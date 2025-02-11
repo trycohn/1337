@@ -1,2 +1,2 @@
 # 1337
-1337community
+1337community.com
