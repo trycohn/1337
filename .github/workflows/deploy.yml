@@ -22,5 +22,5 @@ jobs:
           # Если используется нестандартный порт, раскомментируйте строку ниже и добавьте секрет VPS_PORT
           # port: ${{ secrets.VPS_PORT }}
           script: |
-            cd /root/www/1337tournament
+            cd /root/www/1337tournament/1337
             git pull
