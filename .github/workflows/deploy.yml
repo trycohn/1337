@@ -19,9 +19,8 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "1337"  # Adjust this to the directory or files you want to copy
           # Если используется нестандартный порт, раскомментируйте строку ниже и добавьте секрет VPS_PORT
           # port: ${{ secrets.VPS_PORT }}
           script: |
-            cd /root/www/1337tournament/
+            cd /root/var/www/1337community.com/
             git pull
