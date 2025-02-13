@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Список турниров</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+ <!-- Блок авторизации, который будет доступен на всех страницах -->
+ <header id="authHeader">
+    <div id="authBlock">
+      <!-- Форма логина, если пользователь не авторизован -->
+      <form id="loginForm">
+        <input type="text" id="loginUsername" placeholder="Имя пользователя" required>
+        <input type="password" id="loginPassword" placeholder="Пароль" required>
+        <button type="submit">Войти</button>
+      </form>
+      <!-- Блок с информацией о пользователе и кнопкой выхода, если авторизован -->
+      <div id="userInfo" style="display: none;">
+        <span id="usernameDisplay"></span>
+        <button id="logoutButton">Выйти</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основной контент страницы -->
+  <header>
+    <h1>Список турниров</h1>
+  </header>
+  <main>
+    <div id="tournamentsContainer">
+      <!-- Здесь будет список турниров -->
+    </div>
+  </main>
+  
+  <!-- Подключаем скрипты. auth.js должен идти первым, чтобы блок авторизации и его обработчики были готовы -->
+  <script src="js/auth.js"></script>
+  <script src="/js/tournaments.js"></script>
+</body>
+</html>

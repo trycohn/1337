@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Панель управления турниром</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Блок авторизации, который будет доступен на всех страницах -->
+  <header id="authHeader">
+    <div id="authBlock">
+      <!-- Форма логина, если пользователь не авторизован -->
+      <form id="loginForm">
+        <input type="text" id="loginUsername" placeholder="Имя пользователя" required>
+        <input type="password" id="loginPassword" placeholder="Пароль" required>
+        <button type="submit">Войти</button>
+      </form>
+      <!-- Блок с информацией о пользователе и кнопкой выхода, если авторизован -->
+      <div id="userInfo" style="display: none;">
+        <span id="usernameDisplay"></span>
+        <button id="logoutButton">Выйти</button>
+      </div>
+    </div>
+  </header>
+  <header>
+    <h1>Панель управления турниром</h1>
+  </header>
+  <main>
+    <section id="tournamentInfo">
+      <!-- Сведения о турнире будут загружены сюда -->
+    </section>
+    <section id="matchesSection">
+      <h2>Матчи турнира</h2>
+      <!-- Список матчей с формами для редактирования результатов -->
+      <div id="matchesContainer"></div>
+    </section>
+    <section id="teamsSection">
+      <h2>Управление составами команд</h2>
+      <!-- Здесь можно разместить интерфейс для редактирования состава команд -->
+      <div id="teamsContainer"></div>
+    </section>
+    <div id="myTournamentsContainer"></div>
+    <div id="tournamentInfo"></div>
+    <div id="matchesContainer"></div>
+  </main>
+  <script src="js/tournamentAdmin.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
