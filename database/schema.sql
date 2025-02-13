@@ -75,3 +75,13 @@ CREATE TABLE player_stats (
   assists INTEGER DEFAULT 0,                      -- [Строка 72: Передачи]
   rebounds INTEGER DEFAULT 0                      -- [Строка 73: Подборы]
 );
+
+-- 9. Таблица для администраторов турниров
+CREATE TABLE tournament_admins (
+  id SERIAL PRIMARY KEY,                                      -- [Новая строка 2]
+  tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE, -- [Новая строка 3]
+  admin_id INTEGER REFERENCES users(id) ON DELETE CASCADE,     -- [Новая строка 4]
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,             -- [Новая строка 5]
+  UNIQUE (tournament_id, admin_id)                              -- [Новая строка 6]
+);
+
