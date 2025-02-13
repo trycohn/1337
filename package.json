@@ -1,0 +1,33 @@
+{
+  "name": "1337",
+  "version": "1.0.0",
+  "description": "1337community.com",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+    
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trycohn/1337.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/trycohn/1337/issues"
+  },
+  "homepage": "https://github.com/trycohn/1337#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+
+  
+}
