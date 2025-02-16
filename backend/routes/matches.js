@@ -1,27 +1,59 @@
-// backend/routes/matches.js
-const express = require('express');             // [Строка 1]
-const router = express.Router();                // [Строка 2]
-const pool = require('../db');                  // [Строка 3]
-const authMiddleware = require('../middleware/authMiddleware'); // [Строка 4]
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// Эндпоинт для обновления результатов матча
-router.post('/matches/:matchId/results', authMiddleware, async (req, res) => { // [Строка 7]
-  const { matchId } = req.params;             // [Строка 8]
-  const { score1, score2, winner_team_id } = req.body; // [Строка 9]
-  if (score1 === undefined || score2 === undefined || !winner_team_id) { // [Строка 10]
-    return res.status(400).json({ status: 'error', message: 'score1, score2 and winner_team_id are required' });
-  }
+// ✅ Обновление результата матча
+router.put('/:id/results', authMiddleware, async (req, res) => {
+  const matchId = req.params.id;
+  const { score1, score2 } = req.body;
+
   try {
-    // Обновляем запись матча новыми данными
-    const result = await pool.query(
-      'UPDATE matches SET score1 = $1, score2 = $2, winner_team_id = $3 WHERE id = $4 RETURNING *', // [Строка 14]
-      [score1, score2, winner_team_id, matchId]
+    await pool.query(
+      'UPDATE matches SET score1 = $1, score2 = $2 WHERE id = $3',
+      [score1, score2, matchId]
     );
-    res.json({ status: 'success', match: result.rows[0] }); // [Строка 17]
+    res.json({ status: 'success', message: 'Результаты матча обновлены' });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-module.exports = router; // [Строка 23]
+// ✅ Удаление матча
+router.delete('/:id', authMiddleware, async (req, res) => {
+  const matchId = req.params.id;
+
+  try {
+    await pool.query('DELETE FROM matches WHERE id = $1', [matchId]);
+    res.json({ status: 'success', message: 'Матч удалён' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// ✅ Завершение матча
+router.put('/:id/complete', authMiddleware, async (req, res) => {
+    const matchId = req.params.id;
+  
+    try {
+      // Проверяем, существует ли матч
+      const matchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
+      if (matchResult.rows.length === 0) {
+        return res.status(404).json({ status: 'error', message: 'Матч не найден' });
+      }
+  
+      // Обновляем статус матча на 'completed'
+      await pool.query(
+        "UPDATE matches SET status = 'completed' WHERE id = $1 RETURNING *",
+        [matchId]
+      );
+  
+      res.json({ status: 'success', message: 'Матч завершён' });
+    } catch (err) {
+      console.error('Ошибка при завершении матча:', err);
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
+  
+
+module.exports = router;

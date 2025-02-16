@@ -1,64 +1,72 @@
-
 // backend/server.js
-require('dotenv').config();
-const express = require('express'); // [Строка 1: Подключение express]
-const cors = require('cors');       // [Строка 2: Подключение cors]
+require('dotenv').config({ path: __dirname + '/.env' });
 
-const app = express();
+console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET); // Проверяем загрузку
+
+const express = require('express');
+const path = require('path');
+const cors = require('cors');
 const pool = require('./db');
-const port = process.env.PORT || 3000;
 
-const path = require('path'); // Если ещё не подключено
+// Инициализация Express
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(cors());
+
+// Подключение статических файлов (Frontend)
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Middleware для обработки JSON и URL-кодированных данных
-app.use(express.json());                       // [Строка 7]
-app.use(express.urlencoded({ extended: true })); // [Строка 8]
+app.use(express.urlencoded({ extended: true }));
 
-// Включение CORS для разрешения запросов с других доменов
-app.use(cors()); // [Строка 11]
-
-// Тестовый маршрут для проверки работы сервера
-app.get('/', (req, res) => {      // [Строка 14]
-  res.send('Сервер запущен!');     // [Строка 15]
+// Проверка соединения с базой данных
+app.get('/testdb', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ status: 'success', time: result.rows[0].now });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
 });
 
-app.get('/testdb', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT NOW()');
-      res.json({ status: 'success', time: result.rows[0].now });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ status: 'error', message: err.message });
-    }
-  });
+/* ==========================
+   🔗 ПОДКЛЮЧЕНИЕ МАРШРУТОВ
+   ========================== */
 
+// Авторизация
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
-  const authRoutes = require('./routes/auth'); // [Добавляем строку после подключения db]
-  app.use('/api', authRoutes);                // [Регистрируем маршруты под префиксом /api]
+// Турниры
+const tournamentRoutes = require('./routes/tournaments');
+app.use('/api/tournaments', tournamentRoutes);
 
-  const teamRoutes = require('./routes/teams'); // Новая строка
-  app.use('/api', teamRoutes);                  // Новая строка
+// Команды
+const teamRoutes = require('./routes/teams');
+app.use('/api/teams', teamRoutes);
 
+// Игроки в турнирах
+const tournamentPlayersRoutes = require('./routes/tournamentPlayers');
+app.use('/api/tournamentPlayers', tournamentPlayersRoutes);
 
-  const tournamentRoutes = require('./routes/tournaments'); // [Новая строка]
-  app.use('/api', tournamentRoutes);            // [Новая строка]
+// Матчи
+const matchRoutes = require('./routes/matches');
+app.use('/api/matches', matchRoutes);
 
-  const tournamentPlayersRoutes = require('./routes/tournamentPlayers'); // Новая строка
-    app.use('/api', tournamentPlayersRoutes);                            // Новая строка
+// Генерация турнирной сетки
+const bracketRoutes = require('./routes/brackets');
+app.use('/api/brackets', bracketRoutes);
 
-const matchRoutes = require('./routes/matches'); // Новая строка
-app.use('/api', matchRoutes);                      // Новая строка
+// Статистика турниров
+const statisticsRoutes = require('./routes/statistics');
+app.use('/api/statistics', statisticsRoutes);
 
-const bracketRoutes = require('./routes/brackets'); // Новая строка
-app.use('/api', bracketRoutes);                       // Новая строка
-
-const statisticsRoutes = require('./routes/statistics'); // Новая строка
-app.use('/api', statisticsRoutes);                        // Новая строка
-
-
-    
-// Запуск сервера
-app.listen(port, () => {          // [Строка 19]
-  console.log(`Server listening on port ${port}`); // [Строка 20]
+/* ==========================
+   🚀 ЗАПУСК СЕРВЕРА
+   ========================== */
+app.listen(PORT, () => {
+  console.log(`🚀 Сервер запущен на порту ${PORT}`);
 });
