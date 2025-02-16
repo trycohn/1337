@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Создать турнир</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>Создать турнир</h1>
+</header>
+
+<main>
+  <form id="createTournamentForm">
+    <label>Название турнира:
+      <input type="text" id="tournamentName" placeholder="Название" required>
+    </label><br>
+
+    <label>Описание:
+      <textarea id="tournamentDescription" placeholder="Описание"></textarea>
+    </label><br>
+
+    <label>Игра:
+      <select id="tournamentGame" required>
+        <option value="Quake">Quake</option>
+        <option value="Counter Strike 2">Counter Strike 2</option>
+        <option value="Dota 2">Dota 2</option>
+        <option value="Valorant">Valorant</option>
+      </select>
+    </label><br>
+
+    <!-- 🆕 Новый селектор "Тип участия" -->
+    <label>Тип участия:
+      <select id="tournamentType" required>
+        <option value="solo">Соло (индивидуальные участники)</option>
+        <option value="teams">Командный турнир</option>
+      </select>
+    </label><br>
+
+    <button type="submit">Создать турнир</button>
+  </form>
+</main>
+
+<script src="js/createTournament.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

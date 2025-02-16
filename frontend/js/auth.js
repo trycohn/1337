@@ -1,67 +1,131 @@
-/*
- * Файл: auth.js
- * Описание: Обработка авторизации пользователей. Содержит логику входа, сохранения JWT-токена,
- * обновления отображения блока авторизации и выхода из системы.
- */
+// frontend/js/auth.js
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Находим все элементы
     const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
     const userInfo = document.getElementById('userInfo');
     const usernameDisplay = document.getElementById('usernameDisplay');
     const logoutButton = document.getElementById('logoutButton');
-  
-    // Проверяем, существует ли в localStorage JWT-токен
+
+    const showRegisterFormButton = document.getElementById('showRegisterForm');
+    const showLoginFormButton = document.getElementById('showLoginForm');
+
+    // Проверяем, есть ли сохранённый токен
     const token = localStorage.getItem('jwtToken');
-    if (token) {
-      // Если токен есть, отобразим сообщение "Привет, [имя пользователя]!" и кнопку выхода
-      const storedUsername = localStorage.getItem('username') || 'Пользователь';
-      usernameDisplay.textContent = `Привет, ${storedUsername}!`;
-      loginForm.style.display = 'none';
-      userInfo.style.display = 'block';
+    const userId = localStorage.getItem('userId');
+
+    if (token && userId) {
+        showUserInfo();
     } else {
-      loginForm.style.display = 'block';
-      userInfo.style.display = 'none';
+        showLoginForm();
     }
-  
-    // Обработчик события отправки формы логина
-    loginForm.addEventListener('submit', async function(e) {
-      e.preventDefault(); // Предотвращаем перезагрузку страницы
-      const username = document.getElementById('loginUsername').value;
-      const password = document.getElementById('loginPassword').value;
-      try {
-        const response = await fetch('http://localhost:3000/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+
+    // Переключение на форму регистрации
+    if (showRegisterFormButton && showLoginFormButton) {
+        showRegisterFormButton.addEventListener('click', function() {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
         });
-        if (!response.ok) {
-          const errorData = await response.json();
-          // Если пользователь не найден, можно предложить зарегистрироваться
-          if (errorData.message && errorData.message.includes('не найден')) {
-            alert(errorData.message + ' Если вы еще не зарегистрированы, перейдите по ссылке регистрации.');
-          } else {
-            alert(errorData.message);
-          }
-          return;
-        }
-        const data = await response.json();
-        // Сохраняем токен и имя пользователя в localStorage
-        localStorage.setItem('jwtToken', data.token);
-        localStorage.setItem('username', username);
-        // Обновляем отображение: скрываем форму логина и показываем приветствие с кнопкой выхода
-        usernameDisplay.textContent = `Привет, ${username}!`;
+        // Переключение обратно на форму входа
+        showLoginFormButton.addEventListener('click', function() {
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
+    }
+
+    // Обработка входа в систему
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Ошибка авторизации');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('jwtToken', data.token);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('username', username);
+
+                showUserInfo();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    }
+
+    // Обработка регистрации
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Ошибка регистрации');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('jwtToken', data.token);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('username', username);
+                localStorage.setItem('email', email);
+
+                showUserInfo();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    }
+
+    // Обработка выхода
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function() {
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+            localStorage.removeItem('email');
+            showLoginForm();
+        });
+    }
+
+    // Показываем блок с информацией о пользователе
+    function showUserInfo() {
+        if (!userInfo || !usernameDisplay || !loginForm || !registerForm) return;
+
+        usernameDisplay.textContent = `Привет, ${localStorage.getItem('username')}!`;
         loginForm.style.display = 'none';
+        registerForm.style.display = 'none';
         userInfo.style.display = 'block';
-      } catch (error) {
-        alert('Ошибка: ' + error.message);
-      }
-    });
-  
-    // Обработчик события выхода
-    logoutButton.addEventListener('click', function() {
-      localStorage.removeItem('jwtToken');
-      localStorage.removeItem('username');
-      loginForm.style.display = 'block';
-      userInfo.style.display = 'none';
-    });
-  });
-  
+    }
+
+    // Показываем форму входа
+    function showLoginForm() {
+        if (!userInfo || !loginForm || !registerForm) return;
+        
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        userInfo.style.display = 'none';
+    }
+});

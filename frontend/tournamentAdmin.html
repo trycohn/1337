@@ -1,49 +1,51 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Панель управления турниром</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Администрирование турниров</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Блок авторизации, который будет доступен на всех страницах -->
-  <header id="authHeader">
-    <div id="authBlock">
-      <!-- Форма логина, если пользователь не авторизован -->
-      <form id="loginForm">
-        <input type="text" id="loginUsername" placeholder="Имя пользователя" required>
-        <input type="password" id="loginPassword" placeholder="Пароль" required>
-        <button type="submit">Войти</button>
-      </form>
-      <!-- Блок с информацией о пользователе и кнопкой выхода, если авторизован -->
-      <div id="userInfo" style="display: none;">
-        <span id="usernameDisplay"></span>
-        <button id="logoutButton">Выйти</button>
-      </div>
+<header id="authHeader">
+    <nav id="mainNav">
+        <div class="dropdown">
+            <button class="dropbtn">Меню ▼</button>
+            <div class="dropdown-content">
+                <a href="index.html">Главная</a>
+                <a href="tournamentList.html">Список турниров</a>
+                <a href="tournamentAdmin.html">Мои турниры</a>
+                <a href="createTournament.html">Создать турнир</a>
+                <a href="tournamentView.html">Просмотр турнира</a>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main>
+    <h1 id="tournamentHeader">Мои турниры</h1>
+    <div id="myTournamentsContainer">Загрузка...</div>
+
+    <div id="tournamentDetails" style="display: none;">
+        <button id="backToListButton" style="display: none;">← Назад к списку</button>
+        <h2 id="tournamentTitle"></h2>
+
+        <h2>Регистрация участника</h2>
+        <form id="addParticipantForm">
+            <input type="text" id="participantName" placeholder="Имя участника" required>
+            <button type="submit">Добавить участника</button>
+        </form>
+
+        <h2>Список участников</h2>
+        <ul id="participantListContainer">Загрузка...</ul>
+
+        <h2>Сетка турнира</h2>
+        <button id="generateBracketButton">Сгенерировать сетку</button>
+        <div id="bracketContainer">Сетка турнира появится здесь</div>
     </div>
-  </header>
-  <header>
-    <h1>Панель управления турниром</h1>
-  </header>
-  <main>
-    <section id="tournamentInfo">
-      <!-- Сведения о турнире будут загружены сюда -->
-    </section>
-    <section id="matchesSection">
-      <h2>Матчи турнира</h2>
-      <!-- Список матчей с формами для редактирования результатов -->
-      <div id="matchesContainer"></div>
-    </section>
-    <section id="teamsSection">
-      <h2>Управление составами команд</h2>
-      <!-- Здесь можно разместить интерфейс для редактирования состава команд -->
-      <div id="teamsContainer"></div>
-    </section>
-    <div id="myTournamentsContainer"></div>
-    <div id="tournamentInfo"></div>
-    <div id="matchesContainer"></div>
-  </main>
-  <script src="js/tournamentAdmin.js"></script>
-  <script src="js/auth.js"></script>
+</main>
+
+<script src="js/tournamentAdmin.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>

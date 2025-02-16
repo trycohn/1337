@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Список турниров</title>
-  <link rel="stylesheet" href="/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр турнира</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
- <!-- Блок навигации и авторизации -->
- <!-- Блок навигации и авторизации -->
+      <!-- Навигация и авторизация -->
+<!-- Блок навигации и авторизации -->
 <header id="authHeader">
     <nav id="mainNav">
         <div class="dropdown">
@@ -49,20 +50,18 @@
 
 
   
-  
+    <main>
+        <h1>Информация о турнире</h1>
+        <div id="tournamentInfo">Загрузка...</div>
 
-  <!-- Основной контент страницы -->
-  <header>
-    <h1>Список турниров</h1>
-  </header>
-  <main>
-    <div id="tournamentsContainer">
-      <!-- Здесь будет список турниров -->
-    </div>
-  </main>
-  
-  <!-- Подключаем скрипты. auth.js должен идти первым, чтобы блок авторизации и его обработчики были готовы -->
-  <script src="js/auth.js"></script>
-  <script src="/js/tournaments.js"></script>
+        <h2>Команды</h2>
+        <div id="teamsContainer">Загрузка...</div>
+
+        <h2>Матчи</h2>
+        <div id="matchesContainer">Загрузка...</div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/tournamentView.js"></script>
 </body>
 </html>
