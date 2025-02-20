@@ -1,16 +1,18 @@
-// backend/db.js
-require('dotenv').config();
 const { Pool } = require('pg');
-
-// Проверяем, локальная ли база (если DATABASE_URL содержит "localhost")
-const isProduction = process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost');
+require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:S1lverbooze@localhost:5432/postgres',
-  ssl: isProduction ? { rejectUnauthorized: false } : false // SSL отключается для локальной базы
+    connectionString: process.env.DATABASE_URL,
 });
 
-console.log('🔍 Подключение к базе:', process.env.DATABASE_URL || 'Локальная база');
+// Проверка подключения при инициализации
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('Ошибка подключения к базе данных:', err.stack);
+        return;
+    }
+    console.log('✅ Успешное подключение к базе данных');
+    release();
+});
 
-// Экспортируем пул соединений
 module.exports = pool;
