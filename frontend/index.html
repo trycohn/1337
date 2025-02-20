@@ -1,68 +1,150 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная</title>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <title>1337 Brackets (SPA + pushState)</title>
+  <!-- Предполагаем, что style.css лежит в frontend/css/ -->
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-<!-- Блок навигации и авторизации -->
+
+<!-- 
+  Шапка сайта:
+  - Навигация (pushState)
+  - Блок авторизации (логин, регистрация, userInfo)
+-->
 <header id="authHeader">
   <nav id="mainNav">
-      <div class="dropdown">
-          <button class="dropbtn">Меню ▼</button>
-          <div class="dropdown-content">
-              <a href="index.html">Главная</a>
-              <a href="tournamentList.html">Список турниров</a>
-              <a href="tournamentAdmin.html">Мои турниры</a>
-              <a href="createTournament.html">Создать турнир</a>
-              <a href="tournamentView.html">Просмотр турнира</a>
-          </div>
+    <div class="dropdown">
+      <button class="dropbtn">Меню ▼</button>
+      <div class="dropdown-content">
+        <!-- Ссылки, которые мы перехватим в app.js и сделаем pushState -->
+        <a href="/home" class="nav-link" data-screen="home">Главная</a>
+        <a href="/tournaments" class="nav-link" data-screen="tournaments">Список турниров</a>
+        <a href="/admin" class="nav-link" data-screen="admin">Мои турниры</a>
+        <a href="/create" class="nav-link" data-screen="create">Создать турнир</a>
       </div>
+    </div>
   </nav>
 
+  <!-- Блок авторизации (как раньше) -->
   <div id="authBlock">
-      <!-- Форма входа (если пользователь не авторизован) -->
-      <form id="loginForm">
-          <input type="text" id="loginUsername" placeholder="Имя пользователя" required autocomplete="username">
-          <input type="password" id="loginPassword" placeholder="Пароль" required autocomplete="current-password">
-          <button type="submit">Войти</button>
-          <button type="button" id="showRegisterForm">Регистрация</button>
-      </form>
+    <!-- Форма входа (если пользователь не авторизован) -->
+    <form id="loginForm">
+      <input type="text" id="loginUsername" placeholder="Имя пользователя" required autocomplete="username" />
+      <input type="password" id="loginPassword" placeholder="Пароль" required autocomplete="current-password" />
+      <button type="submit">Войти</button>
+      <button type="button" id="showRegisterForm">Регистрация</button>
+    </form>
 
-      <!-- Форма регистрации (скрыта по умолчанию) -->
-      <form id="registerForm" style="display: none;">
-          <input type="text" id="registerUsername" placeholder="Имя пользователя" required autocomplete="username">
-          <input type="email" id="registerEmail" placeholder="Email" required autocomplete="email">
-          <input type="password" id="registerPassword" placeholder="Пароль" required autocomplete="new-password">
-          <button type="submit">Зарегистрироваться</button>
-          <button type="button" id="showLoginForm">Назад</button>
-      </form>
+    <!-- Форма регистрации (скрыта по умолчанию) -->
+    <form id="registerForm" style="display: none;">
+      <input type="text" id="registerUsername" placeholder="Имя пользователя" required />
+      <input type="email" id="registerEmail" placeholder="Email" required />
+      <input type="password" id="registerPassword" placeholder="Пароль" required />
+      <button type="submit">Зарегистрироваться</button>
+      <button type="button" id="showLoginForm">Назад</button>
+    </form>
 
-      <!-- Блок с информацией о пользователе и кнопкой выхода (если авторизован) -->
-      <div id="userInfo" style="display: none;">
-          <span id="usernameDisplay"></span>
-          <button id="logoutButton">Выйти</button>
-      </div>
+    <!-- Блок "Пользователь" (после логина) -->
+    <div id="userInfo" style="display: none;">
+      <span id="usernameDisplay"></span>
+      <button id="logoutButton">Выйти</button>
+    </div>
   </div>
 </header>
 
 <main>
+  <!-- Экран 1: Home -->
+  <section id="screen-home">
     <h1>Добро пожаловать на 1337 Brackets</h1>
-    <p>
-        Это платформа для организации турниров по различным киберспортивным дисциплинам.
-        Здесь вы можете создавать турниры, приглашать команды, следить за матчами и анализировать результаты.
-    </p>
-    <h2>Возможности сайта</h2>
-    <ul>
-        <li>Создание и управление турнирами</li>
-        <li>Просмотр расписания и результатов матчей</li>
-        <li>Статистика команд и игроков</li>
-    </ul>
+    <p>Это главная страница. Всё содержимое вашего бывшего index.html здесь.</p>
+  </section>
+
+  <!-- Экран 2: Tournaments -->
+  <section id="screen-tournaments" style="display: none;">
+    <h2>Список турниров</h2>
+    <!-- Место, куда вы выводите список турниров -->
+    <div id="tournamentsContainer">Здесь будет список всех турниров...</div>
+  </section>
+
+  <!-- Экран 3: Admin -->
+  <section id="screen-admin" style="display: none;">
+    <h2>Мои турниры</h2>
+    <!-- Место для списка "моих" турниров -->
+    <div id="myTournamentsContainer">Тут ваши турниры...</div>
+
+    <!-- Детали конкретного турнира -->
+    <div id="tournamentDetails" style="display: none;">
+      <h3 id="tournamentTitle"></h3>
+      <!-- Список участников -->
+      <h4>Список участников:</h4>
+      <ul id="participantListContainer"></ul>
+
+      <!-- Форма для добавления участника -->
+      <form id="addParticipantForm">
+        <input type="text" id="participantName" placeholder="Имя участника" />
+        <button type="submit">Добавить участника</button>
+      </form>
+
+      <!-- Чекбокс "Матч за 3 место" -->
+      <label>
+        <input type="checkbox" id="thirdPlaceCheckbox" />
+        Нужен матч за 3-е место?
+      </label>
+      <button id="generateBracketButton">Сгенерировать сетку</button>
+
+      <!-- Контейнер для сетки -->
+      <h4>Сетка</h4>
+      <div id="bracketContainer"></div>
+    </div>
+  </section>
+
+  <!-- Экран 4: Create -->
+  <section id="screen-create" style="display: none;">
+    <h2>Создать турнир</h2>
+    <form id="createTournamentForm">
+      <label>Название турнира:
+        <input type="text" id="tournamentName" required/>
+      </label>
+      <br/>
+      <label>Описание:
+        <textarea id="tournamentDescription"></textarea>
+      </label>
+      <br/>
+      <label>Игра:
+        <select id="tournamentGame">
+          <option value="Quake">Quake</option>
+          <option value="Counter Strike 2">Counter Strike 2</option>
+          <option value="Dota 2">Dota 2</option>
+          <option value="Valorant">Valorant</option>
+        </select>
+      </label>
+      <br/>
+      <label>Тип участия:
+        <select id="tournamentType">
+          <option value="solo">Соло</option>
+          <option value="teams">Командный</option>
+        </select>
+      </label>
+      <br/>
+      <button type="submit">Создать турнир</button>
+    </form>
+  </section>
 </main>
 
-<!-- Подключение auth.js перед </body> -->
+<!-- Подключаем SPA-скрипт (pushState) -->
+<script src="js/app.js"></script>
+
+<!-- Здесь вы можете подключить auth.js, tournamentAdmin.js, createTournament.js, etc. -->
 <script src="js/auth.js"></script>
+<script src="js/tournamentAdmin.js"></script>
+<script src="js/createTournament.js"></script>
+<script src="js/tournaments.js"></script>
+<script src="js/tournamentDetails.js"></script>
+<script src="js/tournamentView.js"></script>
+<script src="js/tournamentList.js"></script>
+<!-- <script src="js/singleelimination.js"></script> -->
+
 </body>
 </html>

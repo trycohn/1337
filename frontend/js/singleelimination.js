@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function() {
         remainingRounds--;
       }
       // Если n>=4 и чекбокс отмечен, добавляем отдельный раунд для матча за 3-е место
-      const needThirdMatch = document.getElementById("thirdMatchCheckbox").checked;
+      const needThirdMatch = document.getElementById("thirdPlaceCheckbox").checked;
       if (needThirdMatch && n >= 4) {
         const thirdPlaceRound = [];
         const thirdMatch = new Match(rounds.length, 0, null, null);

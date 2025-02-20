@@ -17,29 +17,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToListButton = document.getElementById('backToListButton');
     if (backToListButton) {
         backToListButton.addEventListener('click', () => {
+            // Скрываем детали, показываем список моих турниров
             document.getElementById('tournamentDetails').style.display = 'none';
             document.getElementById('myTournamentsContainer').style.display = 'block';
             document.getElementById('tournamentHeader').textContent = 'Мои турниры';
             backToListButton.style.display = 'none';
-            window.currentTournamentId = null; // Сбрасываем ID при выходе
+
+            // Сбрасываем глобальные переменные
+            window.currentTournamentId = null;
+            window.entityMap = {}; 
         });
     }
 });
 
 // ============================
-// Загрузка "Мои турниры"
+// 1) Загрузка "Мои турниры"
 // ============================
 async function loadMyTournaments() {
     try {
         const response = await fetch('http://localhost:3000/api/tournaments/myTournaments', {
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` }
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
         });
-
         if (!response.ok) {
             throw new Error(`Ошибка загрузки турниров: ${response.status}`);
         }
-
         const data = await response.json();
         displayMyTournaments(data.tournaments);
     } catch (error) {
@@ -58,28 +62,28 @@ function displayMyTournaments(tournaments) {
     }
 
     const list = document.createElement('ul');
-    tournaments.forEach(tournament => {
+    tournaments.forEach(t => {
         const li = document.createElement('li');
         const link = document.createElement('a');
         link.href = "#";
-        link.textContent = `${tournament.name} [${tournament.game}] - статус: ${tournament.status}`;
-        link.addEventListener('click', () => selectTournament(tournament));
+        link.textContent = `${t.name} [${t.game}] - статус: ${t.status}`;
+        // При клике выбираем турнир
+        link.addEventListener('click', () => selectTournament(t));
 
         li.appendChild(link);
         list.appendChild(li);
     });
-
     container.appendChild(list);
 }
 
 // ============================
-// Выбор турнира из списка
+// 2) Выбор турнира
 // ============================
 function selectTournament(tournament) {
-    // Сохраняем ID выбранного турнира в глобальную переменную
     window.currentTournamentId = tournament.id;
+    window.entityMap = {}; // ID -> name
 
-    document.getElementById('tournamentHeader').textContent = tournament.name;
+    // Показываем детали турнира
     document.getElementById('tournamentDetails').style.display = 'block';
     document.getElementById('myTournamentsContainer').style.display = 'none';
 
@@ -88,26 +92,26 @@ function selectTournament(tournament) {
 
     document.getElementById('tournamentTitle').textContent = tournament.name;
 
-    loadParticipants(window.currentTournamentId);
-    // При переходе сразу стираем старую сетку
+    // 2.1) Загрузим список участников (отобразим над сеткой)
+    loadParticipants(tournament.id);
+
+    // 2.2) Загрузим участников/команды в entityMap (для отображения имён в сетке)
+    loadParticipantsOrTeams(tournament.id);
+
+    // 2.3) Очищаем сетку, потом грузим матчи
     document.getElementById('bracketContainer').innerHTML = '';
+    loadMatches(tournament.id);
 }
 
 // ============================
-// Загрузка списка участников
+// 3) Загрузка списка участников (solo) для отображения над сеткой
 // ============================
 async function loadParticipants(tournamentId) {
     try {
-        if (!tournamentId) {
-            console.error('Не указан tournamentId при загрузке участников.');
-            return;
-        }
-
         const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/participants`);
         if (!response.ok) {
             throw new Error('Ошибка загрузки участников');
         }
-
         const data = await response.json();
         displayParticipants(data.participants);
     } catch (error) {
@@ -124,7 +128,6 @@ function displayParticipants(participants) {
         container.innerText = 'Нет зарегистрированных участников.';
         return;
     }
-
     participants.forEach(participant => {
         const li = document.createElement('li');
         li.textContent = participant.name;
@@ -133,11 +136,28 @@ function displayParticipants(participants) {
 }
 
 // ============================
-// Добавление одного участника
+// 4) Загрузка участников (solo) / команд (teams) в entityMap
+// ============================
+async function loadParticipantsOrTeams(tournamentId) {
+    try {
+        const resp = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/participants`);
+        if (!resp.ok) {
+            throw new Error('Ошибка загрузки участников/команд');
+        }
+        const data = await resp.json();
+        data.participants.forEach(p => {
+            window.entityMap[p.id] = p.name;
+        });
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// ============================
+// 5) Добавление одного участника
 // ============================
 async function addParticipant(e) {
     e.preventDefault();
-
     const tournamentId = window.currentTournamentId;
     if (!tournamentId) {
         alert('Сначала выберите турнир.');
@@ -163,14 +183,16 @@ async function addParticipant(e) {
 
         alert('Участник добавлен!');
         document.getElementById('participantName').value = '';
+        // Обновим список участников и entityMap
         loadParticipants(tournamentId);
+        loadParticipantsOrTeams(tournamentId);
     } catch (error) {
         alert(error.message);
     }
 }
 
 // ============================
-// Генерация сетки
+// 6) Генерация сетки
 // ============================
 async function generateBracket() {
     const tournamentId = window.currentTournamentId;
@@ -178,10 +200,14 @@ async function generateBracket() {
         alert('Сначала выберите турнир.');
         return;
     }
+
+    const withThirdPlace = document.getElementById('thirdPlaceCheckbox')?.checked || false;
+
     try {
         const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/generateBracket`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ withThirdPlace })
         });
 
         if (!response.ok) {
@@ -189,8 +215,8 @@ async function generateBracket() {
         }
 
         alert('Сетка успешно сгенерирована!');
-
-        // После генерации сетки загружаем все матчи
+        // Перерисовать сетку
+        document.getElementById('bracketContainer').innerHTML = '';
         loadMatches(tournamentId);
 
     } catch (error) {
@@ -199,7 +225,7 @@ async function generateBracket() {
 }
 
 // ============================
-// Загрузка матчей турнира (GET /api/tournaments/:id/matches)
+// 7) Загрузка матчей
 // ============================
 async function loadMatches(tournamentId) {
     try {
@@ -207,58 +233,95 @@ async function loadMatches(tournamentId) {
         if (!response.ok) {
             throw new Error('Ошибка загрузки матчей');
         }
-
         const data = await response.json();
         drawBracket(data.matches);
     } catch (error) {
+        console.error(error);
         alert(error.message);
     }
 }
 
 // ============================
-// Рисуем турнирную сетку
+// 8) Отрисовка сетки
 // ============================
 function drawBracket(matches) {
     const bracketContainer = document.getElementById('bracketContainer');
-    bracketContainer.innerHTML = '';
+    bracketContainer.innerHTML = ''; // Очищаем
 
     if (!matches || matches.length === 0) {
         bracketContainer.textContent = 'Матчи не найдены.';
         return;
     }
 
-    // Группируем матчи по раундам
+    // 1) Сортируем матчи по id, чтобы иметь предсказуемый порядок
+    matches.sort((a, b) => a.id - b.id);
+
+    // 2) Группируем по round
     const rounds = {};
-    matches.forEach(match => {
-        if (!rounds[match.round]) {
-            rounds[match.round] = [];
+    let maxRound = 0;
+    matches.forEach(m => {
+        if (!rounds[m.round]) {
+            rounds[m.round] = [];
         }
-        rounds[match.round].push(match);
+        rounds[m.round].push(m);
+
+        if (m.round > maxRound) {
+            maxRound = m.round;
+        }
     });
 
-    // Сортируем раунды по возрастанию
-    const roundKeys = Object.keys(rounds).sort((a, b) => a - b);
+    // Сортируем список раундов по возрастанию
+    const roundNumbers = Object.keys(rounds).map(Number).sort((a, b) => a - b);
 
-    roundKeys.forEach(round => {
+    // 3) Для каждого раунда делаем свою «колонку»
+    roundNumbers.forEach(rnd => {
+        const roundArr = rounds[rnd];
+        // Можно отсортировать внутри раунда по id
+        roundArr.sort((a, b) => a.id - b.id);
+
+        // Создаём div-колонку
         const roundDiv = document.createElement('div');
         roundDiv.classList.add('round-column');
-        roundDiv.innerHTML = `<h3>Раунд ${round}</h3>`;
 
-        rounds[round].forEach(m => {
+        // Опционально, как-то называем раунд:
+        const roundTitle = document.createElement('h4');
+        roundTitle.textContent = `Раунд ${rnd}`; // или более сложная логика (Финал, Полуфинал...)
+        roundDiv.appendChild(roundTitle);
+
+        // 4) Для каждого матча — делаем блок
+        roundArr.forEach(match => {
             const matchDiv = document.createElement('div');
             matchDiv.classList.add('match-item');
 
-            // Формируем отображение
+            // team1_id, team2_id => преобразуем в имена/«Победитель пары #X»
+            const team1Text = resolveEntityName(match.team1_id);
+            const team2Text = resolveEntityName(match.team2_id);
+
             matchDiv.innerHTML = `
-                <p>Матч #${m.id}, Раунд: ${m.round}</p>
-                <p>Участник 1 (ID: ${m.team1_id || '---'})</p>
-                <p>Участник 2 (ID: ${m.team2_id || '---'})</p>
-                <p>Статус: ${m.status}</p>
-                <hr>
+                <p><strong>Пара #${match.id}</strong></p>
+                <p>${team1Text}</p>
+                <p>${team2Text}</p>
+                <p>Статус: ${match.status}</p>
             `;
+
             roundDiv.appendChild(matchDiv);
         });
 
         bracketContainer.appendChild(roundDiv);
     });
 }
+function resolveEntityName(entityId) {
+    if (!entityId) return '---';
+
+    // Если <0 => "Победитель пары #|id|"
+    if (entityId < 0) {
+        return `Победитель пары #${-entityId}`;
+    }
+
+    // Если >0 => ищем в entityMap
+    if (window.entityMap && window.entityMap[entityId]) {
+        return window.entityMap[entityId];
+    }
+    return `Участник ID=${entityId}`;
+}
+

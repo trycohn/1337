@@ -1,7 +1,7 @@
--- database/schema.sql
-
+-- ========================
 -- 1. Таблица пользователей
-CREATE TABLE users (
+-- ========================
+CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
@@ -9,112 +9,81 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Таблица турниров с параметром игры и форматом турнира
-CREATE TABLE tournaments (
+-- =============================
+-- 2. Таблица турниров
+--    (включаем поле type: solo/teams)
+-- =============================
+CREATE TABLE IF NOT EXISTS tournaments (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   description TEXT,
-  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_by INT REFERENCES users(id) ON DELETE SET NULL, -- Автор турнира
   status VARCHAR(20) NOT NULL DEFAULT 'active',
   game VARCHAR(50) NOT NULL CHECK (game IN ('Quake', 'Counter Strike 2', 'Dota 2', 'Valorant')),
-  format VARCHAR(50) NOT NULL DEFAULT 'single_elimination', -- ✅ Новый столбец для формата турнира
+  type VARCHAR(10) NOT NULL DEFAULT 'solo',         -- solo или teams
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Таблица команд (глобальные команды)
-CREATE TABLE teams (
+-- ===========================================
+-- 3. Таблица участников (для solo-турниров)
+-- ===========================================
+CREATE TABLE IF NOT EXISTS tournament_participants (
   id SERIAL PRIMARY KEY,
+  tournament_id INT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,               -- Имя участника (solo)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ===========================================
+-- 4. Таблица команд (для командных турниров)
+--    Если в будущем нужны команды
+-- ===========================================
+CREATE TABLE IF NOT EXISTS teams (
+  id SERIAL PRIMARY KEY,
+  tournament_id INT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
-  city VARCHAR(100) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Таблица игроков (глобальные игроки)
-CREATE TABLE players (
+-- =================================================================
+-- 5. Таблица матчей
+--    ВАЖНО: нет ссылок (FOREIGN KEY) на team1_id / team2_id!
+--    Сохраняем только FK на tournament_id, чтобы при удалении
+--    турнира матчи тоже удалялись.
+-- =================================================================
+CREATE TABLE IF NOT EXISTS matches (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  position VARCHAR(50),
+  tournament_id INT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  round INT NOT NULL,
+  team1_id INT,           -- МОЖЕТ быть ID участника ИЛИ команды
+  team2_id INT,           -- аналогично
+  winner_team_id INT,     -- при необходимости (или winner_id)
+  status VARCHAR(50) DEFAULT 'scheduled',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Промежуточная таблица для связи турниров и команд
-CREATE TABLE tournament_teams (
+-- ===========================================
+-- 6. Таблица турнирных администраторов
+-- ===========================================
+CREATE TABLE IF NOT EXISTS tournament_admins (
   id SERIAL PRIMARY KEY,
-  tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
-  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-  UNIQUE(tournament_id, team_id)
-);
-
--- 6. Таблица для составов команд в турнирах
-CREATE TABLE tournament_team_players (
-  id SERIAL PRIMARY KEY,
-  tournament_team_id INTEGER REFERENCES tournament_teams(id) ON DELETE CASCADE,
-  player_id INTEGER REFERENCES players(id) ON DELETE CASCADE,
-  is_captain BOOLEAN DEFAULT FALSE,
-  UNIQUE(tournament_team_id, player_id)
-);
-
--- 7. Таблица матчей с поддержкой разных форматов турниров
-CREATE TABLE matches (
-  id SERIAL PRIMARY KEY,
-  tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
-  round INTEGER NOT NULL,
-  team1_id INTEGER REFERENCES tournament_teams(id) ON DELETE SET NULL,
-  team2_id INTEGER REFERENCES tournament_teams(id) ON DELETE SET NULL,
-  score1 INTEGER DEFAULT 0,
-  score2 INTEGER DEFAULT 0,
-  winner_team_id INTEGER REFERENCES tournament_teams(id) ON DELETE SET NULL,
-  match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  status VARCHAR(50) DEFAULT 'scheduled' -- ✅ Добавлен статус матча ('scheduled', 'completed', 'won_by_default')
-);
-
--- 8. Таблица статистики игроков
-CREATE TABLE player_stats (
-  id SERIAL PRIMARY KEY,
-  match_id INTEGER REFERENCES matches(id) ON DELETE CASCADE,
-  player_id INTEGER REFERENCES players(id) ON DELETE CASCADE,
-  points INTEGER DEFAULT 0,
-  assists INTEGER DEFAULT 0,
-  rebounds INTEGER DEFAULT 0
-);
-
--- 9. Таблица для администраторов турниров
-CREATE TABLE tournament_admins (
-  id SERIAL PRIMARY KEY,
-  tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
-  admin_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  tournament_id INT REFERENCES tournaments(id) ON DELETE CASCADE,
+  admin_id INT REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (tournament_id, admin_id)
 );
 
--- ✅ Индексы для оптимизации запросов
-CREATE INDEX IF NOT EXISTS idx_tournament_format ON tournaments(format);
-CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);
-
-CREATE TABLE IF NOT EXISTS tournament_participants (
+-- ===========================================
+-- 7. При необходимости: статистика игроков
+--    Если планируете хранить очки, ассисты и т. п.
+-- ===========================================
+CREATE TABLE IF NOT EXISTS player_stats (
   id SERIAL PRIMARY KEY,
-  tournament_id INT REFERENCES tournaments(id) ON DELETE CASCADE,
-  name VARCHAR(100) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE tournaments (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  description TEXT,
-  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'active',
-  game VARCHAR(50) NOT NULL CHECK (game IN ('Quake','Counter Strike 2','Dota 2','Valorant')),
-  type VARCHAR(10) NOT NULL DEFAULT 'solo', -- 🆕 solo или teams
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS matches (
-  id SERIAL PRIMARY KEY,
-  tournament_id INT REFERENCES tournaments(id) ON DELETE CASCADE,
-  round INT NOT NULL,
-  team1_id INT,
-  team2_id INT,
-  status VARCHAR(50) DEFAULT 'scheduled',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  match_id INT REFERENCES matches(id) ON DELETE CASCADE,
+  -- если solo: player_id -> tournament_participants?
+  -- если teams: team_id -> teams / tournament_teams?
+  -- В зависимости от логики
+  points INT DEFAULT 0,
+  assists INT DEFAULT 0,
+  rebounds INT DEFAULT 0
 );
