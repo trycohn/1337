@@ -17,7 +17,7 @@ app.use(cors({
 }));
 
 // Подключение статических файлов (Frontend)
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend'), { cacheControl: false })); // Отключаем кэш
 
 // Middleware для обработки URL-кодированных данных
 app.use(express.urlencoded({ extended: true }));
@@ -31,6 +31,10 @@ app.get('/testdb', async (req, res) => {
         console.error('Ошибка подключения к базе:', err);
         res.status(500).json({ status: 'error', message: err.message });
     }
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 /* ==========================
