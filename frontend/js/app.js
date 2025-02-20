@@ -1,73 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // При загрузке -> routeTo(location.pathname)
-    routeTo(location.pathname);
-  
-    // Перехватываем клики по .nav-link
-    document.querySelectorAll('a.nav-link').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const path = link.getAttribute('href');       // e.g. "/admin"
-        const screenKey = link.dataset.screen;        // e.g. "admin"
-        pushNavigate(path, screenKey);
-      });
+    // Перехватываем клики по навигации
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const screen = link.getAttribute('data-screen');
+            showScreen(screen);
+        });
     });
-  
-    // При нажатии Back/Forward
-    window.onpopstate = function(event) {
-      routeTo(location.pathname);
-    };
-  });
-  
-  /**
-   * Делаем pushState без перезагрузки
-   */
-  function pushNavigate(path, screenKey) {
-    history.pushState({ screenKey }, '', path);
-    showScreen(screenKey);
-  }
-  
-  /**
-   * routeTo(path) -> определяем screenKey
-   */
-  function routeTo(path) {
-    let screenKey = 'home'; // по умолчанию
-  
-    switch(path) {
-      case '/':
-      case '/home':
-        screenKey = 'home';
-        break;
-      case '/tournaments':
-        screenKey = 'tournaments';
-        break;
-      case '/admin':
-        screenKey = 'admin';
-        // Можно loadMyTournaments() тут
-        break;
-      case '/create':
-        screenKey = 'create';
-        break;
-      default:
-        // fallback
-        screenKey = 'home';
-        break;
+
+    // Обрабатываем начальную загрузку и изменения истории
+    window.addEventListener('popstate', (e) => {
+        const state = e.state || { screen: 'home' };
+        showScreen(state.screen, state);
+    });
+
+    // Загружаем начальный экран
+    const initialPath = window.location.pathname.slice(1) || 'home';
+    showScreen(initialPath);
+});
+
+// Функция переключения экранов (дублируем для совместимости)
+function showScreen(screenId, params = {}) {
+    document.querySelectorAll('main > section').forEach(section => {
+        section.style.display = 'none';
+    });
+
+    const targetScreen = document.getElementById(`screen-${screenId}`);
+    if (targetScreen) {
+        targetScreen.style.display = 'block';
+
+        // Если это экран admin и есть tournamentId, показываем детали
+        if (screenId === 'admin' && params.tournamentId) {
+            loadTournamentDetails(params.tournamentId);
+        }
+    } else {
+        console.error(`Экран screen-${screenId} не найден`);
     }
-    showScreen(screenKey);
-  }
-  
-  /**
-   * Показываем нужное <section id="screen-...">, скрываем остальные
-   */
-  function showScreen(screenKey) {
-    const screens = ['home','tournaments','admin','create'];
-    screens.forEach(s => {
-      const el = document.getElementById(`screen-${s}`);
-      if (!el) return;
-      el.style.display = (s===screenKey) ? 'block' : 'none';
-    });
-  
-    // Дополнительно, при показе admin, 
-    // вы можете вызывать loadMyTournaments() и т.п.
-    // if (screenKey==='admin') { loadMyTournaments(); }
-  }
-  
+
+    const url = `/${screenId}${params.tournamentId ? `?id=${params.tournamentId}` : ''}`;
+    window.history.pushState({ screen: screenId, ...params }, '', url);
+}
+
+// Загрузка деталей турнира (пример)
+function loadTournamentDetails(tournamentId) {
+    // Здесь можно сделать fetch-запрос к /api/tournaments/:id
+    // Пока просто показываем заглушку
+    const detailsContainer = document.getElementById('tournamentDetails');
+    const title = document.getElementById('tournamentTitle');
+    if (detailsContainer && title) {
+        detailsContainer.style.display = 'block';
+        title.textContent = `Турнир ID: ${tournamentId}`;
+    }
+}

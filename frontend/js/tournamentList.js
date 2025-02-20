@@ -1,40 +1,28 @@
-document.addEventListener('DOMContentLoaded', loadTournaments);
-
-// ✅ Загрузка списка турниров
 async function loadTournaments() {
     try {
-        const response = await fetch('http://localhost:3000/api/tournaments');
+        const response = await fetch('http://localhost:3000/api/tournaments', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) {
-            throw new Error('Ошибка загрузки турниров');
+            throw new Error(`Ошибка загрузки турниров (статус: ${response.status})`);
         }
-
         const data = await response.json();
-        displayTournaments(data.tournaments);
+        displayTournaments(data);
     } catch (error) {
-        console.error('Ошибка:', error);
-        document.getElementById('tournamentsContainer').innerText = 'Не удалось загрузить турниры.';
+        console.error('Ошибка загрузки турниров:', error);
     }
 }
 
-// ✅ Отображение списка турниров в DOM
 function displayTournaments(tournaments) {
-    const container = document.getElementById('tournamentsContainer');
-    container.innerHTML = '';
-
-    if (tournaments.length === 0) {
-        container.innerText = 'Нет доступных турниров.';
-        return;
+    // Проверяем, что tournaments — массив
+    const tournamentArray = Array.isArray(tournaments) ? tournaments : [];
+    console.log('Количество турниров:', tournamentArray.length);
+    // Дальше твоя логика отображения, например:
+    const list = document.getElementById('tournament-list');
+    if (list) {
+        list.innerHTML = tournamentArray.map(t => `<li>${t.name}</li>`).join('');
     }
-
-    const list = document.createElement('ul');
-    tournaments.forEach(t => {
-        const listItem = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = `tournamentView.html?id=${t.id}`;
-        link.textContent = `${t.name} [${t.game}] - статус: ${t.status}`;
-        listItem.appendChild(link);
-        list.appendChild(listItem);
-    });
-
-    container.appendChild(list);
 }
+
+document.addEventListener('DOMContentLoaded', loadTournaments);
