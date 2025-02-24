@@ -1,23 +1,24 @@
 require('dotenv').config({ path: __dirname + '/.env' });
 
-console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET); // Проверяем загрузку
+console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET); // Проверяем загрузку переменной окружения
 
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const pool = require('./db');
 
-// Инициализация Express
 const app = express();
 
+// Middleware для разбора JSON и настройки CORS
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3000', // Укажи точный адрес frontend
+    origin: 'http://localhost:3000', // Точный адрес фронтенда
     credentials: true
 }));
 
 // Подключение статических файлов (Frontend)
-app.use(express.static(path.join(__dirname, '../frontend'), { cacheControl: false })); // Отключаем кэш
+// Все файлы из папки '../frontend' будут отдаваться как статика
+app.use(express.static(path.join(__dirname, '../frontend'), { cacheControl: false }));
 
 // Middleware для обработки URL-кодированных данных
 app.use(express.urlencoded({ extended: true }));
@@ -33,13 +34,10 @@ app.get('/testdb', async (req, res) => {
     }
 });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
-
 /* ==========================
-   🔗 ПОДКЛЮЧЕНИЕ МАРШРУТОВ
+   🔗 ПОДКЛЮЧЕНИЕ API МАРШРУТОВ
    ========================== */
+// Все API маршруты должны быть объявлены до catch-all маршрута для SPA
 
 // Авторизация
 const authRoutes = require('./routes/auth');
@@ -69,18 +67,32 @@ app.use('/api/brackets', bracketRoutes);
 const statisticsRoutes = require('./routes/statistics');
 app.use('/api/statistics', statisticsRoutes);
 
-// Обработка 404 для неизвестных маршрутов
+// Обработка 404 для API маршрутов, если ни один из них не сработал
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'API маршрут не найден' });
+});
+
+/* ==========================
+   🚀 Catch-all для SPA
+   ========================== */
+// Для всех GET-запросов, не начинающихся с "/api", отдаем index.html.
+// Это позволяет SPA-роутеру обрабатывать маршруты на клиенте.
+app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+/* ==========================
+   ⚠️ Общая обработка 404 для остальных маршрутов
+   ========================== */
 app.use((req, res) => {
     res.status(404).json({ error: 'Маршрут не найден' });
 });
 
-/* ==========================
-   🚀 ЗАПУСК СЕРВЕРА
-   ========================== */
+// Запуск сервера на указанном порту
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
-    // Проверяем подключение к базе при старте
+    // При старте проверяем подключение к базе данных
     try {
         await pool.query('SELECT NOW()');
         console.log('✅ Подключение к базе данных успешно');

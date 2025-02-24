@@ -1,82 +1,112 @@
+/**
+ * routes/tournaments.js
+ *
+ * Этот модуль определяет маршруты для работы с турнирами.
+ * Реализованы:
+ * 1. GET /api/tournaments                - Получение списка всех турниров.
+ * 2. GET /api/tournaments/:id            - Получение деталей турнира по ID.
+ * 3. POST /api/tournaments               - Создание нового турнира.
+ * 4. GET /api/tournaments/:id/participants - Получение списка участников турнира.
+ * 5. POST /api/tournaments/:id/participants- Добавление участника к турниру.
+ */
+
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
-const jwt = require('jsonwebtoken');
+const pool = require('../db'); // Подключение к базе данных
 
-// Middleware для проверки токена
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-        console.warn('Токен не предоставлен в запросе');
-        return res.status(401).json({ error: 'Токен не предоставлен' });
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            console.error('Ошибка верификации токена:', err.message);
-            return res.status(403).json({ error: 'Недействительный токен' });
-        }
-        console.log('Токен верифицирован, пользователь:', user);
-        req.user = user;
-        next();
-    });
-};
-
-// Получение всех турниров
+// 1) Получение списка всех турниров
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM tournaments');
-        console.log('Все турниры успешно загружены:', result.rows);
-        res.json(result.rows || []);
+        const result = await pool.query('SELECT * FROM tournaments ORDER BY id ASC');
+        res.json(result.rows);
     } catch (error) {
-        console.error('Ошибка в /api/tournaments:', error.stack);
-        res.status(500).json({ error: 'Ошибка сервера при загрузке турниров' });
+        console.error('Ошибка при получении турниров:', error);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
-// Получение "моих" турниров с проверкой авторизации
-router.get('/myTournaments', authenticateToken, async (req, res) => {
+// 2) Получение деталей турнира по ID
+router.get('/:id', async (req, res) => {
+    const tournamentId = parseInt(req.params.id, 10);
     try {
-        const userId = req.user.id;
-        console.log('Запрос турниров для user_id:', userId);
-
-        const result = await pool.query(
-            'SELECT * FROM tournaments WHERE user_id = $1',
-            [userId]
-        );
-        console.log('Мои турниры успешно загружены:', result.rows);
-        res.json(result.rows || []);
-    } catch (error) {
-        console.error('Ошибка в /api/tournaments/myTournaments:', error.stack);
-        res.status(500).json({ error: 'Ошибка сервера при загрузке моих турниров' });
-    }
-});
-
-// Создание нового турнира
-router.post('/', authenticateToken, async (req, res) => {
-    try {
-        const { name, description, game, type } = req.body;
-        const userId = req.user.id;
-
-        // Проверка обязательных полей
-        if (!name || !game) {
-            return res.status(400).json({ error: 'Название и игра обязательны' });
+        const result = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Турнир не найден' });
         }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Ошибка при получении турнира:', error);
+        res.status(500).json({ message: 'Ошибка сервера' });
+    }
+});
 
+// 3) Создание нового турнира
+router.post('/', async (req, res) => {
+    const { name, description, game, type } = req.body;
+    if (!name || !game || !type) {
+        return res.status(400).json({ message: 'Не все необходимые поля заполнены' });
+    }
+    try {
         const result = await pool.query(
-            `INSERT INTO tournaments (name, description, game, type, user_id, status, format, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-             RETURNING *`,
-            [name, description || null, game, type || 'solo', userId, 'pending', 'single_elimination']
+            'INSERT INTO tournaments (name, description, game, type) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, game, type]
         );
-
-        console.log('Турнир успешно создан:', result.rows[0]);
         res.status(201).json(result.rows[0]);
     } catch (error) {
-        console.error('Ошибка при создании турнира:', error.stack);
-        res.status(500).json({ error: 'Ошибка сервера при создании турнира' });
+        console.error('Ошибка при создании турнира:', error);
+        res.status(500).json({ message: 'Ошибка сервера' });
+    }
+});
+
+// GET /api/tournaments/:id/participants — получение списка участников для выбранного турнира
+router.get('/:id/participants', async (req, res) => {
+    const tournamentId = parseInt(req.params.id, 10);
+    try {
+        const result = await pool.query(
+            'SELECT * FROM participants WHERE tournament_id = $1 ORDER BY id ASC',
+            [tournamentId]
+        );
+        res.json({ participants: result.rows });
+    } catch (error) {
+        console.error('Ошибка при получении участников:', error);
+        res.status(500).json({ message: 'Ошибка сервера' });
+    }
+});
+
+
+// 5) Добавление участника к турниру
+router.post('/:id/participants', async (req, res) => {
+    const tournamentId = parseInt(req.params.id, 10);
+    const { name } = req.body;
+    if (!name) {
+        return res.status(400).json({ message: 'Имя участника обязательно' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO participants (tournament_id, name) VALUES ($1, $2) RETURNING *',
+            [tournamentId, name]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Ошибка при добавлении участника:', error);
+        res.status(500).json({ message: 'Ошибка сервера', error: error.message });
+    }
+});
+
+// GET /api/tournaments/:id/matches — Получение списка матчей для турнира
+router.get('/:id/matches', async (req, res) => {
+    const tournamentId = parseInt(req.params.id, 10);
+    try {
+        // Предположим, что в таблице matches хранится информация о матчах турнира,
+        // и что есть столбец tournament_id, по которому фильтруются матчи
+        const result = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY id ASC',
+            [tournamentId]
+        );
+        res.json({ matches: result.rows });
+    } catch (error) {
+        console.error('Ошибка при получении матчей:', error);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 

@@ -1,54 +1,70 @@
-document.addEventListener('DOMContentLoaded', () => {
-  loadMyTournaments();
-});
+/**
+ * tournaments.js
+ *
+ * Этот файл отвечает за загрузку турниров для текущего пользователя ("Мои турниры")
+ * и их отображение на странице.
+ *
+ * Теперь названия турниров выводятся как ссылки с data-screen="admin",
+ * чтобы при клике переключалась секция управления турниром.
+ */
+
+function getTournamentsContainer() {
+  let container = document.getElementById('myTournamentsContainer');
+  if (!container) {
+      console.error("Элемент с id 'myTournamentsContainer' не найден. Создаем новый контейнер.");
+      container = document.createElement('div');
+      container.id = 'myTournamentsContainer';
+      document.body.appendChild(container);
+  }
+  return container;
+}
+
+function displayTournaments(tournaments) {
+  const tournamentsContainer = getTournamentsContainer();
+  tournamentsContainer.innerHTML = ''; // Очищаем содержимое
+
+  tournaments.forEach(tournament => {
+      const tournamentDiv = document.createElement('div');
+      tournamentDiv.classList.add('tournament-item');
+
+      // Создаем ссылку для управления турниром с явным указанием tournamentId
+      const link = document.createElement('a');
+      link.href = `/admin?tournamentId=${tournament.id}`;
+      link.textContent = tournament.name;
+      // Добавляем data-атрибут для SPA-роутинга
+      link.dataset.screen = "admin";
+
+      tournamentDiv.appendChild(link);
+      tournamentsContainer.appendChild(tournamentDiv);
+  });
+}
 
 async function loadMyTournaments() {
   try {
-      const token = localStorage.getItem('jwtToken');
-      if (!token) {
-          throw new Error('Нет токена в localStorage. Пожалуйста, войдите в систему.');
-      }
-
-      const response = await fetch('http://localhost:3000/api/tournaments/myTournaments', {
-          method: 'GET',
-          headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-          }
-      });
+      const response = await fetch('/api/tournaments');
+      console.log("Запрошенный URL:", response.url, "Статус:", response.status);
 
       if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Ошибка загрузки турниров (статус: ${response.status}): ${errorText}`);
+          throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const data = await response.json();
-      displayMyTournaments(data);
+      const contentType = response.headers.get("content-type");
+      console.log("Тип содержимого ответа:", contentType);
+
+      if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          throw new Error(`Expected JSON, but received: ${text.substring(0, 100)}...`);
+      }
+
+      const tournaments = await response.json();
+      displayTournaments(tournaments);
   } catch (error) {
-      console.error('Ошибка загрузки турниров:', error);
-      const container = document.getElementById('myTournamentsContainer');
-      if (container) {
-          container.innerText = `Не удалось загрузить турниры: ${error.message}`;
-      }
+      console.error("Ошибка загрузки турниров:", error);
+      const tournamentsContainer = getTournamentsContainer();
+      tournamentsContainer.innerHTML = '<p>Ошибка загрузки турниров. Попробуйте позже.</p>';
   }
 }
 
-function displayMyTournaments(tournaments) {
-  const container = document.getElementById('myTournamentsContainer');
-  if (!container) {
-      console.error('Контейнер myTournamentsContainer не найден в DOM');
-      return;
-  }
-  container.innerHTML = '';
-  if (!Array.isArray(tournaments) || tournaments.length === 0) {
-      container.innerText = 'Нет доступных турниров.';
-      return;
-  }
-  const list = document.createElement('ul');
-  tournaments.forEach(t => {
-      const listItem = document.createElement('li');
-      listItem.textContent = `${t.name} [${t.game}] - статус: ${t.status}`;
-      list.appendChild(listItem);
-  });
-  container.appendChild(list);
-}
+document.addEventListener("DOMContentLoaded", () => {
+  loadMyTournaments();
+});

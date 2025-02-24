@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <!-- Шапка с навигацией и блоком авторизации -->
   <header id="authHeader">
     <nav id="mainNav">
       <div class="dropdown">
@@ -39,34 +40,45 @@
     </div>
   </header>
 
+  <!-- Основной контент -->
   <main>
+    <!-- Главная страница -->
     <section id="screen-home">
       <h1>Добро пожаловать на 1337 Brackets</h1>
       <p>Это главная страница. Всё содержимое вашего бывшего index.html здесь.</p>
     </section>
 
+    <!-- Страница списка турниров -->
     <section id="screen-tournaments" style="display: none;">
       <h2>Список турниров</h2>
       <div id="tournamentsContainer">Здесь будет список всех турниров...</div>
     </section>
 
-    <!-- Исправленная секция -->
+    <!-- Страница управления турнирами (Мои турниры) -->
     <section id="screen-admin" style="display: none;">
       <h2>Мои турниры</h2>
       <div id="myTournamentsContainer">Тут ваши турниры...</div>
       <p>TEST VERSION: 2025-02-20</p>
       <div id="tournamentDetails" style="display: none;">
+        <!-- Блок для сообщения об успешном создании турнира -->
         <div id="creationSuccess" style="display: none; color: green; margin-bottom: 10px;">
           Турнир успешно создан!
           <button id="hideSuccessMessage" style="margin-left: 10px;">Скрыть</button>
         </div>
+        <!-- Заголовок и детали турнира -->
+        <div id="tournamentInfoContainer"></div>
         <h3 id="tournamentTitle"></h3>
         <h4>Список участников:</h4>
         <ul id="participantListContainer"></ul>
-        <!-- ... остальное без изменений -->
+        <!-- Остальные детали турнира -->
+      </div>
+      <div id="tournamentInfoContainer">
+        <h2 id="tournamentNameDisplay"></h2>
+        <!-- Другие детали турнира -->
       </div>
     </section>
 
+    <!-- Страница создания турнира -->
     <section id="screen-create" style="display: none;">
       <h2>Создать турнир</h2>
       <form id="createTournamentForm">
@@ -97,9 +109,12 @@
         <button type="submit">Создать турнир</button>
       </form>
     </section>
+
+    <!-- Дополнительный контент (если необходимо) -->
     <div id="mainContent"></div>
   </main>
 
+  <!-- Подключение скриптов -->
   <script src="js/app.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/tournamentAdmin.js"></script>
