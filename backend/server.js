@@ -61,7 +61,7 @@ app.use('/api/matches', matchRoutes);
 
 // Генерация турнирной сетки
 const bracketRoutes = require('./routes/brackets');
-app.use('/api/brackets', bracketRoutes);
+app.use('/api/tournaments', bracketRoutes);
 
 // Статистика турниров
 const statisticsRoutes = require('./routes/statistics');

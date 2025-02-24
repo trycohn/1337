@@ -1,22 +1,29 @@
+// backend/middleware/authMiddleware.js
+
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = process.env;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
+// Middleware для проверки авторизации
+const authMiddleware = (req, res, next) => {
+    // Получаем заголовок Authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    }
 
-module.exports = function authMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'];
+    // Если заголовок начинается с "Bearer ", удаляем этот префикс
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ status: 'error', message: 'No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    console.error('Ошибка проверки токена:', err.message);
-    return res.status(401).json({ status: 'error', message: 'Token is not valid' });
-  }
+    try {
+        // Верифицируем токен
+        const decoded = jwt.verify(token, JWT_SECRET);
+        // Сохраняем данные пользователя из токена в req.user
+        req.user = decoded.user;
+        next();
+    } catch (err) {
+        console.error(err);
+        res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
 };
+
+module.exports = authMiddleware;
