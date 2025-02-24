@@ -1,5 +1,5 @@
 /**
- * /mnt/data/tournamentAdmin.js
+ * frontend/js/tournamentAdmin.js
  *
  * Этот файл отвечает за администрирование турнира:
  * 1. Если в URL указан конкретный турнир, сразу загружаются его детали,
@@ -8,12 +8,10 @@
  * 3. При выборе турнира обновляются его детали, создаётся скрытое поле с его ID,
  *    а также загружается актуальный список участников, матчей и т.д.
  * 4. На странице турнира есть форма для добавления участников, кнопка "Сформировать сетку"
- *    и блок для установки результатов матчей (placeholder‑логика).
+ *    и кнопка "Назад к списку турниров".
  *
  * Изменения:
- * – При выборе турнира удаляется существующий контейнер списка участников и создаётся новый.
- * – При выборе турнира очищается предыдущий интервал обновления участников и устанавливается новый.
- * – Для всех fetch-запросов установлена опция cache: 'no-store' для получения актуальных данных.
+ * – Автообновление списка участников теперь происходит раз в 15 секунд (15000 мс).
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (details) details.style.display = 'block';
         const tournamentsList = document.getElementById('myTournamentsContainer');
         if (tournamentsList) tournamentsList.style.display = 'none';
-        // Удаляем старый контейнер участников и создаем новый
+        // Удаляем старый контейнер участников и создаём новый
         resetParticipantContainer();
         // Устанавливаем интервал обновления участников для турнира из URL
         setParticipantInterval(tournamentIdFromUrl);
@@ -92,18 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.entityMap = {};
         const hiddenInput = document.getElementById('currentTournamentIdInput');
         if (hiddenInput) hiddenInput.remove();
-        // Очищаем интервал обновления участников
-        if (window.participantInterval) {
-            clearInterval(window.participantInterval);
-            window.participantInterval = null;
-        }
         console.log('Вернулись к списку турниров, window.currentTournamentId сброшен.');
     });
 });
 
-// Устанавливаем интервал обновления списка участников для заданного турнира
+// Функция для установки интервала обновления списка участников (изменено: 15000 мс вместо 5000)
 function setParticipantInterval(tournamentId) {
-    // Если интервал уже установлен, очищаем его
     if (window.participantInterval) {
         clearInterval(window.participantInterval);
     }
@@ -111,14 +103,14 @@ function setParticipantInterval(tournamentId) {
         console.log('Автообновление списка участников для турнира', tournamentId);
         loadParticipants(tournamentId);
         loadParticipantsOrTeams(tournamentId);
-    }, 5000);
+    }, 15000); // Изменено: интервал 15000 мс (15 секунд)
 }
 
 // Функция для удаления и создания нового контейнера списка участников.
 function resetParticipantContainer() {
     let oldContainer = document.getElementById('participantListContainer');
     if (oldContainer) {
-        oldContainer.remove();
+        oldContainer.innerHTML = '';
     }
     return ensureParticipantContainer();
 }
@@ -187,23 +179,27 @@ function displayMyTournaments(tournaments) {
         return;
     }
     const list = document.createElement('ul');
-    tournaments.forEach(t => {
-        const li = document.createElement('li');
+    tournaments.forEach(tournament => {
+        const tournamentDiv = document.createElement('div');
+        tournamentDiv.classList.add('tournament-item');
+        // Создаем ссылку для управления турниром с явным указанием tournamentId
         const link = document.createElement('a');
-        link.href = "#";
-        link.textContent = `${t.name} [${t.game}] - статус: ${t.status}`;
-        link.addEventListener('click', () => selectTournament(t));
-        li.appendChild(link);
-        list.appendChild(li);
+        link.href = `/admin?tournamentId=${tournament.id}`;
+        link.textContent = tournament.name;
+        link.dataset.screen = "admin";
+        tournamentDiv.appendChild(link);
+        container.appendChild(tournamentDiv);
     });
-    container.appendChild(list);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadMyTournaments();
+});
 
 // ============================
 // 2) Выбор турнира и отображение его деталей
 // ============================
 function selectTournament(tournament) {
-    // Очищаем предыдущий интервал обновления участников
     if (window.participantInterval) {
         clearInterval(window.participantInterval);
         window.participantInterval = null;
@@ -231,12 +227,9 @@ function selectTournament(tournament) {
     if (addParticipantForm && details) {
         details.appendChild(addParticipantForm);
     }
-    // Удаляем и создаем заново контейнер участников
     resetParticipantContainer();
-    // Очистка контейнера матчей
     const bracketContainer = ensureBracketContainer();
     bracketContainer.innerHTML = '';
-    // Устанавливаем новый интервал обновления участников для выбранного турнира
     setParticipantInterval(tournament.id);
     setTimeout(() => {
         loadParticipants(tournament.id);
@@ -366,7 +359,10 @@ async function generateBracket() {
     try {
         const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/generateBracket`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Передаем токен авторизации
+            },
             body: JSON.stringify({ withThirdPlace }),
             cache: 'no-store'
         });
