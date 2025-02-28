@@ -12,7 +12,8 @@ const app = express();
 // Middleware для разбора JSON и настройки CORS
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3000', // Точный адрес фронтенда
+    origin: ['http://80.87.200.23/', 'http://127.0.0.1:5500'], // Точный адрес фронтенда
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Активные методы
     credentials: true
 }));
 
