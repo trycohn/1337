@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // Подключение к базе данных
 const jwt = require('jsonwebtoken'); // ✅ Убедились, что импорт единственный
-const bcrypt = require('bcrypt'); // Хэширование паролей
+const bcrypt = require('bcryptjs'); // Хэширование паролей
 const authMiddleware = require('../middleware/authMiddleware');
 
 require('dotenv').config(); // ✅ Загружаем переменные окружения
