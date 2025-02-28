@@ -152,7 +152,7 @@ function ensureBracketContainer() {
 // ============================
 async function loadMyTournaments() {
     try {
-        const response = await fetch('http://localhost:3000/api/tournaments/myTournaments', {
+        const response = await fetch('/api/tournaments/myTournaments', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
@@ -244,7 +244,7 @@ function selectTournament(tournament) {
 async function loadParticipants(tournamentId) {
     try {
         console.log('Загрузка участников для турнира ID:', tournamentId);
-        const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
+        const response = await fetch(`/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
             method: 'GET',
             cache: 'no-store'
         });
@@ -280,7 +280,7 @@ function displayParticipants(participants) {
 // ============================
 async function loadParticipantsOrTeams(tournamentId) {
     try {
-        const resp = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
+        const resp = await fetch(`/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
             method: 'GET',
             cache: 'no-store'
         });
@@ -328,7 +328,7 @@ async function addParticipant(e) {
         return;
     }
     try {
-        const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/participants`, {
+        const response = await fetch(`/api/tournaments/${tournamentId}/participants`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: participantName }),
@@ -357,7 +357,7 @@ async function generateBracket() {
     }
     const withThirdPlace = document.getElementById('thirdPlaceCheckbox')?.checked || false;
     try {
-        const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/generateBracket`, {
+        const response = await fetch(`/api/tournaments/${tournamentId}/generateBracket`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -383,7 +383,7 @@ async function generateBracket() {
 // ============================
 async function loadMatches(tournamentId) {
     try {
-        const response = await fetch(`http://localhost:3000/api/tournaments/${tournamentId}/matches`, {
+        const response = await fetch(`/api/tournaments/${tournamentId}/matches`, {
             method: 'GET',
             cache: 'no-store'
         });
