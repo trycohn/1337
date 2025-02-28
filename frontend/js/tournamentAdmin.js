@@ -244,7 +244,7 @@ function selectTournament(tournament) {
 async function loadParticipants(tournamentId) {
     try {
         console.log('Загрузка участников для турнира ID:', tournamentId);
-        const response = await fetch(`http://1337community.com/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
+        const response = await fetch(`/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             },
