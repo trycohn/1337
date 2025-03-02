@@ -20,6 +20,9 @@ const authMiddleware = (req, res, next) => {
         console.log('Decoded token:', decoded);
         // Сохраняем данные пользователя из токена в req.user
         req.user = decoded.user;
+        if (!req.user) {
+            return res.status(401).json({ status: 'error', message: 'User not authenticated' });
+        }
         next();
     } catch (err) {
         console.error(err);
