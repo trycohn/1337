@@ -17,6 +17,8 @@ const authMiddleware = (req, res, next) => {
     try {
         // Верифицируем токен
         const decoded = jwt.verify(token, JWT_SECRET);
+        console.log('Decoded token:', decoded);
+        req.user = decoded.user;
         // Сохраняем данные пользователя из токена в req.user
         req.user = decoded.user;
         next();
