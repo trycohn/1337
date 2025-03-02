@@ -48,8 +48,8 @@ router.post('/:tournamentId/generateBracket', authMiddleware, async (req, res) =
         matches.push({
           tournament_id: tournamentId,
           round: round,
-          team1_id: shuffledTeams[i].id,
-          team2_id: shuffledTeams[i + 1] ? shuffledTeams[i + 1].id : null
+          team1_id: shuffledTeams[i].teams_id,
+          team2_id: shuffledTeams[i + 1] ? shuffledTeams[i + 1].teams_id : null
         });
       }
     } else {
@@ -59,8 +59,8 @@ router.post('/:tournamentId/generateBracket', authMiddleware, async (req, res) =
         matches.push({
           tournament_id: tournamentId,
           round: 0, // Предварительный раунд обозначаем как 0
-          team1_id: shuffledTeams[i].id,
-          team2_id: shuffledTeams[i + 1] ? shuffledTeams[i + 1].id : null
+          team1_id: shuffledTeams[i].teams_id,
+          team2_id: shuffledTeams[i + 1] ? shuffledTeams[i + 1].teams_id : null
         });
       }
       // Дополнительная логика для связи предварительного раунда с основным может быть добавлена здесь.
