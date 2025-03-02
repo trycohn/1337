@@ -379,7 +379,6 @@ async function generateBracket() {
 
         if (response.status === 403) {
             alert('У вас нет прав для генерации сетки турнира. Пожалуйста, проверьте авторизацию.');
-            window.location.href = '/login'; // Перенаправляем на страницу входа
             return;
         }
 
