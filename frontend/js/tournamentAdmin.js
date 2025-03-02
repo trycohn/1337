@@ -366,19 +366,48 @@ async function generateBracket() {
     const withThirdPlace = document.getElementById('thirdPlaceCheckbox')?.checked || false;
     
     try {
+        // Сначала проверим права на турнир
+        const checkResponse = await fetch(`/api/tournaments/${tournamentId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            cache: 'no-store'
+        });
+
+        if (!checkResponse.ok) {
+            console.error('Ошибка проверки прав:', await checkResponse.text());
+            throw new Error('Ошибка проверки прав на турнир');
+        }
+
+        const tournamentData = await checkResponse.json();
+        console.log('Данные турнира:', tournamentData);
+
+        // Теперь пробуем сгенерировать сетку
         const response = await fetch(`/api/tournaments/${tournamentId}/generateBracket`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ withThirdPlace }),
-            credentials: 'include', // Добавляем для передачи куки
+            body: JSON.stringify({ 
+                withThirdPlace,
+                tournamentId // явно передаем ID турнира
+            }),
+            credentials: 'include',
             cache: 'no-store'
         });
 
+        const responseData = await response.text();
+        console.log('Ответ сервера:', responseData);
+
         if (response.status === 403) {
-            alert('У вас нет прав для генерации сетки турнира. Пожалуйста, проверьте авторизацию.');
+            const errorData = JSON.parse(responseData);
+            alert(`Ошибка доступа: ${errorData.message}`);
+            // Проверяем роль пользователя
+            const userRole = await checkUserRole();
+            console.log('Роль пользователя:', userRole);
             return;
         }
 
@@ -391,8 +420,25 @@ async function generateBracket() {
         bracketContainer.innerHTML = '';
         loadMatches(tournamentId);
     } catch (error) {
-        console.error('Ошибка при генерации сетки:', error);
-        alert('Ошибка при генерации сетки. Проверьте консоль для деталей.');
+        console.error('Подробности ошибки:', error);
+        alert(`Ошибка при генерации сетки: ${error.message}`);
+    }
+}
+
+// Функция для проверки роли пользователя
+async function checkUserRole() {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch('/api/users/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const userData = await response.json();
+        return userData.role;
+    } catch (error) {
+        console.error('Ошибка получения роли пользователя:', error);
+        return null;
     }
 }
 
