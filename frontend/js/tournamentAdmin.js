@@ -405,10 +405,6 @@ async function generateBracket() {
         if (response.status === 403) {
             const errorData = JSON.parse(responseData);
             alert(`Ошибка доступа: ${errorData.message}`);
-            // Проверяем роль пользователя
-            const userRole = await checkUserRole();
-            console.log('Роль пользователя:', userRole);
-            return;
         }
 
         if (!response.ok) {
