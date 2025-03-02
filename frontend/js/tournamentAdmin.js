@@ -355,26 +355,45 @@ async function generateBracket() {
         alert('Сначала выберите турнир.');
         return;
     }
+
+    // Проверяем наличие токена
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+        alert('Необходима авторизация. Пожалуйста, войдите в систему.');
+        return;
+    }
+
     const withThirdPlace = document.getElementById('thirdPlaceCheckbox')?.checked || false;
+    
     try {
         const response = await fetch(`/api/tournaments/${tournamentId}/generateBracket`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Передаем токен авторизации
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ withThirdPlace }),
+            credentials: 'include', // Добавляем для передачи куки
             cache: 'no-store'
         });
+
+        if (response.status === 403) {
+            alert('У вас нет прав для генерации сетки турнира. Пожалуйста, проверьте авторизацию.');
+            window.location.href = '/login'; // Перенаправляем на страницу входа
+            return;
+        }
+
         if (!response.ok) {
             throw new Error(`Ошибка генерации сетки: ${response.status}`);
         }
+
         alert('Сетка успешно сгенерирована!');
         const bracketContainer = ensureBracketContainer();
         bracketContainer.innerHTML = '';
         loadMatches(tournamentId);
     } catch (error) {
-        alert(error.message);
+        console.error('Ошибка при генерации сетки:', error);
+        alert('Ошибка при генерации сетки. Проверьте консоль для деталей.');
     }
 }
 
