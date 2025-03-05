@@ -25,8 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const tournamentDescription = document.getElementById("tournamentDescription").value.trim();
       const tournamentGame = document.getElementById("tournamentGame").value;
       const tournamentType = document.getElementById("tournamentType").value;
-      const createdbyID = (localStorage.getItem('userId'));
-      console.log(createdbyID)
   
       // Формируем объект данных для отправки
       const data = {
@@ -34,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         description: tournamentDescription,
         game: tournamentGame,
         type: tournamentType,
-        created_by: createdbyID.id,
+        created_by: localStorage.getItem('userId'),
       };
   
       try {
