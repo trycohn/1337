@@ -18,7 +18,8 @@ const authMiddleware = (req, res, next) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         console.log('Decoded token:', decoded);
         // Сохраняем данные пользователя из токена в req.user
-        req.user = decoded = localStorage.setItem('user', JSON.stringify(decoded));;
+        req.user = decoded;
+        localStorage.setItem('user', JSON.stringify(decoded));
         if (!req.user) {
             return res.status(401).json({ status: 'error', message: 'User not authenticated' });
         }
