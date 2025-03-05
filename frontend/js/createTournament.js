@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const tournamentDescription = document.getElementById("tournamentDescription").value.trim();
       const tournamentGame = document.getElementById("tournamentGame").value;
       const tournamentType = document.getElementById("tournamentType").value;
-      const createdbyID = localStorage.getItem('user').id;
+      const createdbyID = JSON.parse(localStorage.getItem('user')).id;
   
       // Формируем объект данных для отправки
       const data = {
