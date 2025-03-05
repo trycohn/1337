@@ -370,7 +370,7 @@ async function generateBracket() {
         const checkResponse = await fetch(`/api/tournaments/${tournamentId}`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
                 'Content-Type': 'application/json'
             },
             cache: 'no-store'
@@ -389,7 +389,7 @@ async function generateBracket() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             },
             body: JSON.stringify({ 
                 withThirdPlace,
