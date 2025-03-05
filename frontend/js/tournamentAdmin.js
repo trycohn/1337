@@ -356,35 +356,9 @@ async function generateBracket() {
         return;
     }
 
-    // Проверяем наличие токена
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-        alert('Необходима авторизация. Пожалуйста, войдите в систему.');
-        return;
-    }
-
     const withThirdPlace = document.getElementById('thirdPlaceCheckbox')?.checked || false;
-    
+
     try {
-        // Сначала проверим права на турнир
-        const checkResponse = await fetch(`/api/tournaments/${tournamentId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
-                'Content-Type': 'application/json'
-            },
-            cache: 'no-store'
-        });
-
-        if (!checkResponse.ok) {
-            console.error('Ошибка проверки прав:', await checkResponse.text());
-            throw new Error('Ошибка проверки прав на турнир');
-        }
-
-        const tournamentData = await checkResponse.json();
-        console.log('Данные турнира:', tournamentData);
-
-        // Теперь пробуем сгенерировать сетку
         const response = await fetch(`/api/tournaments/${tournamentId}/generateBracket`, {
             method: 'POST',
             headers: {
@@ -395,29 +369,18 @@ async function generateBracket() {
                 withThirdPlace,
                 tournamentId // явно передаем ID турнира
             }),
-            credentials: 'include',
             cache: 'no-store'
         });
-
-        const responseData = await response.text();
-        console.log('Ответ сервера:', responseData);
-
-        if (response.status === 403) {
-            const errorData = JSON.parse(responseData);
-            alert(`Ошибка доступа: ${errorData.message}`);
-        }
 
         if (!response.ok) {
             throw new Error(`Ошибка генерации сетки: ${response.status}`);
         }
-
         alert('Сетка успешно сгенерирована!');
         const bracketContainer = ensureBracketContainer();
         bracketContainer.innerHTML = '';
         loadMatches(tournamentId);
     } catch (error) {
-        console.error('Подробности ошибки:', error);
-        alert(`Ошибка при генерации сетки: ${error.message}`);
+        alert(error.message);
     }
 }
 
