@@ -1,5 +1,4 @@
 // backend/middleware/authMiddleware.js
-sessionStorage.setItem("Decoded");
 localStorage.setItem('user', decoded);
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = process.env;
