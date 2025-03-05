@@ -42,14 +42,14 @@ router.get('/:id', async (req, res) => {
 
 // 3) Создание нового турнира
 router.post('/', async (req, res) => {
-    const { name, description, game, type } = req.body;
+    const { name, description, game, type, created_by } = req.body;
     if (!name || !game || !type) {
         return res.status(400).json({ message: 'Не все необходимые поля заполнены' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO tournaments (name, description, game, type) VALUES ($1, $2, $3, $4) RETURNING *',
-            [name, description, game, type]
+            'INSERT INTO tournaments (name, description, game, type, created_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [name, description, game, type, created_by]
         );
         res.status(201).json(result.rows[0]);
     } catch (error) {
