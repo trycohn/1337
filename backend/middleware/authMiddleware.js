@@ -1,5 +1,4 @@
 // backend/middleware/authMiddleware.js
-localStorage.setItem('user', decoded);
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = process.env;
 
@@ -19,7 +18,7 @@ const authMiddleware = (req, res, next) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         console.log('Decoded token:', decoded);
         // Сохраняем данные пользователя из токена в req.user
-        req.user = decoded;
+        req.user = decoded = localStorage.setItem('user');;
         if (!req.user) {
             return res.status(401).json({ status: 'error', message: 'User not authenticated' });
         }
