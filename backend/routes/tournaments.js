@@ -13,6 +13,20 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // Подключение к базе данных
+const authMiddleware = require('../middleware/authMiddleware');
+const authenticateToken = require('../middleware/authMiddleware');
+
+router.get('/myTournaments', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        console.log('Получение турниров для пользователя:', userId);
+        const result = await pool.query('SELECT * FROM tournaments WHERE created_by = $1', [userId]);
+        res.json({ tournaments: result.rows });
+    } catch (error) {
+        console.error('Ошибка:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
 
 // 1) Получение списка всех турниров
 router.get('/', async (req, res) => {
@@ -27,16 +41,20 @@ router.get('/', async (req, res) => {
 
 // 2) Получение деталей турнира по ID
 router.get('/:id', async (req, res) => {
-    const tournamentId = parseInt(req.params.id, 10);
+    const tournamentId = parseInt(req.params.id, 10); // Преобразуем ID в число
+    if (isNaN(tournamentId)) {
+        return res.status(400).json({ error: 'Некорректный ID турнира' });
+    }
+
     try {
         const result = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Турнир не найден' });
+            return res.status(404).json({ error: 'Турнир не найден' });
         }
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Ошибка при получении турнира:', error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        console.error(error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -60,7 +78,10 @@ router.post('/', async (req, res) => {
 
 // GET /api/tournaments/:id/participants — получение списка участников для выбранного турнира
 router.get('/:id/participants', async (req, res) => {
-    const tournamentId = parseInt(req.params.id, 10);
+    const tournamentId = parseInt(req.params.id, 10); // Преобразуем строку в число
+    if (isNaN(tournamentId)) {
+        return res.status(400).json({ error: 'Некорректный ID турнира' });
+    }
     try {
         const result = await pool.query(
             'SELECT * FROM participants WHERE tournament_id = $1 ORDER BY id ASC',
