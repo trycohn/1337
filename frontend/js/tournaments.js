@@ -40,28 +40,18 @@ function displayTournaments(tournaments) {
 }
 
 async function loadMyTournaments() {
+  console.log('Отправка запроса к:', '/api/tournaments/myTournaments');
+  const token = localStorage.getItem('jwtToken');
   try {
-      const response = await fetch('/api/tournaments');
-      console.log("Запрошенный URL:", response.url, "Статус:", response.status);
-
-      if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const contentType = response.headers.get("content-type");
-      console.log("Тип содержимого ответа:", contentType);
-
-      if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          throw new Error(`Expected JSON, but received: ${text.substring(0, 100)}...`);
-      }
-
-      const tournaments = await response.json();
-      displayTournaments(tournaments);
+      const response = await fetch('/api/tournaments/myTournaments', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Ошибка сервера');
+      console.log('Мои турниры:', data.tournaments);
   } catch (error) {
-      console.error("Ошибка загрузки турниров:", error);
-      const tournamentsContainer = getTournamentsContainer();
-      tournamentsContainer.innerHTML = '<p>Ошибка загрузки турниров. Попробуйте позже.</p>';
+      console.error('Ошибка загрузки турниров:', error);
   }
 }
 

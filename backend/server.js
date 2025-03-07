@@ -101,3 +101,5 @@ app.listen(PORT, async () => {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
     }
 });
+
+

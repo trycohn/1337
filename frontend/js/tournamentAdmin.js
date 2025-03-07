@@ -10,34 +10,90 @@
  * 4. На странице турнира есть форма для добавления участников, кнопка "Сформировать сетку"
  *    и кнопка "Назад к списку турниров".
  *
- * Изменения:
- * – Автообновление списка участников теперь происходит раз в 15 секунд (15000 мс).
+ * Особенности:
+ * – Автообновление списка участников происходит каждые 15 секунд (15000 мс).
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tournamentIdFromUrl = urlParams.get('id') || urlParams.get('tournamentId');
+import { generateBracket } from './bracketUtils.js';
+import { loadAndDisplayTournamentDetails, loadAndDisplayParticipants } from './tournamentDetails.js';
 
-    if (tournamentIdFromUrl) {
-        window.currentTournamentId = tournamentIdFromUrl;
-        console.log('Установлен currentTournamentId из URL:', tournamentIdFromUrl);
-        const details = document.getElementById('tournamentDetails');
-        if (details) details.style.display = 'block';
-        const tournamentsList = document.getElementById('myTournamentsContainer');
-        if (tournamentsList) tournamentsList.style.display = 'none';
-        // Удаляем старый контейнер участников и создаём новый
-        resetParticipantContainer();
-        // Устанавливаем интервал обновления участников для турнира из URL
-        setParticipantInterval(tournamentIdFromUrl);
-        setTimeout(() => {
-            loadTournamentDetails(tournamentIdFromUrl);
-            loadParticipants(tournamentIdFromUrl);
-            loadParticipantsOrTeams(tournamentIdFromUrl);
-            loadMatches(tournamentIdFromUrl);
-        }, 100);
-    } else {
-        loadMyTournaments();
+// Вспомогательные функции
+function setParticipantInterval(tournamentId) {
+    if (window.participantInterval) {
+        clearInterval(window.participantInterval);
     }
+    window.participantInterval = setInterval(() => {
+        console.log('Автообновление списка участников для турнира', tournamentId);
+        loadAndDisplayParticipants(tournamentId);
+    }, 15000); // Интервал 15 секунд
+}
+
+function resetParticipantContainer() {
+    let oldContainer = document.getElementById('participantListContainer');
+    if (oldContainer) {
+        oldContainer.innerHTML = '';
+    }
+    return ensureParticipantContainer();
+}
+
+function ensureParticipantContainer() {
+    let container = document.getElementById('participantListContainer');
+    if (!container) {
+        container = document.createElement('ul');
+        container.id = 'participantListContainer';
+        const details = document.getElementById('tournamentDetails');
+        if (details) {
+            details.appendChild(container);
+        } else {
+            document.getElementById('screen-admin').appendChild(container);
+        }
+    }
+    return container;
+}
+
+function ensureBracketContainer() {
+    let container = document.getElementById('bracketContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'bracketContainer';
+        const adminSection = document.getElementById('screen-admin');
+        if (adminSection) {
+            adminSection.appendChild(container);
+        } else {
+            document.body.appendChild(container);
+        }
+    }
+    return container;
+}
+
+// Основной блок кода, выполняемый после загрузки DOM
+document.addEventListener('DOMContentLoaded', async () => {
+    // Кнопка "Назад к списку турниров"
+    let backToListButton = document.getElementById('backToListButton');
+    if (!backToListButton) {
+        backToListButton = document.createElement('button');
+        backToListButton.id = 'backToListButton';
+        backToListButton.innerText = 'Назад к списку турниров';
+        const adminSection = document.getElementById('screen-admin');
+        if (!adminSection) {
+            console.error('Секция screen-admin не найдена');
+            return;
+        }
+        adminSection.insertBefore(backToListButton, adminSection.firstChild);
+    }
+    backToListButton.addEventListener('click', () => {
+        const details = document.getElementById('tournamentDetails');
+        if (details) details.style.display = 'none';
+        const tournamentsList = document.getElementById('myTournamentsContainer');
+        if (tournamentsList) tournamentsList.style.display = 'block';
+        backToListButton.style.display = 'none';
+        window.currentTournamentId = null;
+        window.entityMap = {};
+        const hiddenInput = document.getElementById('currentTournamentIdInput');
+        if (hiddenInput) hiddenInput.remove();
+        console.log('Вернулись к списку турниров, window.currentTournamentId сброшен.');
+        updateGenerateBracketButtonVisibility();
+    });
 
     // Форма добавления участника
     let addParticipantForm = document.getElementById('addParticipantForm');
@@ -67,95 +123,68 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBracketButton.innerText = 'Сформировать сетку';
         document.getElementById('screen-admin').appendChild(generateBracketButton);
     }
-    generateBracketButton.addEventListener('click', generateBracket);
-
-    // Кнопка "Назад к списку турниров"
-    let backToListButton = document.getElementById('backToListButton');
-    if (!backToListButton) {
-        backToListButton = document.createElement('button');
-        backToListButton.id = 'backToListButton';
-        backToListButton.innerText = 'Назад к списку турниров';
-        const adminSection = document.getElementById('screen-admin');
-        adminSection.insertBefore(backToListButton, adminSection.firstChild);
-    }
-    backToListButton.addEventListener('click', () => {
-        const details = document.getElementById('tournamentDetails');
-        if (details) details.style.display = 'none';
-        const tournamentsList = document.getElementById('myTournamentsContainer');
-        if (tournamentsList) tournamentsList.style.display = 'block';
-        const header = document.getElementById('tournamentHeader');
-        if (header) header.textContent = 'Мои турниры';
-        backToListButton.style.display = 'none';
-        window.currentTournamentId = null;
-        window.entityMap = {};
-        const hiddenInput = document.getElementById('currentTournamentIdInput');
-        if (hiddenInput) hiddenInput.remove();
-        console.log('Вернулись к списку турниров, window.currentTournamentId сброшен.');
+    generateBracketButton.addEventListener('click', async () => {
+        const tournamentId = window.currentTournamentId;
+        if (!tournamentId) {
+            alert('Сначала выберите турнир.');
+            return;
+        }
+        try {
+            await generateBracket(tournamentId);
+            alert('Сетка успешно сгенерирована!');
+            loadMatches(tournamentId);
+        } catch (error) {
+            alert(error.message);
+        }
     });
+
+    // Функция обновления видимости кнопки генерации сетки
+    function updateGenerateBracketButtonVisibility() {
+        if (window.currentTournamentId) {
+            generateBracketButton.style.display = 'block';
+            backToListButton.style.display = 'inline-block';
+        } else {
+            generateBracketButton.style.display = 'none';
+            backToListButton.style.display = 'none';
+        }
+    }
+    updateGenerateBracketButtonVisibility();
+
+    // Логика загрузки данных при наличии tournamentId в URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentIdFromUrl = urlParams.get('id') || urlParams.get('tournamentId');
+
+    if (tournamentIdFromUrl) {
+        window.currentTournamentId = tournamentIdFromUrl;
+        console.log('Установлен currentTournamentId из URL:', tournamentIdFromUrl);
+        const details = document.getElementById('tournamentDetails');
+        if (details) details.style.display = 'block';
+        const tournamentsList = document.getElementById('myTournamentsContainer');
+        if (tournamentsList) tournamentsList.style.display = 'none';
+        resetParticipantContainer();
+        setParticipantInterval(tournamentIdFromUrl);
+
+        // Загружаем и отображаем детали турнира и участников
+        await loadAndDisplayTournamentDetails(tournamentIdFromUrl);
+        await loadAndDisplayParticipants(tournamentIdFromUrl);
+        await loadMatches(tournamentIdFromUrl);
+
+        updateGenerateBracketButtonVisibility();
+    } else {
+        loadMyTournaments();
+    }
 });
 
-// Функция для установки интервала обновления списка участников (изменено: 15000 мс вместо 5000)
-function setParticipantInterval(tournamentId) {
-    if (window.participantInterval) {
-        clearInterval(window.participantInterval);
-    }
-    window.participantInterval = setInterval(() => {
-        console.log('Автообновление списка участников для турнира', tournamentId);
-        loadParticipants(tournamentId);
-        loadParticipantsOrTeams(tournamentId);
-    }, 15000); // Изменено: интервал 15000 мс (15 секунд)
-}
-
-// Функция для удаления и создания нового контейнера списка участников.
-function resetParticipantContainer() {
-    let oldContainer = document.getElementById('participantListContainer');
-    if (oldContainer) {
-        oldContainer.innerHTML = '';
-    }
-    return ensureParticipantContainer();
-}
-
-// Функция для гарантированного получения контейнера списка участников.
-function ensureParticipantContainer() {
-    let container = document.getElementById('participantListContainer');
-    if (!container) {
-        container = document.createElement('ul');
-        container.id = 'participantListContainer';
-        const details = document.getElementById('tournamentDetails');
-        if (details) {
-            details.appendChild(container);
-        } else {
-            document.getElementById('screen-admin').appendChild(container);
-        }
-    }
-    return container;
-}
-
-// Функция для гарантированного получения контейнера для матчей.
-function ensureBracketContainer() {
-    let container = document.getElementById('bracketContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'bracketContainer';
-        const adminSection = document.getElementById('screen-admin');
-        if (adminSection) {
-            adminSection.appendChild(container);
-        } else {
-            document.body.appendChild(container);
-        }
-    }
-    return container;
-}
-
-// ============================
-// 1) Загрузка списка турниров ("Мои турниры")
-// ============================
+// Функция загрузки списка турниров ("Мои турниры")
 async function loadMyTournaments() {
+    console.log('Отправка запроса к:', '/api/tournaments/myTournaments');
     try {
+        const token = localStorage.getItem('jwtToken');
         const response = await fetch('/api/tournaments/myTournaments', {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
             cache: 'no-store'
         });
@@ -171,6 +200,7 @@ async function loadMyTournaments() {
     }
 }
 
+// Функция отображения списка турниров
 function displayMyTournaments(tournaments) {
     const container = document.getElementById('myTournamentsContainer');
     container.innerHTML = '';
@@ -182,7 +212,6 @@ function displayMyTournaments(tournaments) {
     tournaments.forEach(tournament => {
         const tournamentDiv = document.createElement('div');
         tournamentDiv.classList.add('tournament-item');
-        // Создаем ссылку для управления турниром с явным указанием tournamentId
         const link = document.createElement('a');
         link.href = `/admin?tournamentId=${tournament.id}`;
         link.textContent = tournament.name;
@@ -192,121 +221,7 @@ function displayMyTournaments(tournaments) {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadMyTournaments();
-});
-
-// ============================
-// 2) Выбор турнира и отображение его деталей
-// ============================
-function selectTournament(tournament) {
-    if (window.participantInterval) {
-        clearInterval(window.participantInterval);
-        window.participantInterval = null;
-    }
-    window.currentTournamentId = tournament.id;
-    window.entityMap = {};
-    console.log('Выбран турнир:', tournament.id);
-    const details = document.getElementById('tournamentDetails');
-    if (details) details.style.display = 'block';
-    const tournamentsList = document.getElementById('myTournamentsContainer');
-    if (tournamentsList) tournamentsList.style.display = 'none';
-    const backButton = document.getElementById('backToListButton');
-    if (backButton) backButton.style.display = 'inline-block';
-    const titleEl = document.getElementById('tournamentTitle');
-    if (titleEl) titleEl.textContent = tournament.name;
-    let hiddenInput = document.getElementById('currentTournamentIdInput');
-    if (!hiddenInput) {
-        hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.id = 'currentTournamentIdInput';
-        document.getElementById('tournamentDetails').appendChild(hiddenInput);
-    }
-    hiddenInput.value = tournament.id;
-    const addParticipantForm = document.getElementById('addParticipantForm');
-    if (addParticipantForm && details) {
-        details.appendChild(addParticipantForm);
-    }
-    resetParticipantContainer();
-    const bracketContainer = ensureBracketContainer();
-    bracketContainer.innerHTML = '';
-    setParticipantInterval(tournament.id);
-    setTimeout(() => {
-        loadParticipants(tournament.id);
-        loadParticipantsOrTeams(tournament.id);
-        loadMatches(tournament.id);
-    }, 100);
-}
-
-// ============================
-// 3) Загрузка списка участников (solo)
-// ============================
-async function loadParticipants(tournamentId) {
-    try {
-        console.log('Загрузка участников для турнира ID:', tournamentId);
-        const response = await fetch(`/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
-            method: 'GET',
-            cache: 'no-store'
-        });
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки участников');
-        }
-        const data = await response.json();
-        console.log('Полученные участники:', data.participants);
-        displayParticipants(data.participants);
-    } catch (error) {
-        console.error('Ошибка загрузки участников:', error);
-        const container = document.getElementById('participantListContainer');
-        if (container) container.innerText = 'Ошибка загрузки участников.';
-    }
-}
-
-function displayParticipants(participants) {
-    const container = ensureParticipantContainer();
-    container.innerHTML = '';
-    if (!participants || participants.length === 0) {
-        container.innerText = 'Нет зарегистрированных участников.';
-        return;
-    }
-    participants.forEach(participant => {
-        const li = document.createElement('li');
-        li.textContent = participant.name;
-        container.appendChild(li);
-    });
-}
-
-// ============================
-// 4) Загрузка участников в entityMap
-// ============================
-async function loadParticipantsOrTeams(tournamentId) {
-    try {
-        const resp = await fetch(`/api/tournaments/${tournamentId}/participants?t=${Date.now()}`, {
-            method: 'GET',
-            cache: 'no-store'
-        });
-        if (!resp.ok) {
-            throw new Error('Ошибка загрузки участников/команд');
-        }
-        const data = await resp.json();
-        if (!window.entityMap || typeof window.entityMap !== 'object') {
-            window.entityMap = {};
-        }
-        if (!data.participants || !Array.isArray(data.participants)) {
-            console.error('Участники не получены или формат данных неверный:', data);
-            return;
-        }
-        data.participants.forEach(p => {
-            window.entityMap[p.id] = p.name;
-        });
-        console.log('Обновленная entityMap:', window.entityMap);
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-// ============================
-// 5) Добавление участника
-// ============================
+// Функция добавления участника
 async function addParticipant(e) {
     e.preventDefault();
     let tournamentId = window.currentTournamentId;
@@ -339,71 +254,13 @@ async function addParticipant(e) {
         }
         alert('Участник добавлен!');
         document.getElementById('participantName').value = '';
-        loadParticipants(tournamentId);
-        loadParticipantsOrTeams(tournamentId);
+        loadAndDisplayParticipants(tournamentId);
     } catch (error) {
         alert(error.message);
     }
 }
 
-// ============================
-// 6) Генерация сетки турнира
-// ============================
-async function generateBracket() {
-    const tournamentId = window.currentTournamentId;
-    if (!tournamentId) {
-        alert('Сначала выберите турнир.');
-        return;
-    }
-
-    const withThirdPlace = document.getElementById('thirdPlaceCheckbox')?.checked || false;
-
-    try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/generateBracket`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-            },
-            body: JSON.stringify({ 
-                withThirdPlace,
-                tournamentId // явно передаем ID турнира
-            }),
-            cache: 'no-store'
-        });
-
-        if (!response.ok) {
-            throw new Error(`Ошибка генерации сетки: ${response.status}`);
-        }
-        alert('Сетка успешно сгенерирована!');
-        const bracketContainer = ensureBracketContainer();
-        bracketContainer.innerHTML = '';
-        loadMatches(tournamentId);
-    } catch (error) {
-        alert(error.message);
-    }
-}
-
-// Функция для проверки роли пользователя
-async function checkUserRole() {
-    try {
-        const token = localStorage.getItem('jwtToken');
-        const response = await fetch('/api/users/me', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        const userData = await response.json();
-        return userData.role;
-    } catch (error) {
-        console.error('Ошибка получения роли пользователя:', error);
-        return null;
-    }
-}
-
-// ============================
-// 7) Загрузка матчей турнира
-// ============================
+// Функция загрузки матчей турнира
 async function loadMatches(tournamentId) {
     try {
         const response = await fetch(`/api/tournaments/${tournamentId}/matches`, {
@@ -421,9 +278,7 @@ async function loadMatches(tournamentId) {
     }
 }
 
-// ============================
-// 8) Отрисовка сетки (матчей)
-// ============================
+// Функция отрисовки сетки (матчей)
 function drawBracket(matches) {
     const bracketContainer = ensureBracketContainer();
     bracketContainer.innerHTML = '';
@@ -465,9 +320,7 @@ function drawBracket(matches) {
     });
 }
 
-// ============================
-// 9) Получение имени участника по ID из глобальной entityMap
-// ============================
+// Функция получения имени участника по ID из глобальной entityMap
 function resolveEntityName(entityId) {
     if (!entityId) return '---';
     if (entityId < 0) {
@@ -477,4 +330,21 @@ function resolveEntityName(entityId) {
         return window.entityMap[entityId];
     }
     return `Участник ID=${entityId}`;
+}
+
+// Функция для проверки роли пользователя
+async function checkUserRole() {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch('/api/users/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const userData = await response.json();
+        return userData.role;
+    } catch (error) {
+        console.error('Ошибка получения роли пользователя:', error);
+        return null;
+    }
 }

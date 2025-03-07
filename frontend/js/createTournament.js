@@ -8,6 +8,7 @@
  * «Поздравляем, Ваш турнир "название турнира" создан, перейти к управлению?»
  * с ссылкой на страницу управления турниром (с data-screen="admin").
  */
+import { generateBracket } from './bracketUtils.js';
 
 document.addEventListener("DOMContentLoaded", () => {
     const createTournamentForm = document.getElementById("createTournamentForm");
@@ -25,57 +26,53 @@ document.addEventListener("DOMContentLoaded", () => {
       const tournamentDescription = document.getElementById("tournamentDescription").value.trim();
       const tournamentGame = document.getElementById("tournamentGame").value;
       const tournamentType = document.getElementById("tournamentType").value;
-      const userid = localStorage.getItem('userId');
+      const userId = localStorage.getItem("userId");
+  
       // Формируем объект данных для отправки
       const data = {
         name: tournamentName,
         description: tournamentDescription,
         game: tournamentGame,
         type: tournamentType,
-        created_by: userid,
+        created_by: userId,
       };
   
       try {
-        // Получаем токен авторизации из localStorage по ключу "jwtToken"
+        // Получаем токен авторизации из localStorage
         const token = localStorage.getItem("jwtToken");
         const headers = {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         };
   
-        // Если токен найден, добавляем его в заголовки запроса
         if (token) {
           headers["Authorization"] = "Bearer " + token;
         } else {
           console.warn("Пользователь не авторизован. Токен отсутствует.");
         }
   
-        // Отправляем POST-запрос для создания турнира с заголовками и опцией credentials для отправки cookie
+        // Отправляем POST-запрос для создания турнира
         const response = await fetch("/api/tournaments", {
           method: "POST",
           headers,
           credentials: "include",
-          body: JSON.stringify(data)
+          body: JSON.stringify(data),
         });
   
-        // Если сервер вернул ошибку, выбрасываем исключение
         if (!response.ok) {
           throw new Error(`Ошибка создания турнира: ${response.status}`);
         }
   
-        // Парсим ответ в формате JSON
         const result = await response.json();
   
-        // Проверяем, что в ответе присутствуют необходимые данные (ID и имя турнира)
         if (!result.id || !result.name) {
           throw new Error("В ответе отсутствуют необходимые данные турнира");
         }
   
-        // Обновляем детали турнира в DOM с сообщением и ссылкой на управление
-        updateTournamentDetails(result.id, result.name);
+        // Обновляем детали турнира в DOM
+        updateTournamentDetails(result.id, result.name, userId);
   
-        // Дополнительная логика: очистка формы
+        // Очистка формы
         createTournamentForm.reset();
-  
       } catch (error) {
         console.error("Ошибка при создании турнира:", error);
       }
@@ -84,22 +81,18 @@ document.addEventListener("DOMContentLoaded", () => {
   
   /**
    * Функция для обновления деталей турнира в DOM.
-   * Если необходимые элементы не найдены, они создаются динамически.
-   * Теперь выводится сообщение:
-   * «Поздравляем, Ваш турнир "название турнира" создан, перейти к управлению?»
-   * где "перейти к управлению" – ссылка с data-screen="admin" на страницу управления турниром.
+   * Добавляет кнопку "Сформировать сетку" с проверкой прав пользователя.
    *
    * @param {number|string} tournamentId - ID созданного турнира
    * @param {string} tournamentName - Название созданного турнира
+   * @param {string} userId - ID текущего пользователя
    */
-  function updateTournamentDetails(tournamentId, tournamentName) {
-    // Получаем контейнер деталей турнира
+  function updateTournamentDetails(tournamentId, tournamentName, userId) {
     let detailsContainer = document.getElementById("tournamentDetails");
     if (!detailsContainer) {
       console.error("Контейнер tournamentDetails не найден. Создаем новый контейнер.");
       detailsContainer = document.createElement("div");
       detailsContainer.id = "tournamentDetails";
-      // Добавляем контейнер в секцию "Мои турниры", если она существует, иначе в body
       const adminSection = document.getElementById("screen-admin");
       if (adminSection) {
         adminSection.appendChild(detailsContainer);
@@ -108,19 +101,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   
-    // Проверяем наличие элемента заголовка турнира внутри detailsContainer
     let title = detailsContainer.querySelector("#tournamentTitle");
     if (!title) {
-      console.error("Элемент tournamentTitle не найден внутри tournamentDetails. Создаем его.");
       title = document.createElement("h3");
       title.id = "tournamentTitle";
       detailsContainer.appendChild(title);
     }
   
-    // Проверяем наличие элемента сообщения об успешном создании турнира
     let successMessage = detailsContainer.querySelector("#creationSuccess");
     if (!successMessage) {
-      console.error("Элемент creationSuccess не найден внутри tournamentDetails. Создаем его.");
       successMessage = document.createElement("div");
       successMessage.id = "creationSuccess";
       successMessage.style.color = "green";
@@ -128,19 +117,53 @@ document.addEventListener("DOMContentLoaded", () => {
       detailsContainer.insertBefore(successMessage, detailsContainer.firstChild);
     }
   
-    // Обновляем заголовок турнира (если требуется)
     title.textContent = tournamentName || "Неизвестный турнир";
   
-    // Формируем сообщение с ссылкой на управление созданным турниром
-    // Обратите внимание, что ссылка получает data-screen="admin", чтобы обработчик маршрутизации мог перехватить клик.
     successMessage.innerHTML = `Поздравляем, Ваш турнир "${tournamentName}" создан. <a href="/admin?tournamentId=${tournamentId}" data-screen="admin">Перейти к управлению</a>?`;
   
-    // Сохраняем ID турнира в data-атрибуте контейнера
-    detailsContainer.setAttribute("data-tournament-id", tournamentId);
+    // Добавляем кнопку "Сформировать сетку"
+    let generateBracketButton = detailsContainer.querySelector("#generateBracketButton");
+    if (!generateBracketButton) {
+      generateBracketButton = document.createElement("button");
+      generateBracketButton.id = "generateBracketButton";
+      generateBracketButton.textContent = "Сформировать сетку";
+      generateBracketButton.addEventListener("click", () => {
+        console.log('tournamentId:', tournamentId); // Проверяем значение
+        generateBracket(tournamentId); // Передаем tournamentId
+      });
+      detailsContainer.appendChild(generateBracketButton);
+    }
   
-    // Показываем контейнер деталей, если он скрыт
+    // Проверка прав пользователя
+    const isAdmin = localStorage.getItem("isAdmin") === "true"; // Предполагаем, что роль хранится в localStorage
+    const isCreator = userId === userId; // Всегда true, так как это создатель при создании турнира
+    const canGenerateBracket = isCreator || isAdmin;
+  
+    // Управление видимостью кнопки
+    generateBracketButton.style.display = canGenerateBracket ? "block" : "none";
+  
+    detailsContainer.setAttribute("data-tournament-id", tournamentId);
     detailsContainer.style.display = "block";
   
     console.log("Обновление деталей, DOM:", detailsContainer);
+
+    async function createTournament() {
+
+        try {
+            await generateBracket(tournamentId);
+            alert('Сетка успешно сгенерирована!');
+        } catch (error) {
+            alert(error.message);
+        }
+    }
   }
   
+  /**
+   * Функция-заглушка для генерации сетки.
+   * Здесь можно добавить логику генерации сетки турнира.
+   *
+   * @param {number|string} tournamentId - ID турнира
+   */
+  // Функция генерации сетки
+ 
+

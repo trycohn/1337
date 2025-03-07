@@ -4,6 +4,7 @@ const pool = require('../db'); // Подключение к базе данны�
 const jwt = require('jsonwebtoken'); // ✅ Убедились, что импорт единственный
 const bcrypt = require('bcryptjs'); // Хэширование паролей
 const authMiddleware = require('../middleware/authMiddleware');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 require('dotenv').config(); // ✅ Загружаем переменные окружения
 
@@ -16,7 +17,7 @@ if (!JWT_SECRET) {
 
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
-
+    authenticateToken
     try {
         const userResult = await pool.query('SELECT id, username, password_hash FROM users WHERE username = $1', [username]);
 
