@@ -35,6 +35,9 @@ app.get('/testdb', async (req, res) => {
     }
 });
 
+app.use('/api/users', require('./routes/users'));
+
+
 /* ==========================
    🔗 ПОДКЛЮЧЕНИЕ API МАРШРУТОВ
    ========================== */
@@ -72,6 +75,8 @@ app.use('/api/statistics', statisticsRoutes);
 app.use('/api', (req, res) => {
     res.status(404).json({ error: 'API маршрут не найден' });
 });
+
+
 
 /* ==========================
    🚀 Catch-all для SPA

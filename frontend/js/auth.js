@@ -14,6 +14,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // Проверяем, есть ли сохранённый токен
     const token = localStorage.getItem('jwtToken');
     const userId = localStorage.getItem('userId');
+    
+    async function login(username, password) {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem('jwtToken', data.token);
+        } else {
+            console.error('Ошибка входа:', data.error);
+        }
+    }
+    
+    function logout() {
+        localStorage.removeItem('jwtToken');
+    }
+    
+    async function getUserData() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) return null;
+        try {
+            const response = await fetch('/api/users/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Не удалось получить данные пользователя');
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
+
+    // Проверка авторизации
+    document.addEventListener('DOMContentLoaded', async () => {
+        const userData = await getUserData();
+        if (userData) {
+            console.log('Пользователь авторизован:', userData);
+        } else {
+            console.log('Пользователь не авторизован');
+        }
+        // Остальная логика роутинга
+    });
 
     if (token && userId) {
         showUserInfo();
@@ -65,6 +109,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    function isAuthenticated() {
+        return !!localStorage.getItem('jwtToken');
+    }
+
+
+    async function getUserData() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) return null;
+        try {
+            const response = await fetch('/api/users/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Не удалось получить данные пользователя');
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
+
 
     // Обработка регистрации
     if (registerForm) {

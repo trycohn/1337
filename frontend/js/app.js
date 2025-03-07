@@ -5,6 +5,12 @@ import { loadAndDisplayTournamentDetails, loadAndDisplayParticipants } from './t
 document.addEventListener('DOMContentLoaded', () => {
     // Делегированный обработчик кликов для всех ссылок с data-screen
     document.addEventListener('click', (e) => {
+        const userData = await getUserData();
+    if (userData) {
+        console.log('Пользователь авторизован:', userData);
+    } else {
+        console.log('Пользователь не авторизован');
+    }
         const target = e.target.closest('a[data-screen]');
         if (target) {
             e.preventDefault();
