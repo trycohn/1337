@@ -15,6 +15,7 @@ const router = express.Router();
 const pool = require('../db'); // Подключение к базе данных
 const authMiddleware = require('../middleware/authMiddleware');
 const authenticateToken = require('../middleware/authMiddleware');
+const checkTournamentAdmin = require('../middleware/authAdmin');
 
 router.get('/myTournaments', authenticateToken, async (req, res) => {
     try {
@@ -25,6 +26,23 @@ router.get('/myTournaments', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Ошибка:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+router.get('/tournaments/:id', async (req, res) => {
+    const tournamentId = req.params.id;
+    try {
+        const [tournament] = await db.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
+        const admins = await db.query('SELECT user_id FROM tournament_admins WHERE tournament_id = $1', [tournamentId]);
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        res.json({
+            ...tournament,
+            admins: admins.map(a => a.user_id)
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка при получении данных турнира' });
     }
 });
 
@@ -96,21 +114,34 @@ router.get('/:id/participants', async (req, res) => {
 
 
 // 5) Добавление участника к турниру
-router.post('/:id/participants', async (req, res) => {
-    const tournamentId = parseInt(req.params.id, 10);
-    const { name } = req.body;
-    if (!name) {
-        return res.status(400).json({ message: 'Имя участника обязательно' });
-    }
+router.post('/tournaments/:id/participants', checkTournamentAdmin, async (req, res) => {
+    const tournamentId = req.params.id;
+    const { userId } = req.body; // ID пользователя из тела запроса
+    const participantData = req.body;
+
     try {
-        const result = await pool.query(
-            'INSERT INTO participants (tournament_id, name) VALUES ($1, $2) RETURNING *',
-            [tournamentId, name]
+        // Проверка существования турнира
+        const [tournament] = await db.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        // Проверка существования пользователя
+        const [user] = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Добавление участника в таблицу tournament_participants
+        await db.query(
+            'INSERT INTO tournament_participants (tournament_id, user_id) VALUES ($1, $2)',
+            [tournamentId, userId]
         );
-        res.status(201).json(result.rows[0]);
+
+        res.status(200).json({ message: 'Участник добавлен' });
     } catch (error) {
         console.error('Ошибка при добавлении участника:', error);
-        res.status(500).json({ message: 'Ошибка сервера', error: error.message });
+        res.status(500).json({ error: 'Ошибка при добавлении участника' });
     }
 });
 

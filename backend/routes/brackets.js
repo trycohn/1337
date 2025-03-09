@@ -5,6 +5,7 @@ const router = express.Router();                                 // [Строк�
 const pool = require('../db');                                   // [Строка 3]
 const authMiddleware = require('../middleware/authMiddleware');  // [Строка 4]
 const bracketController = require('../controllers/bracketController'); // [Строка 5]
+const checkTournamentAdmin = require('../middleware/authAdmin');
 
 // Функция перемешивания массива (алгоритм Фишера-Йетса)
 function shuffleArray(array) {                                   // [Строка 8]
