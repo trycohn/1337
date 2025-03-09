@@ -2,6 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="1337 Brackets - платформа для организации и управления турнирами" />
   <title>1337 Brackets (SPA + pushState)</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -66,15 +68,14 @@
           <button id="hideSuccessMessage" style="margin-left: 10px;">Скрыть</button>
         </div>
         <!-- Заголовок и детали турнира -->
-        <div id="tournamentInfoContainer"></div>
-        <h3 id="tournamentTitle"></h3>
-        <h4>Список участников:</h4>
-        <ul id="participantListContainer"></ul>
-        <!-- Остальные детали турнира -->
+        <div id="tournamentInfo">
+          <h3 id="tournamentTitle"></h3>
+          <h4>Список участников:</h4>
+          <ul id="participantListContainer"></ul>
+        </div>
       </div>
       <div id="tournamentInfoContainer">
         <h2 id="tournamentNameDisplay"></h2>
-        <!-- Другие детали турнира -->
       </div>
     </section>
 
@@ -123,5 +124,5 @@
   <script type="module" src="js/tournamentList.js"></script>
   <script type="module" src="js/createTournament.js" defer></script>
   <script type="module" src="js/tournamentAdmin.js" defer></script>
-</body>
+ </body>
 </html>

@@ -47,10 +47,11 @@ function displayTournamentInfo(tournament) {
     }
     
     // Получаем элемент для отображения названия турнира
-    const tournamentNameElement = document.getElementById("tournamentNameDisplay");
-    if (!tournamentNameElement) {
-        console.error("Элемент tournamentNameDisplay не найден");
-        return;
+    const nameDisplay = document.getElementById('tournamentNameDisplay');
+    if (nameDisplay) {
+        nameDisplay.textContent = tournament.name; // Устанавливаем название турнира
+    } else {
+        console.error('Элемент tournamentNameDisplay не найден');
     }
     
     // Обновляем текст элемента с именем турнира
