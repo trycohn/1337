@@ -7,16 +7,16 @@
  * 2. GET /api/tournaments/:id            - Получение деталей турнира по ID.
  * 3. POST /api/tournaments               - Создание нового турнира.
  * 4. GET /api/tournaments/:id/participants - Получение списка участников турнира.
- * 5. POST /api/tournaments/:id/participants- Добавление участника к турниру.
+ * 5. POST /api/tournaments/:id/participants - Добавление участника к турниру.
  */
 
 const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // Подключение к базе данных
-const authMiddleware = require('../middleware/authMiddleware');
 const authenticateToken = require('../middleware/authMiddleware');
 const checkTournamentAdmin = require('../middleware/authAdmin');
 
+// Получение турниров пользователя
 router.get('/myTournaments', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -26,23 +26,6 @@ router.get('/myTournaments', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Ошибка:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-    }
-});
-
-router.get('/tournaments/:id', async (req, res) => {
-    const tournamentId = req.params.id;
-    try {
-        const [tournament] = await db.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
-        const admins = await db.query('SELECT user_id FROM tournament_admins WHERE tournament_id = $1', [tournamentId]);
-        if (!tournament) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        res.json({
-            ...tournament,
-            admins: admins.map(a => a.user_id)
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Ошибка при получении данных турнира' });
     }
 });
 
@@ -71,7 +54,7 @@ router.get('/:id', async (req, res) => {
         }
         res.json(result.rows[0]);
     } catch (error) {
-        console.error(error);
+        console.error('Ошибка при получении турнира:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
@@ -94,7 +77,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET /api/tournaments/:id/participants — получение списка участников для выбранного турнира
+// 4) Получение списка участников турнира
 router.get('/:id/participants', async (req, res) => {
     const tournamentId = parseInt(req.params.id, 10); // Преобразуем строку в число
     if (isNaN(tournamentId)) {
@@ -102,7 +85,7 @@ router.get('/:id/participants', async (req, res) => {
     }
     try {
         const result = await pool.query(
-            'SELECT * FROM participants WHERE tournament_id = $1 ORDER BY id ASC',
+            'SELECT * FROM tournament_participants WHERE tournament_id = $1 ORDER BY user_id ASC',
             [tournamentId]
         );
         res.json({ participants: result.rows });
@@ -112,45 +95,62 @@ router.get('/:id/participants', async (req, res) => {
     }
 });
 
-
 // 5) Добавление участника к турниру
-router.post('/tournaments/:id/participants', checkTournamentAdmin, async (req, res) => {
-    const tournamentId = req.params.id;
-    const { userId } = req.body; // ID пользователя из тела запроса
-    const participantData = req.body;
+// routes/tournaments.js
+router.post('/:id/participants', checkTournamentAdmin, async (req, res) => {
+    const tournamentId = parseInt(req.params.id, 10);
+    const { userId, name, teamId } = req.body; // Получаем userId, name и teamId из тела запроса
+
+    if (isNaN(tournamentId)) {
+        return res.status(400).json({ error: 'Некорректный ID турнира' });
+    }
+    if (!name && !userId && !teamId) {
+        return res.status(400).json({ error: 'Необходимо указать хотя бы имя, userId или teamId' });
+    }
 
     try {
         // Проверка существования турнира
-        const [tournament] = await db.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
-        if (!tournament) {
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
+        if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
         }
 
-        // Проверка существования пользователя
-        const [user] = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-        if (!user) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+        // Если указан userId, проверяем существование пользователя
+        if (userId) {
+            const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+            if (userResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Пользователь не найден' });
+            }
         }
 
-        // Добавление участника в таблицу tournament_participants
-        await db.query(
-            'INSERT INTO tournament_participants (tournament_id, user_id) VALUES ($1, $2)',
-            [tournamentId, userId]
+        // Если указан teamId, проверяем существование команды
+        if (teamId) {
+            const teamResult = await pool.query('SELECT * FROM tournament_teams WHERE id = $1', [teamId]);
+            if (teamResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Команда не найдена' });
+            }
+        }
+
+        // Добавление участника
+        const result = await pool.query(
+            'INSERT INTO tournament_participants (tournament_id, user_id, name, team_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [tournamentId, userId || null, name || (userId ? `User_${userId}` : `Team_${teamId}`), teamId || null]
         );
 
-        res.status(200).json({ message: 'Участник добавлен' });
+        res.status(201).json({ message: 'Участник добавлен', participant: result.rows[0] });
     } catch (error) {
         console.error('Ошибка при добавлении участника:', error);
-        res.status(500).json({ error: 'Ошибка при добавлении участника' });
+        res.status(500).json({ error: 'Ошибка сервера при добавлении участника' });
     }
 });
 
-// GET /api/tournaments/:id/matches — Получение списка матчей для турнира
+// Получение списка матчей для турнира
 router.get('/:id/matches', async (req, res) => {
     const tournamentId = parseInt(req.params.id, 10);
+    if (isNaN(tournamentId)) {
+        return res.status(400).json({ error: 'Некорректный ID турнира' });
+    }
     try {
-        // Предположим, что в таблице matches хранится информация о матчах турнира,
-        // и что есть столбец tournament_id, по которому фильтруются матчи
         const result = await pool.query(
             'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY id ASC',
             [tournamentId]
