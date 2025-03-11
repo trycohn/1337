@@ -226,14 +226,6 @@ async function addParticipant(e) {
     e.preventDefault();
     let tournamentId = window.currentTournamentId;
     if (!tournamentId) {
-        const hiddenInput = document.getElementById('currentTournamentIdInput');
-        if (hiddenInput) {
-            tournamentId = hiddenInput.value;
-            window.currentTournamentId = tournamentId;
-        }
-    }
-    console.log('Попытка добавить участника для турнира:', tournamentId);
-    if (!tournamentId) {
         alert('Сначала выберите турнир.');
         return;
     }
@@ -243,23 +235,28 @@ async function addParticipant(e) {
         return;
     }
     try {
+        const token = localStorage.getItem('jwtToken');
         const response = await fetch(`/api/tournaments/${tournamentId}/participants`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: participantName }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: participantName }), // userId и teamId добавляются опционально
             cache: 'no-store'
         });
         if (!response.ok) {
-            throw new Error('Ошибка добавления участника');
+            const errorData = await response.json();
+            throw new Error(`Ошибка добавления участника: ${errorData.error}`);
         }
         alert('Участник добавлен!');
         document.getElementById('participantName').value = '';
         loadAndDisplayParticipants(tournamentId);
     } catch (error) {
+        console.error('Ошибка:', error);
         alert(error.message);
     }
 }
-
 // Функция загрузки матчей турнира
 async function loadMatches(tournamentId) {
     try {
