@@ -1,48 +1,89 @@
-// backend/routes/teams.js
-const express = require('express'); // [Строка 1]
-const router = express.Router();    // [Строка 2]
-const pool = require('../db');      // [Строка 3]
-const authMiddleware = require('../middleware/authMiddleware'); // [Строка 4]
+const express = require('express');
+const router = express.Router();
+const pool = require('../db'); // Подключение к базе данных
+const { authenticateToken, restrictTo } = require('../middleware/auth'); // Middleware для аутентификации и авторизации
 
-// Эндпоинт для регистрации команды в турнире
-router.post('/:tournamentId/teams', authMiddleware, async (req, res) => { // [Строка 7]
-  const tournamentId = req.params.tournamentId; // [Строка 8]
-  const { name, city } = req.body;              // [Строка 9]
-  if (!name || !city) {                         // [Строка 10]
-    return res.status(400).json({ status: 'error', message: 'Name and city are required' });
-  }
-  try {
-    // Проверяем, существует ли команда в глобальной таблице teams
-    let teamResult = await pool.query('SELECT * FROM teams WHERE name = $1 AND city = $2', [name, city]); // [Строка 14]
-    let team;
-    if (teamResult.rows.length > 0) {
-      team = teamResult.rows[0];                // [Строка 17]
-    } else {
-      // Если не существует – создаём новую запись
-      const newTeamResult = await pool.query(
-        'INSERT INTO teams (name, city) VALUES ($1, $2) RETURNING *', // [Строка 21]
-        [name, city]
-      );
-      team = newTeamResult.rows[0];
+// Получение списка всех команд
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM teams');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    // Проверяем, зарегистрирована ли команда уже в данном турнире
-    const checkRegistration = await pool.query(
-      'SELECT * FROM tournament_teams WHERE tournament_id = $1 AND team_id = $2',
-      [tournamentId, team.id]
-    );
-    if (checkRegistration.rows.length > 0) {
-      return res.status(400).json({ status: 'error', message: 'Team already registered in this tournament' });
-    }
-    // Регистрируем команду в турнире
-    const registrationResult = await pool.query(
-      'INSERT INTO tournament_teams (tournament_id, team_id) VALUES ($1, $2) RETURNING *',
-      [tournamentId, team.id]
-    );
-    res.status(201).json({ status: 'success', tournamentTeam: registrationResult.rows[0], team });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: 'error', message: err.message });
-  }
 });
 
-module.exports = router; // [Строка 36]
+// Получение команд пользователя
+router.get('/', authenticateToken, async (req, res) => {
+    const userId = req.query.userId || req.user.id;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM tournament_teams WHERE creator_id = $1',
+            [userId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Ошибка получения команд:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Создание новой команды (доступно авторизованным пользователям)
+router.post('/', authenticateToken, async (req, res) => {
+    const { name, tournament_id } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO teams (name, tournament_id, captain_id) VALUES ($1, $2, $3) RETURNING *',
+            [name, tournament_id, req.user.id]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Обновление команды (доступно капитану команды или администратору)
+router.put('/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    try {
+        // Проверяем, является ли пользователь капитаном команды или администратором
+        const teamCheck = await pool.query('SELECT captain_id FROM teams WHERE id = $1', [id]);
+        if (teamCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Команда не найдена' });
+        }
+        if (teamCheck.rows[0].captain_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Недостаточно прав' });
+        }
+
+        const result = await pool.query(
+            'UPDATE teams SET name = $1 WHERE id = $2 RETURNING *',
+            [name, id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Удаление команды (доступно капитану команды или администратору)
+router.delete('/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Проверяем, является ли пользователь капитаном команды или администратором
+        const teamCheck = await pool.query('SELECT captain_id FROM teams WHERE id = $1', [id]);
+        if (teamCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Команда не найдена' });
+        }
+        if (teamCheck.rows[0].captain_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Недостаточно прав' });
+        }
+
+        const result = await pool.query('DELETE FROM teams WHERE id = $1 RETURNING *', [id]);
+        res.json({ message: 'Команда удалена' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+module.exports = router;
