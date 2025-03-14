@@ -1,0 +1,61 @@
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const pool = require('./db'); // Подключение к базе данных (полный путь: backend/db.js)
+require('dotenv').config(); // Загрузка переменных окружения из .env
+
+const app = express();
+
+// Middleware для обработки JSON-запросов
+app.use(express.json());
+
+// Настройка CORS для разрешения запросов с фронтенда
+app.use(cors({
+    origin: [
+        'http://localhost:3000', // Для разработки
+        'http://127.0.0.1:5500', // Дополнительный адрес для разработки
+        'https://1337community.com' // Для продакшена
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true
+}));
+
+// Обслуживание статических файлов из папки frontend/build
+app.use(express.static(path.join(__dirname, '../frontend/build'), { cacheControl: false }));
+
+// Подключение маршрутов
+app.use('/api/users', require('./routes/users')); // Маршруты пользователей
+app.use('/api/auth', require('./routes/auth')); // Маршруты аутентификации
+app.use('/api/tournaments', require('./routes/tournaments')); // Маршруты турниров
+app.use('/api/teams', require('./routes/teams')); // Маршруты команд
+app.use('/api/tournamentPlayers', require('./routes/tournamentPlayers')); // Маршруты игроков турнира
+app.use('/api/matches', require('./routes/matches')); // Маршруты матчей
+app.use('/api/statistics', require('./routes/statistics')); // Маршруты статистики
+
+// Catch-all для SPA (React Router) - перенаправление на index.html
+app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
+
+// Обработка 404 для API-маршрутов
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'API маршрут не найден' });
+});
+
+// Общая обработка 404 для остальных маршрутов
+app.use((req, res) => {
+    res.status(404).json({ error: 'Маршрут не найден' });
+});
+
+// Запуск сервера
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
+    // Проверка подключения к базе данных при старте
+    try {
+        await pool.query('SELECT NOW()');
+        console.log('✅ Подключение к базе данных успешно');
+    } catch (err) {
+        console.error('❌ Ошибка подключения к базе данных:', err.message);
+    }
+});
