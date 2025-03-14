@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Администрирование турниров</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="authHeader">
+    <nav id="mainNav">
+        <div class="dropdown">
+            <button class="dropbtn">Меню ▼</button>
+            <div class="dropdown-content">
+                <a href="index.html">Главная</a>
+                <a href="tournamentList.html">Список турниров</a>
+                <a href="tournamentAdmin.html">Мои турниры</a>
+                <a href="createTournament.html">Создать турнир</a>
+                <a href="tournamentView.html">Просмотр турнира</a>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main>
+    <h1 id="tournamentHeader">Мои турниры</h1>
+    <div id="myTournamentsContainer">Загрузка...</div>
+
+    <div id="tournamentDetails" style="display: none;">
+        <button id="backToListButton" style="display: none;">← Назад к списку</button>
+        <h2 id="tournamentTitle"></h2>
+
+        <h2>Регистрация участника</h2>
+        <form id="addParticipantForm">
+            <input type="text" id="participantName" placeholder="Имя участника" required>
+            <button type="submit">Добавить участника</button>
+        </form>
+
+        <h2>Список участников</h2>
+        <ul id="participantListContainer">Загрузка...</ul>
+
+        <h2>Сетка турнира</h2>
+        <button id="generateBracketButton">Сгенерировать сетку</button>
+        <label>
+            <input type="checkbox" id="thirdPlaceCheckbox" />
+            Нужен матч за 3-е место?
+          </label>
+          <div id="bracketContainer"></div>
+    </div>
+</main>
+
+<script src="js/tournamentAdmin.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>
