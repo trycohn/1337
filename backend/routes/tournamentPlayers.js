@@ -1,68 +1,88 @@
-// backend/routes/tournamentPlayers.js
-const express = require('express');             // [Строка 1]
-const router = express.Router();                // [Строка 2]
-const pool = require('../db');                  // [Строка 3]
-const authMiddleware = require('../middleware/authMiddleware'); // [Строка 4]
+const express = require('express');
+const router = express.Router();
+const pool = require('../db'); // Подключение к базе данных
+const { authenticateToken, restrictTo } = require('../middleware/auth'); // Middleware для аутентификации и авторизации
 
-// Эндпоинт для добавления игрока в команду в турнире
-router.post('/tournaments/:tournamentId/teams/:tournamentTeamId/players', authMiddleware, async (req, res) => { // [Строка 7]
-  const { tournamentId, tournamentTeamId } = req.params; // [Строка 8]
-  const { name, position, isCaptain } = req.body;         // [Строка 9]
-  if (!name) {                                            // [Строка 10]
-    return res.status(400).json({ status: 'error', message: 'Player name is required' });
-  }
-  try {
-    // Проверяем, существует ли игрок в глобальной таблице players
-    let playerResult = await pool.query('SELECT * FROM players WHERE name = $1', [name]); // [Строка 14]
-    let player;
-    if (playerResult.rows.length > 0) {
-      player = playerResult.rows[0];
-    } else {
-      // Если игрок не найден – создаём новую запись
-      const newPlayerResult = await pool.query(
-        'INSERT INTO players (name, position) VALUES ($1, $2) RETURNING *', // [Строка 20]
-        [name, position]
-      );
-      player = newPlayerResult.rows[0];
+// Получение списка всех игроков турнира
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM players');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    // Проверяем, зарегистрирован ли игрок уже в данной команде турнира
-    const checkRegistration = await pool.query(
-      'SELECT * FROM tournament_team_players WHERE tournament_team_id = $1 AND player_id = $2',
-      [tournamentTeamId, player.id]
-    );
-    if (checkRegistration.rows.length > 0) {
-      return res.status(400).json({ status: 'error', message: 'Player already registered in this tournament team' });
-    }
-    // Регистрируем игрока в команде турнира
-    const registrationResult = await pool.query(
-      'INSERT INTO tournament_team_players (tournament_team_id, player_id, is_captain) VALUES ($1, $2, $3) RETURNING *',
-      [tournamentTeamId, player.id, isCaptain || false]
-    );
-    res.status(201).json({ status: 'success', tournamentTeamPlayer: registrationResult.rows[0], player });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: 'error', message: err.message });
-  }
 });
 
-// Эндпоинт для удаления игрока из команды турнира
-router.delete('/tournaments/:tournamentId/teams/:tournamentTeamId/players/:tournamentTeamPlayerId', authMiddleware, async (req, res) => {
-    const { tournamentId, tournamentTeamId, tournamentTeamPlayerId } = req.params;
+// Добавление нового игрока в турнир (доступно организаторам и администраторам)
+router.post('/', authenticateToken, restrictTo(['organizer', 'admin']), async (req, res) => {
+    const { user_id, team_id, name, tournament_id } = req.body;
     try {
-      // Здесь можно добавить проверку, что только капитан команды имеет право удалять игрока
-      const deleteResult = await pool.query(
-        'DELETE FROM tournament_team_players WHERE id = $1 RETURNING *',
-        [tournamentTeamPlayerId]
-      );
-      if (deleteResult.rowCount === 0) {
-        return res.status(404).json({ status: 'error', message: 'Player not found in this tournament team' });
-      }
-      res.json({ status: 'success', removedPlayer: deleteResult.rows[0] });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ status: 'error', message: err.message });
-    }
-  });
-  
+        // Проверка на обязательные поля
+        if (!tournament_id) {
+            return res.status(400).json({ message: 'Турнир не указан' });
+        }
 
-module.exports = router; // [Строка 36]
+        // Если указан user_id, проверяем, существует ли пользователь
+        if (user_id) {
+            const userCheck = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
+            if (userCheck.rows.length === 0) {
+                return res.status(404).json({ message: 'Пользователь не найден' });
+            }
+        }
+
+        // Если указан team_id, проверяем, существует ли команда
+        if (team_id) {
+            const teamCheck = await pool.query('SELECT * FROM teams WHERE id = $1 AND tournament_id = $2', [team_id, tournament_id]);
+            if (teamCheck.rows.length === 0) {
+                return res.status(404).json({ message: 'Команда не найдена или не принадлежит турниру' });
+            }
+        }
+
+        // Добавляем игрока
+        const result = await pool.query(
+            'INSERT INTO players (user_id, team_id, name, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [user_id || null, team_id || null, name || null, tournament_id]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Обновление игрока турнира (доступно организаторам и администраторам)
+router.put('/:id', authenticateToken, restrictTo(['organizer', 'admin']), async (req, res) => {
+    const { id } = req.params;
+    const { team_id, name } = req.body;
+    try {
+        // Проверяем, существует ли игрок
+        const playerCheck = await pool.query('SELECT * FROM players WHERE id = $1', [id]);
+        if (playerCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Игрок не найден' });
+        }
+
+        // Обновляем игрока
+        const result = await pool.query(
+            'UPDATE players SET team_id = $1, name = $2 WHERE id = $3 RETURNING *',
+            [team_id || null, name || null, id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Удаление игрока из турнира (доступно организаторам и администраторам)
+router.delete('/:id', authenticateToken, restrictTo(['organizer', 'admin']), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM players WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Игрок не найден' });
+        }
+        res.json({ message: 'Игрок удален' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+module.exports = router;

@@ -1,0 +1,208 @@
+    /* Общие стили */
+    body {
+        background-color: #000;
+        color: #ccc;
+        font-family: 'Play', Arial, sans-serif;
+        margin: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #000;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(255,255,255,0.1);
+      }
+      /* Заголовки */
+      h1 { color: #fff; }
+      /* Заголовки раундов – выравнивание по центру, белый цвет */
+      .round-column h2 {
+        text-align: center;  /* добавлено выравнивание по центру */
+        color: #fff;
+        font-weight: normal;
+      }
+      /* Для финального матча и матча за 3-е место – красный цвет */
+      .final-label { color: red; }
+      /* Стили формы регистрации */
+      #registrationSection {
+        border: 1px solid #444;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        background-color: #000;
+      }
+      #registrationSection input[type="text"] {
+        padding: 4px;
+        margin-right: 5px;
+        width: 200px;
+        background-color: #151515;
+        color: #ccc;
+        border: 1px solid #444;
+      }
+      #registeredTeamsList li { color: #ccc; }
+      /* Чекбокс */
+      #thirdMatchCheckboxContainer {
+        margin-bottom: 10px;
+        color: #ccc;
+      }
+      /* Стили для кнопок – класс v15 */
+      &.v15{
+  
+  &:hover{
+    .icon{
+      transform: scale(0.9) skew(0deg, 0deg);
+  
+      &:before, &:after{
+        width: 60px;
+      }
+      &:before{
+        left: calc(50% - 30px);
+      }
+      &:after{
+        right: calc(50% - 30px);
+      }
+  
+      span {
+        &:before, &:after {
+          height: calc(100% - 20px);
+        }
+        &:before{
+          top: 10px;
+        }
+        &:after{
+          bottom: 10px;
+        }
+      }
+    }
+  }
+  
+  .label{
+    padding: 10px 22px;
+  }
+  
+  .icon{
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: skew(-40deg, 0deg);
+    transition: all 0.2s;
+  
+    &:before, &:after{
+      content: '';
+      height: 1px;
+      width: 30px;
+      position: absolute;
+      display: block;
+      background: #f0202f;
+      transition: all 0.2s;
+      transition-delay: 0.2s;
+    }
+    &:before{
+      left: 0;
+      top: 0;
+    }
+    &:after{
+      right: 0;
+      bottom: 0;
+    }
+    span{
+  
+      &:before, &:after{
+        content: '';
+        background: #f0202f;
+        position: absolute;
+        display: block;
+        width: 2px;
+        height: 30px;
+        transition: all 0.2s;
+        transition-delay: 0.2s;
+      }
+      &:before{
+        left: 0;
+        top: 0;
+      }
+      &:after{
+        right: 0;
+        bottom: 0;
+      }
+    }
+  }
+  }
+  
+      /* Контейнер для раундов – горизонтальное расположение, столбцы по 20% */
+      .bracket-container {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        overflow-x: auto;
+        margin-top: 20px;
+      }
+      .round-column {
+        width: 20%;  /* ширина столбца 20% */
+        margin: 0 10px;
+      }
+      .match {
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 5px;
+        margin-bottom: 20px;
+        background-color: #151515;
+        text-align: center;
+      }
+      .match > div:first-child {
+        font-size: 12px;
+        margin-bottom: 5px;
+        color: #ccc;
+      }
+      .team {
+        padding: 5px;
+        margin: 5px 0;
+        cursor: pointer;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background-color: #151515;
+        color: #ccc;
+      }
+      .team:hover { background-color: #212121; }
+      .tbd { color: #888; font-style: italic; }
+      input[type="number"] {
+        text-align: center;
+        padding: 2px;
+        margin: 0 2px;
+        background-color: #212121;
+        color: #ccc;
+        border: 1px solid #444;
+      }
+      .confirm-btn {
+        background-color: #cbcbcb;
+        color: #000;
+        border: none;
+        border-radius: 4px;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .confirm-btn.confirmed { background-color: #000; color: #fff; }
+      .score-container {
+        display: flex;
+        align-items: center;
+        margin-top: 5px;
+      }
+      /* Стили для списка призёров */
+      .prize-list {
+        margin-top: 20px;
+        color: #ccc;
+      }
+      .prize-list .first-prize {
+        color: red;
+        font-weight: bold;
+      }
+      .medal {
+        vertical-align: middle;
+        height: 1em;
+        margin-left: 5px;
+      }
+    
