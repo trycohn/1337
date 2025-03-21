@@ -1,105 +1,99 @@
 const pool = require('./db');
 
-async function generateBracket(tournamentId, participants, thirdPlaceMatch) {
-    const matches = [];
-    const n = participants.length;
-    const nearestPowerOf2 = Math.pow(2, Math.floor(Math.log2(n)));
-    let hasPreliminaryRound = false;
+/**
+ * Генерация турнирной сетки
+ * @param {number} tournamentId - ID турнира
+ * @param {Array} participants - Массив участников [{ id, name }]
+ * @param {boolean} thirdPlaceMatch - Нужен ли матч за 3-е место
+ * @returns {Array} - Список сгенерированных матчей
+ */
+const generateBracket = async (tournamentId, participants, thirdPlaceMatch) => {
+  const matches = [];
+  let matchNumber = 1;
 
-    console.log(`Participants: ${n}, Nearest power of 2: ${nearestPowerOf2}`);
+  // Рандомизируем участников
+  const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+  const participantCount = shuffledParticipants.length;
 
-    let matchNumber = 1;
-    let currentParticipants = [...participants];
+  // Ближайшая степень двойки <= participantCount
+  const targetCount = Math.pow(2, Math.floor(Math.log2(participantCount)));
+  const prelimMatchesCount = participantCount - targetCount; // Матчи для выравнивания
 
-    // Проверяем, нужен ли предварительный раунд
-    if (n !== nearestPowerOf2) {
-        hasPreliminaryRound = true;
-        const excessParticipants = n - nearestPowerOf2;
-        const prelimParticipantsCount = excessParticipants * 2;
-        const prelimMatchCount = excessParticipants;
-
-        console.log(`Preliminary round: ${prelimParticipantsCount} participants, ${prelimMatchCount} matches`);
-
-        const prelimParticipants = currentParticipants.slice(0, prelimParticipantsCount);
-        for (let i = 0; i < prelimMatchCount; i++) {
-            const team1 = prelimParticipants[i * 2];
-            const team2 = prelimParticipants[i * 2 + 1];
-            const matchResult = await pool.query(
-                'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [tournamentId, 0, team1.id, team2.id, matchNumber++]
-            );
-            matches.push(matchResult.rows[0]);
-        }
-
-        currentParticipants = currentParticipants.slice(prelimParticipantsCount);
+  // **Предварительный раунд**
+  if (prelimMatchesCount > 0) {
+    const prelimParticipants = shuffledParticipants.splice(0, prelimMatchesCount * 2);
+    for (let i = 0; i < prelimParticipants.length; i += 2) {
+      const team1 = prelimParticipants[i];
+      const team2 = prelimParticipants[i + 1] || { id: null, name: 'TBD' };
+      const match = await pool.query(
+        'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [tournamentId, -1, team1.id, team2.id, matchNumber++]
+      );
+      matches.push(match.rows[0]);
     }
+  }
 
-    // Основная сетка
-    let round = 1;
-    let totalMatches = hasPreliminaryRound ? nearestPowerOf2 : n;
+  // Участники основного раунда: оставшиеся + победители предварительного
+  const mainParticipants = [
+    ...shuffledParticipants,
+    ...Array(prelimMatchesCount).fill({ id: null, name: 'TBD' }) // Места для победителей
+  ];
 
-    // Раунд 1: заполняем оставшихся участников
-    const round1Matches = [];
-    const matchCountRound1 = Math.ceil(totalMatches / 2);
+  // **Полуфиналы (Раунд 0)**
+  const round0Matches = [];
+  for (let i = 0; i < targetCount / 2; i++) {
+    const team1 = mainParticipants[i * 2] || { id: null, name: 'TBD' };
+    const team2 = mainParticipants[i * 2 + 1] || { id: null, name: 'TBD' };
+    const match = await pool.query(
+      'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [tournamentId, 0, team1.id, team2.id, matchNumber++]
+    );
+    round0Matches.push(match.rows[0]);
+  }
+  matches.push(...round0Matches);
 
-    console.log(`Round ${round}, matches: ${matchCountRound1}`);
+  // **Финальный раунд (Раунд 1)**
+  const finalMatch = await pool.query(
+    'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [tournamentId, 1, null, null, matchNumber++]
+  );
+  matches.push(finalMatch.rows[0]);
 
-    let participantIndex = 0;
-    for (let i = 0; i < matchCountRound1; i++) {
-        let team1 = null;
-        let team2 = null;
+  if (thirdPlaceMatch) {
+    const thirdPlaceMatchResult = await pool.query(
+      'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, is_third_place_match) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [tournamentId, 1, null, null, matchNumber++, true]
+    );
+    matches.push(thirdPlaceMatchResult.rows[0]);
+  }
 
-        if (participantIndex < currentParticipants.length) {
-            team1 = currentParticipants[participantIndex++];
-        }
-        if (participantIndex < currentParticipants.length) {
-            team2 = currentParticipants[participantIndex++];
-        } else if (i === 0 && hasPreliminaryRound) {
-            team2 = null; // Место для победителя предварительного раунда
-        }
+  // **Обновление next_match_id**
+  const prelimMatches = matches.filter(m => m.round === -1);
+  const round0MatchesFiltered = matches.filter(m => m.round === 0); // Исправлено: избегание повторного объявления
+  const round1Matches = matches.filter(m => m.round === 1 && !m.is_third_place_match);
 
-        const matchResult = await pool.query(
-            'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [tournamentId, round, team1 ? team1.id : null, team2 ? team2.id : null, matchNumber++]
-        );
-        round1Matches.push(matchResult.rows[0]);
+  for (let i = 0; i < prelimMatches.length; i++) {
+    const nextMatchIndex = i % 2; // Связываем с матчами Раунда 0
+    if (nextMatchIndex < round0MatchesFiltered.length) {
+      await pool.query(
+        'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+        [round0MatchesFiltered[nextMatchIndex].id, prelimMatches[i].id]
+      );
+      prelimMatches[i].next_match_id = round0MatchesFiltered[nextMatchIndex].id;
     }
-    matches.push(...round1Matches);
+  }
 
-    // Создаём пустые матчи для оставшихся раундов, включая финал
-    round++;
-    totalMatches = matchCountRound1;
-    const totalRounds = Math.ceil(Math.log2(nearestPowerOf2));
-    while (round <= totalRounds) {
-        const matchCount = Math.max(1, Math.floor(totalMatches / 2)); // Гарантируем минимум 1 матч для финала
-
-        console.log(`Round ${round}, matches: ${matchCount}`);
-
-        for (let i = 0; i < matchCount; i++) {
-            const matchResult = await pool.query(
-                'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [tournamentId, round, null, null, matchNumber++]
-            );
-            matches.push(matchResult.rows[0]);
-        }
-
-        totalMatches = matchCount;
-        round++;
+  for (let i = 0; i < round0MatchesFiltered.length; i++) {
+    if (i < round1Matches.length) {
+      await pool.query(
+        'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+        [round1Matches[0].id, round0MatchesFiltered[i].id]
+      );
+      round0MatchesFiltered[i].next_match_id = round1Matches[0].id;
     }
+  }
 
-    // Матч за 3-е место (если чекбокс активен), создаём пустой матч
-    if (thirdPlaceMatch && totalRounds > 1) {
-        const semiFinalMatches = matches.filter(m => m.round === totalRounds - 1); // Полуфиналы
-        if (semiFinalMatches.length >= 2) {
-            const matchResult = await pool.query(
-                'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, is_third_place_match) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-                [tournamentId, totalRounds, null, null, matchNumber++, true]
-            );
-            matches.push(matchResult.rows[0]);
-        }
-    }
-
-    return matches;
-}
+  return matches;
+};
 
 module.exports = { generateBracket };
