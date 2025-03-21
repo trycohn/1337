@@ -58,34 +58,40 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Турнир не найден' });
-        }
-        const tournament = tournamentResult.rows[0];
-
-        const participantsQuery =
-            tournament.participant_type === 'solo'
-                ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1'
-                : 'SELECT * FROM tournament_teams WHERE tournament_id = $1';
-        const participantsResult = await pool.query(participantsQuery, [id]);
-
-        const matchesResult = await pool.query(
-            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, id',
-            [id]
-        );
-
-        res.json({
-            ...tournament,
-            participants: participantsResult.rows,
-            participant_count: participantsResult.rows.length,
-            matches: matchesResult.rows,
-        });
+      const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+      if (tournamentResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Турнир не найден' });
+      }
+      const tournament = tournamentResult.rows[0];
+  
+      const participantsQuery =
+        tournament.participant_type === 'solo'
+          ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1'
+          : 'SELECT * FROM tournament_teams WHERE tournament_id = $1';
+      const participantsResult = await pool.query(participantsQuery, [id]);
+  
+      const matchesResult = await pool.query(
+        'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+        [id]
+      );
+  
+      console.log('Tournament data:', {
+        tournament,
+        participants: participantsResult.rows,
+        matches: matchesResult.rows,
+      });
+  
+      res.json({
+        ...tournament,
+        participants: participantsResult.rows,
+        participant_count: participantsResult.rows.length,
+        matches: matchesResult.rows,
+      });
     } catch (err) {
-        console.error('Ошибка получения деталей турнира:', err);
-        res.status(500).json({ error: err.message });
+      console.error('Ошибка получения деталей турнира:', err);
+      res.status(500).json({ error: err.message });
     }
-});
+  });
 
 // Участие в турнире
 // Участие в турнире
@@ -656,16 +662,17 @@ router.post('/:id/generate-bracket', authenticateToken, async (req, res) => {
 // Обновление результата матча
 router.post('/:id/update-match', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { matchId, winner_team_id } = req.body;
+    const { matchId, winner_team_id, score1, score2 } = req.body;
     const userId = req.user.id;
 
     try {
+        // Проверка турнира и прав доступа (оставляем как есть)
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
         }
-
         const tournament = tournamentResult.rows[0];
+
         if (tournament.created_by !== userId) {
             const adminCheck = await pool.query(
                 'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
@@ -676,6 +683,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             }
         }
 
+        // Получение данных матча
         const matchResult = await pool.query('SELECT * FROM matches WHERE id = $1 AND tournament_id = $2', [matchId, id]);
         if (matchResult.rows.length === 0) {
             return res.status(404).json({ error: 'Матч не найден' });
@@ -686,62 +694,27 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Результат матча уже определён' });
         }
 
-        const updateResult = await pool.query(
-            'UPDATE matches SET winner_team_id = $1 WHERE id = $2 RETURNING *',
-            [winner_team_id, matchId]
+        // Обновление результата текущего матча
+        await pool.query(
+            'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4',
+            [winner_team_id, score1, score2, matchId]
         );
 
-        // Получаем все матчи турнира для определения totalRounds
-        const allMatches = await pool.query('SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number', [id]);
-        const totalRounds = Math.max(...allMatches.rows.map(m => m.round));
-
-        // Обновление следующего матча
-        const nextRound = match.round + 1;
-        const nextMatches = await pool.query('SELECT * FROM matches WHERE tournament_id = $1 AND round = $2 AND is_third_place_match = FALSE', [id, nextRound]);
-        let updateField = null;
-        let nextMatchId = null;
-
-        if (nextMatches.rows.length > 0) {
-            for (const nextMatch of nextMatches.rows) {
-                if (nextMatch.team1_id === null) {
-                    updateField = 'team1_id';
-                    nextMatchId = nextMatch.id;
-                    break;
-                } else if (nextMatch.team2_id === null) {
-                    updateField = 'team2_id';
-                    nextMatchId = nextMatch.id;
-                    break;
+        // Логика для предварительного раунда
+        if (match.round === -1 && match.next_match_id) {
+            const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
+            if (nextMatchResult.rows.length > 0) {
+                const nextMatch = nextMatchResult.rows[0];
+                // Добавление победителя в следующий матч
+                if (!nextMatch.team1_id) {
+                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                } else if (!nextMatch.team2_id) {
+                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
                 }
             }
         }
 
-        if (updateField && nextMatchId) {
-            await pool.query(
-                `UPDATE matches SET ${updateField} = $1 WHERE id = $2 RETURNING *`,
-                [winner_team_id, nextMatchId]
-            );
-        }
-
-        // Обновление матча за 3-е место, если это полуфинал
-        if (match.round === totalRounds - 1) {
-            const thirdPlaceMatch = allMatches.rows.find(m => m.round === totalRounds && m.is_third_place_match === true);
-            if (thirdPlaceMatch) {
-                const otherTeamId = (match.team1_id === winner_team_id) ? match.team2_id : match.team1_id;
-                if (!thirdPlaceMatch.team1_id) {
-                    await pool.query(
-                        'UPDATE matches SET team1_id = $1 WHERE id = $2 RETURNING *',
-                        [otherTeamId, thirdPlaceMatch.id]
-                    );
-                } else if (!thirdPlaceMatch.team2_id) {
-                    await pool.query(
-                        'UPDATE matches SET team2_id = $1 WHERE id = $2 RETURNING *',
-                        [otherTeamId, thirdPlaceMatch.id]
-                    );
-                }
-            }
-        }
-
-        res.status(200).json({ message: 'Результат обновлён', match: updateResult.rows[0] });
+        res.status(200).json({ message: 'Результат обновлён' });
     } catch (err) {
         console.error('Ошибка обновления матча:', err);
         res.status(500).json({ error: err.message });
