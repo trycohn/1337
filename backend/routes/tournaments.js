@@ -1,8 +1,10 @@
+// backend/routes/tournaments.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 const { sendNotification } = require('../notifications');
+const { generateBracket } = require('../bracketGenerator'); // Импорт функции генерации сетки
 
 // Получение списка всех турниров с количеством участников
 router.get('/', async (req, res) => {
@@ -58,42 +60,35 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-      const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-      if (tournamentResult.rows.length === 0) {
-        return res.status(404).json({ message: 'Турнир не найден' });
-      }
-      const tournament = tournamentResult.rows[0];
-  
-      const participantsQuery =
-        tournament.participant_type === 'solo'
-          ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1'
-          : 'SELECT * FROM tournament_teams WHERE tournament_id = $1';
-      const participantsResult = await pool.query(participantsQuery, [id]);
-  
-      const matchesResult = await pool.query(
-        'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
-        [id]
-      );
-  
-      console.log('Tournament data:', {
-        tournament,
-        participants: participantsResult.rows,
-        matches: matchesResult.rows,
-      });
-  
-      res.json({
-        ...tournament,
-        participants: participantsResult.rows,
-        participant_count: participantsResult.rows.length,
-        matches: matchesResult.rows,
-      });
-    } catch (err) {
-      console.error('Ошибка получения деталей турнира:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
 
-// Участие в турнире
+        const participantsQuery =
+            tournament.participant_type === 'solo'
+                ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1'
+                : 'SELECT * FROM tournament_teams WHERE tournament_id = $1';
+        const participantsResult = await pool.query(participantsQuery, [id]);
+
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [id]
+        );
+
+        res.json({
+            ...tournament,
+            participants: participantsResult.rows,
+            participant_count: participantsResult.rows.length,
+            matches: matchesResult.rows,
+        });
+    } catch (err) {
+        console.error('Ошибка получения деталей турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Участие в турнире
 router.post('/:id/participate', authenticateToken, async (req, res) => {
     const { id } = req.params;
@@ -274,8 +269,6 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-
 
 // Ручное добавление участника (для solo и team)
 router.post('/:id/add-participant', authenticateToken, async (req, res) => {
@@ -602,14 +595,13 @@ router.get('/:id/admin-request-status', authenticateToken, async (req, res) => {
 });
 
 // Генерация турнирной сетки
-const { generateBracket } = require('../bracketGenerator');
-
 router.post('/:id/generate-bracket', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { thirdPlaceMatch } = req.body;
     const userId = req.user.id;
 
     try {
+        // Проверка турнира и прав доступа
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
@@ -626,33 +618,49 @@ router.post('/:id/generate-bracket', authenticateToken, async (req, res) => {
             }
         }
 
-        if (tournament.status !== 'active') {
-            return res.status(400).json({ error: 'Турнир неактивен' });
+        // Проверка, что сетка ещё не сгенерирована
+        const existingMatches = await pool.query('SELECT * FROM matches WHERE tournament_id = $1', [id]);
+        if (existingMatches.rows.length > 0) {
+            return res.status(400).json({ error: 'Сетка уже сгенерирована' });
         }
 
-        await pool.query('DELETE FROM matches WHERE tournament_id = $1', [id]);
-
+        // Получение участников в зависимости от типа турнира
         let participants;
         if (tournament.participant_type === 'solo') {
-            participants = await pool.query(
+            const participantsResult = await pool.query(
                 'SELECT id, name FROM tournament_participants WHERE tournament_id = $1',
                 [id]
             );
+            participants = participantsResult.rows;
         } else {
-            participants = await pool.query(
+            const participantsResult = await pool.query(
                 'SELECT id, name FROM tournament_teams WHERE tournament_id = $1',
                 [id]
             );
+            participants = participantsResult.rows;
         }
-        const participantList = participants.rows;
 
-        if (participantList.length < 2) {
+        if (participants.length < 2) {
             return res.status(400).json({ error: 'Недостаточно участников для генерации сетки' });
         }
 
-        const matches = await generateBracket(id, participantList, thirdPlaceMatch);
+        // Генерация сетки с использованием модуля bracketGenerator
+        const matches = await generateBracket(tournament.format, id, participants, thirdPlaceMatch);
 
-        res.status(200).json({ message: 'Сетка сгенерирована', matches });
+        // Получаем обновлённые данные турнира
+        const updatedTournamentResult = await pool.query(
+            'SELECT t.*, ' +
+            'COALESCE((SELECT json_agg(tp.*) FROM tournament_participants tp WHERE tp.tournament_id = t.id), \'[]\') as participants, ' +
+            'COALESCE((SELECT json_agg(m.*) FROM matches m WHERE m.tournament_id = t.id), \'[]\') as matches ' +
+            'FROM tournaments t WHERE t.id = $1 GROUP BY t.id',
+            [id]
+        );
+
+        const tournamentData = updatedTournamentResult.rows[0];
+        tournamentData.matches = Array.isArray(tournamentData.matches) ? tournamentData.matches : [];
+        tournamentData.participants = Array.isArray(tournamentData.participants) ? tournamentData.participants : [];
+
+        res.status(200).json({ message: 'Сетка успешно сгенерирована', tournament: tournamentData });
     } catch (err) {
         console.error('Ошибка генерации сетки:', err);
         res.status(500).json({ error: err.message });
@@ -662,11 +670,15 @@ router.post('/:id/generate-bracket', authenticateToken, async (req, res) => {
 // Обновление результата матча
 router.post('/:id/update-match', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { matchId, winner_team_id, score1, score2 } = req.body;
+    let { matchId, winner_team_id, score1, score2 } = req.body;
     const userId = req.user.id;
 
     try {
-        // Проверка турнира и прав доступа (оставляем как есть)
+        // Преобразуем matchId и winner_team_id в числа
+        matchId = Number(matchId);
+        winner_team_id = winner_team_id ? Number(winner_team_id) : null;
+
+        // Проверка турнира и прав доступа
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
@@ -683,15 +695,20 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             }
         }
 
-        // Получение данных матча
+        // Получение данных текущего матча
         const matchResult = await pool.query('SELECT * FROM matches WHERE id = $1 AND tournament_id = $2', [matchId, id]);
         if (matchResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Матч не найден' });
+            return res.status(400).json({ error: 'Матч не найден' });
         }
         const match = matchResult.rows[0];
 
-        if (match.winner_team_id) {
-            return res.status(400).json({ error: 'Результат матча уже определён' });
+        if (match.winner_team_id && match.winner_team_id === winner_team_id) {
+            return res.status(400).json({ error: 'Этот победитель уже установлен' });
+        }
+
+        // Проверка, что winner_team_id является одним из участников матча
+        if (winner_team_id && ![match.team1_id, match.team2_id].includes(winner_team_id)) {
+            return res.status(400).json({ error: 'Победитель должен быть одним из участников матча' });
         }
 
         // Обновление результата текущего матча
@@ -700,21 +717,165 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             [winner_team_id, score1, score2, matchId]
         );
 
-        // Логика для предварительного раунда
+        // Определяем проигравшего
+        const loser_team_id = match.team1_id === winner_team_id ? match.team2_id : match.team1_id;
+
+        // Логика для предварительного раунда (раунд -1)
         if (match.round === -1 && match.next_match_id) {
             const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-            if (nextMatchResult.rows.length > 0) {
-                const nextMatch = nextMatchResult.rows[0];
-                // Добавление победителя в следующий матч
-                if (!nextMatch.team1_id) {
-                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                } else if (!nextMatch.team2_id) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+            if (nextMatchResult.rows.length === 0) {
+                return res.status(400).json({ error: 'Целевой матч не найден' });
+            }
+
+            const nextMatch = nextMatchResult.rows[0];
+
+            if (!nextMatch.team1_id) {
+                await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+            } else if (!nextMatch.team2_id && nextMatch.team1_id !== winner_team_id) {
+                await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+            } else {
+                const round0Matches = await pool.query(
+                    'SELECT * FROM matches WHERE tournament_id = $1 AND round = 0 AND bracket_type = $2',
+                    [id, 'winner']
+                );
+                const availableMatch = round0Matches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
+                if (availableMatch) {
+                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
+                    await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, match.id]);
+                } else {
+                    return res.status(400).json({ error: 'Нет доступных мест в основном раунде' });
+                }
+            }
+
+            // Корректируем next_match_id для оставшихся матчей предварительного раунда
+            const remainingPrelimMatches = await pool.query(
+                'SELECT * FROM matches WHERE tournament_id = $1 AND round = -1 AND winner_team_id IS NULL',
+                [id]
+            );
+            const round0Matches = await pool.query(
+                'SELECT * FROM matches WHERE tournament_id = $1 AND round = 0 AND bracket_type = $2',
+                [id, 'winner']
+            );
+
+            for (const prelimMatch of remainingPrelimMatches.rows) {
+                if (prelimMatch.id === match.id) continue;
+                const availableMatch = round0Matches.rows.find(m => !m.team2_id);
+                if (availableMatch) {
+                    await pool.query(
+                        'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                        [availableMatch.id, prelimMatch.id]
+                    );
+                    console.log(`Корректировка next_match_id для матча ${prelimMatch.match_number}: -> Match ${availableMatch.match_number}`);
                 }
             }
         }
 
-        res.status(200).json({ message: 'Результат обновлён' });
+        // Логика для Double Elimination
+        if (tournament.format === 'double_elimination') {
+            if (match.round !== -1 && match.next_match_id) {
+                const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
+                if (nextMatchResult.rows.length > 0) {
+                    const nextMatch = nextMatchResult.rows[0];
+
+                    // Проверяем, не добавлен ли победитель уже в следующий матч
+                    if (nextMatch.team1_id === winner_team_id || nextMatch.team2_id === winner_team_id) {
+                        console.log(`Победитель (team ${winner_team_id}) уже добавлен в матч ${nextMatch.id}`);
+                    } else if (!nextMatch.team1_id) {
+                        await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    } else if (!nextMatch.team2_id && nextMatch.team1_id !== winner_team_id) {
+                        await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    } else if (nextMatch.team1_id === nextMatch.team2_id) {
+                        await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    } else {
+                        const roundMatches = await pool.query(
+                            'SELECT * FROM matches WHERE tournament_id = $1 AND round = $2 AND bracket_type = $3',
+                            [id, match.round + 1, 'winner']
+                        );
+                        const availableMatch = roundMatches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
+                        if (availableMatch) {
+                            await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
+                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, match.id]);
+                        } else {
+                            return res.status(400).json({ error: 'Нет доступных мест в верхней сетке' });
+                        }
+                    }
+                }
+            }
+
+            // Проигравший переходит в нижнюю сетку или выбывает
+            if (loser_team_id) {
+                if (match.bracket_type === 'winner') {
+                    // Проигравший из верхней сетки переходит в нижнюю
+                    let targetLoserRound;
+                    const totalWinnerRounds = Math.ceil(Math.log2(6)); // Для 6 участников: 3 раунда (0, 1, 2)
+                    const totalLoserRounds = totalWinnerRounds + 1; // 4 раунда (1, 2, 3, 4)
+
+                    if (match.round === -1) {
+                        targetLoserRound = 1;
+                    } else if (match.round === totalWinnerRounds - 1) {
+                        // Проигравший из финала верхней сетки (Round 2) должен попасть в финал нижней сетки (Round 4)
+                        targetLoserRound = totalLoserRounds;
+                    } else {
+                        // Проигравшие из Round 0 верхней сетки -> Round 1 нижней, Round 1 верхней -> Round 2 нижней и т.д.
+                        targetLoserRound = match.round + 1;
+                    }
+
+                    let loserMatches = await pool.query(
+                        'SELECT * FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3 AND is_third_place_match = false',
+                        [id, 'loser', targetLoserRound]
+                    );
+
+                    let availableLoserMatch = loserMatches.rows.find(m => (!m.team1_id || !m.team2_id) && m.team1_id !== loser_team_id && m.team2_id !== loser_team_id);
+
+                    if (!availableLoserMatch) {
+                        const maxMatchNumberResult = await pool.query(
+                            'SELECT COALESCE(MAX(match_number), 0) as max_match_number FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3',
+                            [id, 'loser', targetLoserRound]
+                        );
+                        const maxMatchNumber = maxMatchNumberResult.rows[0].max_match_number;
+
+                        const newMatchResult = await pool.query(
+                            'INSERT INTO matches (tournament_id, round, match_number, bracket_type, team1_id, team2_id, match_date) ' +
+                            'VALUES ($1, $2, $3, $4, $5, NULL, NOW()) RETURNING *',
+                            [id, targetLoserRound, maxMatchNumber + 1, 'loser', loser_team_id]
+                        );
+                        availableLoserMatch = newMatchResult.rows[0];
+                        console.log(`Создан новый матч ${availableLoserMatch.id} в раунде ${targetLoserRound} сетки лузеров для проигравшего (team ${loser_team_id})`);
+                    } else {
+                        if (!availableLoserMatch.team1_id) {
+                            await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, availableLoserMatch.id]);
+                        } else {
+                            await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, availableLoserMatch.id]);
+                        }
+                        console.log(`Проигравший (team ${loser_team_id}) из раунда ${match.round} верхней сетки добавлен в матч ${availableLoserMatch.id} раунда ${targetLoserRound} сетки лузеров`);
+                    }
+                } else if (match.bracket_type === 'loser') {
+                    // Проигравший из нижней сетки выбывает из турнира
+                    console.log(`Проигравший (team ${loser_team_id}) из матча ${match.id} нижней сетки выбывает из турнира`);
+                }
+            }
+        }
+
+        // Получаем обновлённые данные турнира
+        const updatedTournament = await pool.query(
+            'SELECT t.*, COALESCE(array_agg(p.*), \'{}\') as participants, COALESCE(array_agg(m.*), \'{}\') as matches ' +
+            'FROM tournaments t ' +
+            'LEFT JOIN tournament_participants p ON t.id = p.tournament_id ' +
+            'LEFT JOIN matches m ON t.id = m.tournament_id ' +
+            'WHERE t.id = $1 ' +
+            'GROUP BY t.id',
+            [id]
+        );
+
+        const tournamentData = updatedTournament.rows[0] || {};
+        tournamentData.matches = Array.isArray(tournamentData.matches) && tournamentData.matches[0] !== null 
+            ? tournamentData.matches 
+            : [];
+        tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
+            ? tournamentData.participants 
+            : [];
+
+        res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
     } catch (err) {
         console.error('Ошибка обновления матча:', err);
         res.status(500).json({ error: err.message });

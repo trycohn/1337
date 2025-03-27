@@ -1,3 +1,4 @@
+// frontend/src/components/CreateTournament.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
@@ -100,7 +101,7 @@ function CreateTournament({ onTournamentCreated }) {
           onChange={handleInputChange}
         >
           <option value="single_elimination">Single Elimination</option>
-          <option value="full_double_elimination">Full Double Elimination</option>
+          <option value="double_elimination">Double Elimination</option> {/* Изменено с full_double_elimination */}
           <option value="mix">Mix</option>
           <option value="round_robin">Групповой (Round Robin)</option>
         </select>
