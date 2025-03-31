@@ -4,7 +4,7 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 const { sendNotification } = require('../notifications');
-const { generateBracket } = require('../bracketGenerator'); // Импорт функции генерации сетки
+const { generateBracket } = require('../bracketGenerator');
 
 // Получение списка всех турниров с количеством участников
 router.get('/', async (req, res) => {
@@ -22,9 +22,10 @@ router.get('/', async (req, res) => {
                    END AS participant_count
             FROM tournaments t
         `);
-        res.json(result.rows);
+        console.log('🔍 Tournaments fetched:', result.rows);
+        res.json(result.rows); // Убедились, что возвращается массив
     } catch (err) {
-        console.error('Ошибка получения турниров:', err);
+        console.error('❌ Ошибка получения турниров:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -33,9 +34,10 @@ router.get('/', async (req, res) => {
 router.get('/games', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, name FROM games');
+        console.log('🔍 Games fetched:', result.rows);
         res.json(result.rows);
     } catch (err) {
-        console.error('Ошибка получения списка игр:', err);
+        console.error('❌ Ошибка получения списка игр:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -49,9 +51,10 @@ router.post('/', authenticateToken, async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
             [name, game, format, req.user.id, 'active', participant_type, max_participants || null, start_date || null, description || null]
         );
+        console.log('🔍 Tournament created:', result.rows[0]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error('Ошибка создания турнира:', err);
+        console.error('❌ Ошибка создания турнира:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -77,14 +80,16 @@ router.get('/:id', async (req, res) => {
             [id]
         );
 
-        res.json({
+        const responseData = {
             ...tournament,
             participants: participantsResult.rows,
             participant_count: participantsResult.rows.length,
             matches: matchesResult.rows,
-        });
+        };
+        console.log('🔍 Tournament details fetched:', responseData);
+        res.json(responseData);
     } catch (err) {
-        console.error('Ошибка получения деталей турнира:', err);
+        console.error('❌ Ошибка получения деталей турнира:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -185,7 +190,7 @@ router.post('/:id/participate', authenticateToken, async (req, res) => {
 
         res.status(200).json({ message: 'Вы успешно зарегистрированы в турнире' });
     } catch (err) {
-        console.error('Ошибка регистрации в турнире:', err);
+        console.error('❌ Ошибка регистрации в турнире:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -265,7 +270,7 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
 
         res.status(200).json({ message: 'Вы отказались от участия в турнире' });
     } catch (err) {
-        console.error('Ошибка отказа от участия:', err);
+        console.error('❌ Ошибка отказа от участия:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -338,7 +343,7 @@ router.post('/:id/add-participant', authenticateToken, async (req, res) => {
 
         res.status(200).json({ message: 'Участник успешно добавлен' });
     } catch (err) {
-        console.error('Ошибка добавления участника:', err);
+        console.error('❌ Ошибка добавления участника:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -410,7 +415,7 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
 
         res.status(200).json({ message: `Приглашение отправлено пользователю ${user.username}` });
     } catch (err) {
-        console.error('Ошибка отправки приглашения:', err);
+        console.error('❌ Ошибка отправки приглашения:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -471,7 +476,7 @@ router.post('/:id/request-admin', authenticateToken, async (req, res) => {
 
         res.status(200).json({ message: 'Запрос на администрирование отправлен' });
     } catch (err) {
-        console.error('Ошибка запроса на администрирование:', err);
+        console.error('❌ Ошибка запроса на администрирование:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -555,7 +560,7 @@ router.post('/:id/respond-admin-request', authenticateToken, async (req, res) =>
 
         res.status(200).json({ message: `Запрос на администрирование ${action === 'accept' ? 'принят' : 'отклонён'}` });
     } catch (err) {
-        console.error('Ошибка обработки запроса на администрирование:', err);
+        console.error('❌ Ошибка обработки запроса на администрирование:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -589,7 +594,7 @@ router.get('/:id/admin-request-status', authenticateToken, async (req, res) => {
 
         return res.json({ status: null });
     } catch (err) {
-        console.error('Ошибка получения статуса запроса:', err);
+        console.error('❌ Ошибка получения статуса запроса:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -660,9 +665,10 @@ router.post('/:id/generate-bracket', authenticateToken, async (req, res) => {
         tournamentData.matches = Array.isArray(tournamentData.matches) ? tournamentData.matches : [];
         tournamentData.participants = Array.isArray(tournamentData.participants) ? tournamentData.participants : [];
 
+        console.log('🔍 Bracket generated for tournament:', tournamentData);
         res.status(200).json({ message: 'Сетка успешно сгенерирована', tournament: tournamentData });
     } catch (err) {
-        console.error('Ошибка генерации сетки:', err);
+        console.error('❌ Ошибка генерации сетки:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -875,9 +881,10 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             ? tournamentData.participants 
             : [];
 
+        console.log('🔍 Match updated for tournament:', tournamentData);
         res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
     } catch (err) {
-        console.error('Ошибка обновления матча:', err);
+        console.error('❌ Ошибка обновления матча:', err);
         res.status(500).json({ error: err.message });
     }
 });
