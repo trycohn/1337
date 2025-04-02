@@ -1,0 +1,25 @@
+{
+    "headers": [
+      {
+        "source": "/manifest.json",
+        "headers": [
+          { "key": "Access-Control-Allow-Origin", "value": "*" },
+          { "key": "Content-Type", "value": "application/json" }
+        ]
+      },
+      {
+        "source": "/logo192.png",
+        "headers": [
+          { "key": "Access-Control-Allow-Origin", "value": "*" },
+          { "key": "Content-Type", "value": "image/png" }
+        ]
+      },
+      {
+        "source": "/logo512.png",
+        "headers": [
+          { "key": "Access-Control-Allow-Origin", "value": "*" },
+          { "key": "Content-Type", "value": "image/png" }
+        ]
+      }
+    ]
+  }
