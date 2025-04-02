@@ -14,8 +14,8 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          cd /var/www/1337community.com
-          git pull --merge
+         cd /var/www/1337community.com
+          git pull
           cd backend && npm install && pm2 restart backend
           cd ../frontend && npm install && npm run build
           sudo nginx -s reload
