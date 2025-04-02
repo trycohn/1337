@@ -12,7 +12,7 @@ jobs:
       with:
         host: 80.87.200.23
         username: root
-        key: 01012006Fortnite!
+        key: ${{ secrets.SSH_KEY }}
         script: |
           cd /var/www/1337community.com
           git pull --merge
