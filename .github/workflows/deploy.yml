@@ -14,8 +14,17 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-         cd /var/www/1337community.com
+          cd /var/www/1337community.com
           git pull
-          cd backend && npm install && pm2 restart backend
+          # Остановка и удаление старых процессов PM2
+          pm2 stop backend || true
+          pm2 delete backend || true
+          pm2 stop 1337-backend || true
+          pm2 delete 1337-backend || true
+          # Установка зависимостей и запуск бэкенда
+          cd backend && npm install
+          pm2 start server.js --name "1337-backend"
+          # Установка зависимостей и сборка фронтенда
           cd ../frontend && npm install && npm run build
+          # Перезапуск Nginx
           sudo nginx -s reload
