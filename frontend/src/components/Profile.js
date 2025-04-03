@@ -44,6 +44,16 @@ function Profile() {
         }
     };
 
+    const linkSteam = () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+            window.location.href = `${baseUrl}/api/users/steam?authToken=${token}`;
+        } else {
+            setError('Вы должны быть авторизованы для привязки Steam');
+        }
+    };
+
     const linkFaceit = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -118,9 +128,7 @@ function Profile() {
                 <div>
                     <p>Steam: {user.steam_url || 'Не привязан'}</p>
                     {!user.steam_url && (
-                        <button onClick={() => window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/users/steam`}>
-                            Привязать Steam
-                        </button>
+                        <button onClick={linkSteam}>Привязать Steam</button>
                     )}
                 </div>
                 <div>

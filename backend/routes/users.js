@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/auth');
 const SteamAPI = require('steamapi').default;
-const passport = require('passport'); // Добавляем passport
+const passport = require('passport');
 
 const steam = new SteamAPI(process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY');
 
@@ -106,38 +106,36 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Маршрут для начала Steam авторизации
-router.get('/steam', passport.authenticate('steam', { session: false }));
+router.get('/steam', (req, res, next) => {
+    // Сохраняем authToken в сессии для callback
+    if (req.query.authToken) {
+        req.session.authToken = req.query.authToken;
+    }
+    passport.authenticate('steam', { session: false })(req, res, next);
+});
 
-// Callback для Steam авторизации
+// Callback для Steam авторизации (только привязка)
 router.get('/steam-callback', passport.authenticate('steam', { session: false }), async (req, res) => {
     try {
         console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
-        let user;
 
-        const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
-        console.log('Existing user:', existingUser.rows);
-        if (existingUser.rows.length > 0) {
-            user = existingUser.rows[0];
-        } else {
-            if (req.headers.authorization) {
-                const token = req.headers.authorization.split(' ')[1];
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                console.log('Linking Steam to user:', decoded);
-                await pool.query(
-                    'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
-                    [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
-                );
-                user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
-            } else {
-                console.log('Creating new user with Steam ID:', steamId);
-                const result = await pool.query(
-                    'INSERT INTO users (username, steam_id, steam_url) VALUES ($1, $2, $3) RETURNING *',
-                    [`steam_${steamId}`, steamId, `https://steamcommunity.com/profiles/${steamId}`]
-                );
-                user = result.rows[0];
-            }
+        // Проверяем наличие authToken в сессии
+        const authToken = req.session.authToken || req.query.authToken;
+        if (!authToken) {
+            return res.status(401).json({ error: 'Требуется авторизация для привязки Steam' });
         }
+
+        // Верифицируем токен и получаем пользователя
+        const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+        console.log('Linking Steam to user:', decoded);
+
+        // Привязываем Steam ID к существующему пользователю
+        await pool.query(
+            'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
+            [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
+        );
+        const user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
 
         const token = jwt.sign(
             { id: user.id, role: user.role || 'user', username: user.username },

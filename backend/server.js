@@ -29,24 +29,28 @@ app.use(passport.session());
 
 // Настройка Steam Strategy
 passport.use(new SteamStrategy({
-    returnURL: process.env.NODE_ENV === 'production'
-        ? 'https://1337community.com/api/users/steam-callback'
-        : 'http://localhost:3000/api/users/steam-callback',
-    realm: process.env.NODE_ENV === 'production'
-        ? 'https://1337community.com/'
-        : 'http://localhost:3000/',
-    apiKey: process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY'
+  returnURL: process.env.NODE_ENV === 'production'
+      ? 'https://1337community.com/api/users/steam-callback'
+      : 'http://localhost:3000/api/users/steam-callback',
+  realm: process.env.NODE_ENV === 'production'
+      ? 'https://1337community.com/'
+      : 'http://localhost:3000/',
+  apiKey: process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY'
 }, async (identifier, profile, done) => {
-    const steamId = profile.id;
-    try {
-        const user = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
-        if (user.rows.length > 0) {
-            return done(null, user.rows[0]);
-        }
-        return done(null, { steamId }); // Новый пользователь, сохраним позже
-    } catch (err) {
-        return done(err);
-    }
+  console.log('SteamStrategy identifier:', identifier);
+  console.log('SteamStrategy profile:', profile);
+  const steamId = profile.id;
+  try {
+      const user = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+      console.log('SteamStrategy user check:', user.rows);
+      if (user.rows.length > 0) {
+          return done(null, user.rows[0]);
+      }
+      return done(null, { steamId });
+  } catch (err) {
+      console.error('SteamStrategy error:', err);
+      return done(err);
+  }
 }));
 
 passport.serializeUser((user, done) => {
