@@ -106,13 +106,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Маршрут для начала Steam авторизации
-router.get('/steam', (req, res, next) => {
-    // Сохраняем authToken в сессии для callback
-    if (req.query.authToken) {
-        req.session.authToken = req.query.authToken;
-    }
-    passport.authenticate('steam', { session: false })(req, res, next);
-});
+router.get('/steam', passport.authenticate('steam', { session: false }));
 
 // Callback для Steam авторизации (только привязка)
 router.get('/steam-callback', passport.authenticate('steam', { session: false }), async (req, res) => {
@@ -120,8 +114,8 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
         console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
 
-        // Проверяем наличие authToken в сессии
-        const authToken = req.session.authToken || req.query.authToken;
+        // Проверяем наличие authToken в query
+        const authToken = req.query.authToken;
         if (!authToken) {
             return res.status(401).json({ error: 'Требуется авторизация для привязки Steam' });
         }
@@ -130,12 +124,22 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
         const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
         console.log('Linking Steam to user:', decoded);
 
+        // Проверяем, не привязан ли steam_id к другому пользователю
+        const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== decoded.id) {
+            return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
+        }
+
         // Привязываем Steam ID к существующему пользователю
         await pool.query(
             'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
             [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
         );
         const user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
 
         const token = jwt.sign(
             { id: user.id, role: user.role || 'user', username: user.username },
