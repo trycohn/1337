@@ -30,12 +30,8 @@ const io = new Server(server, {
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
   const allowedOrigins = process.env.NODE_ENV === 'production'
-      ? [
-          'https://1337brackets-frontend-9xfz.vercel.app',
-          'https://1337brackets-frontend.vercel.app',
-          'https://1337community.com' // Добавляем основной домен
-      ]
-      : ['http://localhost:3001', 'http://127.0.0.1:5500'];
+      ? ['https://1337community.com'] // Только основной домен
+      : ['http://localhost:3001', 'http://127.0.0.1:5500']; // Локальные домены остаются
   const origin = req.headers.origin || 'https://1337community.com'; // Запасной вариант для undefined
   console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
   if (allowedOrigins.includes(origin)) {
