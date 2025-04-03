@@ -5,10 +5,10 @@
   "main": "index.js",
   "proxy": "http://localhost:3000",
   "scripts": {
- "start": "NODE_OPTIONS='--no-deprecation' react-scripts start",
-  "build": "react-app-rewired build",
-  "test": "react-app-rewired test",
-  "eject": "react-scripts eject"
+    "start": "NODE_OPTIONS='--no-deprecation' react-scripts start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-scripts eject"
   },
   "repository": {
     "type": "git",
@@ -32,6 +32,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "react-app-rewired": "^2.2.1"
   }
 }
