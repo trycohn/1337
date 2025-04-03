@@ -45,18 +45,19 @@ passport.use(new SteamStrategy({
 }));
 
 passport.serializeUser((user, done) => {
-    console.log('Serialize user:', user);
-    done(null, user.id || user.steamId);
+  console.log('Serialize user:', user);
+  done(null, user.steamId); // Только steamId
 });
 
-passport.deserializeUser(async (id, done) => {
-    try {
-        const user = await pool.query('SELECT * FROM users WHERE id = $1 OR steam_id = $2', [id, id]);
-        console.log('Deserialize user:', user.rows[0]);
-        done(null, user.rows[0] || { steamId: id });
-    } catch (err) {
-        done(err);
-    }
+passport.deserializeUser(async (steamId, done) => {
+  console.log('Deserialize steamId:', steamId);
+  try {
+      const user = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+      console.log('Deserialize user:', user.rows[0]);
+      done(null, user.rows[0] || { steamId });
+  } catch (err) {
+      done(err);
+  }
 });
 
 // Настройка CORS для socket.io
