@@ -13,7 +13,7 @@ function App() {
                     <Route index element={<Home />} />
                     <Route path="/tournaments" element={<TournamentsPage />} />
                     <Route path="/tournaments/:id" element={<TournamentDetails />} />
-                    <Route path="/register" element={<div>Страница регистрации</div>} /> {/* Пример для ссылки */}
+                    <Route path="/register" element={<div>Страница для регистрации</div>} /> {/* Пример для ссылки */}
                     <Route path="/profile" element={<Profile />} /> {/* Добавляем маршрут для профиля */}
                 </Route>
             </Routes>
