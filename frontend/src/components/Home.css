@@ -852,3 +852,11 @@ header.header {
     font-size: 14px;
 }
 }
+
+.username-link {
+  color: #007bff;
+  text-decoration: none;
+}
+.username-link:hover {
+  text-decoration: underline;
+}
