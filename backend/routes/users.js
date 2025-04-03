@@ -7,6 +7,8 @@ const { authenticateToken } = require('../middleware/auth');
 const SteamAPI = require('steamapi').default;
 const passport = require('passport');
 
+// Убедимся, что STEAM_API_KEY загружается
+console.log('🔍 STEAM_API_KEY in users.js:', process.env.STEAM_API_KEY);
 const steam = new SteamAPI(process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY');
 
 // Регистрация нового пользователя
@@ -109,10 +111,18 @@ router.get('/me', authenticateToken, async (req, res) => {
 router.get('/steam', (req, res, next) => {
     const authToken = req.query.authToken;
     console.log('Steam authToken:', authToken);
-    passport.authenticate('steam', {
-        session: false,
-        state: authToken // Передаём authToken через state
-    })(req, res, next);
+    if (authToken) {
+        // Верифицируем токен перед началом
+        try {
+            const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+            console.log('Steam authToken decoded:', decoded);
+            req.session.authToken = authToken; // Сохраняем в сессии
+        } catch (err) {
+            console.error('Invalid authToken:', err);
+            return res.status(401).json({ error: 'Недействительный токен авторизации' });
+        }
+    }
+    passport.authenticate('steam', { session: false })(req, res, next);
 });
 
 // Callback для Steam авторизации (только привязка)
@@ -121,9 +131,9 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
         console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
 
-        // Извлекаем authToken из state
-        const authToken = req.query.state;
-        console.log('Steam callback, authToken from state:', authToken);
+        // Извлекаем authToken из сессии
+        const authToken = req.session.authToken;
+        console.log('Steam callback, authToken from session:', authToken);
         if (!authToken) {
             return res.status(401).json({ error: 'Требуется авторизация для привязки Steam' });
         }
