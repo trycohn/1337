@@ -2,6 +2,7 @@
 require('dotenv').config({ path: __dirname + '/.env' });
 
 console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET);
+console.log("🔍 NODE_ENV:", process.env.NODE_ENV); // Добавляем отладку
 
 const express = require('express');
 const pool = require('./db');
@@ -14,31 +15,32 @@ const server = http.createServer(app);
 
 // Настройка CORS для socket.io
 const io = new Server(server, {
-    cors: {
-        origin: process.env.NODE_ENV === 'production'
-            ? ['https://1337brackets-frontend-9xfz.vercel.app', 'https://1337brackets-frontend.vercel.app']
-            : ['http://localhost:3001', 'http://127.0.0.1:5500'],
-        methods: ['GET', 'POST'],
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization'],
-    },
-    path: '/socket.io',
-    transports: ['websocket', 'polling'],
-    allowEIO3: true,
+  cors: {
+      origin: process.env.NODE_ENV === 'production'
+          ? ['https://1337community.com']
+          : ['http://localhost:3001', 'http://127.0.0.1:5500'],
+      methods: ['GET', 'POST'],
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization'],
+  },
+  path: '/socket.io',
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
 });
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
   const allowedOrigins = process.env.NODE_ENV === 'production'
-      ? ['https://1337community.com'] // Только основной домен
-      : ['http://localhost:3001', 'http://127.0.0.1:5500']; // Локальные домены остаются
-  const origin = req.headers.origin || 'https://1337community.com'; // Запасной вариант для undefined
+      ? ['https://1337community.com']
+      : ['http://localhost:3001', 'http://127.0.0.1:5500'];
+  const origin = req.headers.origin || 'https://1337community.com';
+  console.log(`🔍 Текущие allowedOrigins: ${JSON.stringify(allowedOrigins)}`); // Отладка
   console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
   if (allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
       console.log(`🚫 Origin ${origin} не разрешён`);
-      return res.status(403).json({ error: 'Origin not allowed' }); // Явно отклоняем
+      return res.status(403).json({ error: 'Origin not allowed' });
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
