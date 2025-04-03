@@ -106,7 +106,14 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Маршрут для начала Steam авторизации
-router.get('/steam', passport.authenticate('steam', { session: false }));
+router.get('/steam', (req, res, next) => {
+    const authToken = req.query.authToken;
+    console.log('Steam authToken:', authToken);
+    passport.authenticate('steam', {
+        session: false,
+        state: authToken // Передаём authToken через state
+    })(req, res, next);
+});
 
 // Callback для Steam авторизации (только привязка)
 router.get('/steam-callback', passport.authenticate('steam', { session: false }), async (req, res) => {
@@ -114,8 +121,9 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
         console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
 
-        // Проверяем наличие authToken в query
-        const authToken = req.query.authToken;
+        // Извлекаем authToken из state
+        const authToken = req.query.state;
+        console.log('Steam callback, authToken from state:', authToken);
         if (!authToken) {
             return res.status(401).json({ error: 'Требуется авторизация для привязки Steam' });
         }
