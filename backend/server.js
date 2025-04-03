@@ -29,24 +29,29 @@ const io = new Server(server, {
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
-    const allowedOrigins = process.env.NODE_ENV === 'production'
-        ? ['https://1337brackets-frontend-9xfz.vercel.app', 'https://1337brackets-frontend.vercel.app']
-        : ['http://localhost:3001', 'http://127.0.0.1:5500'];
-    const origin = req.headers.origin;
-    console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-        console.log(`🚫 Origin ${origin} не разрешён`);
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    if (req.method === 'OPTIONS') {
-        console.log(`🔍 Обработка preflight-запроса (OPTIONS) для ${req.path}`);
-        return res.status(200).end();
-    }
-    next();
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+      ? [
+          'https://1337brackets-frontend-9xfz.vercel.app',
+          'https://1337brackets-frontend.vercel.app',
+          'https://1337community.com' // Добавляем основной домен
+      ]
+      : ['http://localhost:3001', 'http://127.0.0.1:5500'];
+  const origin = req.headers.origin || 'https://1337community.com'; // Запасной вариант для undefined
+  console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
+  if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+      console.log(`🚫 Origin ${origin} не разрешён`);
+      return res.status(403).json({ error: 'Origin not allowed' }); // Явно отклоняем
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+      console.log(`🔍 Обработка preflight-запроса (OPTIONS) для ${req.path}`);
+      return res.status(200).end();
+  }
+  next();
 });
 
 // Middleware для Express
