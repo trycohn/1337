@@ -45,13 +45,12 @@ function Layout() {
         if (token && !user) {
             fetchUser(token);
         }
-        // Проверяем URL на наличие токена после Steam callback
         const urlParams = new URLSearchParams(window.location.search);
         const steamToken = urlParams.get('token');
         if (steamToken) {
             localStorage.setItem('token', steamToken);
             fetchUser(steamToken);
-            navigate('/profile', { replace: true }); // Убираем token из URL
+            navigate('/profile', { replace: true });
         }
     }, [navigate, user]);
 
@@ -95,7 +94,8 @@ function Layout() {
     };
 
     const handleSteamLogin = () => {
-        window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/users/steam`;
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        window.location.href = `${baseUrl}/api/users/steam`; // Убраны лишние слэши
     };
 
     const handleLogout = () => {
