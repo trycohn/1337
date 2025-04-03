@@ -169,7 +169,7 @@ function Layout() {
                                 <button onClick={() => { setShowCreateForm(!showCreateForm); setIsMenuOpen(false); }}>
                                     Создать турнир
                                 </button>
-                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link> {/* Добавлена ссылка */}
+                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Профиль</Link> {/* Добавлена ссылка */}
                             </>
                         )}
                         {!user && (
