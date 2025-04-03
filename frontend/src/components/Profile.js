@@ -5,7 +5,6 @@ import './Profile.css';
 function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
-    const [steamId, setSteamId] = useState('');
     const [faceitId, setFaceitId] = useState('');
     const [verificationData, setVerificationData] = useState({
         fullName: '',
@@ -42,30 +41,6 @@ function Profile() {
             setStats(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки статистики');
-        }
-    };
-
-    const linkSteamManual = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/link-steam', { steamId }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUser({ ...user, steam_id: response.data.steamId, steam_url: response.data.steamUrl });
-            setSteamId('');
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка привязки Steam');
-        }
-    };
-
-    const linkSteamOpenID = () => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            // Перенаправляем с токеном в query (для простоты, в продакшене лучше использовать сессии)
-            window.location.href = `http://localhost:3000/api/users/link-steam?token=${token}`;
-        } else {
-            setError('Токен не найден. Пожалуйста, войдите в систему.');
         }
     };
 
@@ -141,15 +116,13 @@ function Profile() {
             <section>
                 <h3>Привязка профилей</h3>
                 <div>
-                    <input 
-                        value={steamId} 
-                        onChange={(e) => setSteamId(e.target.value)} 
-                        placeholder="Steam ID" 
-                    />
-                    <button onClick={linkSteamManual}>Привязать Steam (ручной ввод)</button>
-                    <button onClick={linkSteamOpenID}>Привязать через Steam</button>
+                    <p>Steam: {user.steam_url || 'Не привязан'}</p>
+                    {!user.steam_url && (
+                        <button onClick={() => window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/users/steam`}>
+                            Привязать Steam
+                        </button>
+                    )}
                 </div>
-                <p>Steam: {user.steam_url || 'Не привязан'}</p>
                 <div>
                     <input 
                         value={faceitId} 

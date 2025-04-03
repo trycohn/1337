@@ -45,6 +45,14 @@ function Layout() {
         if (token && !user) {
             fetchUser(token);
         }
+        // Проверяем URL на наличие токена после Steam callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const steamToken = urlParams.get('token');
+        if (steamToken) {
+            localStorage.setItem('token', steamToken);
+            fetchUser(steamToken);
+            navigate('/profile', { replace: true }); // Убираем token из URL
+        }
     }, [navigate, user]);
 
     useEffect(() => {
@@ -84,6 +92,10 @@ function Layout() {
             setError(error.response?.data?.message || 'Ошибка входа');
             console.error('❌ Ошибка входа:', error.response ? error.response.data : error.message);
         }
+    };
+
+    const handleSteamLogin = () => {
+        window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/users/steam`;
     };
 
     const handleLogout = () => {
@@ -156,9 +168,9 @@ function Layout() {
                 <div className="nav-container">
                     <button className="hamburger" onClick={toggleMenu}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 6H21V8H3V6Z" fill="#007bff" />
-                            <path d="M3 11H21V13H3V11Z" fill="#007bff" />
-                            <path d="M3 16H21V18H3V16Z" fill="#007bff" />
+                            <path d="M3 6H21V8H3V6Z" fill="#007bff"/>
+                            <path d="M3 11H21V13H3V11Z" fill="#007bff"/>
+                            <path d="M3 16H21V18H3V16Z" fill="#007bff"/>
                         </svg>
                     </button>
                     <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
@@ -169,7 +181,7 @@ function Layout() {
                                 <button onClick={() => { setShowCreateForm(!showCreateForm); setIsMenuOpen(false); }}>
                                     Создать турнир
                                 </button>
-                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Профиль</Link> {/* Добавлена ссылка */}
+                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                             </>
                         )}
                         {!user && (
@@ -182,7 +194,7 @@ function Layout() {
                         <div className="user-info">
                             <Link to="/profile" className="username-link">
                                 Привет, {user.username}!
-                            </Link> {/* Сделали ник кликабельным */}
+                            </Link>
                             <div className="notifications">
                                 <div className="bell-container" onClick={toggleNotifications}>
                                     <FontAwesomeIcon
@@ -269,6 +281,7 @@ function Layout() {
                                 required
                             />
                             <button type="submit">Войти</button>
+                            <button type="button" onClick={handleSteamLogin}>Войти через Steam</button>
                             {error && <span className="error">{error}</span>}
                         </form>
                     )}
