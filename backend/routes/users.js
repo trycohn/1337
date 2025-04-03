@@ -7,9 +7,6 @@ const { authenticateToken } = require('../middleware/auth');
 const SteamAPI = require('steamapi').default;
 const passport = require('passport');
 
-// Временное хранилище для authToken
-const authTokens = new Map();
-
 console.log('🔍 STEAM_API_KEY in users.js:', process.env.STEAM_API_KEY);
 const steam = new SteamAPI(process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY');
 
@@ -117,11 +114,10 @@ router.get('/steam', (req, res, next) => {
         try {
             const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
             console.log('Steam authToken decoded:', decoded);
-            const state = Math.random().toString(36).substring(2); // Генерируем уникальный state
-            authTokens.set(state, authToken); // Сохраняем в Map
-            console.log('authTokens after set:', Array.from(authTokens.entries()));
-            console.log('Generated state:', state);
-            passport.authenticate('steam', { session: false, state })(req, res, next);
+            passport.authenticate('steam', {
+                session: false,
+                state: authToken // Передаём authToken напрямую как state
+            })(req, res, next);
         } catch (err) {
             console.error('Invalid authToken:', err);
             return res.status(401).json({ error: 'Недействительный токен авторизации' });
@@ -137,12 +133,9 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
         console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
 
-        // Извлекаем state из query
-        const state = req.query.state;
-        console.log('Steam callback, state:', state);
-        const authToken = authTokens.get(state);
-        console.log('authTokens after get:', Array.from(authTokens.entries()));
-        console.log('Steam callback, authToken from map:', authToken);
+        // Извлекаем authToken из state
+        const authToken = req.query.state;
+        console.log('Steam callback, authToken from state:', authToken);
 
         if (authToken) {
             // Верифицируем токен и получаем пользователя
@@ -152,7 +145,6 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
             // Проверяем, не привязан ли steam_id к другому пользователю
             const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
             if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== decoded.id) {
-                authTokens.delete(state); // Удаляем использованный state
                 return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
             }
 
@@ -164,7 +156,6 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
             const user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
 
             if (!user) {
-                authTokens.delete(state);
                 return res.status(404).json({ error: 'Пользователь не найден' });
             }
 
@@ -175,10 +166,8 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
             );
 
             console.log('Redirecting with token:', token);
-            authTokens.delete(state); // Удаляем использованный state
             res.redirect(`https://1337community.com/profile?token=${token}`);
         } else {
-            // Если authToken отсутствует, не создаём нового пользователя (для будущей регистрации)
             console.log('No authToken provided, redirecting to login');
             res.redirect('https://1337community.com/');
         }
