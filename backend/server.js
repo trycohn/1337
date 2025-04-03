@@ -66,7 +66,7 @@ passport.deserializeUser(async (id, done) => {
 const io = new Server(server, {
     cors: {
         origin: process.env.NODE_ENV === 'production'
-            ? ['https://1337community.com']
+            ? ['https://1337community.com', 'https://www.1337community.com'] // Добавлен www
             : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'],
         methods: ['GET', 'POST'],
         credentials: true,
@@ -77,15 +77,19 @@ const io = new Server(server, {
     allowEIO3: true,
 });
 
-// Middleware для CORS
+// Middleware для обработки CORS вручную
 app.use((req, res, next) => {
     const allowedOrigins = process.env.NODE_ENV === 'production'
-        ? ['https://1337community.com']
+        ? ['https://1337community.com', 'https://www.1337community.com'] // Добавлен www
         : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
-    const origin = req.headers.origin || 'http://localhost:3000';
+    const origin = req.headers.origin || 'https://1337community.com'; // Запасной вариант для продакшена
     console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
+    console.log(`🔍 Все заголовки запроса:`, req.headers); // Отладка заголовков
+    console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`); // Проверка окружения
+    console.log(`🔍 Разрешённые origins: ${allowedOrigins}`); // Отладка списка origins
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
+        console.log(`✅ Origin ${origin} разрешён`);
     } else {
         console.log(`🚫 Origin ${origin} не разрешён`);
         return res.status(403).json({ error: 'Origin not allowed' });
