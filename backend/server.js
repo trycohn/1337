@@ -2,6 +2,7 @@ require('dotenv').config({ path: __dirname + '/.env' });
 
 console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET);
 console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
+console.log("🔍 STEAM_API_KEY:", process.env.STEAM_API_KEY); // Добавили отладку ключа
 
 const express = require('express');
 const pool = require('./db');
@@ -29,37 +30,36 @@ app.use(passport.session());
 
 // Настройка Steam Strategy
 passport.use(new SteamStrategy({
-  returnURL: process.env.NODE_ENV === 'production'
-      ? 'https://1337community.com/api/users/steam-callback'
-      : 'http://localhost:3000/api/users/steam-callback',
-  realm: process.env.NODE_ENV === 'production'
-      ? 'https://1337community.com/'
-      : 'http://localhost:3000/',
-  apiKey: process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY'
+    returnURL: process.env.NODE_ENV === 'production'
+        ? 'https://1337community.com/api/users/steam-callback'
+        : 'http://localhost:3000/api/users/steam-callback',
+    realm: process.env.NODE_ENV === 'production'
+        ? 'https://1337community.com/'
+        : 'http://localhost:3000/',
+    apiKey: process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY'
 }, async (identifier, profile, done) => {
-  console.log('SteamStrategy identifier:', identifier);
-  console.log('SteamStrategy profile:', profile);
-  const steamId = profile.id;
-  try {
-      const user = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
-      console.log('SteamStrategy user check:', user.rows);
-      if (user.rows.length > 0) {
-          return done(null, user.rows[0]);
-      }
-      return done(null, { steamId });
-  } catch (err) {
-      console.error('SteamStrategy error:', err);
-      return done(err);
-  }
+    console.log('SteamStrategy identifier:', identifier);
+    console.log('SteamStrategy profile:', profile);
+    const steamId = profile.id;
+    try {
+        const user = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        console.log('SteamStrategy user check:', user.rows);
+        return done(null, { steamId });
+    } catch (err) {
+        console.error('SteamStrategy error:', err);
+        return done(err);
+    }
 }));
 
 passport.serializeUser((user, done) => {
+    console.log('Serialize user:', user);
     done(null, user.id || user.steamId);
 });
 
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await pool.query('SELECT * FROM users WHERE id = $1 OR steam_id = $2', [id, id]);
+        console.log('Deserialize user:', user.rows[0]);
         done(null, user.rows[0] || { steamId: id });
     } catch (err) {
         done(err);
@@ -70,7 +70,7 @@ passport.deserializeUser(async (id, done) => {
 const io = new Server(server, {
     cors: {
         origin: process.env.NODE_ENV === 'production'
-            ? ['https://1337community.com', 'https://www.1337community.com'] // Добавлен www
+            ? ['https://1337community.com', 'https://www.1337community.com']
             : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'],
         methods: ['GET', 'POST'],
         credentials: true,
@@ -84,13 +84,13 @@ const io = new Server(server, {
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
     const allowedOrigins = process.env.NODE_ENV === 'production'
-        ? ['https://1337community.com', 'https://www.1337community.com'] // Добавлен www
+        ? ['https://1337community.com', 'https://www.1337community.com']
         : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
-    const origin = req.headers.origin || 'https://1337community.com'; // Запасной вариант для продакшена
+    const origin = req.headers.origin || 'https://1337community.com';
     console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
-    console.log(`🔍 Все заголовки запроса:`, req.headers); // Отладка заголовков
-    console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`); // Проверка окружения
-    console.log(`🔍 Разрешённые origins: ${allowedOrigins}`); // Отладка списка origins
+    console.log(`🔍 Все заголовки запроса:`, req.headers);
+    console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`);
+    console.log(`🔍 Разрешённые origins: ${allowedOrigins}`);
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         console.log(`✅ Origin ${origin} разрешён`);
