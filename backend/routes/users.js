@@ -111,25 +111,26 @@ router.get('/steam', passport.authenticate('steam', { session: false }));
 // Callback для Steam авторизации
 router.get('/steam-callback', passport.authenticate('steam', { session: false }), async (req, res) => {
     try {
+        console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
         let user;
 
-        // Проверяем, есть ли пользователь с таким Steam ID
         const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        console.log('Existing user:', existingUser.rows);
         if (existingUser.rows.length > 0) {
             user = existingUser.rows[0];
         } else {
-            // Если пользователь авторизован через JWT, привязываем Steam ID
             if (req.headers.authorization) {
                 const token = req.headers.authorization.split(' ')[1];
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                console.log('Linking Steam to user:', decoded);
                 await pool.query(
                     'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
                     [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
                 );
                 user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
             } else {
-                // Если нет JWT, создаём нового пользователя (опционально)
+                console.log('Creating new user with Steam ID:', steamId);
                 const result = await pool.query(
                     'INSERT INTO users (username, steam_id, steam_url) VALUES ($1, $2, $3) RETURNING *',
                     [`steam_${steamId}`, steamId, `https://steamcommunity.com/profiles/${steamId}`]
@@ -139,12 +140,12 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
         }
 
         const token = jwt.sign(
-            { id: user.id, role: user.role, username: user.username },
+            { id: user.id, role: user.role || 'user', username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // Перенаправляем на фронтенд с токеном
+        console.log('Redirecting with token:', token);
         res.redirect(`https://1337community.com/profile?token=${token}`);
     } catch (err) {
         console.error('Ошибка в steam-callback:', err);
