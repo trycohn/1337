@@ -32,6 +32,7 @@ router.get('/', async (req, res) => {
 
 // Получение списка игр
 router.get('/games', async (req, res) => {
+    console.log('🔍 Запрос к /api/tournaments/games получен');
     try {
         const result = await pool.query('SELECT id, name FROM games');
         console.log('🔍 Games fetched:', result.rows);
