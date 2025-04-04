@@ -168,6 +168,10 @@ function Profile() {
         }
     };
 
+    const unlinkSteam = async () => {
+        console.log('test...');
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
