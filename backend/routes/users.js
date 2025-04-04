@@ -108,7 +108,6 @@ router.get('/steam-callback', async (req, res) => {
         console.log('Steam callback query:', req.query);
         const openidParams = req.query;
 
-        // Проверяем подлинность ответа от Steam
         const checkAuthUrl = 'https://steamcommunity.com/openid/login';
         const authParams = {
             ...openidParams,
@@ -127,7 +126,6 @@ router.get('/steam-callback', async (req, res) => {
         const steamId = openidParams['openid.claimed_id'].split('/').pop();
         console.log('Extracted Steam ID:', steamId);
 
-        // Проверяем, существует ли пользователь с этим steam_id
         const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         console.log('Existing user with steam_id:', existingUser.rows);
 
@@ -142,7 +140,6 @@ router.get('/steam-callback', async (req, res) => {
             return res.redirect(`https://1337community.com/profile?token=${token}`);
         }
 
-        // Если пользователь не авторизован, перенаправляем на профиль с steamId
         console.log('No existing user, redirecting with steamId:', steamId);
         res.redirect(`https://1337community.com/profile?steamId=${steamId}`);
     } catch (err) {
@@ -162,14 +159,12 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
 
     try {
         console.log('Linking Steam ID:', steamId, 'to user:', req.user.id);
-        // Проверяем, не привязан ли steam_id к другому пользователю
         const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== req.user.id) {
             console.error('Steam ID already linked to another user:', existingSteamUser.rows[0].id);
             return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
         }
 
-        // Привязываем Steam ID к текущему пользователю
         await pool.query(
             'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
             [steamId, `https://steamcommunity.com/profiles/${steamId}`, req.user.id]
@@ -180,6 +175,49 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('Ошибка привязки Steam:', err);
         res.status(500).json({ error: 'Не удалось привязать Steam' });
+    }
+});
+
+// Изменение никнейма
+router.post('/update-username', authenticateToken, async (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ message: 'Никнейм обязателен' });
+    }
+
+    try {
+        const usernameCheck = await pool.query('SELECT * FROM users WHERE username = $1 AND id != $2', [username, req.user.id]);
+        if (usernameCheck.rows.length > 0) {
+            return res.status(400).json({ message: 'Этот никнейм уже занят' });
+        }
+
+        await pool.query('UPDATE users SET username = $1 WHERE id = $2', [username, req.user.id]);
+        res.json({ message: 'Никнейм успешно изменён' });
+    } catch (err) {
+        console.error('Ошибка изменения никнейма:', err);
+        res.status(500).json({ error: 'Не удалось изменить никнейм' });
+    }
+});
+
+// Получение никнейма Steam
+router.get('/steam-nickname', authenticateToken, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT steam_id FROM users WHERE id = $1', [req.user.id]);
+        const steamId = userResult.rows[0].steam_id;
+
+        if (!steamId) {
+            return res.status(400).json({ error: 'Steam ID не привязан' });
+        }
+
+        const apiKey = process.env.STEAM_API_KEY; // Укажи свой Steam API ключ в .env
+        const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
+        const steamNickname = response.data.response.players[0].personaname;
+
+        res.json({ steamNickname });
+    } catch (err) {
+        console.error('Ошибка получения никнейма Steam:', err);
+        res.status(500).json({ error: 'Не удалось получить никнейм Steam' });
     }
 });
 

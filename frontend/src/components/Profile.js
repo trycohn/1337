@@ -6,6 +6,7 @@ function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
     const [faceitId, setFaceitId] = useState('');
+    const [newUsername, setNewUsername] = useState(''); // Новое состояние для никнейма
     const [verificationData, setVerificationData] = useState({
         fullName: '',
         birthDate: '',
@@ -20,6 +21,7 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUser(response.data);
+            setNewUsername(response.data.username); // Устанавливаем текущий никнейм
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки данных пользователя');
         }
@@ -60,18 +62,45 @@ function Profile() {
         }
     };
 
+    const updateUsername = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await api.post('/api/users/update-username', { username: newUsername }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(prevUser => prevUser ? { ...prevUser, username: newUsername } : null);
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка изменения никнейма');
+        }
+    };
+
+    const setSteamNickname = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await api.get('/api/users/steam-nickname', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const steamNickname = response.data.steamNickname;
+            setNewUsername(steamNickname);
+            await updateUsername(); // Сразу обновляем никнейм
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка получения никнейма Steam');
+        }
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
             fetchUserData(token);
             fetchStats(token);
             const urlParams = new URLSearchParams(window.location.search);
-            const steamId = urlParams.get('steamId'); // Изменено с openid.claimed_id на steamId
+            const steamId = urlParams.get('steamId');
             if (steamId) {
                 handleSteamCallback(steamId, token);
             }
         }
-    }, []); // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const linkFaceit = async () => {
         try {
@@ -138,6 +167,16 @@ function Profile() {
             <section>
                 <h3>Данные пользователя</h3>
                 <p>Имя пользователя: {user.username}</p>
+                <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="Новый никнейм"
+                />
+                <button onClick={updateUsername}>Изменить никнейм</button>
+                {user.steam_id && (
+                    <button onClick={setSteamNickname}>Установить никнейм Steam</button>
+                )}
                 <p>Email: {user.email}</p>
                 <p>Статус верификации: {user.is_verified ? 'Верифицирован' : 'Не верифицирован'}</p>
             </section>
