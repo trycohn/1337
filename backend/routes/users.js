@@ -114,10 +114,13 @@ router.get('/steam-callback', async (req, res) => {
             ...openidParams,
             'openid.mode': 'check_authentication'
         };
+        console.log('Checking Steam authentication with params:', authParams);
         const response = await axios.get(checkAuthUrl, { params: authParams });
+        console.log('Steam auth response:', response.data);
         const isValid = response.data.includes('is_valid:true');
 
         if (!isValid) {
+            console.error('Steam authentication failed');
             return res.status(401).json({ error: 'Недействительный ответ от Steam' });
         }
 
@@ -126,6 +129,8 @@ router.get('/steam-callback', async (req, res) => {
 
         // Проверяем, существует ли пользователь с этим steam_id
         const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        console.log('Existing user with steam_id:', existingUser.rows);
+
         if (existingUser.rows.length > 0) {
             const user = existingUser.rows[0];
             const token = jwt.sign(
@@ -133,10 +138,12 @@ router.get('/steam-callback', async (req, res) => {
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
+            console.log('User exists, redirecting with token:', token);
             return res.redirect(`https://1337community.com/profile?token=${token}`);
         }
 
-        // Если пользователь не авторизован, перенаправляем на страницу логина с параметром steamId
+        // Если пользователь не авторизован, перенаправляем на профиль с steamId
+        console.log('No existing user, redirecting with steamId:', steamId);
         res.redirect(`https://1337community.com/profile?steamId=${steamId}`);
     } catch (err) {
         console.error('Ошибка в steam-callback:', err);
@@ -149,13 +156,16 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
     const { steamId } = req.body;
 
     if (!steamId) {
+        console.error('No steamId provided in /link-steam');
         return res.status(400).json({ message: 'Steam ID обязателен' });
     }
 
     try {
+        console.log('Linking Steam ID:', steamId, 'to user:', req.user.id);
         // Проверяем, не привязан ли steam_id к другому пользователю
         const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== req.user.id) {
+            console.error('Steam ID already linked to another user:', existingSteamUser.rows[0].id);
             return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
         }
 
@@ -164,6 +174,7 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
             'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
             [steamId, `https://steamcommunity.com/profiles/${steamId}`, req.user.id]
         );
+        console.log('Steam ID linked successfully to user:', req.user.id);
 
         res.json({ message: 'Steam успешно привязан' });
     } catch (err) {
