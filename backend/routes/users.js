@@ -117,16 +117,19 @@ router.get('/steam', (req, res, next) => {
             return res.status(401).json({ error: 'Недействительный токен авторизации' });
         }
     } else {
-        passport.authenticate('steam', { session: false })(req, res, next); // Без authToken для будущей регистрации
+        passport.authenticate('steam', { session: false })(req, res, next);
     }
 });
 
 // Callback для Steam авторизации
 router.get('/steam-callback', passport.authenticate('steam', { session: false }), async (req, res) => {
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN'); // Начинаем транзакцию
+
         console.log('Steam callback, req.user:', req.user);
         const steamId = req.user.steamId;
-        const authToken = req.authToken; // Извлекаем authToken из запроса
+        const authToken = req.authToken;
         console.log('Steam callback, authToken:', authToken);
 
         if (authToken) {
@@ -134,32 +137,38 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
             const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
             console.log('Linking Steam to user:', decoded);
 
-            // Проверяем, не привязан ли steam_id к другому пользователю
-            const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
-            if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== decoded.id) {
-                // Копируем steam_id и steam_url в существующий профиль
-                await pool.query(
-                    'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
-                    [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
-                );
-                console.log('Steam data copied to existing user:', decoded.id);
+            // Находим пользователя с этим steam_id (нового пользователя)
+            const existingSteamUser = await client.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+            if (existingSteamUser.rows.length > 0) {
+                const newUserId = existingSteamUser.rows[0].id;
 
-                // Удаляем нового пользователя, если он был создан
-                if (existingSteamUser.rows[0].id !== decoded.id) {
-                    await pool.query('DELETE FROM users WHERE id = $1', [existingSteamUser.rows[0].id]);
-                    console.log('New user deleted:', existingSteamUser.rows[0].id);
+                // Проверяем, не привязан ли steam_id к другому пользователю (кроме decoded.id)
+                if (newUserId !== decoded.id) {
+                    // Переносим steam_id и steam_url в профиль decoded.id
+                    await client.query(
+                        'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
+                        [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
+                    );
+                    console.log('Steam data transferred to user:', decoded.id);
+
+                    // Удаляем нового пользователя
+                    await client.query('DELETE FROM users WHERE id = $1', [newUserId]);
+                    console.log('New user deleted:', newUserId);
+                } else {
+                    console.log('Steam ID already linked to this user:', decoded.id);
                 }
             } else {
-                // Если steam_id ещё не привязан, просто обновляем профиль
-                await pool.query(
+                // Если новый пользователь не был создан, просто обновляем steam_id
+                await client.query(
                     'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
                     [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
                 );
+                console.log('Steam ID linked to user:', decoded.id);
             }
 
-            const user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
+            const user = (await client.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
             if (!user) {
-                return res.status(404).json({ error: 'Пользователь не найден' });
+                throw new Error('Пользователь не найден');
             }
 
             const token = jwt.sign(
@@ -169,12 +178,13 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
             );
 
             console.log('Redirecting with token:', token);
+            await client.query('COMMIT'); // Завершаем транзакцию
             res.redirect(`https://1337community.com/profile?token=${token}`);
         } else {
-            // Если authToken отсутствует, создаём нового пользователя (для будущей регистрации)
+            // Создание нового пользователя, если authToken отсутствует
             const newUsername = `steam_${steamId}`;
-            const result = await pool.query(
-                'INSERT INTO users (username, steam_id, steam_url) VALUES ($1, $2, $3) RETURNING id, username, role',
+            const result = await client.query(
+                'INSERT INTO users (username, steam_id, steam_url) VALUES ($1, $2, $3) ON CONFLICT (steam_id) DO UPDATE SET username = EXCLUDED.username RETURNING id, username, role',
                 [newUsername, steamId, `https://steamcommunity.com/profiles/${steamId}`]
             );
             const newUser = result.rows[0];
@@ -186,11 +196,15 @@ router.get('/steam-callback', passport.authenticate('steam', { session: false })
             );
 
             console.log('New user created and redirecting with token:', token);
+            await client.query('COMMIT'); // Завершаем транзакцию
             res.redirect(`https://1337community.com/profile?token=${token}`);
         }
     } catch (err) {
+        await client.query('ROLLBACK'); // Откатываем транзакцию при ошибке
         console.error('Ошибка в steam-callback:', err);
         res.status(500).json({ error: 'Ошибка авторизации через Steam' });
+    } finally {
+        client.release();
     }
 });
 
