@@ -2,79 +2,15 @@ require('dotenv').config({ path: __dirname + '/.env' });
 
 console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET);
 console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
-console.log("🔍 STEAM_API_KEY:", process.env.STEAM_API_KEY);
 
 const express = require('express');
 const pool = require('./db');
 const http = require('http');
 const { Server } = require('socket.io');
-const passport = require('passport');
-const SteamStrategy = require('passport-steam').Strategy;
-const session = require('express-session');
 const tournamentsRouter = require('./routes/tournaments');
 
 const app = express();
 const server = http.createServer(app);
-
-// Настройка сессий (нужна для passport, но не для authToken)
-app.use(session({
-    secret: process.env.JWT_SECRET || 'your_session_secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
-}));
-
-// Инициализация Passport
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Настройка Steam Strategy
-passport.use(new SteamStrategy({
-    returnURL: process.env.NODE_ENV === 'production'
-        ? 'https://1337community.com/api/users/steam-callback'
-        : 'http://localhost:3000/api/users/steam-callback',
-    realm: process.env.NODE_ENV === 'production'
-        ? 'https://1337community.com/'
-        : 'http://localhost:3000/',
-    apiKey: process.env.STEAM_API_KEY || 'YOUR_STEAM_API_KEY'
-}, async (identifier, profile, done) => {
-    console.log('SteamStrategy identifier:', identifier);
-    console.log('SteamStrategy profile:', profile);
-    const steamId = profile.id;
-    return done(null, { steamId }); // Только steamId, без создания пользователя
-}));
-
-passport.serializeUser((user, done) => {
-    console.log('Serialize user:', user);
-    done(null, user.steamId); // Сериализуем только steamId
-});
-
-passport.deserializeUser(async (steamId, done) => {
-    console.log('Deserialize steamId:', steamId);
-    try {
-        const user = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
-        console.log('Deserialize user:', user.rows[0]);
-        done(null, user.rows[0] || { steamId }); // Если пользователя нет, возвращаем только steamId
-    } catch (err) {
-        console.error('Deserialize error:', err);
-        done(err);
-    }
-});
-
-// Настройка CORS для socket.io
-const io = new Server(server, {
-    cors: {
-        origin: process.env.NODE_ENV === 'production'
-            ? ['https://1337community.com', 'https://www.1337community.com']
-            : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'],
-        methods: ['GET', 'POST'],
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization'],
-    },
-    path: '/socket.io',
-    transports: ['websocket', 'polling'],
-    allowEIO3: true,
-});
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
@@ -141,6 +77,21 @@ app.use('/api', (req, res) => {
 app.use((req, res) => {
     console.log(`404 для пути: ${req.path}`);
     res.status(404).json({ error: 'Маршрут не найден' });
+});
+
+// Настройка Socket.IO
+const io = new Server(server, {
+    cors: {
+        origin: process.env.NODE_ENV === 'production'
+            ? ['https://1337community.com', 'https://www.1337community.com']
+            : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'],
+        methods: ['GET', 'POST'],
+        credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    },
+    path: '/socket.io',
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
 });
 
 io.on('connection', (socket) => {

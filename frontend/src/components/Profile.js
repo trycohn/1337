@@ -19,6 +19,12 @@ function Profile() {
         if (token) {
             fetchUserData(token);
             fetchStats(token);
+            // Обработка callback от Steam
+            const urlParams = new URLSearchParams(window.location.search);
+            const steamId = urlParams.get('steamId');
+            if (steamId) {
+                linkSteamCallback(steamId, token);
+            }
         }
     }, []);
 
@@ -48,9 +54,23 @@ function Profile() {
         const token = localStorage.getItem('token');
         if (token) {
             const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-            window.location.href = `${baseUrl}/api/users/steam?authToken=${token}`;
+            const steamLoginUrl = `https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_immediate&openid.return_to=${baseUrl}/profile&openid.realm=${baseUrl}&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select`;
+            window.open(steamLoginUrl, 'steamLogin', 'width=800,height=600');
         } else {
             setError('Вы должны быть авторизованы для привязки Steam');
+        }
+    };
+
+    const linkSteamCallback = async (steamId, token) => {
+        try {
+            const response = await api.post('/api/users/link-steam', { steamId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser({ ...user, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` });
+            setError('');
+            window.history.replaceState({}, document.title, '/profile'); // Убираем steamId из URL
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка привязки Steam');
         }
     };
 
