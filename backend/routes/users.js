@@ -178,6 +178,17 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
     }
 });
 
+// отвязка Steam ID
+router.post('/unlink-steam', authenticateToken, async (req, res) => {
+    try {
+        await pool.query('UPDATE users SET steam_id = NULL, steam_url = NULL WHERE id = $1', [req.user.id]);
+        res.json({ message: 'Steam отвязан' });
+    } catch (err) {
+        console.error('Ошибка отвязки Steam:', err);
+        res.status(500).json({ error: 'Не удалось отвязать Steam' });
+    }
+});
+
 // Изменение никнейма
 router.post('/update-username', authenticateToken, async (req, res) => {
     const { username } = req.body;
