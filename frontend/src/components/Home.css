@@ -61,24 +61,30 @@ header.header {
   display: flex;
   gap: 10px;
   transition: all 0.3s ease;
+  align-items: center; /* Добавляем вертикальное выравнивание */
 }
 
 .navigation a,
 .navigation button {
-  text-decoration: none;
-  color: #2a2a2a;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
+    text-decoration: none;
+    color: #2a2a2a;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px; /* Устанавливаем единый padding */
+    font-family: inherit;
+    font-size: 16px; /* Фиксируем размер шрифта */
+    line-height: 1; /* Устанавливаем одинаковую высоту строки */
+    display: inline-flex; /* Унифицируем display */
+    align-items: center; /* Центрируем содержимое по вертикали */
+    justify-content: center; /* Центрируем содержимое по горизонтали */
+    height: 32px; /* Фиксируем высоту для всех элементов */
+    box-sizing: border-box; /* Учитываем padding в общей высоте */
 }
 
 .navigation a:hover,
 .navigation button:hover {
-  color: #0056b3;
+    color: #0056b3;
 }
 
 /* Стили для авторизации и профиля */
