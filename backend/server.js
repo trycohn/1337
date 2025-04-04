@@ -14,29 +14,25 @@ const server = http.createServer(app);
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
-    const allowedOrigins = process.env.NODE_ENV === 'production'
-        ? ['https://1337community.com', 'https://www.1337community.com']
-        : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
-    const origin = req.headers.origin || 'https://1337community.com';
-    console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
-    console.log(`🔍 Все заголовки запроса:`, req.headers);
-    console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`);
-    console.log(`🔍 Разрешённые origins: ${allowedOrigins}`);
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        console.log(`✅ Origin ${origin} разрешён`);
-    } else {
-        console.log(`🚫 Origin ${origin} не разрешён`);
-        return res.status(403).json({ error: 'Origin not allowed' });
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    if (req.method === 'OPTIONS') {
-        console.log(`🔍 Обработка preflight-запроса (OPTIONS) для ${req.path}`);
-        return res.status(200).end();
-    }
-    next();
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+      ? ['https://1337community.com', 'https://www.1337community.com']
+      : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
+  const origin = req.headers.origin || 'https://1337community.com';
+  console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
+  console.log(`🔍 Все заголовки запроса:`, req.headers);
+  console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`);
+  console.log(`🔍 Разрешённые origins: ${allowedOrigins}`);
+  // Временно разрешаем любой origin для теста
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  console.log(`✅ Origin ${origin} разрешён (временная настройка)`);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+      console.log(`🔍 Обработка preflight-запроса (OPTIONS) для ${req.path}`);
+      return res.status(200).end();
+  }
+  next();
 });
 
 app.use((req, res, next) => {
