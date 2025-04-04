@@ -199,6 +199,7 @@ function Profile() {
                     {!user.steam_url && (
                         <button onClick={linkSteam}>Привязать Steam</button>
                     )}
+                    <button onClick={unlinkSteam}>Отвязать стим</button>
                 </div>
                 <div>
                     <input 
