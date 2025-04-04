@@ -64,7 +64,18 @@ function Profile() {
         }
     };
 
-    
+    const unlinkSteam = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            await api.post('/api/users/unlink-steam', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(prevUser => prevUser ? { ...prevUser, steam_id: null, steam_url: null } : null);
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отвязки Steam');
+        }
+    };
 
     const updateUsername = async () => {
         const token = localStorage.getItem('token');
