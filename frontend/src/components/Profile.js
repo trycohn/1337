@@ -14,20 +14,6 @@ function Profile() {
     const [emailToken, setEmailToken] = useState('');
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetchUserData(token);
-            fetchStats(token);
-            const urlParams = new URLSearchParams(window.location.search);
-            const openidClaimedId = urlParams.get('openid.claimed_id');
-            if (openidClaimedId) {
-                const steamId = openidClaimedId.split('/').pop();
-                handleSteamCallback(steamId, token);
-            }
-        }
-    }, [handleSteamCallback]);
-
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -55,7 +41,7 @@ function Profile() {
         if (token) {
             const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
             const steamLoginUrl = `https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_setup&openid.return_to=${baseUrl}/api/users/steam-callback&openid.realm=${baseUrl}&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select`;
-            window.location.href = steamLoginUrl; // Перенаправляем на Steam
+            window.location.href = steamLoginUrl;
         } else {
             setError('Вы должны быть авторизованы для привязки Steam');
         }
@@ -66,13 +52,27 @@ function Profile() {
             const response = await api.post('/api/users/link-steam', { steamId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser({ ...user, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` });
+            setUser(prevUser => prevUser ? { ...prevUser, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` } : null);
             setError('');
-            window.history.replaceState({}, document.title, '/profile'); // Убираем параметры из URL
+            window.history.replaceState({}, document.title, '/profile');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка привязки Steam');
         }
     };
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetchUserData(token);
+            fetchStats(token);
+            const urlParams = new URLSearchParams(window.location.search);
+            const openidClaimedId = urlParams.get('openid.claimed_id');
+            if (openidClaimedId) {
+                const steamId = openidClaimedId.split('/').pop();
+                handleSteamCallback(steamId, token);
+            }
+        }
+    }, []); // eslint-disable-next-line react-hooks/exhaustive-deps
 
     const linkFaceit = async () => {
         try {
@@ -80,7 +80,7 @@ function Profile() {
             const response = await api.post('/api/users/link-faceit', { faceitId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser({ ...user, faceit_id: response.data.faceitId });
+            setUser(prevUser => prevUser ? { ...prevUser, faceit_id: response.data.faceitId } : null);
             setFaceitId('');
             setError('');
         } catch (err) {
@@ -94,7 +94,7 @@ function Profile() {
             const response = await api.post('/api/users/verify', verificationData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser({ ...user, ...response.data.user });
+            setUser(prevUser => prevUser ? { ...prevUser, ...response.data.user } : null);
             setVerificationData({ fullName: '', birthDate: '', avatarUrl: '' });
             setError('');
         } catch (err) {
@@ -121,7 +121,7 @@ function Profile() {
             await api.post('/api/users/confirm-email', { token: emailToken }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser({ ...user, is_verified: true });
+            setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null);
             setEmailToken('');
             setError('');
         } catch (err) {
