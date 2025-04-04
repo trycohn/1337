@@ -19,15 +19,14 @@ function Profile() {
         if (token) {
             fetchUserData(token);
             fetchStats(token);
-            // Обработка callback от Steam OpenID
             const urlParams = new URLSearchParams(window.location.search);
             const openidClaimedId = urlParams.get('openid.claimed_id');
             if (openidClaimedId) {
-                const steamId = openidClaimedId.split('/').pop(); // Извлекаем Steam ID
+                const steamId = openidClaimedId.split('/').pop();
                 handleSteamCallback(steamId, token);
             }
         }
-    }, []);
+    }, [handleSteamCallback]);
 
     const fetchUserData = async (token) => {
         try {
