@@ -66,9 +66,8 @@ function Profile() {
             fetchUserData(token);
             fetchStats(token);
             const urlParams = new URLSearchParams(window.location.search);
-            const openidClaimedId = urlParams.get('openid.claimed_id');
-            if (openidClaimedId) {
-                const steamId = openidClaimedId.split('/').pop();
+            const steamId = urlParams.get('steamId'); // Изменено с openid.claimed_id на steamId
+            if (steamId) {
                 handleSteamCallback(steamId, token);
             }
         }
