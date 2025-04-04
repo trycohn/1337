@@ -14,8 +14,8 @@ function Profile() {
     });
     const [emailToken, setEmailToken] = useState('');
     const [error, setError] = useState('');
-    const [showModal, setShowModal] = useState(false); // Состояние для модального окна
-    const [steamNickname, setSteamNickname] = useState(''); // Никнейм из Steam
+    const [showModal, setShowModal] = useState(false);
+    const [steamNickname, setSteamNickname] = useState(''); // Оставляем как есть
 
     const fetchUserData = async (token) => {
         try {
@@ -77,14 +77,14 @@ function Profile() {
         }
     };
 
-    const setSteamNickname = async () => {
+    const fetchAndSetSteamNickname = async () => { // Переименованная функция
         const token = localStorage.getItem('token');
         try {
             const response = await api.get('/api/users/steam-nickname', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSteamNickname(response.data.steamNickname);
-            setShowModal(true); // Показываем модальное окно
+            setShowModal(true);
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка получения никнейма Steam');
         }
@@ -186,7 +186,7 @@ function Profile() {
                 />
                 <button onClick={updateUsername}>Изменить никнейм</button>
                 {user.steam_id && (
-                    <button onClick={setSteamNickname}>Установить никнейм Steam</button>
+                    <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button> // Используем новую функцию
                 )}
                 <p>Email: {user.email}</p>
                 <p>Статус верификации: {user.is_verified ? 'Верифицирован' : 'Не верифицирован'}</p>
