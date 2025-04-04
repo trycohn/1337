@@ -6,7 +6,7 @@ function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
     const [faceitId, setFaceitId] = useState('');
-    const [newUsername, setNewUsername] = useState(''); // Новое состояние для никнейма
+    const [newUsername, setNewUsername] = useState('');
     const [verificationData, setVerificationData] = useState({
         fullName: '',
         birthDate: '',
@@ -14,6 +14,8 @@ function Profile() {
     });
     const [emailToken, setEmailToken] = useState('');
     const [error, setError] = useState('');
+    const [showModal, setShowModal] = useState(false); // Состояние для модального окна
+    const [steamNickname, setSteamNickname] = useState(''); // Никнейм из Steam
 
     const fetchUserData = async (token) => {
         try {
@@ -21,7 +23,7 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUser(response.data);
-            setNewUsername(response.data.username); // Устанавливаем текущий никнейм
+            setNewUsername(response.data.username);
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки данных пользователя');
         }
@@ -81,12 +83,21 @@ function Profile() {
             const response = await api.get('/api/users/steam-nickname', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const steamNickname = response.data.steamNickname;
-            setNewUsername(steamNickname);
-            await updateUsername(); // Сразу обновляем никнейм
+            setSteamNickname(response.data.steamNickname);
+            setShowModal(true); // Показываем модальное окно
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка получения никнейма Steam');
         }
+    };
+
+    const confirmSteamNickname = async () => {
+        setNewUsername(steamNickname);
+        await updateUsername();
+        setShowModal(false);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
     };
 
     useEffect(() => {
@@ -258,6 +269,16 @@ function Profile() {
                     <p>Статистика загружается...</p>
                 )}
             </section>
+
+            {showModal && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <p>Твой никнейм в Steam "{steamNickname}", устанавливаем в качестве основного на профиль?</p>
+                        <button onClick={confirmSteamNickname}>Да</button>
+                        <button onClick={closeModal}>Нет</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
