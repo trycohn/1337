@@ -19,11 +19,12 @@ function Profile() {
         if (token) {
             fetchUserData(token);
             fetchStats(token);
-            // Обработка callback от Steam
+            // Обработка callback от Steam OpenID
             const urlParams = new URLSearchParams(window.location.search);
-            const steamId = urlParams.get('steamId');
-            if (steamId) {
-                linkSteamCallback(steamId, token);
+            const openidClaimedId = urlParams.get('openid.claimed_id');
+            if (openidClaimedId) {
+                const steamId = openidClaimedId.split('/').pop(); // Извлекаем Steam ID
+                handleSteamCallback(steamId, token);
             }
         }
     }, []);
@@ -54,21 +55,21 @@ function Profile() {
         const token = localStorage.getItem('token');
         if (token) {
             const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-            const steamLoginUrl = `https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_immediate&openid.return_to=${baseUrl}/profile&openid.realm=${baseUrl}&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select`;
-            window.open(steamLoginUrl, 'steamLogin', 'width=800,height=600');
+            const steamLoginUrl = `https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_setup&openid.return_to=${baseUrl}/api/users/steam-callback&openid.realm=${baseUrl}&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select`;
+            window.location.href = steamLoginUrl; // Перенаправляем на Steam
         } else {
             setError('Вы должны быть авторизованы для привязки Steam');
         }
     };
 
-    const linkSteamCallback = async (steamId, token) => {
+    const handleSteamCallback = async (steamId, token) => {
         try {
             const response = await api.post('/api/users/link-steam', { steamId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUser({ ...user, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` });
             setError('');
-            window.history.replaceState({}, document.title, '/profile'); // Убираем steamId из URL
+            window.history.replaceState({}, document.title, '/profile'); // Убираем параметры из URL
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка привязки Steam');
         }

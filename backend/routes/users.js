@@ -4,7 +4,7 @@ const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/auth');
-const passport = require('passport');
+const axios = require('axios');
 
 // Регистрация нового пользователя
 router.post('/register', async (req, res) => {
@@ -102,109 +102,73 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
 });
 
-// Маршрут для начала Steam авторизации
-router.get('/steam', (req, res, next) => {
-    const authToken = req.query.authToken;
-    console.log('Steam authToken:', authToken);
-    if (authToken) {
-        try {
-            const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
-            console.log('Steam authToken decoded:', decoded);
-            req.authToken = authToken; // Сохраняем authToken в запросе
-            passport.authenticate('steam', { session: false })(req, res, next);
-        } catch (err) {
-            console.error('Invalid authToken:', err);
-            return res.status(401).json({ error: 'Недействительный токен авторизации' });
+// Callback для Steam OpenID
+router.get('/steam-callback', async (req, res) => {
+    try {
+        console.log('Steam callback query:', req.query);
+        const openidParams = req.query;
+
+        // Проверяем подлинность ответа от Steam
+        const checkAuthUrl = 'https://steamcommunity.com/openid/login';
+        const authParams = {
+            ...openidParams,
+            'openid.mode': 'check_authentication'
+        };
+        const response = await axios.get(checkAuthUrl, { params: authParams });
+        const isValid = response.data.includes('is_valid:true');
+
+        if (!isValid) {
+            return res.status(401).json({ error: 'Недействительный ответ от Steam' });
         }
-    } else {
-        passport.authenticate('steam', { session: false })(req, res, next);
+
+        const steamId = openidParams['openid.claimed_id'].split('/').pop();
+        console.log('Extracted Steam ID:', steamId);
+
+        // Проверяем, существует ли пользователь с этим steam_id
+        const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        if (existingUser.rows.length > 0) {
+            const user = existingUser.rows[0];
+            const token = jwt.sign(
+                { id: user.id, role: user.role, username: user.username },
+                process.env.JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+            return res.redirect(`https://1337community.com/profile?token=${token}`);
+        }
+
+        // Если пользователь не авторизован, перенаправляем на страницу логина с параметром steamId
+        res.redirect(`https://1337community.com/profile?steamId=${steamId}`);
+    } catch (err) {
+        console.error('Ошибка в steam-callback:', err);
+        res.status(500).json({ error: 'Ошибка авторизации через Steam' });
     }
 });
 
-// Callback для Steam авторизации
-router.get('/steam-callback', passport.authenticate('steam', { session: false }), async (req, res) => {
-    const client = await pool.connect();
+// Привязка Steam ID
+router.post('/link-steam', authenticateToken, async (req, res) => {
+    const { steamId } = req.body;
+
+    if (!steamId) {
+        return res.status(400).json({ message: 'Steam ID обязателен' });
+    }
+
     try {
-        await client.query('BEGIN'); // Начинаем транзакцию
-
-        console.log('Steam callback, req.user:', req.user);
-        const steamId = req.user.steamId;
-        const authToken = req.authToken;
-        console.log('Steam callback, authToken:', authToken);
-
-        if (authToken) {
-            // Верифицируем токен и получаем существующего пользователя
-            const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
-            console.log('Linking Steam to user:', decoded);
-
-            // Находим пользователя с этим steam_id (нового пользователя)
-            const existingSteamUser = await client.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
-            if (existingSteamUser.rows.length > 0) {
-                const newUserId = existingSteamUser.rows[0].id;
-
-                // Проверяем, не привязан ли steam_id к другому пользователю (кроме decoded.id)
-                if (newUserId !== decoded.id) {
-                    // Переносим steam_id и steam_url в профиль decoded.id
-                    await client.query(
-                        'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
-                        [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
-                    );
-                    console.log('Steam data transferred to user:', decoded.id);
-
-                    // Удаляем нового пользователя
-                    await client.query('DELETE FROM users WHERE id = $1', [newUserId]);
-                    console.log('New user deleted:', newUserId);
-                } else {
-                    console.log('Steam ID already linked to this user:', decoded.id);
-                }
-            } else {
-                // Если новый пользователь не был создан, просто обновляем steam_id
-                await client.query(
-                    'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
-                    [steamId, `https://steamcommunity.com/profiles/${steamId}`, decoded.id]
-                );
-                console.log('Steam ID linked to user:', decoded.id);
-            }
-
-            const user = (await client.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
-            if (!user) {
-                throw new Error('Пользователь не найден');
-            }
-
-            const token = jwt.sign(
-                { id: user.id, role: user.role || 'user', username: user.username },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
-
-            console.log('Redirecting with token:', token);
-            await client.query('COMMIT'); // Завершаем транзакцию
-            res.redirect(`https://1337community.com/profile?token=${token}`);
-        } else {
-            // Создание нового пользователя, если authToken отсутствует
-            const newUsername = `steam_${steamId}`;
-            const result = await client.query(
-                'INSERT INTO users (username, steam_id, steam_url) VALUES ($1, $2, $3) ON CONFLICT (steam_id) DO UPDATE SET username = EXCLUDED.username RETURNING id, username, role',
-                [newUsername, steamId, `https://steamcommunity.com/profiles/${steamId}`]
-            );
-            const newUser = result.rows[0];
-
-            const token = jwt.sign(
-                { id: newUser.id, role: newUser.role, username: newUser.username },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
-
-            console.log('New user created and redirecting with token:', token);
-            await client.query('COMMIT'); // Завершаем транзакцию
-            res.redirect(`https://1337community.com/profile?token=${token}`);
+        // Проверяем, не привязан ли steam_id к другому пользователю
+        const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== req.user.id) {
+            return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
         }
+
+        // Привязываем Steam ID к текущему пользователю
+        await pool.query(
+            'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
+            [steamId, `https://steamcommunity.com/profiles/${steamId}`, req.user.id]
+        );
+
+        res.json({ message: 'Steam успешно привязан' });
     } catch (err) {
-        await client.query('ROLLBACK'); // Откатываем транзакцию при ошибке
-        console.error('Ошибка в steam-callback:', err);
-        res.status(500).json({ error: 'Ошибка авторизации через Steam' });
-    } finally {
-        client.release();
+        console.error('Ошибка привязки Steam:', err);
+        res.status(500).json({ error: 'Не удалось привязать Steam' });
     }
 });
 
