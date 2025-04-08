@@ -103,7 +103,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Callback для Steam OpenID
-router.get('/steam', async (req, res) => {
+router.get('/steam-callback', async (req, res) => {
     try {
         console.log('Steam callback query:', req.query);
         const openidParams = req.query;
