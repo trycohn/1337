@@ -148,6 +148,26 @@ router.get('/steam-callback', async (req, res) => {
     }
 });
 
+// Маршрут для начала Steam авторизации
+router.get('/steam', (req, res, next) => {
+    const authToken = req.query.authToken;
+    console.log('Steam authToken:', authToken);
+    if (authToken) {
+        try {
+            const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+            console.log('Steam authToken decoded:', decoded);
+            req.authToken = authToken; // Сохраняем authToken в запросе
+            passport.authenticate('steam', { session: false })(req, res, next);
+        } catch (err) {
+            console.error('Invalid authToken:', err);
+            return res.status(401).json({ error: 'Недействительный токен авторизации' });
+        }
+    } else {
+        passport.authenticate('steam', { session: false })(req, res, next);
+    }
+});
+
+
 // Привязка Steam ID
 router.post('/link-steam', authenticateToken, async (req, res) => {
     const { steamId } = req.body;
