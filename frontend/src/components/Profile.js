@@ -5,6 +5,8 @@ import './Profile.css';
 function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
+    const [cs2Stats, setCs2Stats] = useState(null);
+    const [isLoadingCs2Stats, setIsLoadingCs2Stats] = useState(false);
     const [faceitId, setFaceitId] = useState('');
     const [newUsername, setNewUsername] = useState('');
     const [verificationData, setVerificationData] = useState({
@@ -28,6 +30,22 @@ function Profile() {
             setError(err.response?.data?.message || 'Ошибка загрузки данных пользователя');
         }
     };
+
+    const fetchCs2Stats = async () => {
+        if (!user.steam_id) return;
+        
+        setIsLoadingCs2Stats(true);
+        try {
+            const response = await api.get(`/api/playerStats/${user.steam_id}`);
+            if (response.data.success) {
+                setCs2Stats(response.data.data);
+            }
+        } catch (err) {
+            setError('Ошибка получения статистики CS2');
+        } finally {
+            setIsLoadingCs2Stats(false);
+        }
+    };   
 
     const fetchStats = async (token) => {
         try {
@@ -213,7 +231,29 @@ function Profile() {
                         <button onClick={linkSteam}>Привязать Steam</button>
                     )}
                     {user.steam_url && (
-                    <button onClick={unlinkSteam}>Отвязать стим</button>
+                        <div className="steam-buttons">
+                            <button onClick={unlinkSteam}>Отвязать стим</button>
+                            <button 
+                                onClick={fetchCs2Stats} 
+                                disabled={isLoadingCs2Stats}
+                            >
+                                {isLoadingCs2Stats ? 'Загрузка...' : 'Статистика CS2'}
+                            </button>
+                        </div>
+                    )}
+    
+                    {cs2Stats && (
+                        <div className="cs2-stats">
+                            <h4>Статистика CS2</h4>
+                            <div className="rank-container">
+                                {cs2Stats.ranks.map((rankUrl, index) => (
+                                    <div key={index} className="rank-item">
+                                        <img src={rankUrl} alt={`Ранг ${index + 1}`} className="rank-image" />
+                                        <span className="rank-wins">{cs2Stats.wins[index]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </div>
                 <div>
