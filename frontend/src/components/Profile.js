@@ -202,59 +202,58 @@ function Profile() {
     const renderRankGroups = () => {
         if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return null;
 
-        // Копии массивов для работы
+        // Создаём копии для дальнейшей работы
         const winValues = Array.from(cs2Stats.wins);
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
+        const groups = [];
 
-        // Обрезаем filteredRanks до logo-csgo.png (если он есть)
-        const csgoIndex = filteredRanks.findIndex(url => url.includes('logo-csgo.png'));
-        if (csgoIndex !== -1) {
-            filteredRanks = filteredRanks.slice(0, csgoIndex);
+        // Если premier.png присутствует - отрисовываем его всегда с первыми двумя значениями wins 
+        const premierIndex = filteredRanks.findIndex(url => url.includes('premier.png'));
+        if (premierIndex !== -1) {
+            groups.push({
+                type: 'premier',
+                image: filteredRanks[premierIndex],
+                wins: [winValues.shift(), winValues.shift()] // используем и удаляем первые два элемента wins
+            });
+            // В любом случае удаляем premier.png для дальнейшей группировки
+            filteredRanks.splice(premierIndex, 1);
         }
 
-        // Регулярное выражение для допустимого значения win: либо '---', либо число с запятыми
-        const validWinRegex = /^(\d{1,3}(,\d{3})*|---)$/;
-
-        // Собираем группы для premier.png
-        const premierGroups = [];
-        filteredRanks.forEach(url => {
-            if (url.includes('premier.png')) {
-                let win1 = '';
-                let win2 = '';
-                // Ищем первое допустимое значение win
-                while (winValues.length && !validWinRegex.test(winValues[0])) {
-                    winValues.shift();
-                }
-                if (winValues.length) {
-                    win1 = winValues.shift();
-                }
-                // Ищем второе допустимое значение win
-                while (winValues.length && !validWinRegex.test(winValues[0])) {
-                    winValues.shift();
-                }
-                if (winValues.length) {
-                    win2 = winValues.shift();
-                }
-                premierGroups.push({
-                    image: url,
-                    wins: [win1, win2]
-                });
-            }
-        });
+        // Формируем группы по 3 картинки (группы могут быть неполными)
+        for (let i = 0; i < filteredRanks.length; i += 3) {
+            groups.push({
+                type: 'group',
+                images: filteredRanks.slice(i, i + 3)
+            });
+        }
 
         return (
             <div>
-                {premierGroups.map((group, index) => (
-                    <div key={`group-${index}`} className="rank-row">
-                        <div className="rank-group">
-                            <img src={group.image} alt="premier" className="rank-image" />
-                            <div className="rank-win">
-                                <span>{group.wins[0]}</span>
-                                {group.wins[1] && <span> {group.wins[1]}</span>}
+                {groups.map((group, index) => {
+                    if (group.type === 'premier') {
+                        return (
+                            <div key={`group-${index}`} className="rank-row">
+                                <div className="rank-group">
+                                    <img src={group.image} alt="premier" className="rank-image" />
+                                    <div className="rank-win">
+                                        <span>{group.wins[0]}</span>
+                                        {group.wins[1] && <span> {group.wins[1]}</span>}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
+                        );
+                    } else {
+                        return (
+                            <div key={`group-${index}`} className="rank-row">
+                                {group.images.map((img, idx) => (
+                                    <div key={`img-${idx}`} className="rank-group">
+                                        <img src={img} alt={`rank ${idx + 1}`} className="rank-image" />
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    }
+                })}
             </div>
         );
     };
