@@ -207,15 +207,18 @@ function Profile() {
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
         const groups = [];
 
-        // Если присутствует premier.png, выводим её с первыми двумя значениями wins
+        // Если premier.png присутствует и значение wins не равно '---'
         const premierIndex = filteredRanks.findIndex(url => url.includes('premier.png'));
         if (premierIndex !== -1) {
-            groups.push({
-                type: 'premier',
-                image: filteredRanks[premierIndex],
-                wins: [winValues.shift(), winValues.shift()] // используем и удаляем первые два элемента wins
-            });
-            filteredRanks.splice(premierIndex, 1); // удаляем картинку premier для последующей группировки
+            if (winValues[0] !== '---') {
+                groups.push({
+                    type: 'premier',
+                    image: filteredRanks[premierIndex],
+                    wins: [winValues.shift(), winValues.shift()] // используем и удаляем первые два элемента wins
+                });
+            }
+            // В любом случае удаляем premier.png для дальнейшей группировки
+            filteredRanks.splice(premierIndex, 1);
         }
 
         // Формируем группы по 3 картинки (группы могут быть неполными)
