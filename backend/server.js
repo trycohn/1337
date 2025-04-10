@@ -6,6 +6,7 @@ console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
 const express = require('express');
 const pool = require('./db');
 const http = require('http');
+const puppeteer = require('puppeteer');
 const { Server } = require('socket.io');
 const tournamentsRouter = require('./routes/tournaments');
 
@@ -64,6 +65,7 @@ app.use('/api/tournamentPlayers', require('./routes/tournamentPlayers'));
 app.use('/api/matches', require('./routes/matches'));
 app.use('/api/statistics', require('./routes/statistics'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/playerStats', require('./routes/playerStats'));
 
 app.use('/api', (req, res) => {
     console.log(`404 для пути: ${req.path}`);
