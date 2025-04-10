@@ -124,3 +124,19 @@ input, button {
     font-size: 14px;
     color: #666;
 }
+
+.rank-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.rank-group {
+    margin-right: 15px;
+    text-align: center;
+}
+
+.rank-win {
+    margin-top: 5px;
+    font-weight: bold;
+}
