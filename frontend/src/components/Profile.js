@@ -201,12 +201,15 @@ function Profile() {
 
     const renderRankGroups = () => {
         if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return null;
-
+    
         // Создаём копии для дальнейшей работы
         const winValues = Array.from(cs2Stats.wins);
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
         const groups = [];
-
+    
+        // Функция для проверки формата win (например, "12,361" или "---")
+        const validWinFormat = (win) => /^(\d{1,3}(,\d{3})*|---)$/.test(win);
+    
         // Ищем все вхождения premier.png и для каждого формируем отдельную группу
         const premierIndices = [];
         filteredRanks.forEach((url, index) => {
@@ -214,20 +217,25 @@ function Profile() {
                 premierIndices.push(index);
             }
         });
-
+    
         // Обрабатываем каждое найденное вхождение premier.png
         // Обратите внимание, что при удалении элементов нужно идти с конца, чтобы индексы не сдвигались
         premierIndices
             .sort((a, b) => b - a)
             .forEach(idx => {
+                const win1 = winValues.shift();
+                const win2 = winValues.shift();
                 groups.unshift({
                     type: 'premier',
                     image: filteredRanks[idx],
-                    wins: [winValues.shift(), winValues.shift()] // берём два элемента из wins
+                    wins: [
+                        validWinFormat(win1) ? win1 : '---',
+                        validWinFormat(win2) ? win2 : ''
+                    ]
                 });
                 filteredRanks.splice(idx, 1); // удаляем premier.png для дальнейшей группировки
             });
-
+    
         // Формируем группы по 3 картинки (группы могут быть неполными)
         for (let i = 0; i < filteredRanks.length; i += 3) {
             groups.push({
@@ -235,7 +243,7 @@ function Profile() {
                 images: filteredRanks.slice(i, i + 3)
             });
         }
-
+    
         return (
             <div>
                 {groups.map((group, index) => {
