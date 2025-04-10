@@ -235,10 +235,10 @@ function Profile() {
                             <div key={`group-${index}`} className="rank-row">
                                 <div className="rank-group">
                                     <img src={group.image} alt="premier" className="rank-image" />
-                                    <div className="rank-win">
-                                        <span>{group.wins[0]}</span>
-                                        {group.wins[1] && <span> {group.wins[1]}</span>}
-                                    </div>
+                                </div>
+                                <div className="rank-win">
+                                    <span>{group.wins[0]}</span>
+                                    {group.wins[1] && <span> {group.wins[1]}</span>}
                                 </div>
                             </div>
                         );

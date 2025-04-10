@@ -133,10 +133,10 @@ input, button {
 
 .rank-group {
     margin-right: 15px;
-    text-align: center;
 }
 
 .rank-win {
-    margin-top: 5px;
     font-weight: bold;
+    /* Дополнительное оформление, например, отступы */
+    margin-left: 15px;
 }
