@@ -202,18 +202,18 @@ function Profile() {
     const renderRankGroups = () => {
         if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return null;
 
-        // Создём копии для дальнейшей работы
+        // Создаём копии для дальнейшей работы
         const winValues = Array.from(cs2Stats.wins);
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
         const groups = [];
 
-        // Если присутствует premier.png, выводим её с первым значением wins
+        // Если присутствует premier.png, выводим её с первыми двумя значениями wins
         const premierIndex = filteredRanks.findIndex(url => url.includes('premier.png'));
         if (premierIndex !== -1) {
             groups.push({
                 type: 'premier',
                 image: filteredRanks[premierIndex],
-                win: winValues.shift() // используем и удаляем первый элемент wins
+                wins: [winValues.shift(), winValues.shift()] // используем и удаляем первые два элемента wins
             });
             filteredRanks.splice(premierIndex, 1); // удаляем картинку premier для последующей группировки
         }
@@ -234,7 +234,10 @@ function Profile() {
                             <div key={`group-${index}`} className="rank-row">
                                 <div className="rank-group">
                                     <img src={group.image} alt="premier" className="rank-image" />
-                                    <div className="rank-win">{group.win}</div>
+                                    <div className="rank-win">
+                                        <span>{group.wins[0]}</span>
+                                        {group.wins[1] && <span> {group.wins[1]}</span>}
+                                    </div>
                                 </div>
                             </div>
                         );
