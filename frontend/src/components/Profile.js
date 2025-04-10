@@ -207,17 +207,26 @@ function Profile() {
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
         const groups = [];
 
-        // Если premier.png присутствует - отрисовываем его всегда с первыми двумя значениями wins 
-        const premierIndex = filteredRanks.findIndex(url => url.includes('premier.png'));
-        if (premierIndex !== -1) {
-            groups.push({
-                type: 'premier',
-                image: filteredRanks[premierIndex],
-                wins: [winValues.shift(), winValues.shift()] // используем и удаляем первые два элемента wins
+        // Ищем все вхождения premier.png и для каждого формируем отдельную группу
+        const premierIndices = [];
+        filteredRanks.forEach((url, index) => {
+            if (url.includes('premier.png')) {
+                premierIndices.push(index);
+            }
+        });
+
+        // Обрабатываем каждое найденное вхождение premier.png
+        // Обратите внимание, что при удалении элементов нужно идти с конца, чтобы индексы не сдвигались
+        premierIndices
+            .sort((a, b) => b - a)
+            .forEach(idx => {
+                groups.unshift({
+                    type: 'premier',
+                    image: filteredRanks[idx],
+                    wins: [winValues.shift(), winValues.shift()] // берём два элемента из wins
+                });
+                filteredRanks.splice(idx, 1); // удаляем premier.png для дальнейшей группировки
             });
-            // В любом случае удаляем premier.png для дальнейшей группировки
-            filteredRanks.splice(premierIndex, 1);
-        }
 
         // Формируем группы по 3 картинки (группы могут быть неполными)
         for (let i = 0; i < filteredRanks.length; i += 3) {
