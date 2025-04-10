@@ -202,80 +202,54 @@ function Profile() {
     const renderRankGroups = () => {
         if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return null;
 
-        // Отфильтровать логотип CS2
-        const filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
+        // Создём копии для дальнейшей работы
+        const winValues = Array.from(cs2Stats.wins);
+        let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
+        const groups = [];
 
-        // Проверяем, что массив достаточно длинный для группировки
-        if (filteredRanks.length < 13) return (<p>Недостаточно данных для отображения статистики</p>);
+        // Если присутствует premier.png, выводим её с первым значением wins
+        const premierIndex = filteredRanks.findIndex(url => url.includes('premier.png'));
+        if (premierIndex !== -1) {
+            groups.push({
+                type: 'premier',
+                image: filteredRanks[premierIndex],
+                win: winValues.shift() // используем и удаляем первый элемент wins
+            });
+            filteredRanks.splice(premierIndex, 1); // удаляем картинку premier для последующей группировки
+        }
 
-        // Формируем группы согласно описанной логике
-        const group1 = { image: filteredRanks[0], win: cs2Stats.wins[0] };
-        const group2 = filteredRanks.slice(1, 4);     // wingman.png, wingman10.svg, wingman11.svg
-        const group3 = filteredRanks.slice(4, 7);     // de_dust2_v2.png, ranks/4.png, ranks/4.png
-        const group4 = filteredRanks.slice(7, 10);    // cs2_office.png, ranks/0.png, ranks/0.png
-        const group5 = filteredRanks.slice(10, 13);   // de_anubis.png, ranks/0.png, ranks/0.png
+        // Формируем группы по 3 картинки (группы могут быть неполными)
+        for (let i = 0; i < filteredRanks.length; i += 3) {
+            groups.push({
+                type: 'group',
+                images: filteredRanks.slice(i, i + 3)
+            });
+        }
 
         return (
             <div>
-                {/* Группа 1: premier.png с win */}
-                <div className="rank-row">
-                    <div className="rank-group">
-                        <img src={group1.image} alt="premier" className="rank-image" />
-                        <div className="rank-win">{group1.win}</div>
-                    </div>
-                </div>
-
-                {/* Группа 2: wingman */}
-                <div className="rank-row">
-                    <div className="rank-group">
-                        <img src={group2[0]} alt="wingman" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group2[1]} alt="wingman 10" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group2[2]} alt="wingman 11" className="rank-image" />
-                    </div>
-                </div>
-
-                {/* Группа 3: de_dust2_v2 */}
-                <div className="rank-row">
-                    <div className="rank-group">
-                        <img src={group3[0]} alt="de_dust2_v2" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group3[1]} alt="rank 4 (1)" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group3[2]} alt="rank 4 (2)" className="rank-image" />
-                    </div>
-                </div>
-
-                {/* Группа 4: cs2_office */}
-                <div className="rank-row">
-                    <div className="rank-group">
-                        <img src={group4[0]} alt="cs2_office" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group4[1]} alt="rank 0 (1)" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group4[2]} alt="rank 0 (2)" className="rank-image" />
-                    </div>
-                </div>
-
-                {/* Группа 5: de_anubis */}
-                <div className="rank-row">
-                    <div className="rank-group">
-                        <img src={group5[0]} alt="de_anubis" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group5[1]} alt="rank 0 (3)" className="rank-image" />
-                    </div>
-                    <div className="rank-group">
-                        <img src={group5[2]} alt="rank 0 (4)" className="rank-image" />
-                    </div>
-                </div>
+                {groups.map((group, index) => {
+                    if (group.type === 'premier') {
+                        return (
+                            <div key={`group-${index}`} className="rank-row">
+                                <div className="rank-group">
+                                    <img src={group.image} alt="premier" className="rank-image" />
+                                    <div className="rank-win">{group.win}</div>
+                                </div>
+                            </div>
+                        );
+                    } else {
+                        return (
+                            <div key={`group-${index}`} className="rank-row">
+                                {group.images.map((img, idx) => (
+                                    <div key={`img-${idx}`} className="rank-group">
+                                        <img src={img} alt={`rank ${idx + 1}`} className="rank-image" />
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    }
+                })}
             </div>
         );
     };
