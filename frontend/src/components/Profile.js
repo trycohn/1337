@@ -203,12 +203,24 @@ function Profile() {
         if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return null;
     
         // Создаём копии для дальнейшей работы
-        const winValues = Array.from(cs2Stats.wins);
+        let winValues = Array.from(cs2Stats.wins);
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
         const groups = [];
     
         // Функция для проверки формата win (например, "12,361" или "---")
         const validWinFormat = (win) => /^(\d{1,3}(,\d{3})*|---)$/.test(win);
+    
+        // Функция для поиска и удаления первого win-значения с корректным форматом
+        const getValidWinValue = () => {
+            for (let i = 0; i < winValues.length; i++) {
+                if (validWinFormat(winValues[i])) {
+                    const val = winValues[i];
+                    winValues.splice(i, 1);
+                    return val;
+                }
+            }
+            return '---';
+        };
     
         // Ищем все вхождения premier.png и для каждого формируем отдельную группу
         const premierIndices = [];
@@ -218,20 +230,17 @@ function Profile() {
             }
         });
     
-        // Обрабатываем каждое найденное вхождение premier.png
-        // Обратите внимание, что при удалении элементов нужно идти с конца, чтобы индексы не сдвигались
+        // Обрабатываем каждое найденное вхождение premier.png.
+        // Ищем win-значения по всему массиву winValues, а не только первые.
         premierIndices
             .sort((a, b) => b - a)
             .forEach(idx => {
-                const win1 = winValues.shift();
-                const win2 = winValues.shift();
+                const win1 = getValidWinValue();
+                const win2 = getValidWinValue();
                 groups.unshift({
                     type: 'premier',
                     image: filteredRanks[idx],
-                    wins: [
-                        validWinFormat(win1) ? win1 : '---',
-                        validWinFormat(win2) ? win2 : ''
-                    ]
+                    wins: [win1, win2]
                 });
                 filteredRanks.splice(idx, 1); // удаляем premier.png для дальнейшей группировки
             });
