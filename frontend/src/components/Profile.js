@@ -205,6 +205,13 @@ function Profile() {
         // Создаём копии для дальнейшей работы
         let winValues = Array.from(cs2Stats.wins);
         let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
+    
+        // Если есть картинка logo-csgo.png, отрезаем её и все, что после
+        const csgoIdx = filteredRanks.findIndex(url => url.includes('logo-csgo.png'));
+        if (csgoIdx !== -1) {
+            filteredRanks = filteredRanks.slice(0, csgoIdx);
+        }
+    
         const groups = [];
     
         // Функция для проверки формата win (например, "12,361" или "---")
