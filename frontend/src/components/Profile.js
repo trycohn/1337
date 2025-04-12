@@ -144,18 +144,9 @@ function Profile() {
         }
     }, []);
 
-    const linkFaceit = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/link-faceit', { faceitId }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUser(prevUser => prevUser ? { ...prevUser, faceit_id: response.data.faceitId } : null);
-            setFaceitId('');
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка привязки FACEit');
-        }
+    const linkFaceit = () => {
+        // При нажатии на кнопку пользователь перенаправляется на endpoint, который инициирует OAuth-процесс Faceit
+        window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/users/link-faceit`;
     };
 
     const verifyProfile = async () => {
