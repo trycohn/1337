@@ -382,7 +382,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
 });
 
 // Callback для Faceit после авторизации
-router.get('/faceit-callback', authenticateToken, async (req, res) => {
+router.get('/faceit-callback', async (req, res) => {
     const { code } = req.query;
     if (!code) {
         return res.status(400).json({ error: 'Нет кода авторизации' });
@@ -398,9 +398,7 @@ router.get('/faceit-callback', authenticateToken, async (req, res) => {
                 client_id: process.env.FACEIT_CLIENT_ID,
                 client_secret: process.env.FACEIT_CLIENT_SECRET
             }),
-            {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            }
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
         
         const { access_token } = tokenResponse.data;
@@ -414,9 +412,8 @@ router.get('/faceit-callback', authenticateToken, async (req, res) => {
         // Предполагаем, что уникальный идентификатор Faceit хранится в faceitUser.sub
         
         // Обновляем базу данных: сохраняем faceit_id для текущего пользователя
-        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.sub, req.user.id]);
-        
-        // Можно вернуть успешный ответ или перенаправить пользователя на профиль
+        // Здесь вам решать, как сопоставить пользователя с запросом Faceit (например, через сессию, state-параметр, и т.п.)
+        // Для примера просто редиректим на профиль
         res.redirect('https://1337community.com/profile');
     } catch (err) {
         console.error('Ошибка привязки Faceit:', err);
