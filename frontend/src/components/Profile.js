@@ -145,8 +145,9 @@ function Profile() {
     }, []);
 
     const linkFaceit = () => {
-        // При нажатии на кнопку пользователь перенаправляется на endpoint, который инициирует OAuth-процесс Faceit
-        window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/api/users/link-faceit`;
+        const token = localStorage.getItem('token');
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
     };
 
     const verifyProfile = async () => {
