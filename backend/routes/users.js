@@ -377,8 +377,6 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: 'openid profile email membership',
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
         state: state,
         redirect_popup: 'true'
     });
@@ -412,7 +410,6 @@ router.get('/faceit-callback', async (req, res) => {
                 redirect_uri: process.env.FACEIT_REDIRECT_URI,
                 client_id: process.env.FACEIT_CLIENT_ID,
                 client_secret: process.env.FACEIT_CLIENT_SECRET,
-                code_verifier: codeVerifier
             }),
             { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
