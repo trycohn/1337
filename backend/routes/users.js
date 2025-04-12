@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/auth');
 const axios = require('axios');
+const querystring = require('querystring');
 
 // Регистрация нового пользователя
 router.post('/register', async (req, res) => {
@@ -345,6 +346,63 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('Ошибка подтверждения email:', err);
         res.status(500).json({ error: 'Не удалось подтвердить учётную запись' });
+    }
+});
+
+// Маршрут для перенаправления пользователя на страницу авторизации Faceit
+router.get('/link-faceit', authenticateToken, (req, res) => {
+    const clientId = process.env.FACEIT_CLIENT_ID;
+    const redirectUri = process.env.FACEIT_REDIRECT_URI;
+    const authUrl = 'https://accounts.faceit.com';
+    const params = querystring.stringify({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid profile email membership'
+    });
+    res.redirect(`${authUrl}?${params}`);
+});
+
+// Callback для Faceit после авторизации
+router.get('/faceit-callback', authenticateToken, async (req, res) => {
+    const { code } = req.query;
+    if (!code) {
+        return res.status(400).json({ error: 'Нет кода авторизации' });
+    }
+    try {
+        // Обмен кода авторизации на токен
+        const tokenResponse = await axios.post(
+            'https://api.faceit.com/auth/v1/oauth/token',
+            querystring.stringify({
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: process.env.FACEIT_REDIRECT_URI,
+                client_id: process.env.FACEIT_CLIENT_ID,
+                client_secret: process.env.FACEIT_CLIENT_SECRET
+            }),
+            {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            }
+        );
+        
+        const { access_token } = tokenResponse.data;
+        
+        // Получение данных пользователя с помощью access_token
+        const userInfoResponse = await axios.get(
+            'https://api.faceit.com/auth/v1/resources/userinfo',
+            { headers: { Authorization: `Bearer ${access_token}` } }
+        );
+        const faceitUser = userInfoResponse.data;
+        // Предполагаем, что уникальный идентификатор Faceit хранится в faceitUser.sub
+        
+        // Обновляем базу данных: сохраняем faceit_id для текущего пользователя
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.sub, req.user.id]);
+        
+        // Можно вернуть успешный ответ или перенаправить пользователя на профиль
+        res.redirect('https://1337community.com/profile');
+    } catch (err) {
+        console.error('Ошибка привязки Faceit:', err);
+        res.status(500).json({ error: 'Не удалось привязать Faceit профиль' });
     }
 });
 
