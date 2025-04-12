@@ -379,7 +379,8 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         scope: 'openid profile email membership',
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
-        state: state
+        state: state,
+        redirect_popup: 'true'
     });
     res.redirect(`${authUrl}?${params}`);
 });
