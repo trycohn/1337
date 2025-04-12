@@ -334,7 +334,7 @@ function Profile() {
                             </button>
                         </div>
                     )}
-    
+
                     {cs2Stats && (
                         <div className="cs2-stats">
                             <h4>Статистика CS2</h4>
@@ -345,11 +345,6 @@ function Profile() {
                     )}
                 </div>
                 <div>
-                    <input 
-                        value={faceitId} 
-                        onChange={(e) => setFaceitId(e.target.value)} 
-                        placeholder="FACEit ID" 
-                    />
                     <button onClick={linkFaceit}>Привязать FACEit</button>
                 </div>
                 <p>FACEit: {user.faceit_id || 'Не привязан'}</p>
