@@ -1,12 +1,23 @@
-require('dotenv').config({ path: __dirname + '/.env' });
+const dotenv = require('dotenv');
+const result = dotenv.config({ path: __dirname + '/.env' });
 
-console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET);
-console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
+if (result.error) {
+  console.error('❌ Ошибка загрузки .env файла:', result.error);
+} else {
+  console.log('✅ Файл .env успешно загружен');
+}
+
+console.log("🔍 Загруженный JWT_SECRET:", process.env.JWT_SECRET ? '[Установлен]' : '[Отсутствует]');
+console.log("🔍 NODE_ENV:", process.env.NODE_ENV || '[Не указано]');
+console.log("🔍 FACEIT_CLIENT_ID:", process.env.FACEIT_CLIENT_ID ? '[Установлен]' : '[Отсутствует]');
+console.log("🔍 FACEIT_CLIENT_SECRET:", process.env.FACEIT_CLIENT_SECRET ? '[Установлен]' : '[Отсутствует]');
+console.log("🔍 FACEIT_REDIRECT_URI:", process.env.FACEIT_REDIRECT_URI ? '[Установлен]' : '[Отсутствует]');
 
 const express = require('express');
 const pool = require('./db');
 const http = require('http');
 const puppeteer = require('puppeteer');
+const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 const tournamentsRouter = require('./routes/tournaments');
 
@@ -42,6 +53,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Тестовый маршрут
 app.get('/testdb', async (req, res) => {
