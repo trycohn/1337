@@ -363,12 +363,12 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Генерируем state-параметр для защиты от CSRF и для соблюдения требований Faceit
+    // Генерируем state-параметр
     const state = crypto.randomBytes(16).toString('hex');
-    
-    // Сохраните codeVerifier и state для текущего пользователя (например, в сессии или in-memory storage)
-    console.log(`PKCE: codeVerifier для user ${req.user.id}:`, codeVerifier);
-    console.log(`State для user ${req.user.id}:`, state);
+
+    // Сохраняем codeVerifier и state (например, через куки; здесь простой пример)
+    res.cookie('faceit_code_verifier', codeVerifier, { httpOnly: true, secure: true });
+    res.cookie('faceit_state', state, { httpOnly: true, secure: true });
 
     const authUrl = 'https://accounts.faceit.com/api/v1/authorize';
     const params = querystring.stringify({
@@ -385,12 +385,25 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
 
 // Callback для Faceit после авторизации
 router.get('/faceit-callback', async (req, res) => {
-    const { code } = req.query;
+    const { code, state: returnedState } = req.query;
     if (!code) {
         return res.status(400).json({ error: 'Нет кода авторизации' });
     }
+    
+    // Считайте сохранённый state из куки и сравните его с returnedState
+    const savedState = req.cookies.faceit_state;
+    if (!savedState || savedState !== returnedState) {
+        return res.status(403).json({ error: 'Некорректный state' });
+    }
+    
+    // Считайте code_verifier из куки
+    const codeVerifier = req.cookies.faceit_code_verifier;
+    if (!codeVerifier) {
+        return res.status(400).json({ error: 'Отсутствует code_verifier' });
+    }
+    
     try {
-        // Обмен кода авторизации на токен
+        // Обмен кода авторизации на токен, передавая code_verifier
         const tokenResponse = await axios.post(
             'https://api.faceit.com/auth/v1/oauth/token',
             querystring.stringify({
@@ -398,7 +411,8 @@ router.get('/faceit-callback', async (req, res) => {
                 code,
                 redirect_uri: process.env.FACEIT_REDIRECT_URI,
                 client_id: process.env.FACEIT_CLIENT_ID,
-                client_secret: process.env.FACEIT_CLIENT_SECRET
+                client_secret: process.env.FACEIT_CLIENT_SECRET,
+                code_verifier: codeVerifier
             }),
             { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
@@ -411,11 +425,9 @@ router.get('/faceit-callback', async (req, res) => {
             { headers: { Authorization: `Bearer ${access_token}` } }
         );
         const faceitUser = userInfoResponse.data;
-        // Предполагаем, что уникальный идентификатор Faceit хранится в faceitUser.sub
+        // Здесь необходимо сопоставить faceitUser с вашим пользователем (например, через state или сессию)
         
-        // Обновляем базу данных: сохраняем faceit_id для текущего пользователя
-        // Здесь вам решать, как сопоставить пользователя с запросом Faceit (например, через сессию, state-параметр, и т.п.)
-        // Для примера просто редиректим на профиль
+        // Для примера просто перенаправляем на профиль
         res.redirect('https://1337community.com/profile');
     } catch (err) {
         console.error('Ошибка привязки Faceit:', err);
