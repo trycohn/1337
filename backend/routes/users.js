@@ -426,8 +426,6 @@ router.get('/faceit-callback', async (req, res) => {
         );
         const faceitUser = userInfoResponse.data;
         
-        // Извлекаем userId из сохранённого state
-        // Ожидается, что state имеет формат "randomPart-userId"
         const stateParts = savedState.split('-');
         const userId = stateParts[stateParts.length - 1];
         
@@ -435,12 +433,11 @@ router.get('/faceit-callback', async (req, res) => {
         await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
         console.log('FACEit профиль успешно привязан для пользователя', userId);
         
-        // В конце успешной обработки:
         res.clearCookie('faceit_code_verifier');
         res.clearCookie('faceit_state');
         res.redirect('https://1337community.com/profile?faceit=success');
     } catch (err) {
-        console.error('Ошибка привязки Faceit:', err);
+        console.error('Ошибка привязки Faceit:', err.response?.data || err.message);
         res.redirect('https://1337community.com/profile?error=faceit_error');
     }
 });
