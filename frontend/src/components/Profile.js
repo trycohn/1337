@@ -144,6 +144,15 @@ function Profile() {
         }
     }, []);
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('faceit') === 'success') {
+            fetchUserData(localStorage.getItem('token')); // Обновить данные пользователя
+        } else if (params.get('error')) {
+            setError(`Ошибка привязки FACEIT: ${params.get('error')}`);
+        }
+    }, []);
+
     const linkFaceit = () => {
         const token = localStorage.getItem('token');
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
