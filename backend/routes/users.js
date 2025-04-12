@@ -384,7 +384,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
 });
 
 // Callback для Faceit после авторизации
-router.get('/faceit-callback', async (req, res) => {
+router.get('/faceit-callback', authenticateToken, async (req, res) => {
     const { code, state: returnedState } = req.query;
     if (!code) {
         return res.status(400).json({ error: 'Нет кода авторизации' });
@@ -427,11 +427,15 @@ router.get('/faceit-callback', async (req, res) => {
         const faceitUser = userInfoResponse.data;
         // Здесь необходимо сопоставить faceitUser с вашим пользователем (например, через state или сессию)
         
+        // Обновляем faceit_id для текущего пользователя в базе данных
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, req.user.id]);
+        console.log('FACEit профиль успешно привязан для пользователя', req.user.id);
+        
         // Для примера просто перенаправляем на профиль
         res.redirect('https://1337community.com/profile');
     } catch (err) {
         console.error('Ошибка привязки Faceit:', err);
-        res.status(500).json({ error: 'Не удалось привязать Faceit профиль' });
+        res.status(500).json({ error: 'Не удалось привязать FACEit профиль' });
     }
 });
 
