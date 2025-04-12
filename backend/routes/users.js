@@ -388,22 +388,20 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
 router.get('/faceit-callback', async (req, res) => {
     const { code, state: returnedState } = req.query;
     if (!code) {
-        return res.status(400).json({ error: 'Нет кода авторизации' });
-    }
-    
-    // Считайте сохранённый state из куки и сравните его с returnedState
-    const savedState = req.cookies.faceit_state;
-    if (!savedState || savedState !== returnedState) {
-        return res.status(403).json({ error: 'Некорректный state' });
-    }
-    
-    // Считайте code_verifier из куки
-    const codeVerifier = req.cookies.faceit_code_verifier;
-    if (!codeVerifier) {
-        return res.status(400).json({ error: 'Отсутствует code_verifier' });
+        return res.redirect('https://1337community.com/profile?error=no_code');
     }
     
     try {
+        const savedState = req.cookies.faceit_state;
+        if (!savedState || savedState !== returnedState) {
+            return res.redirect('https://1337community.com/profile?error=invalid_state');
+        }
+        
+        const codeVerifier = req.cookies.faceit_code_verifier;
+        if (!codeVerifier) {
+            return res.redirect('https://1337community.com/profile?error=no_verifier');
+        }
+
         // Обмен кода авторизации на токен, передавая code_verifier
         const tokenResponse = await axios.post(
             'https://api.faceit.com/auth/v1/oauth/token',
@@ -436,11 +434,13 @@ router.get('/faceit-callback', async (req, res) => {
         await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
         console.log('FACEit профиль успешно привязан для пользователя', userId);
         
-        // Редирект на профиль
-        res.redirect('https://1337community.com/profile');
+        // В конце успешной обработки:
+        res.clearCookie('faceit_code_verifier');
+        res.clearCookie('faceit_state');
+        res.redirect('https://1337community.com/profile?faceit=success');
     } catch (err) {
         console.error('Ошибка привязки Faceit:', err);
-        res.status(500).json({ error: 'Не удалось привязать FACEit профиль' });
+        res.redirect('https://1337community.com/profile?error=faceit_error');
     }
 });
 
