@@ -161,7 +161,7 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
 
     try {
         console.log('Linking Steam ID:', steamId, 'to user:', req.user.id);
-        const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
+        const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1');
         if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== req.user.id) {
             console.error('Steam ID already linked to another user:', existingSteamUser.rows[0].id);
             return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
@@ -363,10 +363,11 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Генерируем state-параметр
-    const state = crypto.randomBytes(16).toString('hex');
+    // Генерируем state-параметр, включающий userId
+    const randomPart = crypto.randomBytes(8).toString('hex');
+    const state = `${randomPart}-${req.user.id}`;
 
-    // Сохраняем codeVerifier и state (например, через куки; здесь простой пример)
+    // Сохраняем codeVerifier и state (например, через куки)
     res.cookie('faceit_code_verifier', codeVerifier, { httpOnly: true, secure: true });
     res.cookie('faceit_state', state, { httpOnly: true, secure: true });
 
@@ -384,7 +385,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
 });
 
 // Callback для Faceit после авторизации
-router.get('/faceit-callback', authenticateToken, async (req, res) => {
+router.get('/faceit-callback', async (req, res) => {
     const { code, state: returnedState } = req.query;
     if (!code) {
         return res.status(400).json({ error: 'Нет кода авторизации' });
@@ -425,13 +426,17 @@ router.get('/faceit-callback', authenticateToken, async (req, res) => {
             { headers: { Authorization: `Bearer ${access_token}` } }
         );
         const faceitUser = userInfoResponse.data;
-        // Здесь необходимо сопоставить faceitUser с вашим пользователем (например, через state или сессию)
         
-        // Обновляем faceit_id для текущего пользователя в базе данных
-        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, req.user.id]);
-        console.log('FACEit профиль успешно привязан для пользователя', req.user.id);
+        // Извлекаем userId из сохранённого state
+        // Ожидается, что state имеет формат "randomPart-userId"
+        const stateParts = savedState.split('-');
+        const userId = stateParts[stateParts.length - 1];
         
-        // Для примера просто перенаправляем на профиль
+        // Обновляем faceit_id для пользователя в базе данных
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
+        console.log('FACEit профиль успешно привязан для пользователя', userId);
+        
+        // Редирект на профиль
         res.redirect('https://1337community.com/profile');
     } catch (err) {
         console.error('Ошибка привязки Faceit:', err);
