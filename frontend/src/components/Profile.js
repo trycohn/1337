@@ -146,17 +146,12 @@ function Profile() {
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        const faceitStatus = params.get('faceit');
-        const error = params.get('error');
-        
-        if (faceitStatus === 'success') {
-            // Принудительно обновляем данные пользователя
-            fetchUserData();
-            setMessage('FACEIT профиль успешно привязан');
-        } else if (error) {
-            setError(`Ошибка привязки FACEIT: ${error}`);
+        if (params.get('faceit') === 'success') {
+            fetchUserData(localStorage.getItem('token')); // Обновить данные пользователя
+        } else if (params.get('error')) {
+            setError(`Ошибка привязки FACEIT: ${params.get('error')}`);
         }
-    }, [window.location.search]);
+    }, []);
 
     const linkFaceit = () => {
         const token = localStorage.getItem('token');
