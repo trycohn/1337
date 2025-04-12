@@ -380,7 +380,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
         state: state,
-        redirect_popup: 'false'
+        redirect_popup: 'true'
     });
     res.redirect(`${authUrl}?${params}`);
 });
