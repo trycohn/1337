@@ -367,9 +367,20 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     const randomPart = crypto.randomBytes(8).toString('hex');
     const state = `${randomPart}-${req.user.id}`;
 
-    // Сохраняем codeVerifier и state (например, через куки)
-    res.cookie('faceit_code_verifier', codeVerifier, { httpOnly: true, secure: true, sameSite: 'none' });
-    res.cookie('faceit_state', state, { httpOnly: true, secure: true, sameSite: 'none' });
+    // Сохраняем codeVerifier и state с дополнительными настройками безопасности для HTTPS
+    console.log('Устанавливаем cookies для FACEIT авторизации:', { codeVerifier, state });
+    res.cookie('faceit_code_verifier', codeVerifier, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'none', 
+        maxAge: 10 * 60 * 1000 // 10 минут
+    });
+    res.cookie('faceit_state', state, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'none', 
+        maxAge: 10 * 60 * 1000 // 10 минут
+    });
 
     const authUrl = 'https://accounts.faceit.com';
     const params = querystring.stringify({
@@ -382,26 +393,45 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         state: state,
         redirect_popup: 'true'
     });
+    console.log('Перенаправляем на авторизацию FACEIT:', `${authUrl}?${params}`);
     res.redirect(`${authUrl}?${params}`);
 });
 
 // Callback для Faceit после авторизации
 router.get('/faceit-callback', async (req, res) => {
     const { code, state: returnedState } = req.query;
+    console.log('FACEIT callback получен:', { code: !!code, returnedState });
+    
     if (!code) {
+        console.error('Ошибка: код авторизации не получен от FACEIT');
         return res.redirect('https://1337community.com/profile?error=no_code');
     }
     
     try {
+        console.log('Cookies в запросе:', req.cookies);
         const savedState = req.cookies.faceit_state;
-        if (!savedState || savedState !== returnedState) {
+        if (!savedState) {
+            console.error('Ошибка: отсутствует сохраненное состояние (state) в cookie');
+            return res.redirect('https://1337community.com/profile?error=missing_state');
+        }
+        
+        if (savedState !== returnedState) {
+            console.error('Ошибка: несоответствие состояний (state). Ожидалось:', savedState, 'Получено:', returnedState);
             return res.redirect('https://1337community.com/profile?error=invalid_state');
         }
         
         const codeVerifier = req.cookies.faceit_code_verifier;
         if (!codeVerifier) {
+            console.error('Ошибка: отсутствует code_verifier в cookie');
             return res.redirect('https://1337community.com/profile?error=no_verifier');
         }
+
+        console.log('Отправка запроса на получение токена FACEIT с параметрами:', {
+            redirect_uri: process.env.FACEIT_REDIRECT_URI,
+            client_id: process.env.FACEIT_CLIENT_ID,
+            client_secret: !!process.env.FACEIT_CLIENT_SECRET, // логируем только наличие секрета, но не сам секрет
+            code_verifier: !!codeVerifier // логируем только наличие верификатора, но не сам верификатор
+        });
 
         // Обмен кода авторизации на токен, передавая code_verifier
         const tokenResponse = await axios.post(
@@ -418,6 +448,7 @@ router.get('/faceit-callback', async (req, res) => {
         );
         
         const { access_token } = tokenResponse.data;
+        console.log('Токен доступа FACEIT успешно получен');
         
         // Получение данных пользователя с помощью access_token
         const userInfoResponse = await axios.get(
@@ -425,6 +456,10 @@ router.get('/faceit-callback', async (req, res) => {
             { headers: { Authorization: `Bearer ${access_token}` } }
         );
         const faceitUser = userInfoResponse.data;
+        console.log('Получена информация о пользователе FACEIT:', { 
+            id: faceitUser.id,
+            nickname: faceitUser.nickname || 'не указан'
+        });
         
         const stateParts = savedState.split('-');
         const userId = stateParts[stateParts.length - 1];
@@ -437,7 +472,12 @@ router.get('/faceit-callback', async (req, res) => {
         res.clearCookie('faceit_state');
         res.redirect('https://1337community.com/profile?faceit=success');
     } catch (err) {
-        console.error('Ошибка привязки Faceit:', err.response?.data || err.message);
+        console.error('Ошибка привязки Faceit:', err.message);
+        console.error('Детали ошибки:', err.response?.data || 'Нет дополнительных данных');
+        if (err.response) {
+            console.error('Статус ответа:', err.response.status);
+            console.error('Заголовки ответа:', err.response.headers);
+        }
         res.redirect('https://1337community.com/profile?error=faceit_error');
     }
 });
