@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/auth');
 const axios = require('axios');
 const querystring = require('querystring');
+const crypto = require('crypto');
 
 // Регистрация нового пользователя
 router.post('/register', async (req, res) => {
@@ -353,13 +354,29 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 router.get('/link-faceit', authenticateToken, (req, res) => {
     const clientId = process.env.FACEIT_CLIENT_ID;
     const redirectUri = process.env.FACEIT_REDIRECT_URI; // например, "https://1337community.com/api/users/faceit-callback"
-    // Используем endpoint, который получает ошибку, т.е. с подкаталогом
+
+    // Генерируем code_verifier
+    const codeVerifier = crypto.randomBytes(32).toString('hex');
+
+    // Вычисляем code_challenge по алгоритму S256
+    const hash = crypto.createHash('sha256').update(codeVerifier).digest();
+    const codeChallenge = hash.toString('base64')      // base64
+      .replace(/\+/g, '-') // URL-safe
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Сохраните codeVerifier для текущего пользователя (например, в сессии или in-memory map)
+    // req.session.faceitCodeVerifier = codeVerifier;
+    console.log(`PKCE: codeVerifier для user ${req.user.id}:`, codeVerifier);
+
     const authUrl = 'https://accounts.faceit.com/api/v1/authorize';
     const params = querystring.stringify({
         client_id: clientId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'openid profile email membership'
+        scope: 'openid profile email membership',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256'
     });
     res.redirect(`${authUrl}?${params}`);
 });
