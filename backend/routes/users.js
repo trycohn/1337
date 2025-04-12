@@ -353,21 +353,22 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 // Маршрут для перенаправления пользователя на страницу авторизации Faceit
 router.get('/link-faceit', authenticateToken, (req, res) => {
     const clientId = process.env.FACEIT_CLIENT_ID;
-    const redirectUri = process.env.FACEIT_REDIRECT_URI; // например, "https://1337community.com/api/users/faceit-callback"
+    const redirectUri = process.env.FACEIT_REDIRECT_URI; // должен точно совпадать с настройками Faceit
 
-    // Генерируем code_verifier
+    // Генерация code_verifier и вычисление code_challenge (S256)
     const codeVerifier = crypto.randomBytes(32).toString('hex');
-
-    // Вычисляем code_challenge по алгоритму S256
     const hash = crypto.createHash('sha256').update(codeVerifier).digest();
-    const codeChallenge = hash.toString('base64')      // base64
-      .replace(/\+/g, '-') // URL-safe
+    const codeChallenge = hash.toString('base64')
+      .replace(/\+/g, '-')  // URL-safe
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Сохраните codeVerifier для текущего пользователя (например, в сессии или in-memory map)
-    // req.session.faceitCodeVerifier = codeVerifier;
+    // Генерируем state-параметр для защиты от CSRF и для соблюдения требований Faceit
+    const state = crypto.randomBytes(16).toString('hex');
+    
+    // Сохраните codeVerifier и state для текущего пользователя (например, в сессии или in-memory storage)
     console.log(`PKCE: codeVerifier для user ${req.user.id}:`, codeVerifier);
+    console.log(`State для user ${req.user.id}:`, state);
 
     const authUrl = 'https://accounts.faceit.com/api/v1/authorize';
     const params = querystring.stringify({
@@ -376,7 +377,8 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         response_type: 'code',
         scope: 'openid profile email membership',
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256'
+        code_challenge_method: 'S256',
+        state: state
     });
     res.redirect(`${authUrl}?${params}`);
 });
