@@ -352,8 +352,9 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 // Маршрут для перенаправления пользователя на страницу авторизации Faceit
 router.get('/link-faceit', authenticateToken, (req, res) => {
     const clientId = process.env.FACEIT_CLIENT_ID;
-    const redirectUri = process.env.FACEIT_REDIRECT_URI;
-    const authUrl = 'https://accounts.faceit.com';
+    const redirectUri = process.env.FACEIT_REDIRECT_URI; // например, "https://1337community.com/api/users/faceit-callback"
+    // Используем endpoint, который получает ошибку, т.е. с подкаталогом
+    const authUrl = 'https://accounts.faceit.com/api/v1/authorize';
     const params = querystring.stringify({
         client_id: clientId,
         redirect_uri: redirectUri,
