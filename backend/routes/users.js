@@ -370,7 +370,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     res.cookie('faceit_code_verifier', codeVerifier, { httpOnly: true, secure: true });
     res.cookie('faceit_state', state, { httpOnly: true, secure: true });
 
-    const authUrl = 'https://accounts.faceit.com/api/v1/authorize';
+    const authUrl = 'https://accounts.faceit.com';
     const params = querystring.stringify({
         client_id: clientId,
         redirect_uri: redirectUri,
