@@ -26,17 +26,23 @@ function Profile() {
             });
             setUser(response.data);
             setNewUsername(response.data.username);
+            
+            // Автоматически загружаем статистику CS2, если есть steam_id
+            if (response.data.steam_id) {
+                fetchCs2Stats(response.data.steam_id);
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки данных пользователя');
         }
     };
 
-    const fetchCs2Stats = async () => {
-        if (!user.steam_id) return;
+    const fetchCs2Stats = async (steamId) => {
+        const id = steamId || (user && user.steam_id);
+        if (!id) return;
         
         setIsLoadingCs2Stats(true);
         try {
-            const response = await api.get(`/api/playerStats/${user.steam_id}`);
+            const response = await api.get(`/api/playerStats/${id}`);
             if (response.data.success) {
                 setCs2Stats(response.data.data);
             }
@@ -327,10 +333,10 @@ function Profile() {
                         <div className="steam-buttons">
                             <button onClick={unlinkSteam}>Отвязать стим</button>
                             <button 
-                                onClick={fetchCs2Stats} 
+                                onClick={() => fetchCs2Stats()}
                                 disabled={isLoadingCs2Stats}
                             >
-                                {isLoadingCs2Stats ? 'Загрузка...' : 'Статистика CS2'}
+                                {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
                             </button>
                         </div>
                     )}
