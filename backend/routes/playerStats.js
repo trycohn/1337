@@ -21,7 +21,7 @@ async function scrapePlayerStats(steamId) {
             waitUntil: 'networkidle2',
         });
 
-        await page.waitForSelector('#player-ranks', { timeout: 10000 });
+        await page.waitForSelector('#player-ranks', { timeout: 5000 });
 
         const stats = await page.evaluate(() => {
             const rankImages = Array.from(document.getElementById('player-ranks').querySelectorAll('img'))
