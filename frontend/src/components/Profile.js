@@ -143,7 +143,7 @@ function Profile() {
     const initFaceitSdk = () => {
         try {
             // Проверяем наличие SDK и функции инициализации
-            if (!window.FACEIT_CONFIG || !window.FACEIT || typeof window.FACEIT.init !== 'function') {
+            if (!window.FACEIT || typeof window.FACEIT.init !== 'function') {
                 console.error('FACEIT SDK не загружен или недоступен');
                 setError('FACEIT SDK не загружен. Пожалуйста, обновите страницу или попробуйте позже.');
                 return false;
@@ -155,8 +155,8 @@ function Profile() {
             const state = `${randomPart}-${userId}`;
 
             // Получаем client_id из конфигурации или переменных окружения
-            let clientId = window.FACEIT_CONFIG.client_id;
-            if (clientId.includes('%REACT_APP_')) {
+            let clientId = window.FACEIT_CONFIG?.client_id;
+            if (!clientId || clientId.includes('%REACT_APP_')) {
                 clientId = process.env.REACT_APP_FACEIT_CLIENT_ID || 'b1e036ba-787c-4898-967b-bb94a5479a8c';
             }
 
@@ -176,7 +176,9 @@ function Profile() {
 
             // Реинициализация SDK с новыми параметрами
             window.FACEIT.init(initParams);
-            window.FACEIT_CONFIG.is_sdk_loaded = true;
+            if (window.FACEIT_CONFIG) {
+                window.FACEIT_CONFIG.is_sdk_loaded = true;
+            }
             return true;
         } catch (err) {
             console.error('Ошибка инициализации FACEIT SDK:', err);
