@@ -165,7 +165,7 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
 
     try {
         console.log('Linking Steam ID:', steamId, 'to user:', req.user.id);
-        const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1');
+        const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== req.user.id) {
             console.error('Steam ID already linked to another user:', existingSteamUser.rows[0].id);
             return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
