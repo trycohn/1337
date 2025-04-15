@@ -20,28 +20,9 @@ const puppeteer = require('puppeteer');
 const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 const tournamentsRouter = require('./routes/tournaments');
-const passport = require('./passport');
-const session = require('express-session');
 
 const app = express();
 const server = http.createServer(app);
-
-// Настройка сессий для Passport
-app.use(session({
-  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'none',
-    httpOnly: true
-  }
-}));
-
-// Инициализация Passport
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {

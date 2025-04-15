@@ -8,7 +8,6 @@ const axios = require('axios');
 const querystring = require('querystring');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
-const passport = require('passport');
 
 // Подключаем cookie-parser middleware
 router.use(cookieParser());
@@ -357,99 +356,149 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 
 // Маршрут для перенаправления пользователя на страницу авторизации Faceit
 router.get('/link-faceit', authenticateToken, (req, res) => {
-    try {
-        console.log('Начало процесса привязки FACEIT для пользователя:', req.user.id);
-        
-        // Сохраняем ID пользователя в сессии для последующего использования
-        req.session.userId = req.user.id;
-        req.session.save((err) => {
-            if (err) {
-                console.error('Ошибка сохранения сессии:', err);
-                return res.status(500).json({ error: 'Ошибка сохранения сессии' });
-            }
-            console.log('ID пользователя сохранен в сессии:', req.session.userId);
-            
-            // Перенаправляем на авторизацию через Passport
-            passport.authenticate('faceit', {
-                state: req.user.id
-            })(req, res);
-        });
-    } catch (err) {
-        console.error('Ошибка в маршруте link-faceit:', err);
-        res.status(500).json({ error: 'Ошибка привязки FACEIT' });
-    }
+    const clientId = process.env.FACEIT_CLIENT_ID;
+    const redirectUri = process.env.FACEIT_REDIRECT_URI; // должен точно совпадать с настройками Faceit
+
+    // Генерация code_verifier и вычисление code_challenge (S256)
+    const codeVerifier = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(codeVerifier).digest();
+    const codeChallenge = hash.toString('base64')
+      .replace(/\+/g, '-')  // URL-safe
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Генерируем state-параметр, включающий userId
+    const randomPart = crypto.randomBytes(8).toString('hex');
+    const state = `${randomPart}-${req.user.id}`;
+
+    // Выводим в лог параметры перед установкой кук
+    console.log('Устанавливаем куки для FACEIT авторизации:');
+    console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
+    console.log('state:', state);
+    console.log('Host:', req.headers.host);
+    console.log('Origin:', req.headers.origin);
+
+    // Получаем домен из заголовка или используем стандартный
+    const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
+    const cookieOptions = { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'none',
+        maxAge: 15 * 60 * 1000 // 15 минут
+    };
+    
+    console.log('Cookie options:', cookieOptions);
+
+    // Сохраняем codeVerifier и state в куки с настройками для HTTPS
+    res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
+    res.cookie('faceit_state', state, cookieOptions);
+
+    const authUrl = 'https://accounts.faceit.com';
+    const params = querystring.stringify({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid profile email membership',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+        state: state,
+        redirect_popup: 'true'
+    });
+    
+    console.log('Redirect URL:', `${authUrl}?${params}`);
+    console.log('FACEIT параметры:', {clientId, redirectUri});
+    
+    res.redirect(`${authUrl}?${params}`);
 });
 
 // Callback для Faceit после авторизации
-router.get('/faceit-callback', 
-    (req, res, next) => {
-        console.log('Получен callback от FACEIT:', req.query);
-        console.log('Сессия в callback:', req.session);
-        next();
-    },
-    passport.authenticate('faceit', { 
-        failureRedirect: 'https://1337community.com/profile?error=faceit_auth_failed',
-        session: false
-    }), 
-    async (req, res) => {
-        try {
-            console.log('Данные пользователя после аутентификации:', req.user);
-            
-            // Получаем ID пользователя из сессии
-            const userId = req.session.userId;
-            console.log('ID пользователя из сессии:', userId);
-            
-            if (!userId) {
-                console.error('Ошибка: ID пользователя отсутствует в сессии');
-                return res.redirect('https://1337community.com/profile?error=no_user_id');
-            }
-            
-            // Если это новый пользователь FACEIT, создаем его
-            if (req.user.is_new) {
-                console.log('Создание нового пользователя FACEIT');
-                // Проверяем, не существует ли уже пользователь с таким email
-                const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1', [req.user.email]);
-                
-                if (emailCheck.rows.length > 0) {
-                    // Если пользователь с таким email существует, обновляем его faceit_id
-                    await pool.query(
-                        'UPDATE users SET faceit_id = $1 WHERE id = $2',
-                        [req.user.faceit_id, emailCheck.rows[0].id]
-                    );
-                    console.log('FACEit профиль успешно привязан к существующему пользователю', emailCheck.rows[0].id);
-                } else {
-                    // Создаем нового пользователя
-                    const hashedPassword = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
-                    const result = await pool.query(
-                        'INSERT INTO users (username, email, password_hash, faceit_id) VALUES ($1, $2, $3, $4) RETURNING id',
-                        [req.user.username, req.user.email, hashedPassword, req.user.faceit_id]
-                    );
-                    console.log('Создан новый пользователь с FACEit профилем', result.rows[0].id);
-                }
-            } else {
-                // Обновляем faceit_id для существующего пользователя
-                console.log('Обновление faceit_id для пользователя:', userId);
-                await pool.query(
-                    'UPDATE users SET faceit_id = $1 WHERE id = $2',
-                    [req.user.faceit_id, userId]
-                );
-                console.log('FACEit профиль успешно привязан для пользователя', userId);
-            }
-            
-            // Очищаем сессию
-            req.session.destroy((err) => {
-                if (err) {
-                    console.error('Ошибка при уничтожении сессии:', err);
-                }
-                
-                // Перенаправляем на страницу профиля
-                res.redirect('https://1337community.com/profile?faceit=success');
-            });
-        } catch (err) {
-            console.error('Ошибка привязки Faceit:', err);
-            res.redirect(`https://1337community.com/profile?error=faceit_error&message=${encodeURIComponent(err.message)}`);
-        }
+router.get('/faceit-callback', async (req, res) => {
+    const { code, state: returnedState } = req.query;
+    console.log('Получен callback от FACEIT:', req.query);
+    console.log('Cookies в запросе:', req.cookies);
+    
+    if (!code) {
+        console.error('Ошибка: Код авторизации отсутствует');
+        return res.redirect('https://1337community.com/profile?error=no_code');
     }
-);
+    
+    try {
+        const savedState = req.cookies.faceit_state;
+        if (!savedState || savedState !== returnedState) {
+            console.error('Ошибка: Несоответствие state параметра', {
+                savedState,
+                returnedState
+            });
+            return res.redirect('https://1337community.com/profile?error=invalid_state');
+        }
+        
+        const codeVerifier = req.cookies.faceit_code_verifier;
+        if (!codeVerifier) {
+            console.error('Ошибка: code_verifier отсутствует в куки');
+            return res.redirect('https://1337community.com/profile?error=no_verifier');
+        }
+
+        console.log('Отправка запроса на получение токена FACEIT...');
+        console.log('FACEIT_REDIRECT_URI:', process.env.FACEIT_REDIRECT_URI);
+        
+        // Обмен кода авторизации на токен, передавая code_verifier
+        const tokenParams = {
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: process.env.FACEIT_REDIRECT_URI,
+            client_id: process.env.FACEIT_CLIENT_ID,
+            client_secret: process.env.FACEIT_CLIENT_SECRET,
+            code_verifier: codeVerifier
+        };
+        
+        console.log('Параметры запроса токена:', tokenParams);
+        
+        const tokenResponse = await axios.post(
+            'https://api.faceit.com/auth/v1/oauth/token',
+            querystring.stringify(tokenParams),
+            { 
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded' 
+                }
+            }
+        );
+        
+        const { access_token } = tokenResponse.data;
+        console.log('Токен получен успешно, запрашиваем данные пользователя');
+        
+        // Получение данных пользователя с помощью access_token
+        const userInfoResponse = await axios.get(
+            'https://api.faceit.com/auth/v1/resources/userinfo',
+            { headers: { Authorization: `Bearer ${access_token}` } }
+        );
+        const faceitUser = userInfoResponse.data;
+        console.log('Получены данные пользователя FACEIT:', faceitUser.id);
+        
+        const stateParts = savedState.split('-');
+        const userId = stateParts[stateParts.length - 1];
+        
+        // Обновляем faceit_id для пользователя в базе данных
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
+        console.log('FACEit профиль успешно привязан для пользователя', userId);
+        
+        // Очищаем куки
+        res.clearCookie('faceit_code_verifier', { httpOnly: true, secure: true, sameSite: 'none' });
+        res.clearCookie('faceit_state', { httpOnly: true, secure: true, sameSite: 'none' });
+        
+        res.redirect('https://1337community.com/profile?faceit=success');
+    } catch (err) {
+        console.error('Ошибка привязки Faceit:', err.response?.data || err.message);
+        // Более подробный лог ошибки
+        if (err.response) {
+            console.error('Данные ответа с ошибкой:', {
+                data: err.response.data,
+                status: err.response.status,
+                headers: err.response.headers
+            });
+        }
+        
+        res.redirect(`https://1337community.com/profile?error=faceit_error&message=${encodeURIComponent(err.message)}`);
+    }
+});
 
 module.exports = router;
