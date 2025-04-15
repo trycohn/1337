@@ -161,8 +161,31 @@ function Profile() {
 
     const linkFaceit = () => {
         const token = localStorage.getItem('token');
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-        window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
+        if (token) {
+            const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+            // Используем fetch вместо window.location.href для передачи заголовка Authorization
+            fetch(`${baseUrl}/api/users/link-faceit`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include' // Важно для работы с cookie
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    return response.text().then(text => {
+                        throw new Error(`Ошибка перенаправления: ${text}`);
+                    });
+                }
+            })
+            .catch(err => {
+                setError(`Ошибка привязки FACEIT: ${err.message}`);
+            });
+        } else {
+            setError('Вы должны быть авторизованы для привязки FACEIT');
+        }
     };
 
     const verifyProfile = async () => {

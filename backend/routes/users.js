@@ -384,6 +384,8 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         httpOnly: true, 
         secure: true, 
         sameSite: 'none',
+        domain: domain,
+        path: '/',
         maxAge: 15 * 60 * 1000 // 15 минут
     };
     
@@ -481,9 +483,20 @@ router.get('/faceit-callback', async (req, res) => {
         await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
         console.log('FACEit профиль успешно привязан для пользователя', userId);
         
+        // Получаем домен из заголовка или используем стандартный
+        const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
+        const cookieOptions = { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'none',
+            domain: domain,
+            path: '/',
+            maxAge: 0 // Сразу истекает
+        };
+        
         // Очищаем куки
-        res.clearCookie('faceit_code_verifier', { httpOnly: true, secure: true, sameSite: 'none' });
-        res.clearCookie('faceit_state', { httpOnly: true, secure: true, sameSite: 'none' });
+        res.clearCookie('faceit_code_verifier', cookieOptions);
+        res.clearCookie('faceit_state', cookieOptions);
         
         res.redirect('https://1337community.com/profile?faceit=success');
     } catch (err) {
