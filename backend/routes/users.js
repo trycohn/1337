@@ -398,7 +398,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     const params = querystring.stringify({
         client_id: clientId,
         redirect_uri: redirectUri,
-        response_type: 'token',
+        response_type: 'code',
         scope: 'openid profile email',
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
