@@ -137,6 +137,89 @@ function Profile() {
         setShowModal(false);
     };
 
+    // Функция для инициализации параметров FACEIT SDK и генерации state
+    const initFaceitSdk = () => {
+        try {
+            // Проверяем наличие SDK
+            if (typeof FACEIT === 'undefined') {
+                setError('FACEIT SDK не загружен');
+                return false;
+            }
+
+            // Генерируем state с userId для безопасности
+            const userId = user?.id || '';
+            const randomPart = Math.random().toString(36).substring(2, 10);
+            const state = `${randomPart}-${userId}`;
+
+            // Обновляем параметры инициализации
+            const initParams = {
+                client_id: process.env.REACT_APP_FACEIT_CLIENT_ID || '',
+                response_type: 'code',
+                state: state,
+                redirect_popup: true,
+                debug: true
+            };
+
+            // Реинициализация SDK с новыми параметрами
+            FACEIT.init(initParams);
+            return true;
+        } catch (err) {
+            console.error('Ошибка инициализации FACEIT SDK:', err);
+            setError('Не удалось инициализировать FACEIT SDK');
+            return false;
+        }
+    };
+
+    // Обновляем функцию привязки FACEIT
+    const linkFaceit = () => {
+        if (!initFaceitSdk()) return;
+
+        try {
+            // Добавляем div для кнопки, если его еще нет
+            const faceitLoginDiv = document.getElementById('faceitLogin');
+            if (!faceitLoginDiv) {
+                const div = document.createElement('div');
+                div.id = 'faceitLogin';
+                div.style.display = 'none';
+                document.body.appendChild(div);
+            }
+
+            // Вызываем логин через FACEIT SDK
+            const popup = FACEIT.loginWithFaceit();
+            if (!popup) {
+                setError('Не удалось открыть окно авторизации FACEIT');
+            }
+        } catch (err) {
+            console.error('Ошибка при вызове FACEIT логина:', err);
+            setError('Ошибка авторизации FACEIT');
+        }
+    };
+
+    // Добавляем функцию для обработки кода авторизации
+    const handleFaceitCode = async (code, state) => {
+        if (!code) {
+            setError('Отсутствует код авторизации FACEIT');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            // Отправляем код на бэкенд для обмена на токен
+            const response = await api.post('/api/users/faceit-oauth', 
+                { code, state },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            if (response.data && response.data.success) {
+                setError('');
+                fetchUserData(token);
+            }
+        } catch (err) {
+            console.error('Ошибка обработки кода FACEIT:', err);
+            setError(err.response?.data?.message || 'Ошибка привязки FACEIT аккаунта');
+        }
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -147,7 +230,18 @@ function Profile() {
             if (steamId) {
                 handleSteamCallback(steamId, token);
             }
+
+            // Проверяем параметры для FACEIT
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            if (code && state) {
+                handleFaceitCode(code, state);
+                // Очищаем URL после обработки
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -158,12 +252,6 @@ function Profile() {
             setError(`Ошибка привязки FACEIT: ${params.get('error')}`);
         }
     }, []);
-
-    const linkFaceit = () => {
-        const token = localStorage.getItem('token');
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-        window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
-    };
 
     const verifyProfile = async () => {
         try {
@@ -352,6 +440,8 @@ function Profile() {
                 </div>
                 <div>
                     <button onClick={linkFaceit}>Привязать FACEit</button>
+                    {/* Добавляем скрытый div для кнопки FACEIT */}
+                    <div id="faceitLogin" style={{ display: 'none' }}></div>
                 </div>
                 <p>FACEit: {user.faceit_id || 'Не привязан'}</p>
             </section>

@@ -501,4 +501,90 @@ router.get('/faceit-callback', async (req, res) => {
     }
 });
 
+// Новый маршрут для обмена кода авторизации FACEIT на токен из фронтенда
+router.post('/faceit-oauth', authenticateToken, async (req, res) => {
+    const { code, state } = req.body;
+    
+    if (!code) {
+        console.error('Ошибка: Код авторизации отсутствует');
+        return res.status(400).json({ message: 'Код авторизации FACEIT обязателен' });
+    }
+    
+    try {
+        // Парсим state для получения userId (проверка безопасности)
+        const stateParts = state.split('-');
+        if (stateParts.length < 2) {
+            console.error('Ошибка: Некорректный формат state');
+            return res.status(400).json({ message: 'Некорректный формат state' });
+        }
+        
+        const stateUserId = stateParts[stateParts.length - 1];
+        
+        // Проверяем, что userId из state совпадает с авторизованным пользователем
+        if (stateUserId && stateUserId !== req.user.id.toString()) {
+            console.error('Ошибка: Несоответствие ID пользователя', {
+                stateUserId,
+                tokenUserId: req.user.id
+            });
+            return res.status(403).json({ message: 'Несоответствие ID пользователя' });
+        }
+
+        console.log('Отправка запроса на получение токена FACEIT...');
+        
+        // Обмен кода авторизации на токен
+        const tokenParams = {
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: process.env.FACEIT_REDIRECT_URI,
+            client_id: process.env.FACEIT_CLIENT_ID,
+            client_secret: process.env.FACEIT_CLIENT_SECRET
+        };
+        
+        console.log('Параметры запроса токена:', {
+            ...tokenParams,
+            client_secret: '[СКРЫТ]'
+        });
+        
+        const tokenResponse = await axios.post(
+            'https://api.faceit.com/auth/v1/oauth/token',
+            querystring.stringify(tokenParams),
+            { 
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded' 
+                }
+            }
+        );
+        
+        const { access_token } = tokenResponse.data;
+        console.log('Токен получен успешно, запрашиваем данные пользователя');
+        
+        // Получение данных пользователя с помощью access_token
+        const userInfoResponse = await axios.get(
+            'https://api.faceit.com/auth/v1/resources/userinfo',
+            { headers: { Authorization: `Bearer ${access_token}` } }
+        );
+        const faceitUser = userInfoResponse.data;
+        console.log('Получены данные пользователя FACEIT:', faceitUser.id);
+        
+        // Обновляем faceit_id для пользователя в базе данных
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, req.user.id]);
+        console.log('FACEit профиль успешно привязан для пользователя', req.user.id);
+        
+        res.json({ success: true, message: 'FACEIT аккаунт успешно привязан' });
+    } catch (err) {
+        console.error('Ошибка привязки Faceit:', err.response?.data || err.message);
+        
+        // Более подробный лог ошибки
+        if (err.response) {
+            console.error('Данные ответа с ошибкой:', {
+                data: err.response.data,
+                status: err.response.status,
+                headers: err.response.headers
+            });
+        }
+        
+        res.status(500).json({ message: 'Ошибка привязки FACEIT аккаунта' });
+    }
+});
+
 module.exports = router;
