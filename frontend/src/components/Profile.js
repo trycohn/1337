@@ -142,8 +142,8 @@ function Profile() {
     // Функция для инициализации параметров FACEIT SDK и генерации state
     const initFaceitSdk = () => {
         try {
-            // Проверяем наличие SDK
-            if (typeof FACEIT === 'undefined') {
+            // Проверяем наличие SDK и функции инициализации
+            if (!window.FACEIT_CONFIG || !window.FACEIT || typeof window.FACEIT.init !== 'function') {
                 console.error('FACEIT SDK не загружен или недоступен');
                 setError('FACEIT SDK не загружен. Пожалуйста, обновите страницу или попробуйте позже.');
                 return false;
@@ -154,17 +154,29 @@ function Profile() {
             const randomPart = Math.random().toString(36).substring(2, 10);
             const state = `${randomPart}-${userId}`;
 
+            // Получаем client_id из конфигурации или переменных окружения
+            let clientId = window.FACEIT_CONFIG.client_id;
+            if (clientId.includes('%REACT_APP_')) {
+                clientId = process.env.REACT_APP_FACEIT_CLIENT_ID || 'b1e036ba-787c-4898-967b-bb94a5479a8c';
+            }
+
             // Обновляем параметры инициализации
             const initParams = {
-                client_id: process.env.REACT_APP_FACEIT_CLIENT_ID || '',
+                client_id: clientId,
                 response_type: 'code',
                 state: state,
                 redirect_popup: true,
                 debug: true
             };
 
+            console.log('Реинициализация FACEIT SDK с параметрами:', {
+                ...initParams,
+                client_id: initParams.client_id.substring(0, 6) + '...'
+            });
+
             // Реинициализация SDK с новыми параметрами
-            FACEIT.init(initParams);
+            window.FACEIT.init(initParams);
+            window.FACEIT_CONFIG.is_sdk_loaded = true;
             return true;
         } catch (err) {
             console.error('Ошибка инициализации FACEIT SDK:', err);
@@ -176,10 +188,16 @@ function Profile() {
     // Обновляем функцию привязки FACEIT
     const linkFaceit = () => {
         try {
-            if (typeof FACEIT === 'undefined') {
-                console.error('FACEIT SDK не загружен или недоступен');
-                setError('FACEIT SDK не загружен. Пожалуйста, обновите страницу или попробуйте позже.');
-                return;
+            // Если SDK еще не загружен, попробуем инициализировать его
+            if (!window.FACEIT_CONFIG || !window.FACEIT_CONFIG.is_sdk_loaded) {
+                // Пробуем инициализировать через глобальную функцию
+                if (window.initFaceitSdk && window.initFaceitSdk()) {
+                    console.log('FACEIT SDK инициализирован через глобальную функцию');
+                } else {
+                    console.error('FACEIT SDK не загружен или недоступен');
+                    setError('FACEIT SDK не загружен. Пожалуйста, обновите страницу или попробуйте позже.');
+                    return;
+                }
             }
             
             if (!initFaceitSdk()) return;
@@ -194,9 +212,12 @@ function Profile() {
             }
 
             // Вызываем логин через FACEIT SDK
-            const popup = FACEIT.loginWithFaceit();
+            console.log('Вызываем FACEIT.loginWithFaceit()');
+            const popup = window.FACEIT.loginWithFaceit();
             if (!popup) {
                 setError('Не удалось открыть окно авторизации FACEIT');
+            } else {
+                console.log('Окно авторизации FACEIT открыто');
             }
         } catch (err) {
             console.error('Ошибка при вызове FACEIT логина:', err);
