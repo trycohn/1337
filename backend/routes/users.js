@@ -377,7 +377,6 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
     console.log('code_challenge:', codeChallenge.substring(0, 10) + '...');
     console.log('state:', state);
-    console.log('Redirect URI:', redirectUri);
 
     // Получаем домен из заголовка или используем стандартный
     const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
@@ -394,7 +393,7 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
     res.cookie('faceit_state', state, cookieOptions);
 
-    // Формируем URL авторизации FACEIT согласно OpenID endpoints
+    // Формируем URL авторизации FACEIT
     const authUrl = 'https://accounts.faceit.com';
     const params = querystring.stringify({
         client_id: clientId,
@@ -403,7 +402,8 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         scope: 'openid profile email',
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
-        state: state
+        state: state,
+        redirect_popup: true
     });
     
     console.log('Redirect URL:', `${authUrl}?${params}`);
@@ -414,14 +414,9 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
 
 // Callback для Faceit после авторизации
 router.get('/faceit-callback', async (req, res) => {
-    const { code, state: returnedState, error } = req.query;
+    const { code, state: returnedState } = req.query;
     console.log('Получен callback от FACEIT:', req.query);
     console.log('Cookies в запросе:', req.cookies);
-    
-    if (error) {
-        console.error('Ошибка FACEIT:', error);
-        return res.redirect(`https://1337community.com/profile?error=${error}`);
-    }
     
     if (!code) {
         console.error('Ошибка: Код авторизации отсутствует');
@@ -446,7 +441,6 @@ router.get('/faceit-callback', async (req, res) => {
 
         console.log('Отправка запроса на получение токена FACEIT...');
         console.log('FACEIT_REDIRECT_URI:', process.env.FACEIT_REDIRECT_URI);
-        console.log('Code verifier:', codeVerifier.substring(0, 10) + '...');
         
         // Обмен кода авторизации на токен, передавая code_verifier
         const tokenResponse = await axios.post(
@@ -466,7 +460,6 @@ router.get('/faceit-callback', async (req, res) => {
             }
         );
         
-        console.log('Получен ответ с токеном:', tokenResponse.data);
         const { access_token } = tokenResponse.data;
         console.log('Токен получен успешно, запрашиваем данные пользователя');
         
@@ -477,20 +470,14 @@ router.get('/faceit-callback', async (req, res) => {
         );
         
         const faceitUser = userInfoResponse.data;
-        console.log('Получены данные пользователя FACEIT:', faceitUser);
-        
-        // Используем sub или другой идентификатор пользователя
-        const faceitId = faceitUser.sub || faceitUser.id || faceitUser.guid;
-        console.log('Используем идентификатор FACEIT:', faceitId);
-        
-        if (!faceitId) {
-            console.error('Не найден идентификатор FACEIT пользователя в ответе');
-            return res.redirect('https://1337community.com/profile?error=no_faceit_id');
-        }
+        console.log('Получены данные пользователя FACEIT:', faceitUser.sub || faceitUser.id);
         
         // Извлекаем userId из state
         const stateParts = savedState.split('-');
         const userId = stateParts[stateParts.length - 1];
+        
+        // Используем sub как идентификатор, если он есть, иначе id
+        const faceitId = faceitUser.sub || faceitUser.id;
         
         // Обновляем faceit_id для пользователя в базе данных
         await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitId, userId]);
