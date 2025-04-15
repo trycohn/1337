@@ -4,7 +4,6 @@ import TournamentDetails from './components/TournamentDetails';
 import TournamentsPage from './pages/TournamentsPage';
 import Layout from './components/Layout'; // Импортируем Layout как корневой компонент
 import Profile from './components/Profile'; // Добавляем импорт Profile
-import FaceitCallback from './components/FaceitCallback';
 
 function App() {
     return (
@@ -16,7 +15,6 @@ function App() {
                     <Route path="/tournaments/:id" element={<TournamentDetails />} />
                     <Route path="/register" element={<div>Страница для регистрации</div>} /> {/* Пример для ссылки */}
                     <Route path="/profile" element={<Profile />} /> {/* Добавляем маршрут для профиля */}
-                    <Route path="/faceit-callback" element={<FaceitCallback />} />
                 </Route>
             </Routes>
         </Router>

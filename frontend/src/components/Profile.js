@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import api from '../axios';
-import FaceitSDK from './FaceitSDK';
 import './Profile.css';
 
 function Profile() {
@@ -19,7 +18,6 @@ function Profile() {
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [steamNickname, setSteamNickname] = useState(''); // Оставляем как есть
-    const [faceitSDK, setFaceitSDK] = useState(null);
 
     const fetchUserData = async (token) => {
         try {
@@ -162,11 +160,9 @@ function Profile() {
     }, []);
 
     const linkFaceit = () => {
-        if (faceitSDK) {
-            faceitSDK.loginWithFaceit();
-        } else {
-            setError('FACEIT SDK не инициализирован');
-        }
+        const token = localStorage.getItem('token');
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
     };
 
     const verifyProfile = async () => {
@@ -306,7 +302,6 @@ function Profile() {
 
     return (
         <div className="profile">
-            <FaceitSDK onInit={setFaceitSDK} />
             <h2>Личный кабинет</h2>
             {error && <p className="error">{error}</p>}
             
