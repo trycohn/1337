@@ -394,11 +394,11 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     res.cookie('faceit_state', state, cookieOptions);
 
     // Формируем URL авторизации FACEIT
-    const authUrl = 'https://api.faceit.com/auth/v1/oauth/authorize';
+    const authUrl = 'https://accounts.faceit.com/';
     const params = querystring.stringify({
         client_id: clientId,
         redirect_uri: redirectUri,
-        response_type: 'code',
+        response_type: 'token',
         scope: 'openid profile email',
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
