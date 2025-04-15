@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../axios';
 import './Profile.css';
 
+/* global FACEIT */
+
 function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
@@ -142,7 +144,8 @@ function Profile() {
         try {
             // Проверяем наличие SDK
             if (typeof FACEIT === 'undefined') {
-                setError('FACEIT SDK не загружен');
+                console.error('FACEIT SDK не загружен или недоступен');
+                setError('FACEIT SDK не загружен. Пожалуйста, обновите страницу или попробуйте позже.');
                 return false;
             }
 
@@ -165,16 +168,22 @@ function Profile() {
             return true;
         } catch (err) {
             console.error('Ошибка инициализации FACEIT SDK:', err);
-            setError('Не удалось инициализировать FACEIT SDK');
+            setError('Не удалось инициализировать FACEIT SDK. Пожалуйста, попробуйте позже.');
             return false;
         }
     };
 
     // Обновляем функцию привязки FACEIT
     const linkFaceit = () => {
-        if (!initFaceitSdk()) return;
-
         try {
+            if (typeof FACEIT === 'undefined') {
+                console.error('FACEIT SDK не загружен или недоступен');
+                setError('FACEIT SDK не загружен. Пожалуйста, обновите страницу или попробуйте позже.');
+                return;
+            }
+            
+            if (!initFaceitSdk()) return;
+
             // Добавляем div для кнопки, если его еще нет
             const faceitLoginDiv = document.getElementById('faceitLogin');
             if (!faceitLoginDiv) {
@@ -191,7 +200,7 @@ function Profile() {
             }
         } catch (err) {
             console.error('Ошибка при вызове FACEIT логина:', err);
-            setError('Ошибка авторизации FACEIT');
+            setError('Ошибка авторизации FACEIT. Пожалуйста, попробуйте позже.');
         }
     };
 
