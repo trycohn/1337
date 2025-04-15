@@ -34,22 +34,12 @@ app.use((req, res, next) => {
   console.log(`🔍 Все заголовки запроса:`, req.headers);
   console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`);
   console.log(`🔍 Разрешённые origins: ${allowedOrigins}`);
-  
-  // Проверяем, находится ли origin в списке разрешенных
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    console.log(`✅ Origin ${origin} разрешён`);
-  } else {
-    // Временно разрешаем любой origin для теста
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    console.log(`⚠️ Origin ${origin} не в списке разрешенных, но временно разрешен`);
-  }
-  
+  // Временно разрешаем любой origin для теста
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  console.log(`✅ Origin ${origin} разрешён (временная настройка)`);
   res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
-  
   if (req.method === 'OPTIONS') {
       console.log(`🔍 Обработка preflight-запроса (OPTIONS) для ${req.path}`);
       return res.status(200).end();

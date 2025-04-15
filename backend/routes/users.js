@@ -355,102 +355,67 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 });
 
 // Маршрут для перенаправления пользователя на страницу авторизации Faceit
-router.get('/link-faceit', async (req, res) => {
-    try {
-        let userId;
-        // Проверяем токен авторизации
-        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-            // Если передан через заголовок
-            const token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            userId = decoded.id;
-        } else if (req.query.token) {
-            // Если передан через параметр запроса
-            const token = req.query.token;
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            userId = decoded.id;
-        } else {
-            return res.status(401).json({ error: 'Токен авторизации отсутствует' });
-        }
+router.get('/link-faceit', authenticateToken, (req, res) => {
+    const clientId = process.env.FACEIT_CLIENT_ID;
+    const redirectUri = process.env.FACEIT_REDIRECT_URI; // должен точно совпадать с настройками Faceit
 
-        const clientId = process.env.FACEIT_CLIENT_ID;
-        const redirectUri = process.env.FACEIT_REDIRECT_URI;
-        
-        if (!clientId || !redirectUri) {
-            console.error('Отсутствуют настройки FACEIT_CLIENT_ID или FACEIT_REDIRECT_URI');
-            return res.status(500).json({ error: 'Ошибка конфигурации сервера' });
-        }
+    // Генерация code_verifier и вычисление code_challenge (S256)
+    const codeVerifier = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(codeVerifier).digest();
+    const codeChallenge = hash.toString('base64')
+      .replace(/\+/g, '-')  // URL-safe
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
 
-        // Генерация code_verifier и вычисление code_challenge (S256)
-        const codeVerifier = crypto.randomBytes(32).toString('hex');
-        const hash = crypto.createHash('sha256').update(codeVerifier).digest();
-        const codeChallenge = hash.toString('base64')
-          .replace(/\+/g, '-')  // URL-safe
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
+    // Генерируем state-параметр, включающий userId
+    const randomPart = crypto.randomBytes(8).toString('hex');
+    const state = `${randomPart}-${req.user.id}`;
 
-        // Генерируем state-параметр, включающий userId
-        const randomPart = crypto.randomBytes(8).toString('hex');
-        const state = `${randomPart}-${userId}`;
+    // Выводим в лог параметры перед установкой кук
+    console.log('Устанавливаем куки для FACEIT авторизации:');
+    console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
+    console.log('state:', state);
+    console.log('Host:', req.headers.host);
+    console.log('Origin:', req.headers.origin);
 
-        // Выводим в лог параметры перед установкой кук
-        console.log('Устанавливаем куки для FACEIT авторизации:');
-        console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
-        console.log('state:', state);
-        console.log('Host:', req.headers.host);
-        console.log('Origin:', req.headers.origin);
+    // Получаем домен из заголовка или используем стандартный
+    const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
+    const cookieOptions = { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'none',
+        maxAge: 15 * 60 * 1000 // 15 минут
+    };
+    
+    console.log('Cookie options:', cookieOptions);
 
-        // Получаем домен из заголовка или используем стандартный
-        const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
-        const cookieOptions = { 
-            httpOnly: true, 
-            secure: true, 
-            sameSite: 'lax',
-            domain: domain,
-            path: '/',
-            maxAge: 15 * 60 * 1000 // 15 минут
-        };
-        
-        console.log('Cookie options:', cookieOptions);
+    // Сохраняем codeVerifier и state в куки с настройками для HTTPS
+    res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
+    res.cookie('faceit_state', state, cookieOptions);
 
-        // Сохраняем codeVerifier и state в куки с настройками для HTTPS
-        res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
-        res.cookie('faceit_state', state, cookieOptions);
-
-        const authUrl = 'https://accounts.faceit.com';
-        const params = querystring.stringify({
-            client_id: clientId,
-            redirect_uri: redirectUri,
-            response_type: 'code',
-            scope: 'openid profile email membership',
-            code_challenge: codeChallenge,
-            code_challenge_method: 'S256',
-            state: state,
-            redirect_popup: 'true'
-        });
-        
-        console.log('Redirect URL:', `${authUrl}?${params}`);
-        console.log('FACEIT параметры:', {clientId, redirectUri});
-        
-        res.redirect(`${authUrl}?${params}`);
-    } catch (err) {
-        console.error('Ошибка при подготовке авторизации FACEIT:', err);
-        res.status(500).json({ error: 'Ошибка сервера при привязке FACEIT' });
-    }
+    const authUrl = 'https://accounts.faceit.com';
+    const params = querystring.stringify({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid profile email membership',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+        state: state,
+        redirect_popup: 'true'
+    });
+    
+    console.log('Redirect URL:', `${authUrl}?${params}`);
+    console.log('FACEIT параметры:', {clientId, redirectUri});
+    
+    res.redirect(`${authUrl}?${params}`);
 });
 
 // Callback для Faceit после авторизации
 router.get('/faceit-callback', async (req, res) => {
-    const { code, state: returnedState, error, error_description } = req.query;
+    const { code, state: returnedState } = req.query;
     console.log('Получен callback от FACEIT:', req.query);
     console.log('Cookies в запросе:', req.cookies);
-    console.log('Полные заголовки запроса:', req.headers);
-    
-    // Если FACEIT вернул ошибку
-    if (error) {
-        console.error(`Ошибка от FACEIT: ${error} - ${error_description}`);
-        return res.redirect(`https://1337community.com/profile?error=faceit_auth_error&message=${encodeURIComponent(error_description || error)}`);
-    }
     
     if (!code) {
         console.error('Ошибка: Код авторизации отсутствует');
@@ -458,16 +423,8 @@ router.get('/faceit-callback', async (req, res) => {
     }
     
     try {
-        // Проверяем наличие state в куки
         const savedState = req.cookies.faceit_state;
-        if (!savedState) {
-            console.error('Ошибка: state параметр отсутствует в куки');
-            console.log('Доступные куки:', req.cookies);
-            return res.redirect('https://1337community.com/profile?error=no_state_cookie');
-        }
-        
-        // Проверяем соответствие state
-        if (savedState !== returnedState) {
+        if (!savedState || savedState !== returnedState) {
             console.error('Ошибка: Несоответствие state параметра', {
                 savedState,
                 returnedState
@@ -475,11 +432,9 @@ router.get('/faceit-callback', async (req, res) => {
             return res.redirect('https://1337community.com/profile?error=invalid_state');
         }
         
-        // Проверяем наличие code_verifier в куки
         const codeVerifier = req.cookies.faceit_code_verifier;
         if (!codeVerifier) {
             console.error('Ошибка: code_verifier отсутствует в куки');
-            console.log('Доступные куки:', req.cookies);
             return res.redirect('https://1337community.com/profile?error=no_verifier');
         }
 
@@ -491,8 +446,6 @@ router.get('/faceit-callback', async (req, res) => {
             grant_type: 'authorization_code',
             code,
             redirect_uri: process.env.FACEIT_REDIRECT_URI,
-            client_id: process.env.FACEIT_CLIENT_ID,
-            client_secret: process.env.FACEIT_CLIENT_SECRET,
             code_verifier: codeVerifier
         };
         
@@ -503,7 +456,10 @@ router.get('/faceit-callback', async (req, res) => {
             querystring.stringify(tokenParams),
             { 
                 headers: { 
-                    'Content-Type': 'application/x-www-form-urlencoded' 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': 'Basic ' + Buffer.from(
+                        `${process.env.FACEIT_CLIENT_ID}:${process.env.FACEIT_CLIENT_SECRET}`
+                    ).toString('base64')
                 }
             }
         );
@@ -519,7 +475,6 @@ router.get('/faceit-callback', async (req, res) => {
         const faceitUser = userInfoResponse.data;
         console.log('Получены данные пользователя FACEIT:', faceitUser.id);
         
-        // Извлекаем userId из state параметра
         const stateParts = savedState.split('-');
         const userId = stateParts[stateParts.length - 1];
         
@@ -527,20 +482,9 @@ router.get('/faceit-callback', async (req, res) => {
         await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
         console.log('FACEit профиль успешно привязан для пользователя', userId);
         
-        // Получаем домен из заголовка или используем стандартный
-        const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
-        const cookieOptions = { 
-            httpOnly: true, 
-            secure: true, 
-            sameSite: 'lax',
-            domain: domain,
-            path: '/',
-            maxAge: 0 // Сразу истекает
-        };
-        
         // Очищаем куки
-        res.clearCookie('faceit_code_verifier', cookieOptions);
-        res.clearCookie('faceit_state', cookieOptions);
+        res.clearCookie('faceit_code_verifier', { httpOnly: true, secure: true, sameSite: 'none' });
+        res.clearCookie('faceit_state', { httpOnly: true, secure: true, sameSite: 'none' });
         
         res.redirect('https://1337community.com/profile?faceit=success');
     } catch (err) {
