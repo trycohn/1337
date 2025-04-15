@@ -150,6 +150,25 @@ function Profile() {
         }
     }, []);
 
+    // Загружаем никнейм Steam при изменении user.steam_id
+    useEffect(() => {
+        if (user && user.steam_id) {
+            fetchSteamNickname();
+        }
+    }, [user?.steam_id]);
+
+    const fetchSteamNickname = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await api.get('/api/users/steam-nickname', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSteamNickname(response.data.steamNickname);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка получения никнейма Steam');
+        }
+    };
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('faceit') === 'success') {
@@ -325,7 +344,9 @@ function Profile() {
             <section>
                 <h3>Привязка профилей</h3>
                 <div>
-                    <p>Steam: {user.steam_url || 'Не привязан'}</p>
+                    <p>Steam: {user.steam_url 
+                        ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span> 
+                        : 'Не привязан'}</p>
                     {!user.steam_url && (
                         <button onClick={linkSteam}>Привязать Steam</button>
                     )}
