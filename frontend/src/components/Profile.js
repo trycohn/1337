@@ -344,7 +344,7 @@ function Profile() {
             <section>
                 <h3>Привязка профилей</h3>
                 <div>
-                    <p>Steam: {user.steam_url 
+                    <p>{user.steam_url 
                         ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span> 
                         : 'Не привязан'}</p>
                     {!user.steam_url && (
