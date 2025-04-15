@@ -473,13 +473,18 @@ router.get('/faceit-callback', async (req, res) => {
             { headers: { Authorization: `Bearer ${access_token}` } }
         );
         const faceitUser = userInfoResponse.data;
-        console.log('Получены данные пользователя FACEIT:', faceitUser.id);
+        console.log('Полный ответ от FACEIT API:', JSON.stringify(faceitUser, null, 2));
+        
+        // Извлекаем sub вместо id (sub содержит FACEIT ID пользователя в формате OAuth2)
+        const faceitId = faceitUser.sub || faceitUser.guid || faceitUser.id;
+        
+        console.log('Получены данные пользователя FACEIT:', faceitId);
         
         const stateParts = savedState.split('-');
         const userId = stateParts[stateParts.length - 1];
         
         // Обновляем faceit_id для пользователя в базе данных
-        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitId, userId]);
         console.log('FACEit профиль успешно привязан для пользователя', userId);
         
         // Очищаем куки
