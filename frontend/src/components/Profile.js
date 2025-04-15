@@ -103,6 +103,20 @@ function Profile() {
         }
     };
 
+    const unlinkFaceit = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            await api.post('/api/users/unlink-faceit', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(prevUser => prevUser ? { ...prevUser, faceit_id: null } : null);
+            setFaceitInfo(null);
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отвязки FACEIT');
+        }
+    };
+
     const updateUsername = async () => {
         const token = localStorage.getItem('token');
         try {
@@ -402,7 +416,9 @@ function Profile() {
             <section className="faceit-section">
                 <h3>Faceit</h3>
                 <div>
-                    <button onClick={linkFaceit}>Привязать FACEit</button>
+                    {!user.faceit_id && (
+                        <button onClick={linkFaceit}>Привязать FACEit</button>
+                    )}
                     <p>
                         {user.faceit_id 
                             ? <span>
@@ -416,6 +432,9 @@ function Profile() {
                             : 'Не привязан'
                         }
                     </p>
+                    {user.faceit_id && (
+                        <button onClick={unlinkFaceit}>Отвязать FACEIT</button>
+                    )}
                 </div>
             </section>
 

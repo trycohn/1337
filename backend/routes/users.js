@@ -294,6 +294,17 @@ router.post('/link-faceit', authenticateToken, async (req, res) => {
     }
 });
 
+// Отвязка FACEIT ID
+router.post('/unlink-faceit', authenticateToken, async (req, res) => {
+    try {
+        await pool.query('UPDATE users SET faceit_id = NULL WHERE id = $1', [req.user.id]);
+        res.json({ message: 'FACEIT отвязан' });
+    } catch (err) {
+        console.error('Ошибка отвязки FACEIT:', err);
+        res.status(500).json({ error: 'Не удалось отвязать FACEIT' });
+    }
+});
+
 // Верификация профиля
 router.post('/verify', authenticateToken, async (req, res) => {
     const { fullName, birthDate, avatarUrl } = req.body;
