@@ -435,6 +435,24 @@ function Profile() {
                     {user.faceit_id && (
                         <button onClick={unlinkFaceit}>Отвязать FACEIT</button>
                     )}
+
+                    {faceitInfo && faceitInfo.elo > 0 && (
+                        <div className="faceit-stats">
+                            <h4>Статистика FACEIT</h4>
+                            <div className="faceit-elo">
+                                <p><strong>ELO:</strong> {faceitInfo.elo}</p>
+                                <p><strong>Уровень:</strong> {faceitInfo.level}</p>
+                            </div>
+                            {faceitInfo.stats && (
+                                <div className="faceit-detailed-stats">
+                                    <p><strong>Матчи:</strong> {faceitInfo.stats.Matches || 0}</p>
+                                    <p><strong>Винрейт:</strong> {faceitInfo.stats['Win Rate %'] || '0'}%</p>
+                                    <p><strong>K/D:</strong> {faceitInfo.stats['Average K/D Ratio'] || '0'}</p>
+                                    <p><strong>HS %:</strong> {faceitInfo.stats['Average Headshots %'] || '0'}%</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 

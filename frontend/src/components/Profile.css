@@ -149,3 +149,41 @@ input, button {
     border-radius: 5px;
     background-color: #f9f9f9;
 }
+
+.faceit-stats {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f0f8ff;
+    border-radius: 8px;
+    border: 1px solid #b0e0e6;
+}
+
+.faceit-elo {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #d1e0e0;
+}
+
+.faceit-elo p {
+    font-size: 18px;
+    color: #2a3f5f;
+    margin: 0;
+}
+
+.faceit-detailed-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.faceit-detailed-stats p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.faceit-detailed-stats strong {
+    color: #333;
+}
