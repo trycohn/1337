@@ -166,7 +166,7 @@ function Profile() {
             return;
         }
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-        window.location.href = `${baseUrl}/api/users/link-faceit`;
+        window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
     };
 
     const verifyProfile = async () => {
