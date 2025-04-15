@@ -161,8 +161,12 @@ function Profile() {
 
     const linkFaceit = () => {
         const token = localStorage.getItem('token');
+        if (!token) {
+            setError('Вы должны быть авторизованы для привязки FACEIT');
+            return;
+        }
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-        window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
+        window.location.href = `${baseUrl}/api/users/link-faceit`;
     };
 
     const verifyProfile = async () => {
