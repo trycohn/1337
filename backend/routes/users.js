@@ -238,6 +238,42 @@ router.get('/steam-nickname', authenticateToken, async (req, res) => {
     }
 });
 
+// Получение никнейма и информации FACEit
+router.get('/faceit-info', authenticateToken, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT faceit_id FROM users WHERE id = $1', [req.user.id]);
+        const faceitId = userResult.rows[0].faceit_id;
+
+        if (!faceitId) {
+            return res.status(400).json({ error: 'FACEit ID не привязан' });
+        }
+
+        try {
+            // Используем FACEIT API для получения данных пользователя
+            const response = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}`, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                }
+            });
+            
+            const faceitNickname = response.data.nickname;
+            const faceitUrl = `https://www.faceit.com/ru/players/${faceitNickname}`;
+            
+            res.json({ faceitNickname, faceitUrl });
+        } catch (apiErr) {
+            console.error('Ошибка получения данных с FACEIT API:', apiErr);
+            // Если API не доступен, возвращаем только ID с базовой ссылкой
+            res.json({ 
+                faceitNickname: faceitId, 
+                faceitUrl: `https://www.faceit.com/ru/players/${faceitId}` 
+            });
+        }
+    } catch (err) {
+        console.error('Ошибка получения информации FACEIT:', err);
+        res.status(500).json({ error: 'Не удалось получить данные FACEIT' });
+    }
+});
+
 // Привязка профиля FACEit (заглушка)
 router.post('/link-faceit', authenticateToken, async (req, res) => {
     const { faceitId } = req.body;

@@ -8,6 +8,8 @@ function Profile() {
     const [cs2Stats, setCs2Stats] = useState(null);
     const [isLoadingCs2Stats, setIsLoadingCs2Stats] = useState(false);
     const [faceitId, setFaceitId] = useState('');
+    const [faceitInfo, setFaceitInfo] = useState(null);
+    const [isLoadingFaceitInfo, setIsLoadingFaceitInfo] = useState(false);
     const [newUsername, setNewUsername] = useState('');
     const [verificationData, setVerificationData] = useState({
         fullName: '',
@@ -17,7 +19,7 @@ function Profile() {
     const [emailToken, setEmailToken] = useState('');
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [steamNickname, setSteamNickname] = useState(''); // Оставляем как есть
+    const [steamNickname, setSteamNickname] = useState('');
 
     const fetchUserData = async (token) => {
         try {
@@ -114,7 +116,7 @@ function Profile() {
         }
     };
 
-    const fetchAndSetSteamNickname = async () => { // Переименованная функция
+    const fetchAndSetSteamNickname = async () => {
         const token = localStorage.getItem('token');
         try {
             const response = await api.get('/api/users/steam-nickname', {
@@ -157,6 +159,13 @@ function Profile() {
         }
     }, [user?.steam_id]);
 
+    // Загружаем информацию о FACEit при изменении user.faceit_id
+    useEffect(() => {
+        if (user && user.faceit_id) {
+            fetchFaceitInfo();
+        }
+    }, [user?.faceit_id]);
+
     const fetchSteamNickname = async () => {
         const token = localStorage.getItem('token');
         try {
@@ -169,10 +178,26 @@ function Profile() {
         }
     };
 
+    const fetchFaceitInfo = async () => {
+        const token = localStorage.getItem('token');
+        setIsLoadingFaceitInfo(true);
+        try {
+            const response = await api.get('/api/users/faceit-info', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setFaceitInfo(response.data);
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка получения информации FACEit');
+        } finally {
+            setIsLoadingFaceitInfo(false);
+        }
+    };
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('faceit') === 'success') {
-            fetchUserData(localStorage.getItem('token')); // Обновить данные пользователя
+            fetchUserData(localStorage.getItem('token'));
         } else if (params.get('error')) {
             setError(`Ошибка привязки FACEIT: ${params.get('error')}`);
         }
@@ -335,7 +360,7 @@ function Profile() {
                 />
                 <button onClick={updateUsername}>Изменить никнейм</button>
                 {user.steam_id && (
-                    <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button> // Используем новую функцию
+                    <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button>
                 )}
                 <p>Email: {user.email}</p>
                 <p>Статус верификации: {user.is_verified ? 'Верифицирован' : 'Не верифицирован'}</p>
@@ -378,7 +403,19 @@ function Profile() {
                 <h3>Faceit</h3>
                 <div>
                     <button onClick={linkFaceit}>Привязать FACEit</button>
-                    <p>FACEit: {user.faceit_id || 'Не привязан'}</p>
+                    <p>
+                        {user.faceit_id 
+                            ? <span>
+                                Привязан: {isLoadingFaceitInfo 
+                                    ? 'Загрузка...' 
+                                    : (faceitInfo 
+                                        ? <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a> 
+                                        : user.faceit_id)
+                                }
+                              </span>
+                            : 'Не привязан'
+                        }
+                    </p>
                 </div>
             </section>
 
