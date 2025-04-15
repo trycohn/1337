@@ -341,12 +341,14 @@ function Profile() {
                 <p>Статус верификации: {user.is_verified ? 'Верифицирован' : 'Не верифицирован'}</p>
             </section>
 
-            <section>
-                <h3>Привязка профилей</h3>
+            <section className="steam-section">
+                <h3>Steam</h3>
                 <div>
-                    <p>{user.steam_url 
-                        ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span> 
-                        : 'Не привязан'}</p>
+                    <p>
+                        {user.steam_url 
+                            ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span>
+                            : 'Не привязан'}
+                    </p>
                     {!user.steam_url && (
                         <button onClick={linkSteam}>Привязать Steam</button>
                     )}
@@ -361,7 +363,6 @@ function Profile() {
                             </button>
                         </div>
                     )}
-
                     {cs2Stats && (
                         <div className="cs2-stats">
                             <h4>Статистика CS2</h4>
@@ -371,10 +372,14 @@ function Profile() {
                         </div>
                     )}
                 </div>
+            </section>
+
+            <section className="faceit-section">
+                <h3>Faceit</h3>
                 <div>
                     <button onClick={linkFaceit}>Привязать FACEit</button>
+                    <p>FACEit: {user.faceit_id || 'Не привязан'}</p>
                 </div>
-                <p>FACEit: {user.faceit_id || 'Не привязан'}</p>
             </section>
 
             <section>
