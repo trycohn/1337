@@ -360,28 +360,26 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
     const redirectUri = process.env.FACEIT_REDIRECT_URI; // должен точно совпадать с настройками Faceit
 
     // Генерация code_verifier и вычисление code_challenge (S256)
-    const codeVerifier = crypto.randomBytes(64).toString('base64url').substring(0, 128);
-    const codeChallenge = crypto
-        .createHash('sha256')
-        .update(codeVerifier)
-        .digest('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    const codeVerifier = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(codeVerifier).digest();
+    const codeChallenge = hash.toString('base64')
+      .replace(/\+/g, '-')  // URL-safe
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
 
-    // Генерируем state-параметр для защиты от CSRF
-    const state = crypto.randomBytes(16).toString('hex') + '-' + req.user.id;
+    // Генерируем state-параметр, включающий userId
+    const randomPart = crypto.randomBytes(8).toString('hex');
+    const state = `${randomPart}-${req.user.id}`;
 
-    // Логирование параметров
+    // Выводим в лог параметры перед установкой кук
     console.log('Устанавливаем куки для FACEIT авторизации:');
     console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
-    console.log('code_challenge:', codeChallenge.substring(0, 10) + '...');
     console.log('state:', state);
+    console.log('Host:', req.headers.host);
+    console.log('Origin:', req.headers.origin);
 
     // Получаем домен из заголовка или используем стандартный
     const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
-    
-    // Настройки для кук
     const cookieOptions = { 
         httpOnly: true, 
         secure: true, 
@@ -389,21 +387,22 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         maxAge: 15 * 60 * 1000 // 15 минут
     };
     
-    // Сохраняем codeVerifier и state в куки
+    console.log('Cookie options:', cookieOptions);
+
+    // Сохраняем codeVerifier и state в куки с настройками для HTTPS
     res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
     res.cookie('faceit_state', state, cookieOptions);
 
-    // Формируем URL авторизации FACEIT
     const authUrl = 'https://accounts.faceit.com';
     const params = querystring.stringify({
         client_id: clientId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'openid profile email',
+        scope: 'openid profile email membership',
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
         state: state,
-        redirect_popup: true
+        redirect_popup: 'true'
     });
     
     console.log('Redirect URL:', `${authUrl}?${params}`);
@@ -443,16 +442,20 @@ router.get('/faceit-callback', async (req, res) => {
         console.log('FACEIT_REDIRECT_URI:', process.env.FACEIT_REDIRECT_URI);
         
         // Обмен кода авторизации на токен, передавая code_verifier
+        const tokenParams = {
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: process.env.FACEIT_REDIRECT_URI,
+            client_id: process.env.FACEIT_CLIENT_ID,
+            client_secret: process.env.FACEIT_CLIENT_SECRET,
+            code_verifier: codeVerifier
+        };
+        
+        console.log('Параметры запроса токена:', tokenParams);
+        
         const tokenResponse = await axios.post(
             'https://api.faceit.com/auth/v1/oauth/token',
-            querystring.stringify({
-                grant_type: 'authorization_code',
-                client_id: process.env.FACEIT_CLIENT_ID,
-                client_secret: process.env.FACEIT_CLIENT_SECRET,
-                code: code,
-                redirect_uri: process.env.FACEIT_REDIRECT_URI,
-                code_verifier: codeVerifier
-            }),
+            querystring.stringify(tokenParams),
             { 
                 headers: { 
                     'Content-Type': 'application/x-www-form-urlencoded' 
@@ -468,19 +471,14 @@ router.get('/faceit-callback', async (req, res) => {
             'https://api.faceit.com/auth/v1/resources/userinfo',
             { headers: { Authorization: `Bearer ${access_token}` } }
         );
-        
         const faceitUser = userInfoResponse.data;
-        console.log('Получены данные пользователя FACEIT:', faceitUser.sub || faceitUser.id);
+        console.log('Получены данные пользователя FACEIT:', faceitUser.id);
         
-        // Извлекаем userId из state
         const stateParts = savedState.split('-');
         const userId = stateParts[stateParts.length - 1];
         
-        // Используем sub как идентификатор, если он есть, иначе id
-        const faceitId = faceitUser.sub || faceitUser.id;
-        
         // Обновляем faceit_id для пользователя в базе данных
-        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitId, userId]);
+        await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitUser.id, userId]);
         console.log('FACEit профиль успешно привязан для пользователя', userId);
         
         // Очищаем куки
