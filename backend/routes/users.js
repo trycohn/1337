@@ -587,4 +587,5 @@ router.post('/faceit-oauth', authenticateToken, async (req, res) => {
     }
 });
 
+
 module.exports = router;
