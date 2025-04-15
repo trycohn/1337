@@ -430,7 +430,6 @@ function Profile() {
                             </button>
                         </div>
                     )}
-
                     {cs2Stats && (
                         <div className="cs2-stats">
                             <h4>Статистика CS2</h4>
@@ -440,6 +439,7 @@ function Profile() {
                         </div>
                     )}
                 </div>
+                <div id="faceitLogin"></div>
                 <div>
                     <button onClick={linkFaceit}>Привязать FACEit</button>
                     {/* Добавляем скрытый div для кнопки FACEIT */}
