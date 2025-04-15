@@ -402,7 +402,8 @@ router.get('/link-faceit', authenticateToken, (req, res) => {
         scope: 'openid profile email',
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
-        state: state
+        state: state,
+        redirect_popup: true
     });
     
     console.log('Redirect URL:', `${authUrl}?${params}`);
@@ -450,7 +451,9 @@ router.get('/faceit-callback', async (req, res) => {
                 client_secret: process.env.FACEIT_CLIENT_SECRET,
                 code: code,
                 redirect_uri: process.env.FACEIT_REDIRECT_URI,
-                code_verifier: codeVerifier
+                code_verifier: codeVerifier,
+                redirect_popup: true,
+
             }),
             { 
                 headers: { 
