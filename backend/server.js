@@ -30,10 +30,12 @@ const server = http.createServer(app);
 app.use(session({
   secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 часа
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'none',
+    httpOnly: true
   }
 }));
 

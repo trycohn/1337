@@ -357,25 +357,47 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 
 // Маршрут для перенаправления пользователя на страницу авторизации Faceit
 router.get('/link-faceit', authenticateToken, (req, res) => {
-    // Сохраняем ID пользователя в сессии для последующего использования
-    req.session.userId = req.user.id;
-    
-    // Перенаправляем на авторизацию через Passport
-    passport.authenticate('faceit', {
-        state: req.user.id
-    })(req, res);
+    try {
+        console.log('Начало процесса привязки FACEIT для пользователя:', req.user.id);
+        
+        // Сохраняем ID пользователя в сессии для последующего использования
+        req.session.userId = req.user.id;
+        req.session.save((err) => {
+            if (err) {
+                console.error('Ошибка сохранения сессии:', err);
+                return res.status(500).json({ error: 'Ошибка сохранения сессии' });
+            }
+            console.log('ID пользователя сохранен в сессии:', req.session.userId);
+            
+            // Перенаправляем на авторизацию через Passport
+            passport.authenticate('faceit', {
+                state: req.user.id
+            })(req, res);
+        });
+    } catch (err) {
+        console.error('Ошибка в маршруте link-faceit:', err);
+        res.status(500).json({ error: 'Ошибка привязки FACEIT' });
+    }
 });
 
 // Callback для Faceit после авторизации
 router.get('/faceit-callback', 
+    (req, res, next) => {
+        console.log('Получен callback от FACEIT:', req.query);
+        console.log('Сессия в callback:', req.session);
+        next();
+    },
     passport.authenticate('faceit', { 
         failureRedirect: 'https://1337community.com/profile?error=faceit_auth_failed',
         session: false
     }), 
     async (req, res) => {
         try {
+            console.log('Данные пользователя после аутентификации:', req.user);
+            
             // Получаем ID пользователя из сессии
             const userId = req.session.userId;
+            console.log('ID пользователя из сессии:', userId);
             
             if (!userId) {
                 console.error('Ошибка: ID пользователя отсутствует в сессии');
@@ -384,6 +406,7 @@ router.get('/faceit-callback',
             
             // Если это новый пользователь FACEIT, создаем его
             if (req.user.is_new) {
+                console.log('Создание нового пользователя FACEIT');
                 // Проверяем, не существует ли уже пользователь с таким email
                 const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1', [req.user.email]);
                 
@@ -405,6 +428,7 @@ router.get('/faceit-callback',
                 }
             } else {
                 // Обновляем faceit_id для существующего пользователя
+                console.log('Обновление faceit_id для пользователя:', userId);
                 await pool.query(
                     'UPDATE users SET faceit_id = $1 WHERE id = $2',
                     [req.user.faceit_id, userId]
@@ -413,10 +437,14 @@ router.get('/faceit-callback',
             }
             
             // Очищаем сессию
-            req.session.destroy();
-            
-            // Перенаправляем на страницу профиля
-            res.redirect('https://1337community.com/profile?faceit=success');
+            req.session.destroy((err) => {
+                if (err) {
+                    console.error('Ошибка при уничтожении сессии:', err);
+                }
+                
+                // Перенаправляем на страницу профиля
+                res.redirect('https://1337community.com/profile?faceit=success');
+            });
         } catch (err) {
             console.error('Ошибка привязки Faceit:', err);
             res.redirect(`https://1337community.com/profile?error=faceit_error&message=${encodeURIComponent(err.message)}`);
