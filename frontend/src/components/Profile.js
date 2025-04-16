@@ -21,8 +21,6 @@ function Profile() {
     const [isResendDisabled, setIsResendDisabled] = useState(false);
     const [resendCountdown, setResendCountdown] = useState(0);
     const [isClosingModal, setIsClosingModal] = useState(false);
-
-    // Добавим новое состояние для отслеживания ошибки проверки кода
     const [verificationError, setVerificationError] = useState('');
 
     const fetchUserData = async (token) => {
@@ -171,6 +169,7 @@ function Profile() {
             setShowEmailVerificationModal(false);
             setIsClosingModal(false);
             setVerificationCode('');
+            setVerificationError('');
         }, 300); // Время должно совпадать с длительностью анимации в CSS (0.3s)
     };
 
@@ -182,6 +181,9 @@ function Profile() {
             await api.post('/api/users/verify-email', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            
+            // Сбрасываем ошибку при успешной отправке нового кода
+            setVerificationError('');
             
             // Устанавливаем задержку 3 минуты на повторную отправку
             setIsResendDisabled(true);
@@ -197,7 +199,7 @@ function Profile() {
             
             setError('');
         } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка отправки кода подтверждения');
+            setVerificationError(err.response?.data?.error || 'Ошибка отправки кода подтверждения');
         }
     };
 
@@ -236,7 +238,7 @@ function Profile() {
             alert('Email успешно подтвержден! Теперь вам доступны все функции сайта.');
             setError('');
         } catch (err) {
-            // Отображаем ошибку внутри модального окна
+            // Устанавливаем ошибку в модальном окне вместо общей ошибки
             setVerificationError(err.response?.data?.message || 'Неверный код подтверждения');
         }
     };
@@ -247,11 +249,6 @@ function Profile() {
         // Принимаем только цифры и не более 6 символов
         const code = value.replace(/\D/g, '').slice(0, 6);
         setVerificationCode(code);
-        
-        // Сбрасываем ошибку при изменении кода
-        if (verificationError) {
-            setVerificationError('');
-        }
     };
 
     // Функция для обработки вставки из буфера обмена
@@ -615,9 +612,7 @@ function Profile() {
                                 {[0, 1, 2, 3, 4, 5].map((index) => (
                                     <div 
                                         key={index} 
-                                        className={`code-digit ${verificationCode[index] ? 'filled' : ''} 
-                                                    ${index === verificationCode.length ? 'active' : ''} 
-                                                    ${verificationError && verificationCode.length === 6 ? 'error' : ''}`}
+                                        className={`code-digit ${verificationCode[index] ? 'filled' : ''} ${index === verificationCode.length ? 'active' : ''}`}
                                     >
                                         {verificationCode[index] || ''}
                                     </div>
@@ -626,7 +621,9 @@ function Profile() {
                         </div>
                         
                         {verificationError && (
-                            <div className="verification-error">{verificationError}</div>
+                            <div className="verification-error">
+                                {verificationError}
+                            </div>
                         )}
                         
                         <div className="modal-buttons">

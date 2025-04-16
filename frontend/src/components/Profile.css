@@ -333,7 +333,7 @@ input, button {
 
 .email-verification-modal .modal-buttons {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: wrap;
     margin-top: 20px;
 }
@@ -351,6 +351,18 @@ input, button {
 .email-verification-modal button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.verification-error {
+    color: #e74c3c;
+    background-color: #fdf0f0;
+    border-left: 4px solid #e74c3c;
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    font-size: 14px;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-out forwards;
 }
 
 .profile h3 {
@@ -389,40 +401,4 @@ input, button {
 
 .profile button:hover {
     background-color: #0069d9;
-}
-
-.code-digit.error {
-    border-color: #dc3545;
-    background-color: #fff0f0;
-    animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-5px); }
-    40%, 80% { transform: translateX(5px); }
-}
-
-.verification-error {
-    color: #dc3545;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 4px;
-    padding: 8px 12px;
-    margin: 15px 0;
-    text-align: center;
-    font-size: 14px;
-    opacity: 0;
-    animation: fadeInError 0.3s ease-out forwards;
-}
-
-@keyframes fadeInError {
-    from { 
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to { 
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
