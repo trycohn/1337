@@ -62,8 +62,8 @@ function CreateTournament() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Перенаправляем на главную страницу после создания турнира
-      navigate('/');
+      // Перенаправляем на страницу созданного турнира
+      navigate(`/tournaments/${response.data.id}`);
       
     } catch (error) {
       console.error('Ошибка создания турнира:', error);
