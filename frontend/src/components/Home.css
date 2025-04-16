@@ -908,6 +908,27 @@ header.header {
 
 .auth-form-container {
   padding: 30px;
+  min-height: 380px; /* Фиксированная минимальная высота для форм */
+  position: relative;
+}
+
+.auth-form {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  right: 30px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.auth-form.hidden {
+  opacity: 0;
+  z-index: -1;
+}
+
+.auth-form.visible {
+  opacity: 1;
+  z-index: 1;
 }
 
 .auth-form h2 {
@@ -974,12 +995,19 @@ header.header {
   color: #dc3545;
   text-align: center;
   margin-top: 15px;
+  position: absolute;
+  bottom: 10px;
+  left: 30px;
+  right: 30px;
 }
 
 .success-message {
   color: #28a745;
   text-align: center;
-  margin-top: 15px;
+  position: absolute;
+  bottom: 10px;
+  left: 30px;
+  right: 30px;
   padding: 10px;
   background-color: rgba(40, 167, 69, 0.1);
   border-radius: 4px;

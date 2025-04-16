@@ -88,69 +88,73 @@ function AuthPage() {
         </div>
         
         <div className="auth-form-container">
-          {isLogin ? (
-            <form onSubmit={handleLogin} className="auth-form">
-              <h2>Вход в аккаунт</h2>
-              <div className="form-group">
-                <input
-                  type="email"
-                  placeholder="Электронная почта"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="password"
-                  placeholder="Пароль"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="auth-button">Войти</button>
-              <button 
-                type="button" 
-                className="steam-button"
-                onClick={handleSteamLogin}
-              >
-                Войти через Steam
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleRegister} className="auth-form">
-              <h2>Регистрация</h2>
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="Имя пользователя"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="email"
-                  placeholder="Электронная почта"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="password"
-                  placeholder="Пароль"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="auth-button">Зарегистрироваться</button>
-            </form>
-          )}
+          <form 
+            onSubmit={handleLogin} 
+            className={`auth-form ${isLogin ? 'visible' : 'hidden'}`}
+          >
+            <h2>Вход в аккаунт</h2>
+            <div className="form-group">
+              <input
+                type="email"
+                placeholder="Электронная почта"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input
+                type="password"
+                placeholder="Пароль"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="auth-button">Войти</button>
+            <button 
+              type="button" 
+              className="steam-button"
+              onClick={handleSteamLogin}
+            >
+              Войти через Steam
+            </button>
+          </form>
+          
+          <form 
+            onSubmit={handleRegister} 
+            className={`auth-form ${!isLogin ? 'visible' : 'hidden'}`}
+          >
+            <h2>Регистрация</h2>
+            <div className="form-group">
+              <input
+                type="text"
+                placeholder="Имя пользователя"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input
+                type="email"
+                placeholder="Электронная почта"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input
+                type="password"
+                placeholder="Пароль"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="auth-button">Зарегистрироваться</button>
+          </form>
           
           {error && <p className="error-message">{error}</p>}
           {successMessage && <div className="success-message">{successMessage}</div>}
