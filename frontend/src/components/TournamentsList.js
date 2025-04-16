@@ -82,16 +82,17 @@ function TournamentsList() {
     };
 
     const uniqueValues = (field) => {
-        return [...new Set(tournaments.map((t) => t[field]?.toLowerCase()))].sort();
+        // Возвращаем оригинальные значения, а не в нижнем регистре
+        return [...new Set(tournaments.map((t) => t[field]).filter(Boolean))].sort();
     };
 
     const filteredAndSortedTournaments = tournaments
         .filter((tournament) => {
             return (
-                (filters.game === '' || tournament.game?.toLowerCase() === filters.game.toLowerCase()) &&
+                (filters.game === '' || tournament.game === filters.game) &&
                 (filters.name === '' || tournament.name?.toLowerCase().includes(filters.name.toLowerCase())) &&
-                (filters.format === '' || tournament.format?.toLowerCase() === filters.format.toLowerCase()) &&
-                (filters.status === '' || tournament.status?.toLowerCase() === filters.status.toLowerCase()) &&
+                (filters.format === '' || tournament.format === filters.format) &&
+                (filters.status === '' || tournament.status === filters.status) &&
                 (filters.start_date === null ||
                     new Date(tournament.start_date).toLocaleDateString('ru-RU') ===
                     filters.start_date.toLocaleDateString('ru-RU'))
