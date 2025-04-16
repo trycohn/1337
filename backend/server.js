@@ -20,6 +20,7 @@ const puppeteer = require('puppeteer');
 const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 const tournamentsRouter = require('./routes/tournaments');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -117,7 +118,30 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
-const PORT = process.env.PORT || 3000;
+// Инициализация транспорта электронной почты и проверка соединения
+const mailTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_PORT === '465',
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
+
+// Проверка соединения с SMTP-сервером
+if (process.env.NODE_ENV !== 'test') {
+    mailTransporter.verify((error, success) => {
+        if (error) {
+            console.warn('ПРЕДУПРЕЖДЕНИЕ: Не удалось подключиться к SMTP-серверу:', error);
+        } else {
+            console.log('SMTP-сервер готов к отправке сообщений');
+        }
+    });
+}
+
+// Запуск сервера
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, async () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
     try {

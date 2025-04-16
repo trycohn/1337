@@ -8,6 +8,18 @@ const axios = require('axios');
 const querystring = require('querystring');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
+const nodemailer = require('nodemailer');
+
+// Настройка транспорта nodemailer
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_PORT === '465', // true для 465, false для других портов
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
 
 // Подключаем cookie-parser middleware
 router.use(cookieParser());
@@ -421,45 +433,98 @@ router.get('/stats', authenticateToken, async (req, res) => {
     }
 });
 
-// Подтверждение через email (заглушка)
+// Подтверждение через email
 router.post('/verify-email', authenticateToken, async (req, res) => {
-    const verificationToken = Math.random().toString(36).substring(2);
-
     try {
-        await pool.query(
-            'UPDATE users SET verification_token = $1 WHERE id = $2',
-            [verificationToken, req.user.id]
+        // Получаем email пользователя из базы данных
+        const userResult = await pool.query(
+            'SELECT email FROM users WHERE id = $1',
+            [req.user.id]
         );
-        console.log(`Токен верификации для пользователя ${req.user.id}: ${verificationToken}`);
-        res.json({ message: 'Токен верификации отправлен (проверь консоль)', token: verificationToken });
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Пользователь не найден' });
+        }
+        
+        const email = userResult.rows[0].email;
+        
+        // Генерируем 6-значный код
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Сохраняем код в базе данных
+        await pool.query(
+            'UPDATE users SET verification_token = $1, token_expiry = NOW() + INTERVAL \'30 minutes\' WHERE id = $2',
+            [verificationCode, req.user.id]
+        );
+        
+        // Отправляем код по электронной почте
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: 'Подтверждение электронной почты - 1337 Community',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Подтверждение электронной почты</h2>
+                    <p>Здравствуйте, ${req.user.username}!</p>
+                    <p>Для подтверждения вашей электронной почты, пожалуйста, введите следующий код:</p>
+                    <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
+                        <strong>${verificationCode}</strong>
+                    </div>
+                    <p>Код действителен в течение 30 минут.</p>
+                    <p>Если вы не запрашивали подтверждение почты, пожалуйста, проигнорируйте это сообщение.</p>
+                    <p>С уважением,<br>Команда 1337 Community</p>
+                </div>
+            `
+        };
+        
+        await transporter.sendMail(mailOptions);
+        
+        res.json({ message: 'Код подтверждения отправлен на вашу почту' });
     } catch (err) {
-        console.error('Ошибка верификации email:', err);
-        res.status(500).json({ error: 'Не удалось отправить токен верификации' });
+        console.error('Ошибка отправки кода верификации:', err);
+        res.status(500).json({ error: 'Не удалось отправить код подтверждения' });
     }
 });
 
 router.post('/confirm-email', authenticateToken, async (req, res) => {
-    const { token } = req.body;
-
+    const { code } = req.body;
+    
+    if (!code) {
+        return res.status(400).json({ message: 'Код подтверждения обязателен' });
+    }
+    
     try {
         const result = await pool.query(
-            'SELECT verification_token FROM users WHERE id = $1',
+            'SELECT verification_token, token_expiry FROM users WHERE id = $1',
             [req.user.id]
         );
-        const storedToken = result.rows[0].verification_token;
-
-        if (token === storedToken) {
-            await pool.query(
-                'UPDATE users SET is_verified = TRUE, verification_token = NULL WHERE id = $1',
-                [req.user.id]
-            );
-            res.json({ message: 'Учётная запись подтверждена' });
-        } else {
-            res.status(400).json({ message: 'Неверный токен верификации' });
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Пользователь не найден' });
         }
+        
+        const { verification_token, token_expiry } = result.rows[0];
+        
+        // Проверяем срок действия кода
+        if (token_expiry && new Date() > new Date(token_expiry)) {
+            return res.status(400).json({ message: 'Срок действия кода истек. Запросите новый код' });
+        }
+        
+        // Проверяем код
+        if (code !== verification_token) {
+            return res.status(400).json({ message: 'Неверный код подтверждения' });
+        }
+        
+        // Подтверждаем email
+        await pool.query(
+            'UPDATE users SET is_verified = TRUE, verification_token = NULL, token_expiry = NULL WHERE id = $1',
+            [req.user.id]
+        );
+        
+        res.json({ message: 'Email успешно подтвержден' });
     } catch (err) {
         console.error('Ошибка подтверждения email:', err);
-        res.status(500).json({ error: 'Не удалось подтвердить учётную запись' });
+        res.status(500).json({ error: 'Не удалось подтвердить email' });
     }
 });
 
