@@ -233,9 +233,6 @@ function Profile() {
             // Обновляем статус верификации пользователя
             setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null);
             closeEmailVerificationModal();
-            
-            // Показываем сообщение об успешной верификации
-            alert('Email успешно подтвержден! Теперь вам доступны все функции сайта.');
             setError('');
         } catch (err) {
             // Устанавливаем ошибку в модальном окне вместо общей ошибки
