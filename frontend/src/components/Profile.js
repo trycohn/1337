@@ -438,7 +438,7 @@ function Profile() {
 
                     {faceitInfo && faceitInfo.elo > 0 && (
                         <div className="faceit-stats">
-                            <h4>Статистика FACEIT</h4>
+                            <h4>Статистика FACEIT{faceitInfo.statsFrom === 'csgo' ? ' (CS:GO)' : ''}</h4>
                             <div className="faceit-elo">
                                 <p><strong>ELO:</strong> {faceitInfo.elo}</p>
                                 <p><strong>Уровень:</strong> {faceitInfo.level}</p>

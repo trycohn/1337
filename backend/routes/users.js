@@ -272,7 +272,8 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                     faceitNickname,
                     faceitUrl,
                     elo: playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0,
-                    level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0
+                    level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0,
+                    statsFrom: 'cs2'
                 };
                 
                 // Добавляем статистику, если она доступна
@@ -296,7 +297,8 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                         faceitNickname,
                         faceitUrl,
                         elo: playerResponse.data.games?.csgo?.faceit_elo || playerResponse.data.games?.cs2?.faceit_elo || 0,
-                        level: playerResponse.data.games?.csgo?.skill_level || playerResponse.data.games?.cs2?.skill_level || 0
+                        level: playerResponse.data.games?.csgo?.skill_level || playerResponse.data.games?.cs2?.skill_level || 0,
+                        statsFrom: 'csgo'
                     };
                     
                     // Добавляем статистику, если она доступна
@@ -312,7 +314,8 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                         faceitNickname: faceitNickname || faceitId, 
                         faceitUrl: `https://www.faceit.com/ru/players/${faceitNickname || faceitId}`,
                         elo: playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0,
-                        level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0
+                        level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0,
+                        statsFrom: null
                     });
                 }
             }
@@ -323,7 +326,8 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                 faceitNickname: faceitId, 
                 faceitUrl: `https://www.faceit.com/ru/players/${faceitId}`,
                 elo: 0,
-                level: 0
+                level: 0,
+                statsFrom: null
             });
         }
     } catch (err) {
