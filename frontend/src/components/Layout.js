@@ -154,9 +154,6 @@ function Layout() {
                                 <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                             </>
                         )}
-                        {!user && (
-                            <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Войти / Регистрация</Link>
-                        )}
                     </nav>
                 </div>
                 <div className="auth-block">
