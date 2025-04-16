@@ -8,8 +8,6 @@ import './Home.css';
 
 function Layout() {
     const [user, setUser] = useState(null);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
@@ -73,29 +71,6 @@ function Layout() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showNotifications]);
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await api.post('/api/users/login', {
-                email,
-                password,
-            });
-            localStorage.setItem('token', response.data.token);
-            setError(null);
-            await fetchUser(response.data.token);
-            setEmail('');
-            setPassword('');
-        } catch (error) {
-            setError(error.response?.data?.message || 'Ошибка входа');
-            console.error('❌ Ошибка входа:', error.response ? error.response.data : error.message);
-        }
-    };
-
-    const handleSteamLogin = () => {
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
-        window.location.href = `${baseUrl}/api/users/steam`; // Убраны лишние слэши
-    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -180,7 +155,7 @@ function Layout() {
                             </>
                         )}
                         {!user && (
-                            <Link to="/register" onClick={() => setIsMenuOpen(false)}>Регистрация</Link>
+                            <Link to="/auth" onClick={() => setIsMenuOpen(false)}>Войти / Регистрация</Link>
                         )}
                     </nav>
                 </div>
@@ -260,25 +235,9 @@ function Layout() {
                             <button onClick={handleLogout}>Выйти</button>
                         </div>
                     ) : (
-                        <form className="login-form" onSubmit={handleLogin}>
-                            <input
-                                type="email"
-                                placeholder="Электронная почта"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                            <input
-                                type="password"
-                                placeholder="Пароль"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                            <button type="submit">Войти</button>
-                            <button type="button" onClick={handleSteamLogin}>Войти через Steam</button>
-                            {error && <span className="error">{error}</span>}
-                        </form>
+                        <div className="login-button-container">
+                            <Link to="/auth" className="login-button">Войти</Link>
+                        </div>
                     )}
                 </div>
             </header>

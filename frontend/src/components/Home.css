@@ -866,3 +866,151 @@ header.header {
 .username-link:hover {
   text-decoration: underline;
 }
+
+/* Стили для страницы авторизации */
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 100px);
+  padding: 20px;
+}
+
+.auth-container {
+  max-width: 500px;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 15px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-tab.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.auth-form-container {
+  padding: 30px;
+}
+
+.auth-form h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  text-align: center;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-bottom: 15px;
+}
+
+.auth-button:hover {
+  background-color: #0069d9;
+}
+
+.steam-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #171a21;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.steam-button:hover {
+  background-color: #2a475e;
+}
+
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  margin-top: 15px;
+}
+
+.success-message {
+  color: #28a745;
+  text-align: center;
+  margin-top: 15px;
+  padding: 10px;
+  background-color: rgba(40, 167, 69, 0.1);
+  border-radius: 4px;
+}
+
+@media (max-width: 600px) {
+  .auth-container {
+    max-width: 100%;
+  }
+  
+  .auth-form-container {
+    padding: 20px;
+  }
+}
+
+/* Стили для кнопки Войти в шапке */
+.login-button-container {
+  display: flex;
+  align-items: center;
+}
+
+.login-button {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #0069d9;
+}
