@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import io from 'socket.io-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,6 +18,7 @@ function Layout() {
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef(null);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const fetchUser = async (token) => {
         try {
@@ -74,6 +75,10 @@ function Layout() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showNotifications]);
+
+    useEffect(() => {
+        setShowCreateForm(false);
+    }, [location.pathname]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
