@@ -31,6 +31,16 @@ function authenticateToken(req, res, next) {
     });
 }
 
+// Middleware для ограничения доступа по ролям
+function restrictTo(roles) {
+    return (req, res, next) => {
+        if (!req.user || !roles.includes(req.user.role)) {
+            return res.status(403).json({ message: 'Доступ запрещен: недостаточно прав' });
+        }
+        next();
+    };
+}
+
 // Новый middleware для проверки верификации email
 async function verifyEmailRequired(req, res, next) {
     try {
@@ -54,4 +64,4 @@ async function verifyEmailRequired(req, res, next) {
     }
 }
 
-module.exports = { authenticateToken, verifyEmailRequired };
+module.exports = { authenticateToken, restrictTo, verifyEmailRequired };
