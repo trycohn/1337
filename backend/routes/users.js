@@ -260,26 +260,62 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
             const faceitUrl = `https://www.faceit.com/ru/players/${faceitNickname}`;
             
             // Получаем статистику CS2 (игра с ID csgo в FACEIT API)
-            const statsResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}/stats/csgo`, {
-                headers: {
-                    'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+            try {
+                const statsResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}/stats/cs2`, {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                    }
+                });
+                
+                // Получаем базовые данные о пользователе FACEIT
+                const userData = {
+                    faceitNickname,
+                    faceitUrl,
+                    elo: playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0,
+                    level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0
+                };
+                
+                // Добавляем статистику, если она доступна
+                if (statsResponse.data && statsResponse.data.lifetime) {
+                    userData.stats = statsResponse.data.lifetime;
                 }
-            });
-            
-            // Получаем базовые данные о пользователе FACEIT
-            const userData = {
-                faceitNickname,
-                faceitUrl,
-                elo: playerResponse.data.games?.csgo?.faceit_elo || playerResponse.data.games?.cs2?.faceit_elo || 0,
-                level: playerResponse.data.games?.csgo?.skill_level || playerResponse.data.games?.cs2?.skill_level || 0
-            };
-            
-            // Добавляем статистику, если она доступна
-            if (statsResponse.data && statsResponse.data.lifetime) {
-                userData.stats = statsResponse.data.lifetime;
+                
+                res.json(userData);
+            } catch (cs2Err) {
+                console.log('CS2 статистика не найдена, пробуем CSGO...');
+                try {
+                    // Пробуем получить статистику CS:GO если CS2 не найдена
+                    const statsResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}/stats/csgo`, {
+                        headers: {
+                            'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                        }
+                    });
+                    
+                    // Получаем базовые данные о пользователе FACEIT
+                    const userData = {
+                        faceitNickname,
+                        faceitUrl,
+                        elo: playerResponse.data.games?.csgo?.faceit_elo || playerResponse.data.games?.cs2?.faceit_elo || 0,
+                        level: playerResponse.data.games?.csgo?.skill_level || playerResponse.data.games?.cs2?.skill_level || 0
+                    };
+                    
+                    // Добавляем статистику, если она доступна
+                    if (statsResponse.data && statsResponse.data.lifetime) {
+                        userData.stats = statsResponse.data.lifetime;
+                    }
+                    
+                    res.json(userData);
+                } catch (csgoErr) {
+                    console.log('Ни CS2, ни CSGO статистика не найдены');
+                    // Если API не доступен, возвращаем только ID с базовой ссылкой
+                    res.json({ 
+                        faceitNickname: faceitNickname || faceitId, 
+                        faceitUrl: `https://www.faceit.com/ru/players/${faceitNickname || faceitId}`,
+                        elo: playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0,
+                        level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0
+                    });
+                }
             }
-            
-            res.json(userData);
         } catch (apiErr) {
             console.error('Ошибка получения данных с FACEIT API:', apiErr);
             // Если API не доступен, возвращаем только ID с базовой ссылкой
