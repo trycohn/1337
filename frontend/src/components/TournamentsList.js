@@ -258,5 +258,5 @@ function TournamentsList() {
         </section>
     );
 }
-
+ 
 export default TournamentsList;
