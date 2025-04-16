@@ -20,6 +20,7 @@ function Profile() {
     const [verificationCode, setVerificationCode] = useState('');
     const [isResendDisabled, setIsResendDisabled] = useState(false);
     const [resendCountdown, setResendCountdown] = useState(0);
+    const [isClosingModal, setIsClosingModal] = useState(false);
 
     const fetchUserData = async (token) => {
         try {
@@ -160,8 +161,14 @@ function Profile() {
     };
 
     const closeEmailVerificationModal = () => {
-        setShowEmailVerificationModal(false);
-        setVerificationCode('');
+        setIsClosingModal(true);
+        
+        // Ждем завершения анимации перед фактическим скрытием модального окна
+        setTimeout(() => {
+            setShowEmailVerificationModal(false);
+            setIsClosingModal(false);
+            setVerificationCode('');
+        }, 300); // Время должно совпадать с длительностью анимации в CSS (0.3s)
     };
 
     const sendVerificationCode = async () => {
@@ -221,6 +228,9 @@ function Profile() {
             // Обновляем статус верификации пользователя
             setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null);
             closeEmailVerificationModal();
+            
+            // Показываем сообщение об успешной верификации
+            alert('Email успешно подтвержден! Теперь вам доступны все функции сайта.');
             setError('');
         } catch (err) {
             setError(err.response?.data?.message || 'Неверный код подтверждения');
@@ -253,6 +263,13 @@ function Profile() {
     const handleCodeContainerClick = () => {
         document.getElementById('hidden-code-input').focus();
     };
+
+    // Добавим эффект для автоматической проверки кода, когда он заполнен полностью
+    useEffect(() => {
+        if (verificationCode.length === 6) {
+            submitVerificationCode();
+        }
+    }, [verificationCode]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -567,7 +584,7 @@ function Profile() {
 
             {/* Обновленное модальное окно подтверждения email */}
             {showEmailVerificationModal && (
-                <div className="modal-overlay" onClick={closeEmailVerificationModal}>
+                <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeEmailVerificationModal}>
                     <div className="modal-content email-verification-modal" onClick={(e) => e.stopPropagation()}>
                         <h3>Подтверждение email</h3>
                         <p>На вашу почту {user.email} был отправлен 6-значный код. Введите его ниже:</p>
@@ -598,7 +615,6 @@ function Profile() {
                         </div>
                         
                         <div className="modal-buttons">
-                            <button onClick={submitVerificationCode}>Подтвердить</button>
                             <button 
                                 onClick={sendVerificationCode} 
                                 disabled={isResendDisabled}
@@ -606,11 +622,10 @@ function Profile() {
                                 Отправить повторно
                                 {isResendDisabled && (
                                     <span className="resend-countdown">
-                                        ({Math.floor(resendCountdown / 60)}:{(resendCountdown % 60).toString().padStart(2, '0')})
+                                        {Math.floor(resendCountdown / 60)}:{(resendCountdown % 60).toString().padStart(2, '0')}
                                     </span>
                                 )}
                             </button>
-                            <button onClick={closeEmailVerificationModal}>Отмена</button>
                         </div>
                     </div>
                 </div>
