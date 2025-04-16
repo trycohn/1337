@@ -22,6 +22,9 @@ function Profile() {
     const [resendCountdown, setResendCountdown] = useState(0);
     const [isClosingModal, setIsClosingModal] = useState(false);
 
+    // Добавим новое состояние для отслеживания ошибки проверки кода
+    const [verificationError, setVerificationError] = useState('');
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -215,7 +218,7 @@ function Profile() {
 
     const submitVerificationCode = async () => {
         if (verificationCode.length !== 6) {
-            setError('Код подтверждения должен состоять из 6 цифр');
+            setVerificationError('Код подтверждения должен состоять из 6 цифр');
             return;
         }
         
@@ -233,7 +236,8 @@ function Profile() {
             alert('Email успешно подтвержден! Теперь вам доступны все функции сайта.');
             setError('');
         } catch (err) {
-            setError(err.response?.data?.message || 'Неверный код подтверждения');
+            // Отображаем ошибку внутри модального окна
+            setVerificationError(err.response?.data?.message || 'Неверный код подтверждения');
         }
     };
 
@@ -243,6 +247,11 @@ function Profile() {
         // Принимаем только цифры и не более 6 символов
         const code = value.replace(/\D/g, '').slice(0, 6);
         setVerificationCode(code);
+        
+        // Сбрасываем ошибку при изменении кода
+        if (verificationError) {
+            setVerificationError('');
+        }
     };
 
     // Функция для обработки вставки из буфера обмена
@@ -606,13 +615,19 @@ function Profile() {
                                 {[0, 1, 2, 3, 4, 5].map((index) => (
                                     <div 
                                         key={index} 
-                                        className={`code-digit ${verificationCode[index] ? 'filled' : ''} ${index === verificationCode.length ? 'active' : ''}`}
+                                        className={`code-digit ${verificationCode[index] ? 'filled' : ''} 
+                                                    ${index === verificationCode.length ? 'active' : ''} 
+                                                    ${verificationError && verificationCode.length === 6 ? 'error' : ''}`}
                                     >
                                         {verificationCode[index] || ''}
                                     </div>
                                 ))}
                             </div>
                         </div>
+                        
+                        {verificationError && (
+                            <div className="verification-error">{verificationError}</div>
+                        )}
                         
                         <div className="modal-buttons">
                             <button 
