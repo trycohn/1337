@@ -4,6 +4,7 @@ import TournamentDetails from './components/TournamentDetails';
 import TournamentsPage from './pages/TournamentsPage';
 import Layout from './components/Layout'; // Импортируем Layout как корневой компонент
 import Profile from './components/Profile'; // Добавляем импорт Profile
+import Register from './components/Register'; // Импортируем компонент Register
 
 function App() {
     return (
@@ -13,7 +14,7 @@ function App() {
                     <Route index element={<Home />} />
                     <Route path="/tournaments" element={<TournamentsPage />} />
                     <Route path="/tournaments/:id" element={<TournamentDetails />} />
-                    <Route path="/register" element={<div>Страница для регистрации</div>} /> {/* Пример для ссылки */}
+                    <Route path="/register" element={<Register />} /> {/* Используем компонент Register */}
                     <Route path="/profile" element={<Profile />} /> {/* Добавляем маршрут для профиля */}
                 </Route>
             </Routes>
