@@ -495,7 +495,7 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
     
     try {
         const result = await pool.query(
-            'SELECT verification_token, token_expiry FROM users WHERE id = $1',
+            'SELECT verification_token, token_expiry, email, username FROM users WHERE id = $1',
             [req.user.id]
         );
         
@@ -503,7 +503,7 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
         
-        const { verification_token, token_expiry } = result.rows[0];
+        const { verification_token, token_expiry, email, username } = result.rows[0];
         
         // Проверяем срок действия кода
         if (token_expiry && new Date() > new Date(token_expiry)) {
@@ -520,6 +520,27 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
             'UPDATE users SET is_verified = TRUE, verification_token = NULL, token_expiry = NULL WHERE id = $1',
             [req.user.id]
         );
+        
+        // Отправляем письмо об успешном подтверждении
+        const successMailOptions = {
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: 'Email успешно подтвержден - 1337 Community',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Ваш email успешно подтвержден!</h2>
+                    <p>Здравствуйте, ${username}!</p>
+                    <p>Поздравляем! Ваш email был успешно подтвержден.</p>
+                    <p>Теперь вам доступны все функции нашего сайта, включая создание и администрирование турниров.</p>
+                    <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #4682b4;">
+                        <p style="margin: 0;">Добро пожаловать в полноценное сообщество 1337 Community!</p>
+                    </div>
+                    <p>С уважением,<br>Команда 1337 Community</p>
+                </div>
+            `
+        };
+        
+        await transporter.sendMail(successMailOptions);
         
         res.json({ message: 'Email успешно подтвержден' });
     } catch (err) {
