@@ -1,10 +1,26 @@
 // frontend/src/components/CreateTournament.js
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-function CreateTournament({ onTournamentCreated }) {
+// Добавляем немного встроенных стилей
+const styles = {
+  formButtons: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '15px'
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    color: '#333',
+    border: '1px solid #ccc'
+  }
+};
+
+function CreateTournament() {
+  const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -45,17 +61,10 @@ function CreateTournament({ onTournamentCreated }) {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      onTournamentCreated(response.data); // Передаём созданный турнир родителю
-      setCreateForm({
-        name: '',
-        game: '',
-        format: 'single_elimination',
-        participant_type: 'solo',
-        hasLimit: false,
-        max_participants: '',
-        start_date: new Date(),
-        description: '',
-      });
+      
+      // Перенаправляем на главную страницу после создания турнира
+      navigate('/');
+      
     } catch (error) {
       console.error('Ошибка создания турнира:', error);
       alert(error.response?.data?.error || 'Ошибка создания турнира');
@@ -146,7 +155,16 @@ function CreateTournament({ onTournamentCreated }) {
           value={createForm.description}
           onChange={handleInputChange}
         />
-        <button type="submit">Создать турнир</button>
+        <div style={styles.formButtons}>
+          <button type="submit">Создать турнир</button>
+          <button 
+            type="button" 
+            onClick={() => navigate(-1)} 
+            style={styles.cancelButton}
+          >
+            Отмена
+          </button>
+        </div>
       </form>
     </section>
   );

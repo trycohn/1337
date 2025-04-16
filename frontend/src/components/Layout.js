@@ -4,7 +4,6 @@ import api from '../axios';
 import io from 'socket.io-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
-import CreateTournament from './CreateTournament';
 import './Home.css';
 
 function Layout() {
@@ -12,7 +11,6 @@ function Layout() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
-    const [showCreateForm, setShowCreateForm] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -76,10 +74,6 @@ function Layout() {
         };
     }, [showNotifications]);
 
-    useEffect(() => {
-        setShowCreateForm(false);
-    }, [location.pathname]);
-
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
@@ -107,10 +101,6 @@ function Layout() {
         localStorage.removeItem('token');
         setUser(null);
         navigate('/');
-    };
-
-    const handleTournamentCreated = (newTournament) => {
-        setShowCreateForm(false);
     };
 
     const toggleMenu = () => {
@@ -183,9 +173,9 @@ function Layout() {
                         <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                         {user && (
                             <>
-                                <button onClick={() => { setShowCreateForm(!showCreateForm); setIsMenuOpen(false); }}>
+                                <Link to="/create" onClick={() => setIsMenuOpen(false)}>
                                     Создать турнир
-                                </button>
+                                </Link>
                                 <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                             </>
                         )}
@@ -294,11 +284,7 @@ function Layout() {
             </header>
 
             <main>
-                {showCreateForm ? (
-                    <CreateTournament onTournamentCreated={handleTournamentCreated} />
-                ) : (
-                    <Outlet />
-                )}
+                <Outlet />
             </main>
         </div>
     );
