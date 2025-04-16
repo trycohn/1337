@@ -11,15 +11,15 @@ function Profile() {
     const [faceitInfo, setFaceitInfo] = useState(null);
     const [isLoadingFaceitInfo, setIsLoadingFaceitInfo] = useState(false);
     const [newUsername, setNewUsername] = useState('');
-    const [verificationData, setVerificationData] = useState({
-        fullName: '',
-        birthDate: '',
-        avatarUrl: ''
-    });
-    const [emailToken, setEmailToken] = useState('');
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [steamNickname, setSteamNickname] = useState('');
+    
+    // Новые состояния для подтверждения email
+    const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [isResendDisabled, setIsResendDisabled] = useState(false);
+    const [resendCountdown, setResendCountdown] = useState(0);
 
     const fetchUserData = async (token) => {
         try {
@@ -153,6 +153,80 @@ function Profile() {
         setShowModal(false);
     };
 
+    // Функции для подтверждения email
+    const openEmailVerificationModal = async () => {
+        await sendVerificationCode();
+        setShowEmailVerificationModal(true);
+    };
+
+    const closeEmailVerificationModal = () => {
+        setShowEmailVerificationModal(false);
+        setVerificationCode('');
+    };
+
+    const sendVerificationCode = async () => {
+        if (isResendDisabled) return;
+        
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/users/verify-email', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Устанавливаем задержку 3 минуты на повторную отправку
+            setIsResendDisabled(true);
+            const countdownTime = 180; // 3 минуты в секундах
+            setResendCountdown(countdownTime);
+            
+            // Сохраняем время окончания задержки в localStorage
+            const endTime = Date.now() + countdownTime * 1000;
+            localStorage.setItem('resendCodeEndTime', endTime.toString());
+            
+            // Запускаем обратный отсчет
+            startCountdown(countdownTime);
+            
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отправки кода подтверждения');
+        }
+    };
+
+    const startCountdown = (seconds) => {
+        let remainingSeconds = seconds;
+        const intervalId = setInterval(() => {
+            remainingSeconds -= 1;
+            setResendCountdown(remainingSeconds);
+            
+            if (remainingSeconds <= 0) {
+                clearInterval(intervalId);
+                setIsResendDisabled(false);
+                setResendCountdown(0);
+                localStorage.removeItem('resendCodeEndTime');
+            }
+        }, 1000);
+    };
+
+    const submitVerificationCode = async () => {
+        if (verificationCode.length !== 6) {
+            setError('Код подтверждения должен состоять из 6 цифр');
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/users/confirm-email', { code: verificationCode }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем статус верификации пользователя
+            setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null);
+            closeEmailVerificationModal();
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Неверный код подтверждения');
+        }
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -162,6 +236,22 @@ function Profile() {
             const steamId = urlParams.get('steamId');
             if (steamId) {
                 handleSteamCallback(steamId, token);
+            }
+        }
+        
+        // Проверяем, есть ли сохраненное время окончания задержки
+        const savedEndTime = localStorage.getItem('resendCodeEndTime');
+        if (savedEndTime) {
+            const endTime = parseInt(savedEndTime);
+            const now = Date.now();
+            const remainingTime = Math.max(0, Math.floor((endTime - now) / 1000));
+            
+            if (remainingTime > 0) {
+                setIsResendDisabled(true);
+                setResendCountdown(remainingTime);
+                startCountdown(remainingTime);
+            } else {
+                localStorage.removeItem('resendCodeEndTime');
             }
         }
     }, []);
@@ -221,47 +311,6 @@ function Profile() {
         const token = localStorage.getItem('token');
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
         window.location.href = `${baseUrl}/api/users/link-faceit?token=${token}`;
-    };
-
-    const verifyProfile = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/verify', verificationData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUser(prevUser => prevUser ? { ...prevUser, ...response.data.user } : null);
-            setVerificationData({ fullName: '', birthDate: '', avatarUrl: '' });
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка верификации профиля');
-        }
-    };
-
-    const verifyEmail = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/verify-email', {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            alert(`Токен отправлен в консоль: ${response.data.token}`);
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка отправки токена');
-        }
-    };
-
-    const confirmEmail = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/api/users/confirm-email', { token: emailToken }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null);
-            setEmailToken('');
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Ошибка подтверждения email');
-        }
     };
 
     const renderRankGroups = () => {
@@ -363,6 +412,16 @@ function Profile() {
             <h2>Личный кабинет</h2>
             {error && <p className="error">{error}</p>}
             
+            {/* Плашка с предупреждением для неверифицированных пользователей */}
+            {!user.is_verified && (
+                <div className="verification-alert">
+                    <p>
+                        <strong>Внимание!</strong> Ваш email не подтвержден. Вы не можете создавать и администрировать турниры.
+                    </p>
+                    <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                </div>
+            )}
+            
             <section>
                 <h3>Данные пользователя</h3>
                 <p>Имя пользователя: {user.username}</p>
@@ -377,7 +436,10 @@ function Profile() {
                     <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button>
                 )}
                 <p>Email: {user.email}</p>
-                <p>Статус верификации: {user.is_verified ? 'Верифицирован' : 'Не верифицирован'}</p>
+                <p>Статус верификации: {user.is_verified ? 'Подтвержден' : 'Не подтвержден'}</p>
+                {!user.is_verified && (
+                    <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                )}
             </section>
 
             <section className="steam-section">
@@ -457,45 +519,6 @@ function Profile() {
             </section>
 
             <section>
-                <h3>Верификация профиля</h3>
-                {!user.is_verified && (
-                    <>
-                        <input 
-                            value={verificationData.fullName} 
-                            onChange={(e) => setVerificationData({ ...verificationData, fullName: e.target.value })} 
-                            placeholder="ФИО" 
-                        />
-                        <input 
-                            type="date" 
-                            value={verificationData.birthDate} 
-                            onChange={(e) => setVerificationData({ ...verificationData, birthDate: e.target.value })} 
-                        />
-                        <input 
-                            value={verificationData.avatarUrl} 
-                            onChange={(e) => setVerificationData({ ...verificationData, avatarUrl: e.target.value })} 
-                            placeholder="URL аватара" 
-                        />
-                        <button onClick={verifyProfile}>Верифицировать</button>
-                    </>
-                )}
-            </section>
-
-            <section>
-                <h3>Подтверждение email</h3>
-                {!user.is_verified && (
-                    <>
-                        <button onClick={verifyEmail}>Отправить токен</button>
-                        <input 
-                            value={emailToken} 
-                            onChange={(e) => setEmailToken(e.target.value)} 
-                            placeholder="Введите токен" 
-                        />
-                        <button onClick={confirmEmail}>Подтвердить</button>
-                    </>
-                )}
-            </section>
-
-            <section>
                 <h3>Статистика</h3>
                 {stats ? (
                     <>
@@ -515,6 +538,39 @@ function Profile() {
                 )}
             </section>
 
+            {/* Модальное окно для подтверждения почты */}
+            {showEmailVerificationModal && (
+                <div className="modal-overlay" onClick={closeEmailVerificationModal}>
+                    <div className="modal-content email-verification-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>Подтверждение email</h3>
+                        <p>На вашу почту {user.email} был отправлен 6-значный код. Введите его ниже:</p>
+                        
+                        <input 
+                            type="text"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            placeholder="Введите 6-значный код"
+                            maxLength={6}
+                            pattern="\d{6}"
+                        />
+                        
+                        <div className="modal-buttons">
+                            <button onClick={submitVerificationCode}>Подтвердить</button>
+                            <button 
+                                onClick={sendVerificationCode} 
+                                disabled={isResendDisabled}
+                            >
+                                {isResendDisabled 
+                                    ? `Отправить повторно (${Math.floor(resendCountdown / 60)}:${(resendCountdown % 60).toString().padStart(2, '0')})` 
+                                    : 'Отправить повторно'}
+                            </button>
+                            <button onClick={closeEmailVerificationModal}>Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальное окно для установки никнейма Steam */}
             {showModal && (
                 <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
