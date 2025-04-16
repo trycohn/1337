@@ -227,6 +227,33 @@ function Profile() {
         }
     };
 
+    // Функция для обработки ввода кода
+    const handleCodeChange = (e) => {
+        const value = e.target.value;
+        // Принимаем только цифры и не более 6 символов
+        const code = value.replace(/\D/g, '').slice(0, 6);
+        setVerificationCode(code);
+    };
+
+    // Функция для обработки вставки из буфера обмена
+    const handleCodePaste = async (e) => {
+        e.preventDefault();
+        try {
+            // Получаем текст из буфера обмена
+            const text = await navigator.clipboard.readText();
+            // Фильтруем только цифры и ограничиваем длину
+            const code = text.replace(/\D/g, '').slice(0, 6);
+            setVerificationCode(code);
+        } catch (err) {
+            console.error('Не удалось получить доступ к буферу обмена:', err);
+        }
+    };
+
+    // Функция для фокусировки на скрытом поле ввода при клике на контейнер цифр
+    const handleCodeContainerClick = () => {
+        document.getElementById('hidden-code-input').focus();
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -538,21 +565,37 @@ function Profile() {
                 )}
             </section>
 
-            {/* Модальное окно для подтверждения почты */}
+            {/* Обновленное модальное окно подтверждения email */}
             {showEmailVerificationModal && (
                 <div className="modal-overlay" onClick={closeEmailVerificationModal}>
                     <div className="modal-content email-verification-modal" onClick={(e) => e.stopPropagation()}>
                         <h3>Подтверждение email</h3>
                         <p>На вашу почту {user.email} был отправлен 6-значный код. Введите его ниже:</p>
                         
-                        <input 
-                            type="text"
-                            value={verificationCode}
-                            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            placeholder="Введите 6-значный код"
-                            maxLength={6}
-                            pattern="\d{6}"
-                        />
+                        <div className="code-input-container" onClick={handleCodeContainerClick}>
+                            <input 
+                                id="hidden-code-input"
+                                className="code-input-hidden"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={6}
+                                value={verificationCode}
+                                onChange={handleCodeChange}
+                                onPaste={handleCodePaste}
+                                autoFocus
+                            />
+                            <div className="code-display">
+                                {[0, 1, 2, 3, 4, 5].map((index) => (
+                                    <div 
+                                        key={index} 
+                                        className={`code-digit ${verificationCode[index] ? 'filled' : ''} ${index === verificationCode.length ? 'active' : ''}`}
+                                    >
+                                        {verificationCode[index] || ''}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                         
                         <div className="modal-buttons">
                             <button onClick={submitVerificationCode}>Подтвердить</button>
@@ -560,9 +603,12 @@ function Profile() {
                                 onClick={sendVerificationCode} 
                                 disabled={isResendDisabled}
                             >
-                                {isResendDisabled 
-                                    ? `Отправить повторно (${Math.floor(resendCountdown / 60)}:${(resendCountdown % 60).toString().padStart(2, '0')})` 
-                                    : 'Отправить повторно'}
+                                Отправить повторно
+                                {isResendDisabled && (
+                                    <span className="resend-countdown">
+                                        ({Math.floor(resendCountdown / 60)}:{(resendCountdown % 60).toString().padStart(2, '0')})
+                                    </span>
+                                )}
                             </button>
                             <button onClick={closeEmailVerificationModal}>Отмена</button>
                         </div>
