@@ -120,6 +120,14 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
 });
 
+// Маршрут для авторизации через Steam (инициация процесса)
+router.get('/steam', (req, res) => {
+    console.log('Инициирован вход через Steam');
+    const baseUrl = process.env.SERVER_URL || process.env.REACT_APP_API_URL || 'http://localhost:3000';
+    const steamLoginUrl = `https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_setup&openid.return_to=${baseUrl}/api/users/steam-callback&openid.realm=${baseUrl}&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select`;
+    res.redirect(steamLoginUrl);
+});
+
 // Callback для Steam OpenID
 router.get('/steam-callback', async (req, res) => {
     try {
@@ -144,10 +152,12 @@ router.get('/steam-callback', async (req, res) => {
         const steamId = openidParams['openid.claimed_id'].split('/').pop();
         console.log('Extracted Steam ID:', steamId);
 
+        // Проверяем, существует ли пользователь с данным Steam ID
         const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         console.log('Existing user with steam_id:', existingUser.rows);
 
         if (existingUser.rows.length > 0) {
+            // Если пользователь существует, создаем JWT и перенаправляем
             const user = existingUser.rows[0];
             const token = jwt.sign(
                 { id: user.id, role: user.role, username: user.username },
@@ -155,14 +165,35 @@ router.get('/steam-callback', async (req, res) => {
                 { expiresIn: '1h' }
             );
             console.log('User exists, redirecting with token:', token);
-            return res.redirect(`https://1337community.com/profile?token=${token}`);
+            return res.redirect(`https://1337community.com/auth-callback?token=${token}`);
+        } else {
+            // Если пользователь не существует, получаем его никнейм из Steam
+            const apiKey = process.env.STEAM_API_KEY;
+            const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
+            const steamNickname = steamUserResponse.data.response.players[0].personaname;
+            const steamAvatarUrl = steamUserResponse.data.response.players[0].avatarfull;
+            
+            // Создаем нового пользователя с никнеймом и Steam ID
+            const newUserResult = await pool.query(
+                'INSERT INTO users (username, steam_id, steam_url, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id, username, role',
+                [steamNickname, steamId, `https://steamcommunity.com/profiles/${steamId}`, steamAvatarUrl]
+            );
+            
+            const newUser = newUserResult.rows[0];
+            
+            // Создаем JWT для нового пользователя
+            const token = jwt.sign(
+                { id: newUser.id, role: newUser.role, username: newUser.username },
+                process.env.JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+            
+            console.log('Created new user with Steam profile, redirecting with token:', newUser);
+            return res.redirect(`https://1337community.com/auth-callback?token=${token}`);
         }
-
-        console.log('No existing user, redirecting with steamId:', steamId);
-        res.redirect(`https://1337community.com/profile?steamId=${steamId}`);
     } catch (err) {
         console.error('Ошибка в steam-callback:', err);
-        res.status(500).json({ error: 'Ошибка авторизации через Steam' });
+        return res.redirect(`https://1337community.com/auth-error?message=${encodeURIComponent(err.message)}`);
     }
 });
 

@@ -21,6 +21,32 @@ function AuthPage() {
     }
   }, [location]);
 
+  // Проверяем токен при перенаправлении от Steam
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const token = searchParams.get('token');
+    
+    if (token) {
+      localStorage.setItem('token', token);
+      setSuccessMessage('Вы успешно вошли через Steam!');
+      
+      // Очищаем URL от параметров
+      window.history.replaceState({}, document.title, '/login');
+      
+      // Перенаправляем на главную страницу
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
+    }
+    
+    // Проверяем, есть ли сообщение об ошибке
+    const errorMessage = searchParams.get('message');
+    if (errorMessage) {
+      setError(decodeURIComponent(errorMessage));
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, [location, navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
