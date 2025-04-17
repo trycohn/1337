@@ -155,12 +155,21 @@ function Profile() {
         setShowModal(false);
     };
 
-    // Функции для подтверждения email
+    // Функция открытия модального окна с проверкой первого запуска
     const openEmailVerificationModal = async () => {
-        await sendVerificationCode();
         setShowEmailVerificationModal(true);
+        
+        // Проверяем, был ли уже отправлен код ранее
+        const codeWasSentBefore = localStorage.getItem('verification_code_sent') === 'true';
+        
+        if (!codeWasSentBefore) {
+            // Если код отправляется впервые, отправляем его и устанавливаем флаг
+            await sendVerificationCode();
+            localStorage.setItem('verification_code_sent', 'true');
+        }
     };
 
+    // Обновляем функцию закрытия модального окна
     const closeEmailVerificationModal = () => {
         setIsClosingModal(true);
         
@@ -169,7 +178,7 @@ function Profile() {
             setShowEmailVerificationModal(false);
             setIsClosingModal(false);
             setVerificationCode('');
-            setVerificationError('');
+            setVerificationError(''); // Сбрасываем ошибку при закрытии
         }, 300); // Время должно совпадать с длительностью анимации в CSS (0.3s)
     };
 
@@ -628,7 +637,7 @@ function Profile() {
                                 onClick={sendVerificationCode} 
                                 disabled={isResendDisabled}
                             >
-                                Отправить повторно
+                                {localStorage.getItem('verification_code_sent') === 'true' ? 'Отправить повторно' : 'Отправить код'}
                                 {isResendDisabled && (
                                     <span className="resend-countdown">
                                         {Math.floor(resendCountdown / 60)}:{(resendCountdown % 60).toString().padStart(2, '0')}
