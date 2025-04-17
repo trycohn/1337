@@ -19,109 +19,102 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     console.log(`Генерация сетки для ${participantCount} участников`);
 
     // Определяем ближайшую степень двойки с округлением ВНИЗ
-    // Например: для 6 участников это будет 4 (2^2)
-    const powerOfTwo = Math.pow(2, Math.floor(Math.log2(participantCount)));
-    console.log(`Ближайшая степень двойки (округление вниз): ${powerOfTwo}`);
-
-    // Количество матчей в предварительном раунде
-    // Нужно "отсеять" лишних участников, чтобы осталось powerOfTwo участников
-    const preliminaryMatchesCount = Math.ceil((participantCount - powerOfTwo) / 2);
-    console.log(`Количество матчей в предварительном раунде: ${preliminaryMatchesCount}`);
-
-    // Количество участников, которые должны играть в предварительном раунде
-    const preliminaryParticipantsCount = preliminaryMatchesCount * 2;
+    // Для 6 участников это будет 4 (2^2)
+    const pow = Math.floor(Math.log2(participantCount));
+    const closestPowerOfTwo = Math.pow(2, pow);
     
-    // Разделяем участников: кто играет в предварительном раунде, а кто проходит автоматически
+    // Количество раундов равно logBase2(closestPowerOfTwo)
+    // Для 6 участников (степень двойки 4): log2(4) = 2 раунда
+    const totalRounds = Math.log2(closestPowerOfTwo);
+    
+    console.log(`Ближайшая степень двойки: ${closestPowerOfTwo}, всего раундов: ${totalRounds}`);
+
+    // Распределяем участников на тех, кто играет в предварительном раунде, и тех, кто получает "бай"
+    // Количество матчей в предварительном раунде
+    const prelimMatchesNeeded = participantCount - closestPowerOfTwo;
+    
+    // Количество участников в предварительном раунде (2 на каждый матч)
+    const preliminaryParticipantsCount = prelimMatchesNeeded * 2;
+    
+    // Участники для предварительного раунда
     const prelimParticipants = shuffledParticipants.slice(0, preliminaryParticipantsCount);
+    
+    // Участники, получающие автоматический проход в первый раунд
     const byeParticipants = shuffledParticipants.slice(preliminaryParticipantsCount);
     
     console.log(`Участников в предварительном раунде: ${prelimParticipants.length}`);
-    console.log(`Участников с автоматическим проходом: ${byeParticipants.length}`);
+    console.log(`Участников с "bye": ${byeParticipants.length}`);
 
-    // Создаем объект для хранения матчей по раундам
+    // Создаем структуру для хранения матчей по раундам
     const roundMatches = {};
     
-    // Всего раундов в сетке (включая финал)
-    const totalRounds = Math.log2(powerOfTwo) + 1; // +1 для финала
-    console.log(`Всего раундов в основной сетке: ${totalRounds}`);
-    
-    // Инициализируем структуру раундов
     for (let round = 0; round < totalRounds; round++) {
         roundMatches[round] = [];
     }
     
     // Если есть предварительный раунд, добавляем его
-    if (preliminaryMatchesCount > 0) {
+    if (preliminaryParticipantsCount > 0) {
         roundMatches[-1] = [];
     }
-
+    
     // Создаем матчи предварительного раунда
-    if (preliminaryMatchesCount > 0) {
-        for (let i = 0; i < preliminaryMatchesCount; i++) {
+    if (preliminaryParticipantsCount > 0) {
+        for (let i = 0; i < prelimMatchesNeeded; i++) {
             const team1Index = i * 2;
             const team2Index = i * 2 + 1;
             
             const team1 = prelimParticipants[team1Index];
-            // Проверяем, что второй участник существует (на случай нечетного числа)
-            const team2 = team2Index < prelimParticipants.length ? prelimParticipants[team2Index] : null;
-
+            const team2 = prelimParticipants[team2Index];
+            
             const match = await pool.query(
                 'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, bracket_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-                [tournamentId, -1, team1.id, team2 ? team2.id : null, matchNumber++, 'winner']
+                [tournamentId, -1, team1.id, team2.id, matchNumber++, 'winner']
             );
             
-            const newMatch = match.rows[0];
-            roundMatches[-1].push(newMatch);
-            matches.push(newMatch);
+            roundMatches[-1].push(match.rows[0]);
+            matches.push(match.rows[0]);
             
-            console.log(`Создан матч предварительного раунда #${newMatch.match_number}: ${team1.name} vs ${team2 ? team2.name : 'Bye'}`);
+            console.log(`Создан матч предварительного раунда #${match.rows[0].id}: ${team1.name} vs ${team2.name}`);
         }
     }
-
-    // Создаем матчи первого полного раунда (раунд 0)
-    // Количество матчей в первом раунде = powerOfTwo / 2
-    const round0MatchCount = powerOfTwo / 2;
     
-    for (let i = 0; i < round0MatchCount; i++) {
-        // Определяем начальных участников для первого раунда
+    // Создаем матчи первого раунда (раунд 0)
+    // Количество матчей в первом раунде = closestPowerOfTwo / 2
+    const firstRoundMatchCount = closestPowerOfTwo / 2;
+    
+    for (let i = 0; i < firstRoundMatchCount; i++) {
         let team1 = null;
         let team2 = null;
         
-        // Если у нас есть предварительный раунд, первые матчи будут заполняться его победителями
-        // и участниками с автоматическим проходом
-        if (i < preliminaryMatchesCount) {
+        if (i < prelimMatchesNeeded) {
             // Этот матч будет заполнен победителем предварительного матча
             team1 = null;
         } else {
-            // Участник с автоматическим проходом
-            const byeIndex = i - preliminaryMatchesCount;
-            if (byeIndex < byeParticipants.length) {
-                team1 = byeParticipants[byeIndex];
+            // Заполняем матч участниками с автоматическим проходом
+            const byeIndex = i - prelimMatchesNeeded;
+            if (byeIndex * 2 < byeParticipants.length) {
+                team1 = byeParticipants[byeIndex * 2];
+            }
+            
+            if (byeIndex * 2 + 1 < byeParticipants.length) {
+                team2 = byeParticipants[byeIndex * 2 + 1];
             }
         }
         
-        // Для следующего автоматического участника
-        const nextByeIndex = i - preliminaryMatchesCount + round0MatchCount / 2;
-        if (nextByeIndex < byeParticipants.length) {
-            team2 = byeParticipants[nextByeIndex];
-        }
-
         const match = await pool.query(
             'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, bracket_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [tournamentId, 0, team1 ? team1.id : null, team2 ? team2.id : null, matchNumber++, 'winner']
         );
         
-        const newMatch = match.rows[0];
-        roundMatches[0].push(newMatch);
-        matches.push(newMatch);
+        roundMatches[0].push(match.rows[0]);
+        matches.push(match.rows[0]);
         
-        console.log(`Создан матч раунда 0 #${newMatch.match_number}: ${team1 ? team1.name : 'TBD'} vs ${team2 ? team2.name : 'TBD'}`);
+        console.log(`Создан матч раунда 0 #${match.rows[0].id}: ${team1 ? team1.name : 'TBD'} vs ${team2 ? team2.name : 'TBD'}`);
     }
-
-    // Создаем матчи для остальных раундов
+    
+    // Создаем матчи для последующих раундов (1 и далее)
     for (let round = 1; round < totalRounds; round++) {
-        // Количество матчей в текущем раунде = количество матчей в предыдущем раунде / 2
-        const matchCount = Math.max(1, roundMatches[round - 1].length / 2);
+        const matchCount = Math.pow(2, totalRounds - round - 1);
         
         for (let i = 0; i < matchCount; i++) {
             const match = await pool.query(
@@ -129,36 +122,35 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
                 [tournamentId, round, null, null, matchNumber++, 'winner']
             );
             
-            const newMatch = match.rows[0];
-            roundMatches[round].push(newMatch);
-            matches.push(newMatch);
+            roundMatches[round].push(match.rows[0]);
+            matches.push(match.rows[0]);
             
-            console.log(`Создан матч раунда ${round} #${newMatch.match_number}`);
+            console.log(`Создан матч раунда ${round} #${match.rows[0].id}`);
         }
     }
-
-    // Создаем матч за 3-е место, если нужно
+    
+    // Создаем матч за 3-е место, если нужен
     let thirdPlaceMatchObj = null;
     if (thirdPlaceMatch && totalRounds >= 2) {
-        // Матч за 3-е место будет в последнем раунде (как и финал)
-        const lastRound = totalRounds - 1;
+        // Матч за 3-е место будет в том же раунде, что и финал (последний раунд)
+        const finalRound = totalRounds - 1;
         
         const match = await pool.query(
             'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, is_third_place_match, bracket_type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [tournamentId, lastRound, null, null, matchNumber++, true, 'placement']
+            [tournamentId, finalRound, null, null, matchNumber++, true, 'placement']
         );
         
         thirdPlaceMatchObj = match.rows[0];
         matches.push(thirdPlaceMatchObj);
         
-        console.log(`Создан матч за 3-е место #${thirdPlaceMatchObj.match_number}`);
+        console.log(`Создан матч за 3-е место #${thirdPlaceMatchObj.id}`);
     }
-
-    // Связываем матчи между раундами
     
-    // 1. Связываем предварительный раунд с раундом 0
-    if (preliminaryMatchesCount > 0) {
-        for (let i = 0; i < preliminaryMatchesCount; i++) {
+    // Связываем матчи
+    
+    // 1. Связываем предварительный раунд с первым раундом
+    if (preliminaryParticipantsCount > 0) {
+        for (let i = 0; i < prelimMatchesNeeded; i++) {
             const prelimMatch = roundMatches[-1][i];
             const targetMatch = roundMatches[0][i];
             
@@ -167,7 +159,7 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
                 [targetMatch.id, prelimMatch.id]
             );
             
-            console.log(`Связан матч предварительного раунда #${prelimMatch.match_number} с матчем раунда 0 #${targetMatch.match_number}`);
+            console.log(`Связан матч предварительного раунда #${prelimMatch.id} -> матч первого раунда #${targetMatch.id}`);
         }
     }
     
@@ -188,21 +180,28 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
                     [nextMatch.id, currentMatch.id]
                 );
                 
-                console.log(`Связан матч раунда ${round} #${currentMatch.match_number} с матчем раунда ${round + 1} #${nextMatch.match_number}`);
-                
-                // Если это полуфинал (предпоследний раунд) и нужен матч за 3-е место
-                if (round === totalRounds - 2 && thirdPlaceMatch) {
-                    await pool.query(
-                        'UPDATE matches SET loser_next_match_id = $1 WHERE id = $2',
-                        [thirdPlaceMatchObj.id, currentMatch.id]
-                    );
-                    
-                    console.log(`Связан проигравший матча #${currentMatch.match_number} с матчем за 3-е место #${thirdPlaceMatchObj.match_number}`);
-                }
+                console.log(`Связан матч #${currentMatch.id} (раунд ${round}) -> матч #${nextMatch.id} (раунд ${round+1})`);
             }
         }
     }
-
+    
+    // 3. Связываем проигравших полуфиналов с матчем за 3-е место
+    if (thirdPlaceMatch && totalRounds >= 2) {
+        const semifinalRound = totalRounds - 2; // предпоследний раунд
+        const semifinalMatches = roundMatches[semifinalRound];
+        
+        for (let i = 0; i < semifinalMatches.length; i++) {
+            const semifinalMatch = semifinalMatches[i];
+            
+            await pool.query(
+                'UPDATE matches SET loser_next_match_id = $1 WHERE id = $2',
+                [thirdPlaceMatchObj.id, semifinalMatch.id]
+            );
+            
+            console.log(`Связан проигравший полуфинала #${semifinalMatch.id} -> матч за 3-е место #${thirdPlaceMatchObj.id}`);
+        }
+    }
+    
     return matches;
 };
 
