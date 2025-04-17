@@ -149,7 +149,7 @@ function Layout() {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setNotifications((prev) =>
-                    prev.map((n) => (n.type !== 'admin_request' ? { ...n, is_read: true } : n))
+                    prev.map((n) => ({ ...n, is_read: true }))
                 );
             } catch (error) {
                 console.error('❌ Ошибка отметки уведомлений:', error.response ? error.response.data : error.message);
@@ -167,7 +167,7 @@ function Layout() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             await api.post(
-                `/api/notifications/mark-read?userId=${user.id}`,
+                `/api/notifications/mark-read?userId=${user.id}&notificationId=${notification.id}`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );

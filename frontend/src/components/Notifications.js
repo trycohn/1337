@@ -82,7 +82,7 @@ function Notifications() {
       );
       // Отмечаем уведомление как прочитанное
       await axios.post(
-        `/api/notifications/mark-read?userId=${notification.user_id}`,
+        `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
