@@ -7,6 +7,7 @@ import Layout from './components/Layout'; // Импортируем Layout ка�
 import Profile from './components/Profile'; // Добавляем импорт Profile
 import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
+import Notifications from './components/Notifications'; // Добавляем импорт компонента Notifications
 import { LoaderProvider } from './context/LoaderContext';
 
 // Компонент для обработки аутентификации через Steam
@@ -47,6 +48,7 @@ function App() {
                         <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
                         <Route path="/profile" element={<Profile />} /> {/* Добавляем маршрут для профиля */}
                         <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
+                        <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
                         <Route path="/auth-callback" element={<AuthCallback />} />
                         <Route path="/auth-error" element={<Navigate to="/login" />} />
                     </Route>
