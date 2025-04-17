@@ -974,21 +974,48 @@ header.header {
   background-color: #0069d9;
 }
 
-.steam-button {
+.social-login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
   width: 100%;
-  padding: 12px;
+}
+
+.steam-button {
   background-color: #171a21;
   color: white;
   border: none;
+  padding: 10px;
   border-radius: 4px;
-  font-size: 16px;
-  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  width: 100%;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .steam-button:hover {
-  background-color: #2a475e;
+  background-color: #2a3f5f;
+}
+
+.faceit-button {
+  background-color: #fd5a00;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.faceit-button:hover {
+  background-color: #ff7a2f;
 }
 
 .error-message {

@@ -95,6 +95,11 @@ function AuthPage() {
     window.location.href = `${baseUrl}/api/users/steam`;
   };
 
+  const handleFaceitLogin = () => {
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+    window.location.href = `${baseUrl}/api/users/faceit-login`;
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-container">
@@ -138,13 +143,22 @@ function AuthPage() {
               />
             </div>
             <button type="submit" className="auth-button">Войти</button>
-            <button 
-              type="button" 
-              className="steam-button"
-              onClick={handleSteamLogin}
-            >
-              Войти через Steam
-            </button>
+            <div className="social-login-buttons">
+              <button 
+                type="button" 
+                className="steam-button"
+                onClick={handleSteamLogin}
+              >
+                Войти через Steam
+              </button>
+              <button 
+                type="button" 
+                className="faceit-button"
+                onClick={handleFaceitLogin}
+              >
+                Войти через FACEIT
+              </button>
+            </div>
           </form>
           
           <form 
