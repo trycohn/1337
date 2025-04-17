@@ -27,8 +27,8 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
             const team1 = prelimParticipants[i];
             const team2 = prelimParticipants[i + 1] || { id: null, name: 'TBD' };
             const match = await pool.query(
-                'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [tournamentId, -1, team1.id, team2.id, matchNumber++]
+                'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, bracket_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [tournamentId, -1, team1.id, team2.id, matchNumber++, 'winner']
             );
             matches.push(match.rows[0]);
         }
@@ -44,8 +44,8 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
         const team1 = byeParticipants[i] || { id: null, name: 'TBD' };
         const team2 = { id: null, name: 'TBD' };
         const match = await pool.query(
-            'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [tournamentId, 0, team1.id, team2.id, matchNumber++]
+            'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, bracket_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [tournamentId, 0, team1.id, team2.id, matchNumber++, 'winner']
         );
         round0Matches.push(match.rows[0]);
     }
@@ -53,15 +53,15 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
 
     // **Финальный раунд (Раунд 1)**
     const finalMatch = await pool.query(
-        'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [tournamentId, 1, null, null, matchNumber++]
+        'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, bracket_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [tournamentId, 1, null, null, matchNumber++, 'winner']
     );
     matches.push(finalMatch.rows[0]);
 
     if (thirdPlaceMatch) {
         const thirdPlaceMatchResult = await pool.query(
-            'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, is_third_place_match) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [tournamentId, 1, null, null, matchNumber++, true]
+            'INSERT INTO matches (tournament_id, round, team1_id, team2_id, match_number, is_third_place_match, bracket_type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [tournamentId, 1, null, null, matchNumber++, true, 'placement']
         );
         matches.push(thirdPlaceMatchResult.rows[0]);
     }

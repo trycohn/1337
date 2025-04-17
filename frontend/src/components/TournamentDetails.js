@@ -113,6 +113,16 @@ function TournamentDetails() {
             const visitorParticipant = match.team2_id
                 ? (tournament.participants || []).find((p) => p.id === match.team2_id)
                 : null;
+                
+            // Определяем bracket_type по умолчанию, если он отсутствует
+            let bracket_type = match.bracket_type;
+            if (!bracket_type) {
+                if (match.is_third_place_match) {
+                    bracket_type = 'placement';
+                } else {
+                    bracket_type = 'winner';
+                }
+            }
 
             return {
                 id: match.id.toString(),
@@ -142,7 +152,7 @@ function TournamentDetails() {
                 ],
                 nextMatchId: match.next_match_id ? match.next_match_id.toString() : null,
                 is_third_place_match: match.is_third_place_match || false,
-                bracket_type: match.bracket_type,
+                bracket_type: bracket_type,
                 round: match.round,
             };
         });
