@@ -5,6 +5,8 @@ import io from 'socket.io-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
+import Loader from './Loader';
+import { useLoader } from '../context/LoaderContext';
 
 function Layout() {
     const [user, setUser] = useState(null);
@@ -15,8 +17,10 @@ function Layout() {
     const notificationRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
+    const { loading, setLoading } = useLoader();
 
     const fetchUser = async (token) => {
+        setLoading(true);
         try {
             const response = await api.get('/api/users/me', {
                 headers: { Authorization: `Bearer ${token}` },
@@ -34,6 +38,8 @@ function Layout() {
             console.error('❌ Ошибка получения данных пользователя:', error.response ? error.response.data : error.message);
             localStorage.removeItem('token');
             setUser(null);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -41,6 +47,8 @@ function Layout() {
         const token = localStorage.getItem('token');
         if (token && !user) {
             fetchUser(token);
+        } else {
+            setLoading(false);
         }
         const urlParams = new URLSearchParams(window.location.search);
         const steamToken = urlParams.get('token');
@@ -49,7 +57,15 @@ function Layout() {
             fetchUser(steamToken);
             navigate('/profile', { replace: true });
         }
-    }, [navigate, user]);
+    }, [navigate, user, setLoading]);
+
+    useEffect(() => {
+        setLoading(true);
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [location.pathname, setLoading]);
 
     useEffect(() => {
         if (showNotifications && notifications.length === 0) {
@@ -134,6 +150,7 @@ function Layout() {
 
     return (
         <div className="home-container">
+            {loading && <Loader />}
             <header className="header">
                 <div className="nav-container">
                     <button className="hamburger" onClick={toggleMenu}>

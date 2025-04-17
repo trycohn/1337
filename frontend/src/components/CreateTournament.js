@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
 
 // Добавляем немного встроенных стилей
 const styles = {
@@ -32,13 +33,19 @@ function CreateTournament() {
     start_date: new Date(),
     description: '',
   });
+  const { runWithLoader } = useLoaderAutomatic();
 
   useEffect(() => {
-    axios
-      .get('/api/tournaments/games')
-      .then((response) => setGames(response.data))
-      .catch((error) => console.error('Ошибка загрузки игр:', error));
-  }, []);
+    // Используем хук для загрузки списка игр с прелоадером
+    runWithLoader(async () => {
+      try {
+        const response = await axios.get('/api/tournaments/games');
+        setGames(response.data);
+      } catch (error) {
+        console.error('Ошибка загрузки игр:', error);
+      }
+    });
+  }, [runWithLoader]);
 
   const handleCreateTournament = async (e) => {
     e.preventDefault();
@@ -47,28 +54,32 @@ function CreateTournament() {
       alert('Войдите, чтобы создать турнир');
       return;
     }
-    try {
-      const response = await axios.post(
-        '/api/tournaments',
-        {
-          name: createForm.name,
-          game: createForm.game,
-          format: createForm.format,
-          participant_type: createForm.participant_type,
-          max_participants: createForm.hasLimit ? parseInt(createForm.max_participants) : null,
-          start_date: createForm.start_date.toISOString(),
-          description: createForm.description,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // Перенаправляем на страницу созданного турнира
-      navigate(`/tournaments/${response.data.id}`);
-      
-    } catch (error) {
-      console.error('Ошибка создания турнира:', error);
-      alert(error.response?.data?.error || 'Ошибка создания турнира');
-    }
+
+    // Используем хук для создания турнира с прелоадером
+    runWithLoader(async () => {
+      try {
+        const response = await axios.post(
+          '/api/tournaments',
+          {
+            name: createForm.name,
+            game: createForm.game,
+            format: createForm.format,
+            participant_type: createForm.participant_type,
+            max_participants: createForm.hasLimit ? parseInt(createForm.max_participants) : null,
+            start_date: createForm.start_date.toISOString(),
+            description: createForm.description,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        // Перенаправляем на страницу созданного турнира
+        navigate(`/tournaments/${response.data.id}`);
+        
+      } catch (error) {
+        console.error('Ошибка создания турнира:', error);
+        alert(error.response?.data?.error || 'Ошибка создания турнира');
+      }
+    });
   };
 
   const handleInputChange = (e) => {

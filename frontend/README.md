@@ -68,3 +68,69 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Использование прелоадера
+
+В проекте добавлен универсальный прелоадер для всех страниц и асинхронных операций. 
+
+### Как это работает
+
+1. Прелоадер автоматически показывается при переходе между страницами
+2. Для асинхронных операций можно использовать специальный хук
+
+### Автоматический прелоадер при навигации
+
+Прелоадер автоматически появляется при переходе между страницами благодаря интеграции с React Router.
+
+### Использование хука useLoaderAutomatic
+
+Для отображения прелоадера при асинхронных операциях, используйте хук `useLoaderAutomatic`:
+
+```jsx
+import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
+
+function MyComponent() {
+  const { runWithLoader } = useLoaderAutomatic();
+  
+  const handleAsyncOperation = () => {
+    runWithLoader(async () => {
+      // Здесь ваш асинхронный код
+      const data = await fetchSomeData();
+      return data;
+    });
+  };
+  
+  return (
+    <button onClick={handleAsyncOperation}>
+      Загрузить данные
+    </button>
+  );
+}
+```
+
+### Ручное управление прелоадером
+
+Если вам нужно ручное управление прелоадером, используйте хук `useLoader`:
+
+```jsx
+import { useLoader } from '../context/LoaderContext';
+
+function MyComponent() {
+  const { loading, setLoading } = useLoader();
+  
+  const handleButtonClick = async () => {
+    setLoading(true);
+    try {
+      // Ваш асинхронный код
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <button onClick={handleButtonClick}>
+      {loading ? 'Загрузка...' : 'Нажмите для загрузки'}
+    </button>
+  );
+}
+```

@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
 
 function Tournaments() {
   const [tournaments, setTournaments] = useState([]);
+  const { runWithLoader } = useLoaderAutomatic();
 
   useEffect(() => {
-    axios
-      .get('/api/tournaments')
-      .then((response) => setTournaments(response.data))
-      .catch((error) => console.error('Ошибка получения турниров:', error));
-  }, []);
+    // Используем хук для загрузки турниров с прелоадером
+    runWithLoader(async () => {
+      try {
+        const response = await axios.get('/api/tournaments');
+        setTournaments(response.data);
+      } catch (error) {
+        console.error('Ошибка получения турниров:', error);
+      }
+    });
+  }, [runWithLoader]);
 
   return (
     <section className="tournaments-list">

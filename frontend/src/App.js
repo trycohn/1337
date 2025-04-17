@@ -6,22 +6,25 @@ import Layout from './components/Layout'; // Импортируем Layout ка�
 import Profile from './components/Profile'; // Добавляем импорт Profile
 import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
+import { LoaderProvider } from './context/LoaderContext';
 
 function App() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<Layout />}>
-                    <Route index element={<Home />} />
-                    <Route path="/tournaments" element={<TournamentsPage />} />
-                    <Route path="/tournaments/:id" element={<TournamentDetails />} />
-                    <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
-                    <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
-                    <Route path="/profile" element={<Profile />} /> {/* Добавляем маршрут для профиля */}
-                    <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
-                </Route>
-            </Routes>
-        </Router>
+        <LoaderProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<Layout />}>
+                        <Route index element={<Home />} />
+                        <Route path="/tournaments" element={<TournamentsPage />} />
+                        <Route path="/tournaments/:id" element={<TournamentDetails />} />
+                        <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
+                        <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
+                        <Route path="/profile" element={<Profile />} /> {/* Добавляем маршрут для профиля */}
+                        <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
+                    </Route>
+                </Routes>
+            </Router>
+        </LoaderProvider>
     );
 }
 
