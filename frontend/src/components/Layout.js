@@ -44,7 +44,16 @@ function Layout() {
                 try {
                     const data = JSON.parse(event.data);
                     if (data.type === 'notification') {
-                        setNotifications((prev) => [data.data, ...prev]);
+                        console.log('Получено новое уведомление:', data.data);
+                        if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected') {
+                            // Обновить список уведомлений при получении ответа на запрос администрирования
+                            api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`)
+                               .then(res => setNotifications(res.data))
+                               .catch(err => console.error('Ошибка получения уведомлений:', err));
+                        } else {
+                            // Добавляем новое уведомление в список
+                            setNotifications((prev) => [data.data, ...prev]);
+                        }
                     }
                 } catch (error) {
                     console.error('Ошибка при обработке сообщения WebSocket:', error);
@@ -62,8 +71,8 @@ function Layout() {
             // Сохраняем ссылку на WebSocket
             wsRef.current = webSocket;
             
-            // Получаем существующие уведомления
-            const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}`);
+            // Получаем существующие уведомления (без обработанных запросов)
+            const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`);
             setNotifications(notificationsResponse.data);
             
         } catch (error) {
@@ -149,7 +158,7 @@ function Layout() {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setNotifications((prev) =>
-                    prev.map((n) => (n.type !== 'admin_request' ? { ...n, is_read: true } : n))
+                    prev.map((n) => ({ ...n, is_read: true }))
                 );
             } catch (error) {
                 console.error('❌ Ошибка отметки уведомлений:', error.response ? error.response.data : error.message);
@@ -167,13 +176,15 @@ function Layout() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             await api.post(
-                `/api/notifications/mark-read?userId=${user.id}`,
+                `/api/notifications/mark-read?userId=${user.id}&notificationId=${notification.id}`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            setNotifications((prev) =>
-                prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n)).filter((n) => n.id !== notification.id)
-            );
+            
+            // Получаем обновленный список уведомлений с сервера
+            const notificationsResponse = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=false`);
+            setNotifications(notificationsResponse.data);
+            
             alert(response.data.message);
         } catch (error) {
             alert(error.response?.data?.error || 'Ошибка при обработке запроса');
@@ -247,14 +258,16 @@ function Layout() {
                                                                             "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
                                                                         </Link>{' '}
                                                                         - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                        <div className="admin-request-actions">
-                                                                            <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
-                                                                                Принять
-                                                                            </button>
-                                                                            <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
-                                                                                Отклонить
-                                                                            </button>
-                                                                        </div>
+                                                                        {!notification.is_read && (
+                                                                            <div className="admin-request-actions">
+                                                                                <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
+                                                                                    Принять
+                                                                                </button>
+                                                                                <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
+                                                                                    Отклонить
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
                                                                     </>
                                                                 ) : notification.tournament_id ? (
                                                                     <>

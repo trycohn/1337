@@ -6,6 +6,8 @@ const { sendNotification } = require('../notifications');
 // Получение уведомлений пользователя
 router.get('/', async (req, res) => {
     const userId = req.query.userId;
+    const includeProcessed = req.query.includeProcessed === 'true';
+    
     try {
         // Отмечаем все уведомления как прочитанные, кроме admin_request
         await pool.query(
@@ -13,11 +15,23 @@ router.get('/', async (req, res) => {
             [userId, 'admin_request']
         );
 
-        // Получаем все уведомления пользователя
-        const result = await pool.query(
-            'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
-            [userId]
-        );
+        // Строим запрос в зависимости от параметра includeProcessed
+        let query = `SELECT n.* FROM notifications n`;
+        
+        if (!includeProcessed) {
+            // Если не нужны обработанные admin_request, добавляем join и условие
+            query += `
+            LEFT JOIN admin_requests ar ON n.requester_id = ar.user_id AND n.tournament_id = ar.tournament_id
+            WHERE n.user_id = $1 
+            AND (n.type != 'admin_request' OR ar.status = 'pending' OR ar.status IS NULL)`;
+        } else {
+            // Если нужны все уведомления, включая обработанные
+            query += ` WHERE n.user_id = $1`;
+        }
+        
+        query += ` ORDER BY n.created_at DESC`;
+        
+        const result = await pool.query(query, [userId]);
         res.json(result.rows);
     } catch (err) {
         console.error('Ошибка получения уведомлений:', err);
@@ -48,11 +62,22 @@ router.post('/', async (req, res) => {
 // Пометка уведомления как прочитанного
 router.post('/mark-read', async (req, res) => {
     const userId = req.query.userId;
+    const notificationId = req.query.notificationId;
+    
     try {
-        await pool.query(
-            'UPDATE notifications SET is_read = true WHERE user_id = $1 AND type != $2 AND is_read = false',
-            [userId, 'admin_request']
-        );
+        if (notificationId) {
+            // Если указан конкретный ID уведомления
+            await pool.query(
+                'UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2',
+                [notificationId, userId]
+            );
+        } else {
+            // Обновляем все уведомления пользователя, включая admin_request
+            await pool.query(
+                'UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false',
+                [userId]
+            );
+        }
         res.status(200).json({ message: 'Уведомления отмечены как прочитанные' });
     } catch (err) {
         console.error('Ошибка отметки уведомлений:', err);

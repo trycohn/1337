@@ -528,11 +528,14 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
             );
 
             const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" принят создателем ${req.user.username}`;
-            await pool.query(
-                'INSERT INTO notifications (user_id, message, type) VALUES ($1, $2, $3)',
-                [requesterId, notificationMessage, 'admin_request_accepted']
+            const notificationResult = await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
+                [requesterId, notificationMessage, 'admin_request_accepted', id]
             );
+            
+            const notification = notificationResult.rows[0];
             sendNotification(requesterId, {
+                id: notification.id,
                 user_id: requesterId,
                 message: notificationMessage,
                 type: 'admin_request_accepted',
@@ -546,11 +549,14 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
             );
 
             const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" отклонён создателем ${req.user.username}`;
-            await pool.query(
-                'INSERT INTO notifications (user_id, message, type) VALUES ($1, $2, $3)',
-                [requesterId, notificationMessage, 'admin_request_rejected']
+            const notificationResult = await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
+                [requesterId, notificationMessage, 'admin_request_rejected', id]
             );
+            
+            const notification = notificationResult.rows[0];
             sendNotification(requesterId, {
+                id: notification.id,
                 user_id: requesterId,
                 message: notificationMessage,
                 type: 'admin_request_rejected',

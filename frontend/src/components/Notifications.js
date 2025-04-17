@@ -35,7 +35,18 @@ function Notifications() {
             try {
               const data = JSON.parse(event.data);
               if (data.type === 'notification') {
-                setNotifications((prev) => [data.data, ...prev]);
+                console.log('Получено новое уведомление в Notifications:', data.data);
+                if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected') {
+                  // Обновить список уведомлений при получении ответа на запрос администрирования
+                  axios.get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  })
+                  .then(res => setNotifications(res.data))
+                  .catch(err => console.error('Ошибка получения уведомлений:', err));
+                } else {
+                  // Добавляем новое уведомление в список
+                  setNotifications((prev) => [data.data, ...prev]);
+                }
               }
             } catch (error) {
               console.error('Ошибка при обработке сообщения WebSocket:', error);
@@ -55,7 +66,7 @@ function Notifications() {
           
           // Получаем существующие уведомления
           axios
-            .get(`/api/notifications?userId=${userId}`, {
+            .get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
               headers: { Authorization: `Bearer ${token}` },
             })
             .then((res) => setNotifications(res.data))
@@ -82,13 +93,17 @@ function Notifications() {
       );
       // Отмечаем уведомление как прочитанное
       await axios.post(
-        `/api/notifications/mark-read?userId=${notification.user_id}`,
+        `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n)).filter((n) => n.id !== notification.id)
-      );
+      
+      // Получаем обновленный список уведомлений
+      const response2 = await axios.get(`/api/notifications?userId=${notification.user_id}&includeProcessed=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(response2.data);
+      
       alert(response.data.message);
     } catch (error) {
       alert(error.response?.data?.error || 'Ошибка при обработке запроса');
@@ -115,7 +130,7 @@ function Notifications() {
                         "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
                       </Link>{' '}
                       - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      {!notification.is_read && (
+                      {!notification.is_read && notification.type === 'admin_request' && (
                         <div className="admin-request-actions">
                           <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
                             Принять
