@@ -6,6 +6,8 @@ const { sendNotification } = require('../notifications');
 // Получение уведомлений пользователя
 router.get('/', async (req, res) => {
     const userId = req.query.userId;
+    const includeProcessed = req.query.includeProcessed === 'true';
+    
     try {
         // Отмечаем все уведомления как прочитанные, кроме admin_request
         await pool.query(
@@ -13,15 +15,23 @@ router.get('/', async (req, res) => {
             [userId, 'admin_request']
         );
 
-        // Получаем все уведомления пользователя, исключая обработанные admin_request
-        const result = await pool.query(
-            `SELECT n.* FROM notifications n 
+        // Строим запрос в зависимости от параметра includeProcessed
+        let query = `SELECT n.* FROM notifications n`;
+        
+        if (!includeProcessed) {
+            // Если не нужны обработанные admin_request, добавляем join и условие
+            query += `
             LEFT JOIN admin_requests ar ON n.requester_id = ar.user_id AND n.tournament_id = ar.tournament_id
             WHERE n.user_id = $1 
-            AND (n.type != 'admin_request' OR ar.status = 'pending' OR ar.status IS NULL)
-            ORDER BY n.created_at DESC`,
-            [userId]
-        );
+            AND (n.type != 'admin_request' OR ar.status = 'pending' OR ar.status IS NULL)`;
+        } else {
+            // Если нужны все уведомления, включая обработанные
+            query += ` WHERE n.user_id = $1`;
+        }
+        
+        query += ` ORDER BY n.created_at DESC`;
+        
+        const result = await pool.query(query, [userId]);
         res.json(result.rows);
     } catch (err) {
         console.error('Ошибка получения уведомлений:', err);

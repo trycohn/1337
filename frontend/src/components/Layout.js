@@ -62,8 +62,8 @@ function Layout() {
             // Сохраняем ссылку на WebSocket
             wsRef.current = webSocket;
             
-            // Получаем существующие уведомления
-            const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}`);
+            // Получаем существующие уведомления (без обработанных запросов)
+            const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`);
             setNotifications(notificationsResponse.data);
             
         } catch (error) {
@@ -172,7 +172,7 @@ function Layout() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setNotifications((prev) =>
-                prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n)).filter((n) => n.id !== notification.id)
+                prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
             );
             alert(response.data.message);
         } catch (error) {

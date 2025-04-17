@@ -55,7 +55,7 @@ function Notifications() {
           
           // Получаем существующие уведомления
           axios
-            .get(`/api/notifications?userId=${userId}`, {
+            .get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
               headers: { Authorization: `Bearer ${token}` },
             })
             .then((res) => setNotifications(res.data))
@@ -87,7 +87,7 @@ function Notifications() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n)).filter((n) => n.id !== notification.id)
+        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
       );
       alert(response.data.message);
     } catch (error) {
@@ -115,7 +115,7 @@ function Notifications() {
                         "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
                       </Link>{' '}
                       - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      {!notification.is_read && (
+                      {!notification.is_read && notification.type === 'admin_request' && (
                         <div className="admin-request-actions">
                           <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
                             Принять
