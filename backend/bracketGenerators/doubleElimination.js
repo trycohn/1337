@@ -5,7 +5,7 @@ const pool = require('../db');
  * Генерация турнирной сетки для формата Double Elimination с бай-раундами
  * @param {number} tournamentId - ID турнира
  * @param {Array} participants - Массив участников [{ id, name }]
- * @param {boolean} thirdPlaceMatch - Нужен ли матч за 3-е место
+ * @param {boolean} thirdPlaceMatch - Нужен ли матч за 3-е место (игнорируется в Double Elimination, так как 3-е место автоматически занимает проигравший в финале нижней сетки)
  * @returns {Array} - Список сгенерированных матчей
  */
 const generateDoubleEliminationBracket = async (tournamentId, participants, thirdPlaceMatch) => {
@@ -117,19 +117,42 @@ const generateDoubleEliminationBracket = async (tournamentId, participants, thir
         let matchesInRound;
 
         if (round === 1) {
-            // Первый раунд нижней сетки: количество матчей первого раунда верхней сетки / 4
-            matchesInRound = Math.max(1, Math.ceil(firstRoundMatches / 4));
+            // Первый раунд нижней сетки: количество участников первого раунда верхней сетки / 4
+            // В первом раунде верхней сетки у нас nextPowerOfTwo участников (учитывая TBD)
+            matchesInRound = Math.max(1, Math.ceil(nextPowerOfTwo / 4));
+            console.log(`Первый раунд нижней сетки: ${matchesInRound} матчей (${nextPowerOfTwo} участников верхней сетки / 4)`);
         } else if (round === totalLoserRounds) {
             // Финал нижней сетки: 1 матч
             matchesInRound = 1;
+            console.log(`Финал нижней сетки: 1 матч`);
         } else {
-            // Промежуточные раунды:
-            // Проигравшие из победителей + Победители из лузеров предыдущего раунда
-            const winnersRound = round - 1;
-            const winnersMatches = Math.pow(2, totalWinnerRounds - winnersRound - 1);
-            const prevLosersMatches = loserRoundMatches[round - 1].length;
+            // Для промежуточных раундов:
+            // 1. Количество участников предыдущего раунда нижней сетки
+            const prevRoundParticipantsCount = loserRoundMatches[round - 1].length * 2; // матчей * 2 участников в каждом
             
-            matchesInRound = Math.max(1, Math.ceil((winnersMatches + prevLosersMatches) / 4));
+            // 2. Количество проигравших, падающих из верхней сетки в этот раунд
+            // Рассчитываем, из какого раунда верхней сетки проигравшие попадают в текущий раунд нижней
+            const sourceWinnerRound = round - 1;
+            let fallingParticipantsCount = 0;
+            
+            if (sourceWinnerRound < totalWinnerRounds) {
+                // Количество матчей в соответствующем раунде верхней сетки
+                const winnerRoundMatches = Math.pow(2, totalWinnerRounds - sourceWinnerRound - 1);
+                // Каждый матч даёт одного проигравшего
+                fallingParticipantsCount = winnerRoundMatches;
+            }
+            
+            // 3. Общее количество участников в текущем раунде нижней сетки
+            const totalParticipantsInRound = prevRoundParticipantsCount / 2 + fallingParticipantsCount;
+            // Делим на 2, так как победители предыдущего раунда нижней сетки
+            
+            // 4. Количество матчей = количество участников / 2
+            matchesInRound = Math.max(1, Math.ceil(totalParticipantsInRound / 2));
+            
+            console.log(`Раунд ${round} нижней сетки: ${matchesInRound} матчей`);
+            console.log(`- Предыдущий раунд нижней сетки: ${prevRoundParticipantsCount} участников -> ${prevRoundParticipantsCount/2} победителей`);
+            console.log(`- Падающие из раунда ${sourceWinnerRound} верхней сетки: ${fallingParticipantsCount} проигравших`);
+            console.log(`- Всего участников в раунде ${round}: ${totalParticipantsInRound}`);
         }
 
         console.log(`Количество матчей в раунде ${round} нижней сетки: ${matchesInRound}`);
@@ -303,44 +326,14 @@ const generateDoubleEliminationBracket = async (tournamentId, participants, thir
         finalLoserMatch.next_match_id = grandFinalMatch.id;
         await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [grandFinalMatch.id, finalLoserMatch.id]);
         console.log(`Победитель матча ${finalLoserMatch.id} финала нижней сетки переходит в гранд-финал ${grandFinalMatch.id}`);
+        
+        // Отмечаем, что проигравший в финале нижней сетки автоматически занимает 3-е место
+        console.log(`Проигравший в матче ${finalLoserMatch.id} (финал нижней сетки) автоматически занимает 3-е место`);
     }
 
-    // Добавляем матч за третье место, если нужно
-    if (thirdPlaceMatch) {
-        const thirdPlaceMatch = {
-            tournament_id: tournamentId,
-            round: totalWinnerRounds,
-            match_number: matchNumber++,
-            bracket_type: 'placement',
-            is_third_place_match: true,
-            team1_id: null,
-            team2_id: null,
-            match_date: new Date()
-        };
-        
-        const thirdPlaceResult = await pool.query(
-            'INSERT INTO matches (tournament_id, round, match_number, bracket_type, is_third_place_match, team1_id, team2_id, match_date) ' +
-            'VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [thirdPlaceMatch.tournament_id, thirdPlaceMatch.round, thirdPlaceMatch.match_number, 
-             thirdPlaceMatch.bracket_type, thirdPlaceMatch.is_third_place_match, 
-             thirdPlaceMatch.team1_id, thirdPlaceMatch.team2_id, thirdPlaceMatch.match_date]
-        );
-        
-        thirdPlaceMatch.id = thirdPlaceResult.rows[0].id;
-        matches.push(thirdPlaceMatch);
-        console.log(`Создан матч за третье место ${thirdPlaceMatch.id}`);
-        
-        // Связываем проигравших полуфинала верхней сетки с матчем за 3-е место
-        const semifinalMatches = matches.filter(m => m.round === totalWinnerRounds - 2 && m.bracket_type === 'winner');
-        for (const semifinalMatch of semifinalMatches) {
-            // Если у матча уже есть loser_next_match_id, не меняем его
-            if (!semifinalMatch.loser_next_match_id) {
-                semifinalMatch.loser_next_match_id = thirdPlaceMatch.id;
-                await pool.query('UPDATE matches SET loser_next_match_id = $1 WHERE id = $2', [thirdPlaceMatch.id, semifinalMatch.id]);
-                console.log(`Проигравший полуфинала ${semifinalMatch.id} переходит в матч за 3-е место ${thirdPlaceMatch.id}`);
-            }
-        }
-    }
+    // Параметр thirdPlaceMatch игнорируется для Double Elimination,
+    // так как третье место всегда занимает проигравший в финале нижней сетки
+    console.log('Примечание: параметр thirdPlaceMatch игнорируется в Double Elimination, так как третье место автоматически занимает проигравший в финале нижней сетки');
 
     return matches;
 };
