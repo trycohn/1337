@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
             query += `
             LEFT JOIN admin_requests ar ON n.requester_id = ar.user_id AND n.tournament_id = ar.tournament_id
             WHERE n.user_id = $1 
-            AND (n.type != 'admin_request' OR ar.status = 'pending' OR ar.status IS NULL)`;
+            AND (n.type != 'admin_request' OR (n.type = 'admin_request' AND ar.status = 'pending'))`;
         } else {
             // Если нужны все уведомления, включая обработанные
             query += ` WHERE n.user_id = $1`;
