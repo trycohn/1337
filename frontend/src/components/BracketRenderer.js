@@ -10,6 +10,14 @@ const BracketRenderer = ({
     handleTeamClick,
     format
 }) => {
+    // Проверка входных данных
+    if (!games || !Array.isArray(games) || games.length === 0) {
+        console.log('BracketRenderer: пустой массив games или он не определен', games);
+        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
+    }
+
+    console.log('BracketRenderer получил games:', games);
+
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = () => {
         const winnerMatches = games.filter(
@@ -39,6 +47,13 @@ const BracketRenderer = ({
     };
 
     const { winnerRounds, loserRounds, placementMatch, grandFinalMatch } = groupMatchesByRoundAndBracket();
+
+    // Проверка, есть ли доступные матчи для отображения
+    const hasWinnerMatches = Object.values(winnerRounds).some(rounds => rounds && rounds.length > 0);
+    if (!hasWinnerMatches) {
+        console.log('BracketRenderer: нет матчей для отображения после группировки');
+        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
+    }
 
     return (
         <div className="tournament-bracket">

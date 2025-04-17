@@ -42,19 +42,28 @@ function TournamentDetails() {
                 .catch((error) => console.error('Ошибка загрузки пользователя:', error));
         }
 
-        const fetchTournament = async () => {
-            try {
-                const tournamentResponse = await api.get(`/api/tournaments/${id}`);
-                console.log('Данные турнира при загрузке:', tournamentResponse.data);
-                setTournament(tournamentResponse.data);
-                const loadedMatches = Array.isArray(tournamentResponse.data.matches) ? tournamentResponse.data.matches : [];
-                setMatches(loadedMatches);
-            } catch (error) {
-                console.error('Ошибка загрузки турнира:', error);
-            }
-        };
-        fetchTournament();
+        fetchTournamentData();
     }, [id]);
+
+    // Функция для загрузки данных турнира
+    const fetchTournamentData = async () => {
+        try {
+            const tournamentResponse = await api.get(`/api/tournaments/${id}`);
+            console.log('Данные турнира при загрузке:', tournamentResponse.data);
+            
+            const tournament = tournamentResponse.data;
+            const loadedMatches = Array.isArray(tournament.matches) ? tournament.matches : [];
+            
+            console.log('Загруженные матчи:', loadedMatches);
+            console.log('Количество матчей:', loadedMatches.length);
+            
+            setTournament(tournament);
+            setMatches(loadedMatches);
+        } catch (error) {
+            console.error('Ошибка загрузки турнира:', error);
+            setMessage('Ошибка загрузки данных турнира');
+        }
+    };
 
     useEffect(() => {
         if (tournament && user) {
@@ -92,6 +101,10 @@ function TournamentDetails() {
 
         const participantCount = tournament.participants?.length || 0;
         const totalRounds = Math.ceil(Math.log2(participantCount));
+
+        console.log('Формирование игр для BracketRenderer');
+        console.log('Matches в состоянии:', matches);
+        console.log('Participants в состоянии:', tournament.participants);
 
         return matches.map((match) => {
             const homeParticipant = match.team1_id
@@ -235,16 +248,22 @@ function TournamentDetails() {
         }
 
         try {
+            setMessage('Генерация сетки...');
+            
             const generateBracketResponse = await api.post(
                 `/api/tournaments/${id}/generate-bracket`,
                 { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+            
+            console.log('Ответ от сервера:', generateBracketResponse.data);
             setMessage(generateBracketResponse.data.message);
-            const updatedTournament = await api.get(`/api/tournaments/${id}`);
-            setTournament(updatedTournament.data);
-            setMatches(updatedTournament.data.matches || []);
+            
+            // Перезагружаем данные турнира после генерации сетки
+            await fetchTournamentData();
+            
         } catch (error) {
+            console.error('Ошибка при генерации сетки:', error);
             setMessage(error.response?.data?.error || 'Ошибка при генерации сетки');
         }
     };
@@ -582,19 +601,46 @@ function TournamentDetails() {
                 </div>
             )}
             <h3>Турнирная сетка</h3>
-            {matches.length > 0 ? (
-                <div className="custom-tournament-bracket">
-                    <BracketRenderer
-                        games={games}
-                        canEditMatches={canEditMatches}
-                        selectedMatch={selectedMatch}
-                        setSelectedMatch={setSelectedMatch}
-                        handleTeamClick={handleTeamClick}
-                        format={tournament.format}
-                    />
-                </div>
+            {Array.isArray(matches) && matches.length > 0 ? (
+                <>
+                    {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
+                    {console.log('Games для BracketRenderer:', games)}
+                    {Array.isArray(games) && games.length > 0 ? (
+                        <div className="custom-tournament-bracket">
+                            <BracketRenderer
+                                games={games}
+                                canEditMatches={canEditMatches}
+                                selectedMatch={selectedMatch}
+                                setSelectedMatch={setSelectedMatch}
+                                handleTeamClick={handleTeamClick}
+                                format={tournament.format}
+                            />
+                        </div>
+                    ) : (
+                        <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
+                    )}
+                </>
             ) : (
-                <p>Сетка ещё не сгенерирована</p>
+                <>
+                    <p>Сетка ещё не сгенерирована</p>
+                    {canGenerateBracket && (
+                        <div className="generation-options">
+                            {tournament.format === 'single_elimination' && (
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        checked={thirdPlaceMatch}
+                                        onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                    />{' '}
+                                    Нужен матч за третье место?
+                                </label>
+                            )}
+                            <button className="generate-bracket-button" onClick={handleGenerateBracket}>
+                                Сгенерировать сетку
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
             {winners.length > 0 && (
                 <div className="winners-list">
