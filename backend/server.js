@@ -101,6 +101,8 @@ const wss = new WebSocket.Server({
 });
 // Карта для хранения подключений пользователей
 const connectedClients = new Map();
+// Карта для хранения клиентов, просматривающих турниры (tournamentId -> [clients])
+const tournamentClients = new Map();
 
 wss.on('connection', (ws) => {
     console.log('🔌 Новый клиент подключился');
@@ -114,6 +116,34 @@ wss.on('connection', (ws) => {
             if (data.type === 'register' && data.userId) {
                 connectedClients.set(data.userId, ws);
                 console.log(`Клиент зарегистрирован для пользователя ${data.userId}`);
+            }
+            
+            // Обработка регистрации просмотра турнира
+            if (data.type === 'watch_tournament' && data.tournamentId) {
+                ws.tournamentId = data.tournamentId;
+                
+                // Сохраняем клиента в списке наблюдателей за турниром
+                if (!tournamentClients.has(data.tournamentId)) {
+                    tournamentClients.set(data.tournamentId, new Set());
+                }
+                tournamentClients.get(data.tournamentId).add(ws);
+                
+                console.log(`Клиент начал просмотр турнира ${data.tournamentId}`);
+            }
+            
+            // Обработка отписки от турнира
+            if (data.type === 'unwatch_tournament' && data.tournamentId) {
+                if (tournamentClients.has(data.tournamentId)) {
+                    tournamentClients.get(data.tournamentId).delete(ws);
+                    
+                    // Удаляем пустые записи
+                    if (tournamentClients.get(data.tournamentId).size === 0) {
+                        tournamentClients.delete(data.tournamentId);
+                    }
+                }
+                
+                delete ws.tournamentId;
+                console.log(`Клиент прекратил просмотр турнира ${data.tournamentId}`);
             }
         } catch (error) {
             console.error('Ошибка при обработке сообщения:', error);
@@ -131,12 +161,25 @@ wss.on('connection', (ws) => {
                 break;
             }
         }
+        
+        // Удаляем клиента из списка наблюдателей за турниром
+        if (ws.tournamentId && tournamentClients.has(ws.tournamentId)) {
+            tournamentClients.get(ws.tournamentId).delete(ws);
+            
+            // Удаляем пустые записи
+            if (tournamentClients.get(ws.tournamentId).size === 0) {
+                tournamentClients.delete(ws.tournamentId);
+            }
+            
+            console.log(`Клиент прекратил просмотр турнира ${ws.tournamentId} (отключение)`);
+        }
     });
 });
 
 // Сохраняем WebSocket сервер в приложении для использования в других модулях
 app.set('wss', wss);
 app.set('connectedClients', connectedClients);
+app.set('tournamentClients', tournamentClients);
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({

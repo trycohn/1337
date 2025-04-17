@@ -57,4 +57,41 @@ const broadcastNotification = (notification) => {
   }
 };
 
-module.exports = { sendNotification, broadcastNotification };
+// Функция для отправки обновлений турнира всем клиентам на странице турнира
+const broadcastTournamentUpdate = (tournamentId, tournamentData) => {
+  try {
+    // Получаем Express приложение из глобального контекста
+    const app = global.app || require('./server');
+    // Получаем WebSocket сервер из приложения
+    const wss = app.get('wss');
+    const tournamentClients = app.get('tournamentClients') || new Map();
+    
+    if (!wss) {
+      console.error('❌ Не удалось получить WebSocket сервер');
+      return;
+    }
+    
+    // Получаем клиентов, просматривающих этот турнир
+    const clients = tournamentClients.get(tournamentId) || [];
+    console.log(`📊 Отправка обновления турнира ${tournamentId} для ${clients.length} клиентов`);
+    
+    // Отправляем всем клиентам на странице турнира
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) { // 1 = WebSocket.OPEN
+        if (client.tournamentId === tournamentId) {
+          client.send(JSON.stringify({
+            type: 'tournament_update',
+            tournamentId: tournamentId,
+            data: tournamentData
+          }));
+        }
+      }
+    });
+    
+    console.log(`📢 Обновление турнира ${tournamentId} отправлено`);
+  } catch (error) {
+    console.error(`❌ Ошибка при отправке обновления турнира ${tournamentId}:`, error);
+  }
+};
+
+module.exports = { sendNotification, broadcastNotification, broadcastTournamentUpdate };

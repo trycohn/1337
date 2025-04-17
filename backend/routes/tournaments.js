@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { authenticateToken, verifyEmailRequired } = require('../middleware/auth');
-const { sendNotification } = require('../notifications');
+const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
 
 // Получение списка всех турниров с количеством участников
@@ -656,15 +656,22 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
         // Получаем обновлённые данные турнира
         const updatedTournamentResult = await pool.query(
             'SELECT t.*, ' +
-            'COALESCE((SELECT json_agg(tp.*) FROM tournament_participants tp WHERE tp.tournament_id = t.id), \'[]\') as participants, ' +
-            'COALESCE((SELECT json_agg(m.*) FROM matches m WHERE m.tournament_id = t.id), \'[]\') as matches ' +
-            'FROM tournaments t WHERE t.id = $1 GROUP BY t.id',
+            '(SELECT COALESCE(json_agg(tp.*), \'[]\') FROM tournament_participants tp WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
+            'FROM tournaments t WHERE t.id = $1',
             [id]
         );
 
         const tournamentData = updatedTournamentResult.rows[0];
-        tournamentData.matches = Array.isArray(tournamentData.matches) ? tournamentData.matches : [];
-        tournamentData.participants = Array.isArray(tournamentData.participants) ? tournamentData.participants : [];
+        tournamentData.matches = Array.isArray(tournamentData.matches) && tournamentData.matches[0] !== null 
+            ? tournamentData.matches 
+            : [];
+        tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
+            ? tournamentData.participants 
+            : [];
+
+        // Отправляем обновления всем клиентам, просматривающим этот турнир
+        broadcastTournamentUpdate(id, tournamentData);
 
         console.log('🔍 Bracket generated for tournament:', tournamentData);
         res.status(200).json({ message: 'Сетка успешно сгенерирована', tournament: tournamentData });
@@ -799,7 +806,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
                         const availableMatch = roundMatches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
                         if (availableMatch) {
                             await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
-                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, match.id]);
+                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, matchId]);
                         } else {
                             return res.status(400).json({ error: 'Нет доступных мест в верхней сетке' });
                         }
@@ -864,9 +871,9 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
-            'COALESCE((SELECT json_agg(p.*) FROM tournament_participants tp WHERE tp.tournament_id = t.id), \'[]\') as participants, ' +
-            'COALESCE((SELECT json_agg(m.*) FROM matches m WHERE m.tournament_id = t.id), \'[]\') as matches ' +
-            'FROM tournaments t WHERE t.id = $1 GROUP BY t.id',
+            '(SELECT COALESCE(json_agg(tp.*), \'[]\') FROM tournament_participants tp WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
+            'FROM tournaments t WHERE t.id = $1',
             [id]
         );
 
@@ -877,6 +884,9 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
             ? tournamentData.participants 
             : [];
+
+        // Отправляем обновления всем клиентам, просматривающим этот турнир
+        broadcastTournamentUpdate(id, tournamentData);
 
         console.log('🔍 Match updated for tournament:', tournamentData);
         res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
@@ -1155,9 +1165,9 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
-            'COALESCE((SELECT json_agg(p.*) FROM tournament_participants tp WHERE tp.tournament_id = t.id), \'[]\') as participants, ' +
-            'COALESCE((SELECT json_agg(m.*) FROM matches m WHERE m.tournament_id = t.id), \'[]\') as matches ' +
-            'FROM tournaments t WHERE t.id = $1 GROUP BY t.id',
+            '(SELECT COALESCE(json_agg(tp.*), \'[]\') FROM tournament_participants tp WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
+            'FROM tournaments t WHERE t.id = $1',
             [matchIdNum]
         );
 
@@ -1168,6 +1178,9 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
             ? tournamentData.participants 
             : [];
+
+        // Отправляем обновления всем клиентам, просматривающим этот турнир
+        broadcastTournamentUpdate(matchIdNum, tournamentData);
 
         console.log('🔍 Match updated for tournament:', tournamentData);
         res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });

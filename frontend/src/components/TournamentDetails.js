@@ -1,5 +1,5 @@
 // frontend/src/components/TournamentDetails.js
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../axios';
 import BracketRenderer from './BracketRenderer';
@@ -25,6 +25,7 @@ function TournamentDetails() {
     const [selectedWinnerId, setSelectedWinnerId] = useState(null);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
+    const wsRef = useRef(null);
 
     // Загрузка данных
     useEffect(() => {
@@ -43,7 +44,71 @@ function TournamentDetails() {
         }
 
         fetchTournamentData();
+        setupWebSocket();
+
+        return () => {
+            // Закрываем WebSocket при размонтировании компонента
+            if (wsRef.current) {
+                // Отправляем сообщение о прекращении просмотра турнира
+                if (wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({
+                        type: 'unwatch_tournament',
+                        tournamentId: id
+                    }));
+                }
+                wsRef.current.close();
+            }
+        };
     }, [id]);
+
+    // Настройка WebSocket для получения обновлений в реальном времени
+    const setupWebSocket = () => {
+        // Создаем WebSocket соединение
+        const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
+        const webSocket = new WebSocket(`${wsUrl}/ws`);
+        
+        webSocket.onopen = () => {
+            console.log('WebSocket соединение установлено в компоненте TournamentDetails');
+            // После установления соединения сообщаем, что просматриваем турнир
+            webSocket.send(JSON.stringify({
+                type: 'watch_tournament',
+                tournamentId: id
+            }));
+        };
+        
+        webSocket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Получено сообщение WebSocket:', data);
+                
+                // Обрабатываем обновления турнира
+                if (data.type === 'tournament_update' && data.tournamentId === id) {
+                    console.log('Получено обновление турнира:', data.data);
+                    setTournament(data.data);
+                    
+                    if (Array.isArray(data.data.matches)) {
+                        setMatches(data.data.matches);
+                    }
+                    
+                    setMessage('Данные турнира обновлены в реальном времени');
+                    setTimeout(() => setMessage(''), 3000); // Сообщение исчезает через 3 секунды
+                }
+            } catch (error) {
+                console.error('Ошибка при обработке сообщения WebSocket:', error);
+            }
+        };
+        
+        webSocket.onerror = (error) => {
+            console.error('WebSocket ошибка:', error);
+        };
+        
+        webSocket.onclose = () => {
+            console.log('WebSocket соединение закрыто');
+        };
+        
+        // Сохраняем ссылку на WebSocket
+        wsRef.current = webSocket;
+    };
 
     // Функция для загрузки данных турнира
     const fetchTournamentData = async () => {
@@ -106,13 +171,21 @@ function TournamentDetails() {
         console.log('Matches в состоянии:', matches);
         console.log('Participants в состоянии:', tournament.participants);
 
+        // Создаем карту участников для быстрого поиска
+        const participantsMap = {};
+        if (Array.isArray(tournament.participants)) {
+            tournament.participants.forEach(p => {
+                if (p.id) {
+                    participantsMap[p.id] = p;
+                }
+            });
+        }
+        console.log('Карта участников:', participantsMap);
+
         return matches.map((match) => {
-            const homeParticipant = match.team1_id
-                ? (tournament.participants || []).find((p) => p.id === match.team1_id)
-                : null;
-            const visitorParticipant = match.team2_id
-                ? (tournament.participants || []).find((p) => p.id === match.team2_id)
-                : null;
+            // Находим участников по ID
+            const homeParticipant = match.team1_id ? participantsMap[match.team1_id] : null;
+            const visitorParticipant = match.team2_id ? participantsMap[match.team2_id] : null;
                 
             // Определяем bracket_type по умолчанию, если он отсутствует
             let bracket_type = match.bracket_type;
@@ -267,14 +340,34 @@ function TournamentDetails() {
             );
             
             console.log('Ответ от сервера:', generateBracketResponse.data);
-            setMessage(generateBracketResponse.data.message);
             
-            // Перезагружаем данные турнира после генерации сетки
-            await fetchTournamentData();
+            // Обновления турнира должны прийти через WebSocket,
+            // но на всякий случай обновляем данные из ответа
+            if (generateBracketResponse.data.tournament) {
+                const tournamentData = generateBracketResponse.data.tournament;
+                
+                if (!Array.isArray(tournamentData.matches) || tournamentData.matches.length === 0) {
+                    // Если matches пустой, запрашиваем данные заново
+                    await fetchTournamentData();
+                } else {
+                    setTournament(tournamentData);
+                    setMatches(tournamentData.matches);
+                }
+            }
             
+            // Показываем сообщение об успехе
+            setMessage(generateBracketResponse.data.message || 'Сетка успешно сгенерирована');
+            setTimeout(() => setMessage(''), 3000); // Сообщение исчезает через 3 секунды
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
             setMessage(error.response?.data?.error || 'Ошибка при генерации сетки');
+            
+            // Пытаемся синхронизировать данные с сервера
+            try {
+                await fetchTournamentData();
+            } catch (fetchError) {
+                console.error('Ошибка при синхронизации данных:', fetchError);
+            }
         }
     };
 
@@ -283,6 +376,8 @@ function TournamentDetails() {
         const token = localStorage.getItem('token');
 
         try {
+            setMessage('Обновление результата...');
+            
             const updateMatchResponse = await api.post(
                 `/api/tournaments/${id}/update-match`,
                 { matchId, winner_team_id, score1, score2 },
@@ -290,67 +385,36 @@ function TournamentDetails() {
             );
 
             console.log('Ответ сервера:', updateMatchResponse.data);
-            console.log('matches в ответе:', updateMatchResponse.data.tournament.matches);
-            console.log('participants в ответе:', updateMatchResponse.data.tournament.participants);
-            setMessage(updateMatchResponse.data.message);
-
-            let updatedMatches = Array.isArray(updateMatchResponse.data.tournament.matches)
-                ? updateMatchResponse.data.tournament.matches
-                : [];
-
-            let updatedTournamentResponse;
-            if (updatedMatches.length === 0) {
-                console.log('matches пустой, запрашиваем данные заново');
-                updatedTournamentResponse = await api.get(`/api/tournaments/${id}`);
-                console.log('Синхронизированные данные:', updatedTournamentResponse.data);
-                updatedMatches = Array.isArray(updatedTournamentResponse.data.matches)
-                    ? updatedTournamentResponse.data.matches
-                    : [];
-                console.log('Синхронизированные матчи:', updatedMatches);
+            
+            // Обновления турнира будут получены через WebSocket,
+            // но на всякий случай обновляем данные из ответа
+            if (updateMatchResponse.data.tournament) {
+                const tournamentData = updateMatchResponse.data.tournament;
+                
+                if (!Array.isArray(tournamentData.matches) || tournamentData.matches.length === 0) {
+                    // Если matches пустой, запрашиваем данные заново
+                    await fetchTournamentData();
+                } else {
+                    setTournament(tournamentData);
+                    setMatches(tournamentData.matches);
+                }
             }
-
-            setMatches(updatedMatches);
-
-            const newParticipants = updatedTournamentResponse && Array.isArray(updatedTournamentResponse.data.participants)
-                ? updatedTournamentResponse.data.participants
-                : (Array.isArray(updateMatchResponse.data.tournament.participants) && updateMatchResponse.data.tournament.participants.length > 0
-                    ? updateMatchResponse.data.tournament.participants
-                    : (tournament?.participants || []));
-
-            const updatedTournament = {
-                ...updateMatchResponse.data.tournament,
-                participants: newParticipants
-            };
-            console.log('Обновлённый турнир:', updatedTournament);
-            setTournament(updatedTournament);
-
+            
             setSelectedMatch(null);
             setShowConfirmModal(false);
             setMatchScores({ team1: 0, team2: 0 });
+            
+            // Показываем сообщение об успехе
+            setMessage(updateMatchResponse.data.message || 'Результат обновлён');
+            setTimeout(() => setMessage(''), 3000); // Сообщение исчезает через 3 секунды
         } catch (error) {
             console.error('Ошибка от сервера:', error.response?.data);
             const errorMessage = error.response?.data?.error || 'Ошибка при обновлении результата';
             setMessage(errorMessage);
 
+            // Пытаемся синхронизировать данные с сервера
             try {
-                const syncTournamentResponse = await api.get(`/api/tournaments/${id}`);
-                console.log('Синхронизированные данные:', syncTournamentResponse.data);
-
-                const syncedMatches = Array.isArray(syncTournamentResponse.data.matches)
-                    ? syncTournamentResponse.data.matches
-                    : [];
-                console.log('Синхронизированные матчи:', syncedMatches);
-                setMatches(syncedMatches);
-
-                const updatedTournament = {
-                    ...syncTournamentResponse.data,
-                    participants: Array.isArray(syncTournamentResponse.data.participants)
-                        ? syncTournamentResponse.data.participants
-                        : (tournament?.participants || [])
-                };
-                console.log('Синхронизированный турнир:', updatedTournament);
-                setTournament(updatedTournament);
-                setMessage('Данные синхронизированы, но произошла ошибка: ' + errorMessage);
+                await fetchTournamentData();
             } catch (fetchError) {
                 console.error('Ошибка при синхронизации данных:', fetchError);
                 setMessage('Ошибка при синхронизации данных: ' + fetchError.message);
