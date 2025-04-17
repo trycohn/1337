@@ -89,9 +89,6 @@ function TournamentDetails() {
                     if (Array.isArray(data.data.matches)) {
                         setMatches(data.data.matches);
                     }
-                    
-                    setMessage('Данные турнира обновлены в реальном времени');
-                    setTimeout(() => setMessage(''), 3000); // Сообщение исчезает через 3 секунды
                 }
             } catch (error) {
                 console.error('Ошибка при обработке сообщения WebSocket:', error);
@@ -355,9 +352,7 @@ function TournamentDetails() {
                 }
             }
             
-            // Показываем сообщение об успехе
-            setMessage(generateBracketResponse.data.message || 'Сетка успешно сгенерирована');
-            setTimeout(() => setMessage(''), 3000); // Сообщение исчезает через 3 секунды
+            setMessage('');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
             setMessage(error.response?.data?.error || 'Ошибка при генерации сетки');
@@ -404,9 +399,7 @@ function TournamentDetails() {
             setShowConfirmModal(false);
             setMatchScores({ team1: 0, team2: 0 });
             
-            // Показываем сообщение об успехе
-            setMessage(updateMatchResponse.data.message || 'Результат обновлён');
-            setTimeout(() => setMessage(''), 3000); // Сообщение исчезает через 3 секунды
+            setMessage('');
         } catch (error) {
             console.error('Ошибка от сервера:', error.response?.data);
             const errorMessage = error.response?.data?.error || 'Ошибка при обновлении результата';

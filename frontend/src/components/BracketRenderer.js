@@ -55,6 +55,11 @@ const BracketRenderer = ({
         const winnerRounds = {};
         for (let round = 0; round <= maxWinnerRound; round++) {
             const roundMatches = winnerMatches.filter(m => m.round === round);
+            // Сортируем матчи по match_number, чтобы они всегда отображались в одинаковом порядке
+            roundMatches.sort((a, b) => {
+                if (!a.match_number || !b.match_number) return 0;
+                return parseInt(a.match_number) - parseInt(b.match_number);
+            });
             if (roundMatches.length > 0) {
                 winnerRounds[round] = roundMatches;
             }
@@ -62,6 +67,11 @@ const BracketRenderer = ({
 
         // Добавляем предварительный раунд (round = -1) если есть такие матчи
         const prelimMatches = winnerMatches.filter(m => m.round === -1);
+        // Сортируем предварительные матчи по match_number
+        prelimMatches.sort((a, b) => {
+            if (!a.match_number || !b.match_number) return 0;
+            return parseInt(a.match_number) - parseInt(b.match_number);
+        });
         if (prelimMatches.length > 0) {
             winnerRounds[-1] = prelimMatches;
         }
@@ -72,6 +82,11 @@ const BracketRenderer = ({
         const loserRounds = {};
         for (let round = 1; round <= maxLoserRound; round++) {
             const roundMatches = loserMatches.filter(m => m.round === round);
+            // Сортируем матчи по match_number
+            roundMatches.sort((a, b) => {
+                if (!a.match_number || !b.match_number) return 0;
+                return parseInt(a.match_number) - parseInt(b.match_number);
+            });
             if (roundMatches.length > 0) {
                 loserRounds[round] = roundMatches;
             }
