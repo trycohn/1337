@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
         );
 
         // Строим запрос в зависимости от параметра includeProcessed
-        let query = `SELECT n.* FROM notifications n`;
+        let query = `SELECT n.*, CASE WHEN n.type = 'admin_request' THEN ar.status ELSE NULL END AS request_status FROM notifications n`;
         
         if (!includeProcessed) {
             // Если не нужны обработанные admin_request, добавляем join и условие
@@ -26,7 +26,9 @@ router.get('/', async (req, res) => {
             AND (n.type != 'admin_request' OR (n.type = 'admin_request' AND ar.status = 'pending'))`;
         } else {
             // Если нужны все уведомления, включая обработанные
-            query += ` WHERE n.user_id = $1`;
+            query += `
+            LEFT JOIN admin_requests ar ON n.requester_id = ar.user_id AND n.tournament_id = ar.tournament_id
+            WHERE n.user_id = $1`;
         }
         
         query += ` ORDER BY n.created_at DESC`;

@@ -181,9 +181,25 @@ function Layout() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
-            // Получаем обновленный список уведомлений с сервера
-            const notificationsResponse = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=false`);
-            setNotifications(notificationsResponse.data);
+            // Получаем обновленный список уведомлений с сервера для обоих типов
+            const notificationsForDropdown = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=false`);
+            setNotifications(notificationsForDropdown.data);
+            
+            // Дополнительно вызываем событие, имитирующее WebSocket для обновления всех компонентов
+            if (wsRef.current && wsRef.current.readyState === 1) {
+                const notificationMessage = {
+                    type: 'notification',
+                    data: {
+                        type: action === 'accept' ? 'admin_request_accepted' : 'admin_request_rejected',
+                        tournament_id: notification.tournament_id
+                    }
+                };
+                // Имитируем получение сообщения от сервера
+                const messageEvent = new MessageEvent('message', {
+                    data: JSON.stringify(notificationMessage)
+                });
+                wsRef.current.dispatchEvent(messageEvent);
+            }
             
             alert(response.data.message);
         } catch (error) {

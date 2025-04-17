@@ -518,6 +518,7 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
         const requesterUsername = requesterResult.rows[0].username;
 
         if (action === 'accept') {
+            // Если принимаем запрос
             await pool.query(
                 'INSERT INTO tournament_admins (tournament_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
                 [id, requesterId]
@@ -543,6 +544,7 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
                 created_at: new Date().toISOString(),
             });
         } else {
+            // Если отклоняем запрос
             await pool.query(
                 'UPDATE admin_requests SET status = $1 WHERE tournament_id = $2 AND user_id = $3',
                 ['rejected', id, requesterId]

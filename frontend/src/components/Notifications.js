@@ -131,15 +131,23 @@ function Notifications() {
                       </Link>{' '}
                       - {new Date(notification.created_at).toLocaleString('ru-RU')}
                       <div className="admin-request-status">
-                        <span className="status-pending">В ожидании</span>
-                        <div className="admin-request-actions">
-                          <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
-                            Принять
-                          </button>
-                          <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
-                            Отклонить
-                          </button>
-                        </div>
+                        {notification.request_status === 'pending' || !notification.request_status ? (
+                          <>
+                            <span className="status-pending">В ожидании</span>
+                            <div className="admin-request-actions">
+                              <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
+                                Принять
+                              </button>
+                              <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
+                                Отклонить
+                              </button>
+                            </div>
+                          </>
+                        ) : notification.request_status === 'accepted' ? (
+                          <span className="status-accepted">Запрос принят</span>
+                        ) : (
+                          <span className="status-rejected">Запрос отклонен</span>
+                        )}
                       </div>
                     </>
                   ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
