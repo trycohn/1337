@@ -20,13 +20,14 @@ const BracketRenderer = ({
 
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = () => {
-        console.log('Группировка матчей, проверяем bracket_type:', games.map(g => ({id: g.id, bracket_type: g.bracket_type, round: g.round})));
+        console.log('Группировка матчей, проверяем bracket_type:', games.map(g => ({id: g.id, bracket_type: g.bracket_type, round: g.round, is_third_place_match: g.is_third_place_match})));
         
         // Если у матчей отсутствует bracket_type, считаем их принадлежащими к winners bracket
         const winnerMatches = games.filter(
-            (m) => m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type
+            (m) => (m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type) && !m.is_third_place_match
         );
-        const loserMatches = games.filter((m) => m.bracket_type === 'loser');
+        const loserMatches = games.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match);
+        // Матч за 3-е место (placement) или помеченный флагом is_third_place_match
         const placementMatch = games.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
         const grandFinalMatch = games.find((m) => m.bracket_type === 'grand_final');
 

@@ -593,21 +593,6 @@ function TournamentDetails() {
                     {canRequestAdmin && (
                         <button onClick={handleRequestAdmin}>Администрировать турнир</button>
                     )}
-                    {canGenerateBracket && (
-                        <div>
-                            {tournament.format === 'single_elimination' && (
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        checked={thirdPlaceMatch}
-                                        onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                    />{' '}
-                                    Нужен матч за третье место?
-                                </label>
-                            )}
-                            <button onClick={handleGenerateBracket}>Сгенерировать сетку</button>
-                        </div>
-                    )}
                 </div>
             )}
             <h3>Турнирная сетка</h3>

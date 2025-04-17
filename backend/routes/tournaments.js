@@ -724,57 +724,55 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             [winner_team_id, score1, score2, matchId]
         );
 
+        console.log(`Обновлен результат матча ${match.match_number}: победитель ${winner_team_id}, счет ${score1}:${score2}`);
+
         // Определяем проигравшего
         const loser_team_id = match.team1_id === winner_team_id ? match.team2_id : match.team1_id;
 
-        // Логика для предварительного раунда (раунд -1)
-        if (match.round === -1 && match.next_match_id) {
+        // Перемещаем победителя в следующий матч, если он есть
+        if (winner_team_id && match.next_match_id) {
             const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-            if (nextMatchResult.rows.length === 0) {
-                return res.status(400).json({ error: 'Целевой матч не найден' });
-            }
+            if (nextMatchResult.rows.length > 0) {
+                const nextMatch = nextMatchResult.rows[0];
+                console.log(`Следующий матч для победителя: ${nextMatch.match_number}`);
 
-            const nextMatch = nextMatchResult.rows[0];
-
-            if (!nextMatch.team1_id) {
-                await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-            } else if (!nextMatch.team2_id && nextMatch.team1_id !== winner_team_id) {
-                await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-            } else {
-                const round0Matches = await pool.query(
-                    'SELECT * FROM matches WHERE tournament_id = $1 AND round = 0 AND bracket_type = $2',
-                    [id, 'winner']
-                );
-                const availableMatch = round0Matches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
-                if (availableMatch) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
-                    await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, match.id]);
+                // Определяем, в какую позицию (team1 или team2) добавить победителя
+                if (!nextMatch.team1_id) {
+                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    console.log(`Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
+                } else if (!nextMatch.team2_id) {
+                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    console.log(`Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
                 } else {
-                    return res.status(400).json({ error: 'Нет доступных мест в основном раунде' });
+                    console.log(`Обе позиции в матче ${nextMatch.match_number} уже заняты`);
                 }
             }
+        }
 
-            // Корректируем next_match_id для оставшихся матчей предварительного раунда
-            const remainingPrelimMatches = await pool.query(
-                'SELECT * FROM matches WHERE tournament_id = $1 AND round = -1 AND winner_team_id IS NULL',
-                [id]
-            );
-            const round0Matches = await pool.query(
-                'SELECT * FROM matches WHERE tournament_id = $1 AND round = 0 AND bracket_type = $2',
-                [id, 'winner']
-            );
+        // Перемещаем проигравшего в матч за 3-е место, если это полуфинал и есть loser_next_match_id
+        if (loser_team_id && match.loser_next_match_id) {
+            const loserNextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.loser_next_match_id]);
+            if (loserNextMatchResult.rows.length > 0) {
+                const loserNextMatch = loserNextMatchResult.rows[0];
+                console.log(`Матч для проигравшего: ${loserNextMatch.match_number} (матч за 3-е место)`);
 
-            for (const prelimMatch of remainingPrelimMatches.rows) {
-                if (prelimMatch.id === match.id) continue;
-                const availableMatch = round0Matches.rows.find(m => !m.team2_id);
-                if (availableMatch) {
-                    await pool.query(
-                        'UPDATE matches SET next_match_id = $1 WHERE id = $2',
-                        [availableMatch.id, prelimMatch.id]
-                    );
-                    console.log(`Корректировка next_match_id для матча ${prelimMatch.match_number}: -> Match ${availableMatch.match_number}`);
+                // Определяем, в какую позицию (team1 или team2) добавить проигравшего
+                if (!loserNextMatch.team1_id) {
+                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
+                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team1 матча ${loserNextMatch.match_number}`);
+                } else if (!loserNextMatch.team2_id) {
+                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
+                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team2 матча ${loserNextMatch.match_number}`);
+                } else {
+                    console.log(`Обе позиции в матче ${loserNextMatch.match_number} уже заняты`);
                 }
             }
+        }
+
+        // Логика для предварительного раунда (раунд -1)
+        if (match.round === -1) {
+            // Эта логика уже обработана выше при проверке match.next_match_id
+            console.log('Обработан предварительный раунд');
         }
 
         // Логика для Double Elimination
@@ -865,12 +863,10 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
 
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
-            'SELECT t.*, COALESCE(array_agg(p.*), \'{}\') as participants, COALESCE(array_agg(m.*), \'{}\') as matches ' +
-            'FROM tournaments t ' +
-            'LEFT JOIN tournament_participants p ON t.id = p.tournament_id ' +
-            'LEFT JOIN matches m ON t.id = m.tournament_id ' +
-            'WHERE t.id = $1 ' +
-            'GROUP BY t.id',
+            'SELECT t.*, ' +
+            'COALESCE((SELECT json_agg(p.*) FROM tournament_participants tp WHERE tp.tournament_id = t.id), \'[]\') as participants, ' +
+            'COALESCE((SELECT json_agg(m.*) FROM matches m WHERE m.tournament_id = t.id), \'[]\') as matches ' +
+            'FROM tournaments t WHERE t.id = $1 GROUP BY t.id',
             [id]
         );
 
@@ -1024,54 +1020,50 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         // Определяем проигравшего
         const loser_team_id = match.team1_id === winner_team_id ? match.team2_id : match.team1_id;
 
-        // Логика для предварительного раунда (раунд -1)
-        if (match.round === -1 && match.next_match_id) {
+        // Перемещаем победителя в следующий матч, если он есть
+        if (winner_team_id && match.next_match_id) {
             const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-            if (nextMatchResult.rows.length === 0) {
-                return res.status(400).json({ error: 'Целевой матч не найден' });
-            }
+            if (nextMatchResult.rows.length > 0) {
+                const nextMatch = nextMatchResult.rows[0];
+                console.log(`Следующий матч для победителя: ${nextMatch.match_number}`);
 
-            const nextMatch = nextMatchResult.rows[0];
-
-            if (!nextMatch.team1_id) {
-                await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-            } else if (!nextMatch.team2_id && nextMatch.team1_id !== winner_team_id) {
-                await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-            } else {
-                const round0Matches = await pool.query(
-                    'SELECT * FROM matches WHERE tournament_id = $1 AND round = 0 AND bracket_type = $2',
-                    [matchIdNum, 'winner']
-                );
-                const availableMatch = round0Matches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
-                if (availableMatch) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
-                    await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, matchIdNum]);
+                // Определяем, в какую позицию (team1 или team2) добавить победителя
+                if (!nextMatch.team1_id) {
+                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    console.log(`Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
+                } else if (!nextMatch.team2_id) {
+                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
+                    console.log(`Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
                 } else {
-                    return res.status(400).json({ error: 'Нет доступных мест в основном раунде' });
+                    console.log(`Обе позиции в матче ${nextMatch.match_number} уже заняты`);
                 }
             }
+        }
 
-            // Корректируем next_match_id для оставшихся матчей предварительного раунда
-            const remainingPrelimMatches = await pool.query(
-                'SELECT * FROM matches WHERE tournament_id = $1 AND round = -1 AND winner_team_id IS NULL',
-                [matchIdNum]
-            );
-            const round0Matches = await pool.query(
-                'SELECT * FROM matches WHERE tournament_id = $1 AND round = 0 AND bracket_type = $2',
-                [matchIdNum, 'winner']
-            );
+        // Перемещаем проигравшего в матч за 3-е место, если это полуфинал и есть loser_next_match_id
+        if (loser_team_id && match.loser_next_match_id) {
+            const loserNextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.loser_next_match_id]);
+            if (loserNextMatchResult.rows.length > 0) {
+                const loserNextMatch = loserNextMatchResult.rows[0];
+                console.log(`Матч для проигравшего: ${loserNextMatch.match_number} (матч за 3-е место)`);
 
-            for (const prelimMatch of remainingPrelimMatches.rows) {
-                if (prelimMatch.id === matchIdNum) continue;
-                const availableMatch = round0Matches.rows.find(m => !m.team2_id);
-                if (availableMatch) {
-                    await pool.query(
-                        'UPDATE matches SET next_match_id = $1 WHERE id = $2',
-                        [availableMatch.id, prelimMatch.id]
-                    );
-                    console.log(`Корректировка next_match_id для матча ${prelimMatch.match_number}: -> Match ${availableMatch.match_number}`);
+                // Определяем, в какую позицию (team1 или team2) добавить проигравшего
+                if (!loserNextMatch.team1_id) {
+                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
+                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team1 матча ${loserNextMatch.match_number}`);
+                } else if (!loserNextMatch.team2_id) {
+                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
+                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team2 матча ${loserNextMatch.match_number}`);
+                } else {
+                    console.log(`Обе позиции в матче ${loserNextMatch.match_number} уже заняты`);
                 }
             }
+        }
+
+        // Логика для предварительного раунда (раунд -1)
+        if (match.round === -1) {
+            // Эта логика уже обработана выше при проверке match.next_match_id
+            console.log('Обработан предварительный раунд');
         }
 
         // Логика для Double Elimination
@@ -1162,12 +1154,10 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
 
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
-            'SELECT t.*, COALESCE(array_agg(p.*), \'{}\') as participants, COALESCE(array_agg(m.*), \'{}\') as matches ' +
-            'FROM tournaments t ' +
-            'LEFT JOIN tournament_participants p ON t.id = p.tournament_id ' +
-            'LEFT JOIN matches m ON t.id = m.tournament_id ' +
-            'WHERE t.id = $1 ' +
-            'GROUP BY t.id',
+            'SELECT t.*, ' +
+            'COALESCE((SELECT json_agg(p.*) FROM tournament_participants tp WHERE tp.tournament_id = t.id), \'[]\') as participants, ' +
+            'COALESCE((SELECT json_agg(m.*) FROM matches m WHERE m.tournament_id = t.id), \'[]\') as matches ' +
+            'FROM tournaments t WHERE t.id = $1 GROUP BY t.id',
             [matchIdNum]
         );
 
