@@ -27,6 +27,9 @@ function Profile() {
     const [showAddEmailModal, setShowAddEmailModal] = useState(false);
     const [newEmail, setNewEmail] = useState('');
     const [addEmailError, setAddEmailError] = useState('');
+    
+    // Новое состояние для модального окна с требованием привязать почту
+    const [showEmailRequiredModal, setShowEmailRequiredModal] = useState(false);
 
     const fetchUserData = async (token) => {
         try {
@@ -99,6 +102,14 @@ function Profile() {
 
     const unlinkSteam = async () => {
         const token = localStorage.getItem('token');
+        
+        // Проверяем, есть ли привязанная почта
+        if (!user.email) {
+            // Показываем модальное окно с предупреждением и предложением привязать почту
+            setShowEmailRequiredModal(true);
+            return;
+        }
+        
         try {
             await api.post('/api/users/unlink-steam', {}, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -112,6 +123,14 @@ function Profile() {
 
     const unlinkFaceit = async () => {
         const token = localStorage.getItem('token');
+        
+        // Проверяем, есть ли привязанная почта
+        if (!user.email) {
+            // Показываем модальное окно с предупреждением и предложением привязать почту
+            setShowEmailRequiredModal(true);
+            return;
+        }
+        
         try {
             await api.post('/api/users/unlink-faceit', {}, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -515,6 +534,16 @@ function Profile() {
         }
     };
 
+    // Добавить функцию закрытия модального окна с требованием привязать почту
+    const closeEmailRequiredModal = () => {
+        setIsClosingModal(true);
+        
+        setTimeout(() => {
+            setShowEmailRequiredModal(false);
+            setIsClosingModal(false);
+        }, 300);
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -754,6 +783,25 @@ function Profile() {
                         <p>Твой никнейм в Steam "{steamNickname}", устанавливаем в качестве основного на профиль?</p>
                         <button onClick={confirmSteamNickname}>Да</button>
                         <button onClick={closeModal}>Нет</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальное окно с требованием привязать почту */}
+            {showEmailRequiredModal && (
+                <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeEmailRequiredModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Необходима привязка email</h3>
+                        <p>Для отвязки аккаунтов Steam или FACEIT необходимо сначала привязать электронную почту.</p>
+                        <p>Это требуется для того, чтобы у вас сохранялся доступ к аккаунту.</p>
+                        
+                        <div className="modal-buttons">
+                            <button onClick={() => {
+                                closeEmailRequiredModal();
+                                setTimeout(() => openAddEmailModal(), 350);
+                            }}>Привязать email</button>
+                            <button onClick={closeEmailRequiredModal}>Отмена</button>
+                        </div>
                     </div>
                 </div>
             )}
