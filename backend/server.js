@@ -18,11 +18,15 @@ const pool = require('./db');
 const http = require('http');
 const puppeteer = require('puppeteer');
 const cookieParser = require('cookie-parser');
-const { Server } = require('socket.io');
+const WebSocket = require('ws');
 const tournamentsRouter = require('./routes/tournaments');
 const nodemailer = require('nodemailer');
+const notifications = require('./notifications');
 
 const app = express();
+// Установка глобальной переменной для доступа из других модулей
+global.app = app;
+
 const server = http.createServer(app);
 
 // Middleware для обработки CORS вручную
@@ -90,33 +94,49 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Маршрут не найден' });
 });
 
-// Настройка Socket.IO
-const io = new Server(server, {
-    cors: {
-        origin: process.env.NODE_ENV === 'production'
-            ? ['https://1337community.com', 'https://www.1337community.com']
-            : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'],
-        methods: ['GET', 'POST'],
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization'],
-    },
-    path: '/socket.io',
-    transports: ['websocket', 'polling'],
-    allowEIO3: true,
+// Настройка WebSocket сервера
+const wss = new WebSocket.Server({ 
+  server,
+  path: '/ws' // Добавляем путь для WebSocket соединений
+});
+// Карта для хранения подключений пользователей
+const connectedClients = new Map();
+
+wss.on('connection', (ws) => {
+    console.log('🔌 Новый клиент подключился');
+    
+    // Обработка сообщений от клиента
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            
+            // Обработка регистрации пользователя
+            if (data.type === 'register' && data.userId) {
+                connectedClients.set(data.userId, ws);
+                console.log(`Клиент зарегистрирован для пользователя ${data.userId}`);
+            }
+        } catch (error) {
+            console.error('Ошибка при обработке сообщения:', error);
+        }
+    });
+    
+    // Обработка отключения клиента
+    ws.on('close', () => {
+        console.log('🔌 Клиент отключился');
+        // Удаляем отключившегося клиента из карты
+        for (const [userId, client] of connectedClients.entries()) {
+            if (client === ws) {
+                connectedClients.delete(userId);
+                console.log(`Пользователь ${userId} отключился`);
+                break;
+            }
+        }
+    });
 });
 
-io.on('connection', (socket) => {
-    console.log('🔌 Новый клиент подключился:', socket.id);
-    socket.on('register', (userId) => {
-        socket.join(userId);
-        console.log(`Клиент ${socket.id} зарегистрирован для пользователя ${userId}`);
-    });
-    socket.on('disconnect', () => {
-        console.log('🔌 Клиент отключился:', socket.id);
-    });
-});
-
-app.set('io', io);
+// Сохраняем WebSocket сервер в приложении для использования в других модулях
+app.set('wss', wss);
+app.set('connectedClients', connectedClients);
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({

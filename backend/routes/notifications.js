@@ -27,14 +27,17 @@ router.get('/', async (req, res) => {
 
 // Создание уведомления
 router.post('/', async (req, res) => {
-  const { user_id, message, type } = req.body;
+  const { user_id, message, type, tournament_id, requester_id } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO notifications (user_id, message, type) VALUES ($1, $2, $3) RETURNING *',
-      [user_id, message, type]
+      'INSERT INTO notifications (user_id, message, type, tournament_id, requester_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [user_id, message, type, tournament_id || null, requester_id || null]
     );
     const notification = result.rows[0];
+    
+    // Отправка уведомления через WebSocket
     sendNotification(user_id, notification);
+    
     res.status(201).json(notification);
   } catch (err) {
     console.error('Ошибка создания уведомления:', err);

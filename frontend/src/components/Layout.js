@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
-import io from 'socket.io-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
@@ -15,6 +14,7 @@ function Layout() {
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef(null);
+    const wsRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
     const { loading, setLoading } = useLoader();
@@ -26,14 +26,46 @@ function Layout() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUser(response.data);
-            const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000');
-            socket.emit('register', response.data.id);
-            socket.on('notification', (notification) => {
-                setNotifications((prev) => [notification, ...prev]);
-            });
+            
+            // Создаем WebSocket соединение
+            const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
+            const webSocket = new WebSocket(`${wsUrl}/ws`);
+            
+            webSocket.onopen = () => {
+                console.log('WebSocket соединение установлено');
+                // После установления соединения отправляем идентификатор пользователя
+                webSocket.send(JSON.stringify({
+                    type: 'register',
+                    userId: response.data.id
+                }));
+            };
+            
+            webSocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'notification') {
+                        setNotifications((prev) => [data.data, ...prev]);
+                    }
+                } catch (error) {
+                    console.error('Ошибка при обработке сообщения WebSocket:', error);
+                }
+            };
+            
+            webSocket.onerror = (error) => {
+                console.error('WebSocket ошибка:', error);
+            };
+            
+            webSocket.onclose = () => {
+                console.log('WebSocket соединение закрыто');
+            };
+            
+            // Сохраняем ссылку на WebSocket
+            wsRef.current = webSocket;
+            
+            // Получаем существующие уведомления
             const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}`);
             setNotifications(notificationsResponse.data);
-            return () => socket.disconnect();
+            
         } catch (error) {
             console.error('❌ Ошибка получения данных пользователя:', error.response ? error.response.data : error.message);
             localStorage.removeItem('token');
@@ -42,6 +74,15 @@ function Layout() {
             setLoading(false);
         }
     };
+    
+    // Закрываем WebSocket соединение при размонтировании компонента
+    useEffect(() => {
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('token');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Home.css';
@@ -6,6 +6,7 @@ import './Home.css';
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState(null);
+  const wsRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -16,6 +17,43 @@ function Notifications() {
         })
         .then((response) => {
           const userId = response.data.id;
+          
+          // Создаем WebSocket соединение
+          const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
+          const webSocket = new WebSocket(`${wsUrl}/ws`);
+          
+          webSocket.onopen = () => {
+            console.log('WebSocket соединение установлено в компоненте Notifications');
+            // После установления соединения отправляем идентификатор пользователя
+            webSocket.send(JSON.stringify({
+              type: 'register',
+              userId: userId
+            }));
+          };
+          
+          webSocket.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === 'notification') {
+                setNotifications((prev) => [data.data, ...prev]);
+              }
+            } catch (error) {
+              console.error('Ошибка при обработке сообщения WebSocket:', error);
+            }
+          };
+          
+          webSocket.onerror = (error) => {
+            console.error('WebSocket ошибка:', error);
+          };
+          
+          webSocket.onclose = () => {
+            console.log('WebSocket соединение закрыто');
+          };
+          
+          // Сохраняем ссылку на WebSocket
+          wsRef.current = webSocket;
+          
+          // Получаем существующие уведомления
           axios
             .get(`/api/notifications?userId=${userId}`, {
               headers: { Authorization: `Bearer ${token}` },
@@ -25,6 +63,13 @@ function Notifications() {
         })
         .catch((err) => setError(err.response?.data?.error || 'Ошибка загрузки пользователя'));
     }
+    
+    // Закрываем WebSocket соединение при размонтировании компонента
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
   }, []);
 
   const handleRespondAdminRequest = async (notification, action) => {
