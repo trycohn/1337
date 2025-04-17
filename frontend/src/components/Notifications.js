@@ -130,7 +130,7 @@ function Notifications() {
                         "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
                       </Link>{' '}
                       - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      {!notification.is_read && notification.type === 'admin_request' && (
+                      {notification.type === 'admin_request' && (
                         <div className="admin-request-actions">
                           <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
                             Принять
