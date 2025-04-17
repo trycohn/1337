@@ -22,6 +22,11 @@ function Profile() {
     const [resendCountdown, setResendCountdown] = useState(0);
     const [isClosingModal, setIsClosingModal] = useState(false);
     const [verificationError, setVerificationError] = useState('');
+    
+    // Новые состояния для добавления email
+    const [showAddEmailModal, setShowAddEmailModal] = useState(false);
+    const [newEmail, setNewEmail] = useState('');
+    const [addEmailError, setAddEmailError] = useState('');
 
     const fetchUserData = async (token) => {
         try {
@@ -461,6 +466,55 @@ function Profile() {
         );
     };
 
+    // Функция для открытия модального окна добавления почты
+    const openAddEmailModal = () => {
+        setShowAddEmailModal(true);
+        setAddEmailError('');
+    };
+
+    // Функция закрытия модального окна добавления почты
+    const closeAddEmailModal = () => {
+        setIsClosingModal(true);
+        
+        setTimeout(() => {
+            setShowAddEmailModal(false);
+            setIsClosingModal(false);
+            setNewEmail('');
+            setAddEmailError('');
+        }, 300);
+    };
+
+    // Функция для сохранения новой почты
+    const saveEmail = async () => {
+        if (!newEmail || !newEmail.includes('@')) {
+            setAddEmailError('Пожалуйста, введите корректный email');
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/users/update-email', { email: newEmail }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем данные пользователя с новым email
+            setUser(prevUser => prevUser ? { ...prevUser, email: newEmail, is_verified: false } : null);
+            
+            // Закрываем модальное окно добавления email
+            closeAddEmailModal();
+            
+            // Открываем модальное окно подтверждения email
+            setShowEmailVerificationModal(true);
+            
+            // Отправляем код верификации
+            await sendVerificationCode();
+            localStorage.setItem('verification_code_sent', 'true');
+            
+        } catch (err) {
+            setAddEmailError(err.response?.data?.error || 'Ошибка сохранения email');
+        }
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -468,8 +522,18 @@ function Profile() {
             <h2>Личный кабинет</h2>
             {error && <p className="error">{error}</p>}
             
+            {/* Плашка с предупреждением для пользователей без email */}
+            {!user.email && (
+                <div className="verification-alert">
+                    <p>
+                        <strong>Внимание!</strong> У вас не указан email. Вы не можете создавать и администрировать турниры.
+                    </p>
+                    <button onClick={openAddEmailModal}>Привязать email</button>
+                </div>
+            )}
+            
             {/* Плашка с предупреждением для неверифицированных пользователей */}
-            {!user.is_verified && (
+            {user.email && !user.is_verified && (
                 <div className="verification-alert">
                     <p>
                         <strong>Внимание!</strong> Ваш email не подтвержден. Вы не можете создавать и администрировать турниры.
@@ -491,9 +555,13 @@ function Profile() {
                 {user.steam_id && (
                     <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button>
                 )}
-                <p>Email: {user.email}</p>
-                <p>Статус верификации: {user.is_verified ? 'Подтвержден' : 'Не подтвержден'}</p>
-                {!user.is_verified && (
+                <p>Email: {user.email || 'Не указан'}</p>
+                {!user.email ? (
+                    <button onClick={openAddEmailModal}>Привязать email</button>
+                ) : (
+                    <p>Статус верификации: {user.is_verified ? 'Подтвержден' : 'Не подтвержден'}</p>
+                )}
+                {user.email && !user.is_verified && (
                     <button onClick={openEmailVerificationModal}>Подтвердить email</button>
                 )}
             </section>
@@ -593,6 +661,36 @@ function Profile() {
                     <p>Статистика загружается...</p>
                 )}
             </section>
+
+            {/* Модальное окно для добавления email */}
+            {showAddEmailModal && (
+                <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeAddEmailModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Привязка email</h3>
+                        <p>Пожалуйста, введите ваш email:</p>
+                        
+                        <input 
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="example@example.com"
+                            className="email-input"
+                            autoFocus
+                        />
+                        
+                        {addEmailError && (
+                            <div className="verification-error">
+                                {addEmailError}
+                            </div>
+                        )}
+                        
+                        <div className="modal-buttons">
+                            <button onClick={saveEmail}>Сохранить</button>
+                            <button onClick={closeAddEmailModal}>Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Обновленное модальное окно подтверждения email */}
             {showEmailVerificationModal && (

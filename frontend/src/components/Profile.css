@@ -137,6 +137,51 @@ input, button {
     margin: 0 10px 10px 0;
 }
 
+/* Стили для модального окна добавления email */
+.email-input {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.verification-error {
+    color: #ff3333;
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+/* Кнопки для модальных окон */
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    padding: 8px 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background-color: #4682b4;
+    color: white;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.modal-buttons button:hover {
+    background-color: #3a6d96;
+}
+
+.modal-buttons button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
 .steam-buttons {
     display: flex;
     gap: 10px;

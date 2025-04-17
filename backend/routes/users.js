@@ -229,6 +229,30 @@ router.post('/update-username', authenticateToken, async (req, res) => {
     }
 });
 
+// Обновление email пользователя
+router.post('/update-email', authenticateToken, async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Email обязателен' });
+    }
+
+    try {
+        // Проверяем, не занят ли email другим пользователем
+        const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1 AND id != $2', [email, req.user.id]);
+        if (emailCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Этот email уже занят' });
+        }
+
+        // Обновляем email и сбрасываем статус верификации
+        await pool.query('UPDATE users SET email = $1, is_verified = FALSE WHERE id = $2', [email, req.user.id]);
+        res.json({ message: 'Email успешно обновлен' });
+    } catch (err) {
+        console.error('Ошибка обновления email:', err);
+        res.status(500).json({ error: 'Не удалось обновить email' });
+    }
+});
+
 // Получение никнейма Steam
 router.get('/steam-nickname', authenticateToken, async (req, res) => {
     try {
