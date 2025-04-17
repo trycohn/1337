@@ -130,7 +130,8 @@ function Notifications() {
                         "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
                       </Link>{' '}
                       - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      {notification.type === 'admin_request' && (
+                      <div className="admin-request-status">
+                        <span className="status-pending">В ожидании</span>
                         <div className="admin-request-actions">
                           <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
                             Принять
@@ -139,7 +140,21 @@ function Notifications() {
                             Отклонить
                           </button>
                         </div>
-                      )}
+                      </div>
+                    </>
+                  ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
+                    <>
+                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                      <div className="admin-request-status">
+                        <span className="status-accepted">Запрос принят</span>
+                      </div>
+                    </>
+                  ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
+                    <>
+                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                      <div className="admin-request-status">
+                        <span className="status-rejected">Запрос отклонен</span>
+                      </div>
                     </>
                   ) : notification.tournament_id ? (
                     <>
