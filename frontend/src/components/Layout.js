@@ -218,7 +218,7 @@ function Layout() {
                     {user ? (
                         <div className="user-info">
                             <Link to="/profile" className="username-link">
-                                Привет, {user.username}!
+                                {user.username}
                             </Link>
                             <div className="notifications">
                                 <div className="bell-container" onClick={toggleNotifications}>
