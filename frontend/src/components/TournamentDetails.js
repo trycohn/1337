@@ -1,9 +1,9 @@
 // frontend/src/components/TournamentDetails.js
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../axios';
+import './TournamentDetails.css';
 import BracketRenderer from './BracketRenderer';
-import './Home.css';
 
 function TournamentDetails() {
     const { id } = useParams();
@@ -555,18 +555,20 @@ function TournamentDetails() {
                 <ul>
                     {tournament.participants.map((participant) => (
                         <li key={participant.id} className="participant-item">
-                            {/* Добавляем аватар участника */}
-                            <div className="participant-avatar">
-                                <img 
-                                    src={participant.avatar_url || '/default-avatar.png'} 
-                                    alt={`${participant.name} аватар`} 
-                                    className="participant-avatar-img"
-                                />
-                            </div>
-                            <div className="participant-info">
-                                <span className="participant-name">{participant.name}</span>
-                                {participant.is_admin && <span className="admin-badge">Админ</span>}
-                            </div>
+                            {/* Аватар участника с ссылкой на профиль */}
+                            <Link to={`/user/${participant.user_id}`} className="participant-link">
+                                <div className="participant-avatar">
+                                    <img 
+                                        src={participant.avatar_url || '/default-avatar.png'} 
+                                        alt={`${participant.name} аватар`} 
+                                        className="participant-avatar-img"
+                                    />
+                                </div>
+                                <div className="participant-info">
+                                    <span className="participant-name">{participant.name}</span>
+                                    {participant.is_admin && <span className="admin-badge">Админ</span>}
+                                </div>
+                            </Link>
                         </li>
                     ))}
                 </ul>

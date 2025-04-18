@@ -1042,4 +1042,121 @@ router.post('/set-faceit-avatar', authenticateToken, async (req, res) => {
     }
 });
 
+// Получение публичного профиля пользователя по ID
+router.get('/profile/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Получаем базовую информацию о пользователе
+        const userResult = await pool.query(
+            'SELECT id, username, steam_id, faceit_id, steam_url, avatar_url, cs2_premier_rank FROM users WHERE id = $1',
+            [userId]
+        );
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Пользователь не найден' });
+        }
+        
+        const user = userResult.rows[0];
+        
+        // Получаем статистику пользователя
+        const statsResult = await pool.query(
+            'SELECT t.name, uts.result, uts.wins, uts.losses, uts.is_team ' +
+            'FROM user_tournament_stats uts ' +
+            'JOIN tournaments t ON uts.tournament_id = t.id ' +
+            'WHERE uts.user_id = $1',
+            [userId]
+        );
+
+        const stats = statsResult.rows;
+        const soloStats = stats.filter(s => !s.is_team);
+        const teamStats = stats.filter(s => s.is_team);
+
+        const soloWins = soloStats.reduce((sum, s) => sum + s.wins, 0);
+        const soloLosses = soloStats.reduce((sum, s) => sum + s.losses, 0);
+        const teamWins = teamStats.reduce((sum, s) => sum + s.wins, 0);
+        const teamLosses = teamStats.reduce((sum, s) => sum + s.losses, 0);
+
+        const soloWinRate = soloWins + soloLosses > 0 ? (soloWins / (soloWins + soloLosses)) * 100 : 0;
+        const teamWinRate = teamWins + teamLosses > 0 ? (teamWins / (teamWins + teamLosses)) * 100 : 0;
+        
+        // Добавляем статистику к данным пользователя
+        user.stats = {
+            tournaments: stats,
+            solo: { wins: soloWins, losses: soloLosses, winRate: soloWinRate.toFixed(2) },
+            team: { wins: teamWins, losses: teamLosses, winRate: teamWinRate.toFixed(2) }
+        };
+        
+        // Если у пользователя привязан Faceit, получаем информацию о нем
+        if (user.faceit_id) {
+            try {
+                // Используем FACEIT API для получения данных пользователя
+                const playerResponse = await axios.get(`https://open.faceit.com/data/v4/players/${user.faceit_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                    }
+                });
+                
+                const faceitNickname = playerResponse.data.nickname;
+                const faceitUrl = `https://www.faceit.com/ru/players/${faceitNickname}`;
+                const faceitElo = playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0;
+                const faceitLevel = playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0;
+                
+                user.faceit = {
+                    faceitNickname,
+                    faceitUrl,
+                    elo: faceitElo,
+                    level: faceitLevel
+                };
+                
+                // Пробуем получить статистику CS2 или CSGO
+                try {
+                    const statsResponse = await axios.get(`https://open.faceit.com/data/v4/players/${user.faceit_id}/stats/cs2`, {
+                        headers: {
+                            'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                        }
+                    });
+                    
+                    if (statsResponse.data && statsResponse.data.lifetime) {
+                        user.faceit.stats = statsResponse.data.lifetime;
+                        user.faceit.statsFrom = 'cs2';
+                    }
+                } catch (cs2Err) {
+                    try {
+                        const statsResponse = await axios.get(`https://open.faceit.com/data/v4/players/${user.faceit_id}/stats/csgo`, {
+                            headers: {
+                                'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                            }
+                        });
+                        
+                        if (statsResponse.data && statsResponse.data.lifetime) {
+                            user.faceit.stats = statsResponse.data.lifetime;
+                            user.faceit.statsFrom = 'csgo';
+                        }
+                    } catch (csgoErr) {
+                        // Если обе попытки не удались, продолжаем без статистики
+                        console.log('Ни CS2, ни CSGO статистика не найдены для пользователя', userId);
+                    }
+                }
+            } catch (faceitErr) {
+                console.error('Ошибка получения информации Faceit:', faceitErr.message);
+                // Продолжаем без данных Faceit
+            }
+        }
+        
+        // Если у пользователя привязан Steam и есть Premier ранг, добавляем его к ответу
+        if (user.steam_id && user.cs2_premier_rank) {
+            user.premier_rank = user.cs2_premier_rank;
+        }
+        
+        // Удаляем не нужные для публичного профиля поля
+        delete user.cs2_premier_rank;
+        
+        res.json(user);
+    } catch (err) {
+        console.error('Ошибка получения профиля пользователя:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении профиля' });
+    }
+});
+
 module.exports = router;

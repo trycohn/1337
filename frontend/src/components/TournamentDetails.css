@@ -1,0 +1,227 @@
+.tournament-details {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.tournament-details h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.tournament-details p {
+    margin-bottom: 10px;
+}
+
+.tournament-details h3 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.tournament-details button {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.tournament-details button:hover {
+    background-color: #0056b3;
+}
+
+.participants-list {
+    margin: 20px 0;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #eee;
+}
+
+.participants-list ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.participant-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.participant-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.participant-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+}
+
+.participant-avatar {
+    margin-right: 10px;
+}
+
+.participant-avatar-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4a76a8;
+}
+
+.participant-info {
+    flex-grow: 1;
+}
+
+.participant-name {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.admin-badge {
+    background-color: #ff9800;
+    color: white;
+    font-size: 12px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.team-selection, 
+.invite-participant,
+.add-participant {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.team-selection select,
+.team-selection input,
+.invite-participant select,
+.invite-participant input,
+.add-participant input {
+    margin: 10px 0;
+    padding: 8px;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.participation-controls {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.winners-list {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f0f8ff;
+    border-radius: 5px;
+    border: 1px solid #b0e0e6;
+}
+
+.winners-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.winners-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.winners-list li:last-child {
+    border-bottom: none;
+}
+
+.custom-tournament-bracket {
+    margin: 20px 0;
+    overflow-x: auto;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    margin-left: 10px;
+}
+
+.score-inputs {
+    display: flex;
+    justify-content: space-between;
+    margin: 15px 0;
+}
+
+.score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.score-input {
+    width: 60px;
+    padding: 5px;
+    text-align: center;
+    margin-top: 5px;
+}
+
+.success {
+    color: green;
+    margin-top: 10px;
+}
+
+.error {
+    color: red;
+    margin-top: 10px;
+}
+
+.generation-options {
+    margin-top: 15px;
+}
+
+.generate-bracket-button {
+    margin-top: 10px;
+} 
