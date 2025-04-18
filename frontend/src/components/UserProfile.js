@@ -64,7 +64,9 @@ function UserProfile() {
                 <div>
                     <p>
                         {user.steam_url 
-                            ? <span>Профиль: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{user.steam_url.split('/').pop()}</a></span>
+                            ? <span>Профиль: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">
+                                {user.steam_nickname || user.steam_url.split('/').pop()}
+                              </a></span>
                             : 'Не привязан'}
                     </p>
                     {user.steam_url && user.premier_rank && (

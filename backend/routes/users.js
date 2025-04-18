@@ -1059,6 +1059,18 @@ router.get('/profile/:userId', async (req, res) => {
         
         const user = userResult.rows[0];
         
+        // Если у пользователя привязан Steam, получаем его никнейм
+        if (user.steam_id) {
+            try {
+                const apiKey = process.env.STEAM_API_KEY;
+                const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${user.steam_id}`);
+                user.steam_nickname = steamUserResponse.data.response.players[0].personaname;
+            } catch (steamErr) {
+                console.error('Ошибка получения никнейма Steam:', steamErr);
+                // Если не удалось получить никнейм, оставляем только Steam ID
+            }
+        }
+        
         // Получаем статистику пользователя
         const statsResult = await pool.query(
             'SELECT t.name, uts.result, uts.wins, uts.losses, uts.is_team ' +
