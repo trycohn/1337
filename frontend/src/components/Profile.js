@@ -423,35 +423,26 @@ function Profile() {
             return '---';
         };
     
-        // Ищем все вхождения premier.png и для каждого формируем отдельную группу
-        const premierIndices = [];
-        filteredRanks.forEach((url, index) => {
-            if (url.includes('premier.png')) {
-                premierIndices.push(index);
-            }
-        });
-    
-        // Обрабатываем каждое найденное вхождение premier.png.
-        // Ищем win-значения по всему массиву winValues, а не только первые.
-        premierIndices
-            .sort((a, b) => b - a)
-            .forEach(idx => {
-                const win1 = getValidWinValue();
-                const win2 = getValidWinValue();
-                groups.unshift({
-                    type: 'premier',
-                    image: filteredRanks[idx],
-                    wins: [win1, win2]
-                });
-                filteredRanks.splice(idx, 1); // удаляем premier.png для дальнейшей группировки
-            });
-    
-        // Формируем группы по 3 картинки (группы могут быть неполными)
-        for (let i = 0; i < filteredRanks.length; i += 3) {
+        // Ищем последний ранг premier.png
+        const lastPremierIndex = filteredRanks.findLastIndex(url => url.includes('premier.png'));
+        
+        // Если найден premier.png, добавляем только его
+        if (lastPremierIndex !== -1) {
+            const win1 = getValidWinValue();
+            const win2 = getValidWinValue();
             groups.push({
-                type: 'group',
-                images: filteredRanks.slice(i, i + 3)
+                type: 'premier',
+                image: filteredRanks[lastPremierIndex],
+                wins: [win1, win2]
             });
+        } else {
+            // Если нет premier.png, формируем группы по 3 картинки
+            for (let i = 0; i < filteredRanks.length; i += 3) {
+                groups.push({
+                    type: 'group',
+                    images: filteredRanks.slice(i, i + 3)
+                });
+            }
         }
     
         return (
