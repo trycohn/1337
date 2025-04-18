@@ -105,7 +105,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     try {
         console.log('Получение данных пользователя, req.user:', req.user);
         const result = await pool.query(
-            'SELECT id, username, email, role, steam_id, faceit_id, full_name, birth_date, steam_url, avatar_url, is_verified ' +
+            'SELECT id, username, email, role, steam_id, faceit_id, full_name, birth_date, steam_url, avatar_url, is_verified, cs2_premier_rank ' +
             'FROM users WHERE id = $1',
             [req.user.id]
         );

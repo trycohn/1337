@@ -14,6 +14,7 @@ function Profile() {
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [steamNickname, setSteamNickname] = useState('');
+    const [premierRank, setPremierRank] = useState(0);
     
     // Новые состояния для подтверждения email
     const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
@@ -39,8 +40,13 @@ function Profile() {
             setUser(response.data);
             setNewUsername(response.data.username);
             
-            // Автоматически загружаем статистику CS2, если есть steam_id
-            if (response.data.steam_id) {
+            // Извлекаем ранг Premier из данных пользователя
+            if (response.data.cs2_premier_rank) {
+                setPremierRank(response.data.cs2_premier_rank);
+            }
+            
+            // Автоматически загружаем статистику CS2 только при первой привязке Steam
+            if (response.data.steam_id && !response.data.cs2_premier_rank) {
                 fetchCs2Stats(response.data.steam_id);
             }
         } catch (err) {
@@ -54,9 +60,15 @@ function Profile() {
         
         setIsLoadingCs2Stats(true);
         try {
-            const response = await api.get(`/api/playerStats/${id}`);
+            const response = await api.get(`/api/playerStats/${id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
             if (response.data.success) {
                 setCs2Stats(response.data.data);
+                // Обновляем ранг Premier из ответа API
+                if (response.data.premier_rank !== undefined) {
+                    setPremierRank(response.data.premier_rank);
+                }
             }
         } catch (err) {
             setError('Ошибка получения статистики CS2');
@@ -95,6 +107,9 @@ function Profile() {
             setUser(prevUser => prevUser ? { ...prevUser, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` } : null);
             setError('');
             window.history.replaceState({}, document.title, '/profile');
+            
+            // После привязки Steam автоматически загружаем и сохраняем статистику CS2
+            fetchCs2Stats(steamId);
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка привязки Steam');
         }
@@ -394,67 +409,48 @@ function Profile() {
     };
 
     const renderRankGroups = () => {
-        if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return <p>Нет статистики CS2</p>;
-    
-        // Создаём копии для дальнейшей работы
-        let winValues = Array.from(cs2Stats.wins);
-        let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
-    
-        // Если есть картинка logo-csgo.png, отрезаем её и все, что после
-        const csgoIdx = filteredRanks.findIndex(url => url.includes('logo-csgo.png'));
-        if (csgoIdx !== -1) {
-            filteredRanks = filteredRanks.slice(0, csgoIdx);
-        }
-    
-        const groups = [];
-    
-        // Функция для проверки формата win (например, "12,361" или "---")
-        const validWinFormat = (win) => /^(\d{1,3}(,\d{3})*|---)$/.test(win);
-    
-        // Функция для поиска и удаления первого win-значения с корректным форматом
-        const getValidWinValue = () => {
-            for (let i = 0; i < winValues.length; i++) {
-                if (validWinFormat(winValues[i])) {
-                    const val = winValues[i];
-                    winValues.splice(i, 1);
-                    return val;
-                }
-            }
-            return '---';
-        };
-    
-        // Ищем последний ранг premier.png
-        const lastPremierIndex = filteredRanks.findLastIndex(url => url.includes('premier.png'));
-        
-        // Если найден premier.png, добавляем только его
-        if (lastPremierIndex !== -1) {
-            const win1 = getValidWinValue();
-            const win2 = getValidWinValue();
-            groups.push({
-                type: 'premier',
-                image: filteredRanks[lastPremierIndex],
-                wins: [win1, win2]
-            });
-            
-            return (
-                <div>
-                    {groups.map((group, index) => (
-                        <div key={`group-${index}`} className="rank-row">
-                            <div className="rank-group">
-                                <img src={group.image} alt="premier" className="rank-image" />
-                            </div>
-                            <div className="rank-win">
-                                <span>{group.wins[0]}</span>
-                                {group.wins[1] && <span> {group.wins[1]}</span>}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        } else {
-            // Если нет premier.png, показываем сообщение
+        // Если у пользователя нет ранга Premier, показываем сообщение
+        if (!premierRank) {
             return <p>Нет данных о ранге Premier</p>;
         }
+        
+        // Если есть статистика CS2, используем ее для отображения ранга
+        if (cs2Stats && cs2Stats.ranks) {
+            // Создаём копии для дальнейшей работы
+            let filteredRanks = cs2Stats.ranks.filter(url => !url.includes('logo-cs2.png'));
+            
+            // Если есть картинка logo-csgo.png, отрезаем её и все, что после
+            const csgoIdx = filteredRanks.findIndex(url => url.includes('logo-csgo.png'));
+            if (csgoIdx !== -1) {
+                filteredRanks = filteredRanks.slice(0, csgoIdx);
+            }
+            
+            // Ищем последний ранг premier.png
+            const lastPremierIndex = filteredRanks.findLastIndex(url => url.includes('premier.png'));
+            
+            // Если найден premier.png, показываем его
+            if (lastPremierIndex !== -1) {
+                return (
+                    <div>
+                        <div className="rank-row">
+                            <div className="rank-group">
+                                <img src={filteredRanks[lastPremierIndex]} alt="premier" className="rank-image" />
+                            </div>
+                            <div className="rank-win">
+                                <span>{premierRank}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+        }
+        
+        // Если нет изображения ранга, но есть числовое значение ранга
+        return (
+            <div className="rank-row">
+                <p>Premier Rank: {premierRank}</p>
+            </div>
+        );
     };
 
     // Функция для открытия модального окна добавления почты
@@ -589,7 +585,7 @@ function Profile() {
                             </button>
                         </div>
                     )}
-                    {cs2Stats && (
+                    {user.steam_url && (
                         <div className="cs2-stats">
                             <h4>Статистика CS2</h4>
                             <div className="rank-container">
