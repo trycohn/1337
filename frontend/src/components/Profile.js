@@ -578,12 +578,14 @@ function Profile() {
                     {user.steam_url && (
                         <div className="steam-buttons">
                             <button onClick={unlinkSteam}>Отвязать стим</button>
-                            <button 
-                                onClick={() => fetchCs2Stats()}
-                                disabled={isLoadingCs2Stats}
-                            >
-                                {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
-                            </button>
+                            {premierRank > 0 && (
+                                <button 
+                                    onClick={() => fetchCs2Stats()}
+                                    disabled={isLoadingCs2Stats}
+                                >
+                                    {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
+                                </button>
+                            )}
                         </div>
                     )}
                     {user.steam_url && (
