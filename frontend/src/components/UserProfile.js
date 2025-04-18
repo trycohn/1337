@@ -39,6 +39,17 @@ function UserProfile() {
             </div>
         );
     };
+    
+    // Функция для получения класса статуса онлайн
+    const getOnlineStatusClass = () => {
+        if (!user.online_status) return '';
+        
+        if (user.online_status === 'online') {
+            return 'status-online';
+        } else {
+            return 'status-offline';
+        }
+    };
 
     if (loading) return <div className="profile-loading">Загрузка профиля...</div>;
     if (error) return <div className="profile-error">{error}</div>;
@@ -56,6 +67,11 @@ function UserProfile() {
                 </div>
                 <div className="user-info">
                     <h2>{user.username}</h2>
+                    {user.online_status && (
+                        <div className={`online-status ${getOnlineStatusClass()}`}>
+                            {user.online_status}
+                        </div>
+                    )}
                 </div>
             </div>
             

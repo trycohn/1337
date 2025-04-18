@@ -6,3 +6,6 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS cs2_premier_rank INTEGER DEFAULT 0;
 
 -- Добавляем столбец для хранения FACEIT ELO
 ALTER TABLE users ADD COLUMN IF NOT EXISTS faceit_elo INTEGER DEFAULT 0; 
+
+-- Добавляем столбец для хранения времени последней активности пользователя
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active TIMESTAMP DEFAULT NOW(); 

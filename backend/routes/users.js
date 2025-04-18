@@ -1049,7 +1049,7 @@ router.get('/profile/:userId', async (req, res) => {
         
         // Получаем базовую информацию о пользователе
         const userResult = await pool.query(
-            'SELECT id, username, steam_id, faceit_id, steam_url, avatar_url, cs2_premier_rank FROM users WHERE id = $1',
+            'SELECT id, username, steam_id, faceit_id, steam_url, avatar_url, cs2_premier_rank, last_active FROM users WHERE id = $1',
             [userId]
         );
         
@@ -1058,6 +1058,40 @@ router.get('/profile/:userId', async (req, res) => {
         }
         
         const user = userResult.rows[0];
+        
+        // Определяем статус активности
+        const now = new Date();
+        const lastActive = new Date(user.last_active);
+        const diffInSeconds = Math.floor((now - lastActive) / 1000);
+        
+        // Получаем соединения WebSocket для проверки онлайн-статуса в реальном времени
+        const app = global.app || req.app;
+        const connectedClients = app.get('connectedClients');
+        
+        // Проверяем, есть ли у пользователя активное WebSocket соединение
+        let isOnlineRealtime = false;
+        if (connectedClients && connectedClients.has(userId.toString())) {
+            const ws = connectedClients.get(userId.toString());
+            if (ws && ws.readyState === 1) { // 1 = WebSocket.OPEN
+                isOnlineRealtime = true;
+            }
+        }
+        
+        // Определяем статус активности на основе времени последней активности и WebSocket
+        if (isOnlineRealtime) {
+            user.online_status = 'online';
+        } else if (diffInSeconds < 300) { // 5 минут
+            user.online_status = 'online';
+        } else if (diffInSeconds < 3600) { // 1 час
+            const minutes = Math.floor(diffInSeconds / 60);
+            user.online_status = `был ${minutes} ${getMinutesWord(minutes)} назад`;
+        } else if (diffInSeconds < 86400) { // 24 часа
+            const hours = Math.floor(diffInSeconds / 3600);
+            user.online_status = `был ${hours} ${getHoursWord(hours)} назад`;
+        } else {
+            const days = Math.floor(diffInSeconds / 86400);
+            user.online_status = `был ${days} ${getDaysWord(days)} назад`;
+        }
         
         // Если у пользователя привязан Steam, получаем его никнейм
         if (user.steam_id) {
@@ -1170,5 +1204,53 @@ router.get('/profile/:userId', async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера при получении профиля' });
     }
 });
+
+// Функция для получения правильного склонения слова "минута"
+function getMinutesWord(minutes) {
+    if (minutes >= 11 && minutes <= 14) {
+        return 'минут';
+    }
+    
+    const lastDigit = minutes % 10;
+    if (lastDigit === 1) {
+        return 'минуту';
+    } else if (lastDigit >= 2 && lastDigit <= 4) {
+        return 'минуты';
+    } else {
+        return 'минут';
+    }
+}
+
+// Функция для получения правильного склонения слова "час"
+function getHoursWord(hours) {
+    if (hours >= 11 && hours <= 14) {
+        return 'часов';
+    }
+    
+    const lastDigit = hours % 10;
+    if (lastDigit === 1) {
+        return 'час';
+    } else if (lastDigit >= 2 && lastDigit <= 4) {
+        return 'часа';
+    } else {
+        return 'часов';
+    }
+}
+
+// Функция для получения правильного склонения слова "день"
+function getDaysWord(days) {
+    if (days >= 11 && days <= 14) {
+        return 'дней';
+    }
+    
+    const lastDigit = days % 10;
+    if (lastDigit === 1) {
+        return 'день';
+    } else if (lastDigit >= 2 && lastDigit <= 4) {
+        return 'дня';
+    } else {
+        return 'дней';
+    }
+}
 
 module.exports = router;

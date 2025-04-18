@@ -634,3 +634,24 @@ input, button {
         grid-template-columns: 1fr;
     }
 }
+
+/* Стили для статуса онлайн */
+.online-status {
+    font-size: 0.9rem;
+    margin-top: 5px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.status-online {
+    background-color: rgba(76, 217, 100, 0.1);
+    color: #4cd964;
+    border: 1px solid rgba(76, 217, 100, 0.3);
+}
+
+.status-offline {
+    background-color: rgba(170, 170, 170, 0.1);
+    color: #aaaaaa;
+    border: 1px solid rgba(170, 170, 170, 0.3);
+}

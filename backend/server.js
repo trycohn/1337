@@ -24,6 +24,8 @@ const nodemailer = require('nodemailer');
 const notifications = require('./notifications');
 const cors = require('cors');
 const path = require('path');
+const { authenticateToken } = require('./middleware/auth');
+const { updateActivity } = require('./middleware/activity');
 
 const app = express();
 // Установка глобальной переменной для доступа из других модулей
@@ -61,6 +63,24 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Добавляем middleware для обновления активности пользователя после аутентификации
+app.use((req, res, next) => {
+  // Проверяем наличие токена в заголовке Authorization
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    // Если токен есть, вызываем middleware для аутентификации и обновления активности
+    return authenticateToken(req, res, () => {
+      if (req.user) {
+        updateActivity(req, res, next);
+      } else {
+        next();
+      }
+    });
+  }
+  next();
+});
 
 // Тестовый маршрут
 app.get('/testdb', async (req, res) => {

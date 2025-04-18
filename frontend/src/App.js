@@ -10,6 +10,7 @@ import CreateTournament from './components/CreateTournament'; // Импорти�
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
 import Notifications from './components/Notifications'; // Добавляем импорт компонента Notifications
 import { LoaderProvider } from './context/LoaderContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -39,23 +40,25 @@ function AuthCallback() {
 function App() {
     return (
         <LoaderProvider>
-            <Router>
-                <Routes>
-                    <Route path="/" element={<Layout />}>
-                        <Route index element={<Home />} />
-                        <Route path="/tournaments" element={<TournamentsPage />} />
-                        <Route path="/tournaments/:id" element={<TournamentDetails />} />
-                        <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
-                        <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
-                        <Route path="/profile" element={<Profile />} /> {/* Маршрут для своего профиля */}
-                        <Route path="/user/:userId" element={<UserProfile />} /> {/* Маршрут для просмотра профиля по ID */}
-                        <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
-                        <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
-                        <Route path="/auth-callback" element={<AuthCallback />} />
-                        <Route path="/auth-error" element={<Navigate to="/login" />} />
-                    </Route>
-                </Routes>
-            </Router>
+            <WebSocketProvider>
+                <Router>
+                    <Routes>
+                        <Route path="/" element={<Layout />}>
+                            <Route index element={<Home />} />
+                            <Route path="/tournaments" element={<TournamentsPage />} />
+                            <Route path="/tournaments/:id" element={<TournamentDetails />} />
+                            <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
+                            <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
+                            <Route path="/profile" element={<Profile />} /> {/* Маршрут для своего профиля */}
+                            <Route path="/user/:userId" element={<UserProfile />} /> {/* Маршрут для просмотра профиля по ID */}
+                            <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
+                            <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
+                            <Route path="/auth-callback" element={<AuthCallback />} />
+                            <Route path="/auth-error" element={<Navigate to="/login" />} />
+                        </Route>
+                    </Routes>
+                </Router>
+            </WebSocketProvider>
         </LoaderProvider>
     );
 }
