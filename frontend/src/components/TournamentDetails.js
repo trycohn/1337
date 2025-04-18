@@ -29,41 +29,27 @@ function TournamentDetails() {
     const wsRef = useRef(null);
     const [bracketView, setBracketView] = useState('tree');
 
-    // Загрузка данных
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            api
-                .get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
-                .then((userResponse) => {
-                    setUser(userResponse.data);
-                    api
-                        .get(`/api/teams?userId=${userResponse.data.id}`, { headers: { Authorization: `Bearer ${token}` } })
-                        .then((res) => setTeams(res.data || []))
-                        .catch((error) => console.error('Ошибка загрузки команд:', error));
-                })
-                .catch((error) => console.error('Ошибка загрузки пользователя:', error));
+    // Функция для загрузки данных турнира (определяем выше её использования)
+    const fetchTournamentData = useCallback(async () => {
+        try {
+            const tournamentResponse = await api.get(`/api/tournaments/${id}`);
+            console.log('Данные турнира при загрузке:', tournamentResponse.data);
+            
+            const tournament = tournamentResponse.data;
+            const loadedMatches = Array.isArray(tournament.matches) ? tournament.matches : [];
+            
+            console.log('Загруженные матчи:', loadedMatches);
+            console.log('Количество матчей:', loadedMatches.length);
+            
+            setTournament(tournament);
+            setMatches(loadedMatches);
+        } catch (error) {
+            console.error('Ошибка загрузки турнира:', error);
+            setMessage('Ошибка загрузки данных турнира');
         }
+    }, [id]);
 
-        fetchTournamentData();
-        setupWebSocket();
-
-        return () => {
-            // Закрываем WebSocket при размонтировании компонента
-            if (wsRef.current) {
-                // Отправляем сообщение о прекращении просмотра турнира
-                if (wsRef.current.readyState === WebSocket.OPEN) {
-                    wsRef.current.send(JSON.stringify({
-                        type: 'unwatch_tournament',
-                        tournamentId: id
-                    }));
-                }
-                wsRef.current.close();
-            }
-        };
-    }, [id, fetchTournamentData, setupWebSocket]);
-
-    // Настройка WebSocket для получения обновлений в реальном времени
+    // Настройка WebSocket для получения обновлений в реальном времени (определяем выше её использования)
     const setupWebSocket = useCallback(() => {
         // Создаем WebSocket соединение
         const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
@@ -109,25 +95,39 @@ function TournamentDetails() {
         wsRef.current = webSocket;
     }, [id]);
 
-    // Функция для загрузки данных турнира
-    const fetchTournamentData = useCallback(async () => {
-        try {
-            const tournamentResponse = await api.get(`/api/tournaments/${id}`);
-            console.log('Данные турнира при загрузке:', tournamentResponse.data);
-            
-            const tournament = tournamentResponse.data;
-            const loadedMatches = Array.isArray(tournament.matches) ? tournament.matches : [];
-            
-            console.log('Загруженные матчи:', loadedMatches);
-            console.log('Количество матчей:', loadedMatches.length);
-            
-            setTournament(tournament);
-            setMatches(loadedMatches);
-        } catch (error) {
-            console.error('Ошибка загрузки турнира:', error);
-            setMessage('Ошибка загрузки данных турнира');
+    // Загрузка данных
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            api
+                .get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
+                .then((userResponse) => {
+                    setUser(userResponse.data);
+                    api
+                        .get(`/api/teams?userId=${userResponse.data.id}`, { headers: { Authorization: `Bearer ${token}` } })
+                        .then((res) => setTeams(res.data || []))
+                        .catch((error) => console.error('Ошибка загрузки команд:', error));
+                })
+                .catch((error) => console.error('Ошибка загрузки пользователя:', error));
         }
-    }, [id]);
+
+        fetchTournamentData();
+        setupWebSocket();
+
+        return () => {
+            // Закрываем WebSocket при размонтировании компонента
+            if (wsRef.current) {
+                // Отправляем сообщение о прекращении просмотра турнира
+                if (wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({
+                        type: 'unwatch_tournament',
+                        tournamentId: id
+                    }));
+                }
+                wsRef.current.close();
+            }
+        };
+    }, [id, fetchTournamentData, setupWebSocket]);
 
     useEffect(() => {
         if (tournament && user) {
