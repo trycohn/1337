@@ -308,8 +308,8 @@ router.get('/steam-nickname', authenticateToken, async (req, res) => {
 // Получение никнейма и информации FACEit
 router.get('/faceit-info', authenticateToken, async (req, res) => {
     try {
-        const userResult = await pool.query('SELECT faceit_id FROM users WHERE id = $1', [req.user.id]);
-        const faceitId = userResult.rows[0].faceit_id;
+        const userResult = await pool.query('SELECT faceit_id, faceit_elo FROM users WHERE id = $1', [req.user.id]);
+        const { faceit_id: faceitId, faceit_elo: currentFaceitElo } = userResult.rows[0];
 
         if (!faceitId) {
             return res.status(400).json({ error: 'FACEit ID не привязан' });
@@ -326,6 +326,16 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
             const faceitNickname = playerResponse.data.nickname;
             const faceitUrl = `https://www.faceit.com/ru/players/${faceitNickname}`;
             
+            // Получаем новое значение ELO из ответа API
+            const newElo = playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0;
+            
+            // Проверяем, изменилось ли ELO
+            if (newElo !== currentFaceitElo && newElo > 0) {
+                console.log(`Обновляем FACEIT ELO для пользователя ${req.user.id}: ${currentFaceitElo} -> ${newElo}`);
+                // Обновляем ELO в базе данных
+                await pool.query('UPDATE users SET faceit_elo = $1 WHERE id = $2', [newElo, req.user.id]);
+            }
+            
             // Получаем статистику CS2 (игра с ID csgo в FACEIT API)
             try {
                 const statsResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}/stats/cs2`, {
@@ -338,7 +348,7 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                 const userData = {
                     faceitNickname,
                     faceitUrl,
-                    elo: playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0,
+                    elo: newElo,
                     level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0,
                     statsFrom: 'cs2'
                 };
@@ -363,7 +373,7 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                     const userData = {
                         faceitNickname,
                         faceitUrl,
-                        elo: playerResponse.data.games?.csgo?.faceit_elo || playerResponse.data.games?.cs2?.faceit_elo || 0,
+                        elo: newElo,
                         level: playerResponse.data.games?.csgo?.skill_level || playerResponse.data.games?.cs2?.skill_level || 0,
                         statsFrom: 'csgo'
                     };
@@ -380,7 +390,7 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                     res.json({ 
                         faceitNickname: faceitNickname || faceitId, 
                         faceitUrl: `https://www.faceit.com/ru/players/${faceitNickname || faceitId}`,
-                        elo: playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0,
+                        elo: newElo,
                         level: playerResponse.data.games?.cs2?.skill_level || playerResponse.data.games?.csgo?.skill_level || 0,
                         statsFrom: null
                     });
@@ -388,11 +398,11 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
             }
         } catch (apiErr) {
             console.error('Ошибка получения данных с FACEIT API:', apiErr);
-            // Если API не доступен, возвращаем только ID с базовой ссылкой
+            // Если API не доступен, возвращаем только ID с базовой ссылкой и текущий ELO из базы
             res.json({ 
                 faceitNickname: faceitId, 
                 faceitUrl: `https://www.faceit.com/ru/players/${faceitId}`,
-                elo: 0,
+                elo: currentFaceitElo || 0,
                 level: 0,
                 statsFrom: null
             });
@@ -749,9 +759,22 @@ router.get('/faceit-callback', async (req, res) => {
                 // Если пользователь не существует, создаем новый аккаунт
                 console.log('Creating new user with FACEIT profile:', faceitNickname);
                 
+                // Получаем ELO пользователя из FACEIT API
+                let faceitElo = 0;
+                try {
+                    const playerResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                        }
+                    });
+                    faceitElo = playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0;
+                } catch (apiErr) {
+                    console.error('Ошибка получения ELO из FACEIT API:', apiErr);
+                }
+                
                 const newUserResult = await pool.query(
-                    'INSERT INTO users (username, faceit_id) VALUES ($1, $2) RETURNING id, username, role',
-                    [faceitNickname, faceitId]
+                    'INSERT INTO users (username, faceit_id, faceit_elo) VALUES ($1, $2, $3) RETURNING id, username, role',
+                    [faceitNickname, faceitId, faceitElo]
                 );
                 
                 const newUser = newUserResult.rows[0];
@@ -778,9 +801,22 @@ router.get('/faceit-callback', async (req, res) => {
                 return res.redirect('https://1337community.com/profile?error=faceit_already_linked');
             }
             
-            // Обновляем faceit_id для пользователя в базе данных
-            await pool.query('UPDATE users SET faceit_id = $1 WHERE id = $2', [faceitId, userId]);
-            console.log('FACEit профиль успешно привязан для пользователя', userId);
+            // Получаем ELO пользователя из FACEIT API
+            let faceitElo = 0;
+            try {
+                const playerResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+                    }
+                });
+                faceitElo = playerResponse.data.games?.cs2?.faceit_elo || playerResponse.data.games?.csgo?.faceit_elo || 0;
+            } catch (apiErr) {
+                console.error('Ошибка получения ELO из FACEIT API:', apiErr);
+            }
+            
+            // Обновляем faceit_id и faceit_elo для пользователя в базе данных
+            await pool.query('UPDATE users SET faceit_id = $1, faceit_elo = $2 WHERE id = $3', [faceitId, faceitElo, userId]);
+            console.log(`FACEit профиль успешно привязан для пользователя ${userId} с ELO ${faceitElo}`);
             
             res.redirect('https://1337community.com/profile?faceit=success');
         }
