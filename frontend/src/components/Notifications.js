@@ -6,6 +6,7 @@ import './Home.css';
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -36,8 +37,9 @@ function Notifications() {
               const data = JSON.parse(event.data);
               if (data.type === 'notification') {
                 console.log('Получено новое уведомление в Notifications:', data.data);
-                if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected') {
-                  // Обновить список уведомлений при получении ответа на запрос администрирования
+                if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected' || 
+                    data.data.type === 'friend_request_accepted') {
+                  // Обновить список уведомлений при получении ответа на запрос администрирования или заявку в друзья
                   axios.get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
                     headers: { Authorization: `Bearer ${token}` },
                   })
@@ -110,6 +112,92 @@ function Notifications() {
     }
   };
 
+  // Функция для обработки принятия заявки в друзья
+  const handleAcceptFriendRequest = async (notification) => {
+    const token = localStorage.getItem('token');
+    setActionLoading(notification.id);
+    try {
+      // Получаем ID заявки в друзья из базы данных
+      const friendsResponse = await axios.get(`/api/friends/requests/incoming`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const friendRequest = friendsResponse.data.find(req => req.userId === notification.requester_id);
+      
+      if (!friendRequest) {
+        alert('Заявка в друзья не найдена или уже обработана');
+        return;
+      }
+
+      // Принимаем заявку
+      await axios.post('/api/friends/accept', { requestId: friendRequest.id }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Отмечаем уведомление как прочитанное
+      await axios.post(
+        `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Получаем обновленный список уведомлений
+      const notificationsResponse = await axios.get(`/api/notifications?userId=${notification.user_id}&includeProcessed=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(notificationsResponse.data);
+      
+      alert('Заявка в друзья принята');
+    } catch (error) {
+      alert(error.response?.data?.error || 'Ошибка при обработке заявки в друзья');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Функция для обработки отклонения заявки в друзья
+  const handleRejectFriendRequest = async (notification) => {
+    const token = localStorage.getItem('token');
+    setActionLoading(notification.id);
+    try {
+      // Получаем ID заявки в друзья из базы данных
+      const friendsResponse = await axios.get(`/api/friends/requests/incoming`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const friendRequest = friendsResponse.data.find(req => req.userId === notification.requester_id);
+      
+      if (!friendRequest) {
+        alert('Заявка в друзья не найдена или уже обработана');
+        return;
+      }
+
+      // Отклоняем заявку
+      await axios.post('/api/friends/reject', { requestId: friendRequest.id }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Отмечаем уведомление как прочитанное
+      await axios.post(
+        `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Получаем обновленный список уведомлений
+      const notificationsResponse = await axios.get(`/api/notifications?userId=${notification.user_id}&includeProcessed=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(notificationsResponse.data);
+      
+      alert('Заявка в друзья отклонена');
+    } catch (error) {
+      alert(error.response?.data?.error || 'Ошибка при обработке заявки в друзья');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <section className="notifications-page">
       <h2>История уведомлений</h2>
@@ -162,6 +250,37 @@ function Notifications() {
                       {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
                       <div className="admin-request-status">
                         <span className="status-rejected">Запрос отклонен</span>
+                      </div>
+                    </>
+                  ) : notification.type === 'friend_request' && notification.requester_id ? (
+                    <>
+                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                      <div className="friend-request-status">
+                        <span className="status-pending">В ожидании</span>
+                        <div className="friend-request-actions">
+                          <button 
+                            onClick={() => handleAcceptFriendRequest(notification)}
+                            disabled={actionLoading === notification.id}
+                          >
+                            {actionLoading === notification.id ? 'Обработка...' : 'Принять'}
+                          </button>
+                          <button 
+                            onClick={() => handleRejectFriendRequest(notification)}
+                            disabled={actionLoading === notification.id}
+                          >
+                            {actionLoading === notification.id ? 'Обработка...' : 'Отклонить'}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : notification.type === 'friend_request_accepted' && notification.requester_id ? (
+                    <>
+                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                      <div className="friend-request-status">
+                        <span className="status-accepted">Заявка принята</span>
+                        <Link to={`/profile/${notification.requester_id}`} className="view-profile-link">
+                          Посмотреть профиль
+                        </Link>
                       </div>
                     </>
                   ) : notification.tournament_id ? (
