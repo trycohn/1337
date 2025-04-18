@@ -223,20 +223,23 @@ function Layout() {
                 <div className="nav-container">
                     <button className="hamburger" onClick={toggleMenu}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 6H21V8H3V6Z" fill="#007bff"/>
-                            <path d="M3 11H21V13H3V11Z" fill="#007bff"/>
-                            <path d="M3 16H21V18H3V16Z" fill="#007bff"/>
+                            <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
+                            <path d="M3 11H21V13H3V11Z" fill="#ffffff"/>
+                            <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
                         </svg>
                     </button>
+                    <div className="site-brand">
+                        <Link to="/">1337 Community</Link>
+                    </div>
                     <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
-                        <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
-                        <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
+                        <Link to="/" onClick={() => setIsMenuOpen(false)} className={location.pathname === '/' ? 'active' : ''}>Главная</Link>
+                        <Link to="/tournaments" onClick={() => setIsMenuOpen(false)} className={location.pathname.includes('/tournaments') ? 'active' : ''}>Турниры</Link>
                         {user && (
                             <>
-                                <Link to="/create" onClick={() => setIsMenuOpen(false)}>
+                                <Link to="/create" onClick={() => setIsMenuOpen(false)} className={location.pathname === '/create' ? 'active' : ''}>
                                     Создать турнир
                                 </Link>
-                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
+                                <Link to="/profile" onClick={() => setIsMenuOpen(false)} className={location.pathname === '/profile' ? 'active' : ''}>Мой профиль</Link>
                             </>
                         )}
                     </nav>
