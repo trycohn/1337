@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Home.css';
+import { isCurrentUser } from '../utils/userHelpers';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  const [friendshipStatuses, setFriendshipStatuses] = useState({});
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -40,14 +42,14 @@ function Notifications() {
                 if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected' || 
                     data.data.type === 'friend_request_accepted') {
                   // Обновить список уведомлений при получении ответа на запрос администрирования или заявку в друзья
-                  axios.get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  })
-                  .then(res => setNotifications(res.data))
-                  .catch(err => console.error('Ошибка получения уведомлений:', err));
+                  fetchNotifications(userId, token);
                 } else {
                   // Добавляем новое уведомление в список
                   setNotifications((prev) => [data.data, ...prev]);
+                  // Если это заявка в друзья, обновляем статусы дружбы
+                  if (data.data.type === 'friend_request' && data.data.requester_id) {
+                    fetchFriendshipStatus(data.data.requester_id, token);
+                  }
                 }
               }
             } catch (error) {
@@ -67,12 +69,7 @@ function Notifications() {
           wsRef.current = webSocket;
           
           // Получаем существующие уведомления
-          axios
-            .get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((res) => setNotifications(res.data))
-            .catch((err) => setError(err.response?.data?.error || 'Ошибка загрузки уведомлений'));
+          fetchNotifications(userId, token);
         })
         .catch((err) => setError(err.response?.data?.error || 'Ошибка загрузки пользователя'));
     }
@@ -84,6 +81,42 @@ function Notifications() {
       }
     };
   }, []);
+
+  // Функция для получения уведомлений
+  const fetchNotifications = async (userId, token) => {
+    try {
+      const res = await axios.get(`/api/notifications?userId=${userId}&includeProcessed=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setNotifications(res.data);
+      
+      // Для всех уведомлений типа friend_request получаем актуальный статус дружбы
+      const friendRequests = res.data.filter(n => n.type === 'friend_request' && n.requester_id);
+      
+      for (const request of friendRequests) {
+        fetchFriendshipStatus(request.requester_id, token);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Ошибка загрузки уведомлений');
+    }
+  };
+
+  // Функция для получения статуса дружбы с конкретным пользователем
+  const fetchFriendshipStatus = async (userId, token) => {
+    try {
+      const response = await axios.get(`/api/friends/status/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setFriendshipStatuses(prev => ({
+        ...prev,
+        [userId]: response.data
+      }));
+    } catch (err) {
+      console.error('Ошибка получения статуса дружбы:', err);
+    }
+  };
 
   const handleRespondAdminRequest = async (notification, action) => {
     const token = localStorage.getItem('token');
@@ -101,10 +134,7 @@ function Notifications() {
       );
       
       // Получаем обновленный список уведомлений
-      const response2 = await axios.get(`/api/notifications?userId=${notification.user_id}&includeProcessed=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNotifications(response2.data);
+      fetchNotifications(notification.user_id, token);
       
       alert(response.data.message);
     } catch (error) {
@@ -141,11 +171,11 @@ function Notifications() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
+      // Обновляем статус дружбы после принятия заявки
+      await fetchFriendshipStatus(notification.requester_id, token);
+      
       // Получаем обновленный список уведомлений
-      const notificationsResponse = await axios.get(`/api/notifications?userId=${notification.user_id}&includeProcessed=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNotifications(notificationsResponse.data);
+      fetchNotifications(notification.user_id, token);
       
       alert('Заявка в друзья принята');
     } catch (error) {
@@ -184,11 +214,11 @@ function Notifications() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
+      // Обновляем статус дружбы после отклонения заявки
+      await fetchFriendshipStatus(notification.requester_id, token);
+      
       // Получаем обновленный список уведомлений
-      const notificationsResponse = await axios.get(`/api/notifications?userId=${notification.user_id}&includeProcessed=true`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNotifications(notificationsResponse.data);
+      fetchNotifications(notification.user_id, token);
       
       alert('Заявка в друзья отклонена');
     } catch (error) {
@@ -196,6 +226,16 @@ function Notifications() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  // Функция для проверки, является ли заявка в друзья уже принятой
+  const isFriendRequestAccepted = (requesterId) => {
+    return friendshipStatuses[requesterId]?.status === 'accepted';
+  };
+
+  // Функция для проверки, является ли заявка в друзья отклоненной или обработанной
+  const isFriendRequestProcessed = (requesterId) => {
+    return !!friendshipStatuses[requesterId] && friendshipStatuses[requesterId].status !== 'pending';
   };
 
   return (
@@ -256,21 +296,34 @@ function Notifications() {
                     <>
                       {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
                       <div className="friend-request-status">
-                        <span className="status-pending">В ожидании</span>
-                        <div className="friend-request-actions">
-                          <button 
-                            onClick={() => handleAcceptFriendRequest(notification)}
-                            disabled={actionLoading === notification.id}
-                          >
-                            {actionLoading === notification.id ? 'Обработка...' : 'Принять'}
-                          </button>
-                          <button 
-                            onClick={() => handleRejectFriendRequest(notification)}
-                            disabled={actionLoading === notification.id}
-                          >
-                            {actionLoading === notification.id ? 'Обработка...' : 'Отклонить'}
-                          </button>
-                        </div>
+                        {isFriendRequestAccepted(notification.requester_id) ? (
+                          <>
+                            <span className="status-accepted">Заявка принята</span>
+                            <Link to={isCurrentUser(notification.requester_id) ? "/profile" : `/user/${notification.requester_id}`} className="view-profile-link">
+                              Посмотреть профиль
+                            </Link>
+                          </>
+                        ) : isFriendRequestProcessed(notification.requester_id) ? (
+                          <span className="status-rejected">Заявка отклонена</span>
+                        ) : (
+                          <>
+                            <span className="status-pending">В ожидании</span>
+                            <div className="friend-request-actions">
+                              <button 
+                                onClick={() => handleAcceptFriendRequest(notification)}
+                                disabled={actionLoading === notification.id}
+                              >
+                                {actionLoading === notification.id ? 'Обработка...' : 'Принять'}
+                              </button>
+                              <button 
+                                onClick={() => handleRejectFriendRequest(notification)}
+                                disabled={actionLoading === notification.id}
+                              >
+                                {actionLoading === notification.id ? 'Обработка...' : 'Отклонить'}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </>
                   ) : notification.type === 'friend_request_accepted' && notification.requester_id ? (
@@ -278,14 +331,14 @@ function Notifications() {
                       {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
                       <div className="friend-request-status">
                         <span className="status-accepted">Заявка принята</span>
-                        <Link to={`/user/${notification.requester_id}`} className="view-profile-link">
+                        <Link to={isCurrentUser(notification.requester_id) ? "/profile" : `/user/${notification.requester_id}`} className="view-profile-link">
                           Посмотреть профиль
                         </Link>
                       </div>
                     </>
                   ) : notification.tournament_id ? (
                     <>
-                      {notification.message.split(' турнира ')[0]} турнира{' '}
+                      {notification.message.split(' турнира ')[0]} турниров{' '}
                       <Link to={`/tournaments/${notification.tournament_id}`}>
                         "{notification.message.split(' турнира ')[1]?.split('"')[1] || 'турнир'}"
                       </Link>{' '}
