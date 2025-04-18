@@ -14,7 +14,15 @@ console.log("🔍 FACEIT_CLIENT_SECRET:", process.env.FACEIT_CLIENT_SECRET ? '[�
 console.log("🔍 FACEIT_REDIRECT_URI:", process.env.FACEIT_REDIRECT_URI ? '[Установлен]' : '[Отсутствует]');
 
 const express = require('express');
+const morgan = require('morgan');
+const cors = require('cors');
+const helmet = require('helmet');
+const path = require('path');
+const rateLimiter = require('express-rate-limit');
 const pool = require('./db');
+const { authenticateSocket } = require('./notifications');
+const { authenticateToken } = require('./middleware/auth');
+const { updateActivity } = require('./middleware/activity');
 const http = require('http');
 const puppeteer = require('puppeteer');
 const cookieParser = require('cookie-parser');
@@ -22,10 +30,6 @@ const WebSocket = require('ws');
 const tournamentsRouter = require('./routes/tournaments');
 const nodemailer = require('nodemailer');
 const notifications = require('./notifications');
-const cors = require('cors');
-const path = require('path');
-const { authenticateToken } = require('./middleware/auth');
-const { updateActivity } = require('./middleware/activity');
 
 const app = express();
 // Установка глобальной переменной для доступа из других модулей
@@ -106,16 +110,7 @@ app.use('/api/statistics', require('./routes/statistics'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/playerStats', require('./routes/playerStats'));
 app.use('/api/friends', require('./routes/friends'));
-
-app.use('/api', (req, res) => {
-    console.log(`404 для пути: ${req.path}`);
-    res.status(404).json({ error: 'API маршрут не найден' });
-});
-
-app.use((req, res) => {
-    console.log(`404 для пути: ${req.path}`);
-    res.status(404).json({ error: 'Маршрут не найден' });
-});
+app.use('/api/chats', require('./routes/chats'));
 
 // Настройка WebSocket сервера
 const wss = new WebSocket.Server({ 
@@ -129,7 +124,7 @@ const tournamentClients = new Map();
 
 wss.on('connection', (ws) => {
     console.log('🔌 Новый клиент подключился');
-    
+
     // Обработка сообщений от клиента
     ws.on('message', (message) => {
         try {
@@ -172,7 +167,7 @@ wss.on('connection', (ws) => {
             console.error('Ошибка при обработке сообщения:', error);
         }
     });
-    
+
     // Обработка отключения клиента
     ws.on('close', () => {
         console.log('🔌 Клиент отключился');
@@ -203,6 +198,10 @@ wss.on('connection', (ws) => {
 app.set('wss', wss);
 app.set('connectedClients', connectedClients);
 app.set('tournamentClients', tournamentClients);
+
+// Настройка WebSocket для чата
+const { setupChatWebSocket } = require('./chat-ws');
+setupChatWebSocket(server);
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({
@@ -240,6 +239,40 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Главный роут для проверки работы API
 app.get('/', (req, res) => {
     res.json({ message: 'Сервер 1337 Community API работает!' });
+});
+
+// Настройка middleware
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(cors());
+app.use(express.json());
+
+// Статические файлы
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Настройка лимита запросов
+const limiter = rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 100 // максимум 100 запросов на IP
+});
+app.use(limiter);
+
+// Маршруты API
+app.use('/api', (req, res) => {
+    console.log(`404 для пути: ${req.path}`);
+    res.status(404).json({ error: 'API маршрут не найден' });
+});
+
+// Обработка 404
+app.use((req, res) => {
+    console.log(`404 для пути: ${req.path}`);
+    res.status(404).json({ error: 'Маршрут не найден' });
+});
+
+// Обработка ошибок
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: "Internal Server Error" });
 });
 
 // Запуск сервера
