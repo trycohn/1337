@@ -1,0 +1,119 @@
+.message {
+    max-width: 70%;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    position: relative;
+    background-color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    align-self: flex-start;
+    word-break: break-word;
+}
+
+.message.own {
+    background-color: #dcf8c6;
+    align-self: flex-end;
+}
+
+.message-text {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.message-meta {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.message-time {
+    margin-right: 4px;
+}
+
+.message-status {
+    font-size: 0.9rem;
+}
+
+.message-status.read {
+    color: #4fc3f7;
+}
+
+.message-status.sent {
+    color: #999;
+}
+
+/* Стили для изображений */
+.message-image {
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.message-image img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* Стили для документов */
+.message-document, .message-file {
+    display: flex;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.document-icon, .file-icon {
+    font-size: 24px;
+    margin-right: 10px;
+    color: #555;
+}
+
+.document-info, .file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.document-name, .file-name {
+    font-weight: 500;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.document-download, .file-download {
+    font-size: 0.8rem;
+    color: #4b6cb7;
+    text-decoration: none;
+}
+
+.document-download:hover, .file-download:hover {
+    text-decoration: underline;
+}
+
+/* Стили для объявлений */
+.message-announcement {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 241, 118, 0.3);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.announcement-icon {
+    font-size: 18px;
+    margin-right: 10px;
+    color: #f57c00;
+}
+
+.announcement-text {
+    flex: 1;
+    font-weight: 500;
+} 
