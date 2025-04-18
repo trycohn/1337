@@ -245,6 +245,7 @@ function Layout() {
                     {user ? (
                         <div className="user-info">
                             <Link to="/profile" className="username-link">
+                                {user.avatar_url && <img src={user.avatar_url} alt="" className="navbar-avatar" />}
                                 {user.username}
                             </Link>
                             <div className="notifications">
