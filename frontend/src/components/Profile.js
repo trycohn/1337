@@ -394,7 +394,7 @@ function Profile() {
     };
 
     const renderRankGroups = () => {
-        if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return null;
+        if (!cs2Stats || !cs2Stats.ranks || !cs2Stats.wins) return <p>Нет статистики CS2</p>;
     
         // Создаём копии для дальнейшей работы
         let winValues = Array.from(cs2Stats.wins);
@@ -435,45 +435,26 @@ function Profile() {
                 image: filteredRanks[lastPremierIndex],
                 wins: [win1, win2]
             });
+            
+            return (
+                <div>
+                    {groups.map((group, index) => (
+                        <div key={`group-${index}`} className="rank-row">
+                            <div className="rank-group">
+                                <img src={group.image} alt="premier" className="rank-image" />
+                            </div>
+                            <div className="rank-win">
+                                <span>{group.wins[0]}</span>
+                                {group.wins[1] && <span> {group.wins[1]}</span>}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
         } else {
-            // Если нет premier.png, формируем группы по 3 картинки
-            for (let i = 0; i < filteredRanks.length; i += 3) {
-                groups.push({
-                    type: 'group',
-                    images: filteredRanks.slice(i, i + 3)
-                });
-            }
+            // Если нет premier.png, показываем сообщение
+            return <p>Нет данных о ранге Premier</p>;
         }
-    
-        return (
-            <div>
-                {groups.map((group, index) => {
-                    if (group.type === 'premier') {
-                        return (
-                            <div key={`group-${index}`} className="rank-row">
-                                <div className="rank-group">
-                                    <img src={group.image} alt="premier" className="rank-image" />
-                                </div>
-                                <div className="rank-win">
-                                    <span>{group.wins[0]}</span>
-                                    {group.wins[1] && <span> {group.wins[1]}</span>}
-                                </div>
-                            </div>
-                        );
-                    } else {
-                        return (
-                            <div key={`group-${index}`} className="rank-row">
-                                {group.images.map((img, idx) => (
-                                    <div key={`img-${idx}`} className="rank-group">
-                                        <img src={img} alt={`rank ${idx + 1}`} className="rank-image" />
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    }
-                })}
-            </div>
-        );
     };
 
     // Функция для открытия модального окна добавления почты
