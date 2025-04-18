@@ -7,14 +7,6 @@ import './Home.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 
-// Создаем функцию для обновления аватара, которая будет доступна извне
-export const updateGlobalAvatar = (newAvatarUrl) => {
-    // Проверяем, определена ли функция в окне (она будет определена после рендеринга Layout)
-    if (window.updateHeaderAvatar) {
-        window.updateHeaderAvatar(newAvatarUrl);
-    }
-};
-
 function Layout() {
     const [user, setUser] = useState(null);
     const [error, setError] = useState(null);
@@ -26,10 +18,6 @@ function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const { loading, setLoading } = useLoader();
-
-    // Добавим переменную, чтобы контролировать скрытие навигационной панели при скролле
-    const [lastScrollY, setLastScrollY] = useState(0);
-    const [hideNav, setHideNav] = useState(false);
 
     const fetchUser = async (token) => {
         setLoading(true);
@@ -66,17 +54,6 @@ function Layout() {
                             // Добавляем новое уведомление в список
                             setNotifications((prev) => [data.data, ...prev]);
                         }
-                    } else if (data.type === 'avatar_update') {
-                        // Обновляем аватар пользователя в реальном времени
-                        console.log('Получено обновление аватара:', data.avatar_url);
-                        
-                        // Проверяем, относится ли обновление к текущему пользователю
-                        if (!data.userId || data.userId === response.data.id) {
-                            setUser(prevUser => ({
-                                ...prevUser,
-                                avatar_url: data.avatar_url
-                            }));
-                        }
                     }
                 } catch (error) {
                     console.error('Ошибка при обработке сообщения WebSocket:', error);
@@ -106,28 +83,6 @@ function Layout() {
             setLoading(false);
         }
     };
-    
-    // Добавим обработчик события скролла для скрытия/показа навигационной панели
-    useEffect(() => {
-        const controlNavbar = () => {
-            if (typeof window !== 'undefined') {
-                const scrollY = window.scrollY;
-                // Скрываем навигационную панель только при скролле вниз и после преодоления определенного порога
-                if (scrollY > lastScrollY && scrollY > 100) {
-                    setHideNav(true);
-                } else {
-                    setHideNav(false);
-                }
-                setLastScrollY(scrollY);
-            }
-        };
-
-        window.addEventListener('scroll', controlNavbar);
-        
-        return () => {
-            window.removeEventListener('scroll', controlNavbar);
-        };
-    }, [lastScrollY]);
     
     // Закрываем WebSocket соединение при размонтировании компонента
     useEffect(() => {
@@ -212,39 +167,6 @@ function Layout() {
         setShowNotifications(!showNotifications);
     };
 
-    // Функция для эмуляции получения обновления аватара через WebSocket
-    const updateAvatar = (newAvatarUrl) => {
-        if (wsRef.current && wsRef.current.readyState === 1) {
-            const avatarUpdateMessage = {
-                type: 'avatar_update',
-                avatar_url: newAvatarUrl,
-                userId: user?.id // Добавляем идентификатор пользователя
-            };
-            
-            // Имитируем получение сообщения от сервера
-            const messageEvent = new MessageEvent('message', {
-                data: JSON.stringify(avatarUpdateMessage)
-            });
-            wsRef.current.dispatchEvent(messageEvent);
-            
-            // Также отправляем обновление на сервер, чтобы оно распространилось на все вкладки и устройства
-            wsRef.current.send(JSON.stringify({
-                type: 'broadcast_avatar_update',
-                avatar_url: newAvatarUrl,
-                userId: user?.id
-            }));
-        } else {
-            // Если WebSocket недоступен, просто обновляем локально
-            setUser(prevUser => ({
-                ...prevUser,
-                avatar_url: newAvatarUrl
-            }));
-        }
-    };
-
-    // Функция, которая может быть экспортирована из модуля и использоваться в Profile.js
-    window.updateHeaderAvatar = updateAvatar;
-
     const handleRespondAdminRequest = async (notification, action) => {
         const token = localStorage.getItem('token');
         try {
@@ -297,27 +219,24 @@ function Layout() {
     return (
         <div className="home-container">
             {loading && <Loader />}
-            <header className="header" style={{ transform: hideNav ? 'translateY(-100%)' : 'translateY(0)' }}>
+            <header className="header">
                 <div className="nav-container">
                     <button className="hamburger" onClick={toggleMenu}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
-                            <path d="M3 11H21V13H3V11Z" fill="#ffffff"/>
-                            <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
+                            <path d="M3 6H21V8H3V6Z" fill="#007bff"/>
+                            <path d="M3 11H21V13H3V11Z" fill="#007bff"/>
+                            <path d="M3 16H21V18H3V16Z" fill="#007bff"/>
                         </svg>
                     </button>
-                    <div className="site-brand">
-                        <Link to="/">1337 Community</Link>
-                    </div>
                     <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
-                        <Link to="/" onClick={() => setIsMenuOpen(false)} className={location.pathname === '/' ? 'active' : ''}>Главная</Link>
-                        <Link to="/tournaments" onClick={() => setIsMenuOpen(false)} className={location.pathname.includes('/tournaments') ? 'active' : ''}>Турниры</Link>
+                        <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
+                        <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                         {user && (
                             <>
-                                <Link to="/create" onClick={() => setIsMenuOpen(false)} className={location.pathname === '/create' ? 'active' : ''}>
+                                <Link to="/create" onClick={() => setIsMenuOpen(false)}>
                                     Создать турнир
                                 </Link>
-                                <Link to="/profile" onClick={() => setIsMenuOpen(false)} className={location.pathname === '/profile' ? 'active' : ''}>Мой профиль</Link>
+                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                             </>
                         )}
                     </nav>
@@ -326,7 +245,6 @@ function Layout() {
                     {user ? (
                         <div className="user-info">
                             <Link to="/profile" className="username-link">
-                                {user.avatar_url && <img src={user.avatar_url} alt="" className="navbar-avatar" />}
                                 {user.username}
                             </Link>
                             <div className="notifications">

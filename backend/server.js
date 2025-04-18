@@ -22,7 +22,6 @@ const WebSocket = require('ws');
 const tournamentsRouter = require('./routes/tournaments');
 const nodemailer = require('nodemailer');
 const notifications = require('./notifications');
-const path = require('path');
 
 const app = express();
 // Установка глобальной переменной для доступа из других модулей
@@ -84,8 +83,6 @@ app.use('/api/matches', require('./routes/matches'));
 app.use('/api/statistics', require('./routes/statistics'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/playerStats', require('./routes/playerStats'));
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api', (req, res) => {
     console.log(`404 для пути: ${req.path}`);

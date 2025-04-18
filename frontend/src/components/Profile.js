@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../axios';
 import './Profile.css';
-import { updateGlobalAvatar } from './Layout'; // Импортируем функцию обновления аватара
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -16,11 +15,6 @@ function Profile() {
     const [showModal, setShowModal] = useState(false);
     const [steamNickname, setSteamNickname] = useState('');
     const [premierRank, setPremierRank] = useState(0);
-    
-    // Новые состояния для аватара
-    const [avatarPreview, setAvatarPreview] = useState('');
-    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-    const fileInputRef = useRef(null);
     
     // Новые состояния для подтверждения email
     const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
@@ -519,112 +513,6 @@ function Profile() {
         }, 300);
     };
 
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            setAvatarPreview(URL.createObjectURL(file));
-        }
-    };
-
-    const uploadAvatar = async () => {
-        if (!fileInputRef.current?.files?.length) {
-            setError('Файл не выбран');
-            return;
-        }
-
-        const file = fileInputRef.current.files[0];
-        const formData = new FormData();
-        formData.append('avatar', file);
-
-        setIsUploadingAvatar(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/upload-avatar', formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-            
-            setUser(prevUser => ({
-                ...prevUser,
-                avatar_url: response.data.avatarUrl
-            }));
-            
-            // Обновляем аватар глобально в Layout
-            updateGlobalAvatar(response.data.avatarUrl);
-            
-            // Сбрасываем значение input
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-            setAvatarPreview('');
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка загрузки аватара');
-        } finally {
-            setIsUploadingAvatar(false);
-        }
-    };
-
-    const setAvatarFromSteam = async () => {
-        if (!user.steam_id) {
-            setError('Сначала привяжите Steam');
-            return;
-        }
-
-        setIsUploadingAvatar(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/avatar-from-steam', {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setUser(prevUser => ({
-                ...prevUser,
-                avatar_url: response.data.avatarUrl
-            }));
-            
-            // Обновляем аватар глобально в Layout
-            updateGlobalAvatar(response.data.avatarUrl);
-            
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка установки аватара из Steam');
-        } finally {
-            setIsUploadingAvatar(false);
-        }
-    };
-
-    const setAvatarFromFaceit = async () => {
-        if (!user.faceit_id) {
-            setError('Сначала привяжите FACEIT');
-            return;
-        }
-
-        setIsUploadingAvatar(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.post('/api/users/avatar-from-faceit', {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setUser(prevUser => ({
-                ...prevUser,
-                avatar_url: response.data.avatarUrl
-            }));
-            
-            // Обновляем аватар глобально в Layout
-            updateGlobalAvatar(response.data.avatarUrl);
-            
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка установки аватара из FACEIT');
-        } finally {
-            setIsUploadingAvatar(false);
-        }
-    };
-
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -651,63 +539,6 @@ function Profile() {
                     <button onClick={openEmailVerificationModal}>Подтвердить email</button>
                 </div>
             )}
-            
-            {/* Секция с аватаром */}
-            <section>
-                <h3>Аватар профиля</h3>
-                <div className="avatar-container">
-                    <div className="avatar-preview">
-                        {avatarPreview ? (
-                            <img src={avatarPreview} alt="Превью" className="profile-avatar" />
-                        ) : user.avatar_url ? (
-                            <img src={user.avatar_url} alt={user.username} className="profile-avatar" />
-                        ) : (
-                            <span>Нет аватара</span>
-                        )}
-                    </div>
-                    
-                    <input 
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        ref={fileInputRef}
-                        className="file-input"
-                    />
-                    
-                    <div className="avatar-actions">
-                        <button 
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploadingAvatar}
-                        >
-                            Выбрать файл
-                        </button>
-                        {avatarPreview && (
-                            <button 
-                                onClick={uploadAvatar}
-                                disabled={isUploadingAvatar}
-                            >
-                                {isUploadingAvatar ? 'Загрузка...' : 'Загрузить'}
-                            </button>
-                        )}
-                        {user.steam_id && (
-                            <button 
-                                onClick={setAvatarFromSteam}
-                                disabled={isUploadingAvatar}
-                            >
-                                Аватар из Steam
-                            </button>
-                        )}
-                        {user.faceit_id && (
-                            <button 
-                                onClick={setAvatarFromFaceit}
-                                disabled={isUploadingAvatar}
-                            >
-                                Аватар из FACEIT
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </section>
             
             <section>
                 <h3>Данные пользователя</h3>

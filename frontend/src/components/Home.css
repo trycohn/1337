@@ -9,10 +9,9 @@
 }
 
 main {
-  padding: 20px;
-  max-width: 1200px;
+  width: 80%;
   margin: 0 auto;
-  padding-top: 85px; /* Добавляем отступ для основного контента, чтобы он не перекрывался фиксированной шапкой */
+  flex: 1;
 }
 
 main section {
@@ -21,20 +20,18 @@ main section {
 }
 
 /* Стили для header */
+header.header {
+  width: 100%;
+  background-color: #f5f5f5;
+  padding: 10px 0;
+}
+
 .header {
-  background-color: #1a1a1a;
-  margin-bottom: 15px;
   display: flex;
   justify-content: space-between;
-  padding: 15px 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 1000;
-  transition: transform 0.3s ease;
+  align-items: center;
+  margin-bottom: 20px;
+  color: #2a2a2a;
 }
 
 .nav-container {
@@ -47,13 +44,7 @@ main section {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 5px;
-  margin-right: 10px;
-  transition: transform 0.3s;
-}
-
-.hamburger:hover {
-  transform: scale(1.1);
+  padding: 0 10px;
 }
 
 .hamburger svg {
@@ -68,21 +59,32 @@ main section {
 
 .navigation {
   display: flex;
-  gap: 20px;
+  gap: 10px;
+  transition: all 0.3s ease;
+  align-items: center; /* Добавляем вертикальное выравнивание */
 }
 
-.navigation a {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 6px 10px;
-  border-radius: 4px;
-  transition: all 0.2s;
+.navigation a,
+.navigation button {
+    text-decoration: none;
+    color: #2a2a2a;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px; /* Устанавливаем единый padding */
+    font-family: inherit;
+    font-size: 16px; /* Фиксируем размер шрифта */
+    line-height: 1; /* Устанавливаем одинаковую высоту строки */
+    display: inline-flex; /* Унифицируем display */
+    align-items: center; /* Центрируем содержимое по вертикали */
+    justify-content: center; /* Центрируем содержимое по горизонтали */
+    height: 32px; /* Фиксируем высоту для всех элементов */
+    box-sizing: border-box; /* Учитываем padding в общей высоте */
 }
 
-.navigation a:hover, .navigation a.active {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #8ee2ff;
+.navigation a:hover,
+.navigation button:hover {
+    color: #0056b3;
 }
 
 /* Стили для авторизации и профиля */
@@ -99,51 +101,25 @@ main section {
 
 .user-info {
   display: flex;
+  gap: 10px;
   align-items: center;
-  gap: 15px;
 }
 
-.username-link {
-  display: flex;
-  align-items: center;
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 20px;
-  background-color: rgba(255, 255, 255, 0.1);
-  transition: all 0.2s;
-}
-
-.username-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.navbar-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-right: 8px;
-  border: 2px solid #fff;
-  object-fit: cover;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+.user-info span {
+  margin-right: 10px;
 }
 
 .user-info button {
-  background-color: #ff5252;
+  padding: 5px 10px;
+  background-color: #007bff;
   color: white;
   border: none;
-  padding: 6px 14px;
-  border-radius: 20px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
 }
 
 .user-info button:hover {
-  background-color: #ff0000;
-  transform: translateY(-2px);
+  background-color: #0056b3;
 }
 
 .login-form {
@@ -571,99 +547,76 @@ main section {
 /* Стили для уведомлений */
 .notifications {
   position: relative;
+  display: inline-block;
 }
 
 .bell-container {
-  position: relative;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.bell-container:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
 }
 
 .bell-icon {
-  color: #fff !important;
-  font-size: 18px;
+  font-size: 24px;
 }
 
 .unread-count {
   position: absolute;
   top: -5px;
-  right: -5px;
-  background-color: #ff5252;
+  right: -10px;
+  background: red;
   color: white;
-  font-size: 11px;
-  min-width: 16px;
+  border-radius: 50%;
+  width: 16px;
   height: 16px;
-  line-height: 16px;
-  text-align: center;
-  border-radius: 10px;
-  font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
 }
 
 .notification-dropdown-wrapper {
   position: absolute;
-  top: 45px;
-  right: -100px;
-  width: 350px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  max-height: 500px;
-  overflow: hidden;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 300px;
+  max-height: 400px;
   display: flex;
   flex-direction: column;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .notification-dropdown {
-  max-height: 350px;
+  flex: 1;
   overflow-y: auto;
-  padding: 10px;
 }
 
 .notification-item {
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 14px;
-  color: #333;
-  transition: background-color 0.2s;
-}
-
-.notification-item:hover {
-  background-color: #f9f9f9;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
 }
 
 .notification-item.unread {
-  background-color: #f0f8ff;
-  border-left: 3px solid #4682b4;
+  font-weight: bold;
+}
+
+.notification-item a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.notification-item a:hover {
+  text-decoration: underline;
 }
 
 .notification-footer {
   padding: 10px;
-  text-align: center;
-  background-color: #f9f9f9;
   border-top: 1px solid #eee;
-}
-
-.notification-footer .show-all {
-  color: #4682b4;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.notification-footer .show-all:hover {
-  text-decoration: underline;
+  background: #f9f9f9;
 }
 
 .show-all {
@@ -801,71 +754,109 @@ main section {
 }
 
 /* Медиа-запросы для адаптивности */
-@media (max-width: 768px) {
-  .hamburger {
-    display: block;
+@media (max-width: 600px) {
+  .header {
+      flex-direction: column;
+      align-items: flex-start;
   }
-  
-  .site-brand {
-    margin-right: 0;
-  }
-  
+
   .nav-container {
-    width: 100%;
-    justify-content: space-between;
+      width: 100%;
+      position: relative;
   }
-  
+
+  .hamburger {
+      display: block;
+  }
+
   .navigation {
-    display: none;
-    position: absolute;
-    top: 60px;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    background-color: #2a3f5f;
-    padding: 10px;
-    z-index: 1000;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-    border-bottom: 3px solid #007bff;
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+      background: #fff;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 10;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      opacity: 0;
+      transform: translateY(-10px);
   }
-  
+
   .navigation.open {
-    display: flex;
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
   }
-  
-  .navigation a {
-    padding: 12px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    width: 100%;
-    box-sizing: border-box;
+
+  .navigation a,
+  .navigation button {
+      width: 100%;
+      text-align: left;
+      padding: 5px 0;
   }
-  
-  .navigation a:last-child {
-    border-bottom: none;
+
+  .auth-block {
+      width: 100%;
+      margin-top: 10px;
   }
-  
+
+  .login-form {
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+  }
+
+  .login-form input,
+  .login-form button {
+      width: 100%;
+      margin-bottom: 5px;
+  }
+
+  .login-form .error {
+      margin-left: 0;
+  }
+
   .user-info {
-    gap: 8px;
+      flex-direction: column;
+      align-items: flex-start;
   }
-  
-  .username-link {
-    font-size: 14px;
-    padding: 4px 8px;
-  }
-  
-  .notification-dropdown-wrapper {
-    right: -20px;
-    width: 290px;
-  }
-  
-  .bell-container {
-    padding: 6px;
-  }
-  
+
   .user-info button {
-    padding: 4px 10px;
-    font-size: 13px;
+      margin-top: 5px;
   }
+
+  .tournament-bracket {
+      flex-direction: column;
+      gap: 20px;
+  }
+
+  .bracket-grid {
+      flex-direction: column;
+  }
+
+  .round-column {
+      min-width: 100%;
+  }
+
+  .custom-seed {
+      width: 100%;
+  }
+
+  .final-matches {
+      flex-direction: column;
+      gap: 20px;
+  }
+
+  .bracket h2 {
+    font-size: 20px;
+}
+.round-column h3 {
+    font-size: 14px;
+}
 }
 
 .username-link {
@@ -1066,20 +1057,17 @@ main section {
 }
 
 .login-button {
-  background-color: #4CAF50;
+  background-color: #007bff;
   color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 8px 15px;
+  border-radius: 4px;
   text-decoration: none;
   font-weight: 600;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
 }
 
 .login-button:hover {
-  background-color: #45a049;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background-color: #0069d9;
 }
 
 /* Стили для уведомлений */
@@ -1127,28 +1115,4 @@ main section {
     margin-top: 5px;
     display: flex;
     gap: 5px;
-}
-
-.site-brand {
-    margin-right: 30px;
-}
-
-.site-brand a {
-    color: #fff;
-    text-decoration: none;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-}
-
-.site-brand a::before {
-    content: "";
-    width: 24px;
-    height: 24px;
-    background-color: #007bff;
-    margin-right: 8px;
-    border-radius: 4px;
-    display: inline-block;
 }

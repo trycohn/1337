@@ -568,14 +568,7 @@ function TournamentDetails() {
             </p>
             <ul>
                 {(Array.isArray(tournament.participants) ? tournament.participants : []).map((participant) => (
-                    <li key={participant.id}>
-                        <img 
-                            src={participant.avatar_url || 'https://via.placeholder.com/40'} 
-                            alt="" 
-                            className="participant-avatar" 
-                        />
-                        {participant.name || `Участник ${participant.id}`}
-                    </li>
+                    <li key={participant.id}>{participant.name || `Участник ${participant.id}`}</li>
                 ))}
             </ul>
             {user && tournament.status === 'active' && (

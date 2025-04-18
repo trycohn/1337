@@ -72,7 +72,7 @@ router.get('/:id', async (req, res) => {
 
         const participantsQuery =
             tournament.participant_type === 'solo'
-                ? 'SELECT tp.*, u.avatar_url FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = $1'
+                ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1'
                 : 'SELECT * FROM tournament_teams WHERE tournament_id = $1';
         const participantsResult = await pool.query(participantsQuery, [id]);
 
