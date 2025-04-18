@@ -278,7 +278,7 @@ function Notifications() {
                       {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
                       <div className="friend-request-status">
                         <span className="status-accepted">Заявка принята</span>
-                        <Link to={`/profile/${notification.requester_id}`} className="view-profile-link">
+                        <Link to={`/user/${notification.requester_id}`} className="view-profile-link">
                           Посмотреть профиль
                         </Link>
                       </div>

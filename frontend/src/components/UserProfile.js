@@ -326,7 +326,7 @@ function UserProfile() {
                     <div className="friends-list">
                         {user.friends.map(friend => (
                             <div key={friend.id} className="friend-item">
-                                <a href={`/user/${friend.id}`} className="friend-link">
+                                <a href={friend.id === user.id ? `/profile` : `/user/${friend.id}`} className="friend-link">
                                     <img 
                                         src={friend.avatar_url || '/default-avatar.png'} 
                                         alt={friend.username} 
