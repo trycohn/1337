@@ -283,6 +283,20 @@ function Layout() {
                                                                             </button>
                                                                         </div>
                                                                     </>
+                                                                ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
+                                                                    <>
+                                                                        {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                        <div className="admin-request-status">
+                                                                            <span className="status-accepted">Запрос принят</span>
+                                                                        </div>
+                                                                    </>
+                                                                ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
+                                                                    <>
+                                                                        {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                        <div className="admin-request-status">
+                                                                            <span className="status-rejected">Запрос отклонен</span>
+                                                                        </div>
+                                                                    </>
                                                                 ) : notification.tournament_id ? (
                                                                     <>
                                                                         {notification.message.split(' турнира ')[0]} турнира{' '}
