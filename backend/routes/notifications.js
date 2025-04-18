@@ -9,14 +9,13 @@ router.get('/', async (req, res) => {
     const includeProcessed = req.query.includeProcessed === 'true';
     
     try {
-        // Отмечаем все уведомления как прочитанные, кроме admin_request
-        await pool.query(
-            'UPDATE notifications SET is_read = true WHERE user_id = $1 AND type != $2 AND is_read = false',
-            [userId, 'admin_request']
-        );
-
         // Строим запрос в зависимости от параметра includeProcessed
-        let query = `SELECT n.*, CASE WHEN n.type = 'admin_request' THEN ar.status ELSE NULL END AS request_status FROM notifications n`;
+        let query = `SELECT n.*, CASE 
+            WHEN n.type = 'admin_request' THEN ar.status 
+            WHEN n.type = 'admin_request_accepted' THEN 'accepted'
+            WHEN n.type = 'admin_request_rejected' THEN 'rejected'
+            ELSE NULL END AS request_status 
+        FROM notifications n`;
         
         if (!includeProcessed) {
             // Если не нужны обработанные admin_request, добавляем join и условие
@@ -46,8 +45,8 @@ router.post('/', async (req, res) => {
   const { user_id, message, type, tournament_id, requester_id } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO notifications (user_id, message, type, tournament_id, requester_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [user_id, message, type, tournament_id || null, requester_id || null]
+      'INSERT INTO notifications (user_id, message, type, tournament_id, requester_id, is_read) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [user_id, message, type, tournament_id || null, requester_id || null, false]
     );
     const notification = result.rows[0];
     
@@ -74,7 +73,7 @@ router.post('/mark-read', async (req, res) => {
                 [notificationId, userId]
             );
         } else {
-            // Обновляем все уведомления пользователя, включая admin_request
+            // Обновляем все уведомления пользователя
             await pool.query(
                 'UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false',
                 [userId]
