@@ -31,6 +31,12 @@ app.use('/api/teams', require('./routes/teams')); // Маршруты коман
 app.use('/api/tournamentPlayers', require('./routes/tournamentPlayers')); // Маршруты игроков турнира
 app.use('/api/matches', require('./routes/matches')); // Маршруты матчей
 app.use('/api/statistics', require('./routes/statistics')); // Маршруты статистики
+const notificationsRouter = require('./routes/notifications');
+const playerStatsRouter = require('./routes/playerStats');
+const friendsRouter = require('./routes/friends');
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/playerStats', playerStatsRouter);
+app.use('/api/friends', friendsRouter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {

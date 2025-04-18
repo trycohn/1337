@@ -1194,6 +1194,31 @@ router.get('/profile/:userId', async (req, res) => {
         if (user.steam_id && user.cs2_premier_rank) {
             user.premier_rank = user.cs2_premier_rank;
         }
+
+        // Получаем список друзей пользователя (только принятые заявки)
+        const friendsResult = await pool.query(`
+            SELECT f.id, f.status,
+                u.id as friend_id, u.username, u.avatar_url
+            FROM friends f
+            JOIN users u ON (
+                CASE
+                    WHEN f.user_id = $1 THEN f.friend_id
+                    WHEN f.friend_id = $1 THEN f.user_id
+                END
+            ) = u.id
+            WHERE (f.user_id = $1 OR f.friend_id = $1)
+            AND f.status = 'accepted'
+            LIMIT 10
+        `, [userId]);
+
+        // Форматируем список друзей и добавляем к ответу
+        if (friendsResult.rows.length > 0) {
+            user.friends = friendsResult.rows.map(row => ({
+                id: row.friend_id,
+                username: row.username,
+                avatar_url: row.avatar_url
+            }));
+        }
         
         // Удаляем не нужные для публичного профиля поля
         delete user.cs2_premier_rank;

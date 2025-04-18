@@ -38,6 +38,11 @@ function Profile() {
     // Новое состояние для модального окна с требованием привязать почту
     const [showEmailRequiredModal, setShowEmailRequiredModal] = useState(false);
 
+    // Новые состояния для друзей
+    const [friends, setFriends] = useState([]);
+    const [friendRequests, setFriendRequests] = useState([]);
+    const [loadingFriends, setLoadingFriends] = useState(false);
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -344,6 +349,11 @@ function Profile() {
             if (steamId) {
                 handleSteamCallback(steamId, token);
             }
+
+            // Загружаем список друзей при загрузке страницы
+            fetchFriends();
+            // Загружаем заявки в друзья
+            fetchFriendRequests();
         }
         
         // Проверяем, есть ли сохраненное время окончания задержки
@@ -627,6 +637,84 @@ function Profile() {
         setShowAvatarModal(false);
     };
 
+    // Функция для загрузки списка друзей
+    const fetchFriends = async () => {
+        setLoadingFriends(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/friends', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Фильтруем только принятые заявки
+            const acceptedFriends = response.data.filter(f => f.status === 'accepted');
+            setFriends(acceptedFriends);
+        } catch (err) {
+            console.error('Ошибка загрузки списка друзей:', err);
+        } finally {
+            setLoadingFriends(false);
+        }
+    };
+
+    // Функция для загрузки входящих заявок в друзья
+    const fetchFriendRequests = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/friends/requests/incoming', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setFriendRequests(response.data);
+        } catch (err) {
+            console.error('Ошибка загрузки заявок в друзья:', err);
+        }
+    };
+
+    // Функция для принятия заявки в друзья
+    const acceptFriendRequest = async (requestId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/friends/accept', { requestId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем списки друзей и заявок
+            fetchFriends();
+            fetchFriendRequests();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка принятия заявки в друзья');
+        }
+    };
+
+    // Функция для отклонения заявки в друзья
+    const rejectFriendRequest = async (requestId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/friends/reject', { requestId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем список заявок
+            fetchFriendRequests();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отклонения заявки в друзья');
+        }
+    };
+
+    // Функция для удаления из друзей
+    const removeFriend = async (friendId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/friends/${friendId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем список друзей
+            fetchFriends();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка удаления из друзей');
+        }
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -791,6 +879,76 @@ function Profile() {
                     </>
                 ) : (
                     <p>Статистика загружается...</p>
+                )}
+            </section>
+
+            {/* Секция друзей */}
+            <section className="friends-section">
+                <h3>Друзья</h3>
+                {loadingFriends ? (
+                    <p>Загрузка списка друзей...</p>
+                ) : (
+                    <>
+                        <div className="friends-list">
+                            {friends.length > 0 ? (
+                                friends.map(friend => (
+                                    <div key={friend.id} className="friend-item">
+                                        <a href={`/profile/${friend.friend.id}`} className="friend-link">
+                                            <img 
+                                                src={friend.friend.avatar_url || '/default-avatar.png'} 
+                                                alt={friend.friend.username} 
+                                                className="friend-avatar" 
+                                            />
+                                            <span className="friend-username">{friend.friend.username}</span>
+                                        </a>
+                                        <button 
+                                            className="remove-friend-btn" 
+                                            onClick={() => removeFriend(friend.friend.id)}
+                                            title="Удалить из друзей"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <p>У вас пока нет друзей</p>
+                            )}
+                        </div>
+
+                        {friendRequests.length > 0 && (
+                            <div className="friend-requests">
+                                <h4>Заявки в друзья</h4>
+                                {friendRequests.map(request => (
+                                    <div key={request.id} className="friend-request-item">
+                                        <div className="request-user">
+                                            <img 
+                                                src={request.user.avatar_url || '/default-avatar.png'} 
+                                                alt={request.user.username} 
+                                                className="request-avatar" 
+                                            />
+                                            <a href={`/profile/${request.user.id}`} className="request-username">
+                                                {request.user.username}
+                                            </a>
+                                        </div>
+                                        <div className="request-actions">
+                                            <button 
+                                                className="accept-request-btn" 
+                                                onClick={() => acceptFriendRequest(request.id)}
+                                            >
+                                                Принять
+                                            </button>
+                                            <button 
+                                                className="reject-request-btn" 
+                                                onClick={() => rejectFriendRequest(request.id)}
+                                            >
+                                                Отклонить
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
 

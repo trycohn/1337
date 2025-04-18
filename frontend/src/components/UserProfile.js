@@ -8,6 +8,8 @@ function UserProfile() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [friendStatus, setFriendStatus] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -23,7 +25,22 @@ function UserProfile() {
             }
         };
 
+        const fetchFriendStatus = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return; // Если пользователь не авторизован, не проверяем
+                
+                const response = await api.get(`/api/friends/status/${userId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setFriendStatus(response.data);
+            } catch (err) {
+                console.error('Ошибка получения статуса дружбы:', err);
+            }
+        };
+
         fetchUserProfile();
+        fetchFriendStatus();
     }, [userId]);
 
     const renderRankGroups = () => {
@@ -51,6 +68,157 @@ function UserProfile() {
         }
     };
 
+    // Функция для отправки заявки в друзья
+    const sendFriendRequest = async () => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Для добавления в друзья необходимо авторизоваться');
+                return;
+            }
+            
+            await api.post('/api/friends/request', { friendId: userId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем статус дружбы
+            setFriendStatus({
+                status: 'pending',
+                direction: 'outgoing'
+            });
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отправки заявки в друзья');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Функция для принятия заявки в друзья
+    const acceptFriendRequest = async () => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/friends/accept', { requestId: friendStatus.id }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем статус дружбы
+            setFriendStatus({
+                ...friendStatus,
+                status: 'accepted',
+                direction: null
+            });
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка принятия заявки в друзья');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Функция для отклонения заявки в друзья
+    const rejectFriendRequest = async () => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/friends/reject', { requestId: friendStatus.id }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем статус дружбы
+            setFriendStatus({
+                status: 'none'
+            });
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отклонения заявки в друзья');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Функция для удаления из друзей
+    const removeFriend = async () => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/friends/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем статус дружбы
+            setFriendStatus({
+                status: 'none'
+            });
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка удаления из друзей');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // Функция для отображения кнопки действия в зависимости от статуса дружбы
+    const renderFriendActionButton = () => {
+        if (!friendStatus) return null;
+        
+        const currentUserId = JSON.parse(atob(localStorage.getItem('token')?.split('.')[1] || 'e30='))?.id;
+        if (currentUserId == userId) return null; // Не показываем кнопку на своем профиле
+        
+        switch (friendStatus.status) {
+            case 'none':
+                return (
+                    <button 
+                        className="friend-action-btn add-friend" 
+                        onClick={sendFriendRequest}
+                        disabled={actionLoading}
+                    >
+                        {actionLoading ? 'Загрузка...' : 'Добавить в друзья'}
+                    </button>
+                );
+            case 'pending':
+                if (friendStatus.direction === 'incoming') {
+                    return (
+                        <div className="friend-request-actions">
+                            <button 
+                                className="friend-action-btn accept-request" 
+                                onClick={acceptFriendRequest}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? 'Загрузка...' : 'Принять заявку'}
+                            </button>
+                            <button 
+                                className="friend-action-btn reject-request" 
+                                onClick={rejectFriendRequest}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? 'Загрузка...' : 'Отклонить'}
+                            </button>
+                        </div>
+                    );
+                } else {
+                    return (
+                        <button 
+                            className="friend-action-btn pending-request" 
+                            disabled={true}
+                        >
+                            Заявка отправлена
+                        </button>
+                    );
+                }
+            case 'accepted':
+                return (
+                    <button 
+                        className="friend-action-btn remove-friend" 
+                        onClick={removeFriend}
+                        disabled={actionLoading}
+                    >
+                        {actionLoading ? 'Загрузка...' : 'Удалить из друзей'}
+                    </button>
+                );
+            default:
+                return null;
+        }
+    };
+
     if (loading) return <div className="profile-loading">Загрузка профиля...</div>;
     if (error) return <div className="profile-error">{error}</div>;
     if (!user) return <div className="profile-not-found">Пользователь не найден</div>;
@@ -72,6 +240,7 @@ function UserProfile() {
                             {user.online_status}
                         </div>
                     )}
+                    {renderFriendActionButton()}
                 </div>
             </div>
             
@@ -150,6 +319,26 @@ function UserProfile() {
                     <p>Нет статистики</p>
                 )}
             </section>
+
+            {user.friends && user.friends.length > 0 && (
+                <section className="friends-section">
+                    <h3>Друзья</h3>
+                    <div className="friends-list">
+                        {user.friends.map(friend => (
+                            <div key={friend.id} className="friend-item">
+                                <a href={`/profile/${friend.id}`} className="friend-link">
+                                    <img 
+                                        src={friend.avatar_url || '/default-avatar.png'} 
+                                        alt={friend.username} 
+                                        className="friend-avatar" 
+                                    />
+                                    <span className="friend-username">{friend.username}</span>
+                                </a>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     );
 }
