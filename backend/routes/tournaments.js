@@ -70,10 +70,24 @@ router.get('/:id', async (req, res) => {
         }
         const tournament = tournamentResult.rows[0];
 
-        const participantsQuery =
-            tournament.participant_type === 'solo'
-                ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1'
-                : 'SELECT * FROM tournament_teams WHERE tournament_id = $1';
+        // Получаем данные участников в зависимости от типа турнира, добавляя информацию о аватарке
+        let participantsQuery;
+        if (tournament.participant_type === 'solo') {
+            participantsQuery = `
+                SELECT tp.*, u.avatar_url 
+                FROM tournament_participants tp 
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT tt.*, u.avatar_url
+                FROM tournament_teams tt
+                LEFT JOIN users u ON tt.creator_id = u.id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
         const participantsResult = await pool.query(participantsQuery, [id]);
 
         const matchesResult = await pool.query(
@@ -661,10 +675,10 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
         // Генерация сетки с использованием модуля bracketGenerator
         const matches = await generateBracket(tournament.format, id, participants, thirdPlaceMatch);
 
-        // Получаем обновлённые данные турнира
+        // Получаем обновлённые данные турнира вместе с аватарками участников
         const updatedTournamentResult = await pool.query(
             'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(tp.*), \'[]\') FROM tournament_participants tp WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(tp.* || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
             [id]
@@ -879,7 +893,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(tp.*), \'[]\') FROM tournament_participants tp WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(tp.* || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
             [id]
@@ -1173,7 +1187,7 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(tp.*), \'[]\') FROM tournament_participants tp WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(tp.* || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
             [matchIdNum]

@@ -22,6 +22,8 @@ const WebSocket = require('ws');
 const tournamentsRouter = require('./routes/tournaments');
 const nodemailer = require('nodemailer');
 const notifications = require('./notifications');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
 // Установка глобальной переменной для доступа из других модулей
@@ -202,6 +204,22 @@ if (process.env.NODE_ENV !== 'test') {
         }
     });
 }
+
+// Middleware
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://1337community.com'], // Разрешенные источники для CORS
+    credentials: true,
+}));
+app.use(express.json()); // Парсинг JSON в body
+app.use(express.urlencoded({ extended: true })); // Парсинг URL-encoded в body
+
+// Обслуживание статических файлов из папки uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Главный роут для проверки работы API
+app.get('/', (req, res) => {
+    res.json({ message: 'Сервер 1337 Community API работает!' });
+});
 
 // Запуск сервера
 const PORT = process.env.PORT || 3000;
