@@ -46,7 +46,8 @@ function Profile() {
             }
             
             // Автоматически загружаем статистику CS2 только при первой привязке Steam
-            if (response.data.steam_id && !response.data.cs2_premier_rank) {
+            // (только если есть steam_id и нет cs2_premier_rank)
+            if (response.data.steam_id && response.data.cs2_premier_rank === 0) {
                 fetchCs2Stats(response.data.steam_id);
             }
         } catch (err) {
