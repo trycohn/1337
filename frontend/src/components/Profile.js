@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../axios';
 import './Profile.css';
 
@@ -15,6 +15,12 @@ function Profile() {
     const [showModal, setShowModal] = useState(false);
     const [steamNickname, setSteamNickname] = useState('');
     const [premierRank, setPremierRank] = useState(0);
+    
+    // Новые состояния для аватарки
+    const [avatar, setAvatar] = useState(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
+    const fileInputRef = useRef(null);
     
     // Новые состояния для подтверждения email
     const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
@@ -39,6 +45,11 @@ function Profile() {
             });
             setUser(response.data);
             setNewUsername(response.data.username);
+            
+            // Устанавливаем аватар, если он есть
+            if (response.data.avatar_url) {
+                setAvatar(response.data.avatar_url);
+            }
             
             // Извлекаем ранг Premier из данных пользователя
             if (response.data.cs2_premier_rank) {
@@ -513,11 +524,132 @@ function Profile() {
         }, 300);
     };
 
+    // Функция для загрузки аватара
+    const handleAvatarUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Проверяем тип файла (разрешаем только изображения)
+        if (!file.type.startsWith('image/')) {
+            setError('Пожалуйста, выберите файл изображения');
+            return;
+        }
+
+        // Ограничение размера файла (например, 5 МБ)
+        const maxSize = 5 * 1024 * 1024; // 5 МБ в байтах
+        if (file.size > maxSize) {
+            setError('Размер файла не должен превышать 5 МБ');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        setUploadingAvatar(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.post('/api/users/upload-avatar', formData, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            // Обновляем аватар в состоянии
+            setAvatar(response.data.avatar_url);
+            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url}));
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка загрузки аватара');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
+    // Функция для установки аватара из Steam
+    const setAvatarFromSteam = async () => {
+        if (!user.steam_id) {
+            setError('Steam не привязан');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.post('/api/users/set-steam-avatar', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем аватар в состоянии
+            setAvatar(response.data.avatar_url);
+            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url}));
+            setError('');
+            setShowAvatarModal(false);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка установки аватара из Steam');
+        }
+    };
+
+    // Функция для установки аватара из FACEIT
+    const setAvatarFromFaceit = async () => {
+        if (!user.faceit_id) {
+            setError('FACEIT не привязан');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.post('/api/users/set-faceit-avatar', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем аватар в состоянии
+            setAvatar(response.data.avatar_url);
+            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url}));
+            setError('');
+            setShowAvatarModal(false);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка установки аватара из FACEIT');
+        }
+    };
+
+    // Обработчик клика на кнопку выбора файла
+    const triggerFileInput = () => {
+        fileInputRef.current.click();
+    };
+
+    // Открытие модального окна выбора аватара
+    const openAvatarModal = () => {
+        setShowAvatarModal(true);
+    };
+
+    // Закрытие модального окна выбора аватара
+    const closeAvatarModal = () => {
+        setShowAvatarModal(false);
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
         <div className="profile">
             <h2>Личный кабинет</h2>
+            
+            <div className="profile-header">
+                <div className="avatar-container">
+                    <img 
+                        src={avatar || '/default-avatar.png'} 
+                        alt="Аватар пользователя" 
+                        className="user-avatar"
+                        onClick={openAvatarModal}
+                    />
+                    <button className="change-avatar-btn" onClick={openAvatarModal}>
+                        Изменить аватар
+                    </button>
+                </div>
+                <div className="user-info">
+                    <h3>{user.username}</h3>
+                </div>
+            </div>
+            
             {error && <p className="error">{error}</p>}
             
             {/* Плашка с предупреждением для пользователей без email */}
@@ -773,6 +905,56 @@ function Profile() {
                             }}>Привязать email</button>
                             <button onClick={closeEmailRequiredModal}>Отмена</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальное окно выбора аватара */}
+            {showAvatarModal && (
+                <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeAvatarModal}>
+                    <div className="modal-content avatar-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>Изменить аватар</h3>
+                        
+                        <div className="avatar-preview">
+                            <img 
+                                src={avatar || '/default-avatar.png'} 
+                                alt="Текущий аватар" 
+                                className="current-avatar"
+                            />
+                        </div>
+                        
+                        <div className="avatar-options">
+                            <button 
+                                onClick={triggerFileInput} 
+                                disabled={uploadingAvatar}
+                            >
+                                {uploadingAvatar ? 'Загрузка...' : 'Загрузить свой аватар'}
+                            </button>
+                            
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleAvatarUpload} 
+                                accept="image/*" 
+                                style={{ display: 'none' }} 
+                            />
+                            
+                            {user.steam_id && (
+                                <button onClick={setAvatarFromSteam}>
+                                    Установить аватар из Steam
+                                </button>
+                            )}
+                            
+                            {user.faceit_id && (
+                                <button onClick={setAvatarFromFaceit}>
+                                    Установить аватар из FACEIT
+                                </button>
+                            )}
+                        </div>
+                        
+                        <button onClick={closeAvatarModal} className="close-modal-btn">
+                            Закрыть
+                        </button>
                     </div>
                 </div>
             )}

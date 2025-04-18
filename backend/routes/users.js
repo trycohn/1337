@@ -9,6 +9,9 @@ const querystring = require('querystring');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // Настройка транспорта nodemailer
 const transporter = nodemailer.createTransport({
@@ -23,6 +26,43 @@ const transporter = nodemailer.createTransport({
 
 // Подключаем cookie-parser middleware
 router.use(cookieParser());
+
+// Настройка multer для загрузки файлов
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = path.join(__dirname, '../uploads/avatars');
+        // Создаем директорию, если она не существует
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        // Используем userId и timestamp для уникального имени файла
+        const userId = req.user.id;
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname);
+        cb(null, `user_${userId}_${timestamp}${ext}`);
+    }
+});
+
+// Фильтр файлов для multer
+const fileFilter = (req, file, cb) => {
+    // Принимаем только изображения
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Разрешены только изображения'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5 МБ
+    },
+    fileFilter: fileFilter
+});
 
 // Регистрация нового пользователя
 router.post('/register', async (req, res) => {
@@ -883,6 +923,123 @@ router.get('/faceit-login', (req, res) => {
     console.log('FACEIT login redirect URL:', `${authUrl}?${params}`);
     
     res.redirect(`${authUrl}?${params}`);
+});
+
+// Загрузка аватара
+router.post('/upload-avatar', authenticateToken, upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+
+        // Создаем URL для доступа к файлу
+        const baseUrl = process.env.SERVER_URL || 'http://localhost:3000';
+        const relativePath = `/uploads/avatars/${req.file.filename}`;
+        const avatar_url = `${baseUrl}${relativePath}`;
+
+        // Обновляем аватар пользователя в базе данных
+        await pool.query(
+            'UPDATE users SET avatar_url = $1 WHERE id = $2',
+            [avatar_url, req.user.id]
+        );
+
+        res.json({ 
+            message: 'Аватар успешно загружен',
+            avatar_url: avatar_url
+        });
+    } catch (err) {
+        console.error('Ошибка загрузки аватара:', err);
+        res.status(500).json({ error: 'Не удалось загрузить аватар' });
+    }
+});
+
+// Установка аватара из Steam
+router.post('/set-steam-avatar', authenticateToken, async (req, res) => {
+    try {
+        // Получаем Steam ID пользователя
+        const userResult = await pool.query(
+            'SELECT steam_id FROM users WHERE id = $1',
+            [req.user.id]
+        );
+        
+        const steamId = userResult.rows[0].steam_id;
+        
+        if (!steamId) {
+            return res.status(400).json({ error: 'Steam не привязан к аккаунту' });
+        }
+        
+        // Получаем аватар из Steam API
+        const apiKey = process.env.STEAM_API_KEY;
+        const steamUserResponse = await axios.get(
+            `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`
+        );
+        
+        // Получаем URL аватара
+        const steamAvatarUrl = steamUserResponse.data.response.players[0].avatarfull;
+        
+        if (!steamAvatarUrl) {
+            return res.status(404).json({ error: 'Аватар Steam не найден' });
+        }
+        
+        // Обновляем аватар пользователя в базе данных
+        await pool.query(
+            'UPDATE users SET avatar_url = $1 WHERE id = $2',
+            [steamAvatarUrl, req.user.id]
+        );
+        
+        res.json({ 
+            message: 'Аватар из Steam успешно установлен',
+            avatar_url: steamAvatarUrl
+        });
+    } catch (err) {
+        console.error('Ошибка установки аватара из Steam:', err);
+        res.status(500).json({ error: 'Не удалось установить аватар из Steam' });
+    }
+});
+
+// Установка аватара из FACEIT
+router.post('/set-faceit-avatar', authenticateToken, async (req, res) => {
+    try {
+        // Получаем FACEIT ID пользователя
+        const userResult = await pool.query(
+            'SELECT faceit_id FROM users WHERE id = $1',
+            [req.user.id]
+        );
+        
+        const faceitId = userResult.rows[0].faceit_id;
+        
+        if (!faceitId) {
+            return res.status(400).json({ error: 'FACEIT не привязан к аккаунту' });
+        }
+        
+        // Используем FACEIT API для получения данных пользователя
+        const playerResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}`, {
+            headers: {
+                'Authorization': `Bearer ${process.env.FACEIT_API_KEY}`
+            }
+        });
+        
+        // Получаем URL аватара из ответа API
+        const faceitAvatarUrl = playerResponse.data.avatar || null;
+        
+        if (!faceitAvatarUrl) {
+            return res.status(404).json({ error: 'Аватар FACEIT не найден' });
+        }
+        
+        // Обновляем аватар пользователя в базе данных
+        await pool.query(
+            'UPDATE users SET avatar_url = $1 WHERE id = $2',
+            [faceitAvatarUrl, req.user.id]
+        );
+        
+        res.json({ 
+            message: 'Аватар из FACEIT успешно установлен',
+            avatar_url: faceitAvatarUrl
+        });
+    } catch (err) {
+        console.error('Ошибка установки аватара из FACEIT:', err);
+        res.status(500).json({ error: 'Не удалось установить аватар из FACEIT' });
+    }
 });
 
 module.exports = router;

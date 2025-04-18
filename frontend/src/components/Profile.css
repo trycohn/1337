@@ -447,3 +447,114 @@ input, button {
 .profile button:hover {
     background-color: #0069d9;
 }
+
+/* Стили для аватара и профиля */
+.profile-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.avatar-container {
+    position: relative;
+    margin-right: 20px;
+}
+
+.user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #4a76a8;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.user-avatar:hover {
+    transform: scale(1.05);
+}
+
+.change-avatar-btn {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #4a76a8;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.change-avatar-btn:hover {
+    opacity: 1;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Модальное окно выбора аватара */
+.avatar-modal {
+    max-width: 400px;
+}
+
+.avatar-preview {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.current-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #4a76a8;
+}
+
+.avatar-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.avatar-options button {
+    padding: 10px;
+    background-color: #4a76a8;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.avatar-options button:hover {
+    background-color: #3d6593;
+}
+
+.avatar-options button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.close-modal-btn {
+    margin-top: 10px;
+    padding: 8px 15px;
+    background-color: #cccccc;
+    color: #333;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.close-modal-btn:hover {
+    background-color: #bbbbbb;
+}
