@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './Profile.css';
+import { redirectIfCurrentUser, isCurrentUser } from '../utils/userHelpers';
 
 function UserProfile() {
     const { userId } = useParams();
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -12,6 +14,11 @@ function UserProfile() {
     const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
+        // Перенаправляем на личный кабинет, если ID совпадает с текущим пользователем
+        if (redirectIfCurrentUser(userId, navigate)) {
+            return;
+        }
+
         const fetchUserProfile = async () => {
             try {
                 setLoading(true);
@@ -41,7 +48,7 @@ function UserProfile() {
 
         fetchUserProfile();
         fetchFriendStatus();
-    }, [userId]);
+    }, [userId, navigate]);
 
     const renderRankGroups = () => {
         // Если у пользователя нет ранга Premier, показываем сообщение
@@ -326,7 +333,7 @@ function UserProfile() {
                     <div className="friends-list">
                         {user.friends.map(friend => (
                             <div key={friend.id} className="friend-item">
-                                <a href={friend.id === user.id ? `/profile` : `/user/${friend.id}`} className="friend-link">
+                                <a href={isCurrentUser(friend.id) ? `/profile` : `/user/${friend.id}`} className="friend-link">
                                     <img 
                                         src={friend.avatar_url || '/default-avatar.png'} 
                                         alt={friend.username} 
