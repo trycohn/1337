@@ -1,6 +1,6 @@
 // frontend/src/components/TournamentDetails.js
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import api from '../axios';
 import './TournamentDetails.css';
 import BracketRenderer from './BracketRenderer';
@@ -61,10 +61,10 @@ function TournamentDetails() {
                 wsRef.current.close();
             }
         };
-    }, [id]);
+    }, [id, fetchTournamentData, setupWebSocket]);
 
     // Настройка WebSocket для получения обновлений в реальном времени
-    const setupWebSocket = () => {
+    const setupWebSocket = useCallback(() => {
         // Создаем WebSocket соединение
         const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
         const webSocket = new WebSocket(`${wsUrl}/ws`);
@@ -107,10 +107,10 @@ function TournamentDetails() {
         
         // Сохраняем ссылку на WebSocket
         wsRef.current = webSocket;
-    };
+    }, [id]);
 
     // Функция для загрузки данных турнира
-    const fetchTournamentData = async () => {
+    const fetchTournamentData = useCallback(async () => {
         try {
             const tournamentResponse = await api.get(`/api/tournaments/${id}`);
             console.log('Данные турнира при загрузке:', tournamentResponse.data);
@@ -127,7 +127,7 @@ function TournamentDetails() {
             console.error('Ошибка загрузки турнира:', error);
             setMessage('Ошибка загрузки данных турнира');
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         if (tournament && user) {

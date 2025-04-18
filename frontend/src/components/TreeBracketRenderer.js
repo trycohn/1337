@@ -88,7 +88,7 @@ const TreeBracketRenderer = ({
   }, [games]);
   
   // Обработчики для drag-and-drop функциональности
-  const handleMouseDown = (e) => {
+  const handleMouseDown = useCallback((e) => {
     if (e.button !== 0) return; // Только левая кнопка мыши
     
     setDragging(true);
@@ -98,9 +98,9 @@ const TreeBracketRenderer = ({
     });
     
     e.preventDefault();
-  };
+  }, [position, setDragging, setStartDragPosition]);
   
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!dragging) return;
     
     setPosition({
@@ -109,14 +109,14 @@ const TreeBracketRenderer = ({
     });
     
     e.preventDefault();
-  };
+  }, [dragging, startDragPosition, setPosition]);
   
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDragging(false);
-  };
+  }, [setDragging]);
   
   // Обработчики для сенсорных устройств
-  const handleTouchStart = (e) => {
+  const handleTouchStart = useCallback((e) => {
     if (e.touches.length !== 1) return;
     
     setDragging(true);
@@ -126,9 +126,9 @@ const TreeBracketRenderer = ({
     });
     
     e.preventDefault();
-  };
+  }, [position, setDragging, setStartDragPosition]);
   
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     if (!dragging || e.touches.length !== 1) return;
     
     setPosition({
@@ -137,11 +137,11 @@ const TreeBracketRenderer = ({
     });
     
     e.preventDefault();
-  };
+  }, [dragging, startDragPosition, setPosition]);
   
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     setDragging(false);
-  };
+  }, [setDragging]);
   
   // Управление масштабированием
   const handleZoomIn = () => {
@@ -182,7 +182,7 @@ const TreeBracketRenderer = ({
         window.removeEventListener('touchend', handleTouchEnd);
       }
     };
-  }, [dragging, position, startDragPosition]);
+  }, [dragging, position, startDragPosition, handleMouseDown, handleMouseMove, handleMouseUp, handleTouchStart, handleTouchMove, handleTouchEnd]);
   
   // Получаем сгруппированные матчи
   const { winnersRounds, losersRounds, grandFinalMatches, thirdPlaceMatches } = groupedMatches();
@@ -237,37 +237,35 @@ const TreeBracketRenderer = ({
   };
   
   // Рендеринг раунда с матчами
-  const renderRound = (matches, roundNumber, isLosers = false) => {
-    if (!matches || matches.length === 0) return null;
+  const renderRound = (round, isLosers = false) => {
+    if (!round || !round.matches || round.matches.length === 0) return null;
     
     // Определяем название раунда
     let roundName = '';
-    if (matches[0] && matches[0].round_name) {
-      roundName = matches[0].round_name;
+    const roundNumber = round.round;
+    
+    if (isLosers) {
+      roundName = `Нижняя сетка ${roundNumber}`;
     } else {
-      if (isLosers) {
-        roundName = `Нижняя сетка ${roundNumber}`;
-      } else {
-        // Для Single Elimination логика именования раундов
-        const isDoubleElimination = tournamentType === 'DoubleElimination';
-        if (!isDoubleElimination) {
-          const totalRounds = Object.keys(winnersRounds).length;
-          if (roundNumber === totalRounds) {
-            roundName = 'Финал';
-          } else if (roundNumber === totalRounds - 1) {
-            roundName = 'Полуфинал';
-          } else if (roundNumber === totalRounds - 2) {
-            roundName = 'Четвертьфинал';
-          } else if (roundNumber === totalRounds - 3) {
-            roundName = '1/8 финала';
-          } else if (roundNumber === totalRounds - 4) {
-            roundName = '1/16 финала';
-          } else {
-            roundName = `Раунд ${roundNumber}`;
-          }
+      // Для Single Elimination логика именования раундов
+      const isDoubleElimination = tournamentType === 'DOUBLE_ELIMINATION';
+      if (!isDoubleElimination) {
+        const totalRounds = winnersRounds.length;
+        if (roundNumber === totalRounds) {
+          roundName = 'Финал';
+        } else if (roundNumber === totalRounds - 1) {
+          roundName = 'Полуфинал';
+        } else if (roundNumber === totalRounds - 2) {
+          roundName = 'Четвертьфинал';
+        } else if (roundNumber === totalRounds - 3) {
+          roundName = '1/8 финала';
+        } else if (roundNumber === totalRounds - 4) {
+          roundName = '1/16 финала';
         } else {
-          roundName = `Верхняя сетка ${roundNumber}`;
+          roundName = `Раунд ${roundNumber}`;
         }
+      } else {
+        roundName = `Верхняя сетка ${roundNumber}`;
       }
     }
     
@@ -275,7 +273,7 @@ const TreeBracketRenderer = ({
       <div key={`${isLosers ? 'losers' : 'winners'}-round-${roundNumber}`} className="tree-round">
         <h3>{roundName}</h3>
         <div className="tree-matches">
-          {matches.map(match => renderMatch(match))}
+          {round.matches.map(match => renderMatch(match))}
         </div>
       </div>
     );
@@ -301,14 +299,7 @@ const TreeBracketRenderer = ({
           <div className="tree-winners-bracket">
             <h2>Основная сетка</h2>
             <div className="tree-rounds">
-              {winnersRounds.map((round) => (
-                <div className="tree-round" key={`winners-${round.round}`}>
-                  <h3>Раунд {round.round}</h3>
-                  <div className="tree-matches">
-                    {round.matches.map(match => renderMatch(match))}
-                  </div>
-                </div>
-              ))}
+              {winnersRounds.map(round => renderRound(round, false))}
             </div>
           </div>
           
@@ -319,14 +310,7 @@ const TreeBracketRenderer = ({
               <div className="tree-losers-bracket">
                 <h2>Нижняя сетка</h2>
                 <div className="tree-rounds">
-                  {losersRounds.map((round) => (
-                    <div className="tree-round" key={`losers-${round.round}`}>
-                      <h3>Раунд {round.round}</h3>
-                      <div className="tree-matches">
-                        {round.matches.map(match => renderMatch(match))}
-                      </div>
-                    </div>
-                  ))}
+                  {losersRounds.map(round => renderRound(round, true))}
                 </div>
               </div>
             </>
