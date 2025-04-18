@@ -16,6 +16,8 @@ export const WebSocketProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        let currentUserId = null;
+
         try {
             // Получаем userId из JWT токена
             const base64Url = token.split('.')[1];
@@ -27,11 +29,15 @@ export const WebSocketProvider = ({ children }) => {
             const decodedToken = JSON.parse(jsonPayload);
             if (decodedToken.id) {
                 setUserId(decodedToken.id);
+                currentUserId = decodedToken.id;
             }
         } catch (error) {
             console.error('Ошибка при декодировании токена:', error);
             return;
         }
+
+        // Если не удалось получить ID, выходим
+        if (!currentUserId) return;
 
         // Определение корректного адреса WebSocket
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -50,10 +56,10 @@ export const WebSocketProvider = ({ children }) => {
             setSocket(ws);
             
             // Отправляем сообщение о регистрации пользователя
-            if (decodedToken.id) {
+            if (currentUserId) {
                 ws.send(JSON.stringify({ 
                     type: 'register', 
-                    userId: decodedToken.id 
+                    userId: currentUserId 
                 }));
             }
         };
