@@ -453,11 +453,13 @@ input, button {
     display: flex;
     align-items: center;
     margin-bottom: 20px;
+    padding-top: 20px;
 }
 
 .avatar-container {
     position: relative;
     margin-right: 20px;
+    z-index: 1;
 }
 
 .user-avatar {
