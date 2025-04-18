@@ -543,6 +543,37 @@ function TournamentDetails() {
         }
     }
 
+    // Отображение участников турнира с аватарами
+    const renderParticipants = () => {
+        if (!tournament || !tournament.participants || tournament.participants.length === 0) {
+            return <p>Пока нет участников</p>;
+        }
+
+        return (
+            <div className="participants-list">
+                <h4>Участники ({tournament.participants.length})</h4>
+                <ul>
+                    {tournament.participants.map((participant) => (
+                        <li key={participant.id} className="participant-item">
+                            {/* Добавляем аватар участника */}
+                            <div className="participant-avatar">
+                                <img 
+                                    src={participant.avatar_url || '/default-avatar.png'} 
+                                    alt={`${participant.name} аватар`} 
+                                    className="participant-avatar-img"
+                                />
+                            </div>
+                            <div className="participant-info">
+                                <span className="participant-name">{participant.name}</span>
+                                {participant.is_admin && <span className="admin-badge">Админ</span>}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        );
+    };
+
     return (
         <section className="tournament-details">
             <h2>
@@ -566,11 +597,7 @@ function TournamentDetails() {
             <p>
                 <strong>Участники ({tournament.participant_count || 0}):</strong>
             </p>
-            <ul>
-                {(Array.isArray(tournament.participants) ? tournament.participants : []).map((participant) => (
-                    <li key={participant.id}>{participant.name || `Участник ${participant.id}`}</li>
-                ))}
-            </ul>
+            {renderParticipants()}
             {user && tournament.status === 'active' && (
                 <div className="participation-controls">
                     {!isParticipating && matches.length === 0 ? (

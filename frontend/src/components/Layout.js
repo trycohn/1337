@@ -244,6 +244,13 @@ function Layout() {
                 <div className="auth-block">
                     {user ? (
                         <div className="user-info">
+                            <Link to="/profile" className="header-avatar-link">
+                                <img
+                                    src={user.avatar_url || '/default-avatar.png'}
+                                    alt="Аватар пользователя"
+                                    className="header-avatar"
+                                />
+                            </Link>
                             <Link to="/profile" className="username-link">
                                 {user.username}
                             </Link>
