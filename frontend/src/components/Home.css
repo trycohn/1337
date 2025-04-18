@@ -582,6 +582,20 @@ header.header {
   font-size: 24px;
 }
 
+.messages-link {
+  margin-left: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.messages-icon {
+  font-size: 24px;
+}
+
+.messages-link:hover .messages-icon {
+  color: #0056b3 !important;
+}
+
 .unread-count {
   position: absolute;
   top: -5px;

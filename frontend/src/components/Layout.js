@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment } from '@fortawesome/free-regular-svg-icons';
+import { faComment, faEnvelope } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
@@ -237,6 +237,7 @@ function Layout() {
                                     Создать турнир
                                 </Link>
                                 <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
+                                <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
                             </>
                         )}
                     </nav>
@@ -263,6 +264,13 @@ function Layout() {
                                     />
                                     {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
                                 </div>
+                                <Link to="/messages" className="messages-link">
+                                    <FontAwesomeIcon
+                                        icon={faEnvelope}
+                                        className="messages-icon"
+                                        style={{ color: '#000000' }}
+                                    />
+                                </Link>
                                 {showNotifications && (
                                     <div className="notification-dropdown-wrapper" ref={notificationRef}>
                                         <div className="notification-dropdown">
