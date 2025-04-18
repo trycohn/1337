@@ -893,7 +893,7 @@ function Profile() {
                             {friends.length > 0 ? (
                                 friends.map(friend => (
                                     <div key={friend.id} className="friend-item">
-                                        <a href={`/profile/${friend.friend.id}`} className="friend-link">
+                                        <a href={`/user/${friend.friend.id}`} className="friend-link">
                                             <img 
                                                 src={friend.friend.avatar_url || '/default-avatar.png'} 
                                                 alt={friend.friend.username} 
@@ -926,7 +926,7 @@ function Profile() {
                                                 alt={request.user.username} 
                                                 className="request-avatar" 
                                             />
-                                            <a href={`/profile/${request.user.id}`} className="request-username">
+                                            <a href={`/user/${request.user.id}`} className="request-username">
                                                 {request.user.username}
                                             </a>
                                         </div>
