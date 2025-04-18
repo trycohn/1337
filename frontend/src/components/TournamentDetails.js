@@ -555,8 +555,11 @@ function TournamentDetails() {
                 <ul>
                     {tournament.participants.map((participant) => (
                         <li key={participant.id} className="participant-item">
-                            {/* Аватар участника с ссылкой на профиль */}
-                            <Link to={`/user/${participant.user_id}`} className="participant-link">
+                            {/* Проверяем, является ли участник текущим авторизованным пользователем */}
+                            <Link 
+                                to={user && participant.user_id === user.id ? '/profile' : `/user/${participant.user_id}`} 
+                                className="participant-link"
+                            >
                                 <div className="participant-avatar">
                                     <img 
                                         src={participant.avatar_url || '/default-avatar.png'} 
