@@ -9,6 +9,9 @@ const querystring = require('querystring');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
 
 // Настройка транспорта nodemailer
 const transporter = nodemailer.createTransport({
@@ -23,6 +26,33 @@ const transporter = nodemailer.createTransport({
 
 // Подключаем cookie-parser middleware
 router.use(cookieParser());
+
+// Конфигурация хранилища для Multer
+const avatarStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, '..', 'uploads', 'avatars');
+        fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || '.png';
+        cb(null, `user_${req.user.id}_${Date.now()}${ext}`);
+    },
+});
+
+// Фильтр форматов изображений (jpeg, png, gif, webp)
+const avatarFileFilter = (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+        return cb(new Error('Неверный формат файла. Разрешены только изображения.'), false);
+    }
+    cb(null, true);
+};
+
+const uploadAvatar = multer({
+    storage: avatarStorage,
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+    fileFilter: avatarFileFilter,
+});
 
 // Регистрация нового пользователя
 router.post('/register', async (req, res) => {
@@ -218,6 +248,21 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
             'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
             [steamId, `https://steamcommunity.com/profiles/${steamId}`, req.user.id]
         );
+
+        // Если у пользователя ещё нет кастомного аватара, пробуем установить из Steam
+        const currentUser = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+        if (currentUser.rows.length > 0 && !currentUser.rows[0].avatar_url) {
+            try {
+                const apiKey = process.env.STEAM_API_KEY;
+                const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
+                const steamAvatarUrl = steamUserResponse.data.response.players[0].avatarfull;
+                if (steamAvatarUrl) {
+                    await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [steamAvatarUrl, req.user.id]);
+                }
+            } catch (avatarErr) {
+                console.error('Не удалось обновить аватар из Steam:', avatarErr.message);
+            }
+        }
         console.log('Steam ID linked successfully to user:', req.user.id);
 
         res.json({ message: 'Steam успешно привязан' });
@@ -358,6 +403,12 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                     userData.stats = statsResponse.data.lifetime;
                 }
                 
+                // Сохраняем аватар из FACEIT, если у пользователя он не установлен
+                const currentUser = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+                if (currentUser.rows.length > 0 && !currentUser.rows[0].avatar_url && playerResponse.data.avatar) {
+                    await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [playerResponse.data.avatar, req.user.id]);
+                }
+                
                 res.json(userData);
             } catch (cs2Err) {
                 console.log('CS2 статистика не найдена, пробуем CSGO...');
@@ -381,6 +432,12 @@ router.get('/faceit-info', authenticateToken, async (req, res) => {
                     // Добавляем статистику, если она доступна
                     if (statsResponse.data && statsResponse.data.lifetime) {
                         userData.stats = statsResponse.data.lifetime;
+                    }
+                    
+                    // Сохраняем аватар из FACEIT, если у пользователя он не установлен
+                    const currentUser = await pool.query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+                    if (currentUser.rows.length > 0 && !currentUser.rows[0].avatar_url && playerResponse.data.avatar) {
+                        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [playerResponse.data.avatar, req.user.id]);
                     }
                     
                     res.json(userData);
@@ -883,6 +940,64 @@ router.get('/faceit-login', (req, res) => {
     console.log('FACEIT login redirect URL:', `${authUrl}?${params}`);
     
     res.redirect(`${authUrl}?${params}`);
+});
+
+// Маршрут для загрузки кастомного аватара
+router.post('/upload-avatar', authenticateToken, uploadAvatar.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Файл не был загружен' });
+        }
+        const relativePath = `/uploads/avatars/${req.file.filename}`;
+        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [relativePath, req.user.id]);
+        res.json({ message: 'Аватар успешно обновлён', avatarUrl: relativePath });
+    } catch (err) {
+        console.error('Ошибка загрузки аватара:', err);
+        res.status(500).json({ error: 'Не удалось загрузить аватар' });
+    }
+});
+
+// Маршрут для установки аватара из Steam
+router.post('/avatar-from-steam', authenticateToken, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT steam_id FROM users WHERE id = $1', [req.user.id]);
+        if (userResult.rows.length === 0 || !userResult.rows[0].steam_id) {
+            return res.status(400).json({ error: 'Steam не привязан' });
+        }
+        const steamId = userResult.rows[0].steam_id;
+        const apiKey = process.env.STEAM_API_KEY;
+        const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
+        const avatarUrl = response.data.response.players[0].avatarfull;
+        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [avatarUrl, req.user.id]);
+        res.json({ message: 'Аватар установлен из Steam', avatarUrl });
+    } catch (err) {
+        console.error('Ошибка установки аватара из Steam:', err);
+        res.status(500).json({ error: 'Не удалось установить аватар из Steam' });
+    }
+});
+
+// Маршрут для установки аватара из FACEIT
+router.post('/avatar-from-faceit', authenticateToken, async (req, res) => {
+    try {
+        const userResult = await pool.query('SELECT faceit_id FROM users WHERE id = $1', [req.user.id]);
+        if (userResult.rows.length === 0 || !userResult.rows[0].faceit_id) {
+            return res.status(400).json({ error: 'FACEIT не привязан' });
+        }
+        const faceitId = userResult.rows[0].faceit_id;
+        // Получаем данные из FACEIT API
+        const playerResponse = await axios.get(`https://open.faceit.com/data/v4/players/${faceitId}`, {
+            headers: { 'Authorization': `Bearer ${process.env.FACEIT_API_KEY}` },
+        });
+        const avatarUrl = playerResponse.data.avatar || playerResponse.data.cover_image;
+        if (!avatarUrl) {
+            return res.status(400).json({ error: 'Не удалось получить аватар из FACEIT' });
+        }
+        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [avatarUrl, req.user.id]);
+        res.json({ message: 'Аватар установлен из FACEIT', avatarUrl });
+    } catch (err) {
+        console.error('Ошибка установки аватара из FACEIT:', err);
+        res.status(500).json({ error: 'Не удалось установить аватар из FACEIT' });
+    }
 });
 
 module.exports = router;
