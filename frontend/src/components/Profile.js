@@ -632,6 +632,24 @@ function Profile() {
     return (
         <div className="profile">
             <h2>Личный кабинет</h2>
+            
+            <div className="profile-header">
+                <div className="avatar-container">
+                    <img 
+                        src={avatar || '/default-avatar.png'} 
+                        alt="Аватар пользователя" 
+                        className="user-avatar"
+                        onClick={openAvatarModal}
+                    />
+                    <button className="change-avatar-btn" onClick={openAvatarModal}>
+                        Изменить аватар
+                    </button>
+                </div>
+                <div className="user-info">
+                    <h3>{user.username}</h3>
+                </div>
+            </div>
+            
             {error && <p className="error">{error}</p>}
             
             {/* Плашка с предупреждением для пользователей без email */}
@@ -653,23 +671,6 @@ function Profile() {
                     <button onClick={openEmailVerificationModal}>Подтвердить email</button>
                 </div>
             )}
-            
-            <div className="profile-header">
-                <div className="avatar-container">
-                    <img 
-                        src={avatar || '/default-avatar.png'} 
-                        alt="Аватар пользователя" 
-                        className="user-avatar"
-                        onClick={openAvatarModal}
-                    />
-                    <button className="change-avatar-btn" onClick={openAvatarModal}>
-                        Изменить аватар
-                    </button>
-                </div>
-                <div className="user-info">
-                    <h3>{user.username}</h3>
-                </div>
-            </div>
             
             <section>
                 <h3>Данные пользователя</h3>
