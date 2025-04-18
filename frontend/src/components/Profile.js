@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../axios';
 import './Profile.css';
+import { updateGlobalAvatar } from './Layout'; // Импортируем функцию обновления аватара
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -550,6 +551,9 @@ function Profile() {
                 avatar_url: response.data.avatarUrl
             }));
             
+            // Обновляем аватар глобально в Layout
+            updateGlobalAvatar(response.data.avatarUrl);
+            
             // Сбрасываем значение input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -581,6 +585,9 @@ function Profile() {
                 avatar_url: response.data.avatarUrl
             }));
             
+            // Обновляем аватар глобально в Layout
+            updateGlobalAvatar(response.data.avatarUrl);
+            
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка установки аватара из Steam');
@@ -606,6 +613,9 @@ function Profile() {
                 ...prevUser,
                 avatar_url: response.data.avatarUrl
             }));
+            
+            // Обновляем аватар глобально в Layout
+            updateGlobalAvatar(response.data.avatarUrl);
             
             setError('');
         } catch (err) {
