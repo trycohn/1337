@@ -1,0 +1,187 @@
+.bracket-renderer-wrapper {
+    position: relative; /* Необходимо для позиционирования контролов */
+    overflow: hidden;   /* Обрезаем все, что выходит за пределы */
+    width: 100%;        /* Занимает всю ширину родителя */
+    height: 70vh;       /* Примерная высота, можно настроить */
+    background-color: #f0f0f0; /* Фон для наглядности */
+    border: 1px solid #ccc;
+    user-select: none; /* Отключить выделение текста */
+    cursor: grab; /* Курсор по умолчанию */
+}
+
+.bracket-renderer-content {
+    width: fit-content; /* Ширина по содержимому */
+    min-width: 100%; /* Минимум 100% ширины wrapper */
+    display: flex;     /* Располагаем сетки в ряд */
+    gap: 30px;         /* Пространство между сетками */
+    padding: 40px 20px 20px 20px; /* Внутренний отступ, сверху больше места для заголовков */
+    will-change: transform; /* Оптимизация для transform */
+    background-color: #ffffff; /* Белый фон для самой сетки */
+    position: relative; /* Для позиционирования заголовков */
+    transform-origin: 0 0; /* Важно для масштабирования от верхнего левого угла */
+}
+
+.bracket-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10; /* Поверх содержимого */
+    display: flex;
+    gap: 5px;
+}
+
+.bracket-controls button {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    background-color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.bracket-controls button:hover {
+    background-color: #eee;
+}
+.bracket-controls button:active {
+     background-color: #ddd;
+}
+
+.bracket-title {
+    position: absolute; 
+    top: 10px; /* Отступ сверху */
+    left: 50%; /* Центрирование */
+    transform: translateX(-50%); /* Точное центрирование */
+    background: rgba(240, 240, 240, 0.8); /* Полупрозрачный фон */
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 5; /* Ниже контролов, но выше сетки */
+    font-size: 1.1em;
+    margin: 0; /* Убираем лишние margin */
+    white-space: nowrap; /* Предотвратить перенос текста */
+}
+
+/* Адаптация стилей для .bracket, .bracket-grid и т.д. */
+.bracket {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    padding-top: 30px; /* Добавим отступ сверху для заголовка */
+    position: relative; /* Для позиционирования заголовка внутри */
+}
+
+.bracket-grid {
+    display: flex;
+    gap: 40px; /* Пространство между колонками раундов */
+}
+
+.final-matches-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Пространство между финальным матчем и матчем за 3 место */
+    align-items: center;
+    padding-top: 30px; /* Отступ для заголовков */
+    position: relative; /* Для позиционирования заголовков */
+}
+
+.placement-match,
+.grand-final {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     position: relative; /* Для заголовка */
+     width: 100%; /* Занимаем доступную ширину в контейнере */
+}
+
+/* Стили для пустого сообщения */
+.empty-bracket-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: 18px;
+    color: #777;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Стили, импортированные из Home.css (возможно, нужно перенести или адаптировать) */
+.round-column {
+  /* Стили для колонки раунда */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* Расстояние между матчами */
+}
+
+.round-column h3 {
+    font-size: 1em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #555;
+    white-space: nowrap;
+}
+
+.custom-seed {
+  /* Стили для блока матча */
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  width: 200px; /* Фиксированная ширина матча */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.custom-seed.selected {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.match-number {
+  font-size: 0.8em;
+  color: #777;
+  margin-bottom: 5px;
+}
+
+.match-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.9em;
+}
+
+.team.winner .team-name {
+  font-weight: bold;
+}
+
+.team.winner .team-score {
+  font-weight: bold;
+}
+
+.team-name {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.team-score {
+  min-width: 20px;
+  text-align: right;
+}
+
+.bracket-divider {
+    display: none; /* Скрываем hr, т.к. сетки теперь рядом */
+} 
