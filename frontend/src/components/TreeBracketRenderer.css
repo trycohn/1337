@@ -1,6 +1,6 @@
 .tree-bracket-container {
     position: relative;
-    width: 80%;
+    width: 80vw;
     height: 80vh;
     margin: 0 auto;
     background-color: #f9f9f9;
@@ -222,7 +222,7 @@
 /* Медиа-запросы для адаптивности */
 @media (max-width: 768px) {
     .tree-bracket-container {
-        width: 95%;
+        width: 95vw;
         height: 80vh;
     }
     
@@ -241,6 +241,7 @@
 
 @media (max-width: 480px) {
     .tree-bracket-container {
+        width: 95vw;
         height: 80vh;
     }
     
