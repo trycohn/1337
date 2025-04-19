@@ -241,13 +241,20 @@ function TournamentDetails() {
             if (!game) return null;
             
             // Преобразуем bracket_type в формат, понятный для TreeBracketRenderer
-            let bracketType = 'WINNERS';
-            if (game.bracket_type === 'loser') {
+            let bracketType;
+            // Используем исходный bracket_type и is_third_place_match из объекта game
+            const sourceBracketType = game.bracket_type;
+            const isThirdPlace = game.is_third_place_match;
+
+            if (sourceBracketType === 'loser') {
                 bracketType = 'LOSERS';
-            } else if (game.bracket_type === 'grand_final') {
+            } else if (sourceBracketType === 'grand_final') {
                 bracketType = 'GRAND_FINAL';
-            } else if (game.bracket_type === 'placement' || game.is_third_place_match) {
+            } else if (sourceBracketType === 'placement' || isThirdPlace) {
                 bracketType = 'THIRD_PLACE';
+            } else {
+                // Все остальное (winner, prelim, или если тип не указан) идет в WINNERS
+                bracketType = 'WINNERS';
             }
             
             // Получаем номер матча
