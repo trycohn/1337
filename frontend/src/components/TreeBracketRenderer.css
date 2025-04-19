@@ -2,7 +2,6 @@
     position: relative;
     width: 80vw;
     height: 80vh;
-    margin-left: 10vw;
     background-color: #f9f9f9;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -223,7 +222,6 @@
     .tree-bracket-container {
         width: 80vw;
         height: 80vh;
-        margin-left: 10vw;
     }
     
     .tree-round {
@@ -243,7 +241,6 @@
     .tree-bracket-container {
         width: 80vw;
         height: 80vh;
-        margin-left: 10vw;
     }
     
     .tree-round {
