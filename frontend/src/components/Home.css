@@ -908,6 +908,7 @@ header.header {
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 100px);
+  min-width: 35vw;
   padding: 20px;
 }
 
