@@ -954,6 +954,9 @@ header.header {
   right: 30px;
   opacity: 1;
   transition: opacity 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 60px); /* Учитываем левый и правый отступы */
 }
 
 .auth-form.hidden {
@@ -975,6 +978,7 @@ header.header {
 
 .form-group {
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .form-group input {
@@ -984,6 +988,7 @@ header.header {
   border-radius: 4px;
   font-size: 16px;
   transition: border-color 0.3s;
+  box-sizing: border-box; /* Важно! */
 }
 
 .form-group input:focus {
@@ -1003,6 +1008,7 @@ header.header {
   cursor: pointer;
   transition: background-color 0.3s;
   margin-bottom: 15px;
+  box-sizing: border-box; /* Важно! */
 }
 
 .auth-button:hover {
@@ -1029,6 +1035,7 @@ header.header {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box; /* Важно! */
 }
 
 .steam-button:hover {
@@ -1047,6 +1054,7 @@ header.header {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box; /* Важно! */
 }
 
 .faceit-button:hover {
@@ -1082,6 +1090,12 @@ header.header {
   
   .auth-form-container {
     padding: 20px;
+  }
+  
+  .auth-form {
+    left: 20px;
+    right: 20px;
+    width: calc(100% - 40px);
   }
 }
 
