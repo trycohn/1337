@@ -11,6 +11,8 @@
 main {
   margin: 0 auto;
   flex: 1;
+  max-width: 80%; /* Ограничиваем ширину до 80% от видимого окна */
+  width: 80%; /* Устанавливаем ширину в 80% */
 }
 
 main section {
@@ -420,6 +422,7 @@ header.header {
   gap: 20px;
   margin-top: 20px;
   margin-bottom: 20px;
+  width: 100%; /* Занимает 100% родительского элемента (main) */
 }
 
 .bracket {
@@ -1287,4 +1290,41 @@ header.header {
 .view-profile-link:hover {
   background-color: #4682b4;
   color: white;
+}
+
+/* Стили для турнирной сетки */
+.tournament-bracket {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 100%; /* Занимает 100% родительского элемента (main) */
+}
+
+.bracket-renderer-wrapper {
+  position: relative; /* Необходимо для позиционирования контролов */
+  overflow: hidden;   /* Обрезаем все, что выходит за пределы */
+  width: 100%;        /* Занимает всю ширину родителя */
+  height: 70vh;       /* Примерная высота, можно настроить */
+  background-color: #f0f0f0; /* Фон для наглядности */
+  border: 1px solid #ccc;
+  user-select: none; /* Отключить выделение текста */
+  cursor: grab; /* Курсор по умолчанию */
+}
+
+/* Контейнер для сетки турнира */
+.custom-tournament-bracket {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto; /* Добавляем горизонтальную прокрутку */
+}
+
+/* Контейнер для переключения вида сетки */
+.bracket-toggle-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  gap: 10px;
+  width: 100%;
 }
