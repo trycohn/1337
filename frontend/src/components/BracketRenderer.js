@@ -16,21 +16,121 @@ const BracketRenderer = ({
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
+    const [groupedMatches, setGroupedMatches] = useState({ winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null });
 
     // Ссылки для работы с DOM
     const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
     const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
+    
+    // --- Логика перетаскивания и масштабирования ---
+    const handleMouseDown = useCallback((e) => {
+        if (e.button !== 0) return; // Только левая кнопка
+        // Не начинаем перетаскивание, если клик был на элементе управления (например, кнопке)
+        if (e.target.closest('button, .custom-seed')) {
+            return;
+        }
+        setIsDragging(true);
+        setStartDragPos({
+            x: e.clientX - position.x,
+            y: e.clientY - position.y,
+        });
+        if (wrapperRef.current) {
+            wrapperRef.current.style.cursor = 'grabbing';
+        }
+        e.preventDefault();
+    }, [position]);
 
-    // Проверка входных данных
-    if (!games || !Array.isArray(games) || games.length === 0) {
-        console.log('BracketRenderer: пустой массив games или он не определен', games);
-        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
-    }
+    const handleMouseMove = useCallback((e) => {
+        if (!isDragging) return;
+        setPosition({
+            x: e.clientX - startDragPos.x,
+            y: e.clientY - startDragPos.y,
+        });
+        e.preventDefault(); // Предотвратить выделение текста при перетаскивании
+    }, [isDragging, startDragPos]);
 
-    console.log('BracketRenderer получил games:', games);
+    const handleMouseUp = useCallback(() => {
+        if (isDragging) {
+            setIsDragging(false);
+            if (wrapperRef.current) {
+                wrapperRef.current.style.cursor = 'grab';
+            }
+        }
+    }, [isDragging]);
+
+    const handleTouchStart = useCallback((e) => {
+        // Не начинаем перетаскивание, если клик был на элементе управления
+        if (e.target.closest('button, .custom-seed')) {
+            return;
+        }
+        if (e.touches.length === 1) {
+            setIsDragging(true);
+            setStartDragPos({
+                x: e.touches[0].clientX - position.x,
+                y: e.touches[0].clientY - position.y,
+            });
+            if (wrapperRef.current) {
+                wrapperRef.current.style.cursor = 'grabbing';
+            }
+            // e.preventDefault() вызывается в touchmove для разрешения скролла страницы
+        }
+    }, [position]);
+
+    const handleTouchMove = useCallback((e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        // Предотвращаем скролл страницы только ВО ВРЕМЯ перетаскивания
+        e.preventDefault();
+        setPosition({
+            x: e.touches[0].clientX - startDragPos.x,
+            y: e.touches[0].clientY - startDragPos.y,
+        });
+    }, [isDragging, startDragPos]);
+
+    const handleTouchEnd = useCallback(() => {
+        if (isDragging) {
+            setIsDragging(false);
+            if (wrapperRef.current) {
+                wrapperRef.current.style.cursor = 'grab';
+            }
+        }
+    }, [isDragging]);
+
+    const handleWheel = useCallback((e) => {
+        e.preventDefault(); // Предотвратить скролл страницы
+        const scaleAmount = -e.deltaY * 0.001;
+        const newScale = Math.min(Math.max(scale + scaleAmount, 0.5), 3); // Ограничения масштаба
+
+        if (bracketContentRef.current) {
+            const rect = bracketContentRef.current.getBoundingClientRect();
+            // Координаты курсора относительно wrapperRef
+            const mouseX = e.clientX - wrapperRef.current.getBoundingClientRect().left;
+            const mouseY = e.clientY - wrapperRef.current.getBoundingClientRect().top;
+
+            // Координаты курсора относительно transform-origin (0, 0) элемента bracketContentRef ДО масштабирования
+            const mousePointX = (mouseX - position.x) / scale;
+            const mousePointY = (mouseY - position.y) / scale;
+
+            // Новое положение, чтобы точка под курсором осталась на месте
+            const newX = mouseX - mousePointX * newScale;
+            const newY = mouseY - mousePointY * newScale;
+
+            setPosition({ x: newX, y: newY });
+            setScale(newScale);
+        }
+    }, [scale, position]);
+
+    // Сброс вида
+    const resetView = useCallback(() => {
+        setScale(1);
+        setPosition({ x: 0, y: 0 });
+    }, []);
 
     // Группировка матчей по раундам и сеткам
-    const groupMatchesByRoundAndBracket = () => {
+    const groupMatchesByRoundAndBracket = useCallback(() => {
+        if (!games || !Array.isArray(games) || games.length === 0) {
+            return { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
+        }
+        
         console.log('Группировка матчей, проверяем bracket_type:', games.map(g => ({id: g.id, bracket_type: g.bracket_type, round: g.round, is_third_place_match: g.is_third_place_match})));
         
         // Если у матчей отсутствует bracket_type, считаем их принадлежащими к winners bracket
@@ -82,10 +182,10 @@ const BracketRenderer = ({
         const prelimMatches = winnerMatches.filter(m => m.round === -1);
         // Сортируем предварительные матчи по match_number
         prelimMatches.sort((a, b) => {
-             // Проверяем наличие match_number перед парсингом
-             const numA = a.match_number ? parseInt(a.match_number) : 0;
-             const numB = b.match_number ? parseInt(b.match_number) : 0;
-             return numA - numB;
+            // Проверяем наличие match_number перед парсингом
+            const numA = a.match_number ? parseInt(a.match_number) : 0;
+            const numB = b.match_number ? parseInt(b.match_number) : 0;
+            return numA - numB;
         });
         if (prelimMatches.length > 0) {
             winnerRounds[-1] = prelimMatches;
@@ -110,114 +210,7 @@ const BracketRenderer = ({
         }
 
         return { winnerRounds, loserRounds, placementMatch, grandFinalMatch };
-    };
-
-    const { winnerRounds, loserRounds, placementMatch, grandFinalMatch } = groupMatchesByRoundAndBracket();
-
-    // --- Логика перетаскивания и масштабирования ---
-    const handleMouseDown = useCallback((e) => {
-        if (e.button !== 0) return; // Только левая кнопка
-        // Не начинаем перетаскивание, если клик был на элементе управления (например, кнопке)
-         if (e.target.closest('button, .custom-seed')) {
-             return;
-         }
-        setIsDragging(true);
-        setStartDragPos({
-            x: e.clientX - position.x,
-            y: e.clientY - position.y,
-        });
-        if (wrapperRef.current) {
-            wrapperRef.current.style.cursor = 'grabbing';
-        }
-        e.preventDefault();
-    }, [position]);
-
-    const handleMouseMove = useCallback((e) => {
-        if (!isDragging) return;
-        setPosition({
-            x: e.clientX - startDragPos.x,
-            y: e.clientY - startDragPos.y,
-        });
-        e.preventDefault(); // Предотвратить выделение текста при перетаскивании
-    }, [isDragging, startDragPos]);
-
-    const handleMouseUp = useCallback(() => {
-        if (isDragging) {
-            setIsDragging(false);
-            if (wrapperRef.current) {
-                wrapperRef.current.style.cursor = 'grab';
-            }
-        }
-    }, [isDragging]);
-
-    const handleTouchStart = useCallback((e) => {
-        // Не начинаем перетаскивание, если клик был на элементе управления
-        if (e.target.closest('button, .custom-seed')) {
-            return;
-        }
-        if (e.touches.length === 1) {
-            setIsDragging(true);
-            setStartDragPos({
-                x: e.touches[0].clientX - position.x,
-                y: e.touches[0].clientY - position.y,
-            });
-             if (wrapperRef.current) {
-                 wrapperRef.current.style.cursor = 'grabbing';
-             }
-            // e.preventDefault() вызывается в touchmove для разрешения скролла страницы
-        }
-    }, [position]);
-
-    const handleTouchMove = useCallback((e) => {
-        if (!isDragging || e.touches.length !== 1) return;
-        // Предотвращаем скролл страницы только ВО ВРЕМЯ перетаскивания
-        e.preventDefault();
-        setPosition({
-            x: e.touches[0].clientX - startDragPos.x,
-            y: e.touches[0].clientY - startDragPos.y,
-        });
-    }, [isDragging, startDragPos]);
-
-
-    const handleTouchEnd = useCallback(() => {
-         if (isDragging) {
-            setIsDragging(false);
-            if (wrapperRef.current) {
-                wrapperRef.current.style.cursor = 'grab';
-            }
-        }
-    }, [isDragging]);
-
-    const handleWheel = useCallback((e) => {
-        e.preventDefault(); // Предотвратить скролл страницы
-        const scaleAmount = -e.deltaY * 0.001;
-        const newScale = Math.min(Math.max(scale + scaleAmount, 0.5), 3); // Ограничения масштаба
-
-        if (bracketContentRef.current) {
-             const rect = bracketContentRef.current.getBoundingClientRect();
-             // Координаты курсора относительно wrapperRef
-             const mouseX = e.clientX - wrapperRef.current.getBoundingClientRect().left;
-             const mouseY = e.clientY - wrapperRef.current.getBoundingClientRect().top;
-
-             // Координаты курсора относительно transform-origin (0, 0) элемента bracketContentRef ДО масштабирования
-             const mousePointX = (mouseX - position.x) / scale;
-             const mousePointY = (mouseY - position.y) / scale;
-
-             // Новое положение, чтобы точка под курсором осталась на месте
-             const newX = mouseX - mousePointX * newScale;
-             const newY = mouseY - mousePointY * newScale;
-
-             setPosition({ x: newX, y: newY });
-             setScale(newScale);
-        }
-
-    }, [scale, position]);
-
-    // Сброс вида
-    const resetView = () => {
-        setScale(1);
-        setPosition({ x: 0, y: 0 });
-    };
+    }, [games]);
 
     // Установка и удаление обработчиков
     useEffect(() => {
@@ -228,13 +221,12 @@ const BracketRenderer = ({
             // Добавляем touchstart к wrapper, а не к window
             wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
 
-
             // Mousemove и mouseup слушаем на window, чтобы отловить отпускание кнопки вне wrapper
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
-             // Touchmove и touchend также на window
-             window.addEventListener('touchmove', handleTouchMove, { passive: false });
-             window.addEventListener('touchend', handleTouchEnd);
+            // Touchmove и touchend также на window
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd);
         }
 
         return () => {
@@ -242,23 +234,34 @@ const BracketRenderer = ({
                 wrapper.removeEventListener('mousedown', handleMouseDown);
                 wrapper.removeEventListener('wheel', handleWheel);
                 wrapper.removeEventListener('touchstart', handleTouchStart);
-
             }
-             window.removeEventListener('mousemove', handleMouseMove);
-             window.removeEventListener('mouseup', handleMouseUp);
-             window.removeEventListener('touchmove', handleTouchMove);
-             window.removeEventListener('touchend', handleTouchEnd);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
         };
     }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]); // Добавили touch хендлеры в зависимости
 
+    // Обновление сгруппированных матчей при изменении games
+    useEffect(() => {
+        setGroupedMatches(groupMatchesByRoundAndBracket());
+    }, [games, groupMatchesByRoundAndBracket]);
+
     // --- Конец логики перетаскивания и масштабирования ---
 
+    // Если нет данных для отображения, показываем сообщение
+    if (!games || !Array.isArray(games) || games.length === 0) {
+        console.log('BracketRenderer: пустой массив games или он не определен', games);
+        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
+    }
+
+    const { winnerRounds, loserRounds, placementMatch, grandFinalMatch } = groupedMatches;
     const winnerRoundKeys = Object.keys(winnerRounds);
-    const hasWinnerMatches = winnerRoundKeys.length > 0 || loserRounds.length > 0 || placementMatch || grandFinalMatch;
+    const hasWinnerMatches = winnerRoundKeys.length > 0 || Object.keys(loserRounds).length > 0 || placementMatch || grandFinalMatch;
 
     if (!hasWinnerMatches) {
-         console.log('BracketRenderer: нет матчей для отображения после группировки');
-         return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
+        console.log('BracketRenderer: нет матчей для отображения после группировки');
+        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
     }
 
     return (
