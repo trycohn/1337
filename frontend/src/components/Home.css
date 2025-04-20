@@ -1313,13 +1313,6 @@ header.header {
   cursor: grab; /* Курсор по умолчанию */
 }
 
-/* Контейнер для сетки турнира */
-.custom-tournament-bracket {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto; /* Добавляем горизонтальную прокрутку */
-}
-
 /* Контейнер для переключения вида сетки */
 .bracket-toggle-container {
   display: flex;
