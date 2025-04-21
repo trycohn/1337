@@ -268,15 +268,29 @@ router.get('/:chatId/messages', authenticateToken, async (req, res) => {
         );
         
         if (unreadMessages.length > 0) {
-            // Обновляем каждое сообщение отдельно — ON CONFLICT защитит от гонок
+            // Обновляем каждое сообщение отдельно
             const uniqueIds = [...new Set(unreadMessages.map(m => m.id))];
             for (const id of uniqueIds) {
-                await pool.query(`
-                    INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                    VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                    ON CONFLICT (message_id, user_id)
-                    DO UPDATE SET is_read = TRUE, read_at = EXCLUDED.read_at
-                `, [id, req.user.id]);
+                // Проверяем существование записи перед вставкой
+                const checkResult = await pool.query(
+                    'SELECT 1 FROM message_status WHERE message_id = $1 AND user_id = $2',
+                    [id, req.user.id]
+                );
+                
+                if (checkResult.rows.length > 0) {
+                    // Если запись существует, обновляем ее
+                    await pool.query(`
+                        UPDATE message_status 
+                        SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                        WHERE message_id = $1 AND user_id = $2
+                    `, [id, req.user.id]);
+                } else {
+                    // Если записи нет, вставляем новую
+                    await pool.query(`
+                        INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                        VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                    `, [id, req.user.id]);
+                }
             }
         }
         
@@ -315,12 +329,26 @@ router.post('/:chatId/read', authenticateToken, async (req, res) => {
         if (unreadMessagesResult.rows.length > 0) {
             const uniqueIds2 = [...new Set(unreadMessagesResult.rows.map(r => r.id))];
             for (const id of uniqueIds2) {
-                await pool.query(`
-                    INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                    VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                    ON CONFLICT (message_id, user_id)
-                    DO UPDATE SET is_read = TRUE, read_at = EXCLUDED.read_at
-                `, [id, req.user.id]);
+                // Проверяем существование записи перед вставкой
+                const checkResult = await pool.query(
+                    'SELECT 1 FROM message_status WHERE message_id = $1 AND user_id = $2',
+                    [id, req.user.id]
+                );
+                
+                if (checkResult.rows.length > 0) {
+                    // Если запись существует, обновляем ее
+                    await pool.query(`
+                        UPDATE message_status 
+                        SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                        WHERE message_id = $1 AND user_id = $2
+                    `, [id, req.user.id]);
+                } else {
+                    // Если записи нет, вставляем новую
+                    await pool.query(`
+                        INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                        VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                    `, [id, req.user.id]);
+                }
             }
         }
         

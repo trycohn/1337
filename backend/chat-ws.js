@@ -186,15 +186,31 @@ async function handleReadStatus(userId, payload) {
         }
         
         // Обновляем или создаем запись о прочтении
-        const result = await pool.query(`
-            INSERT INTO message_status (message_id, user_id, is_read, read_at)
-            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-            ON CONFLICT (message_id, user_id) 
-            DO UPDATE SET is_read = TRUE, read_at = EXCLUDED.read_at
-            RETURNING read_at
-        `, [message_id, userId]);
+        let read_at;
+        // Проверяем существование записи перед вставкой
+        const checkResult = await pool.query(
+            'SELECT read_at FROM message_status WHERE message_id = $1 AND user_id = $2',
+            [message_id, userId]
+        );
         
-        const read_at = result.rows[0].read_at;
+        if (checkResult.rows.length > 0) {
+            // Если запись существует, обновляем ее
+            const updateResult = await pool.query(`
+                UPDATE message_status 
+                SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                WHERE message_id = $1 AND user_id = $2
+                RETURNING read_at
+            `, [message_id, userId]);
+            read_at = updateResult.rows[0].read_at;
+        } else {
+            // Если записи нет, вставляем новую
+            const insertResult = await pool.query(`
+                INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                RETURNING read_at
+            `, [message_id, userId]);
+            read_at = insertResult.rows[0].read_at;
+        }
         
         // Отправляем уведомление о прочтении отправителю сообщения
         const senderWs = clients.get(sender_id);
