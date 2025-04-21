@@ -449,7 +449,34 @@ function TournamentDetails() {
                 team2: team2Score
             });
             
-            setShowConfirmModal(true);
+            // Получаем id команд
+            const team1Id = selectedGame.participants[0]?.id ? parseInt(selectedGame.participants[0].id) : null;
+            const team2Id = selectedGame.participants[1]?.id ? parseInt(selectedGame.participants[1].id) : null;
+            const selectedWinner = teamId ? parseInt(teamId) : null;
+            
+            // Отладочная информация
+            console.log('Данные матча:', {
+                match: selectedGame,
+                team1Id,
+                team2Id,
+                selectedWinner,
+                isByeMatch: (!team1Id && team2Id) || (team1Id && !team2Id)
+            });
+            
+            // Для бай матча автоматически выбираем существующую команду как победителя
+            if ((!team1Id && team2Id) || (team1Id && !team2Id)) {
+                // Это bye-матч, автоматически выбираем единственную команду победителем
+                const autoWinnerId = team1Id || team2Id;
+                setSelectedWinnerId(autoWinnerId.toString());
+                console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
+                setShowConfirmModal(true);
+            } 
+            // Для обычного матча проверяем, что победитель определен
+            else if (selectedWinner) {
+                setShowConfirmModal(true);
+            } else {
+                setMessage('Невозможно выбрать неопределенную команду (TBD) как победителя');
+            }
         } else {
             console.error(`Матч с ID ${actualMatchId} не найден`);
         }
@@ -470,10 +497,18 @@ function TournamentDetails() {
             const score2 = matchScores.team2;
             let winnerId = selectedWinnerId;
             
+            // Проверяем, является ли это bye-матчем (только один участник)
+            const isByeMatch = (!team1Id && team2Id) || (team1Id && !team2Id);
+            
             // Преобразуем строковые ID в числовые, если они существуют
             team1Id = team1Id ? parseInt(team1Id) : null;
             team2Id = team2Id ? parseInt(team2Id) : null;
             winnerId = winnerId ? parseInt(winnerId) : null;
+            
+            // Для bye-матча, автоматически устанавливаем единственную команду победителем
+            if (isByeMatch && !winnerId) {
+                winnerId = team1Id || team2Id;
+            }
             
             console.log('Отправляем данные:', {
                 matchId: updatedMatch.id,
@@ -481,25 +516,45 @@ function TournamentDetails() {
                 score1,
                 score2,
                 team1_id: team1Id,
-                team2_id: team2Id
+                team2_id: team2Id,
+                isByeMatch
             });
             
-            // Проверяем, что все необходимые данные существуют
-            if (team1Id === null || team2Id === null || !updatedMatch.id) {
-                throw new Error('Неверные данные участников матча');
+            // Проверяем, что ID матча и ID победителя существуют
+            if (!updatedMatch.id) {
+                throw new Error('ID матча отсутствует');
             }
             
-            // Исправляем URL запроса - из `/api/tournaments/matches/${updatedMatch.id}/result` на `/api/tournaments/${id}/update-match`
+            // Для bye-матча пропускаем проверку на соответствие победителя участникам
+            if (!isByeMatch) {
+                // Проверяем, что победитель выбран
+                if (!winnerId) {
+                    throw new Error('Не выбран победитель');
+                }
+                
+                // Убедимся, что winnerId соответствует одной из команд, если обе определены
+                if (team1Id !== null && team2Id !== null && winnerId !== team1Id && winnerId !== team2Id) {
+                    throw new Error('Выбранный победитель не является участником матча');
+                }
+            }
+            
+            // Формируем данные запроса
+            const requestData = {
+                matchId: updatedMatch.id,
+                winner_team_id: winnerId,
+                score1,
+                score2
+            };
+            
+            // Если это бай-матч, добавляем явное указание на это
+            if (isByeMatch) {
+                requestData.is_bye_match = true;
+            }
+            
+            // Отправляем запрос на сервер
             const response = await api.post(
                 `/api/tournaments/${id}/update-match`,
-                {
-                    matchId: updatedMatch.id,
-                    winner_team_id: winnerId,
-                    score1,
-                    score2,
-                    team1_id: team1Id,
-                    team2_id: team2Id
-                },
+                requestData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
