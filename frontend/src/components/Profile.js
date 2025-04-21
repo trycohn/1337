@@ -44,6 +44,9 @@ function Profile() {
     const [friendRequests, setFriendRequests] = useState([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
 
+    // Состояние активной вкладки
+    const [activeTab, setActiveTab] = useState('main'); // 'main' | 'stats' | 'friends'
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
