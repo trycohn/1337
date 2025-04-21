@@ -190,7 +190,7 @@ async function handleReadStatus(userId, payload) {
             INSERT INTO message_status (message_id, user_id, is_read, read_at)
             VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
             ON CONFLICT (message_id, user_id) 
-            DO UPDATE SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+            DO UPDATE SET is_read = TRUE, read_at = EXCLUDED.read_at
             RETURNING read_at
         `, [message_id, userId]);
         
