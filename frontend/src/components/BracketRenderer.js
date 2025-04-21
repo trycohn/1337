@@ -1,7 +1,6 @@
 // frontend/src/components/BracketRenderer.js
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const BracketRenderer = ({
     games,
@@ -369,28 +368,26 @@ const BracketRenderer = ({
         
         const maxOvershoot = 100; // Максимальное расстояние выхода за пределы в пикселях
         
-        // Проверяем правую границу
-        if (contentRect.right < wrapperRect.right - maxOvershoot) {
-            // Если сетка заходит за правую границу больше чем на maxOvershoot
-            newX = wrapperRect.width - (contentRect.width / scale) - maxOvershoot;
+        // Изменяем логику проверки границ, чтобы позволить свободное перемещение в допустимых пределах
+        
+        // Проверяем правую границу (слишком далеко вправо)
+        if (contentRect.left > wrapperRect.right - maxOvershoot) {
+            newX = wrapperRect.width - maxOvershoot;
         }
         
-        // Проверяем левую границу
-        if (contentRect.left > wrapperRect.left + maxOvershoot) {
-            // Если сетка не доходит до левой границы больше чем на maxOvershoot
-            newX = maxOvershoot;
+        // Проверяем левую границу (слишком далеко влево)
+        if (contentRect.right < wrapperRect.left + maxOvershoot) {
+            newX = maxOvershoot - contentRect.width / scale;
         }
         
-        // Проверяем нижнюю границу
-        if (contentRect.bottom < wrapperRect.bottom - maxOvershoot) {
-            // Если сетка заходит за нижнюю границу больше чем на maxOvershoot
-            newY = wrapperRect.height - (contentRect.height / scale) - maxOvershoot;
+        // Проверяем нижнюю границу (слишком далеко вниз)
+        if (contentRect.top > wrapperRect.bottom - maxOvershoot) {
+            newY = wrapperRect.height - maxOvershoot;
         }
         
-        // Проверяем верхнюю границу
-        if (contentRect.top > wrapperRect.top + maxOvershoot) {
-            // Если сетка не доходит до верхней границы больше чем на maxOvershoot
-            newY = maxOvershoot;
+        // Проверяем верхнюю границу (слишком далеко вверх)
+        if (contentRect.bottom < wrapperRect.top + maxOvershoot) {
+            newY = maxOvershoot - contentRect.height / scale;
         }
         
         // Применяем новые координаты только если они изменились
@@ -806,7 +803,7 @@ const BracketRenderer = ({
                 <button onClick={handleZoomOut} title="Уменьшить">-</button>
                 <button onClick={handleResetView} title="Сбросить вид">↺</button>
                 <button onClick={handleOpenInNewTab} title="Открыть в отдельной вкладке">
-                    <FontAwesomeIcon icon="fa-solid fa-up-right-from-square" />
+                    <i className="fa-solid fa-up-right-from-square"></i>
                 </button>
             </div>
 
