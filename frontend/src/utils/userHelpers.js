@@ -3,20 +3,37 @@
  */
 
 /**
+ * Декодируем payload JWT (base64url) безопасно
+ * @param {string} token JWT token
+ * @returns {object|null} decoded payload or null if token is invalid
+ */
+export const decodeTokenPayload = (token) => {
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (err) {
+    console.error('Ошибка декодирования токена:', err);
+    return null;
+  }
+};
+
+/**
  * Получает ID текущего авторизованного пользователя из токена
  * @returns {string|null} ID пользователя или null, если пользователь не авторизован
  */
 export const getCurrentUserId = () => {
   const token = localStorage.getItem('token');
-  if (!token) return null;
-  
-  try {
-    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-    return tokenPayload.id.toString();
-  } catch (error) {
-    console.error('Ошибка при получении ID пользователя из токена:', error);
-    return null;
-  }
+  const payload = decodeTokenPayload(token);
+  return payload?.id ? payload.id.toString() : null;
 };
 
 /**

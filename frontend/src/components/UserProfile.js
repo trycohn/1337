@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './Profile.css';
-import { redirectIfCurrentUser, isCurrentUser } from '../utils/userHelpers';
+import { redirectIfCurrentUser, isCurrentUser, decodeTokenPayload } from '../utils/userHelpers';
 
 function UserProfile() {
     const { userId } = useParams();
@@ -167,7 +167,7 @@ function UserProfile() {
     const renderFriendActionButton = () => {
         if (!friendStatus) return null;
         
-        const currentUserId = JSON.parse(atob(localStorage.getItem('token')?.split('.')[1] || 'e30='))?.id;
+        const currentUserId = decodeTokenPayload(localStorage.getItem('token'))?.id;
         if (currentUserId == userId) return null; // Не показываем кнопку на своем профиле
         
         switch (friendStatus.status) {

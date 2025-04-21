@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './ChatWindow.css';
 import Message from './Message';
+import { decodeTokenPayload } from '../utils/userHelpers';
 
 function ChatWindow({ 
     activeChat, 
@@ -122,7 +123,10 @@ function ChatWindow({
                             <Message 
                                 key={message.id || messageIndex} 
                                 message={message} 
-                                isOwn={message.sender_id === JSON.parse(atob(localStorage.getItem('token').split('.')[1])).id}
+                                isOwn={(() => {
+                                    const payload = decodeTokenPayload(localStorage.getItem('token'));
+                                    return payload ? message.sender_id === payload.id : false;
+                                })()}
                             />
                         ))}
                     </div>
