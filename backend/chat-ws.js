@@ -17,10 +17,6 @@ function setupChatWebSocket(server) {
     server.on('upgrade', function upgrade(request, socket, head) {
         const pathname = url.parse(request.url).pathname;
         
-        // Добавим ведение журнала для диагностики
-        console.log(`WebSocket upgrade запрос на: ${pathname}`);
-        console.log(`Полный URL: ${request.url}`);
-        
         if (pathname === '/chat') {
             wss.handleUpgrade(request, socket, head, function done(ws) {
                 wss.emit('connection', ws, request);

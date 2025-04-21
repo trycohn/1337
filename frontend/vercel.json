@@ -21,10 +21,5 @@
           { "key": "Content-Type", "value": "image/png" }
         ]
       }
-    ],
-    "rewrites": [
-      { "source": "/chat", "destination": "https://api.1337community.com/chat" },
-      { "source": "/ws", "destination": "https://api.1337community.com/ws" },
-      { "source": "/api/:path*", "destination": "https://api.1337community.com/api/:path*" }
     ]
   }
