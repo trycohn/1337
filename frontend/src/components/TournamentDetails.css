@@ -1,7 +1,7 @@
 .tournament-details {
-    /* max-width: 800px; Убираем или комментируем это */
-    /* margin: 0 auto; И это */
     padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .tournament-details h2 {
@@ -275,4 +275,88 @@
     border-radius: 5px;
     padding: 20px;
     text-align: center;
+}
+
+.mix-settings {
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.mix-settings h3 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+}
+
+.rating-type-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.rating-type-selector label {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.rating-type-selector select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.tournament-controls {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.tournament-controls button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.start-tournament {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.start-tournament:hover {
+    background-color: #27ae60;
+}
+
+.end-tournament {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.end-tournament:hover {
+    background-color: #c0392b;
+}
+
+.regenerate-bracket {
+    background-color: #3498db;
+    color: white;
+}
+
+.regenerate-bracket:hover {
+    background-color: #2980b9;
+}
+
+@media (max-width: 768px) {
+    .tournament-controls {
+        flex-direction: column;
+    }
+    
+    .rating-type-selector {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 } 
