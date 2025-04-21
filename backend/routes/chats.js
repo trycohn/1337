@@ -268,29 +268,37 @@ router.get('/:chatId/messages', authenticateToken, async (req, res) => {
         );
         
         if (unreadMessages.length > 0) {
-            // Обновляем каждое сообщение отдельно
+            // Обновляем каждое сообщение отдельно с использованием транзакции
             const uniqueIds = [...new Set(unreadMessages.map(m => m.id))];
-            for (const id of uniqueIds) {
-                // Проверяем существование записи перед вставкой
-                const checkResult = await pool.query(
-                    'SELECT 1 FROM message_status WHERE message_id = $1 AND user_id = $2',
-                    [id, req.user.id]
-                );
+            const client = await pool.connect();
+            
+            try {
+                await client.query('BEGIN');
                 
-                if (checkResult.rows.length > 0) {
-                    // Если запись существует, обновляем ее
-                    await pool.query(`
+                for (const id of uniqueIds) {
+                    // Пытаемся обновить существующую запись
+                    const updateResult = await client.query(`
                         UPDATE message_status 
                         SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
                         WHERE message_id = $1 AND user_id = $2
+                        RETURNING id
                     `, [id, req.user.id]);
-                } else {
-                    // Если записи нет, вставляем новую
-                    await pool.query(`
-                        INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                        VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                    `, [id, req.user.id]);
+                    
+                    // Если записи не существует, создаем новую
+                    if (updateResult.rows.length === 0) {
+                        await client.query(`
+                            INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                        `, [id, req.user.id]);
+                    }
                 }
+                
+                await client.query('COMMIT');
+            } catch (err) {
+                await client.query('ROLLBACK');
+                console.error('Ошибка обновления статусов сообщений:', err);
+            } finally {
+                client.release();
             }
         }
         
@@ -328,27 +336,36 @@ router.post('/:chatId/read', authenticateToken, async (req, res) => {
         
         if (unreadMessagesResult.rows.length > 0) {
             const uniqueIds2 = [...new Set(unreadMessagesResult.rows.map(r => r.id))];
-            for (const id of uniqueIds2) {
-                // Проверяем существование записи перед вставкой
-                const checkResult = await pool.query(
-                    'SELECT 1 FROM message_status WHERE message_id = $1 AND user_id = $2',
-                    [id, req.user.id]
-                );
+            const client = await pool.connect();
+            
+            try {
+                await client.query('BEGIN');
                 
-                if (checkResult.rows.length > 0) {
-                    // Если запись существует, обновляем ее
-                    await pool.query(`
+                for (const id of uniqueIds2) {
+                    // Пытаемся обновить существующую запись
+                    const updateResult = await client.query(`
                         UPDATE message_status 
                         SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
                         WHERE message_id = $1 AND user_id = $2
+                        RETURNING id
                     `, [id, req.user.id]);
-                } else {
-                    // Если записи нет, вставляем новую
-                    await pool.query(`
-                        INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                        VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                    `, [id, req.user.id]);
+                    
+                    // Если записи не существует, создаем новую
+                    if (updateResult.rows.length === 0) {
+                        await client.query(`
+                            INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                        `, [id, req.user.id]);
+                    }
                 }
+                
+                await client.query('COMMIT');
+            } catch (err) {
+                await client.query('ROLLBACK');
+                console.error('Ошибка обновления статусов сообщений:', err);
+                throw err;
+            } finally {
+                client.release();
             }
         }
         

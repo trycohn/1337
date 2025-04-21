@@ -187,29 +187,38 @@ async function handleReadStatus(userId, payload) {
         
         // Обновляем или создаем запись о прочтении
         let read_at;
-        // Проверяем существование записи перед вставкой
-        const checkResult = await pool.query(
-            'SELECT read_at FROM message_status WHERE message_id = $1 AND user_id = $2',
-            [message_id, userId]
-        );
+        const client = await pool.connect();
         
-        if (checkResult.rows.length > 0) {
-            // Если запись существует, обновляем ее
-            const updateResult = await pool.query(`
+        try {
+            await client.query('BEGIN');
+            
+            // Пытаемся обновить существующую запись
+            const updateResult = await client.query(`
                 UPDATE message_status 
                 SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
                 WHERE message_id = $1 AND user_id = $2
                 RETURNING read_at
             `, [message_id, userId]);
-            read_at = updateResult.rows[0].read_at;
-        } else {
-            // Если записи нет, вставляем новую
-            const insertResult = await pool.query(`
-                INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                RETURNING read_at
-            `, [message_id, userId]);
-            read_at = insertResult.rows[0].read_at;
+            
+            if (updateResult.rows.length > 0) {
+                read_at = updateResult.rows[0].read_at;
+            } else {
+                // Если записи не существует, создаем новую
+                const insertResult = await client.query(`
+                    INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                    VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                    RETURNING read_at
+                `, [message_id, userId]);
+                read_at = insertResult.rows[0].read_at;
+            }
+            
+            await client.query('COMMIT');
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error('Ошибка обновления статуса прочтения:', err);
+            throw err;
+        } finally {
+            client.release();
         }
         
         // Отправляем уведомление о прочтении отправителю сообщения
