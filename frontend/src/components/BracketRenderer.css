@@ -20,6 +20,7 @@
     width: fit-content; /* Ширина по содержимому */
     min-width: 100%; /* Минимум 100% ширины wrapper */
     display: flex;     /* Располагаем сетки в ряд */
+    flex-direction: column; /* Меняем направление на вертикальное - сетки друг под другом */
     gap: 30px;         /* Пространство между сетками */
     padding: 40px 20px 20px 20px; /* Внутренний отступ, сверху больше места для заголовков */
     will-change: transform; /* Оптимизация для transform */
@@ -27,6 +28,7 @@
     position: relative; /* Для позиционирования заголовков */
     transform-origin: 0 0; /* Важно для масштабирования от верхнего левого угла */
     pointer-events: all;
+    min-height: 500px; /* Добавляем минимальную высоту */
 }
 
 .bracket-controls {
@@ -62,17 +64,19 @@
 }
 
 .bracket-title {
-    position: absolute; 
-    top: 10px; /* Отступ сверху */
-    left: 50%; /* Центрирование */
-    transform: translateX(-50%); /* Точное центрирование */
-    background: rgba(240, 240, 240, 0.8); /* Полупрозрачный фон */
-    padding: 2px 8px;
+    position: relative; /* Меняем на relative для лучшего позиционирования */
+    top: -20px; /* Отрицательный отступ сверху */
+    left: 0; /* Выравниваем по левому краю */
+    transform: none; /* Убираем трансформацию */
+    background: rgba(240, 240, 240, 0.9); /* Делаем фон более непрозрачным */
+    padding: 4px 12px;
     border-radius: 4px;
-    z-index: 5; /* Ниже контролов, но выше сетки */
-    font-size: 1.1em;
-    margin: 0; /* Убираем лишние margin */
-    white-space: nowrap; /* Предотвратить перенос текста */
+    font-size: 1.2em;
+    margin: 0 0 10px 0; /* Добавляем отступ снизу */
+    white-space: nowrap;
+    display: inline-block; /* Размер по содержимому */
+    border: 1px solid #ccc; /* Добавляем рамку */
+    color: #333; /* Более темный цвет текста */
 }
 
 /* Адаптация стилей для .bracket, .bracket-grid и т.д. */
@@ -87,24 +91,43 @@
 .bracket-grid {
     display: flex;
     gap: 40px; /* Пространство между колонками раундов */
+    overflow-x: auto; /* Добавляем горизонтальную прокрутку при необходимости */
+    padding-bottom: 15px; /* Отступ для скроллбара */
+    position: relative;
 }
 
+/* Стили для финальных матчей при вертикальном расположении */
 .final-matches-container {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Пространство между финальным матчем и матчем за 3 место */
-    align-items: center;
-    padding-top: 30px; /* Отступ для заголовков */
-    position: relative; /* Для позиционирования заголовков */
+    align-items: flex-start;
+    gap: 20px;
+    position: relative;
+    width: 100%;
+}
+
+.final-matches-grid {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 40px;
+    width: 100%;
+}
+
+.match-title {
+    font-size: 1em;
+    margin-bottom: 10px;
+    color: #555;
+    font-weight: bold;
 }
 
 .placement-match,
 .grand-final {
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     position: relative; /* Для заголовка */
-     width: 100%; /* Занимаем доступную ширину в контейнере */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: auto;
+    min-width: 250px;
 }
 
 /* Стили для пустого сообщения */
@@ -193,6 +216,19 @@
   text-align: right;
 }
 
+/* Улучшаем стили для вертикального расположения сеток */
+.winners-bracket, 
+.losers-bracket {
+    margin-bottom: 20px; /* Отступ снизу для каждой сетки */
+    position: relative;
+}
+
+/* Улучшаем стиль разделителя */
 .bracket-divider {
-    display: none; /* Скрываем hr, т.к. сетки теперь рядом */
+    display: block;
+    width: 100%;
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 30px 0;
+    position: relative;
 } 
