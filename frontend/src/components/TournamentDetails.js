@@ -475,10 +475,11 @@ function TournamentDetails() {
                 throw new Error('Неверные данные участников матча');
             }
             
-            // Обновляем результаты
+            // Исправляем URL запроса - из `/api/tournaments/matches/${updatedMatch.id}/result` на `/api/tournaments/${id}/update-match`
             const response = await api.post(
-                `/api/tournaments/matches/${updatedMatch.id}/result`,
+                `/api/tournaments/${id}/update-match`,
                 {
+                    matchId: updatedMatch.id,
                     winner_team_id: winnerId,
                     score1,
                     score2,
