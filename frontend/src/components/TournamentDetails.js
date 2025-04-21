@@ -538,21 +538,60 @@ function TournamentDetails() {
                 }
             }
             
-            // Формируем данные запроса, строго соответствующие API сервера
+            // Формируем данные запроса, только с обязательными полями
             const requestData = {
                 matchId: parseInt(updatedMatch.id),
                 winner_team_id: winnerId,
-                score1,
-                score2
+                score1: score1 || 0,
+                score2: score2 || 0
             };
             
+            // Пробуем сначала отправить запрос с минимальным набором данных
             console.log('🔍 Sending request to:', `/api/tournaments/${id}/update-match`);
-            // Отправляем запрос на сервер
-            const response = await api.post(
-                `/api/tournaments/${id}/update-match`,
-                requestData,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            let response;
+            
+            try {
+                response = await api.post(
+                    `/api/tournaments/${id}/update-match`,
+                    requestData,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            } catch (requestError) {
+                console.error('❌ Ошибка при первой попытке обновления:', requestError);
+                
+                // Если первый запрос не удался, попробуем альтернативный путь
+                if (isByeMatch) {
+                    console.log('Пробуем альтернативный путь для бай-матча...');
+                    // Для бай-матчей используем альтернативный эндпоинт или измененные данные
+                    try {
+                        // 1. Убедимся, что у нас есть только конкретный победитель (без проигравшего)
+                        const simpleRequestData = {
+                            matchId: parseInt(updatedMatch.id),
+                            winner_team_id: winnerId,
+                            score1: 1,  // Принудительно ставим счет 1-0 для бай-матчей
+                            score2: 0
+                        };
+                        
+                        response = await api.post(
+                            `/api/tournaments/${id}/update-match-simple`,
+                            simpleRequestData,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    } catch (alternativeError) {
+                        console.error('❌ Альтернативный путь также не удался:', alternativeError);
+                        
+                        // Если и альтернативный путь не удался, попробуем ручное обновление через fetchTournamentData
+                        await fetchTournamentData();
+                        setMessage('Не удалось автоматически обновить результат, пожалуйста, обновите страницу');
+                        setShowConfirmModal(false);
+                        setSelectedMatch(null);
+                        return;
+                    }
+                } else {
+                    // Если это не бай-матч, просто выбросим ошибку
+                    throw requestError;
+                }
+            }
             
             console.log('✅ Ответ сервера:', response.data);
             
@@ -587,8 +626,15 @@ function TournamentDetails() {
             console.error('Ошибка обновления результатов:', error);
             setMessage(`Ошибка: ${error.response?.data?.error || error.message}`);
             
-            // Обновляем данные турнира, чтобы синхронизировать изменения
-            await fetchTournamentData();
+            // В случае ошибки, пробуем обновить данные турнира
+            try {
+                await fetchTournamentData();
+            } catch (fetchError) {
+                console.error('Ошибка при обновлении данных после ошибки:', fetchError);
+            }
+            
+            setShowConfirmModal(false);
+            setSelectedMatch(null);
         }
     };
 
