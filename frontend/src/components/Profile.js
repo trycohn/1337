@@ -653,13 +653,38 @@ function Profile() {
         setLoadingFriends(true);
         try {
             const token = localStorage.getItem('token');
+            // Сначала получаем базовый список друзей
             const response = await api.get('/api/friends', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             // Фильтруем только принятые заявки
             const acceptedFriends = response.data.filter(f => f.status === 'accepted');
-            setFriends(acceptedFriends);
+            
+            // Для каждого друга запрашиваем дополнительную информацию, включая статус онлайн
+            const friendsWithDetails = await Promise.all(
+                acceptedFriends.map(async (friend) => {
+                    try {
+                        const detailsResponse = await api.get(`/api/users/profile/${friend.friend.id}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        
+                        // Обновляем информацию о статусе онлайн
+                        return {
+                            ...friend,
+                            friend: {
+                                ...friend.friend,
+                                online_status: detailsResponse.data.online_status
+                            }
+                        };
+                    } catch (err) {
+                        console.error(`Ошибка загрузки деталей для друга ${friend.friend.id}:`, err);
+                        return friend; // Возвращаем исходные данные в случае ошибки
+                    }
+                })
+            );
+            
+            setFriends(friendsWithDetails);
         } catch (err) {
             console.error('Ошибка загрузки списка друзей:', err);
         } finally {
