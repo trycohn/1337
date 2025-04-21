@@ -24,10 +24,20 @@ const BracketRenderer = ({
     const [isDragging, setIsDragging] = useState(false);
     const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
     const [groupedMatches, setGroupedMatches] = useState({ winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null });
+    // Добавляем состояние, которое гарантирует инициализацию обработчиков
+    const [isInitialized, setIsInitialized] = useState(false);
 
     // Ссылки для работы с DOM
     const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
     const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
+    
+    // Функция инициализации drag and drop функциональности
+    const initializeDragAndDrop = useCallback(() => {
+        if (wrapperRef.current) {
+            wrapperRef.current.style.cursor = 'grab';
+            setIsInitialized(true);
+        }
+    }, []);
     
     // Функция для притягивания сетки к краю
     const snapToBoundary = useCallback(() => {
@@ -286,6 +296,9 @@ const BracketRenderer = ({
             
             // Устанавливаем курсор grab по умолчанию
             wrapper.style.cursor = 'grab';
+            
+            // Принудительно инициализируем после рендера
+            setTimeout(initializeDragAndDrop, 100);
         }
 
         return () => {
@@ -299,7 +312,45 @@ const BracketRenderer = ({
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd, initializeDragAndDrop]);
+
+    // Принудительная инициализация после первого рендера
+    useEffect(() => {
+        if (!isInitialized && wrapperRef.current && bracketContentRef.current) {
+            // Принудительно переустанавливаем позицию через таймаут
+            const timer = setTimeout(() => {
+                setPosition({ x: 0, y: 0 });
+                initializeDragAndDrop();
+                
+                // Инициализируем перетаскивание сразу после загрузки
+                const extraTimer = setTimeout(() => {
+                    if (wrapperRef.current) {
+                        console.log('BracketRenderer: инициализация обработчиков drag-and-drop');
+                        // Применяем автоматический центральный вид
+                        resetView();
+                    }
+                }, 100);
+                
+                return () => {
+                    clearTimeout(extraTimer);
+                };
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isInitialized, initializeDragAndDrop, resetView]);
+    
+    // Отслеживаем изменение размера окна для пересчета позиции
+    useEffect(() => {
+        const handleResize = () => {
+            // При изменении размера окна проверяем границы
+            snapToBoundary();
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [snapToBoundary]);
 
     // Обновление сгруппированных матчей при изменении games
     useEffect(() => {

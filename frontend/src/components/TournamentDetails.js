@@ -4,7 +4,6 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../axios';
 import './TournamentDetails.css';
 import BracketRenderer from './BracketRenderer';
-import TreeBracketRenderer from './TreeBracketRenderer';
 
 function TournamentDetails() {
     const { id } = useParams();
@@ -27,8 +26,6 @@ function TournamentDetails() {
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const wsRef = useRef(null);
-    const [bracketView, setBracketView] = useState('tree');
-    const [useTreeView, setUseTreeView] = useState(false);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -231,68 +228,6 @@ function TournamentDetails() {
         });
     }, [matches, tournament]);
 
-    // Преобразование данных игр в формат для TreeBracketRenderer
-    const adaptGamesForTreeRenderer = useMemo(() => {
-        if (!games || games.length === 0) return [];
-        
-        console.log('Адаптация игр для TreeBracketRenderer:', games);
-        
-        return games.map(game => {
-            // Проверка на существование объекта игры
-            if (!game) return null;
-            
-            // Преобразуем bracket_type в формат, понятный для TreeBracketRenderer
-            let bracketType;
-            // Используем исходный bracket_type и is_third_place_match из объекта game
-            const sourceBracketType = game.bracket_type;
-            const isThirdPlace = game.is_third_place_match;
-
-            if (sourceBracketType === 'loser') {
-                bracketType = 'LOSERS';
-            } else if (sourceBracketType === 'grand_final') {
-                bracketType = 'GRAND_FINAL';
-            } else if (sourceBracketType === 'placement' || isThirdPlace) {
-                bracketType = 'THIRD_PLACE';
-            } else {
-                // Все остальное (winner, prelim, или если тип не указан) идет в WINNERS
-                bracketType = 'WINNERS';
-            }
-            
-            // Получаем номер матча
-            const matchNumber = game.name ? game.name.replace(/[^\d]/g, '') : game.id;
-            
-            // Проверяем поле participants
-            const participants = Array.isArray(game.participants) 
-                ? game.participants.map(p => ({
-                    id: p?.id || 'tbd',
-                    name: p?.name || 'TBD',
-                    score: p?.score || 0
-                }))
-                : [
-                    { id: 'tbd1', name: 'TBD', score: 0 },
-                    { id: 'tbd2', name: 'TBD', score: 0 }
-                ];
-                
-            // Находим победителя
-            const winner = game.participants 
-                ? game.participants.find(p => p?.isWinner)?.id 
-                : null;
-                
-            return {
-                id: parseInt(game.id) || 0,
-                matchNumber: matchNumber || 'N/A',
-                round: typeof game.round === 'number' ? game.round : 0,
-                bracket_type: bracketType,
-                winner_id: winner || null,
-                match_order: parseInt(game.id) || 0, // используем id как порядок, если нет match_order
-                participants: participants,
-                // Дополнительные поля
-                status: game.state || 'PENDING',
-                nextMatchId: game.nextMatchId || null
-            };
-        }).filter(Boolean); // Удаляем null значения из результата
-    }, [games]);
-
     const handleParticipate = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -432,7 +367,6 @@ function TournamentDetails() {
     };
 
     const handleTeamClick = (teamId, matchId) => {
-        // Если это дерево, то matchId уже предоставлен напрямую
         // Если это классическая сетка, то matchId предоставляется отдельно
         const actualMatchId = typeof matchId === 'number' ? matchId : parseInt(matchId);
         
@@ -443,7 +377,7 @@ function TournamentDetails() {
         setSelectedMatch(actualMatchId);
         setSelectedWinnerId(teamId);
         
-        // Ищем матч в обоих представлениях
+        // Ищем матч
         const selectedGame = games.find(g => parseInt(g.id) === actualMatchId);
         
         if (selectedGame) {
@@ -802,45 +736,15 @@ function TournamentDetails() {
                     {console.log('Games для визуализации сетки:', games)}
                     {Array.isArray(games) && games.length > 0 ? (
                         <div className="custom-tournament-bracket">
-                            <div className="bracket-toggle-container">
-                                <button 
-                                    className={!useTreeView ? 'active' : ''} 
-                                    onClick={() => setUseTreeView(false)}
-                                >
-                                    Классическая сетка
-                                </button>
-                                <button 
-                                    className={useTreeView ? 'active' : ''} 
-                                    onClick={() => setUseTreeView(true)}
-                                >
-                                    Древовидная сетка
-                                </button>
-                            </div>
-                            
                             <div className="tournament-bracket">
-                                {console.log('Данные для сетки, useTreeView:', useTreeView)}
-                                {console.log('Игры:', games)}
-                                {console.log('Можно редактировать:', canEditMatches)}
-                                {console.log('Выбранный матч:', selectedMatch)}
-                                {useTreeView ? (
-                                    <TreeBracketRenderer
-                                        games={adaptGamesForTreeRenderer}
-                                        canEdit={canEditMatches}
-                                        onMatchClick={(match) => setSelectedMatch(parseInt(match.id))}
-                                        selectedMatchId={selectedMatch}
-                                        formatParticipantName={(name) => name}
-                                        tournamentType={tournament.format === 'double_elimination' ? 'DOUBLE_ELIMINATION' : 'SINGLE_ELIMINATION'}
-                                    />
-                                ) : (
-                                    <BracketRenderer
-                                        games={games}
-                                        canEditMatches={canEditMatches}
-                                        selectedMatch={selectedMatch}
-                                        setSelectedMatch={setSelectedMatch}
-                                        handleTeamClick={handleTeamClick}
-                                        format={tournament.format}
-                                    />
-                                )}
+                                <BracketRenderer
+                                    games={games}
+                                    canEditMatches={canEditMatches}
+                                    selectedMatch={selectedMatch}
+                                    setSelectedMatch={setSelectedMatch}
+                                    handleTeamClick={handleTeamClick}
+                                    format={tournament.format}
+                                />
                             </div>
                         </div>
                     ) : (
