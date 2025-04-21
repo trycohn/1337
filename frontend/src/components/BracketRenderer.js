@@ -1,6 +1,7 @@
 // frontend/src/components/BracketRenderer.js
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const BracketRenderer = ({
     games,
@@ -366,28 +367,30 @@ const BracketRenderer = ({
         let newX = position.x;
         let newY = position.y;
         
+        const maxOvershoot = 100; // Максимальное расстояние выхода за пределы в пикселях
+        
         // Проверяем правую границу
-        if (contentRect.right < wrapperRect.right) {
-            // Если сетка заходит за правую границу, притягиваем к ней
-            newX = wrapperRect.width - (contentRect.width / scale);
+        if (contentRect.right < wrapperRect.right - maxOvershoot) {
+            // Если сетка заходит за правую границу больше чем на maxOvershoot
+            newX = wrapperRect.width - (contentRect.width / scale) - maxOvershoot;
         }
         
         // Проверяем левую границу
-        if (contentRect.left > wrapperRect.left) {
-            // Если сетка не доходит до левой границы, притягиваем к ней
-            newX = 0;
+        if (contentRect.left > wrapperRect.left + maxOvershoot) {
+            // Если сетка не доходит до левой границы больше чем на maxOvershoot
+            newX = maxOvershoot;
         }
         
         // Проверяем нижнюю границу
-        if (contentRect.bottom < wrapperRect.bottom) {
-            // Если сетка заходит за нижнюю границу, притягиваем к ней
-            newY = wrapperRect.height - (contentRect.height / scale);
+        if (contentRect.bottom < wrapperRect.bottom - maxOvershoot) {
+            // Если сетка заходит за нижнюю границу больше чем на maxOvershoot
+            newY = wrapperRect.height - (contentRect.height / scale) - maxOvershoot;
         }
         
         // Проверяем верхнюю границу
-        if (contentRect.top > wrapperRect.top) {
-            // Если сетка не доходит до верхней границы, притягиваем к ней
-            newY = 0;
+        if (contentRect.top > wrapperRect.top + maxOvershoot) {
+            // Если сетка не доходит до верхней границы больше чем на maxOvershoot
+            newY = maxOvershoot;
         }
         
         // Применяем новые координаты только если они изменились
@@ -803,11 +806,7 @@ const BracketRenderer = ({
                 <button onClick={handleZoomOut} title="Уменьшить">-</button>
                 <button onClick={handleResetView} title="Сбросить вид">↺</button>
                 <button onClick={handleOpenInNewTab} title="Открыть в отдельной вкладке">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                    </svg>
+                    <FontAwesomeIcon icon="fa-solid fa-up-right-from-square" />
                 </button>
             </div>
 
@@ -822,7 +821,7 @@ const BracketRenderer = ({
             >
                 {/* Верхняя сетка (Winners Bracket) */}
                 <div className="bracket winners-bracket">
-                    <h2 className="bracket-title">Основная сетка</h2>
+                    <h2 className="bracket-title" style={{ textAlign: 'center', border: 'none' }}>Основная сетка</h2>
                     <div className="bracket-grid">
                         {winnerRoundKeys.sort((a, b) => Number(a) - Number(b)).map((round) => {
                             const roundMatches = winnerRounds[round];
@@ -894,7 +893,7 @@ const BracketRenderer = ({
                     <>
                         <hr className="bracket-divider" />
                         <div className="bracket losers-bracket">
-                            <h2 className="bracket-title">Нижняя сетка</h2>
+                            <h2 className="bracket-title" style={{ textAlign: 'center', border: 'none' }}>Нижняя сетка</h2>
                             <div className="bracket-grid">
                                 {Object.keys(loserRounds).sort((a, b) => Number(a) - Number(b)).map((round) => {
                                     const roundMatches = loserRounds[round];
@@ -961,11 +960,11 @@ const BracketRenderer = ({
                     <>
                         <hr className="bracket-divider" />
                         <div className="final-matches-container">
-                            <h2 className="bracket-title">Финальные матчи</h2>
+                            <h2 className="bracket-title" style={{ textAlign: 'center', border: 'none' }}>Финальные матчи</h2>
                             <div className="final-matches-grid">
                                 {grandFinalMatch && (
                                     <div className="bracket grand-final">
-                                        <h3 className="match-title">Большой финал</h3>
+                                        <h3 className="match-title" style={{ textAlign: 'center', border: 'none' }}>Большой финал</h3>
                                         <div
                                             key={grandFinalMatch.id}
                                             className={`custom-seed ${selectedMatch === parseInt(grandFinalMatch.id) ? 'selected' : ''}`}
@@ -1011,7 +1010,7 @@ const BracketRenderer = ({
                                 )}
                                 {placementMatch && (
                                     <div className="bracket placement-match">
-                                        <h3 className="match-title">Матч за 3-е место</h3>
+                                        <h3 className="match-title" style={{ textAlign: 'center', border: 'none' }}>Матч за 3-е место</h3>
                                         <div
                                             key={placementMatch.id}
                                             className={`custom-seed ${selectedMatch === parseInt(placementMatch.id) ? 'selected' : ''}`}
