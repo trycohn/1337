@@ -801,6 +801,10 @@ function Profile() {
 
     // Render friend item with additional info on hover
     const renderFriendItem = (friend) => {
+        // Проверяем и устанавливаем статус по умолчанию, если он отсутствует
+        const onlineStatus = friend.friend.online_status || 'offline';
+        const lastActive = friend.friend.last_active || 'недавно';
+        
         return (
             <div key={friend.id} className="friend-item">
                 <a href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} className="friend-link">
@@ -810,9 +814,9 @@ function Profile() {
                         className="friend-avatar"
                     />
                     <div className="friend-details">
-                        <span className="friend-username">{friend.friend.username}</span>
-                        <span className={`friend-status ${friend.friend.online_status === 'online' ? 'online' : 'offline'}`}>
-                            {friend.friend.online_status === 'online' ? 'Онлайн' : 'Был в сети ' + friend.friend.last_active}
+                        <span className="friend-username" title={friend.friend.username}>{friend.friend.username}</span>
+                        <span className={`friend-status ${onlineStatus === 'online' ? 'online' : 'offline'}`}>
+                            {onlineStatus === 'online' ? 'Онлайн' : `Был в сети ${lastActive}`}
                         </span>
                     </div>
                 </a>
