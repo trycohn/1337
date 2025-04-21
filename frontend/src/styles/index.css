@@ -1,0 +1,19 @@
+/* Главный файл стилей */
+
+/* Импорт переменных */
+@import './variables.css';
+
+/* Импорт базовых стилей */
+@import './base.css';
+
+/* Импорт общих компонентов */
+@import './components.css';
+
+/* Импорт стилей макета */
+@import './layout.css';
+
+/* Импорт утилит */
+@import './utilities.css';
+
+/* Импорт анимаций */
+@import './animations.css'; 
