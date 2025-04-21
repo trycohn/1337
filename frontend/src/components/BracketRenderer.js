@@ -546,12 +546,7 @@ const BracketRenderer = ({
     const winnerRoundKeys = Object.keys(winnerRounds);
     const hasWinnerMatches = winnerRoundKeys.length > 0 || Object.keys(loserRounds).length > 0 || placementMatch || grandFinalMatch;
 
-    if (!hasWinnerMatches) {
-        console.log('BracketRenderer: нет матчей для отображения после группировки');
-        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
-    }
-
-    // Добавим новую функцию для открытия сетки в отдельной вкладке
+    // Добавим новую функцию для открытия сетки в отдельной вкладке - поднимем её до условных блоков
     const handleOpenInNewTab = useCallback(() => {
         // Создаем копию текущего состояния сетки для передачи в новое окно
         const bracketData = {
@@ -790,6 +785,11 @@ const BracketRenderer = ({
         // Открываем новую вкладку с созданным URL
         window.open(url, '_blank');
     }, [games, format, winnerRounds, loserRounds, placementMatch, grandFinalMatch]);
+
+    if (!hasWinnerMatches) {
+        console.log('BracketRenderer: нет матчей для отображения после группировки');
+        return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
+    }
 
     return (
         // Внешний контейнер для обработчиков и overflow
