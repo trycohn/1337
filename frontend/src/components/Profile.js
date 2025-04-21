@@ -23,7 +23,7 @@ function Profile() {
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const fileInputRef = useRef(null);
     
-    // Email verification states
+    // Email verification states re
     const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
     const [isResendDisabled, setIsResendDisabled] = useState(false);
