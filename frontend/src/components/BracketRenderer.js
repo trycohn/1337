@@ -356,7 +356,7 @@ const BracketRenderer = ({
         window.open(url, '_blank');
     }, [games, format, groupedMatches]);
     
-    // Функция для притягивания сетки к краю
+    // Функция для притягивания сетки к краю - полностью переписана
     const snapToBoundary = useCallback(() => {
         if (!wrapperRef.current || !bracketContentRef.current) return;
 
@@ -368,33 +368,35 @@ const BracketRenderer = ({
         
         const maxOvershoot = 100; // Максимальное расстояние выхода за пределы в пикселях
         
-        // Изменяем логику проверки границ, чтобы позволить свободное перемещение в допустимых пределах
+        // Упрощенная логика - притягиваем только если сетка ушла слишком далеко за границы
+        // Проверяем, насколько далеко сетка ушла за границы
+        const overLeftEdge = wrapperRect.left - contentRect.left;
+        const overRightEdge = contentRect.right - wrapperRect.right;
+        const overTopEdge = wrapperRect.top - contentRect.top;
+        const overBottomEdge = contentRect.bottom - wrapperRect.bottom;
         
-        // Проверяем правую границу (слишком далеко вправо)
-        if (contentRect.left > wrapperRect.right - maxOvershoot) {
-            newX = wrapperRect.width - maxOvershoot;
+        // Корректируем позицию только если сетка ушла за пределы больше чем на maxOvershoot
+        if (overLeftEdge > maxOvershoot) {
+            newX = position.x + (overLeftEdge - maxOvershoot);
         }
         
-        // Проверяем левую границу (слишком далеко влево)
-        if (contentRect.right < wrapperRect.left + maxOvershoot) {
-            newX = maxOvershoot - contentRect.width / scale;
+        if (overRightEdge > maxOvershoot) {
+            newX = position.x - (overRightEdge - maxOvershoot);
         }
         
-        // Проверяем нижнюю границу (слишком далеко вниз)
-        if (contentRect.top > wrapperRect.bottom - maxOvershoot) {
-            newY = wrapperRect.height - maxOvershoot;
+        if (overTopEdge > maxOvershoot) {
+            newY = position.y + (overTopEdge - maxOvershoot);
         }
         
-        // Проверяем верхнюю границу (слишком далеко вверх)
-        if (contentRect.bottom < wrapperRect.top + maxOvershoot) {
-            newY = maxOvershoot - contentRect.height / scale;
+        if (overBottomEdge > maxOvershoot) {
+            newY = position.y - (overBottomEdge - maxOvershoot);
         }
         
         // Применяем новые координаты только если они изменились
         if (newX !== position.x || newY !== position.y) {
             setPosition({ x: newX, y: newY });
         }
-    }, [position, scale]);
+    }, [position]);
     
     // Обработчик изменения масштаба с проверкой границ
     const handleScaleChange = useCallback((newScale) => {
@@ -741,12 +743,31 @@ const BracketRenderer = ({
         }
     }, [isInitialized, resetView]);
 
-    // Отслеживаем изменение размера окна для пересчета позиции
+    // Обработчик изменения размера окна для адаптивности
     useEffect(() => {
         const handleResize = () => {
-            // При изменении размера окна проверяем границы
+            // Устанавливаем адаптивную высоту для турнирной сетки
+            if (wrapperRef.current) {
+                const windowHeight = window.innerHeight;
+                // Для мобильных устройств
+                if (window.innerWidth < 768) {
+                    // Используем почти всю высоту экрана для мобильных
+                    wrapperRef.current.style.height = `${windowHeight - 100}px`;
+                } else if (window.innerWidth >= 1028) {
+                    // Для десктопа используем фиксированную высоту
+                    wrapperRef.current.style.height = '800px';
+                } else {
+                    // Для промежуточных размеров
+                    wrapperRef.current.style.height = '600px';
+                }
+            }
+            
+            // Вызываем функцию проверки границ при изменении размера окна
             snapToBoundary();
         };
+        
+        // Вызываем обработчик при монтировании компонента
+        handleResize();
         
         window.addEventListener('resize', handleResize);
         return () => {
@@ -803,7 +824,7 @@ const BracketRenderer = ({
                 <button onClick={handleZoomOut} title="Уменьшить">-</button>
                 <button onClick={handleResetView} title="Сбросить вид">↺</button>
                 <button onClick={handleOpenInNewTab} title="Открыть в отдельной вкладке">
-                    <i className="fa-solid fa-up-right-from-square"></i>
+                    ↗
                 </button>
             </div>
 
@@ -813,7 +834,8 @@ const BracketRenderer = ({
                 className="bracket-renderer-content"
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                    transformOrigin: '0 0' // Важно для масштабирования от верхнего левого угла
+                    transformOrigin: '0 0', // Важно для масштабирования от верхнего левого угла
+                    color: '#000000' // Цвет шрифта по умолчанию - черный
                 }}
             >
                 {/* Верхняя сетка (Winners Bracket) */}
@@ -856,8 +878,8 @@ const BracketRenderer = ({
                                                             }
                                                         }}
                                                     >
-                                                        <span className="team-name">{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                        <span className="team-score">
+                                                        <span className="team-name" style={{ color: '#000000' }}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                        <span className="team-score" style={{ color: '#000000' }}>
                                                             {match.participants[0]?.score ?? '-'}
                                                         </span>
                                                     </div>
@@ -870,8 +892,8 @@ const BracketRenderer = ({
                                                              }
                                                          }}
                                                     >
-                                                        <span className="team-name">{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                        <span className="team-score">
+                                                        <span className="team-name" style={{ color: '#000000' }}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                        <span className="team-score" style={{ color: '#000000' }}>
                                                             {match.participants[1]?.score ?? '-'}
                                                         </span>
                                                     </div>
@@ -921,8 +943,8 @@ const BracketRenderer = ({
                                                                     }
                                                                 }}
                                                             >
-                                                                <span className="team-name">{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                                <span className="team-score">
+                                                                <span className="team-name" style={{ color: '#000000' }}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score" style={{ color: '#000000' }}>
                                                                     {match.participants[0]?.score ?? '-'}
                                                                 </span>
                                                             </div>
@@ -935,8 +957,8 @@ const BracketRenderer = ({
                                                                      }
                                                                  }}
                                                             >
-                                                                <span className="team-name">{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                                <span className="team-score">
+                                                                <span className="team-name" style={{ color: '#000000' }}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score" style={{ color: '#000000' }}>
                                                                     {match.participants[1]?.score ?? '-'}
                                                                 </span>
                                                             </div>
@@ -982,8 +1004,8 @@ const BracketRenderer = ({
                                                         }
                                                     }}
                                                 >
-                                                    <span className="team-name">{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
+                                                    <span className="team-name" style={{ color: '#000000' }}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score" style={{ color: '#000000' }}>
                                                         {grandFinalMatch.participants[0]?.score ?? '-'}
                                                     </span>
                                                 </div>
@@ -996,8 +1018,8 @@ const BracketRenderer = ({
                                                          }
                                                     }}
                                                 >
-                                                    <span className="team-name">{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
+                                                    <span className="team-name" style={{ color: '#000000' }}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score" style={{ color: '#000000' }}>
                                                         {grandFinalMatch.participants[1]?.score ?? '-'}
                                                     </span>
                                                 </div>
@@ -1028,8 +1050,8 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
-                                                    <span className="team-name">{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
+                                                    <span className="team-name" style={{ color: '#000000' }}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score" style={{ color: '#000000' }}>
                                                         {placementMatch.participants[0]?.score ?? '-'}
                                                     </span>
                                                 </div>
@@ -1042,8 +1064,8 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
-                                                    <span className="team-name">{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
+                                                    <span className="team-name" style={{ color: '#000000' }}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score" style={{ color: '#000000' }}>
                                                         {placementMatch.participants[1]?.score ?? '-'}
                                                     </span>
                                                 </div>
