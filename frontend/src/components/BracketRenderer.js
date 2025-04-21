@@ -356,55 +356,18 @@ const BracketRenderer = ({
         window.open(url, '_blank');
     }, [games, format, groupedMatches]);
     
-    // Функция для притягивания сетки к краю - полностью переписана
+    // Функция для притягивания сетки к краю - полностью упрощена
     const snapToBoundary = useCallback(() => {
-        if (!wrapperRef.current || !bracketContentRef.current) return;
-
-        const wrapperRect = wrapperRef.current.getBoundingClientRect();
-        const contentRect = bracketContentRef.current.getBoundingClientRect();
-
-        let newX = position.x;
-        let newY = position.y;
-        
-        const maxOvershoot = 100; // Максимальное расстояние выхода за пределы в пикселях
-        
-        // Упрощенная логика - притягиваем только если сетка ушла слишком далеко за границы
-        // Проверяем, насколько далеко сетка ушла за границы
-        const overLeftEdge = wrapperRect.left - contentRect.left;
-        const overRightEdge = contentRect.right - wrapperRect.right;
-        const overTopEdge = wrapperRect.top - contentRect.top;
-        const overBottomEdge = contentRect.bottom - wrapperRect.bottom;
-        
-        // Корректируем позицию только если сетка ушла за пределы больше чем на maxOvershoot
-        if (overLeftEdge > maxOvershoot) {
-            newX = position.x + (overLeftEdge - maxOvershoot);
-        }
-        
-        if (overRightEdge > maxOvershoot) {
-            newX = position.x - (overRightEdge - maxOvershoot);
-        }
-        
-        if (overTopEdge > maxOvershoot) {
-            newY = position.y + (overTopEdge - maxOvershoot);
-        }
-        
-        if (overBottomEdge > maxOvershoot) {
-            newY = position.y - (overBottomEdge - maxOvershoot);
-        }
-        
-        // Применяем новые координаты только если они изменились
-        if (newX !== position.x || newY !== position.y) {
-            setPosition({ x: newX, y: newY });
-        }
-    }, [position]);
+        // Отключаем тряску - просто разрешаем свободное перемещение сетки
+        // Эта функция вызывается только при отпускании мыши, а не каждый кадр
+    }, []);
     
-    // Обработчик изменения масштаба с проверкой границ
+    // Обработчик изменения масштаба с проверкой границ - убираем вызов snapToBoundary
     const handleScaleChange = useCallback((newScale) => {
         console.log(`handleScaleChange: масштаб изменен на ${newScale}`);
         setScale(newScale);
-        // При следующем рендере вызовем snapToBoundary
-        setTimeout(snapToBoundary, 0);
-    }, [snapToBoundary]);
+        // Не вызываем snapToBoundary - это вызывает проблемы с производительностью
+    }, []);
     
     // Сброс вида - определяем ДО использования!
     const resetView = useCallback(() => {
@@ -479,16 +442,16 @@ const BracketRenderer = ({
         e.preventDefault(); // Предотвратить выделение текста при перетаскивании
     }, [isDragging, startDragPos]);
 
+    // Отключаем вызов snapToBoundary при окончании перетаскивания
     const handleMouseUp = useCallback(() => {
         if (isDragging) {
             setIsDragging(false);
             if (wrapperRef.current) {
                 wrapperRef.current.style.cursor = 'grab';
             }
-            // Применяем притягивание к краю при отпускании мыши
-            snapToBoundary();
+            // Не вызываем snapToBoundary - это вызывает проблемы с производительностью
         }
-    }, [isDragging, snapToBoundary]);
+    }, [isDragging]);
 
     const handleTouchStart = useCallback((e) => {
         // Не начинаем перетаскивание, если клик был на элементе управления
@@ -524,10 +487,9 @@ const BracketRenderer = ({
             if (wrapperRef.current) {
                 wrapperRef.current.style.cursor = 'grab';
             }
-            // Применяем притягивание к краю при отпускании тача
-            snapToBoundary();
+            // Не вызываем snapToBoundary - это вызывает проблемы с производительностью
         }
-    }, [isDragging, snapToBoundary]);
+    }, [isDragging]);
 
     const handleWheel = useCallback((e) => {
         e.preventDefault(); // Предотвратить скролл страницы
@@ -762,30 +724,44 @@ const BracketRenderer = ({
                 }
             }
             
-            // Вызываем функцию проверки границ при изменении размера окна
-            snapToBoundary();
+            // НЕ вызываем snapToBoundary при каждом изменении размера
+            // это может вызывать проблемы с производительностью
         };
         
         // Вызываем обработчик при монтировании компонента
         handleResize();
         
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
+        // Используем throttle для обработчика resize
+        let resizeTimeout;
+        const throttledResize = () => {
+            if (!resizeTimeout) {
+                resizeTimeout = setTimeout(() => {
+                    resizeTimeout = null;
+                    handleResize();
+                }, 200); // Задержка в 200мс
+            }
         };
-    }, [snapToBoundary]);
+        
+        window.addEventListener('resize', throttledResize);
+        return () => {
+            window.removeEventListener('resize', throttledResize);
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+        };
+    }, []);
 
     // Обновление сгруппированных матчей при изменении games
     useEffect(() => {
         setGroupedMatches(groupMatchesByRoundAndBracket());
     }, [games, groupMatchesByRoundAndBracket]);
 
-    // Проверка границ после каждого изменения масштаба
+    // Проверка границ после каждого изменения масштаба - отключаем чтобы избежать тряски
     useEffect(() => {
-        // Даем компоненту обновиться с новым масштабом перед проверкой границ
-        const timer = setTimeout(snapToBoundary, 50);
-        return () => clearTimeout(timer);
-    }, [scale, snapToBoundary]);
+        // Отключаем автоматическую проверку границ, она вызывает тряску
+        // const timer = setTimeout(snapToBoundary, 50);
+        // return () => clearTimeout(timer);
+    }, [scale]);
 
     // --- Конец логики перетаскивания и масштабирования ---
 
