@@ -950,7 +950,7 @@ header.header {
 
 .auth-form-container {
   padding: 30px;
-  min-height: 380px; /* Фиксированная минимальная высота для форм */
+  min-height: 440px; /* Фиксированная минимальная высота для форм */
   position: relative;
 }
 
