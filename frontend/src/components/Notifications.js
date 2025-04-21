@@ -255,7 +255,7 @@ function Notifications() {
 
       // Отмечаем уведомление как прочитанное только после ответа
       await axios.post(
-        `/api/notifications/mark-read?userId=${user.id}&notificationId=${invitationId}`,
+        `/api/notifications/mark-read?userId=${notifications.find(n => n.invitation_id === invitationId)?.user_id}&notificationId=${invitationId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

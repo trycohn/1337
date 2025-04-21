@@ -68,6 +68,7 @@ function TournamentDetails() {
     const [selectedWinnerId, setSelectedWinnerId] = useState(null);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
+    const [selectedUser, setSelectedUser] = useState(null);
     const wsRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
