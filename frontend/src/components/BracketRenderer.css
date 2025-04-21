@@ -3,7 +3,7 @@
     overflow: hidden;   /* Обрезаем все, что выходит за пределы */
     width: 100%;        /* Занимает всю ширину родителя */
     height: 70vh;       /* Примерная высота, можно настроить */
-    background-color: #f0f0f0; /* Фон для наглядности */
+    background-color: #f0f0f0; /* Унифицированный фон */
     border: 1px solid #ccc;
     user-select: none; /* Отключить выделение текста */
     cursor: grab; /* Курсор по умолчанию */
@@ -16,7 +16,7 @@
     gap: 30px;         /* Пространство между сетками */
     padding: 40px 20px 20px 20px; /* Внутренний отступ, сверху больше места для заголовков */
     will-change: transform; /* Оптимизация для transform */
-    background-color: #ffffff; /* Белый фон для самой сетки */
+    background-color: #f0f0f0; /* Унифицированный фон как у wrapper */
     position: relative; /* Для позиционирования заголовков */
     transform-origin: 0 0; /* Важно для масштабирования от верхнего левого угла */
 }
@@ -36,18 +36,24 @@
     font-size: 16px;
     border: 1px solid #ccc;
     background-color: white;
-    border-radius: 4px;
+    color: #333; /* Цвет шрифта #333 согласно требованиям */
+    border-radius: 50%; /* Круглые кнопки */
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: background-color 0.3s, color 0.3s; /* Плавный переход для hover */
 }
+
 .bracket-controls button:hover {
-    background-color: #eee;
+    background-color: #333; /* Фон #333 при наведении */
+    color: white; /* Белый текст при наведении */
 }
+
 .bracket-controls button:active {
-     background-color: #ddd;
+     background-color: #222; /* Немного темнее при нажатии */
+     color: white;
 }
 
 .bracket-title {

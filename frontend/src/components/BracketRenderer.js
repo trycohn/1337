@@ -22,6 +22,46 @@ const BracketRenderer = ({
     const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
     const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
     
+    // Функция для притягивания сетки к краю
+    const snapToBoundary = useCallback(() => {
+        if (!wrapperRef.current || !bracketContentRef.current) return;
+
+        const wrapperRect = wrapperRef.current.getBoundingClientRect();
+        const contentRect = bracketContentRef.current.getBoundingClientRect();
+
+        let newX = position.x;
+        let newY = position.y;
+        
+        // Проверяем правую границу
+        if (contentRect.right < wrapperRect.right) {
+            // Если сетка заходит за правую границу, притягиваем к ней
+            newX = wrapperRect.width - (contentRect.width / scale);
+        }
+        
+        // Проверяем левую границу
+        if (contentRect.left > wrapperRect.left) {
+            // Если сетка не доходит до левой границы, притягиваем к ней
+            newX = 0;
+        }
+        
+        // Проверяем нижнюю границу
+        if (contentRect.bottom < wrapperRect.bottom) {
+            // Если сетка заходит за нижнюю границу, притягиваем к ней
+            newY = wrapperRect.height - (contentRect.height / scale);
+        }
+        
+        // Проверяем верхнюю границу
+        if (contentRect.top > wrapperRect.top) {
+            // Если сетка не доходит до верхней границы, притягиваем к ней
+            newY = 0;
+        }
+        
+        // Применяем новые координаты только если они изменились
+        if (newX !== position.x || newY !== position.y) {
+            setPosition({ x: newX, y: newY });
+        }
+    }, [position, scale]);
+    
     // --- Логика перетаскивания и масштабирования ---
     const handleMouseDown = useCallback((e) => {
         if (e.button !== 0) return; // Только левая кнопка
@@ -55,8 +95,10 @@ const BracketRenderer = ({
             if (wrapperRef.current) {
                 wrapperRef.current.style.cursor = 'grab';
             }
+            // Применяем притягивание к краю при отпускании мыши
+            snapToBoundary();
         }
-    }, [isDragging]);
+    }, [isDragging, snapToBoundary]);
 
     const handleTouchStart = useCallback((e) => {
         // Не начинаем перетаскивание, если клик был на элементе управления
@@ -92,8 +134,10 @@ const BracketRenderer = ({
             if (wrapperRef.current) {
                 wrapperRef.current.style.cursor = 'grab';
             }
+            // Применяем притягивание к краю при отпускании тача
+            snapToBoundary();
         }
-    }, [isDragging]);
+    }, [isDragging, snapToBoundary]);
 
     const handleWheel = useCallback((e) => {
         e.preventDefault(); // Предотвратить скролл страницы
@@ -115,15 +159,23 @@ const BracketRenderer = ({
             const newY = mouseY - mousePointY * newScale;
 
             setPosition({ x: newX, y: newY });
-            setScale(newScale);
+            // Используем handleScaleChange вместо прямой установки масштаба
+            handleScaleChange(newScale);
         }
-    }, [scale, position]);
+    }, [scale, position, handleScaleChange]);
 
     // Сброс вида
     const resetView = useCallback(() => {
-        setScale(1);
         setPosition({ x: 0, y: 0 });
-    }, []);
+        handleScaleChange(1); // Используем handleScaleChange для сброса масштаба
+    }, [handleScaleChange]);
+
+    // Обработчик изменения масштаба с проверкой границ
+    const handleScaleChange = useCallback((newScale) => {
+        setScale(newScale);
+        // При следующем рендере вызовем snapToBoundary
+        setTimeout(snapToBoundary, 0);
+    }, [snapToBoundary]);
 
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = useCallback(() => {
@@ -218,15 +270,16 @@ const BracketRenderer = ({
         if (wrapper) {
             wrapper.addEventListener('mousedown', handleMouseDown);
             wrapper.addEventListener('wheel', handleWheel, { passive: false });
-            // Добавляем touchstart к wrapper, а не к window
             wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
 
             // Mousemove и mouseup слушаем на window, чтобы отловить отпускание кнопки вне wrapper
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
-            // Touchmove и touchend также на window
             window.addEventListener('touchmove', handleTouchMove, { passive: false });
             window.addEventListener('touchend', handleTouchEnd);
+            
+            // Устанавливаем курсор grab по умолчанию
+            wrapper.style.cursor = 'grab';
         }
 
         return () => {
@@ -240,12 +293,19 @@ const BracketRenderer = ({
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]); // Добавили touch хендлеры в зависимости
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
     // Обновление сгруппированных матчей при изменении games
     useEffect(() => {
         setGroupedMatches(groupMatchesByRoundAndBracket());
     }, [games, groupMatchesByRoundAndBracket]);
+
+    // Проверка границ после каждого изменения масштаба
+    useEffect(() => {
+        // Даем компоненту обновиться с новым масштабом перед проверкой границ
+        const timer = setTimeout(snapToBoundary, 50);
+        return () => clearTimeout(timer);
+    }, [scale, snapToBoundary]);
 
     // --- Конец логики перетаскивания и масштабирования ---
 
@@ -273,8 +333,8 @@ const BracketRenderer = ({
         >
             {/* Контролы масштабирования */}
             <div className="bracket-controls">
-                <button onClick={() => setScale(s => Math.min(s + 0.1, 3))} title="Увеличить">+</button>
-                <button onClick={() => setScale(s => Math.max(s - 0.1, 0.5))} title="Уменьшить">-</button>
+                <button onClick={() => handleScaleChange(Math.min(scale + 0.1, 3))} title="Увеличить">+</button>
+                <button onClick={() => handleScaleChange(Math.max(scale - 0.1, 0.5))} title="Уменьшить">-</button>
                 <button onClick={resetView} title="Сбросить вид">↺</button>
             </div>
 
