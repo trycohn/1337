@@ -94,19 +94,10 @@ const BracketRenderer = ({
 
         console.log(`resetView: wrapper (${wrapperWidth}x${wrapperHeight}), content (${contentWidth}x${contentHeight})`);
 
-        // Если контент больше, чем оболочка, центрируем его
-        let newX = 0;
-        let newY = 0;
-        
-        if (contentWidth > wrapperWidth) {
-            // Центрируем по горизонтали
-            newX = (wrapperWidth - contentWidth) / 2;
-        }
-        
-        if (contentHeight > wrapperHeight) {
-            // Центрируем по вертикали
-            newY = (wrapperHeight - contentHeight) / 2;
-        }
+        // Отображаем левый верхний угол сетки вместо центрирования
+        // Небольшое смещение от самого края для лучшей видимости
+        const newX = 20; // Небольшой отступ от левого края
+        const newY = 20; // Небольшой отступ сверху
         
         // Устанавливаем новые значения позиции и масштаба
         console.log(`resetView: установка новой позиции (${newX}, ${newY}), масштаб 1`);
@@ -382,8 +373,8 @@ const BracketRenderer = ({
                 // Устанавливаем курсор
                 wrapperRef.current.style.cursor = 'grab';
                 
-                // Устанавливаем исходную позицию
-                setPosition({ x: 0, y: 0 });
+                // Устанавливаем исходную позицию на левый верхний угол с отступами
+                setPosition({ x: 20, y: 20 });
                 
                 // Устанавливаем состояние инициализации
                 setIsInitialized(true);
@@ -458,6 +449,7 @@ const BracketRenderer = ({
                     
                     // Применяем начальный вид с задержкой
                     setTimeout(() => {
+                        // Используем resetView, который теперь показывает левый верхний угол
                         resetView();
                         console.log('BracketRenderer: начальный вид применен после изменений DOM');
                     }, 300);
@@ -489,6 +481,7 @@ const BracketRenderer = ({
                 
                 // Небольшая задержка для гарантии
                 setTimeout(() => {
+                    // Вызываем resetView для установки начальной позиции
                     resetView();
                     console.log('BracketRenderer: вид сброшен после полной загрузки');
                 }, 300);
