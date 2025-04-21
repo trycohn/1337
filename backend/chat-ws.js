@@ -6,12 +6,9 @@ const url = require('url');
 // Карта для хранения WebSocket-соединений по ID пользователя
 const clients = new Map();
 
-function setupChatWebSocket(server) {
-    // Создаем WebSocket-сервер, привязанный к HTTP‑серверу (аналогично уведомлениям)
-    const wss = new WebSocket.Server({
-        server,
-        path: '/chat'
-    });
+function setupChatWebSocket() {
+    // Создаем WebSocket‑сервер чата в режиме noServer
+    const wss = new WebSocket.Server({ noServer: true });
     
     // Обработка установления соединения
     wss.on('connection', async function connection(ws, request) {
@@ -219,4 +216,5 @@ async function handleReadStatus(userId, payload) {
     }
 }
 
-module.exports = { setupChatWebSocket, clients }; 
+// Экспорт
+module.exports = { setupChatWebSocket, clients };

@@ -112,11 +112,41 @@ app.use('/api/playerStats', require('./routes/playerStats'));
 app.use('/api/friends', require('./routes/friends'));
 app.use('/api/chats', require('./routes/chats'));
 
-// Настройка WebSocket сервера
-const wss = new WebSocket.Server({ 
-  server,
-  path: '/ws' // Добавляем путь для WebSocket соединений
+// Настройка WebSocket сервера уведомлений (используем режим noServer)
+const wss = new WebSocket.Server({
+  noServer: true
 });
+
+// Подключаем WebSocket‑сервер чата в режиме noServer
+const { setupChatWebSocket } = require('./chat-ws');
+const chatWss = setupChatWebSocket();
+
+// Единый роутер WebSocket‑апгрейдов
+server.on('upgrade', (request, socket, head) => {
+  try {
+    const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+
+    if (pathname === '/ws') {
+      wss.handleUpgrade(request, socket, head, ws => {
+        wss.emit('connection', ws, request);
+      });
+      return;
+    }
+
+    if (pathname === '/chat') {
+      chatWss.handleUpgrade(request, socket, head, ws => {
+        chatWss.emit('connection', ws, request);
+      });
+      return;
+    }
+
+    // Неизвестный путь
+    socket.destroy();
+  } catch (err) {
+    socket.destroy();
+  }
+});
+
 // Карта для хранения подключений пользователей
 const connectedClients = new Map();
 // Карта для хранения клиентов, просматривающих турниры (tournamentId -> [clients])
@@ -199,9 +229,7 @@ app.set('wss', wss);
 app.set('connectedClients', connectedClients);
 app.set('tournamentClients', tournamentClients);
 
-// Настройка WebSocket для чата
-const { setupChatWebSocket } = require('./chat-ws');
-setupChatWebSocket(server);
+// Настройка WebSocket для чата уже выполнена выше (chatWss)
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({
