@@ -81,7 +81,7 @@ function Messenger() {
     
     // Обработка нового сообщения
     const handleNewMessage = (message) => {
-        if (activeChat && activeChat.id === message.chat_id) {
+        if (activeChat && Number(activeChat.id) === Number(message.chat_id)) {
             // Если чат активен, добавляем сообщение в список и помечаем как прочитанное
             setMessages(prevMessages => [...prevMessages, message]);
             markMessageAsRead(message.id);
@@ -99,7 +99,7 @@ function Messenger() {
     
     // Обновление статуса прочтения сообщения
     const updateMessageReadStatus = (data) => {
-        if (activeChat && activeChat.id === data.chat_id) {
+        if (activeChat && Number(activeChat.id) === Number(data.chat_id)) {
             setMessages(prevMessages => 
                 prevMessages.map(msg => 
                     msg.id === data.message_id 
