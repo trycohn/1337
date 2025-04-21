@@ -141,11 +141,11 @@ async function handleChatMessage(userId, payload) {
             }
         }
         
-        // Отправляем подтверждение отправителю
+        // Отправляем подтверждение отправителю тем же типом 'message'
         const senderWs = clients.get(userId);
         if (senderWs && senderWs.readyState === WebSocket.OPEN) {
             senderWs.send(JSON.stringify({
-                type: 'message_sent',
+                type: 'message',
                 payload: message
             }));
         }
