@@ -738,9 +738,9 @@ input, button {
 
 .friend-status {
     font-size: 13px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    max-width: 100%;
+    max-width: fit-content;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1636,9 +1636,9 @@ input, button {
 
 .friend-status {
     font-size: 13px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    max-width: 100%;
+    max-width: fit-content;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
