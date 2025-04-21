@@ -538,19 +538,15 @@ function TournamentDetails() {
                 }
             }
             
-            // Формируем данные запроса
+            // Формируем данные запроса, строго соответствующие API сервера
             const requestData = {
-                matchId: updatedMatch.id,
+                matchId: parseInt(updatedMatch.id),
                 winner_team_id: winnerId,
                 score1,
                 score2
             };
             
-            // Если это бай-матч, добавляем явное указание на это
-            if (isByeMatch) {
-                requestData.is_bye_match = true;
-            }
-            
+            console.log('🔍 Sending request to:', `/api/tournaments/${id}/update-match`);
             // Отправляем запрос на сервер
             const response = await api.post(
                 `/api/tournaments/${id}/update-match`,
@@ -558,7 +554,7 @@ function TournamentDetails() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
-            console.log('Ответ на обновление матча:', response.data);
+            console.log('✅ Ответ сервера:', response.data);
             
             // Обновляем данные турнира после изменения
             if (response.data.tournament) {
