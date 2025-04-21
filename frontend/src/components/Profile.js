@@ -804,17 +804,6 @@ function Profile() {
         // Проверяем и устанавливаем статус по умолчанию, если он отсутствует
         const onlineStatus = friend.friend.online_status || 'offline';
         
-        // Функция для получения класса статуса онлайн
-        const getOnlineStatusClass = () => {
-            if (!onlineStatus) return '';
-            
-            if (onlineStatus === 'online') {
-                return 'status-online';
-            } else {
-                return 'status-offline';
-            }
-        };
-        
         return (
             <div key={friend.id} className="friend-item">
                 <a href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} className="friend-link">
@@ -825,8 +814,8 @@ function Profile() {
                     />
                     <div className="friend-details">
                         <span className="friend-username" title={friend.friend.username}>{friend.friend.username}</span>
-                        <span className={`friend-status ${getOnlineStatusClass()}`}>
-                            {onlineStatus}
+                        <span className={`friend-status ${onlineStatus === 'online' ? 'online' : 'offline'}`}>
+                            {onlineStatus === 'online' ? 'Онлайн' : onlineStatus}
                         </span>
                     </div>
                 </a>
