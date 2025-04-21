@@ -30,6 +30,332 @@ const BracketRenderer = ({
     const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
     const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
     
+    // Группировка матчей по раундам и сеткам
+    const groupMatchesByRoundAndBracket = useCallback(() => {
+        if (!games || !Array.isArray(games) || games.length === 0) {
+            return { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
+        }
+        
+        console.log('Группировка матчей, проверяем bracket_type:', games.map(g => ({id: g.id, bracket_type: g.bracket_type, round: g.round, is_third_place_match: g.is_third_place_match})));
+        
+        // Если у матчей отсутствует bracket_type, считаем их принадлежащими к winners bracket
+        const winnerMatches = games.filter(
+            (m) => (m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type) && !m.is_third_place_match
+        );
+        const loserMatches = games.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match);
+        // Матч за 3-е место (placement) или помеченный флагом is_third_place_match
+        const placementMatch = games.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
+        const grandFinalMatch = games.find((m) => m.bracket_type === 'grand_final');
+
+        console.log('После фильтрации:');
+        console.log('Winner matches:', winnerMatches.length);
+        console.log('Loser matches:', loserMatches.length);
+        console.log('Placement match:', placementMatch ? 'да' : 'нет');
+        console.log('Grand final match:', grandFinalMatch ? 'да' : 'нет');
+
+        // Определяем максимальный раунд для верхней и нижней сетки
+        const winnerRoundValues = winnerMatches.map(m => m.round);
+        console.log('Раунды в winner matches:', winnerRoundValues);
+        
+        // Чтобы предварительный раунд (-1) не влиял на maxWinnerRound, 
+        // сначала фильтруем положительные раунды, затем находим максимум
+        const positiveWinnerRounds = winnerRoundValues.filter(r => r >= 0);
+        const maxWinnerRound = positiveWinnerRounds.length > 0 ? Math.max(...positiveWinnerRounds) : 0;
+        
+        const maxLoserRound = loserMatches.length > 0 ? Math.max(...loserMatches.map(m => m.round), 0) : 0;
+
+        console.log('Max Winner Round:', maxWinnerRound);
+        console.log('Max Loser Round:', maxLoserRound);
+
+        // Группировка верхней сетки по раундам (начиная с round = 0)
+        const winnerRounds = {};
+        for (let round = 0; round <= maxWinnerRound; round++) {
+            const roundMatches = winnerMatches.filter(m => m.round === round);
+            // Сортируем матчи по match_number, чтобы они всегда отображались в одинаковом порядке
+            roundMatches.sort((a, b) => {
+                // Проверяем наличие match_number перед парсингом
+                const numA = a.match_number ? parseInt(a.match_number) : 0;
+                const numB = b.match_number ? parseInt(b.match_number) : 0;
+                return numA - numB;
+            });
+            if (roundMatches.length > 0) {
+                winnerRounds[round] = roundMatches;
+            }
+        }
+
+        // Добавляем предварительный раунд (round = -1) если есть такие матчи
+        const prelimMatches = winnerMatches.filter(m => m.round === -1);
+        // Сортируем предварительные матчи по match_number
+        prelimMatches.sort((a, b) => {
+            // Проверяем наличие match_number перед парсингом
+            const numA = a.match_number ? parseInt(a.match_number) : 0;
+            const numB = b.match_number ? parseInt(b.match_number) : 0;
+            return numA - numB;
+        });
+        if (prelimMatches.length > 0) {
+            winnerRounds[-1] = prelimMatches;
+        }
+
+        console.log('Winner rounds после группировки:', Object.keys(winnerRounds));
+
+        // Группировка нижней сетки по раундам (начиная с round = 1)
+        const loserRounds = {};
+        for (let round = 1; round <= maxLoserRound; round++) {
+            const roundMatches = loserMatches.filter(m => m.round === round);
+            // Сортируем матчи по match_number
+            roundMatches.sort((a, b) => {
+                // Проверяем наличие match_number перед парсингом
+                const numA = a.match_number ? parseInt(a.match_number) : 0;
+                const numB = b.match_number ? parseInt(b.match_number) : 0;
+                return numA - numB;
+            });
+            if (roundMatches.length > 0) {
+                loserRounds[round] = roundMatches;
+            }
+        }
+
+        return { winnerRounds, loserRounds, placementMatch, grandFinalMatch };
+    }, [games]);
+    
+    // ВАЖНО: Определяем все useCallback хуки в начале компонента, чтобы соблюдать правила хуков
+    // Функция для открытия сетки в отдельной вкладке
+    const handleOpenInNewTab = useCallback(() => {
+        // Получаем данные из группировки
+        const currentGroupedMatches = groupedMatches || { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
+        
+        // Создаем копию текущего состояния сетки для передачи в новое окно
+        const bracketData = {
+            games: games || [],
+            format: format || 'single_elimination',
+            groupedMatches: currentGroupedMatches
+        };
+        
+        // Создаем HTML-документ, который будет отображаться в новой вкладке
+        const html = `
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Турнирная сетка</title>
+            <style>
+                body, html {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                    font-family: Arial, sans-serif;
+                }
+                .fullscreen-bracket {
+                    width: 100%;
+                    height: 100vh;
+                    background-color: #f5f5f5;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    overflow: auto;
+                }
+                .bracket-header {
+                    width: 100%;
+                    padding: 10px;
+                    background-color: #333;
+                    color: white;
+                    text-align: center;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                }
+                .bracket-container {
+                    padding: 20px;
+                    min-width: fit-content;
+                    overflow: auto;
+                }
+                .bracket-grid {
+                    display: flex;
+                    gap: 40px;
+                    margin-bottom: 30px;
+                }
+                .round-column {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 15px;
+                }
+                .match-card {
+                    width: 200px;
+                    background-color: white;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    padding: 10px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+                .match-title {
+                    font-size: 0.8em;
+                    color: #777;
+                    margin-bottom: 5px;
+                }
+                .team {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 5px 0;
+                    border-bottom: 1px solid #eee;
+                }
+                .team:last-child {
+                    border-bottom: none;
+                }
+                .winner {
+                    font-weight: bold;
+                    color: #2e7d32;
+                }
+                .bracket-title {
+                    font-size: 1.2em;
+                    margin: 20px 0 10px 0;
+                    color: #333;
+                    font-weight: bold;
+                }
+                .bracket-divider {
+                    width: 100%;
+                    border: none;
+                    border-top: 1px solid #ccc;
+                    margin: 20px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="fullscreen-bracket">
+                <div class="bracket-header">
+                    <h1>Турнирная сетка</h1>
+                </div>
+                <div class="bracket-container" id="bracket-container"></div>
+            </div>
+            <script>
+                // Вставляем данные сетки напрямую в скрипт
+                const bracketData = ${JSON.stringify(bracketData)};
+                
+                // Функция для рендеринга сетки из данных
+                function renderBracket() {
+                    try {
+                        const container = document.getElementById('bracket-container');
+                        
+                        // Создаем HTML для отображения сетки
+                        let html = '';
+                        
+                        // Отображаем Winners Bracket
+                        if (bracketData.groupedMatches.winnerRounds && Object.keys(bracketData.groupedMatches.winnerRounds).length > 0) {
+                            html += '<h2 class="bracket-title">Основная сетка</h2>';
+                            html += '<div class="bracket-grid">';
+                            
+                            // Отображаем раунды в порядке возрастания
+                            const rounds = Object.keys(bracketData.groupedMatches.winnerRounds).sort((a, b) => Number(a) - Number(b));
+                            
+                            for (const round of rounds) {
+                                const roundMatches = bracketData.groupedMatches.winnerRounds[round];
+                                html += '<div class="round-column">';
+                                html += '<h3>' + (round === '-1' ? 'Предварительный' : 'Раунд ' + round) + '</h3>';
+                                
+                                for (const match of roundMatches) {
+                                    html += renderMatch(match);
+                                }
+                                
+                                html += '</div>';
+                            }
+                            
+                            html += '</div>';
+                        }
+                        
+                        // Отображаем Losers Bracket
+                        if (bracketData.format === 'double_elimination' && 
+                            bracketData.groupedMatches.loserRounds && 
+                            Object.keys(bracketData.groupedMatches.loserRounds).length > 0) {
+                            html += '<hr class="bracket-divider">';
+                            html += '<h2 class="bracket-title">Нижняя сетка</h2>';
+                            html += '<div class="bracket-grid">';
+                            
+                            const rounds = Object.keys(bracketData.groupedMatches.loserRounds).sort((a, b) => Number(a) - Number(b));
+                            
+                            for (const round of rounds) {
+                                const roundMatches = bracketData.groupedMatches.loserRounds[round];
+                                html += '<div class="round-column">';
+                                html += '<h3>Раунд ' + round + '</h3>';
+                                
+                                for (const match of roundMatches) {
+                                    html += renderMatch(match);
+                                }
+                                
+                                html += '</div>';
+                            }
+                            
+                            html += '</div>';
+                        }
+                        
+                        // Отображаем финальные матчи
+                        if (bracketData.groupedMatches.grandFinalMatch || bracketData.groupedMatches.placementMatch) {
+                            html += '<hr class="bracket-divider">';
+                            html += '<h2 class="bracket-title">Финальные матчи</h2>';
+                            html += '<div class="bracket-grid">';
+                            
+                            if (bracketData.groupedMatches.grandFinalMatch) {
+                                html += '<div class="round-column">';
+                                html += '<h3>Большой финал</h3>';
+                                html += renderMatch(bracketData.groupedMatches.grandFinalMatch);
+                                html += '</div>';
+                            }
+                            
+                            if (bracketData.groupedMatches.placementMatch) {
+                                html += '<div class="round-column">';
+                                html += '<h3>Матч за 3-е место</h3>';
+                                html += renderMatch(bracketData.groupedMatches.placementMatch);
+                                html += '</div>';
+                            }
+                            
+                            html += '</div>';
+                        }
+                            
+                            container.innerHTML = html;
+                        } catch (error) {
+                            console.error('Ошибка при рендеринге сетки:', error);
+                            document.getElementById('bracket-container').innerHTML = '<p>Ошибка при рендеринге сетки: ' + error.message + '</p>';
+                        }
+                    }
+                    
+                    // Функция для рендеринга матча
+                    function renderMatch(match) {
+                        let html = '<div class="match-card">';
+                        html += '<div class="match-title">' + (match.name || 'Матч') + '</div>';
+                        
+                        if (match.participants && match.participants.length >= 2) {
+                            for (const participant of match.participants) {
+                                const isWinner = participant.isWinner;
+                                html += '<div class="team ' + (isWinner ? 'winner' : '') + '">';
+                                html += '<span>' + (participant.name || 'TBD') + '</span>';
+                                html += '<span>' + (participant.score !== undefined ? participant.score : '-') + '</span>';
+                                html += '</div>';
+                            }
+                        } else {
+                            html += '<div class="team">TBD</div>';
+                            html += '<div class="team">TBD</div>';
+                        }
+                        
+                        html += '</div>';
+                        return html;
+                    }
+                    
+                    // Запускаем рендеринг после загрузки страницы
+                    window.onload = renderBracket;
+                </script>
+            </body>
+            </html>
+        `;
+        
+        // Создаем Blob с HTML-содержимым
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        
+        // Открываем новую вкладку с созданным URL
+        window.open(url, '_blank');
+    }, [games, format, groupedMatches]);
+    
     // Функция для притягивания сетки к краю
     const snapToBoundary = useCallback(() => {
         if (!wrapperRef.current || !bracketContentRef.current) return;
@@ -224,93 +550,6 @@ const BracketRenderer = ({
             handleScaleChange(newScale);
         }
     }, [scale, position, handleScaleChange]);
-
-    // Группировка матчей по раундам и сеткам
-    const groupMatchesByRoundAndBracket = useCallback(() => {
-        if (!games || !Array.isArray(games) || games.length === 0) {
-            return { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
-        }
-        
-        console.log('Группировка матчей, проверяем bracket_type:', games.map(g => ({id: g.id, bracket_type: g.bracket_type, round: g.round, is_third_place_match: g.is_third_place_match})));
-        
-        // Если у матчей отсутствует bracket_type, считаем их принадлежащими к winners bracket
-        const winnerMatches = games.filter(
-            (m) => (m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type) && !m.is_third_place_match
-        );
-        const loserMatches = games.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match);
-        // Матч за 3-е место (placement) или помеченный флагом is_third_place_match
-        const placementMatch = games.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
-        const grandFinalMatch = games.find((m) => m.bracket_type === 'grand_final');
-
-        console.log('После фильтрации:');
-        console.log('Winner matches:', winnerMatches.length);
-        console.log('Loser matches:', loserMatches.length);
-        console.log('Placement match:', placementMatch ? 'да' : 'нет');
-        console.log('Grand final match:', grandFinalMatch ? 'да' : 'нет');
-
-        // Определяем максимальный раунд для верхней и нижней сетки
-        const winnerRoundValues = winnerMatches.map(m => m.round);
-        console.log('Раунды в winner matches:', winnerRoundValues);
-        
-        // Чтобы предварительный раунд (-1) не влиял на maxWinnerRound, 
-        // сначала фильтруем положительные раунды, затем находим максимум
-        const positiveWinnerRounds = winnerRoundValues.filter(r => r >= 0);
-        const maxWinnerRound = positiveWinnerRounds.length > 0 ? Math.max(...positiveWinnerRounds) : 0;
-        
-        const maxLoserRound = loserMatches.length > 0 ? Math.max(...loserMatches.map(m => m.round), 0) : 0;
-
-        console.log('Max Winner Round:', maxWinnerRound);
-        console.log('Max Loser Round:', maxLoserRound);
-
-        // Группировка верхней сетки по раундам (начиная с round = 0)
-        const winnerRounds = {};
-        for (let round = 0; round <= maxWinnerRound; round++) {
-            const roundMatches = winnerMatches.filter(m => m.round === round);
-            // Сортируем матчи по match_number, чтобы они всегда отображались в одинаковом порядке
-            roundMatches.sort((a, b) => {
-                // Проверяем наличие match_number перед парсингом
-                const numA = a.match_number ? parseInt(a.match_number) : 0;
-                const numB = b.match_number ? parseInt(b.match_number) : 0;
-                return numA - numB;
-            });
-            if (roundMatches.length > 0) {
-                winnerRounds[round] = roundMatches;
-            }
-        }
-
-        // Добавляем предварительный раунд (round = -1) если есть такие матчи
-        const prelimMatches = winnerMatches.filter(m => m.round === -1);
-        // Сортируем предварительные матчи по match_number
-        prelimMatches.sort((a, b) => {
-            // Проверяем наличие match_number перед парсингом
-            const numA = a.match_number ? parseInt(a.match_number) : 0;
-            const numB = b.match_number ? parseInt(b.match_number) : 0;
-            return numA - numB;
-        });
-        if (prelimMatches.length > 0) {
-            winnerRounds[-1] = prelimMatches;
-        }
-
-        console.log('Winner rounds после группировки:', Object.keys(winnerRounds));
-
-        // Группировка нижней сетки по раундам (начиная с round = 1)
-        const loserRounds = {};
-        for (let round = 1; round <= maxLoserRound; round++) {
-            const roundMatches = loserMatches.filter(m => m.round === round);
-            // Сортируем матчи по match_number
-            roundMatches.sort((a, b) => {
-                // Проверяем наличие match_number перед парсингом
-                const numA = a.match_number ? parseInt(a.match_number) : 0;
-                const numB = b.match_number ? parseInt(b.match_number) : 0;
-                return numA - numB;
-            });
-            if (roundMatches.length > 0) {
-                loserRounds[round] = roundMatches;
-            }
-        }
-
-        return { winnerRounds, loserRounds, placementMatch, grandFinalMatch };
-    }, [games]);
 
     // Установка и удаление обработчиков
     useEffect(() => {
@@ -545,246 +784,6 @@ const BracketRenderer = ({
     
     const winnerRoundKeys = Object.keys(winnerRounds);
     const hasWinnerMatches = winnerRoundKeys.length > 0 || Object.keys(loserRounds).length > 0 || placementMatch || grandFinalMatch;
-
-    // Добавим новую функцию для открытия сетки в отдельной вкладке - поднимем её до условных блоков
-    const handleOpenInNewTab = useCallback(() => {
-        // Создаем копию текущего состояния сетки для передачи в новое окно
-        const bracketData = {
-            games,
-            format,
-            groupedMatches: {
-                winnerRounds,
-                loserRounds,
-                placementMatch,
-                grandFinalMatch
-            }
-        };
-        
-        // Создаем HTML-документ, который будет отображаться в новой вкладке
-        const html = `
-        <!DOCTYPE html>
-        <html lang="ru">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Турнирная сетка</title>
-            <style>
-                body, html {
-                    margin: 0;
-                    padding: 0;
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                    font-family: Arial, sans-serif;
-                }
-                .fullscreen-bracket {
-                    width: 100%;
-                    height: 100vh;
-                    background-color: #f5f5f5;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    overflow: auto;
-                }
-                .bracket-header {
-                    width: 100%;
-                    padding: 10px;
-                    background-color: #333;
-                    color: white;
-                    text-align: center;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                    position: sticky;
-                    top: 0;
-                    z-index: 100;
-                }
-                .bracket-container {
-                    padding: 20px;
-                    min-width: fit-content;
-                    overflow: auto;
-                }
-                .bracket-grid {
-                    display: flex;
-                    gap: 40px;
-                    margin-bottom: 30px;
-                }
-                .round-column {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 15px;
-                }
-                .match-card {
-                    width: 200px;
-                    background-color: white;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    padding: 10px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                }
-                .match-title {
-                    font-size: 0.8em;
-                    color: #777;
-                    margin-bottom: 5px;
-                }
-                .team {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 5px 0;
-                    border-bottom: 1px solid #eee;
-                }
-                .team:last-child {
-                    border-bottom: none;
-                }
-                .winner {
-                    font-weight: bold;
-                    color: #2e7d32;
-                }
-                .bracket-title {
-                    font-size: 1.2em;
-                    margin: 20px 0 10px 0;
-                    color: #333;
-                    font-weight: bold;
-                }
-                .bracket-divider {
-                    width: 100%;
-                    border: none;
-                    border-top: 1px solid #ccc;
-                    margin: 20px 0;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="fullscreen-bracket">
-                <div class="bracket-header">
-                    <h1>Турнирная сетка</h1>
-                </div>
-                <div class="bracket-container" id="bracket-container"></div>
-            </div>
-            <script>
-                // Вставляем данные сетки напрямую в скрипт
-                const bracketData = ${JSON.stringify(bracketData)};
-                
-                // Функция для рендеринга сетки из данных
-                function renderBracket() {
-                    try {
-                        const container = document.getElementById('bracket-container');
-                        
-                        // Создаем HTML для отображения сетки
-                        let html = '';
-                        
-                        // Отображаем Winners Bracket
-                        if (bracketData.groupedMatches.winnerRounds && Object.keys(bracketData.groupedMatches.winnerRounds).length > 0) {
-                            html += '<h2 class="bracket-title">Основная сетка</h2>';
-                            html += '<div class="bracket-grid">';
-                            
-                            // Отображаем раунды в порядке возрастания
-                            const rounds = Object.keys(bracketData.groupedMatches.winnerRounds).sort((a, b) => Number(a) - Number(b));
-                            
-                            for (const round of rounds) {
-                                const roundMatches = bracketData.groupedMatches.winnerRounds[round];
-                                html += '<div class="round-column">';
-                                html += '<h3>' + (round === '-1' ? 'Предварительный' : 'Раунд ' + round) + '</h3>';
-                                
-                                for (const match of roundMatches) {
-                                    html += renderMatch(match);
-                                }
-                                
-                                html += '</div>';
-                            }
-                            
-                            html += '</div>';
-                        }
-                        
-                        // Отображаем Losers Bracket
-                        if (bracketData.format === 'double_elimination' && 
-                            bracketData.groupedMatches.loserRounds && 
-                            Object.keys(bracketData.groupedMatches.loserRounds).length > 0) {
-                            html += '<hr class="bracket-divider">';
-                            html += '<h2 class="bracket-title">Нижняя сетка</h2>';
-                            html += '<div class="bracket-grid">';
-                            
-                            const rounds = Object.keys(bracketData.groupedMatches.loserRounds).sort((a, b) => Number(a) - Number(b));
-                            
-                            for (const round of rounds) {
-                                const roundMatches = bracketData.groupedMatches.loserRounds[round];
-                                html += '<div class="round-column">';
-                                html += '<h3>Раунд ' + round + '</h3>';
-                                
-                                for (const match of roundMatches) {
-                                    html += renderMatch(match);
-                                }
-                                
-                                html += '</div>';
-                            }
-                            
-                            html += '</div>';
-                        }
-                        
-                        // Отображаем финальные матчи
-                        if (bracketData.groupedMatches.grandFinalMatch || bracketData.groupedMatches.placementMatch) {
-                            html += '<hr class="bracket-divider">';
-                            html += '<h2 class="bracket-title">Финальные матчи</h2>';
-                            html += '<div class="bracket-grid">';
-                            
-                            if (bracketData.groupedMatches.grandFinalMatch) {
-                                html += '<div class="round-column">';
-                                html += '<h3>Большой финал</h3>';
-                                html += renderMatch(bracketData.groupedMatches.grandFinalMatch);
-                                html += '</div>';
-                            }
-                            
-                            if (bracketData.groupedMatches.placementMatch) {
-                                html += '<div class="round-column">';
-                                html += '<h3>Матч за 3-е место</h3>';
-                                html += renderMatch(bracketData.groupedMatches.placementMatch);
-                                html += '</div>';
-                            }
-                            
-                            html += '</div>';
-                        }
-                            
-                            container.innerHTML = html;
-                        } catch (error) {
-                            console.error('Ошибка при рендеринге сетки:', error);
-                            document.getElementById('bracket-container').innerHTML = '<p>Ошибка при рендеринге сетки: ' + error.message + '</p>';
-                        }
-                    }
-                    
-                    // Функция для рендеринга матча
-                    function renderMatch(match) {
-                        let html = '<div class="match-card">';
-                        html += '<div class="match-title">' + (match.name || 'Матч') + '</div>';
-                        
-                        if (match.participants && match.participants.length >= 2) {
-                            for (const participant of match.participants) {
-                                const isWinner = participant.isWinner;
-                                html += '<div class="team ' + (isWinner ? 'winner' : '') + '">';
-                                html += '<span>' + (participant.name || 'TBD') + '</span>';
-                                html += '<span>' + (participant.score !== undefined ? participant.score : '-') + '</span>';
-                                html += '</div>';
-                            }
-                        } else {
-                            html += '<div class="team">TBD</div>';
-                            html += '<div class="team">TBD</div>';
-                        }
-                        
-                        html += '</div>';
-                        return html;
-                    }
-                    
-                    // Запускаем рендеринг после загрузки страницы
-                    window.onload = renderBracket;
-                </script>
-            </body>
-            </html>
-        `;
-        
-        // Создаем Blob с HTML-содержимым
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        
-        // Открываем новую вкладку с созданным URL
-        window.open(url, '_blank');
-    }, [games, format, winnerRounds, loserRounds, placementMatch, grandFinalMatch]);
 
     if (!hasWinnerMatches) {
         console.log('BracketRenderer: нет матчей для отображения после группировки');
