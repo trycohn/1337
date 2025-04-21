@@ -940,15 +940,7 @@ function Profile() {
                                     )}
                                     {user.steam_url && (
                                         <div className="steam-buttons">
-                                            <button onClick={unlinkSteam}>Отвязать стим</button>
-                                            {premierRank > 0 && (
-                                                <button 
-                                                    onClick={() => fetchCs2Stats()}
-                                                    disabled={isLoadingCs2Stats}
-                                                >
-                                                    {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
-                                                </button>
-                                            )}
+                                            <button className="unlink-button" onClick={unlinkSteam}>Отвязать стим</button>
                                         </div>
                                     )}
                                 </div>
@@ -968,13 +960,13 @@ function Profile() {
                                                     : (faceitInfo 
                                                         ? <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a> 
                                                         : user.faceit_id)
-                                                }
-                                              </span>
+                                            }
+                                          </span>
                                             : 'Не привязан'
                                         }
                                     </p>
                                     {user.faceit_id && (
-                                        <button onClick={unlinkFaceit}>Отвязать FACEIT</button>
+                                        <button className="unlink-button" onClick={unlinkFaceit}>Отвязать FACEIT</button>
                                     )}
                                 </div>
                             </section>
@@ -1025,6 +1017,15 @@ function Profile() {
                                     <div className="rank-container">
                                         {renderRankGroups()}
                                     </div>
+                                    {premierRank > 0 && (
+                                        <button 
+                                            className="update-stats-button" 
+                                            onClick={() => fetchCs2Stats()}
+                                            disabled={isLoadingCs2Stats}
+                                        >
+                                            {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
+                                        </button>
+                                    )}
                                     {cs2Stats && (
                                         <div className="cs2-detailed-stats">
                                             {/* Дополнительная статистика CS2, если доступна */}
