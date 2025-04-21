@@ -818,8 +818,9 @@ function Profile() {
                 </a>
                 <div className="friend-hover-info">
                     <div className="friend-stats">
-                        <p>Матчей вместе: {friend.matches_together || 0}</p>
-                        <p>Винрейт: {friend.win_rate || 0}%</p>
+                        <p>Матчей вместе: <span>{friend.matches_together || 0}</span></p>
+                        <p>Винрейт против друга: <span>{friend.win_rate || 0}%</span></p>
+                        <p>Последняя игра: <span>{friend.last_match || 'Нет данных'}</span></p>
                     </div>
                     <button className="send-message-btn">Сообщение</button>
                 </div>
