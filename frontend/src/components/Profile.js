@@ -799,6 +799,17 @@ function Profile() {
         );
     };
 
+    // Функция для получения класса статуса онлайн
+    const getOnlineStatusClass = (status) => {
+        if (!status) return '';
+        
+        if (status === 'online') {
+            return 'status-online';
+        } else {
+            return 'status-offline';
+        }
+    };
+
     // Render friend item with additional info on hover
     const renderFriendItem = (friend) => {
         // Проверяем и устанавливаем статус по умолчанию, если он отсутствует
@@ -814,8 +825,8 @@ function Profile() {
                     />
                     <div className="friend-details">
                         <span className="friend-username" title={friend.friend.username}>{friend.friend.username}</span>
-                        <span className={`friend-status ${onlineStatus === 'online' ? 'online' : 'offline'}`}>
-                            {onlineStatus === 'online' ? 'Онлайн' : onlineStatus}
+                        <span className={`friend-status ${getOnlineStatusClass(onlineStatus)}`}>
+                            {onlineStatus}
                         </span>
                     </div>
                 </a>
