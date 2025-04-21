@@ -299,10 +299,12 @@ function TournamentDetails() {
         }
 
         try {
-            const payload =
-                tournament.participant_type === 'solo'
+            const payload = tournament.format === 'mix' 
+                ? {} 
+                : tournament.participant_type === 'solo'
                     ? {}
                     : { teamId: selectedTeam || null, newTeamName: selectedTeam ? null : newTeamName };
+            
             const participateResponse = await api.post(`/api/tournaments/${id}/participate`, payload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -848,7 +850,7 @@ function TournamentDetails() {
                 <div className="participation-controls">
                     {!isParticipating && matches.length === 0 ? (
                         <>
-                            {tournament.participant_type === 'team' && (
+                            {tournament.format !== 'mix' && tournament.participant_type === 'team' && (
                                 <div className="team-selection">
                                     <label>Выберите команду или создайте новую:</label>
                                     <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}>

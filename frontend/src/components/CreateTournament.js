@@ -130,6 +130,25 @@ function CreateTournament() {
           <option value="double">Double Elimination</option>
           <option value="mix">Mix</option>
         </select>
+        <select
+          name="game"
+          value={formData.game}
+          onChange={handleInputChange}
+          required
+        >
+          {formData.format === 'mix' ? (
+            <option value="cs2">Counter Strike 2</option>
+          ) : (
+            <>
+              <option value="">Выберите игру</option>
+              {games.map((game) => (
+                <option key={game.id} value={game.name}>
+                  {game.name}
+                </option>
+              ))}
+            </>
+          )}
+        </select>
         {formData.format === 'mix' && (
           <div className="form-group">
             <label>Количество игроков в команде</label>
