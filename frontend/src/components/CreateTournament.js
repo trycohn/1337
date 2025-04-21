@@ -95,12 +95,16 @@ function CreateTournament() {
 
   const handleFormatChange = (e) => {
     const format = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      format,
-      // Для Mix турнира автоматически устанавливаем team_size
-      team_size: format === 'mix' ? 5 : prev.team_size
-    }));
+    console.log('Выбран формат:', format);
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        format,
+        team_size: format === 'mix' ? 5 : prev.team_size
+      };
+      console.log('Новые данные формы:', newData);
+      return newData;
+    });
   };
 
   return (
@@ -140,6 +144,7 @@ function CreateTournament() {
             />
           </div>
         )}
+        {console.log('Текущий формат:', formData.format)}
         <DatePicker
           selected={formData.start_date}
           onChange={(date) => setFormData((prev) => ({ ...prev, start_date: date }))}
