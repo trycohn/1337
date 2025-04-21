@@ -17,10 +17,9 @@ jobs:
           cd /var/www/1337community.com
           git pull
           # Остановка и удаление старых процессов PM2
-          pm2 stop backend || true
-          pm2 delete backend || true
           pm2 stop 1337-backend || true
           pm2 delete 1337-backend || true
+          npm install
           # Установка зависимостей и запуск бэкенда
           cd backend && npm install
           pm2 start server.js --name "1337-backend"
