@@ -27,8 +27,8 @@ function CreateTournament() {
     name: '',
     description: '',
     format: '',
-    game: 'cs2', // Фиксированное значение для CS2
-    team_size: 5, // Значение по умолчанию для Mix турнира
+    game: '', // Убираем фиксированное значение
+    team_size: 5,
     max_teams: 16,
     start_date: '',
     prize_pool: '',
@@ -37,13 +37,18 @@ function CreateTournament() {
   const { runWithLoader } = useLoaderAutomatic();
 
   useEffect(() => {
+    console.log('Начало загрузки игр');
     // Используем хук для загрузки списка игр с прелоадером
     runWithLoader(async () => {
       try {
+        console.log('Отправка запроса на /api/tournaments/games');
         const response = await axios.get('/api/tournaments/games');
+        console.log('Ответ от сервера:', response.data);
         setGames(response.data);
+        console.log('Состояние games обновлено:', response.data);
       } catch (error) {
         console.error('Ошибка загрузки игр:', error);
+        console.error('Детали ошибки:', error.response?.data);
       }
     });
   }, [runWithLoader]);
@@ -108,6 +113,10 @@ function CreateTournament() {
     });
   };
 
+  console.log('Текущий формат:', formData.format);
+  console.log('Текущая игра:', formData.game);
+  console.log('Список игр:', games);
+
   return (
     <section className="create-tournament">
       <h2>Создать турнир</h2>
@@ -164,7 +173,6 @@ function CreateTournament() {
             />
           </div>
         )}
-        {console.log('Текущий формат:', formData.format)}
         <DatePicker
           selected={formData.start_date}
           onChange={(date) => setFormData((prev) => ({ ...prev, start_date: date }))}
