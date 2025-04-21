@@ -1,9 +1,52 @@
 // frontend/src/components/TournamentDetails.js
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../axios';
 import './TournamentDetails.css';
-import BracketRenderer from './BracketRenderer';
+
+// Используем React.lazy для асинхронной загрузки тяжелого компонента
+const BracketRenderer = lazy(() => 
+    import('./BracketRenderer').catch(err => {
+        console.error('Ошибка при загрузке BracketRenderer:', err);
+        // Возвращаем fallback компонент в случае ошибки
+        return { 
+            default: () => (
+                <div className="bracket-error">
+                    Не удалось загрузить турнирную сетку. Пожалуйста, обновите страницу.
+                </div>
+            ) 
+        };
+    })
+);
+
+// Компонент для случаев ошибок при рендеринге сетки
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error('Ошибка в BracketRenderer:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="bracket-error">
+                    Произошла ошибка при отображении турнирной сетки. 
+                    Пожалуйста, обновите страницу или попробуйте позже.
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
 
 function TournamentDetails() {
     const { id } = useParams();
@@ -236,11 +279,8 @@ function TournamentDetails() {
             // Небольшой хак для принудительного обновления интерфейса
             // это может помочь с инициализацией drag and drop
             const timer = setTimeout(() => {
-                const dummyState = {};
-                setMessage(prev => {
-                    // Не меняем сообщение, просто вызываем перерисовку
-                    return prev;
-                });
+                // Просто вызываем перерисовку, не меняя фактически сообщение
+                setMessage(prev => prev);
             }, 500);
             
             return () => clearTimeout(timer);
@@ -756,15 +796,19 @@ function TournamentDetails() {
                     {Array.isArray(games) && games.length > 0 ? (
                         <div className="custom-tournament-bracket">
                             <div className="tournament-bracket">
-                                <BracketRenderer
-                                    games={games}
-                                    canEditMatches={canEditMatches}
-                                    selectedMatch={selectedMatch}
-                                    setSelectedMatch={setSelectedMatch}
-                                    handleTeamClick={handleTeamClick}
-                                    format={tournament.format}
-                                    key={`bracket-${matches.length}-${selectedMatch}`}
-                                />
+                                <ErrorBoundary>
+                                    <Suspense fallback={<div className="loading-bracket">Загрузка турнирной сетки...</div>}>
+                                        <BracketRenderer
+                                            games={games}
+                                            canEditMatches={canEditMatches}
+                                            selectedMatch={selectedMatch}
+                                            setSelectedMatch={setSelectedMatch}
+                                            handleTeamClick={handleTeamClick}
+                                            format={tournament.format}
+                                            key={`bracket-${matches.length}-${selectedMatch}`}
+                                        />
+                                    </Suspense>
+                                </ErrorBoundary>
                             </div>
                         </div>
                     ) : (

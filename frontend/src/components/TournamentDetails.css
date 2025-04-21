@@ -245,4 +245,33 @@
 .tournament-details p.error {
     background-color: #ffebee;
     color: #c62828;
+}
+
+/* Стили для loading-bracket и bracket-error */
+.loading-bracket {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: #777;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+}
+
+.bracket-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: #c62828;
+    background-color: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
 } 

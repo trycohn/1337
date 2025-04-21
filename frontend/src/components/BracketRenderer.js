@@ -31,14 +31,6 @@ const BracketRenderer = ({
     const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
     const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
     
-    // Функция инициализации drag and drop функциональности
-    const initializeDragAndDrop = useCallback(() => {
-        if (wrapperRef.current) {
-            wrapperRef.current.style.cursor = 'grab';
-            setIsInitialized(true);
-        }
-    }, []);
-    
     // Функция для притягивания сетки к краю
     const snapToBoundary = useCallback(() => {
         if (!wrapperRef.current || !bracketContentRef.current) return;
@@ -87,6 +79,41 @@ const BracketRenderer = ({
         setTimeout(snapToBoundary, 0);
     }, [snapToBoundary]);
     
+    // Сброс вида - определяем ДО использования!
+    const resetView = useCallback(() => {
+        console.log('Запуск resetView');
+        if (!wrapperRef.current || !bracketContentRef.current) {
+            console.warn('resetView: DOM элементы не найдены');
+            return;
+        }
+
+        const wrapperWidth = wrapperRef.current.clientWidth;
+        const wrapperHeight = wrapperRef.current.clientHeight;
+        const contentWidth = bracketContentRef.current.clientWidth;
+        const contentHeight = bracketContentRef.current.clientHeight;
+
+        console.log(`resetView: wrapper (${wrapperWidth}x${wrapperHeight}), content (${contentWidth}x${contentHeight})`);
+
+        // Если контент больше, чем оболочка, центрируем его
+        let newX = 0;
+        let newY = 0;
+        
+        if (contentWidth > wrapperWidth) {
+            // Центрируем по горизонтали
+            newX = (wrapperWidth - contentWidth) / 2;
+        }
+        
+        if (contentHeight > wrapperHeight) {
+            // Центрируем по вертикали
+            newY = (wrapperHeight - contentHeight) / 2;
+        }
+        
+        // Устанавливаем новые значения позиции и масштаба
+        console.log(`resetView: установка новой позиции (${newX}, ${newY}), масштаб 1`);
+        setPosition({ x: newX, y: newY });
+        setScale(1);
+    }, []);
+    
     // Обработчики для кнопок масштабирования
     const handleZoomIn = useCallback(() => {
         console.log('handleZoomIn: увеличиваем масштаб');
@@ -104,7 +131,7 @@ const BracketRenderer = ({
         console.log('handleResetView: сбрасываем вид');
         resetView();
     }, [resetView]);
-
+    
     // --- Логика перетаскивания и масштабирования ---
     const handleMouseDown = useCallback((e) => {
         if (e.button !== 0) return; // Только левая кнопка
@@ -207,41 +234,6 @@ const BracketRenderer = ({
             handleScaleChange(newScale);
         }
     }, [scale, position, handleScaleChange]);
-
-    // Сброс вида
-    const resetView = useCallback(() => {
-        console.log('Запуск resetView');
-        if (!wrapperRef.current || !bracketContentRef.current) {
-            console.warn('resetView: DOM элементы не найдены');
-            return;
-        }
-
-        const wrapperWidth = wrapperRef.current.clientWidth;
-        const wrapperHeight = wrapperRef.current.clientHeight;
-        const contentWidth = bracketContentRef.current.clientWidth;
-        const contentHeight = bracketContentRef.current.clientHeight;
-
-        console.log(`resetView: wrapper (${wrapperWidth}x${wrapperHeight}), content (${contentWidth}x${contentHeight})`);
-
-        // Если контент больше, чем оболочка, центрируем его
-        let newX = 0;
-        let newY = 0;
-        
-        if (contentWidth > wrapperWidth) {
-            // Центрируем по горизонтали
-            newX = (wrapperWidth - contentWidth) / 2;
-        }
-        
-        if (contentHeight > wrapperHeight) {
-            // Центрируем по вертикали
-            newY = (wrapperHeight - contentHeight) / 2;
-        }
-        
-        // Устанавливаем новые значения позиции и масштаба
-        console.log(`resetView: установка новой позиции (${newX}, ${newY}), масштаб 1`);
-        setPosition({ x: newX, y: newY });
-        setScale(1);
-    }, []);
 
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = useCallback(() => {
@@ -446,6 +438,17 @@ const BracketRenderer = ({
         if (!isInitialized && wrapperRef.current) {
             console.log('BracketRenderer: установка MutationObserver');
             
+            // Проверяем, что MutationObserver доступен в браузере
+            if (typeof MutationObserver === 'undefined') {
+                console.warn('BracketRenderer: MutationObserver не поддерживается');
+                // Если MutationObserver не поддерживается, делаем более простую инициализацию
+                if (wrapperRef.current && bracketContentRef.current) {
+                    setIsInitialized(true);
+                    setTimeout(resetView, 300);
+                }
+                return;
+            }
+            
             // Создаем наблюдатель за изменениями DOM
             const observer = new MutationObserver((mutations) => {
                 console.log('BracketRenderer: обнаружены изменения в DOM');
@@ -474,32 +477,7 @@ const BracketRenderer = ({
             };
         }
     }, [isInitialized, resetView]);
-
-    // Отслеживаем изменение размера окна для пересчета позиции
-    useEffect(() => {
-        const handleResize = () => {
-            // При изменении размера окна проверяем границы
-            snapToBoundary();
-        };
-        
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, [snapToBoundary]);
-
-    // Обновление сгруппированных матчей при изменении games
-    useEffect(() => {
-        setGroupedMatches(groupMatchesByRoundAndBracket());
-    }, [games, groupMatchesByRoundAndBracket]);
-
-    // Проверка границ после каждого изменения масштаба
-    useEffect(() => {
-        // Даем компоненту обновиться с новым масштабом перед проверкой границ
-        const timer = setTimeout(snapToBoundary, 50);
-        return () => clearTimeout(timer);
-    }, [scale, snapToBoundary]);
-
+    
     // Добавляем обработчик для document.DOMContentLoaded и window.load
     useEffect(() => {
         // Функция, которая будет вызываться при полной загрузке страницы
@@ -531,6 +509,31 @@ const BracketRenderer = ({
             };
         }
     }, [isInitialized, resetView]);
+
+    // Отслеживаем изменение размера окна для пересчета позиции
+    useEffect(() => {
+        const handleResize = () => {
+            // При изменении размера окна проверяем границы
+            snapToBoundary();
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [snapToBoundary]);
+
+    // Обновление сгруппированных матчей при изменении games
+    useEffect(() => {
+        setGroupedMatches(groupMatchesByRoundAndBracket());
+    }, [games, groupMatchesByRoundAndBracket]);
+
+    // Проверка границ после каждого изменения масштаба
+    useEffect(() => {
+        // Даем компоненту обновиться с новым масштабом перед проверкой границ
+        const timer = setTimeout(snapToBoundary, 50);
+        return () => clearTimeout(timer);
+    }, [scale, snapToBoundary]);
 
     // --- Конец логики перетаскивания и масштабирования ---
 
