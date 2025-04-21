@@ -9,20 +9,28 @@ const clients = new Map();
 function setupChatWebSocket(server) {
     // Создаем WebSocket-сервер
     const wss = new WebSocket.Server({ 
-        server,
+        noServer: true,
         path: '/chat'
+    });
+    
+    // Обработка обновления соединения из HTTP в WebSocket
+    server.on('upgrade', function upgrade(request, socket, head) {
+        const pathname = url.parse(request.url).pathname;
+        
+        if (pathname === '/chat') {
+            wss.handleUpgrade(request, socket, head, function done(ws) {
+                wss.emit('connection', ws, request);
+            });
+        }
     });
     
     // Обработка установления соединения
     wss.on('connection', async function connection(ws, request) {
-        console.log('🔌 Новый клиент подключился к чату');
-        
         // Получаем токен из URL
         const query = url.parse(request.url, true).query;
         const token = query.token;
         
         if (!token) {
-            console.log('❌ Токен не предоставлен, закрываем соединение');
             ws.close(1008, 'Токен не предоставлен');
             return;
         }
@@ -38,12 +46,9 @@ function setupChatWebSocket(server) {
             const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
             
             if (userCheck.rows.length === 0) {
-                console.log(`❌ Пользователь с ID ${userId} не найден, закрываем соединение`);
                 ws.close(1008, 'Пользователь не найден');
                 return;
             }
-            
-            console.log(`✅ Пользователь с ID ${userId} успешно подключился к чату`);
             
             // Сохраняем соединение
             clients.set(userId, ws);
@@ -53,7 +58,6 @@ function setupChatWebSocket(server) {
             
             // Устанавливаем обработчик закрытия соединения
             ws.on('close', function() {
-                console.log(`🔌 Пользователь ${userId} отключился от чата`);
                 clients.delete(userId);
             });
             
@@ -61,7 +65,6 @@ function setupChatWebSocket(server) {
             ws.on('message', async function(message) {
                 try {
                     const data = JSON.parse(message);
-                    console.log(`📨 Получено сообщение от пользователя ${userId}:`, data.type);
                     
                     switch (data.type) {
                         case 'message':
@@ -73,10 +76,10 @@ function setupChatWebSocket(server) {
                             break;
                             
                         default:
-                            console.log('❓ Неизвестный тип сообщения:', data.type);
+                            console.log('Неизвестный тип сообщения:', data.type);
                     }
                 } catch (err) {
-                    console.error('❌ Ошибка обработки сообщения WebSocket:', err);
+                    console.error('Ошибка обработки сообщения WebSocket:', err);
                 }
             });
             
@@ -90,7 +93,7 @@ function setupChatWebSocket(server) {
             }));
             
         } catch (err) {
-            console.error('❌ Ошибка аутентификации WebSocket:', err);
+            console.error('Ошибка аутентификации WebSocket:', err);
             ws.close(1008, 'Ошибка аутентификации');
         }
     });
