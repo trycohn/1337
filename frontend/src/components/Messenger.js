@@ -21,9 +21,16 @@ function Messenger() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = baseUrl.replace(/^https?:/, wsProtocol) + '/chat';
+        // Исправленный код подключения к WebSocket
+        let wsUrl;
+        
+        // Для упрощения - используем относительные URL
+        // Это позволяет браузеру самостоятельно выбрать правильный протокол и хост
+        wsUrl = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        wsUrl += window.location.host;
+        wsUrl += '/chat';
+        
+        console.log('Подключение к WebSocket по адресу:', wsUrl);
         
         const ws = new WebSocket(`${wsUrl}?token=${token}`);
         

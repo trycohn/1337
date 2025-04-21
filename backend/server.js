@@ -40,7 +40,7 @@ const server = http.createServer(app);
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
   const allowedOrigins = process.env.NODE_ENV === 'production'
-      ? ['https://1337community.com', 'https://www.1337community.com']
+      ? ['https://1337community.com', 'https://www.1337community.com', 'https://api.1337community.com']
       : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
   const origin = req.headers.origin || 'https://1337community.com';
   console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
@@ -201,7 +201,13 @@ app.set('tournamentClients', tournamentClients);
 
 // Настройка WebSocket для чата
 const { setupChatWebSocket } = require('./chat-ws');
-setupChatWebSocket(server);
+const chatWss = setupChatWebSocket(server);
+
+// Добавляем обработчик для диагностики upgrade-событий
+server.on('upgrade', (req, socket, head) => {
+  console.log(`Получен upgrade-запрос для: ${req.url}`);
+  // WebSocket-серверы уже имеют свои обработчики, этот только для логирования
+});
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({
