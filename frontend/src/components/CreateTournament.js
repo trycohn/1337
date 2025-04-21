@@ -27,7 +27,8 @@ function CreateTournament() {
     name: '',
     description: '',
     format: '',
-    game: '', // Убираем фиксированное значение
+    game: '',
+    participant_type: 'team',
     team_size: 5,
     max_teams: 16,
     start_date: '',
@@ -70,6 +71,7 @@ function CreateTournament() {
             name: formData.name,
             game: formData.game,
             format: formData.format,
+            participant_type: formData.participant_type,
             team_size: formData.format === 'mix' ? formData.team_size : null,
             max_teams: formData.format === 'mix' ? formData.max_teams : null,
             start_date: formData.start_date.toISOString(),
@@ -106,11 +108,20 @@ function CreateTournament() {
         ...prev,
         format,
         team_size: format === 'mix' ? 5 : prev.team_size,
-        game: format === 'mix' ? 'cs2' : '' // Сбрасываем выбор игры при изменении формата
+        game: format === 'mix' ? 'cs2' : '',
+        participant_type: format === 'mix' ? 'solo' : 'team'
       };
       console.log('Новые данные формы:', newData);
       return newData;
     });
+  };
+
+  const handleParticipantTypeChange = (e) => {
+    const participant_type = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      participant_type
+    }));
   };
 
   console.log('Текущий формат:', formData.format);
@@ -140,6 +151,17 @@ function CreateTournament() {
           <option value="double">Double Elimination</option>
           <option value="mix">Mix</option>
         </select>
+        {formData.format !== 'mix' && (
+          <select
+            name="participant_type"
+            value={formData.participant_type}
+            onChange={handleParticipantTypeChange}
+            required
+          >
+            <option value="team">Командный</option>
+            <option value="solo">Одиночный</option>
+          </select>
+        )}
         <select
           name="game"
           value={formData.game}
