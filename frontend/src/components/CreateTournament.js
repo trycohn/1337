@@ -100,7 +100,8 @@ function CreateTournament() {
       const newData = {
         ...prev,
         format,
-        team_size: format === 'mix' ? 5 : prev.team_size
+        team_size: format === 'mix' ? 5 : prev.team_size,
+        game: format === 'mix' ? 'cs2' : '' // Сбрасываем выбор игры при изменении формата
       };
       console.log('Новые данные формы:', newData);
       return newData;
@@ -142,7 +143,7 @@ function CreateTournament() {
             <>
               <option value="">Выберите игру</option>
               {games.map((game) => (
-                <option key={game.id} value={game.name}>
+                <option key={game.id} value={game.name.toLowerCase()}>
                   {game.name}
                 </option>
               ))}
