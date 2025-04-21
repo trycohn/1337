@@ -494,11 +494,6 @@ input, button {
     opacity: 1;
 }
 
-.user-info {
-    display: flex;
-    flex-direction: column;
-}
-
 /* Модальное окно выбора аватара */
 .avatar-modal {
     max-width: 400px;
