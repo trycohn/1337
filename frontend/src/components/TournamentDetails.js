@@ -464,14 +464,28 @@ function TournamentDetails() {
         
         try {
             // Получаем ID участников и счета
-            const team1Id = updatedMatch?.participants?.[0]?.id;
-            const team2Id = updatedMatch?.participants?.[1]?.id;
+            let team1Id = updatedMatch?.participants?.[0]?.id;
+            let team2Id = updatedMatch?.participants?.[1]?.id;
             const score1 = matchScores.team1;
             const score2 = matchScores.team2;
-            const winnerId = selectedWinnerId;
+            let winnerId = selectedWinnerId;
+            
+            // Преобразуем строковые ID в числовые, если они существуют
+            team1Id = team1Id ? parseInt(team1Id) : null;
+            team2Id = team2Id ? parseInt(team2Id) : null;
+            winnerId = winnerId ? parseInt(winnerId) : null;
+            
+            console.log('Отправляем данные:', {
+                matchId: updatedMatch.id,
+                winner_team_id: winnerId,
+                score1,
+                score2,
+                team1_id: team1Id,
+                team2_id: team2Id
+            });
             
             // Проверяем, что все необходимые данные существуют
-            if (!team1Id || !team2Id || !updatedMatch.id) {
+            if (team1Id === null || team2Id === null || !updatedMatch.id) {
                 throw new Error('Неверные данные участников матча');
             }
             
