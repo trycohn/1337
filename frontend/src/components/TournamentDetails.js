@@ -69,6 +69,10 @@ function TournamentDetails() {
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const wsRef = useRef(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [ratingType, setRatingType] = useState('faceit');
+    const [isCreator, setIsCreator] = useState(false);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -673,9 +677,41 @@ function TournamentDetails() {
         }
     };
 
+    const handleStartTournament = async () => {
+        try {
+            await api.post(`/api/tournaments/${id}/start`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            fetchTournamentData();
+        } catch (err) {
+            setError('Ошибка при старте турнира');
+        }
+    };
+
+    const handleEndTournament = async () => {
+        try {
+            await api.post(`/api/tournaments/${id}/end`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            fetchTournamentData();
+        } catch (err) {
+            setError('Ошибка при завершении турнира');
+        }
+    };
+
+    const handleRegenerateBracket = async () => {
+        try {
+            await api.post(`/api/tournaments/${id}/regenerate`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            fetchTournamentData();
+        } catch (err) {
+            setError('Ошибка при пересоздании сетки');
+        }
+    };
+
     if (!tournament) return <p>Загрузка...</p>;
 
-    const isCreator = user && tournament.created_by === user.id;
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
     const canGenerateBracket = user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
     const canEditMatches = user && (isCreator || adminRequestStatus === 'accepted');
@@ -999,6 +1035,49 @@ function TournamentDetails() {
             )}
             {message && (
                 <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
+            )}
+            {tournament?.format === 'mix' && !tournament?.bracket && (
+                <div className="mix-settings">
+                    <h3>Настройки микса</h3>
+                    <div className="rating-type-selector">
+                        <label>Миксовать по рейтингу:</label>
+                        <select 
+                            value={ratingType}
+                            onChange={(e) => setRatingType(e.target.value)}
+                        >
+                            <option value="faceit">FACEit</option>
+                            <option value="premier">Steam Premier</option>
+                        </select>
+                    </div>
+                </div>
+            )}
+            {tournament?.bracket && tournament?.status === 'pending' && (
+                <div className="tournament-controls">
+                    {isCreator && (
+                        <button 
+                            className="start-tournament"
+                            onClick={handleStartTournament}
+                        >
+                            Стартовать турнир
+                        </button>
+                    )}
+                    <button 
+                        className="regenerate-bracket"
+                        onClick={handleRegenerateBracket}
+                    >
+                        Пересоздать сетку
+                    </button>
+                </div>
+            )}
+            {tournament?.status === 'in_progress' && isCreator && (
+                <div className="tournament-controls">
+                    <button 
+                        className="end-tournament"
+                        onClick={handleEndTournament}
+                    >
+                        Завершить турнир
+                    </button>
+                </div>
             )}
         </section>
     );

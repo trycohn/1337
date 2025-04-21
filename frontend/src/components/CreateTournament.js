@@ -23,15 +23,16 @@ const styles = {
 function CreateTournament() {
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
-  const [createForm, setCreateForm] = useState({
+  const [formData, setFormData] = useState({
     name: '',
-    game: '',
-    format: 'single_elimination',
-    participant_type: 'solo',
-    hasLimit: false,
-    max_participants: '',
-    start_date: new Date(),
     description: '',
+    format: '',
+    game: 'cs2', // Фиксированное значение для CS2
+    team_size: 5, // Значение по умолчанию для Mix турнира
+    max_teams: 16,
+    start_date: '',
+    prize_pool: '',
+    rules: ''
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -61,13 +62,15 @@ function CreateTournament() {
         const response = await axios.post(
           '/api/tournaments',
           {
-            name: createForm.name,
-            game: createForm.game,
-            format: createForm.format,
-            participant_type: createForm.participant_type,
-            max_participants: createForm.hasLimit ? parseInt(createForm.max_participants) : null,
-            start_date: createForm.start_date.toISOString(),
-            description: createForm.description,
+            name: formData.name,
+            game: formData.game,
+            format: formData.format,
+            team_size: formData.format === 'mix' ? formData.team_size : null,
+            max_teams: formData.format === 'mix' ? formData.max_teams : null,
+            start_date: formData.start_date.toISOString(),
+            description: formData.description,
+            prize_pool: formData.prize_pool,
+            rules: formData.rules
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -84,9 +87,19 @@ function CreateTournament() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setCreateForm((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleFormatChange = (e) => {
+    const format = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      format,
+      // Для Mix турнира автоматически устанавливаем team_size
+      team_size: format === 'mix' ? 5 : prev.team_size
     }));
   };
 
@@ -98,13 +111,13 @@ function CreateTournament() {
           type="text"
           name="name"
           placeholder="Название турнира"
-          value={createForm.name}
+          value={formData.name}
           onChange={handleInputChange}
           required
         />
         <select
           name="game"
-          value={createForm.game}
+          value={formData.game}
           onChange={handleInputChange}
           required
         >
@@ -117,44 +130,32 @@ function CreateTournament() {
         </select>
         <select
           name="format"
-          value={createForm.format}
-          onChange={handleInputChange}
+          value={formData.format}
+          onChange={handleFormatChange}
+          required
         >
-          <option value="single_elimination">Single Elimination</option>
-          <option value="double_elimination">Double Elimination</option> {/* Изменено с full_double_elimination */}
+          <option value="">Выберите формат</option>
+          <option value="single">Single Elimination</option>
+          <option value="double">Double Elimination</option>
           <option value="mix">Mix</option>
-          <option value="round_robin">Групповой (Round Robin)</option>
         </select>
-        <select
-          name="participant_type"
-          value={createForm.participant_type}
-          onChange={handleInputChange}
-        >
-          <option value="solo">Solo</option>
-          <option value="team">Команда</option>
-        </select>
-        <label>
-          Ограничение участников:
-          <input
-            type="checkbox"
-            name="hasLimit"
-            checked={createForm.hasLimit}
-            onChange={handleInputChange}
-          />
-        </label>
-        {createForm.hasLimit && (
-          <input
-            type="number"
-            name="max_participants"
-            placeholder="Макс. участников"
-            value={createForm.max_participants}
-            onChange={handleInputChange}
-            required
-          />
+        {formData.format === 'mix' && (
+          <div className="form-group">
+            <label>Количество игроков в команде</label>
+            <input
+              type="number"
+              name="team_size"
+              value={formData.team_size}
+              onChange={handleInputChange}
+              min="2"
+              max="10"
+              required
+            />
+          </div>
         )}
         <DatePicker
-          selected={createForm.start_date}
-          onChange={(date) => setCreateForm((prev) => ({ ...prev, start_date: date }))}
+          selected={formData.start_date}
+          onChange={(date) => setFormData((prev) => ({ ...prev, start_date: date }))}
           showTimeSelect
           dateFormat="Pp"
           placeholderText="Выберите дату и время"
@@ -163,7 +164,21 @@ function CreateTournament() {
           type="text"
           name="description"
           placeholder="Описание (опционально)"
-          value={createForm.description}
+          value={formData.description}
+          onChange={handleInputChange}
+        />
+        <input
+          type="text"
+          name="prize_pool"
+          placeholder="Призовой фонд (опционально)"
+          value={formData.prize_pool}
+          onChange={handleInputChange}
+        />
+        <input
+          type="text"
+          name="rules"
+          placeholder="Правила (опционально)"
+          value={formData.rules}
           onChange={handleInputChange}
         />
         <div style={styles.formButtons}>
