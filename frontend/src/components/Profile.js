@@ -815,7 +815,7 @@ function Profile() {
                     <div className="friend-details">
                         <span className="friend-username" title={friend.friend.username}>{friend.friend.username}</span>
                         <span className={`friend-status ${onlineStatus === 'online' ? 'online' : 'offline'}`}>
-                            {onlineStatus}
+                            {onlineStatus === 'online' ? 'Онлайн' : onlineStatus}
                         </span>
                     </div>
                 </a>
