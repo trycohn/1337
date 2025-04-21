@@ -269,13 +269,14 @@ router.get('/:chatId/messages', authenticateToken, async (req, res) => {
         
         if (unreadMessages.length > 0) {
             // Обновляем каждое сообщение отдельно — ON CONFLICT защитит от гонок
-            for (const msg of unreadMessages) {
+            const uniqueIds = [...new Set(unreadMessages.map(m => m.id))];
+            for (const id of uniqueIds) {
                 await pool.query(`
                     INSERT INTO message_status (message_id, user_id, is_read, read_at)
                     VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
                     ON CONFLICT (message_id, user_id)
                     DO UPDATE SET is_read = TRUE, read_at = EXCLUDED.read_at
-                `, [msg.id, req.user.id]);
+                `, [id, req.user.id]);
             }
         }
         
@@ -312,13 +313,14 @@ router.post('/:chatId/read', authenticateToken, async (req, res) => {
         `, [req.user.id, chatId]);
         
         if (unreadMessagesResult.rows.length > 0) {
-            for (const msg of unreadMessagesResult.rows) {
+            const uniqueIds2 = [...new Set(unreadMessagesResult.rows.map(r => r.id))];
+            for (const id of uniqueIds2) {
                 await pool.query(`
                     INSERT INTO message_status (message_id, user_id, is_read, read_at)
                     VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
                     ON CONFLICT (message_id, user_id)
                     DO UPDATE SET is_read = TRUE, read_at = EXCLUDED.read_at
-                `, [msg.id, req.user.id]);
+                `, [id, req.user.id]);
             }
         }
         
