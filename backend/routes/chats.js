@@ -274,21 +274,13 @@ router.get('/:chatId/messages', authenticateToken, async (req, res) => {
                 await client.query('BEGIN');
                 
                 for (const msg of unreadMessages) {
-                    // Для каждого непрочитанного сообщения создаем или обновляем запись о прочтении
-                    if (msg.is_read === null) {
-                        // Запись о прочтении отсутствует
-                        await client.query(`
-                            INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                        `, [msg.id, req.user.id]);
-                    } else {
-                        // Запись существует, обновляем ее
-                        await client.query(`
-                            UPDATE message_status
-                            SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
-                            WHERE message_id = $1 AND user_id = $2
-                        `, [msg.id, req.user.id]);
-                    }
+                    // Вставляем или обновляем запись о прочтении (избегаем duplicate key)
+                    await client.query(`
+                        INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                        VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                        ON CONFLICT (message_id, user_id)
+                        DO UPDATE SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                    `, [msg.id, req.user.id]);
                 }
                 
                 await client.query('COMMIT');
@@ -339,11 +331,11 @@ router.post('/:chatId/read', authenticateToken, async (req, res) => {
                 await client.query('BEGIN');
                 
                 for (const msg of unreadMessagesResult.rows) {
-                    // Для каждого непрочитанного сообщения создаем или обновляем запись о прочтении
+                    // Вставляем или обновляем запись о прочтении (избегаем duplicate key)
                     await client.query(`
                         INSERT INTO message_status (message_id, user_id, is_read, read_at)
                         VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                        ON CONFLICT (message_id, user_id) 
+                        ON CONFLICT (message_id, user_id)
                         DO UPDATE SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
                     `, [msg.id, req.user.id]);
                 }
