@@ -228,6 +228,25 @@ function TournamentDetails() {
         });
     }, [matches, tournament]);
 
+    // Эффект для инициализации отображения турнирной сетки
+    useEffect(() => {
+        if (Array.isArray(games) && games.length > 0) {
+            console.log('TournamentDetails: games готовы для отображения', games.length);
+            
+            // Небольшой хак для принудительного обновления интерфейса
+            // это может помочь с инициализацией drag and drop
+            const timer = setTimeout(() => {
+                const dummyState = {};
+                setMessage(prev => {
+                    // Не меняем сообщение, просто вызываем перерисовку
+                    return prev;
+                });
+            }, 500);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [games]);
+
     const handleParticipate = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -744,6 +763,7 @@ function TournamentDetails() {
                                     setSelectedMatch={setSelectedMatch}
                                     handleTeamClick={handleTeamClick}
                                     format={tournament.format}
+                                    key={`bracket-${matches.length}-${selectedMatch}`}
                                 />
                             </div>
                         </div>

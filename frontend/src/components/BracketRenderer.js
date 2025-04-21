@@ -81,11 +81,30 @@ const BracketRenderer = ({
     
     // Обработчик изменения масштаба с проверкой границ
     const handleScaleChange = useCallback((newScale) => {
+        console.log(`handleScaleChange: масштаб изменен на ${newScale}`);
         setScale(newScale);
         // При следующем рендере вызовем snapToBoundary
         setTimeout(snapToBoundary, 0);
     }, [snapToBoundary]);
     
+    // Обработчики для кнопок масштабирования
+    const handleZoomIn = useCallback(() => {
+        console.log('handleZoomIn: увеличиваем масштаб');
+        const newScale = Math.min(scale + 0.1, 3);
+        handleScaleChange(newScale);
+    }, [scale, handleScaleChange]);
+    
+    const handleZoomOut = useCallback(() => {
+        console.log('handleZoomOut: уменьшаем масштаб');
+        const newScale = Math.max(scale - 0.1, 0.5);
+        handleScaleChange(newScale);
+    }, [scale, handleScaleChange]);
+    
+    const handleResetView = useCallback(() => {
+        console.log('handleResetView: сбрасываем вид');
+        resetView();
+    }, [resetView]);
+
     // --- Логика перетаскивания и масштабирования ---
     const handleMouseDown = useCallback((e) => {
         if (e.button !== 0) return; // Только левая кнопка
@@ -93,6 +112,8 @@ const BracketRenderer = ({
         if (e.target.closest('button, .custom-seed')) {
             return;
         }
+        
+        console.log('handleMouseDown - начинаем перетаскивание');
         setIsDragging(true);
         setStartDragPos({
             x: e.clientX - position.x,
@@ -189,9 +210,38 @@ const BracketRenderer = ({
 
     // Сброс вида
     const resetView = useCallback(() => {
-        setPosition({ x: 0, y: 0 });
-        handleScaleChange(1); // Используем handleScaleChange для сброса масштаба
-    }, [handleScaleChange]);
+        console.log('Запуск resetView');
+        if (!wrapperRef.current || !bracketContentRef.current) {
+            console.warn('resetView: DOM элементы не найдены');
+            return;
+        }
+
+        const wrapperWidth = wrapperRef.current.clientWidth;
+        const wrapperHeight = wrapperRef.current.clientHeight;
+        const contentWidth = bracketContentRef.current.clientWidth;
+        const contentHeight = bracketContentRef.current.clientHeight;
+
+        console.log(`resetView: wrapper (${wrapperWidth}x${wrapperHeight}), content (${contentWidth}x${contentHeight})`);
+
+        // Если контент больше, чем оболочка, центрируем его
+        let newX = 0;
+        let newY = 0;
+        
+        if (contentWidth > wrapperWidth) {
+            // Центрируем по горизонтали
+            newX = (wrapperWidth - contentWidth) / 2;
+        }
+        
+        if (contentHeight > wrapperHeight) {
+            // Центрируем по вертикали
+            newY = (wrapperHeight - contentHeight) / 2;
+        }
+        
+        // Устанавливаем новые значения позиции и масштаба
+        console.log(`resetView: установка новой позиции (${newX}, ${newY}), масштаб 1`);
+        setPosition({ x: newX, y: newY });
+        setScale(1);
+    }, []);
 
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = useCallback(() => {
@@ -282,8 +332,19 @@ const BracketRenderer = ({
 
     // Установка и удаление обработчиков
     useEffect(() => {
+        console.log('BracketRenderer: установка обработчиков событий');
         const wrapper = wrapperRef.current;
         if (wrapper) {
+            // Очистим существующие обработчики, если они есть
+            wrapper.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            wrapper.removeEventListener('wheel', handleWheel);
+            wrapper.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
+            
+            // Установим новые обработчики
             wrapper.addEventListener('mousedown', handleMouseDown);
             wrapper.addEventListener('wheel', handleWheel, { passive: false });
             wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -297,11 +358,13 @@ const BracketRenderer = ({
             // Устанавливаем курсор grab по умолчанию
             wrapper.style.cursor = 'grab';
             
-            // Принудительно инициализируем после рендера
-            setTimeout(initializeDragAndDrop, 100);
+            console.log('BracketRenderer: обработчики событий установлены');
+        } else {
+            console.warn('BracketRenderer: wrapperRef не инициализирован');
         }
 
         return () => {
+            console.log('BracketRenderer: очистка обработчиков событий');
             if (wrapper) {
                 wrapper.removeEventListener('mousedown', handleMouseDown);
                 wrapper.removeEventListener('wheel', handleWheel);
@@ -312,33 +375,106 @@ const BracketRenderer = ({
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd, initializeDragAndDrop]);
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-    // Принудительная инициализация после первого рендера
+    // Удаляем текущий useEffect для инициализации
+    // и заменяем на более надежную версию
     useEffect(() => {
-        if (!isInitialized && wrapperRef.current && bracketContentRef.current) {
-            // Принудительно переустанавливаем позицию через таймаут
-            const timer = setTimeout(() => {
+        console.log('BracketRenderer: первоначальная проверка DOM-элементов');
+        
+        // Создаем функцию для инициализации, которая будет вызываться несколько раз
+        const initializeDragDrop = () => {
+            if (wrapperRef.current && bracketContentRef.current) {
+                console.log('BracketRenderer: DOM-элементы найдены, инициализация');
+                
+                // Устанавливаем курсор
+                wrapperRef.current.style.cursor = 'grab';
+                
+                // Устанавливаем исходную позицию
                 setPosition({ x: 0, y: 0 });
-                initializeDragAndDrop();
                 
-                // Инициализируем перетаскивание сразу после загрузки
-                const extraTimer = setTimeout(() => {
-                    if (wrapperRef.current) {
-                        console.log('BracketRenderer: инициализация обработчиков drag-and-drop');
-                        // Применяем автоматический центральный вид
-                        resetView();
-                    }
-                }, 100);
+                // Устанавливаем состояние инициализации
+                setIsInitialized(true);
                 
-                return () => {
-                    clearTimeout(extraTimer);
-                };
+                console.log('BracketRenderer: инициализация завершена');
+                return true;
+            }
+            console.log('BracketRenderer: DOM-элементы не найдены, откладываем инициализацию');
+            return false;
+        };
+        
+        // Пытаемся инициализировать сразу
+        if (!initializeDragDrop()) {
+            // Если не получилось, пробуем через 100мс
+            const timer1 = setTimeout(() => {
+                if (!initializeDragDrop()) {
+                    // Если все еще не получилось, пробуем через 500мс
+                    const timer2 = setTimeout(() => {
+                        if (!initializeDragDrop()) {
+                            // Последняя попытка через 1с
+                            const timer3 = setTimeout(() => {
+                                initializeDragDrop();
+                                console.log('BracketRenderer: последняя попытка инициализации');
+                            }, 1000);
+                            return () => clearTimeout(timer3);
+                        }
+                    }, 500);
+                    return () => clearTimeout(timer2);
+                }
             }, 100);
-            return () => clearTimeout(timer);
+            return () => clearTimeout(timer1);
         }
-    }, [isInitialized, initializeDragAndDrop, resetView]);
+    }, []);
     
+    // Отдельный эффект для принудительного центрирования и масштабирования
+    useEffect(() => {
+        if (isInitialized && wrapperRef.current && bracketContentRef.current) {
+            console.log('BracketRenderer: применение начального вида');
+            
+            // Применяем начальный вид с задержкой
+            const resetTimer = setTimeout(() => {
+                resetView();
+                console.log('BracketRenderer: начальный вид применен');
+            }, 300);
+            
+            return () => clearTimeout(resetTimer);
+        }
+    }, [isInitialized, resetView]);
+    
+    // Добавляем обработчик для MutationObserver, чтобы отслеживать изменения в DOM
+    useEffect(() => {
+        if (!isInitialized && wrapperRef.current) {
+            console.log('BracketRenderer: установка MutationObserver');
+            
+            // Создаем наблюдатель за изменениями DOM
+            const observer = new MutationObserver((mutations) => {
+                console.log('BracketRenderer: обнаружены изменения в DOM');
+                if (!isInitialized && wrapperRef.current && bracketContentRef.current) {
+                    // Если компонент еще не инициализирован, но DOM-элементы готовы
+                    setIsInitialized(true);
+                    
+                    // Применяем начальный вид с задержкой
+                    setTimeout(() => {
+                        resetView();
+                        console.log('BracketRenderer: начальный вид применен после изменений DOM');
+                    }, 300);
+                }
+            });
+            
+            // Запускаем наблюдение
+            observer.observe(wrapperRef.current, {
+                childList: true,
+                subtree: true,
+                attributes: true
+            });
+            
+            return () => {
+                observer.disconnect();
+                console.log('BracketRenderer: MutationObserver отключен');
+            };
+        }
+    }, [isInitialized, resetView]);
+
     // Отслеживаем изменение размера окна для пересчета позиции
     useEffect(() => {
         const handleResize = () => {
@@ -363,6 +499,38 @@ const BracketRenderer = ({
         const timer = setTimeout(snapToBoundary, 50);
         return () => clearTimeout(timer);
     }, [scale, snapToBoundary]);
+
+    // Добавляем обработчик для document.DOMContentLoaded и window.load
+    useEffect(() => {
+        // Функция, которая будет вызываться при полной загрузке страницы
+        const handleFullLoad = () => {
+            console.log('BracketRenderer: window.onload или DOMContentLoaded');
+            if (!isInitialized && wrapperRef.current && bracketContentRef.current) {
+                console.log('BracketRenderer: инициализация после полной загрузки страницы');
+                setIsInitialized(true);
+                
+                // Небольшая задержка для гарантии
+                setTimeout(() => {
+                    resetView();
+                    console.log('BracketRenderer: вид сброшен после полной загрузки');
+                }, 300);
+            }
+        };
+        
+        // Проверяем, загружен ли уже документ
+        if (document.readyState === 'complete') {
+            handleFullLoad();
+        } else {
+            // Если нет, добавляем слушатели событий
+            window.addEventListener('load', handleFullLoad);
+            document.addEventListener('DOMContentLoaded', handleFullLoad);
+            
+            return () => {
+                window.removeEventListener('load', handleFullLoad);
+                document.removeEventListener('DOMContentLoaded', handleFullLoad);
+            };
+        }
+    }, [isInitialized, resetView]);
 
     // --- Конец логики перетаскивания и масштабирования ---
 
@@ -397,9 +565,9 @@ const BracketRenderer = ({
         >
             {/* Контролы масштабирования */}
             <div className="bracket-controls">
-                <button onClick={() => handleScaleChange(Math.min(scale + 0.1, 3))} title="Увеличить">+</button>
-                <button onClick={() => handleScaleChange(Math.max(scale - 0.1, 0.5))} title="Уменьшить">-</button>
-                <button onClick={resetView} title="Сбросить вид">↺</button>
+                <button onClick={handleZoomIn} title="Увеличить">+</button>
+                <button onClick={handleZoomOut} title="Уменьшить">-</button>
+                <button onClick={handleResetView} title="Сбросить вид">↺</button>
             </div>
 
             {/* Внутренний контейнер для трансформации */}
