@@ -206,7 +206,7 @@ const BracketRenderer = ({
                 }
                 .winner {
                     font-weight: bold;
-                    color: #2e7d32;
+                    color: #333333;
                 }
                 .bracket-title {
                     font-size: 1.2em;
@@ -791,8 +791,7 @@ const BracketRenderer = ({
         // Внешний контейнер для обработчиков и overflow
         <div
             ref={wrapperRef}
-            className="bracket-renderer-wrapper"
-            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            className={`bracket-renderer-wrapper ${isDragging ? 'dragging' : ''}`}
         >
             {/* Контролы масштабирования */}
             <div className="bracket-controls">
@@ -810,13 +809,12 @@ const BracketRenderer = ({
                 className="bracket-renderer-content"
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                    transformOrigin: '0 0', // Важно для масштабирования от верхнего левого угла
-                    color: '#000000' // Цвет шрифта по умолчанию - черный
+                    transformOrigin: '0 0'
                 }}
             >
                 {/* Верхняя сетка (Winners Bracket) */}
                 <div className="bracket winners-bracket">
-                    <h2 className="bracket-title" style={{ textAlign: 'center', border: 'none' }}>Основная сетка</h2>
+                    <h2 className="bracket-title">Основная сетка</h2>
                     <div className="bracket-grid">
                         {winnerRoundKeys.sort((a, b) => Number(a) - Number(b)).map((round) => {
                             const roundMatches = winnerRounds[round];
@@ -836,8 +834,6 @@ const BracketRenderer = ({
                                                 key={match.id}
                                                 className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                 onClick={(e) => {
-                                                      // Предотвращаем перетаскивание при клике на матч
-                                                      // e.stopPropagation(); // Не нужно, т.к. проверка в handleMouseDown
                                                       if (canEditMatches && match.state !== 'DONE') {
                                                           setSelectedMatch(isSelected ? null : parseInt(match.id));
                                                       }
@@ -854,8 +850,8 @@ const BracketRenderer = ({
                                                             }
                                                         }}
                                                     >
-                                                        <span className="team-name" style={{ color: '#000000' }}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                        <span className="team-score" style={{ color: '#000000' }}>
+                                                        <span className="team-name">{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                        <span className="team-score">
                                                             {match.participants[0]?.score ?? '-'}
                                                         </span>
                                                     </div>
@@ -868,8 +864,8 @@ const BracketRenderer = ({
                                                              }
                                                          }}
                                                     >
-                                                        <span className="team-name" style={{ color: '#000000' }}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                        <span className="team-score" style={{ color: '#000000' }}>
+                                                        <span className="team-name">{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                        <span className="team-score">
                                                             {match.participants[1]?.score ?? '-'}
                                                         </span>
                                                     </div>
@@ -888,7 +884,7 @@ const BracketRenderer = ({
                     <>
                         <hr className="bracket-divider" />
                         <div className="bracket losers-bracket">
-                            <h2 className="bracket-title" style={{ textAlign: 'center', border: 'none' }}>Нижняя сетка</h2>
+                            <h2 className="bracket-title">Нижняя сетка</h2>
                             <div className="bracket-grid">
                                 {Object.keys(loserRounds).sort((a, b) => Number(a) - Number(b)).map((round) => {
                                     const roundMatches = loserRounds[round];
@@ -902,7 +898,6 @@ const BracketRenderer = ({
                                                         key={match.id}
                                                         className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                          onClick={(e) => {
-                                                               // e.stopPropagation();
                                                                if (canEditMatches && match.state !== 'DONE') {
                                                                    setSelectedMatch(isSelected ? null : parseInt(match.id));
                                                                }
@@ -919,8 +914,8 @@ const BracketRenderer = ({
                                                                     }
                                                                 }}
                                                             >
-                                                                <span className="team-name" style={{ color: '#000000' }}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                                <span className="team-score" style={{ color: '#000000' }}>
+                                                                <span className="team-name">{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score">
                                                                     {match.participants[0]?.score ?? '-'}
                                                                 </span>
                                                             </div>
@@ -933,8 +928,8 @@ const BracketRenderer = ({
                                                                      }
                                                                  }}
                                                             >
-                                                                <span className="team-name" style={{ color: '#000000' }}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                                <span className="team-score" style={{ color: '#000000' }}>
+                                                                <span className="team-name">{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score">
                                                                     {match.participants[1]?.score ?? '-'}
                                                                 </span>
                                                             </div>
@@ -955,11 +950,11 @@ const BracketRenderer = ({
                     <>
                         <hr className="bracket-divider" />
                         <div className="final-matches-container">
-                            <h2 className="bracket-title" style={{ textAlign: 'center', border: 'none' }}>Финальные матчи</h2>
+                            <h2 className="bracket-title">Финальные матчи</h2>
                             <div className="final-matches-grid">
                                 {grandFinalMatch && (
                                     <div className="bracket grand-final">
-                                        <h3 className="match-title" style={{ textAlign: 'center', border: 'none' }}>Большой финал</h3>
+                                        <h3 className="match-title">Большой финал</h3>
                                         <div
                                             key={grandFinalMatch.id}
                                             className={`custom-seed ${selectedMatch === parseInt(grandFinalMatch.id) ? 'selected' : ''}`}
@@ -980,8 +975,8 @@ const BracketRenderer = ({
                                                         }
                                                     }}
                                                 >
-                                                    <span className="team-name" style={{ color: '#000000' }}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score" style={{ color: '#000000' }}>
+                                                    <span className="team-name">{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score">
                                                         {grandFinalMatch.participants[0]?.score ?? '-'}
                                                     </span>
                                                 </div>
@@ -994,8 +989,8 @@ const BracketRenderer = ({
                                                          }
                                                     }}
                                                 >
-                                                    <span className="team-name" style={{ color: '#000000' }}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score" style={{ color: '#000000' }}>
+                                                    <span className="team-name">{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score">
                                                         {grandFinalMatch.participants[1]?.score ?? '-'}
                                                     </span>
                                                 </div>
@@ -1005,7 +1000,7 @@ const BracketRenderer = ({
                                 )}
                                 {placementMatch && (
                                     <div className="bracket placement-match">
-                                        <h3 className="match-title" style={{ textAlign: 'center', border: 'none' }}>Матч за 3-е место</h3>
+                                        <h3 className="match-title">Матч за 3-е место</h3>
                                         <div
                                             key={placementMatch.id}
                                             className={`custom-seed ${selectedMatch === parseInt(placementMatch.id) ? 'selected' : ''}`}
@@ -1026,8 +1021,8 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
-                                                    <span className="team-name" style={{ color: '#000000' }}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score" style={{ color: '#000000' }}>
+                                                    <span className="team-name">{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score">
                                                         {placementMatch.participants[0]?.score ?? '-'}
                                                     </span>
                                                 </div>
@@ -1040,8 +1035,8 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
-                                                    <span className="team-name" style={{ color: '#000000' }}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score" style={{ color: '#000000' }}>
+                                                    <span className="team-name">{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score">
                                                         {placementMatch.participants[1]?.score ?? '-'}
                                                     </span>
                                                 </div>
