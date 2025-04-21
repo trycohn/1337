@@ -803,7 +803,6 @@ function Profile() {
     const renderFriendItem = (friend) => {
         // Проверяем и устанавливаем статус по умолчанию, если он отсутствует
         const onlineStatus = friend.friend.online_status || 'offline';
-        const lastActive = friend.friend.last_active || 'недавно';
         
         return (
             <div key={friend.id} className="friend-item">
@@ -816,7 +815,7 @@ function Profile() {
                     <div className="friend-details">
                         <span className="friend-username" title={friend.friend.username}>{friend.friend.username}</span>
                         <span className={`friend-status ${onlineStatus === 'online' ? 'online' : 'offline'}`}>
-                            {onlineStatus === 'online' ? 'Онлайн' : `Был в сети ${lastActive}`}
+                            {onlineStatus}
                         </span>
                     </div>
                 </a>
