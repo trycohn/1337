@@ -116,19 +116,6 @@ function CreateTournament() {
           required
         />
         <select
-          name="game"
-          value={formData.game}
-          onChange={handleInputChange}
-          required
-        >
-          <option value="">Выберите игру</option>
-          {games.map((game) => (
-            <option key={game.id} value={game.name}>
-              {game.name}
-            </option>
-          ))}
-        </select>
-        <select
           name="format"
           value={formData.format}
           onChange={handleFormatChange}
