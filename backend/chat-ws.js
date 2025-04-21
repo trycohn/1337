@@ -7,17 +7,18 @@ const url = require('url');
 const clients = new Map();
 
 function setupChatWebSocket(server) {
-    // Создаем WebSocket-сервер
-    const wss = new WebSocket.Server({ 
-        noServer: true,
-        path: '/chat'
-    });
+    // Создаем WebSocket-сервер без указания path (т.к. используем noServer)
+    const wss = new WebSocket.Server({ noServer: true });
     
     // Обработка обновления соединения из HTTP в WebSocket
     server.on('upgrade', function upgrade(request, socket, head) {
+        // Получаем путь из URL
         const pathname = url.parse(request.url).pathname;
+        console.log('WebSocket upgrade request path:', pathname);
         
+        // Проверяем, соответствует ли путь /chat
         if (pathname === '/chat') {
+            console.log('Handling WebSocket upgrade for /chat');
             wss.handleUpgrade(request, socket, head, function done(ws) {
                 wss.emit('connection', ws, request);
             });
