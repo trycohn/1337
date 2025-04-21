@@ -28,6 +28,7 @@ function TournamentDetails() {
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const wsRef = useRef(null);
     const [bracketView, setBracketView] = useState('tree');
+    const [useTreeView, setUseTreeView] = useState(false);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -802,39 +803,45 @@ function TournamentDetails() {
                     {Array.isArray(games) && games.length > 0 ? (
                         <div className="custom-tournament-bracket">
                             <div className="bracket-toggle-container">
-                                <button
-                                    className={`bracket-toggle-button ${bracketView === 'tree' ? 'active' : ''}`}
-                                    onClick={() => setBracketView('tree')}
-                                >
-                                    Древовидная сетка
-                                </button>
-                                <button
-                                    className={`bracket-toggle-button ${bracketView === 'classic' ? 'active' : ''}`}
-                                    onClick={() => setBracketView('classic')}
+                                <button 
+                                    className={!useTreeView ? 'active' : ''} 
+                                    onClick={() => setUseTreeView(false)}
                                 >
                                     Классическая сетка
                                 </button>
+                                <button 
+                                    className={useTreeView ? 'active' : ''} 
+                                    onClick={() => setUseTreeView(true)}
+                                >
+                                    Древовидная сетка
+                                </button>
                             </div>
                             
-                            {bracketView === 'tree' ? (
-                                <TreeBracketRenderer
-                                    games={adaptGamesForTreeRenderer}
-                                    canEdit={canEditMatches}
-                                    onMatchClick={(match) => setSelectedMatch(parseInt(match.id))}
-                                    selectedMatchId={selectedMatch}
-                                    formatParticipantName={(name) => name}
-                                    tournamentType={tournament.format === 'double_elimination' ? 'DOUBLE_ELIMINATION' : 'SINGLE_ELIMINATION'}
-                                />
-                            ) : (
-                                <BracketRenderer
-                                    games={games}
-                                    canEditMatches={canEditMatches}
-                                    selectedMatch={selectedMatch}
-                                    setSelectedMatch={setSelectedMatch}
-                                    handleTeamClick={handleTeamClick}
-                                    format={tournament.format}
-                                />
-                            )}
+                            <div className="tournament-bracket">
+                                {console.log('Данные для сетки, useTreeView:', useTreeView)}
+                                {console.log('Игры:', games)}
+                                {console.log('Можно редактировать:', canEditMatches)}
+                                {console.log('Выбранный матч:', selectedMatch)}
+                                {useTreeView ? (
+                                    <TreeBracketRenderer
+                                        games={adaptGamesForTreeRenderer}
+                                        canEdit={canEditMatches}
+                                        onMatchClick={(match) => setSelectedMatch(parseInt(match.id))}
+                                        selectedMatchId={selectedMatch}
+                                        formatParticipantName={(name) => name}
+                                        tournamentType={tournament.format === 'double_elimination' ? 'DOUBLE_ELIMINATION' : 'SINGLE_ELIMINATION'}
+                                    />
+                                ) : (
+                                    <BracketRenderer
+                                        games={games}
+                                        canEditMatches={canEditMatches}
+                                        selectedMatch={selectedMatch}
+                                        setSelectedMatch={setSelectedMatch}
+                                        handleTeamClick={handleTeamClick}
+                                        format={tournament.format}
+                                    />
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>

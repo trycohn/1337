@@ -11,6 +11,13 @@ const BracketRenderer = ({
     handleTeamClick,
     format
 }) => {
+    console.log('BracketRenderer: Инициализация с параметрами', { 
+        gamesCount: games?.length, 
+        canEditMatches, 
+        selectedMatch, 
+        format 
+    });
+
     // Состояния для масштабирования и позиционирования
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -61,6 +68,13 @@ const BracketRenderer = ({
             setPosition({ x: newX, y: newY });
         }
     }, [position, scale]);
+    
+    // Обработчик изменения масштаба с проверкой границ
+    const handleScaleChange = useCallback((newScale) => {
+        setScale(newScale);
+        // При следующем рендере вызовем snapToBoundary
+        setTimeout(snapToBoundary, 0);
+    }, [snapToBoundary]);
     
     // --- Логика перетаскивания и масштабирования ---
     const handleMouseDown = useCallback((e) => {
@@ -145,7 +159,6 @@ const BracketRenderer = ({
         const newScale = Math.min(Math.max(scale + scaleAmount, 0.5), 3); // Ограничения масштаба
 
         if (bracketContentRef.current) {
-            const rect = bracketContentRef.current.getBoundingClientRect();
             // Координаты курсора относительно wrapperRef
             const mouseX = e.clientX - wrapperRef.current.getBoundingClientRect().left;
             const mouseY = e.clientY - wrapperRef.current.getBoundingClientRect().top;
@@ -169,13 +182,6 @@ const BracketRenderer = ({
         setPosition({ x: 0, y: 0 });
         handleScaleChange(1); // Используем handleScaleChange для сброса масштаба
     }, [handleScaleChange]);
-
-    // Обработчик изменения масштаба с проверкой границ
-    const handleScaleChange = useCallback((newScale) => {
-        setScale(newScale);
-        // При следующем рендере вызовем snapToBoundary
-        setTimeout(snapToBoundary, 0);
-    }, [snapToBoundary]);
 
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = useCallback(() => {
@@ -316,6 +322,13 @@ const BracketRenderer = ({
     }
 
     const { winnerRounds, loserRounds, placementMatch, grandFinalMatch } = groupedMatches;
+    console.log('BracketRenderer: группировка матчей завершена', { 
+        winnerRoundsKeys: Object.keys(winnerRounds), 
+        loserRoundsKeys: Object.keys(loserRounds),  
+        hasPlacementMatch: !!placementMatch, 
+        hasGrandFinalMatch: !!grandFinalMatch 
+    });
+    
     const winnerRoundKeys = Object.keys(winnerRounds);
     const hasWinnerMatches = winnerRoundKeys.length > 0 || Object.keys(loserRounds).length > 0 || placementMatch || grandFinalMatch;
 
