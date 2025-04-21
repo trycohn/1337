@@ -12,6 +12,7 @@ function UserProfile() {
     const [error, setError] = useState('');
     const [friendStatus, setFriendStatus] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('main');
 
     useEffect(() => {
         // Перенаправляем на личный кабинет, если ID совпадает с текущим пользователем
@@ -174,7 +175,7 @@ function UserProfile() {
             case 'none':
                 return (
                     <button 
-                        className="friend-action-btn add-friend" 
+                        className="add-friend-btn" 
                         onClick={sendFriendRequest}
                         disabled={actionLoading}
                     >
@@ -184,16 +185,16 @@ function UserProfile() {
             case 'pending':
                 if (friendStatus.direction === 'incoming') {
                     return (
-                        <div className="friend-request-actions">
+                        <div className="request-actions">
                             <button 
-                                className="friend-action-btn accept-request" 
+                                className="accept-request-btn" 
                                 onClick={acceptFriendRequest}
                                 disabled={actionLoading}
                             >
                                 {actionLoading ? 'Загрузка...' : 'Принять заявку'}
                             </button>
                             <button 
-                                className="friend-action-btn reject-request" 
+                                className="reject-request-btn" 
                                 onClick={rejectFriendRequest}
                                 disabled={actionLoading}
                             >
@@ -204,7 +205,7 @@ function UserProfile() {
                 } else {
                     return (
                         <button 
-                            className="friend-action-btn pending-request" 
+                            className="pending-request-btn" 
                             disabled={true}
                         >
                             Заявка отправлена
@@ -214,7 +215,7 @@ function UserProfile() {
             case 'accepted':
                 return (
                     <button 
-                        className="friend-action-btn remove-friend" 
+                        className="remove-friend-btn" 
                         onClick={removeFriend}
                         disabled={actionLoading}
                     >
@@ -231,7 +232,7 @@ function UserProfile() {
     if (!user) return <div className="profile-not-found">Пользователь не найден</div>;
 
     return (
-        <div className="profile">
+        <div className="profile-container">
             <div className="profile-header">
                 <div className="avatar-container">
                     <img 
@@ -251,101 +252,172 @@ function UserProfile() {
                 </div>
             </div>
             
-            <section className="steam-section">
-                <h3>Steam</h3>
-                <div>
-                    <p>
-                        {user.steam_url 
-                            ? <span>Профиль: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">
-                                {user.steam_nickname || user.steam_url.split('/').pop()}
-                              </a></span>
-                            : 'Не привязан'}
-                    </p>
-                    {user.steam_url && user.premier_rank && (
-                        <div className="cs2-stats">
-                            <h4>Статистика CS2</h4>
-                            <div className="rank-container">
-                                {renderRankGroups()}
-                            </div>
+            <div className="profile-content">
+                <div className="profile-navigation">
+                    <button 
+                        className={`nav-tab ${activeTab === 'main' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('main')}
+                    >
+                        Профиль
+                    </button>
+                    <button 
+                        className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('stats')}
+                    >
+                        Статистика
+                    </button>
+                    {user.friends && user.friends.length > 0 && (
+                        <button 
+                            className={`nav-tab ${activeTab === 'friends' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('friends')}
+                        >
+                            Друзья
+                        </button>
+                    )}
+                </div>
+                
+                <div className="profile-tab-content">
+                    {activeTab === 'main' && (
+                        <div className="main-tab">
+                            <section className="steam-section">
+                                <h3>Steam</h3>
+                                <div>
+                                    <p>
+                                        {user.steam_url 
+                                            ? <span>Профиль: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">
+                                                {user.steam_nickname || user.steam_url.split('/').pop()}
+                                              </a></span>
+                                            : 'Не привязан'}
+                                    </p>
+                                </div>
+                            </section>
+
+                            {user.faceit && (
+                                <section className="faceit-section">
+                                    <h3>Faceit</h3>
+                                    <div>
+                                        <p>
+                                            <span>
+                                                Профиль: <a href={user.faceit.faceitUrl} target="_blank" rel="noopener noreferrer">{user.faceit.faceitNickname}</a>
+                                            </span>
+                                        </p>
+                                    </div>
+                                </section>
+                            )}
+                        </div>
+                    )}
+                    
+                    {activeTab === 'stats' && (
+                        <div className="stats-tab">
+                            {user.steam_url && user.premier_rank && (
+                                <section className="cs2-stats-section">
+                                    <h3>Статистика CS2</h3>
+                                    <div className="rank-container">
+                                        {renderRankGroups()}
+                                    </div>
+                                </section>
+                            )}
+
+                            {user.faceit && user.faceit.elo > 0 && (
+                                <section className="faceit-stats-section">
+                                    <h3>Статистика FACEIT{user.faceit.statsFrom === 'csgo' ? ' (CS:GO)' : ''}</h3>
+                                    <div className="faceit-elo">
+                                        <p><strong>ELO:</strong> {user.faceit.elo}</p>
+                                        <p><strong>Уровень:</strong> {user.faceit.level}</p>
+                                    </div>
+                                    {user.faceit.stats && (
+                                        <div className="faceit-detailed-stats">
+                                            <p><strong>Матчи:</strong> {user.faceit.stats.Matches || 0}</p>
+                                            <p><strong>Винрейт:</strong> {user.faceit.stats['Win Rate %'] || '0'}%</p>
+                                            <p><strong>K/D:</strong> {user.faceit.stats['Average K/D Ratio'] || '0'}</p>
+                                            <p><strong>HS %:</strong> {user.faceit.stats['Average Headshots %'] || '0'}%</p>
+                                        </div>
+                                    )}
+                                </section>
+                            )}
+                            
+                            <section>
+                                <h3>Статистика турниров</h3>
+                                {user.stats ? (
+                                    <div className="stats-grid">
+                                        <div className="stats-card">
+                                            <div className="stats-value">{user.stats.solo.wins}</div>
+                                            <div className="stats-label">Победы соло</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">{user.stats.solo.losses}</div>
+                                            <div className="stats-label">Поражения соло</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">{user.stats.solo.winRate}%</div>
+                                            <div className="stats-label">Винрейт соло</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">{user.stats.team.wins}</div>
+                                            <div className="stats-label">Победы команда</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">{user.stats.team.losses}</div>
+                                            <div className="stats-label">Поражения команда</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">{user.stats.team.winRate}%</div>
+                                            <div className="stats-label">Винрейт команда</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p>Нет статистики</p>
+                                )}
+                                
+                                {user.stats && user.stats.tournaments.length > 0 && (
+                                    <div className="recent-matches">
+                                        <h3>Турниры</h3>
+                                        <div className="matches-list">
+                                            {user.stats.tournaments.map((t, index) => (
+                                                <div key={index} className="match-item">
+                                                    <div className="match-info">
+                                                        <span className="match-opponent">{t.name}</span>
+                                                        <span className="match-score">{t.result}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+                        </div>
+                    )}
+                    
+                    {activeTab === 'friends' && user.friends && user.friends.length > 0 && (
+                        <div className="friends-tab">
+                            <section className="friends-section">
+                                <h3>Друзья</h3>
+                                <div className="friends-list">
+                                    {user.friends.map(friend => (
+                                        <div key={friend.id} className="friend-item">
+                                            <a href={isCurrentUser(friend.id) ? `/profile` : `/user/${friend.id}`} className="friend-link">
+                                                <img 
+                                                    src={friend.avatar_url || '/default-avatar.png'} 
+                                                    alt={friend.username} 
+                                                    className="friend-avatar" 
+                                                />
+                                                <div className="friend-details">
+                                                    <span className="friend-username">{friend.username}</span>
+                                                    {friend.online_status && (
+                                                        <span className={`friend-status ${friend.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
+                                                            {friend.online_status}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
                         </div>
                     )}
                 </div>
-            </section>
-
-            {user.faceit && (
-                <section className="faceit-section">
-                    <h3>Faceit</h3>
-                    <div>
-                        <p>
-                            <span>
-                                Профиль: <a href={user.faceit.faceitUrl} target="_blank" rel="noopener noreferrer">{user.faceit.faceitNickname}</a>
-                            </span>
-                        </p>
-
-                        {user.faceit.elo > 0 && (
-                            <div className="faceit-stats">
-                                <h4>Статистика FACEIT{user.faceit.statsFrom === 'csgo' ? ' (CS:GO)' : ''}</h4>
-                                <div className="faceit-elo">
-                                    <p><strong>ELO:</strong> {user.faceit.elo}</p>
-                                    <p><strong>Уровень:</strong> {user.faceit.level}</p>
-                                </div>
-                                {user.faceit.stats && (
-                                    <div className="faceit-detailed-stats">
-                                        <p><strong>Матчи:</strong> {user.faceit.stats.Matches || 0}</p>
-                                        <p><strong>Винрейт:</strong> {user.faceit.stats['Win Rate %'] || '0'}%</p>
-                                        <p><strong>K/D:</strong> {user.faceit.stats['Average K/D Ratio'] || '0'}</p>
-                                        <p><strong>HS %:</strong> {user.faceit.stats['Average Headshots %'] || '0'}%</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </section>
-            )}
-
-            <section>
-                <h3>Статистика турниров</h3>
-                {user.stats ? (
-                    <>
-                        <h4>Турниры</h4>
-                        {user.stats.tournaments.length > 0 ? (
-                            <ul>
-                                {user.stats.tournaments.map((t, index) => (
-                                    <li key={index}>{t.name} - {t.result}</li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p>Нет данных об участии в турнирах</p>
-                        )}
-                        <h4>Соло</h4>
-                        <p>W:L: {user.stats.solo.wins}:{user.stats.solo.losses} ({user.stats.solo.winRate}%)</p>
-                        <h4>Командные</h4>
-                        <p>W:L: {user.stats.team.wins}:{user.stats.team.losses} ({user.stats.team.winRate}%)</p>
-                    </>
-                ) : (
-                    <p>Нет статистики</p>
-                )}
-            </section>
-
-            {user.friends && user.friends.length > 0 && (
-                <section className="friends-section">
-                    <h3>Друзья</h3>
-                    <div className="friends-list">
-                        {user.friends.map(friend => (
-                            <div key={friend.id} className="friend-item">
-                                <a href={isCurrentUser(friend.id) ? `/profile` : `/user/${friend.id}`} className="friend-link">
-                                    <img 
-                                        src={friend.avatar_url || '/default-avatar.png'} 
-                                        alt={friend.username} 
-                                        className="friend-avatar" 
-                                    />
-                                    <span className="friend-username">{friend.username}</span>
-                                </a>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
+            </div>
         </div>
     );
 }
