@@ -17,13 +17,13 @@ function Profile() {
     const [steamNickname, setSteamNickname] = useState('');
     const [premierRank, setPremierRank] = useState(0);
     
-    // Новые состояния для аватарки
+    // Avatar states
     const [avatar, setAvatar] = useState(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const fileInputRef = useRef(null);
     
-    // Новые состояния для подтверждения email
+    // Email verification states
     const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
     const [isResendDisabled, setIsResendDisabled] = useState(false);
@@ -31,18 +31,26 @@ function Profile() {
     const [isClosingModal, setIsClosingModal] = useState(false);
     const [verificationError, setVerificationError] = useState('');
     
-    // Новые состояния для добавления email
+    // Email adding states
     const [showAddEmailModal, setShowAddEmailModal] = useState(false);
     const [newEmail, setNewEmail] = useState('');
     const [addEmailError, setAddEmailError] = useState('');
     
-    // Новое состояние для модального окна с требованием привязать почту
+    // Email required modal state
     const [showEmailRequiredModal, setShowEmailRequiredModal] = useState(false);
 
-    // Новые состояния для друзей
+    // Friends states
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
+
+    // Match history states
+    const [matchHistory, setMatchHistory] = useState([]);
+    const [loadingMatchHistory, setLoadingMatchHistory] = useState(false);
+    const [showMatchHistoryModal, setShowMatchHistoryModal] = useState(false);
+
+    // Active tab state
+    const [activeTab, setActiveTab] = useState('main');
 
     const fetchUserData = async (token) => {
         try {
@@ -355,6 +363,8 @@ function Profile() {
             fetchFriends();
             // Загружаем заявки в друзья
             fetchFriendRequests();
+            // Загружаем историю матчей
+            fetchMatchHistory();
         }
         
         // Проверяем, есть ли сохраненное время окончания задержки
@@ -716,11 +726,119 @@ function Profile() {
         }
     };
 
+    // Функция для загрузки истории матчей
+    const fetchMatchHistory = async () => {
+        setLoadingMatchHistory(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/users/match-history', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setMatchHistory(response.data);
+        } catch (err) {
+            console.error('Ошибка загрузки истории матчей:', err);
+        } finally {
+            setLoadingMatchHistory(false);
+        }
+    };
+
+    // Переключение между вкладками
+    const switchTab = (tabName) => {
+        setActiveTab(tabName);
+    };
+
+    // Открытие модального окна истории матчей
+    const openMatchHistoryModal = () => {
+        setShowMatchHistoryModal(true);
+    };
+
+    // Закрытие модального окна истории матчей
+    const closeMatchHistoryModal = () => {
+        setIsClosingModal(true);
+        
+        setTimeout(() => {
+            setShowMatchHistoryModal(false);
+            setIsClosingModal(false);
+        }, 300);
+    };
+
+    // Rendering last 5 matches
+    const renderLastFiveMatches = () => {
+        if (loadingMatchHistory) {
+            return <p>Загрузка истории матчей...</p>;
+        }
+
+        const lastFive = matchHistory.slice(0, 5);
+        
+        if (lastFive.length === 0) {
+            return <p>Нет истории матчей</p>;
+        }
+
+        return (
+            <div className="recent-matches">
+                <h4>Последние 5 матчей</h4>
+                <div className="matches-list">
+                    {lastFive.map((match, index) => (
+                        <div key={index} className={`match-item ${match.result === 'win' ? 'win' : 'loss'}`}>
+                            <div className="match-date">{new Date(match.date).toLocaleDateString()}</div>
+                            <div className="match-info">
+                                <span className="match-opponent">{match.opponent}</span>
+                                <span className="match-score">{match.score}</span>
+                            </div>
+                            <div className="match-tournament">
+                                <a href={`/tournament/${match.tournament_id}`}>{match.tournament_name}</a>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <button className="view-all-btn" onClick={openMatchHistoryModal}>
+                    Показать все матчи
+                </button>
+            </div>
+        );
+    };
+
+    // Render friend item with additional info on hover
+    const renderFriendItem = (friend) => {
+        return (
+            <div key={friend.id} className="friend-item">
+                <a href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} className="friend-link">
+                    <img 
+                        src={friend.friend.avatar_url || '/default-avatar.png'} 
+                        alt={friend.friend.username} 
+                        className="friend-avatar"
+                    />
+                    <div className="friend-details">
+                        <span className="friend-username">{friend.friend.username}</span>
+                        <span className={`friend-status ${friend.friend.online_status === 'online' ? 'online' : 'offline'}`}>
+                            {friend.friend.online_status === 'online' ? 'Онлайн' : 'Был в сети ' + friend.friend.last_active}
+                        </span>
+                    </div>
+                </a>
+                <div className="friend-hover-info">
+                    <div className="friend-stats">
+                        <p>Матчей вместе: {friend.matches_together || 0}</p>
+                        <p>Винрейт: {friend.win_rate || 0}%</p>
+                    </div>
+                    <button className="send-message-btn">Сообщение</button>
+                </div>
+                <button 
+                    className="remove-friend-btn" 
+                    onClick={() => removeFriend(friend.friend.id)}
+                    title="Удалить из друзей"
+                >
+                    ✕
+                </button>
+            </div>
+        );
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
-        <div className="profile">
-            <h2>Личный кабинет</h2>
+        <div className="profile-container">
+            {error && <p className="error">{error}</p>}
             
             <div className="profile-header">
                 <div className="avatar-container">
@@ -735,11 +853,9 @@ function Profile() {
                     </button>
                 </div>
                 <div className="user-info">
-                    <h3>{user.username}</h3>
+                    <h2>{user.username}</h2>
                 </div>
             </div>
-            
-            {error && <p className="error">{error}</p>}
             
             {/* Плашка с предупреждением для пользователей без email */}
             {!user.email && (
@@ -761,198 +877,302 @@ function Profile() {
                 </div>
             )}
             
-            <section>
-                <h3>Данные пользователя</h3>
-                <p>Имя пользователя: {user.username}</p>
-                <input
-                    type="text"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    placeholder="Новый никнейм"
-                />
-                <button onClick={updateUsername}>Изменить никнейм</button>
-                {user.steam_id && (
-                    <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button>
-                )}
-                <p>Email: {user.email || 'Не указан'}</p>
-                {!user.email ? (
-                    <button onClick={openAddEmailModal}>Привязать email</button>
-                ) : (
-                    <p>Статус верификации: {user.is_verified ? 'Подтвержден' : 'Не подтвержден'}</p>
-                )}
-                {user.email && !user.is_verified && (
-                    <button onClick={openEmailVerificationModal}>Подтвердить email</button>
-                )}
-            </section>
-
-            <section className="steam-section">
-                <h3>Steam</h3>
-                <div>
-                    <p>
-                        {user.steam_url 
-                            ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span>
-                            : 'Не привязан'}
-                    </p>
-                    {!user.steam_url && (
-                        <button onClick={linkSteam}>Привязать Steam</button>
-                    )}
-                    {user.steam_url && (
-                        <div className="steam-buttons">
-                            <button onClick={unlinkSteam}>Отвязать стим</button>
-                            {premierRank > 0 && (
-                                <button 
-                                    onClick={() => fetchCs2Stats()}
-                                    disabled={isLoadingCs2Stats}
-                                >
-                                    {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
-                                </button>
-                            )}
-                        </div>
-                    )}
-                    {user.steam_url && (
-                        <div className="cs2-stats">
-                            <h4>Статистика CS2</h4>
-                            <div className="rank-container">
-                                {renderRankGroups()}
-                            </div>
-                        </div>
-                    )}
+            <div className="profile-content">
+                <div className="profile-navigation">
+                    <button 
+                        className={`nav-tab ${activeTab === 'main' ? 'active' : ''}`} 
+                        onClick={() => switchTab('main')}
+                    >
+                        Основная
+                    </button>
+                    <button 
+                        className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`} 
+                        onClick={() => switchTab('stats')}
+                    >
+                        Статистика
+                    </button>
+                    <button 
+                        className={`nav-tab ${activeTab === 'friends' ? 'active' : ''}`} 
+                        onClick={() => switchTab('friends')}
+                    >
+                        Друзья
+                    </button>
                 </div>
-            </section>
+                
+                <div className="profile-tab-content">
+                    {/* Основная вкладка */}
+                    {activeTab === 'main' && (
+                        <div className="main-tab">
+                            <section>
+                                <h3>Данные пользователя</h3>
+                                <p>Имя пользователя: {user.username}</p>
+                                <input
+                                    type="text"
+                                    value={newUsername}
+                                    onChange={(e) => setNewUsername(e.target.value)}
+                                    placeholder="Новый никнейм"
+                                />
+                                <button onClick={updateUsername}>Изменить никнейм</button>
+                                {user.steam_id && (
+                                    <button onClick={fetchAndSetSteamNickname}>Установить никнейм Steam</button>
+                                )}
+                                <p>Email: {user.email || 'Не указан'}</p>
+                                {!user.email ? (
+                                    <button onClick={openAddEmailModal}>Привязать email</button>
+                                ) : (
+                                    <p>Статус верификации: {user.is_verified ? 'Подтвержден' : 'Не подтвержден'}</p>
+                                )}
+                                {user.email && !user.is_verified && (
+                                    <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                                )}
+                            </section>
 
-            <section className="faceit-section">
-                <h3>Faceit</h3>
-                <div>
-                    {!user.faceit_id && (
-                        <button onClick={linkFaceit}>Привязать FACEit</button>
-                    )}
-                    <p>
-                        {user.faceit_id 
-                            ? <span>
-                                Привязан: {isLoadingFaceitInfo 
-                                    ? 'Загрузка...' 
-                                    : (faceitInfo 
-                                        ? <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a> 
-                                        : user.faceit_id)
-                                }
-                              </span>
-                            : 'Не привязан'
-                        }
-                    </p>
-                    {user.faceit_id && (
-                        <button onClick={unlinkFaceit}>Отвязать FACEIT</button>
-                    )}
-
-                    {faceitInfo && faceitInfo.elo > 0 && (
-                        <div className="faceit-stats">
-                            <h4>Статистика FACEIT{faceitInfo.statsFrom === 'csgo' ? ' (CS:GO)' : ''}</h4>
-                            <div className="faceit-elo">
-                                <p><strong>ELO:</strong> {faceitInfo.elo}</p>
-                                <p><strong>Уровень:</strong> {faceitInfo.level}</p>
-                            </div>
-                            {faceitInfo.stats && (
-                                <div className="faceit-detailed-stats">
-                                    <p><strong>Матчи:</strong> {faceitInfo.stats.Matches || 0}</p>
-                                    <p><strong>Винрейт:</strong> {faceitInfo.stats['Win Rate %'] || '0'}%</p>
-                                    <p><strong>K/D:</strong> {faceitInfo.stats['Average K/D Ratio'] || '0'}</p>
-                                    <p><strong>HS %:</strong> {faceitInfo.stats['Average Headshots %'] || '0'}%</p>
+                            <section className="steam-section">
+                                <h3>Steam</h3>
+                                <div>
+                                    <p>
+                                        {user.steam_url 
+                                            ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span>
+                                            : 'Не привязан'}
+                                    </p>
+                                    {!user.steam_url && (
+                                        <button onClick={linkSteam}>Привязать Steam</button>
+                                    )}
+                                    {user.steam_url && (
+                                        <div className="steam-buttons">
+                                            <button onClick={unlinkSteam}>Отвязать стим</button>
+                                            {premierRank > 0 && (
+                                                <button 
+                                                    onClick={() => fetchCs2Stats()}
+                                                    disabled={isLoadingCs2Stats}
+                                                >
+                                                    {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить статистику CS2'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
+                            </section>
+
+                            <section className="faceit-section">
+                                <h3>Faceit</h3>
+                                <div>
+                                    {!user.faceit_id && (
+                                        <button onClick={linkFaceit}>Привязать FACEit</button>
+                                    )}
+                                    <p>
+                                        {user.faceit_id 
+                                            ? <span>
+                                                Привязан: {isLoadingFaceitInfo 
+                                                    ? 'Загрузка...' 
+                                                    : (faceitInfo 
+                                                        ? <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a> 
+                                                        : user.faceit_id)
+                                                }
+                                              </span>
+                                            : 'Не привязан'
+                                        }
+                                    </p>
+                                    {user.faceit_id && (
+                                        <button onClick={unlinkFaceit}>Отвязать FACEIT</button>
+                                    )}
+                                </div>
+                            </section>
+                        </div>
+                    )}
+                    
+                    {/* Вкладка статистики */}
+                    {activeTab === 'stats' && (
+                        <div className="stats-tab">
+                            {/* Статистика сайта */}
+                            <section className="site-stats-section">
+                                <h3>Статистика сайта</h3>
+                                {stats ? (
+                                    <div className="stats-grid">
+                                        <div className="stats-card">
+                                            <div className="stats-value">{stats.solo.wins + stats.solo.losses + stats.team.wins + stats.team.losses}</div>
+                                            <div className="stats-label">Всего матчей</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">{stats.tournaments.length}</div>
+                                            <div className="stats-label">Турниров</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">
+                                                {stats.tournaments.filter(t => t.result === 'Победитель').length}
+                                            </div>
+                                            <div className="stats-label">Выигранных турниров</div>
+                                        </div>
+                                        <div className="stats-card">
+                                            <div className="stats-value">
+                                                {Math.round(((stats.solo.wins + stats.team.wins) / 
+                                                (stats.solo.wins + stats.solo.losses + stats.team.wins + stats.team.losses) * 100) || 0)}%
+                                            </div>
+                                            <div className="stats-label">Винрейт</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p>Статистика загружается...</p>
+                                )}
+                                
+                                {renderLastFiveMatches()}
+                            </section>
+                            
+                            {/* Статистика CS2 */}
+                            {user.steam_url && (
+                                <section className="cs2-stats-section">
+                                    <h3>Статистика CS2</h3>
+                                    <div className="rank-container">
+                                        {renderRankGroups()}
+                                    </div>
+                                    {cs2Stats && (
+                                        <div className="cs2-detailed-stats">
+                                            {/* Дополнительная статистика CS2, если доступна */}
+                                        </div>
+                                    )}
+                                </section>
+                            )}
+                            
+                            {/* Статистика FACEIT */}
+                            {faceitInfo && faceitInfo.elo > 0 && (
+                                <section className="faceit-stats-section">
+                                    <h3>Статистика FACEIT{faceitInfo.statsFrom === 'csgo' ? ' (CS:GO)' : ''}</h3>
+                                    <div className="faceit-elo">
+                                        <p><strong>ELO:</strong> {faceitInfo.elo}</p>
+                                        <p><strong>Уровень:</strong> {faceitInfo.level}</p>
+                                    </div>
+                                    {faceitInfo.stats && (
+                                        <div className="faceit-detailed-stats">
+                                            <p><strong>Матчи:</strong> {faceitInfo.stats.Matches || 0}</p>
+                                            <p><strong>Винрейт:</strong> {faceitInfo.stats['Win Rate %'] || '0'}%</p>
+                                            <p><strong>K/D:</strong> {faceitInfo.stats['Average K/D Ratio'] || '0'}</p>
+                                            <p><strong>HS %:</strong> {faceitInfo.stats['Average Headshots %'] || '0'}%</p>
+                                        </div>
+                                    )}
+                                </section>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Вкладка друзей */}
+                    {activeTab === 'friends' && (
+                        <div className="friends-tab">
+                            {/* Секция друзей */}
+                            <section className="friends-section">
+                                <h3>Друзья</h3>
+                                {loadingFriends ? (
+                                    <p>Загрузка списка друзей...</p>
+                                ) : (
+                                    <>
+                                        <div className="friends-list">
+                                            {friends.length > 0 ? (
+                                                friends.map(friend => renderFriendItem(friend))
+                                            ) : (
+                                                <p>У вас пока нет друзей</p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </section>
+
+                            {/* Секция заявок в друзья */}
+                            {friendRequests.length > 0 && (
+                                <section className="friend-requests-section">
+                                    <h3>Заявки в друзья</h3>
+                                    <div className="friend-requests">
+                                        {friendRequests.map(request => (
+                                            <div key={request.id} className="friend-request-item">
+                                                <div className="request-user">
+                                                    <img 
+                                                        src={request.user.avatar_url || '/default-avatar.png'} 
+                                                        alt={request.user.username} 
+                                                        className="request-avatar" 
+                                                    />
+                                                    <a href={`/user/${request.user.id}`} className="request-username">
+                                                        {request.user.username}
+                                                    </a>
+                                                </div>
+                                                <div className="request-actions">
+                                                    <button 
+                                                        className="accept-request-btn" 
+                                                        onClick={() => acceptFriendRequest(request.id)}
+                                                    >
+                                                        Принять
+                                                    </button>
+                                                    <button 
+                                                        className="reject-request-btn" 
+                                                        onClick={() => rejectFriendRequest(request.id)}
+                                                    >
+                                                        Отклонить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
                             )}
                         </div>
                     )}
                 </div>
-            </section>
-
-            <section>
-                <h3>Статистика</h3>
-                {stats ? (
-                    <>
-                        <h4>Турниры</h4>
-                        <ul>
-                            {stats.tournaments.map((t) => (
-                                <li key={t.tournament_id}>{t.name} - {t.result}</li>
-                            ))}
-                        </ul>
-                        <h4>Соло</h4>
-                        <p>W:L: {stats.solo.wins}:{stats.solo.losses} ({stats.solo.winRate}%)</p>
-                        <h4>Командные</h4>
-                        <p>W:L: {stats.team.wins}:{stats.team.losses} ({stats.team.winRate}%)</p>
-                    </>
-                ) : (
-                    <p>Статистика загружается...</p>
-                )}
-            </section>
-
-            {/* Секция друзей */}
-            <section className="friends-section">
-                <h3>Друзья</h3>
-                {loadingFriends ? (
-                    <p>Загрузка списка друзей...</p>
-                ) : (
-                    <>
-                        <div className="friends-list">
-                            {friends.length > 0 ? (
-                                friends.map(friend => (
-                                    <div key={friend.id} className="friend-item">
-                                        <a href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} className="friend-link">
-                                            <img 
-                                                src={friend.friend.avatar_url || '/default-avatar.png'} 
-                                                alt={friend.friend.username} 
-                                                className="friend-avatar" 
-                                            />
-                                            <span className="friend-username">{friend.friend.username}</span>
-                                        </a>
-                                        <button 
-                                            className="remove-friend-btn" 
-                                            onClick={() => removeFriend(friend.friend.id)}
-                                            title="Удалить из друзей"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                ))
-                            ) : (
-                                <p>У вас пока нет друзей</p>
-                            )}
-                        </div>
-
-                        {friendRequests.length > 0 && (
-                            <div className="friend-requests">
-                                <h4>Заявки в друзья</h4>
-                                {friendRequests.map(request => (
-                                    <div key={request.id} className="friend-request-item">
-                                        <div className="request-user">
-                                            <img 
-                                                src={request.user.avatar_url || '/default-avatar.png'} 
-                                                alt={request.user.username} 
-                                                className="request-avatar" 
-                                            />
-                                            <a href={`/user/${request.user.id}`} className="request-username">
-                                                {request.user.username}
-                                            </a>
-                                        </div>
-                                        <div className="request-actions">
-                                            <button 
-                                                className="accept-request-btn" 
-                                                onClick={() => acceptFriendRequest(request.id)}
-                                            >
-                                                Принять
-                                            </button>
-                                            <button 
-                                                className="reject-request-btn" 
-                                                onClick={() => rejectFriendRequest(request.id)}
-                                            >
-                                                Отклонить
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+            </div>
+            
+            {/* Модальные окна и прочее остаются как есть */}
+            {/* ... existing modals ... */}
+            
+            {/* Модальное окно с полной историей матчей */}
+            {showMatchHistoryModal && (
+                <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeMatchHistoryModal}>
+                    <div className="modal-content match-history-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>История матчей</h3>
+                        
+                        {loadingMatchHistory ? (
+                            <p>Загрузка истории матчей...</p>
+                        ) : (
+                            <div className="full-match-history">
+                                {matchHistory.length > 0 ? (
+                                    <table className="match-history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Дата</th>
+                                                <th>Турнир</th>
+                                                <th>Соперник</th>
+                                                <th>Счет</th>
+                                                <th>Результат</th>
+                                                <th>Дисциплина</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {matchHistory.map((match, index) => (
+                                                <tr key={index} className={match.result === 'win' ? 'win' : 'loss'}>
+                                                    <td>{new Date(match.date).toLocaleDateString()}</td>
+                                                    <td>
+                                                        <a href={`/tournament/${match.tournament_id}`}>
+                                                            {match.tournament_name}
+                                                        </a>
+                                                    </td>
+                                                    <td>{match.opponent}</td>
+                                                    <td>{match.score}</td>
+                                                    <td>
+                                                        {match.result === 'win' ? 'Победа' : 'Поражение'}
+                                                    </td>
+                                                    <td>{match.discipline}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <p>История матчей отсутствует</p>
+                                )}
                             </div>
                         )}
-                    </>
-                )}
-            </section>
-
+                        
+                        <button onClick={closeMatchHistoryModal} className="close-modal-btn">
+                            Закрыть
+                        </button>
+                    </div>
+                </div>
+            )}
+            
             {/* Модальное окно для добавления email */}
             {showAddEmailModal && (
                 <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeAddEmailModal}>
