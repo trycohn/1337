@@ -1278,5 +1278,24 @@ function getDaysWord(days) {
     }
 }
 
+// Поиск пользователей по никнейму
+router.get('/search', authenticateToken, async (req, res) => {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+        return res.status(400).json({ error: 'Минимальная длина запроса - 2 символа' });
+    }
+
+    try {
+        const result = await pool.query(
+            'SELECT id, username, email FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10',
+            [`%${query}%`]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Ошибка при поиске пользователей:', err);
+        res.status(500).json({ error: 'Ошибка сервера при поиске пользователей' });
+    }
+});
 
 module.exports = router;

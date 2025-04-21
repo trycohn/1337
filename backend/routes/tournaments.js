@@ -293,8 +293,8 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
 // Ручное добавление участника (для solo и team)
 router.post('/:id/add-participant', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { participantName } = req.body; // Только имя для неавторизованных
-    const userId = req.user.id;
+    const { participantName, userId } = req.body;
+    const currentUserId = req.user.id;
 
     try {
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
@@ -304,10 +304,10 @@ router.post('/:id/add-participant', authenticateToken, async (req, res) => {
         const tournament = tournamentResult.rows[0];
 
         // Проверка прав: создатель или администратор
-        if (tournament.created_by !== userId) {
+        if (tournament.created_by !== currentUserId) {
             const adminCheck = await pool.query(
                 'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
-                [id, userId]
+                [id, currentUserId]
             );
             if (adminCheck.rows.length === 0) {
                 return res.status(403).json({ error: 'Только создатель или администратор может добавлять участников' });
@@ -342,18 +342,41 @@ router.post('/:id/add-participant', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Укажите имя участника' });
         }
 
+        // Если указан userId, проверяем существование пользователя
+        if (userId) {
+            const userCheck = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+            if (userCheck.rows.length === 0) {
+                return res.status(404).json({ error: 'Пользователь не найден' });
+            }
+
+            // Проверяем, не участвует ли уже пользователь в турнире
+            const participationCheck = await pool.query(
+                'SELECT * FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (participationCheck.rows.length > 0) {
+                return res.status(400).json({ error: 'Этот пользователь уже участвует в турнире' });
+            }
+        }
+
         if (tournament.participant_type === 'solo') {
-            // Добавление неавторизованного участника в solo-турнир
+            // Добавление участника в solo-турнир
             await pool.query(
                 'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
-                [id, null, participantName]
+                [id, userId || null, participantName]
             );
         } else {
-            // Добавление неавторизованного участника в team-турнир
-            await pool.query(
-                'INSERT INTO tournament_teams (tournament_id, name) VALUES ($1, $2) RETURNING id',
-                [id, participantName]
+            // Добавление команды в team-турнир
+            const teamResult = await pool.query(
+                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING id',
+                [id, participantName, userId || null]
             );
+            if (userId) {
+                await pool.query(
+                    'INSERT INTO tournament_team_members (team_id, user_id) VALUES ($1, $2)',
+                    [teamResult.rows[0].id, userId]
+                );
+            }
         }
 
         res.status(200).json({ message: 'Участник успешно добавлен' });
@@ -366,7 +389,7 @@ router.post('/:id/add-participant', authenticateToken, async (req, res) => {
 // Приглашение на турнир
 router.post('/:id/invite', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { username, email } = req.body; // Никнейм или email
+    const { username, email } = req.body;
     const creatorId = req.user.id;
 
     try {
@@ -377,7 +400,13 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
         const tournament = tournamentResult.rows[0];
 
         if (tournament.created_by !== creatorId) {
-            return res.status(403).json({ error: 'Только создатель турнира может отправлять приглашения' });
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [id, creatorId]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может отправлять приглашения' });
+            }
         }
 
         if (tournament.status !== 'active') {
@@ -386,9 +415,6 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
 
         if (!username && !email) {
             return res.status(400).json({ error: 'Укажите никнейм или email' });
-        }
-        if (username && email) {
-            return res.status(400).json({ error: 'Укажите только один метод поиска: никнейм или email' });
         }
 
         let user;
@@ -406,6 +432,7 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
             user = result.rows[0];
         }
 
+        // Проверяем, не участвует ли уже пользователь в турнире
         const checkParticipationQuery =
             tournament.participant_type === 'solo'
                 ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2'
@@ -415,22 +442,133 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Этот пользователь уже участвует в турнире' });
         }
 
-        const notificationMessage = `Вы приглашены в турнир "${tournament.name}" создателем ${req.user.username || creatorId}`;
-        await pool.query(
-            'INSERT INTO notifications (user_id, message, type) VALUES ($1, $2, $3)',
-            [user.id, notificationMessage, 'tournament_invite']
+        // Создаем приглашение
+        const invitationResult = await pool.query(
+            'INSERT INTO tournament_invitations (tournament_id, user_id, invited_by, status) VALUES ($1, $2, $3, $4) RETURNING *',
+            [id, user.id, creatorId, 'pending']
         );
+
+        const notificationMessage = `Вы приглашены в турнир "${tournament.name}" создателем ${req.user.username}`;
+        const notificationResult = await pool.query(
+            'INSERT INTO notifications (user_id, message, type, tournament_id, invitation_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [user.id, notificationMessage, 'tournament_invite', id, invitationResult.rows[0].id]
+        );
+
         sendNotification(user.id, {
+            id: notificationResult.rows[0].id,
             user_id: user.id,
             message: notificationMessage,
             type: 'tournament_invite',
             tournament_id: id,
+            invitation_id: invitationResult.rows[0].id,
             created_at: new Date().toISOString(),
         });
 
-        res.status(200).json({ message: `Приглашение отправлено пользователю ${user.username}` });
+        res.status(200).json({ message: 'Приглашение отправлено' });
     } catch (err) {
         console.error('❌ Ошибка отправки приглашения:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Обработка приглашения
+router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { action, invitation_id } = req.body;
+    const userId = req.user.id;
+
+    try {
+        // Проверяем существование приглашения
+        const invitationResult = await pool.query(
+            'SELECT * FROM tournament_invitations WHERE id = $1 AND user_id = $2 AND tournament_id = $3 AND status = $4',
+            [invitation_id, userId, id, 'pending']
+        );
+        if (invitationResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Приглашение не найдено или уже обработано' });
+        }
+
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
+
+        if (action === 'accept') {
+            // Проверяем, не участвует ли уже пользователь
+            const checkParticipationQuery =
+                tournament.participant_type === 'solo'
+                    ? 'SELECT * FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2'
+                    : 'SELECT tt.* FROM tournament_teams tt JOIN tournament_team_members ttm ON tt.id = ttm.team_id WHERE tt.tournament_id = $1 AND ttm.user_id = $2';
+            const checkResult = await pool.query(checkParticipationQuery, [id, userId]);
+            if (checkResult.rows.length > 0) {
+                return res.status(400).json({ error: 'Вы уже участвуете в этом турнире' });
+            }
+
+            // Добавляем участника
+            if (tournament.participant_type === 'solo') {
+                await pool.query(
+                    'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
+                    [id, userId, req.user.username]
+                );
+            } else {
+                const teamResult = await pool.query(
+                    'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING id',
+                    [id, `${req.user.username}'s Team`, userId]
+                );
+                await pool.query(
+                    'INSERT INTO tournament_team_members (team_id, user_id) VALUES ($1, $2)',
+                    [teamResult.rows[0].id, userId]
+                );
+            }
+
+            // Обновляем статус приглашения
+            await pool.query(
+                'UPDATE tournament_invitations SET status = $1 WHERE id = $2',
+                ['accepted', invitation_id]
+            );
+
+            // Отправляем уведомление создателю
+            const creatorNotificationMessage = `Пользователь ${req.user.username} принял приглашение в турнир "${tournament.name}"`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [tournament.created_by, creatorNotificationMessage, 'invitation_accepted', id]
+            );
+            sendNotification(tournament.created_by, {
+                user_id: tournament.created_by,
+                message: creatorNotificationMessage,
+                type: 'invitation_accepted',
+                tournament_id: id,
+                created_at: new Date().toISOString(),
+            });
+
+            res.status(200).json({ message: 'Вы успешно присоединились к турниру' });
+        } else if (action === 'reject') {
+            // Обновляем статус приглашения
+            await pool.query(
+                'UPDATE tournament_invitations SET status = $1 WHERE id = $2',
+                ['rejected', invitation_id]
+            );
+
+            // Отправляем уведомление создателю
+            const creatorNotificationMessage = `Пользователь ${req.user.username} отклонил приглашение в турнир "${tournament.name}"`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [tournament.created_by, creatorNotificationMessage, 'invitation_rejected', id]
+            );
+            sendNotification(tournament.created_by, {
+                user_id: tournament.created_by,
+                message: creatorNotificationMessage,
+                type: 'invitation_rejected',
+                tournament_id: id,
+                created_at: new Date().toISOString(),
+            });
+
+            res.status(200).json({ message: 'Приглашение отклонено' });
+        } else {
+            res.status(400).json({ error: 'Неверное действие' });
+        }
+    } catch (err) {
+        console.error('❌ Ошибка обработки приглашения:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -63,19 +63,30 @@ router.post('/', async (req, res) => {
 // Пометка уведомления как прочитанного
 router.post('/mark-read', async (req, res) => {
     const userId = req.query.userId;
+    const notificationIds = req.body.notificationIds;
     const notificationId = req.query.notificationId;
     
     try {
-        if (notificationId) {
+        if (notificationIds && Array.isArray(notificationIds)) {
+            // Если указаны конкретные ID уведомлений
+            await pool.query(
+                'UPDATE notifications SET is_read = true WHERE id = ANY($1) AND user_id = $2',
+                [notificationIds, userId]
+            );
+        } else if (notificationId) {
             // Если указан конкретный ID уведомления
             await pool.query(
                 'UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2',
                 [notificationId, userId]
             );
         } else {
-            // Обновляем все уведомления пользователя
+            // Обновляем все уведомления пользователя, которые не требуют действий
             await pool.query(
-                'UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false',
+                `UPDATE notifications 
+                SET is_read = true 
+                WHERE user_id = $1 
+                AND is_read = false 
+                AND type NOT IN ('tournament_invite', 'admin_request', 'friend_request')`,
                 [userId]
             );
         }

@@ -152,14 +152,34 @@ function Layout() {
         const token = localStorage.getItem('token');
         if (!showNotifications && token && user) {
             try {
-                await api.post(
-                    `/api/notifications/mark-read?userId=${user.id}`,
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` } }
+                // Получаем текущие уведомления
+                const response = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=true`);
+                const notifications = response.data;
+                
+                // Фильтруем уведомления, которые не требуют действий
+                const notificationsToMarkAsRead = notifications.filter(n => 
+                    n.type !== 'tournament_invite' && 
+                    n.type !== 'admin_request' && 
+                    n.type !== 'friend_request'
                 );
-                setNotifications((prev) =>
-                    prev.map((n) => ({ ...n, is_read: true }))
-                );
+                
+                // Помечаем как прочитанные только уведомления, не требующие действий
+                if (notificationsToMarkAsRead.length > 0) {
+                    await api.post(
+                        `/api/notifications/mark-read?userId=${user.id}`,
+                        { notificationIds: notificationsToMarkAsRead.map(n => n.id) },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    
+                    // Обновляем локальное состояние
+                    setNotifications(prev => 
+                        prev.map(n => 
+                            notificationsToMarkAsRead.some(ntr => ntr.id === n.id) 
+                                ? { ...n, is_read: true }
+                                : n
+                        )
+                    );
+                }
             } catch (error) {
                 console.error('❌ Ошибка отметки уведомлений:', error.response ? error.response.data : error.message);
             }

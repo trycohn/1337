@@ -73,6 +73,9 @@ function TournamentDetails() {
     const [error, setError] = useState(null);
     const [ratingType, setRatingType] = useState('faceit');
     const [isCreator, setIsCreator] = useState(false);
+    const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
+    const [userSearchResults, setUserSearchResults] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -194,6 +197,34 @@ function TournamentDetails() {
             }
         }
     }, [tournament, user, id]);
+
+    useEffect(() => {
+        const checkAdminStatus = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const userResponse = await api.get('/api/users/me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const currentUser = userResponse.data;
+                setUser(currentUser);
+
+                if (tournament) {
+                    const isCreator = tournament.created_by === currentUser.id;
+                    const isAdmin = tournament.admins?.some(admin => admin.id === currentUser.id);
+                    setIsAdminOrCreator(isCreator || isAdmin);
+                    setIsCreator(isCreator);
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке статуса администратора:', error);
+            }
+        };
+
+        if (tournament) {
+            checkAdminStatus();
+        }
+    }, [tournament]);
 
     const getRoundName = (round, totalRounds) => {
         if (round === -1) return 'Предварительный раунд';
@@ -337,6 +368,21 @@ function TournamentDetails() {
         }
     };
 
+    const handleUserSearch = async (query) => {
+        if (query.length < 2) {
+            setUserSearchResults([]);
+            return;
+        }
+
+        try {
+            const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`);
+            setUserSearchResults(response.data);
+        } catch (error) {
+            console.error('Ошибка при поиске пользователей:', error);
+            setUserSearchResults([]);
+        }
+    };
+
     const handleAddParticipant = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -347,7 +393,10 @@ function TournamentDetails() {
         try {
             const addParticipantResponse = await api.post(
                 `/api/tournaments/${id}/add-participant`,
-                { participantName: addParticipantName },
+                { 
+                    participantName: addParticipantName,
+                    userId: selectedUser?.id || null
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setMessage(addParticipantResponse.data.message);
@@ -355,6 +404,8 @@ function TournamentDetails() {
             setTournament(updatedTournament.data);
             setMatches(updatedTournament.data.matches || []);
             setAddParticipantName('');
+            setSelectedUser(null);
+            setUserSearchResults([]);
         } catch (error) {
             setMessage(error.response?.data?.error || 'Ошибка при добавлении участника');
         }
@@ -679,6 +730,26 @@ function TournamentDetails() {
         }
     };
 
+    const handleInvitationResponse = async (invitationId, action) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Пожалуйста, войдите, чтобы ответить на приглашение');
+            return;
+        }
+
+        try {
+            const response = await api.post(
+                `/api/tournaments/${id}/handle-invitation`,
+                { action, invitation_id: invitationId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMessage(response.data.message);
+            fetchTournamentData();
+        } catch (error) {
+            setMessage(error.response?.data?.error || 'Ошибка при обработке приглашения');
+        }
+    };
+
     const handleStartTournament = async () => {
         try {
             await api.post(`/api/tournaments/${id}/start`, {}, {
@@ -891,39 +962,23 @@ function TournamentDetails() {
                                     type="text"
                                     placeholder="Никнейм пользователя"
                                     value={inviteUsername}
-                                    onChange={(e) => {
-                                        setInviteUsername(e.target.value);
-                                        setInviteEmail('');
-                                    }}
+                                    onChange={(e) => setInviteUsername(e.target.value)}
                                 />
                             ) : (
                                 <input
                                     type="email"
                                     placeholder="Email пользователя"
                                     value={inviteEmail}
-                                    onChange={(e) => {
-                                        setInviteEmail(e.target.value);
-                                        setInviteUsername('');
-                                    }}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
                                 />
                             )}
                             <button onClick={handleInvite}>Пригласить</button>
                         </div>
                     )}
-                    {(isCreator || adminRequestStatus === 'accepted') && matches.length === 0 && (
-                        <div className="add-participant">
-                            <h3>Добавить неавторизованного участника</h3>
-                            <input
-                                type="text"
-                                placeholder="Имя участника"
-                                value={addParticipantName}
-                                onChange={(e) => setAddParticipantName(e.target.value)}
-                            />
-                            <button onClick={handleAddParticipant}>Добавить</button>
-                        </div>
-                    )}
-                    {canRequestAdmin && (
-                        <button onClick={handleRequestAdmin}>Администрировать турнир</button>
+                    {!isAdminOrCreator && tournament?.status === 'active' && (
+                        <button onClick={handleRequestAdmin} className="request-admin-btn">
+                            Запросить права администратора
+                        </button>
                     )}
                 </div>
             )}
@@ -1079,6 +1134,45 @@ function TournamentDetails() {
                     >
                         Завершить турнир
                     </button>
+                </div>
+            )}
+            {isAdminOrCreator && (
+                <div className="add-participant-section">
+                    <h3>Добавить участника</h3>
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                handleUserSearch(e.target.value);
+                            }}
+                            placeholder="Поиск пользователей..."
+                        />
+                        {userSearchResults.length > 0 && (
+                            <ul className="search-results">
+                                {userSearchResults.map(user => (
+                                    <li 
+                                        key={user.id}
+                                        onClick={() => {
+                                            setSelectedUser(user);
+                                            setAddParticipantName(user.username);
+                                            setUserSearchResults([]);
+                                        }}
+                                    >
+                                        {user.username}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                    <input
+                        type="text"
+                        value={addParticipantName}
+                        onChange={(e) => setAddParticipantName(e.target.value)}
+                        placeholder="Имя участника"
+                    />
+                    <button onClick={handleAddParticipant}>Добавить участника</button>
                 </div>
             )}
         </section>

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Home.css';
 import { isCurrentUser } from '../utils/userHelpers';
+import InvitationNotification from './InvitationNotification';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -10,6 +11,7 @@ function Notifications() {
   const [actionLoading, setActionLoading] = useState(null);
   const [friendshipStatuses, setFriendshipStatuses] = useState({});
   const wsRef = useRef(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -99,6 +101,8 @@ function Notifications() {
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка загрузки уведомлений');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -164,7 +168,7 @@ function Notifications() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Отмечаем уведомление как прочитанное
+      // Отмечаем уведомление как прочитанное только после принятия
       await axios.post(
         `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
         {},
@@ -207,7 +211,7 @@ function Notifications() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Отмечаем уведомление как прочитанное
+      // Отмечаем уведомление как прочитанное только после отклонения
       await axios.post(
         `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
         {},
@@ -238,10 +242,37 @@ function Notifications() {
     return !!friendshipStatuses[requesterId] && friendshipStatuses[requesterId].status !== 'pending';
   };
 
+  const handleInvitationResponse = async (invitationId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.post(
+        `/api/tournaments/${invitationId}/handle-invitation`,
+        { action, invitation_id: invitationId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Отмечаем уведомление как прочитанное только после ответа
+      await axios.post(
+        `/api/notifications/mark-read?userId=${user.id}&notificationId=${invitationId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Обновляем список уведомлений
+      setNotifications(notifications.filter(n => n.invitation_id !== invitationId));
+    } catch (err) {
+      setError('Ошибка при обработке приглашения');
+    }
+  };
+
+  if (loading) return <div>Загрузка уведомлений...</div>;
+  if (error) return <div className="error">{error}</div>;
+
   return (
     <section className="notifications-page">
       <h2>История уведомлений</h2>
-      {error && <p className="error">{error}</p>}
       {notifications.length > 0 ? (
         <div className="notification-list">
           {notifications.map((notification) => (
@@ -249,109 +280,109 @@ function Notifications() {
               key={notification.id}
               className={`notification-item ${notification.is_read ? '' : 'unread'}`}
             >
-              {notification.message ? (
+              {notification.type === 'tournament_invite' ? (
+                <InvitationNotification
+                  notification={notification}
+                  onAccept={() => handleInvitationResponse(notification.invitation_id, 'accept')}
+                  onReject={() => handleInvitationResponse(notification.invitation_id, 'reject')}
+                />
+              ) : notification.type === 'admin_request' && notification.tournament_id && notification.requester_id ? (
                 <>
-                  {notification.type === 'admin_request' && notification.tournament_id && notification.requester_id ? (
-                    <>
-                      {notification.message.split(' для турнира ')[0]} для турнира{' '}
-                      <Link to={`/tournaments/${notification.tournament_id}`}>
-                        "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
-                      </Link>{' '}
-                      - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      <div className="admin-request-status">
-                        {notification.request_status === 'pending' || !notification.request_status ? (
-                          <>
-                            <span className="status-pending">В ожидании</span>
-                            <div className="admin-request-actions">
-                              <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
-                                Принять
-                              </button>
-                              <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
-                                Отклонить
-                              </button>
-                            </div>
-                          </>
-                        ) : notification.request_status === 'accepted' ? (
-                          <span className="status-accepted">Запрос принят</span>
-                        ) : (
-                          <span className="status-rejected">Запрос отклонен</span>
-                        )}
-                      </div>
-                    </>
-                  ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
-                    <>
-                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      <div className="admin-request-status">
-                        <span className="status-accepted">Запрос принят</span>
-                      </div>
-                    </>
-                  ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
-                    <>
-                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      <div className="admin-request-status">
-                        <span className="status-rejected">Запрос отклонен</span>
-                      </div>
-                    </>
-                  ) : notification.type === 'friend_request' && notification.requester_id ? (
-                    <>
-                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      <div className="friend-request-status">
-                        {isFriendRequestAccepted(notification.requester_id) ? (
-                          <>
-                            <span className="status-accepted">Заявка принята</span>
-                            <Link to={isCurrentUser(notification.requester_id) ? "/profile" : `/user/${notification.requester_id}`} className="view-profile-link">
-                              Посмотреть профиль
-                            </Link>
-                          </>
-                        ) : isFriendRequestProcessed(notification.requester_id) ? (
-                          <span className="status-rejected">Заявка отклонена</span>
-                        ) : (
-                          <>
-                            <span className="status-pending">В ожидании</span>
-                            <div className="friend-request-actions">
-                              <button 
-                                onClick={() => handleAcceptFriendRequest(notification)}
-                                disabled={actionLoading === notification.id}
-                              >
-                                {actionLoading === notification.id ? 'Обработка...' : 'Принять'}
-                              </button>
-                              <button 
-                                onClick={() => handleRejectFriendRequest(notification)}
-                                disabled={actionLoading === notification.id}
-                              >
-                                {actionLoading === notification.id ? 'Обработка...' : 'Отклонить'}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  ) : notification.type === 'friend_request_accepted' && notification.requester_id ? (
-                    <>
-                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                      <div className="friend-request-status">
+                  {notification.message.split(' для турнира ')[0]} для турнира{' '}
+                  <Link to={`/tournaments/${notification.tournament_id}`}>
+                    "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
+                  </Link>{' '}
+                  - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                  <div className="admin-request-status">
+                    {notification.request_status === 'pending' || !notification.request_status ? (
+                      <>
+                        <span className="status-pending">В ожидании</span>
+                        <div className="admin-request-actions">
+                          <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
+                            Принять
+                          </button>
+                          <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
+                            Отклонить
+                          </button>
+                        </div>
+                      </>
+                    ) : notification.request_status === 'accepted' ? (
+                      <span className="status-accepted">Запрос принят</span>
+                    ) : (
+                      <span className="status-rejected">Запрос отклонен</span>
+                    )}
+                  </div>
+                </>
+              ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
+                <>
+                  {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                  <div className="admin-request-status">
+                    <span className="status-accepted">Запрос принят</span>
+                  </div>
+                </>
+              ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
+                <>
+                  {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                  <div className="admin-request-status">
+                    <span className="status-rejected">Запрос отклонен</span>
+                  </div>
+                </>
+              ) : notification.type === 'friend_request' && notification.requester_id ? (
+                <>
+                  {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                  <div className="friend-request-status">
+                    {isFriendRequestAccepted(notification.requester_id) ? (
+                      <>
                         <span className="status-accepted">Заявка принята</span>
                         <Link to={isCurrentUser(notification.requester_id) ? "/profile" : `/user/${notification.requester_id}`} className="view-profile-link">
                           Посмотреть профиль
                         </Link>
-                      </div>
-                    </>
-                  ) : notification.tournament_id ? (
-                    <>
-                      {notification.message.split(' турнира ')[0]} турниров{' '}
-                      <Link to={`/tournaments/${notification.tournament_id}`}>
-                        "{notification.message.split(' турнира ')[1]?.split('"')[1] || 'турнир'}"
-                      </Link>{' '}
-                      - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                    </>
-                  ) : (
-                    <>
-                      {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                    </>
-                  )}
+                      </>
+                    ) : isFriendRequestProcessed(notification.requester_id) ? (
+                      <span className="status-rejected">Заявка отклонена</span>
+                    ) : (
+                      <>
+                        <span className="status-pending">В ожидании</span>
+                        <div className="friend-request-actions">
+                          <button 
+                            onClick={() => handleAcceptFriendRequest(notification)}
+                            disabled={actionLoading === notification.id}
+                          >
+                            {actionLoading === notification.id ? 'Обработка...' : 'Принять'}
+                          </button>
+                          <button 
+                            onClick={() => handleRejectFriendRequest(notification)}
+                            disabled={actionLoading === notification.id}
+                          >
+                            {actionLoading === notification.id ? 'Обработка...' : 'Отклонить'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : notification.type === 'friend_request_accepted' && notification.requester_id ? (
+                <>
+                  {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                  <div className="friend-request-status">
+                    <span className="status-accepted">Заявка принята</span>
+                    <Link to={isCurrentUser(notification.requester_id) ? "/profile" : `/user/${notification.requester_id}`} className="view-profile-link">
+                      Посмотреть профиль
+                    </Link>
+                  </div>
+                </>
+              ) : notification.tournament_id ? (
+                <>
+                  {notification.message.split(' турнира ')[0]} турниров{' '}
+                  <Link to={`/tournaments/${notification.tournament_id}`}>
+                    "{notification.message.split(' турнира ')[1]?.split('"')[1] || 'турнир'}"
+                  </Link>{' '}
+                  - {new Date(notification.created_at).toLocaleString('ru-RU')}
                 </>
               ) : (
-                <>Неизвестное уведомление - {new Date(notification.created_at).toLocaleString('ru-RU')}</>
+                <>
+                  {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                </>
               )}
             </div>
           ))}
