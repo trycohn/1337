@@ -877,6 +877,19 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         }
         const match = matchResult.rows[0];
 
+        // Запрет изменения результата, если следующий матч уже содержит участников
+        for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
+            if (nextMatchId) {
+                const nextRes = await pool.query(
+                    'SELECT team1_id, team2_id FROM matches WHERE id = $1',
+                    [nextMatchId]
+                );
+                if (nextRes.rows.length && (nextRes.rows[0].team1_id || nextRes.rows[0].team2_id)) {
+                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже содержит участников' });
+                }
+            }
+        }
+        
         if (match.winner_team_id && match.winner_team_id === winner_team_id) {
             return res.status(400).json({ error: 'Этот победитель уже установлен' });
         }
@@ -1190,6 +1203,19 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         }
         const match = matchResult.rows[0];
 
+        // Запрет изменения результата, если следующий матч уже содержит участников
+        for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
+            if (nextMatchId) {
+                const nextRes = await pool.query(
+                    'SELECT team1_id, team2_id FROM matches WHERE id = $1',
+                    [nextMatchId]
+                );
+                if (nextRes.rows.length && (nextRes.rows[0].team1_id || nextRes.rows[0].team2_id)) {
+                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже содержит участников' });
+                }
+            }
+        }
+        
         if (match.winner_team_id && match.winner_team_id === winner_team_id) {
             return res.status(400).json({ error: 'Этот победитель уже установлен' });
         }
@@ -1273,12 +1299,12 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
                     } else {
                         const roundMatches = await pool.query(
                             'SELECT * FROM matches WHERE tournament_id = $1 AND round = $2 AND bracket_type = $3',
-                            [matchIdNum, match.round + 1, 'winner']
+                            [id, match.round + 1, 'winner']
                         );
                         const availableMatch = roundMatches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
                         if (availableMatch) {
                             await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
-                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, matchIdNum]);
+                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, matchId]);
                         } else {
                             return res.status(400).json({ error: 'Нет доступных мест в верхней сетке' });
                         }
@@ -1306,7 +1332,7 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
 
                     let loserMatches = await pool.query(
                         'SELECT * FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3 AND is_third_place_match = false',
-                        [matchIdNum, 'loser', targetLoserRound]
+                        [id, 'loser', targetLoserRound]
                     );
 
                     let availableLoserMatch = loserMatches.rows.find(m => (!m.team1_id || !m.team2_id) && m.team1_id !== loser_team_id && m.team2_id !== loser_team_id);
@@ -1314,14 +1340,14 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
                     if (!availableLoserMatch) {
                         const maxMatchNumberResult = await pool.query(
                             'SELECT COALESCE(MAX(match_number), 0) as max_match_number FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3',
-                            [matchIdNum, 'loser', targetLoserRound]
+                            [id, 'loser', targetLoserRound]
                         );
                         const maxMatchNumber = maxMatchNumberResult.rows[0].max_match_number;
 
                         const newMatchResult = await pool.query(
                             'INSERT INTO matches (tournament_id, round, match_number, bracket_type, team1_id, team2_id, match_date) ' +
                             'VALUES ($1, $2, $3, $4, $5, NULL, NOW()) RETURNING *',
-                            [matchIdNum, targetLoserRound, maxMatchNumber + 1, 'loser', loser_team_id]
+                            [id, targetLoserRound, maxMatchNumber + 1, 'loser', loser_team_id]
                         );
                         availableLoserMatch = newMatchResult.rows[0];
                         console.log(`Создан новый матч ${availableLoserMatch.id} в раунде ${targetLoserRound} сетки лузеров для проигравшего (team ${loser_team_id})`);

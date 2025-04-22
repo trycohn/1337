@@ -1309,7 +1309,13 @@ function TournamentDetails() {
                                             <tbody>
                                                 {team.members.map(member => (
                                                     <tr key={member.participant_id || member.user_id || member.id}>
-                                                        <td>{member.name}</td>
+                                                        <td>
+                                                            {member.user_id ? (
+                                                                <Link to={`/user/${member.user_id}`}>{member.name}</Link>
+                                                            ) : (
+                                                                member.name
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
