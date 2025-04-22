@@ -56,6 +56,8 @@ function Profile() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [searchPerformed, setSearchPerformed] = useState(false);
+    const searchTimeoutRef = useRef(null);
 
     const fetchUserData = async (token) => {
         try {
@@ -881,24 +883,36 @@ function Profile() {
     const handleSearchChange = async (e) => {
         const value = e.target.value;
         setSearchQuery(value);
+        
+        // Clear any existing timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+        
         if (value.length < 2) {
             setSearchResults([]);
+            setSearchPerformed(false);
             return;
         }
-        setIsSearching(true);
-        try {
-            const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            // Отфильтруем пользователей, уже добавленных в друзья
-            const data = response.data;
-            const filtered = data.filter(user => !friends.some(f => f.friend.id === user.id));
-            setSearchResults(filtered);
-        } catch (err) {
-            console.error('Ошибка поиска пользователей:', err);
-        } finally {
-            setIsSearching(false);
-        }
+        
+        // Set a new timeout (debounce)
+        searchTimeoutRef.current = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                // Отфильтруем пользователей, уже добавленных в друзья
+                const data = response.data;
+                const filtered = data.filter(user => !friends.some(f => f.friend.id === user.id));
+                setSearchResults(filtered);
+                setSearchPerformed(true);
+            } catch (err) {
+                console.error('Ошибка поиска пользователей:', err);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500); // 500ms delay before executing search
     };
 
     const sendFriendRequest = async (userId) => {
@@ -1162,7 +1176,7 @@ function Profile() {
                                         ))}
                                     </div>
                                 )}
-                                {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+                                {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
                                     <p className="no-results">Пользователи не найдены</p>
                                 )}
                             </div>
