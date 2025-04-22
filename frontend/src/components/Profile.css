@@ -773,6 +773,33 @@ input, button {
     opacity: 0.7;
 }
 
+/* Enhanced styling for last online display */
+.last-online {
+    font-style: italic;
+    font-size: 12px;
+    color: #8a8aa8;
+    margin-top: 4px;
+    padding-left: 14px;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.last-online::before {
+    content: '⏱';
+    margin-right: 5px;
+    font-size: 11px;
+}
+
+.friend-item:hover .last-online {
+    color: #b8b8d0;
+}
+
+.last-online-time {
+    font-weight: 500;
+    color: #9d9dbc;
+}
+
 .friend-hover-info {
     position: absolute;
     top: 100%;
@@ -1658,6 +1685,33 @@ input, button {
 .friend-status.offline::before {
     background-color: #a0a0b8;
     opacity: 0.7;
+}
+
+/* Enhanced styling for last online display */
+.last-online {
+    font-style: italic;
+    font-size: 12px;
+    color: #8a8aa8;
+    margin-top: 4px;
+    padding-left: 14px;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.last-online::before {
+    content: '⏱';
+    margin-right: 5px;
+    font-size: 11px;
+}
+
+.friend-item:hover .last-online {
+    color: #b8b8d0;
+}
+
+.last-online-time {
+    font-weight: 500;
+    color: #9d9dbc;
 }
 
 .friend-hover-info {
