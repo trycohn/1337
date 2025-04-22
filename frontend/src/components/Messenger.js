@@ -22,6 +22,20 @@ function Messenger() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        // Проверка работоспособности токена
+        try {
+            const parsed = JSON.parse(atob(token.split('.')[1]));
+            const tokenExpiration = parsed.exp * 1000; // Преобразуем в миллисекунды
+            if (Date.now() > tokenExpiration) {
+                console.error('Токен устарел, требуется повторная аутентификация');
+                setError('Сессия устарела. Пожалуйста, войдите заново');
+                localStorage.removeItem('token');
+                return;
+            }
+        } catch (err) {
+            console.error('Ошибка проверки токена:', err);
+        }
+
         // Сохраняем userId в localStorage для временных сообщений
         try {
             const base64Url = token.split('.')[1];
@@ -39,7 +53,14 @@ function Messenger() {
         }
 
         const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
-        const socketClient = io(baseUrl, { query: { token } });
+        const socketClient = io(baseUrl, { 
+            query: { token },
+            path: '/socket.io',
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 20000,
+            transports: ['websocket', 'polling']
+        });
 
         socketClient.on('connect', () => {
             console.log('Socket.IO соединение установлено');
@@ -58,7 +79,17 @@ function Messenger() {
 
         socketClient.on('connect_error', (error) => {
             console.error('Socket.IO ошибка подключения:', error);
-            setError('Ошибка подключения к серверу чата');
+            setError(`Ошибка подключения к серверу чата: ${error.message}`);
+        });
+
+        // Обработка переподключения
+        socketClient.on('reconnect', (attemptNumber) => {
+            console.log(`Socket.IO переподключился после ${attemptNumber} попыток`);
+        });
+
+        socketClient.on('reconnect_error', (error) => {
+            console.error('Socket.IO ошибка переподключения:', error);
+            setError(`Не удалось восстановить соединение с чатом: ${error.message}`);
         });
 
         setSocket(socketClient);
@@ -171,7 +202,7 @@ function Messenger() {
             setError(err.response?.data?.error || 'Ошибка загрузки сообщений');
         }
     };
-    
+
     // Отправка сообщения
     const sendMessage = () => {
         if (!socket || !activeChat || !newMessage.trim()) return;
@@ -204,7 +235,7 @@ function Messenger() {
         
         setNewMessage('');
     };
-    
+
     // Пометка чата как прочитанного
     const markChatAsRead = async (chatId) => {
         try {
@@ -223,13 +254,13 @@ function Messenger() {
             console.error('Ошибка при пометке чата как прочитанного:', err);
         }
     };
-    
+
     // Пометка конкретного сообщения как прочитанного
     const markMessageAsRead = async (messageId) => {
         if (!socket) return;
         socket.emit('read_status', { message_id: messageId });
     };
-    
+
     // Отправка вложения
     const sendAttachment = async (file, type) => {
         if (!activeChat || !file) return;
@@ -253,23 +284,23 @@ function Messenger() {
             setError(err.response?.data?.error || 'Ошибка отправки вложения');
         }
     };
-    
+
     // Обработка изменения активного чата
     const handleChatSelect = (chat) => {
         setActiveChat(chat);
     };
-    
+
     // Обработчик ввода сообщения
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
     };
-    
+
     // Обработчик отправки формы
     const handleSubmit = (e) => {
         e.preventDefault();
         sendMessage();
     };
-    
+
     // Обработка нажатия Enter
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -277,7 +308,7 @@ function Messenger() {
             sendMessage();
         }
     };
-    
+
     // Функция для создания нового чата
     const createChat = async (userId) => {
         try {
@@ -323,4 +354,4 @@ function Messenger() {
     );
 }
 
-export default Messenger; 
+export default Messenger;
