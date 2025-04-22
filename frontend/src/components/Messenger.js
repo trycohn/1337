@@ -96,31 +96,31 @@ function Messenger() {
         }
     }, [activeChat]);
     
-    // Обработка нового сообщения
+    // Обработка нового сообщения: обновляем сообщения и динамически обновляем, сортируя список чатов
     const handleNewMessage = (message) => {
-        // Избегаем дубликатов
+        const chatId = Number(message.chat_id);
+        // Добавляем сообщение, избегая дубликатов
         setMessages(prevMessages => {
             if (prevMessages.some(m => m.id === message.id)) return prevMessages;
             return [...prevMessages, message];
         });
-        // Если сообщение в активном чате, помечаем как прочитанное
-        if (activeChatRef.current && Number(activeChatRef.current) === Number(message.chat_id)) {
+        // Обновляем last_message и пересортировываем чаты по дате последнего сообщения
+        setChats(prevChats => {
+            const updatedChats = prevChats.map(chat =>
+                chat.id === chatId ? { ...chat, last_message: message } : chat
+            );
+            return updatedChats
+                .slice()
+                .sort((a, b) => new Date(b.last_message?.created_at) - new Date(a.last_message?.created_at));
+        });
+        // Если сообщение в активном чате, отмечаем как прочитанное, иначе увеличиваем счетчик непрочитанных
+        if (Number(activeChatRef.current) === chatId) {
             markMessageAsRead(message.id);
         } else {
-            // Иначе увеличиваем счётчик и динамически обновляем список чатов
-            setUnreadCounts(prevCounts => ({
-                ...prevCounts,
-                [message.chat_id]: (prevCounts[message.chat_id] || 0) + 1
+            setUnreadCounts(prev => ({
+                ...prev,
+                [chatId]: (prev[chatId] || 0) + 1
             }));
-            setChats(prevChats => {
-                // Переносим обновлённый чат наверх и обновляем его last_message
-                const otherChats = prevChats.filter(chat => chat.id !== message.chat_id);
-                const updated = prevChats.find(chat => chat.id === message.chat_id);
-                if (updated) {
-                    return [{ ...updated, last_message: message }, ...otherChats];
-                }
-                return prevChats;
-            });
         }
     };
     
