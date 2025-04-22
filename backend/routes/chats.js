@@ -463,6 +463,32 @@ router.post('/attachment', authenticateToken, upload.single('file'), async (req,
     }
 });
 
+// Удаление сообщения
+router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
+    const { messageId } = req.params;
+    
+    try {
+        // Проверяем, существует ли сообщение и принадлежит ли оно текущему пользователю
+        const messageCheck = await pool.query(`
+            SELECT * FROM messages WHERE id = $1 AND sender_id = $2
+        `, [messageId, req.user.id]);
+        
+        if (messageCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'У вас нет прав на удаление этого сообщения' });
+        }
+        
+        // Удаляем сообщение
+        await pool.query(`
+            DELETE FROM messages WHERE id = $1
+        `, [messageId]);
+        
+        res.json({ success: true, message: 'Сообщение успешно удалено' });
+    } catch (err) {
+        console.error('Ошибка удаления сообщения:', err);
+        res.status(500).json({ error: 'Ошибка сервера при удалении сообщения' });
+    }
+});
+
 // Вспомогательная функция для получения информации о чате
 async function getChatInfo(chatId, userId) {
     const result = await pool.query(`

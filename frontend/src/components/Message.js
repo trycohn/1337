@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './Message.css';
 import { formatDate } from '../utils/dateHelpers';
 
-function Message({ message, isOwn }) {
+function Message({ message, isOwn, onDeleteMessage }) {
+    const [showContextMenu, setShowContextMenu] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+    const contextMenuRef = useRef(null);
+    
     // Выбор класса для сообщения в зависимости от отправителя
     const messageClass = () => {
         let baseClass = isOwn ? 'message own' : 'message';
@@ -11,6 +15,40 @@ function Message({ message, isOwn }) {
         }
         return baseClass;
     };
+    
+    // Обработчик правого клика на сообщении
+    const handleContextMenu = (e) => {
+        e.preventDefault();
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMenuPosition({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        });
+        setShowContextMenu(true);
+    };
+    
+    // Скрыть контекстное меню при клике в любом месте
+    const handleClickOutside = (e) => {
+        if (contextMenuRef.current && !contextMenuRef.current.contains(e.target)) {
+            setShowContextMenu(false);
+        }
+    };
+    
+    // Функция для удаления сообщения
+    const handleDeleteMessage = () => {
+        if (onDeleteMessage) {
+            onDeleteMessage(message.id);
+        }
+        setShowContextMenu(false);
+    };
+    
+    // Добавляем и удаляем обработчики событий
+    useEffect(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
     
     // Рендер содержимого сообщения в зависимости от его типа
     const renderMessageContent = () => {
@@ -90,8 +128,24 @@ function Message({ message, isOwn }) {
 
     return (
         <div className={`message-container ${isOwn ? 'own-container' : ''}`}>
-            <div className={messageClass()}>
+            <div className={messageClass()} onContextMenu={handleContextMenu}>
                 {renderMessageContent()}
+                
+                {showContextMenu && (
+                    <div 
+                        className="message-context-menu" 
+                        ref={contextMenuRef}
+                        style={{
+                            top: `${menuPosition.y}px`,
+                            right: isOwn ? `${menuPosition.x}px` : 'auto',
+                            left: !isOwn ? `${menuPosition.x}px` : 'auto'
+                        }}
+                    >
+                        <ul>
+                            <li onClick={handleDeleteMessage}>Удалить</li>
+                        </ul>
+                    </div>
+                )}
             </div>
             <div className="message-meta">
                 <span className="message-time">{formatDate(message.created_at)}</span>

@@ -352,6 +352,40 @@ function Messenger() {
         }
     };
 
+    // Функция для удаления сообщения
+    const deleteMessage = async (messageId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/chats/messages/${messageId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Оптимистичное удаление сообщения из UI
+            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+            
+            // Обновляем последнее сообщение в чате если это было оно
+            if (activeChat) {
+                const chatId = activeChat.id;
+                setChats(prevChats => {
+                    return prevChats.map(chat => {
+                        if (chat.id === chatId && chat.last_message?.id === messageId) {
+                            // Находим предпоследнее сообщение
+                            const newLastMessage = messages
+                                .filter(msg => msg.id !== messageId)
+                                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
+                            
+                            return { ...chat, last_message: newLastMessage };
+                        }
+                        return chat;
+                    });
+                });
+            }
+            
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка удаления сообщения');
+        }
+    };
+
     return (
         <div className="messenger">
             <div className="messenger-container">
@@ -372,6 +406,7 @@ function Messenger() {
                     onKeyPress={handleKeyPress}
                     onSendAttachment={handleFileSelect}
                     messagesEndRef={messagesEndRef}
+                    onDeleteMessage={deleteMessage}
                 />
             </div>
             

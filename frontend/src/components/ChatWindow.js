@@ -11,7 +11,8 @@ function ChatWindow({
     onSubmit, 
     onKeyPress,
     onSendAttachment,
-    messagesEndRef 
+    messagesEndRef,
+    onDeleteMessage 
 }) {
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const fileInputRef = useRef(null);
@@ -145,6 +146,7 @@ function ChatWindow({
                                     const payload = decodeTokenPayload(localStorage.getItem('token'));
                                     return payload ? message.sender_id === payload.id : false;
                                 })()}
+                                onDeleteMessage={onDeleteMessage}
                             />
                         ))}
                     </div>
