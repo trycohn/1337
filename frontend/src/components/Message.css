@@ -69,22 +69,6 @@
     overflow: hidden;
 }
 
-/* Позиционирование для собственных сообщений (справа) */
-.message-context-menu.menu-own {
-    top: -5px;
-    left: 100%; /* Располагаем справа от сообщения */
-    margin-left: 5px; /* Отступ от сообщения */
-    transform-origin: left bottom;
-}
-
-/* Позиционирование для чужих сообщений (слева) */
-.message-context-menu.menu-other {
-    top: -5px;
-    right: 100%; /* Располагаем слева от сообщения */
-    margin-right: 5px;
-    transform-origin: right bottom;
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;

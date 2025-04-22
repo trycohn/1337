@@ -4,8 +4,8 @@ import { formatDate } from '../utils/dateHelpers';
 
 function Message({ message, isOwn, onDeleteMessage }) {
     const [showContextMenu, setShowContextMenu] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const contextMenuRef = useRef(null);
-    const messageRef = useRef(null);
     
     // Выбор класса для сообщения в зависимости от отправителя
     const messageClass = () => {
@@ -19,6 +19,11 @@ function Message({ message, isOwn, onDeleteMessage }) {
     // Обработчик правого клика на сообщении
     const handleContextMenu = (e) => {
         e.preventDefault();
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMenuPosition({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        });
         setShowContextMenu(true);
     };
     
@@ -123,13 +128,18 @@ function Message({ message, isOwn, onDeleteMessage }) {
 
     return (
         <div className={`message-container ${isOwn ? 'own-container' : ''}`}>
-            <div className={messageClass()} ref={messageRef} onContextMenu={handleContextMenu}>
+            <div className={messageClass()} onContextMenu={handleContextMenu}>
                 {renderMessageContent()}
                 
                 {showContextMenu && (
                     <div 
-                        className={`message-context-menu ${isOwn ? 'menu-own' : 'menu-other'}`}
+                        className="message-context-menu" 
                         ref={contextMenuRef}
+                        style={{
+                            top: `${menuPosition.y}px`,
+                            right: isOwn ? `${menuPosition.x}px` : 'auto',
+                            left: !isOwn ? `${menuPosition.x}px` : 'auto'
+                        }}
                     >
                         <ul>
                             <li onClick={handleDeleteMessage}>Удалить</li>
