@@ -1080,6 +1080,7 @@ function TournamentDetails() {
                     )}
                 </div>
 
+                {(isAdminOrCreator || showFullDescription) && (
                 <div className="info-block">
                     <h3>Регламент</h3>
                     <div className="info-content">
@@ -1139,6 +1140,7 @@ function TournamentDetails() {
                         )}
                     </div>
                 </div>
+                )}
             </div>
 
             <p>
