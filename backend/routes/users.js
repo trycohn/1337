@@ -932,8 +932,10 @@ router.post('/upload-avatar', authenticateToken, upload.single('avatar'), async 
             return res.status(400).json({ error: 'Файл не загружен' });
         }
 
-        // Создаем URL для доступа к файлу
-        const baseUrl = process.env.SERVER_URL || 'http://localhost:3000';
+        // Определяем базовый URL динамически (используем SERVER_URL в продакшене)
+        const baseUrl = process.env.NODE_ENV === 'production'
+            ? process.env.SERVER_URL
+            : `${req.protocol}://${req.get('host')}`;
         const relativePath = `/uploads/avatars/${req.file.filename}`;
         const avatar_url = `${baseUrl}${relativePath}`;
 

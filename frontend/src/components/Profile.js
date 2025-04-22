@@ -569,11 +569,9 @@ function Profile() {
         setUploadingAvatar(true);
         try {
             const token = localStorage.getItem('token');
+            // Убираем явное указание Content-Type, чтобы axios сам проставил boundary
             const response = await api.post('/api/users/upload-avatar', formData, {
-                headers: { 
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { Authorization: `Bearer ${token}` }
             });
             
             // Обновляем аватар в состоянии
