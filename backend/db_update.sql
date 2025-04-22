@@ -89,4 +89,8 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER update_chat_timestamp_trigger
 AFTER INSERT ON messages
 FOR EACH ROW
-EXECUTE FUNCTION update_chat_timestamp(); 
+EXECUTE FUNCTION update_chat_timestamp();
+
+-- Добавление столбцов full_description и rules в таблицу tournaments
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS full_description TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules TEXT; 

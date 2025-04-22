@@ -45,12 +45,12 @@ router.get('/games', async (req, res) => {
 
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
-    const { name, game, format, participant_type, max_participants, start_date, description } = req.body;
+    const { name, game, format, participant_type, max_participants, start_date, description, bracket_type } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO tournaments (name, game, format, created_by, status, participant_type, max_participants, start_date, description)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [name, game, format, req.user.id, 'active', participant_type, max_participants || null, start_date || null, description || null]
+            `INSERT INTO tournaments (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+            [name, game, format, req.user.id, 'active', participant_type, max_participants || null, start_date || null, description || null, bracket_type || null]
         );
         console.log('🔍 Tournament created:', result.rows[0]);
         res.status(201).json(result.rows[0]);
