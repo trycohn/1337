@@ -1206,16 +1206,16 @@ function Profile() {
                                     <div className="search-results">
                                         {searchResults.map(user => (
                                             <div key={user.id} className="search-item">
-                                                <a href={`/user/${user.id}`} className="search-user-link">
+                                                <a href={`/user/${user.id}`} className="search-user-link" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flex: 1 }}>
                                                     <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
                                                     <span className="search-username">{user.username}</span>
                                                 </a>
                                                 {user.requestSent ? (
-                                                    <button className="request-sent-btn" disabled>
+                                                    <button className="request-sent-btn" disabled style={{ marginLeft: 'auto', minWidth: '110px' }}>
                                                         Отправлено
                                                     </button>
                                                 ) : (
-                                                    <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">
+                                                    <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn" style={{ marginLeft: 'auto', minWidth: '110px' }}>
                                                         <i className="add-icon">+</i> Добавить
                                                     </button>
                                                 )}
