@@ -4,12 +4,41 @@
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 .tournament-info-section h2 {
     color: #333;
-    margin-bottom: 20px;
+    margin: 0;
     font-size: 1.5rem;
+}
+
+.edit-button {
+    background: #2196F3;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.edit-button:hover {
+    background: #1976D2;
+}
+
+.tournament-info-section h3 {
+    color: #444;
+    margin: 20px 0 15px;
+    font-size: 1.2rem;
 }
 
 .form-group {
@@ -31,6 +60,14 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group textarea:disabled,
+.form-group input:disabled,
+.form-group select:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
 }
 
 .form-group textarea {
@@ -58,6 +95,12 @@
     width: auto;
 }
 
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
 .save-button {
     background: #4CAF50;
     color: white;
@@ -71,4 +114,144 @@
 
 .save-button:hover {
     background: #45a049;
+}
+
+.cancel-button {
+    background: #f44336;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s;
+}
+
+.cancel-button:hover {
+    background: #d32f2f;
+}
+
+.participants-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.participants-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.participant-item:hover {
+    background-color: #f5f5f5;
+    border-color: #2196F3;
+}
+
+.participant-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.participant-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.participant-actions-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.actions-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.actions-content h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.actions-content .action-button {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.profile-button {
+    background: #2196F3;
+    color: white;
+}
+
+.profile-button:hover {
+    background: #1976D2;
+}
+
+.remove-button {
+    background: #f44336;
+    color: white;
+}
+
+.remove-button:hover {
+    background: #d32f2f;
+}
+
+.mix-settings {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.mix-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mix-options .form-group {
+    margin-bottom: 0;
+}
+
+.mix-options label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.mix-options input[type="checkbox"] {
+    width: auto;
 } 
