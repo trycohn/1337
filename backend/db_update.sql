@@ -93,4 +93,7 @@ EXECUTE FUNCTION update_chat_timestamp();
 
 -- Добавление столбцов full_description и rules в таблицу tournaments
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS full_description TEXT;
-ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules TEXT; 
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules TEXT;
+
+-- При окончании списка миграций по турнирам
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS prize_pool TEXT; 

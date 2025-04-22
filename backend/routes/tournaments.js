@@ -1436,4 +1436,50 @@ router.put('/:id/rules', authenticateToken, verifyAdminOrCreator, async (req, re
     }
 });
 
+// Обновление описания турнира
+router.put('/:id/description', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { description } = req.body;
+    try {
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET description = $1 WHERE id = $2 RETURNING *',
+            [description, id]
+        );
+        if (updateResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Не удалось обновить описание турнира' });
+        }
+        res.status(200).json({ message: 'Описание успешно обновлено', tournament: updateResult.rows[0] });
+    } catch (err) {
+        console.error('❌ Ошибка при обновлении описания турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Обновление призового фонда турнира
+router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { prize_pool } = req.body;
+    try {
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET prize_pool = $1 WHERE id = $2 RETURNING *',
+            [prize_pool, id]
+        );
+        if (updateResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Не удалось обновить призовой фонд турнира' });
+        }
+        res.status(200).json({ message: 'Призовой фонд успешно обновлен', tournament: updateResult.rows[0] });
+    } catch (err) {
+        console.error('❌ Ошибка при обновлении призового фонда турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
