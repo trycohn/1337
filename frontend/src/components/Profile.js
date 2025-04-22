@@ -890,7 +890,10 @@ function Profile() {
             const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            setSearchResults(response.data);
+            // Отфильтруем пользователей, уже добавленных в друзья
+            const data = response.data;
+            const filtered = data.filter(user => !friends.some(f => f.friend.id === user.id));
+            setSearchResults(filtered);
         } catch (err) {
             console.error('Ошибка поиска пользователей:', err);
         } finally {
