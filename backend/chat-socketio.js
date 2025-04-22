@@ -34,6 +34,7 @@ function setupChatSocketIO(io) {
 
     // Обработка входящих сообщений в чат
     socket.on('message', async payload => {
+      console.log('Получен запрос на отправку сообщения:', payload);
       const { chat_id, content, message_type = 'text' } = payload;
       if (!chat_id || !content) return;
 
@@ -60,6 +61,7 @@ function setupChatSocketIO(io) {
         message.sender_username = userInfo.rows[0].username;
         message.sender_avatar = userInfo.rows[0].avatar_url;
 
+        console.log(`Отправляю сообщение в комнату chat_${chat_id}:`, message);
         // Отправляю сообщение всем участникам комнаты чата
         io.to(`chat_${chat_id}`).emit('message', message);
       } catch (err) {
@@ -69,6 +71,7 @@ function setupChatSocketIO(io) {
 
     // Обработка статуса прочтения сообщения
     socket.on('read_status', async payload => {
+      console.log('Получен запрос на обновление статуса прочтения:', payload);
       const { message_id } = payload;
       if (!message_id) return;
       try {
