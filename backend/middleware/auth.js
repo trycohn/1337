@@ -64,4 +64,34 @@ async function verifyEmailRequired(req, res, next) {
     }
 }
 
-module.exports = { authenticateToken, restrictTo, verifyEmailRequired };
+// Новый middleware для проверки, что пользователь является создателем или администратором турнира
+async function verifyAdminOrCreator(req, res, next) {
+    const tournamentId = req.params.id;
+    const userId = req.user.id;
+    try {
+        const result = await pool.query(
+            'SELECT created_by FROM tournaments WHERE id = $1',
+            [tournamentId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const { created_by } = result.rows[0];
+        if (created_by === userId) {
+            return next();
+        }
+        const adminCheck = await pool.query(
+            'SELECT 1 FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+            [tournamentId, userId]
+        );
+        if (adminCheck.rows.length > 0) {
+            return next();
+        }
+        return res.status(403).json({ error: 'Доступ запрещён: только создатель или администратор турнира' });
+    } catch (err) {
+        console.error('Ошибка проверки прав админа или создателя:', err);
+        return res.status(500).json({ error: 'Ошибка проверки прав доступа' });
+    }
+}
+
+module.exports = { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator };

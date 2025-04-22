@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { authenticateToken, verifyEmailRequired } = require('../middleware/auth');
+const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator } = require('../middleware/auth');
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
 
@@ -1351,7 +1351,7 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
 });
 
 // Обновление полного описания турнира
-router.put('/:id/full-description', authenticateToken, verifyEmailRequired, async (req, res) => {
+router.put('/:id/full-description', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
     const { full_description } = req.body;
     const userId = req.user.id;
@@ -1389,6 +1389,49 @@ router.put('/:id/full-description', authenticateToken, verifyEmailRequired, asyn
         res.status(200).json({ message: 'Полное описание турнира успешно обновлено', tournament: updatedTournament });
     } catch (err) {
         console.error('❌ Ошибка обновления полного описания турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Обновление регламента турнира
+router.put('/:id/rules', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { rules } = req.body;
+    const userId = req.user.id;
+
+    try {
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
+
+        if (tournament.created_by !== userId) {
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может обновлять регламент турнира' });
+            }
+        }
+
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Турнир неактивен' });
+        }
+
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET rules = $1 WHERE id = $2 RETURNING *',
+            [rules, id]
+        );
+        if (updateResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Не удалось обновить регламент турнира' });
+        }
+        const updatedTournament = updateResult.rows[0];
+
+        res.status(200).json({ message: 'Регламент успешно обновлен', tournament: updatedTournament });
+    } catch (err) {
+        console.error('❌ Ошибка при обновлении регламента турнира:', err);
         res.status(500).json({ error: err.message });
     }
 });
