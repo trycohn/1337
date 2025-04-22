@@ -30,6 +30,8 @@ const WebSocket = require('ws');
 const tournamentsRouter = require('./routes/tournaments');
 const nodemailer = require('nodemailer');
 const notifications = require('./notifications');
+const { Server: SocketIOServer } = require('socket.io');
+const { setupChatSocketIO } = require('./chat-socketio');
 
 const app = express();
 // Установка глобальной переменной для доступа из других модулей
@@ -117,35 +119,11 @@ const wss = new WebSocket.Server({
   noServer: true
 });
 
-// Подключаем WebSocket‑сервер чата в режиме noServer
-const { setupChatWebSocket } = require('./chat-ws');
-const chatWss = setupChatWebSocket();
-
-// Единый роутер WebSocket‑апгрейдов
-server.on('upgrade', (request, socket, head) => {
-  try {
-    const { pathname } = new URL(request.url, `http://${request.headers.host}`);
-
-    if (pathname === '/ws') {
-      wss.handleUpgrade(request, socket, head, ws => {
-        wss.emit('connection', ws, request);
-      });
-      return;
-    }
-
-    if (pathname === '/chat') {
-      chatWss.handleUpgrade(request, socket, head, ws => {
-        chatWss.emit('connection', ws, request);
-      });
-      return;
-    }
-
-    // Неизвестный путь
-    socket.destroy();
-  } catch (err) {
-    socket.destroy();
-  }
+// Устанавливаю Socket.IO сервер для чата
+const io = new SocketIOServer(server, {
+  cors: { origin: true, methods: ['GET', 'POST'], credentials: true }
 });
+setupChatSocketIO(io);
 
 // Карта для хранения подключений пользователей
 const connectedClients = new Map();
@@ -313,4 +291,23 @@ server.listen(PORT, async () => {
     } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
     }
+});
+
+// Обработка WebSocket upgrade только для уведомлений
+server.on('upgrade', (request, socket, head) => {
+  try {
+    const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+
+    if (pathname === '/ws') {
+      wss.handleUpgrade(request, socket, head, ws => {
+        wss.emit('connection', ws, request);
+      });
+      return;
+    }
+
+    // Неизвестный путь для WebSocket
+    socket.destroy();
+  } catch (err) {
+    socket.destroy();
+  }
 });

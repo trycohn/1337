@@ -3,6 +3,7 @@ import api from '../axios';
 import './Messenger.css';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
+import { io } from 'socket.io-client';
 
 function Messenger() {
     const [chats, setChats] = useState([]);
@@ -16,51 +17,31 @@ function Messenger() {
     
     const messagesEndRef = useRef(null);
 
-    // Инициализация WebSocket соединения
+    // Инициализация Socket.IO соединения
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
         const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = baseUrl.replace(/^https?:/, wsProtocol) + '/chat';
-        
-        const ws = new WebSocket(`${wsUrl}?token=${token}`);
-        
-        ws.onopen = () => {
-            console.log('WebSocket соединение установлено');
-        };
-        
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            if (data.type === 'message') {
-                // Добавление нового сообщения
-                handleNewMessage(data.payload);
-            } else if (data.type === 'read_status') {
-                // Обновление статуса прочтения
-                updateMessageReadStatus(data.payload);
-            }
-        };
-        
-        ws.onerror = (error) => {
-            console.error('WebSocket ошибка:', error);
+        const socketClient = io(baseUrl, { query: { token } });
+
+        socketClient.on('connect', () => {
+            console.log('Socket.IO соединение установлено');
+        });
+
+        socketClient.on('message', handleNewMessage);
+        socketClient.on('read_status', updateMessageReadStatus);
+
+        socketClient.on('error', (error) => {
+            console.error('Socket.IO ошибка:', error);
             setError('Ошибка подключения к серверу чата');
-        };
-        
-        ws.onclose = () => {
-            console.log('WebSocket соединение закрыто');
-        };
-        
-        setSocket(ws);
-        
-        // Загружаем список чатов при монтировании компонента
+        });
+
+        setSocket(socketClient);
         fetchChats();
-        
+
         return () => {
-            if (ws) {
-                ws.close();
-            }
+            socketClient.disconnect();
         };
     }, []);
     
@@ -159,17 +140,11 @@ function Messenger() {
     // Отправка сообщения
     const sendMessage = () => {
         if (!socket || !activeChat || !newMessage.trim()) return;
-        
-        const messageData = {
-            type: 'message',
-            payload: {
-                chat_id: activeChat.id,
-                content: newMessage,
-                message_type: 'text'
-            }
-        };
-        
-        socket.send(JSON.stringify(messageData));
+        socket.emit('message', {
+            chat_id: activeChat.id,
+            content: newMessage,
+            message_type: 'text'
+        });
         setNewMessage('');
     };
     
@@ -195,15 +170,7 @@ function Messenger() {
     // Пометка конкретного сообщения как прочитанного
     const markMessageAsRead = async (messageId) => {
         if (!socket) return;
-        
-        const readData = {
-            type: 'read_status',
-            payload: {
-                message_id: messageId
-            }
-        };
-        
-        socket.send(JSON.stringify(readData));
+        socket.emit('read_status', { message_id: messageId });
     };
     
     // Отправка вложения
