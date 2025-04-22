@@ -1501,13 +1501,19 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             [id]
         );
         const participants = partRes.rows;
-        if (!participants.length) return res.status(400).json({ error: 'Нет участников для формирования команд' });
-
-        // Сортируем по рейтингу в выбранном порядке (faceit)
-        participants.sort((a,b) => (b.faceit_rating||0) - (a.faceit_rating||0));
+        if (!participants.length) {
+            return res.status(400).json({ error: 'Нет участников для формирования команд' });
+        }
+        // Проверяем, кратно ли число участников размеру команды
+        const totalPlayers = participants.length;
+        const remainder = totalPlayers % team_size;
+        if (remainder !== 0) {
+            const shortage = team_size - remainder;
+            return res.status(400).json({ error: `Не хватает ${shortage} участников для формирования полных команд` });
+        }
+        const numTeams = totalPlayers / team_size;
 
         // Инициализация команд
-        const numTeams = Math.ceil(participants.length / team_size);
         const teams = Array.from({ length: numTeams }, () => ({ members: [], ratingSum: 0 }));
 
         // Распределяем участников методом жадного балансирования
@@ -1561,18 +1567,20 @@ router.get('/:id/teams', authenticateToken, async (req, res) => {
         }
         // Получаем команды и их участников
         const teamsRes = await pool.query(
-            `SELECT tt.id, tt.name,
+            `SELECT
+                tt.id,
+                tt.name,
                 COALESCE(
-                    (SELECT json_agg(jsonb_build_object('id', tm.user_id, 'name', tm.name))
-                     FROM (
-                         SELECT ttm.user_id, tp.name
-                         FROM tournament_team_members ttm
-                         JOIN tournament_participants tp ON ttm.team_id = tp.team_id AND tp.user_id = ttm.user_id
-                         WHERE ttm.team_id = tt.id
-                     ) tm
-                    ), '[]') AS members
-             FROM tournament_teams tt
-             WHERE tt.tournament_id = $1`,
+                    json_agg(
+                        jsonb_build_object('id', u.id, 'name', u.username)
+                    ) FILTER (WHERE u.id IS NOT NULL), '[]'
+                ) AS members
+            FROM tournament_teams tt
+            LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+            LEFT JOIN users u ON ttm.user_id = u.id
+            WHERE tt.tournament_id = $1
+            GROUP BY tt.id, tt.name
+            ORDER BY tt.id`,
             [id]
         );
         res.json(teamsRes.rows);
