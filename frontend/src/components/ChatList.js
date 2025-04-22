@@ -60,6 +60,25 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
         }
     };
     
+    // Функция для префикса отправителя перед последним сообщением
+    const getSenderPrefix = (chat) => {
+        if (!chat.last_message) return '';
+        // Особая логика для приватных чатов
+        if (chat.type === 'private') {
+            // Если последнее сообщение от собеседника
+            if (chat.last_message.sender_id === chat.user_id) {
+                return `${chat.name}: `;
+            }
+            // Иначе — от текущего пользователя
+            return 'Вы: ';
+        }
+        // Для групповых чатов, если известен имя отправителя
+        if (chat.last_message.sender_username) {
+            return `${chat.last_message.sender_username}: `;
+        }
+        return '';
+    };
+    
     // Фильтрация чатов по поисковому запросу
     const filteredChats = chats.filter(chat => 
         chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,6 +157,7 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
                                     {getChatStatusPrefix(chat)}{chat.name}
                                 </div>
                                 <div className="chat-last-message">
+                                    {getSenderPrefix(chat)}
                                     {getMessageStatusIndicator(chat.last_message)}
                                     {formatLastMessage(chat.last_message)}
                                 </div>
