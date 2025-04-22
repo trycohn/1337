@@ -1009,29 +1009,6 @@ function TournamentDetails() {
             
             <div className="tournament-info-section">
                 <div className="info-block">
-                    <h3>Дисциплина</h3>
-                    {isEditingGame ? (
-                        <div className="edit-field">
-                            <input
-                                type="text"
-                                value={editedGame}
-                                onChange={(e) => setEditedGame(e.target.value)}
-                                placeholder="Название игры"
-                            />
-                            <button onClick={handleSaveGame}>Сохранить</button>
-                            <button onClick={() => setIsEditingGame(false)}>Отмена</button>
-                        </div>
-                    ) : (
-                        <div className="info-content">
-                            <p>{tournament.game || 'Не указана'}</p>
-                            {isAdminOrCreator && (
-                                <button onClick={() => setIsEditingGame(true)}>Редактировать</button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <div className="info-block">
                     <h3>Описание</h3>
                     {isEditingDescription ? (
                         <div className="edit-field">
@@ -1138,6 +1115,9 @@ function TournamentDetails() {
 
             <p>
                 <strong>Формат:</strong> {tournament.format}
+            </p>
+            <p>
+                <strong>Дисциплина:</strong> {tournament.game || 'Не указана'}
             </p>
             <p>
                 <strong>Дата старта:</strong> {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
