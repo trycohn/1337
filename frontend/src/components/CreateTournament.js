@@ -63,6 +63,12 @@ function CreateTournament() {
       return;
     }
 
+    // Проверяем, что указана дата старта
+    if (!formData.start_date) {
+      alert('Необходимо выбрать дату начала турнира');
+      return;
+    }
+
     // Используем хук для создания турнира с прелоадером
     runWithLoader(async () => {
       try {
