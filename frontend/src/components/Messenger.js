@@ -64,14 +64,17 @@ function Messenger() {
         if (!activeChat) return;
         
         // При первом рендере и смене чата сразу получаем статус
-        fetchChatUserInfo(activeChat.id);
+        const lastFetchedChatId = activeChatRef.current;
+        if (lastFetchedChatId !== activeChat.id) {
+            fetchChatUserInfo(activeChat.id);
+        }
         
-        // Устанавливаем интервал обновления статуса
+        // Устанавливаем интервал обновления статуса раз в 3 минуты
         const intervalId = setInterval(() => {
             if (activeChat) {
                 fetchChatUserInfo(activeChat.id);
             }
-        }, 60000); // Каждую минуту
+        }, 180000); // Каждые 3 минуты
         
         return () => clearInterval(intervalId);
     }, [activeChat?.id]);
@@ -167,9 +170,8 @@ function Messenger() {
             
             setMessages(response.data);
             setError('');
-
-            // Получаем информацию о пользователе чата для отображения онлайн статуса
-            await fetchChatUserInfo(chatId);
+            
+            // Не запрашиваем онлайн-статус здесь, так как это делается в useEffect
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка загрузки сообщений');
         }
