@@ -897,6 +897,34 @@ function Profile() {
         }
     };
 
+    // Функция для отмены отправленной заявки в друзья
+    const cancelFriendRequest = async (requestId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/friends/cancel', { requestId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем список отправленных заявок
+            fetchSentFriendRequests();
+            
+            // Обновляем результаты поиска, если они есть
+            if (searchResults.length > 0) {
+                const canceledRequest = sentFriendRequests.find(req => req.id === requestId);
+                if (canceledRequest) {
+                    setSearchResults(prev => prev.map(user => {
+                        if (user.id === canceledRequest.friend.id) {
+                            return { ...user, requestSent: false };
+                        }
+                        return user;
+                    }));
+                }
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отмены заявки в друзья');
+        }
+    };
+
     // Обновляем функцию отправки заявки в друзья
     const sendFriendRequest = async (userId) => {
         try {
@@ -1247,18 +1275,19 @@ function Profile() {
                                 )}
                             </section>
 
-                            {/* Секция заявок в друзья */}
+                            {/* Секция входящих заявок в друзья */}
                             {friendRequests.length > 0 && (
                                 <section className="friend-requests-section">
-                                    <h3>Заявки в друзья</h3>
+                                    <h3>Входящие заявки в друзья</h3>
                                     <div className="friend-requests">
                                         {friendRequests.map(request => (
-                                            <div key={request.id} className="friend-request-item">
-                                                <div className="request-user">
+                                            <div key={request.id} className="friend-request-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0', backgroundColor: '#f5f5f5', borderRadius: '5px' }}>
+                                                <div className="request-user" style={{ display: 'flex', alignItems: 'center' }}>
                                                     <img 
                                                         src={request.user.avatar_url || '/default-avatar.png'} 
                                                         alt={request.user.username} 
                                                         className="request-avatar" 
+                                                        style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
                                                     />
                                                     <a href={`/user/${request.user.id}`} className="request-username">
                                                         {request.user.username}
@@ -1268,14 +1297,49 @@ function Profile() {
                                                     <button 
                                                         className="accept-request-btn" 
                                                         onClick={() => acceptFriendRequest(request.id)}
+                                                        style={{ marginRight: '5px', backgroundColor: '#4CAF50', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}
                                                     >
                                                         Принять
                                                     </button>
                                                     <button 
                                                         className="reject-request-btn" 
                                                         onClick={() => rejectFriendRequest(request.id)}
+                                                        style={{ backgroundColor: '#f44336', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}
                                                     >
                                                         Отклонить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* Новая секция отправленных заявок в друзья */}
+                            {sentFriendRequests.length > 0 && (
+                                <section className="sent-friend-requests-section">
+                                    <h3>Отправленные заявки в друзья</h3>
+                                    <div className="sent-friend-requests">
+                                        {sentFriendRequests.map(request => (
+                                            <div key={request.id} className="sent-request-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0', backgroundColor: '#f0f8ff', borderRadius: '5px' }}>
+                                                <div className="request-user" style={{ display: 'flex', alignItems: 'center' }}>
+                                                    <img 
+                                                        src={request.friend.avatar_url || '/default-avatar.png'} 
+                                                        alt={request.friend.username} 
+                                                        className="request-avatar" 
+                                                        style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
+                                                    />
+                                                    <a href={`/user/${request.friend.id}`} className="request-username">
+                                                        {request.friend.username}
+                                                    </a>
+                                                </div>
+                                                <div className="request-actions">
+                                                    <button 
+                                                        className="cancel-request-btn" 
+                                                        onClick={() => cancelFriendRequest(request.id)}
+                                                        style={{ backgroundColor: '#f44336', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}
+                                                    >
+                                                        Отменить заявку
                                                     </button>
                                                 </div>
                                             </div>
