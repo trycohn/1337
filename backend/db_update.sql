@@ -96,4 +96,7 @@ ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS full_description TEXT;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules TEXT;
 
 -- При окончании списка миграций по турнирам
-ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS prize_pool TEXT; 
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS prize_pool TEXT;
+
+-- Добавление столбца bracket_type в таблицу tournaments
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS bracket_type VARCHAR(50) DEFAULT 'single_elimination'; 
