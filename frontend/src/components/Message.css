@@ -1,5 +1,6 @@
 .message {
-    display: inline-block;
+    display: block;
+    width: fit-content;
     position: relative;
     max-width: 70%;
     padding: 8px 36px 8px 16px;
