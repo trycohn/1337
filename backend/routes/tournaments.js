@@ -1582,7 +1582,7 @@ router.get('/:id/teams', authenticateToken, async (req, res) => {
             LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
             LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
             WHERE tt.tournament_id = $1
-            GROUP BY tt.id
+            GROUP BY tt.id, tt.name
             ORDER BY tt.id`,
             [id]
         );

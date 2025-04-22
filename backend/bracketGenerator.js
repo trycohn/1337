@@ -12,6 +12,7 @@ const { generateDoubleEliminationBracket } = require('./bracketGenerators/double
  */
 const generateBracket = async (format, tournamentId, participants, thirdPlaceMatch) => {
     switch (format.toLowerCase()) {
+        case 'mix':
         case 'single_elimination':
             return await generateSingleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
         case 'double_elimination':
