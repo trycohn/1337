@@ -109,7 +109,14 @@ function ChatWindow({
                         alt={activeChat.name} 
                     />
                 </div>
-                <h2>{activeChat.name}</h2>
+                <div className="chat-header-info">
+                    <h2>{activeChat.name}</h2>
+                    {activeChat.online_status && (
+                        <div className={`chat-online-status ${activeChat.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
+                            {activeChat.online_status}
+                        </div>
+                    )}
+                </div>
             </div>
             
             <div className="chat-messages">
