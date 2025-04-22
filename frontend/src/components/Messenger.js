@@ -183,7 +183,7 @@ function Messenger() {
             if (!chat || !chat.user_id) return;
             
             const token = localStorage.getItem('token');
-            const response = await api.get(`/api/users/${chat.user_id}`, {
+            const response = await api.get(`/api/users/profile/${chat.user_id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
