@@ -1205,20 +1205,22 @@ function Profile() {
                                 {searchResults.length > 0 && (
                                     <div className="search-results">
                                         {searchResults.map(user => (
-                                            <div key={user.id} className="search-item">
-                                                <a href={`/user/${user.id}`} className="search-user-link" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flex: 1 }}>
-                                                    <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
-                                                    <span className="search-username">{user.username}</span>
+                                            <div key={user.id} className="search-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0' }}>
+                                                <a href={`/user/${user.id}`} className="search-user-link" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flex: '0 0 auto', maxWidth: '60%' }}>
+                                                    <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" style={{ marginRight: '10px' }} />
+                                                    <span className="search-username" style={{ display: 'inline-block', verticalAlign: 'middle' }}>{user.username}</span>
                                                 </a>
-                                                {user.requestSent ? (
-                                                    <button className="request-sent-btn" disabled style={{ marginLeft: 'auto', minWidth: '110px' }}>
-                                                        Отправлено
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn" style={{ marginLeft: 'auto', minWidth: '110px' }}>
-                                                        <i className="add-icon">+</i> Добавить
-                                                    </button>
-                                                )}
+                                                <div style={{ flex: '0 0 auto', minWidth: '110px', textAlign: 'right' }}>
+                                                    {user.requestSent ? (
+                                                        <button className="request-sent-btn" disabled style={{ minWidth: '110px', padding: '5px 10px' }}>
+                                                            Отправлено
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn" style={{ minWidth: '110px', padding: '5px 10px' }}>
+                                                            <i className="add-icon">+</i> Добавить
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
