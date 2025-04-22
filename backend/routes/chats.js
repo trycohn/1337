@@ -79,7 +79,17 @@ router.get('/', authenticateToken, async (req, res) => {
                         FROM messages m
                         LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $1
                         WHERE m.chat_id = c.id AND (ms.is_read IS NULL OR ms.is_read = FALSE) AND m.sender_id != $1
-                    ) AS unread_count
+                    ) AS unread_count,
+                    CASE 
+                        WHEN c.type = 'private' THEN (
+                            SELECT u.id
+                            FROM chat_participants cp2
+                            JOIN users u ON cp2.user_id = u.id
+                            WHERE cp2.chat_id = c.id AND cp2.user_id != $1
+                            LIMIT 1
+                        )
+                        ELSE NULL
+                    END AS user_id
                 FROM chats c
                 JOIN chat_participants cp ON c.id = cp.chat_id
                 WHERE cp.user_id = $1
@@ -129,7 +139,8 @@ router.get('/', authenticateToken, async (req, res) => {
                 unread_count: parseInt(row.unread_count),
                 last_message: lastMessage,
                 created_at: row.created_at,
-                updated_at: row.updated_at
+                updated_at: row.updated_at,
+                user_id: row.user_id
             };
         });
 
@@ -495,7 +506,17 @@ async function getChatInfo(chatId, userId) {
                     LIMIT 1
                 )
                 ELSE NULL
-            END AS avatar_url
+            END AS avatar_url,
+            CASE 
+                WHEN c.type = 'private' THEN (
+                    SELECT u.id
+                    FROM chat_participants cp2
+                    JOIN users u ON cp2.user_id = u.id
+                    WHERE cp2.chat_id = c.id AND cp2.user_id != $2
+                    LIMIT 1
+                )
+                ELSE NULL
+            END AS user_id
         FROM chats c
         JOIN chat_participants cp ON c.id = cp.chat_id AND cp.user_id = $2
         WHERE c.id = $1

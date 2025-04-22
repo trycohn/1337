@@ -27,6 +27,17 @@ function ChatWindow({
         );
     }
     
+    // Получаем класс статуса онлайн
+    const getOnlineStatusClass = () => {
+        if (!activeChat.online_status) return '';
+        
+        if (activeChat.online_status === 'online') {
+            return 'status-online';
+        } else {
+            return 'status-offline';
+        }
+    };
+    
     // Обработчик клика по кнопке прикрепления файла
     const handleAttachmentClick = () => {
         setShowAttachmentOptions(!showAttachmentOptions);
@@ -109,7 +120,14 @@ function ChatWindow({
                         alt={activeChat.name} 
                     />
                 </div>
-                <h2>{activeChat.name}</h2>
+                <div className="chat-header-info">
+                    <h2>{activeChat.name}</h2>
+                    {activeChat.online_status && (
+                        <div className={`online-status ${getOnlineStatusClass()}`}>
+                            {activeChat.online_status}
+                        </div>
+                    )}
+                </div>
             </div>
             
             <div className="chat-messages">

@@ -59,6 +59,23 @@ function Messenger() {
         };
     }, []);
     
+    // Обновляем онлайн статус каждую минуту
+    useEffect(() => {
+        if (!activeChat) return;
+        
+        // При первом рендере и смене чата сразу получаем статус
+        fetchChatUserInfo(activeChat.id);
+        
+        // Устанавливаем интервал обновления статуса
+        const intervalId = setInterval(() => {
+            if (activeChat) {
+                fetchChatUserInfo(activeChat.id);
+            }
+        }, 60000); // Каждую минуту
+        
+        return () => clearInterval(intervalId);
+    }, [activeChat?.id]);
+    
     // Прокрутка до последнего сообщения при добавлении новых
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -150,8 +167,36 @@ function Messenger() {
             
             setMessages(response.data);
             setError('');
+
+            // Получаем информацию о пользователе чата для отображения онлайн статуса
+            await fetchChatUserInfo(chatId);
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка загрузки сообщений');
+        }
+    };
+    
+    // Получение информации о пользователе чата для отображения онлайн статуса
+    const fetchChatUserInfo = async (chatId) => {
+        try {
+            // Находим текущий чат
+            const chat = chats.find(c => c.id === chatId);
+            if (!chat || !chat.user_id) return;
+            
+            const token = localStorage.getItem('token');
+            const response = await api.get(`/api/users/${chat.user_id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем онлайн статус в активном чате
+            if (response.data && response.data.online_status) {
+                setActiveChat(prev => ({
+                    ...prev,
+                    online_status: response.data.online_status
+                }));
+            }
+        } catch (err) {
+            console.error('Ошибка получения статуса онлайн:', err);
+            // Не показываем ошибку пользователю, так как это не критично
         }
     };
     
