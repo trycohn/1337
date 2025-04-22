@@ -1320,30 +1320,38 @@ function Profile() {
                                 <section className="sent-friend-requests-section">
                                     <h3>Отправленные заявки в друзья</h3>
                                     <div className="sent-friend-requests">
-                                        {sentFriendRequests.map(request => (
-                                            <div key={request.id} className="sent-request-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0', backgroundColor: '#f0f8ff', borderRadius: '5px' }}>
-                                                <div className="request-user" style={{ display: 'flex', alignItems: 'center' }}>
-                                                    <img 
-                                                        src={request.friend.avatar_url || '/default-avatar.png'} 
-                                                        alt={request.friend.username} 
-                                                        className="request-avatar" 
-                                                        style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
-                                                    />
-                                                    <a href={`/user/${request.friend.id}`} className="request-username">
-                                                        {request.friend.username}
-                                                    </a>
+                                        {sentFriendRequests.map(request => {
+                                            // Проверяем структуру полученных данных и используем правильные поля
+                                            const friend = request.friend || request.friendUser || request;
+                                            const friendId = friend.id || request.friendId;
+                                            const friendUsername = friend.username || "Пользователь";
+                                            const friendAvatar = friend.avatar_url || '/default-avatar.png';
+                                            
+                                            return (
+                                                <div key={request.id} className="sent-request-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0', backgroundColor: '#f0f8ff', borderRadius: '5px' }}>
+                                                    <div className="request-user" style={{ display: 'flex', alignItems: 'center' }}>
+                                                        <img 
+                                                            src={friendAvatar} 
+                                                            alt={friendUsername} 
+                                                            className="request-avatar" 
+                                                            style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
+                                                        />
+                                                        <a href={`/user/${friendId}`} className="request-username">
+                                                            {friendUsername}
+                                                        </a>
+                                                    </div>
+                                                    <div className="request-actions">
+                                                        <button 
+                                                            className="cancel-request-btn" 
+                                                            onClick={() => cancelFriendRequest(request.id)}
+                                                            style={{ backgroundColor: '#f44336', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}
+                                                        >
+                                                            Отменить заявку
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="request-actions">
-                                                    <button 
-                                                        className="cancel-request-btn" 
-                                                        onClick={() => cancelFriendRequest(request.id)}
-                                                        style={{ backgroundColor: '#f44336', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '3px', cursor: 'pointer' }}
-                                                    >
-                                                        Отменить заявку
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </section>
                             )}
