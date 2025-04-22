@@ -2,29 +2,18 @@
     max-width: 70%;
     padding: 8px 12px;
     margin-bottom: 8px;
-    border-radius: 16px;
+    border-radius: 8px;
     position: relative;
     background-color: #34344a;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     align-self: flex-start;
     word-break: break-word;
     color: #e0e0e5;
-    display: inline-flex;
-    flex-direction: column;
 }
 
 .message.own {
     background-color: #3a4db8;
     align-self: flex-end;
-    border-radius: 16px 16px 4px 16px;
-}
-
-.message:not(.own) {
-    border-radius: 16px 16px 16px 4px;
-}
-
-.message-content {
-    margin-right: 40px; /* Оставляем место для времени */
 }
 
 .message-text {
@@ -36,12 +25,9 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    margin-top: 4px;
     font-size: 0.75rem;
     color: #8a8aa8;
-    position: absolute;
-    bottom: 8px;
-    right: 12px;
-    white-space: nowrap;
 }
 
 .message-time {
@@ -65,7 +51,6 @@
     max-width: 100%;
     overflow: hidden;
     border-radius: 4px;
-    margin-bottom: 15px; /* Дополнительное пространство для метаданных */
 }
 
 .message-image img {
@@ -83,7 +68,6 @@
     background-color: rgba(60, 60, 84, 0.5);
     border-radius: 4px;
     padding: 8px;
-    margin-bottom: 10px; /* Дополнительное пространство для метаданных */
 }
 
 .document-icon, .file-icon {
@@ -124,7 +108,6 @@
     background-color: rgba(255, 193, 7, 0.2);
     border-radius: 4px;
     padding: 8px;
-    margin-bottom: 10px; /* Дополнительное пространство для метаданных */
 }
 
 .announcement-icon {

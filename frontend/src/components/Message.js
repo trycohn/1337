@@ -84,9 +84,7 @@ function Message({ message, isOwn }) {
 
     return (
         <div className={messageClass}>
-            <div className="message-content">
-                {renderMessageContent()}
-            </div>
+            {renderMessageContent()}
             <div className="message-meta">
                 <span className="message-time">{formatDate(message.created_at)}</span>
                 {renderMessageStatus()}
