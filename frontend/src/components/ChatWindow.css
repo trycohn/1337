@@ -62,9 +62,14 @@
 .chat-header .online-status {
     font-size: 0.8rem;
     margin-top: 4px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     color: #a0a0b8;
+    width: auto;
+    padding: 2px 8px 2px 5px;
+    border-radius: 10px;
+    background-color: rgba(50, 50, 70, 0.3);
+    align-self: flex-start;
 }
 
 .chat-header .online-status.status-online {
