@@ -894,25 +894,25 @@ function TournamentDetails() {
 
     // Логика формирования команд для микса
     const handleFormTeams = () => {
-        if (!Array.isArray(tournament.participants) || tournament.participants.length === 0) return;
-        // Клонируем массив участников
+        if (!Array.isArray(tournament?.participants) || tournament.participants.length === 0) return;
+        // Клонируем и перемешиваем участников
         const players = [...tournament.participants];
-        // Перемешивание Фишера-Йетса
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [players[i], players[j]] = [players[j], players[i]];
         }
-        // Размер команды
-        const size = tournament.team_size || 1;
-        const teams = [];
-        while (players.length > 0) {
-            teams.push(players.splice(0, size));
+        // Определяем размер команды из настроек турнира
+        const size = parseInt(tournament.team_size, 10) || 1;
+        // Группируем участников по size
+        const groups = [];
+        for (let i = 0; i < players.length; i += size) {
+            groups.push(players.slice(i, i + size));
         }
-        // Формируем структуру команд
-        const formatted = teams.map((teamPlayers, idx) => ({
+        // Формируем структуры команд
+        const formatted = groups.map((members, idx) => ({
             id: `team-${idx + 1}`,
             name: `Команда ${idx + 1}`,
-            members: teamPlayers
+            members
         }));
         setMixedTeams(formatted);
     };
