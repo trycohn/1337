@@ -33,7 +33,8 @@ function CreateTournament() {
     max_teams: 16,
     start_date: '',
     prize_pool: '',
-    rules: ''
+    rules: '',
+    bracket_type: 'single_elimination'
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -77,7 +78,8 @@ function CreateTournament() {
             start_date: formData.start_date.toISOString(),
             description: formData.description,
             prize_pool: formData.prize_pool,
-            rules: formData.rules
+            rules: formData.rules,
+            bracket_type: formData.format === 'mix' ? formData.bracket_type : null
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -109,7 +111,8 @@ function CreateTournament() {
         format,
         team_size: format === 'mix' ? 5 : prev.team_size,
         game: format === 'mix' ? 'cs2' : '',
-        participant_type: format === 'mix' ? 'solo' : 'team'
+        participant_type: format === 'mix' ? 'solo' : 'team',
+        bracket_type: format === 'mix' ? 'single_elimination' : null
       };
       console.log('Новые данные формы:', newData);
       return newData;
@@ -182,18 +185,32 @@ function CreateTournament() {
           )}
         </select>
         {formData.format === 'mix' && (
-          <div className="form-group">
-            <label>Количество игроков в команде</label>
-            <input
-              type="number"
-              name="team_size"
-              value={formData.team_size}
-              onChange={handleInputChange}
-              min="2"
-              max="10"
-              required
-            />
-          </div>
+          <>
+            <div className="form-group">
+              <label>Количество игроков в команде</label>
+              <input
+                type="number"
+                name="team_size"
+                value={formData.team_size}
+                onChange={handleInputChange}
+                min="2"
+                max="10"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Формат турнирной сетки</label>
+              <select
+                name="bracket_type"
+                value={formData.bracket_type}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="single_elimination">Single Elimination</option>
+                <option value="double_elimination">Double Elimination</option>
+              </select>
+            </div>
+          </>
         )}
         <DatePicker
           selected={formData.start_date}

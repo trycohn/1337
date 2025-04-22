@@ -84,6 +84,10 @@ function TournamentDetails() {
     const [editedPrizePool, setEditedPrizePool] = useState('');
     const [editedGame, setEditedGame] = useState('');
     const [isEditingGame, setIsEditingGame] = useState(false);
+    const [isEditingFullDescription, setIsEditingFullDescription] = useState(false);
+    const [isEditingRules, setIsEditingRules] = useState(false);
+    const [editedFullDescription, setEditedFullDescription] = useState('');
+    const [editedRules, setEditedRules] = useState('');
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -842,12 +846,48 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для сохранения изменений полного описания
+    const handleSaveFullDescription = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.put(
+                `/api/tournaments/${id}/full-description`,
+                { full_description: editedFullDescription },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setTournament(prev => ({ ...prev, full_description: editedFullDescription }));
+            setIsEditingFullDescription(false);
+            setMessage('Полное описание успешно обновлено');
+        } catch (error) {
+            setMessage('Ошибка при обновлении полного описания');
+        }
+    };
+
+    // Функция для сохранения изменений регламента
+    const handleSaveRules = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.put(
+                `/api/tournaments/${id}/rules`,
+                { rules: editedRules },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setTournament(prev => ({ ...prev, rules: editedRules }));
+            setIsEditingRules(false);
+            setMessage('Регламент успешно обновлен');
+        } catch (error) {
+            setMessage('Ошибка при обновлении регламента');
+        }
+    };
+
     // Инициализация состояний при загрузке турнира
     useEffect(() => {
         if (tournament) {
             setEditedDescription(tournament.description || '');
             setEditedPrizePool(tournament.prize_pool || '');
             setEditedGame(tournament.game || '');
+            setEditedFullDescription(tournament.full_description || '');
+            setEditedRules(tournament.rules || '');
         }
     }, [tournament]);
 
@@ -1051,9 +1091,45 @@ function TournamentDetails() {
                         {showFullDescription && (
                             <div className="full-description">
                                 <h4>Полное описание</h4>
-                                <p>{tournament.full_description || 'Нет полного описания'}</p>
+                                {isEditingFullDescription ? (
+                                    <div className="edit-field">
+                                        <textarea
+                                            value={editedFullDescription}
+                                            onChange={(e) => setEditedFullDescription(e.target.value)}
+                                            placeholder="Полное описание турнира"
+                                            rows="4"
+                                        />
+                                        <button onClick={handleSaveFullDescription}>Сохранить</button>
+                                        <button onClick={() => setIsEditingFullDescription(false)}>Отмена</button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p>{tournament.full_description || 'Нет полного описания'}</p>
+                                        {isAdminOrCreator && (
+                                            <button onClick={() => setIsEditingFullDescription(true)}>Редактировать</button>
+                                        )}
+                                    </div>
+                                )}
                                 <h4>Регламент</h4>
-                                <p>{tournament.rules || 'Регламент не указан'}</p>
+                                {isEditingRules ? (
+                                    <div className="edit-field">
+                                        <textarea
+                                            value={editedRules}
+                                            onChange={(e) => setEditedRules(e.target.value)}
+                                            placeholder="Регламент турнира"
+                                            rows="4"
+                                        />
+                                        <button onClick={handleSaveRules}>Сохранить</button>
+                                        <button onClick={() => setIsEditingRules(false)}>Отмена</button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p>{tournament.rules || 'Регламент не указан'}</p>
+                                        {isAdminOrCreator && (
+                                            <button onClick={() => setIsEditingRules(true)}>Редактировать</button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
