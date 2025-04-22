@@ -463,4 +463,45 @@
 
 .full-description p:last-child {
     margin-bottom: 0;
+}
+
+/* Сетка для микс-команд */
+.mixed-teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.team-card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.team-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.team-table th {
+    background-color: #007bff;
+    color: white;
+    padding: 8px;
+    text-align: left;
+    font-size: 1em;
+}
+
+.team-table td {
+    padding: 6px;
+    border-top: 1px solid #ddd;
+    font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+    .mixed-teams-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
 } 

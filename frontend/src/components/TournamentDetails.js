@@ -1297,16 +1297,26 @@ function TournamentDetails() {
                     {mixedTeams.length > 0 && (
                         <div className="mixed-teams">
                             <h3>Сформированные команды</h3>
-                            {mixedTeams.map(team => (
-                                <div key={team.id} className="team-block">
-                                    <h4>{team.name}</h4>
-                                    <ul>
-                                        {team.members.map(member => (
-                                            <li key={member.participant_id || member.id}>{member.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
+                            <div className="mixed-teams-grid">
+                                {mixedTeams.map(team => (
+                                    <div key={team.id} className="team-card">
+                                        <table className="team-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>{team.name}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {team.members.map(member => (
+                                                    <tr key={member.participant_id || member.user_id || member.id}>
+                                                        <td>{member.name}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
