@@ -77,6 +77,13 @@ function TournamentDetails() {
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
     const [userSearchResults, setUserSearchResults] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [editedDescription, setEditedDescription] = useState('');
+    const [showFullDescription, setShowFullDescription] = useState(false);
+    const [isEditingPrizePool, setIsEditingPrizePool] = useState(false);
+    const [editedPrizePool, setEditedPrizePool] = useState('');
+    const [editedGame, setEditedGame] = useState('');
+    const [isEditingGame, setIsEditingGame] = useState(false);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -784,6 +791,66 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для сохранения изменений описания
+    const handleSaveDescription = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.put(
+                `/api/tournaments/${id}/description`,
+                { description: editedDescription },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setTournament(prev => ({ ...prev, description: editedDescription }));
+            setIsEditingDescription(false);
+            setMessage('Описание успешно обновлено');
+        } catch (error) {
+            setMessage('Ошибка при обновлении описания');
+        }
+    };
+
+    // Функция для сохранения изменений призового фонда
+    const handleSavePrizePool = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.put(
+                `/api/tournaments/${id}/prize-pool`,
+                { prize_pool: editedPrizePool },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setTournament(prev => ({ ...prev, prize_pool: editedPrizePool }));
+            setIsEditingPrizePool(false);
+            setMessage('Призовой фонд успешно обновлен');
+        } catch (error) {
+            setMessage('Ошибка при обновлении призового фонда');
+        }
+    };
+
+    // Функция для сохранения изменений игры
+    const handleSaveGame = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.put(
+                `/api/tournaments/${id}/game`,
+                { game: editedGame },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setTournament(prev => ({ ...prev, game: editedGame }));
+            setIsEditingGame(false);
+            setMessage('Игра успешно обновлена');
+        } catch (error) {
+            setMessage('Ошибка при обновлении игры');
+        }
+    };
+
+    // Инициализация состояний при загрузке турнира
+    useEffect(() => {
+        if (tournament) {
+            setEditedDescription(tournament.description || '');
+            setEditedPrizePool(tournament.prize_pool || '');
+            setEditedGame(tournament.game || '');
+        }
+    }, [tournament]);
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -899,9 +966,100 @@ function TournamentDetails() {
             <h2>
                 {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
             </h2>
-            <p>
-                <strong>Описание:</strong> {tournament.description || 'Нет описания'}
-            </p>
+            
+            <div className="tournament-info-section">
+                <div className="info-block">
+                    <h3>Дисциплина</h3>
+                    {isEditingGame ? (
+                        <div className="edit-field">
+                            <input
+                                type="text"
+                                value={editedGame}
+                                onChange={(e) => setEditedGame(e.target.value)}
+                                placeholder="Название игры"
+                            />
+                            <button onClick={handleSaveGame}>Сохранить</button>
+                            <button onClick={() => setIsEditingGame(false)}>Отмена</button>
+                        </div>
+                    ) : (
+                        <div className="info-content">
+                            <p>{tournament.game || 'Не указана'}</p>
+                            {isAdminOrCreator && (
+                                <button onClick={() => setIsEditingGame(true)}>Редактировать</button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="info-block">
+                    <h3>Описание</h3>
+                    {isEditingDescription ? (
+                        <div className="edit-field">
+                            <textarea
+                                value={editedDescription}
+                                onChange={(e) => setEditedDescription(e.target.value)}
+                                placeholder="Описание турнира"
+                                rows="4"
+                            />
+                            <button onClick={handleSaveDescription}>Сохранить</button>
+                            <button onClick={() => setIsEditingDescription(false)}>Отмена</button>
+                        </div>
+                    ) : (
+                        <div className="info-content">
+                            <p>{tournament.description || 'Нет описания'}</p>
+                            {isAdminOrCreator && (
+                                <button onClick={() => setIsEditingDescription(true)}>Редактировать</button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="info-block">
+                    <h3>Призовой фонд</h3>
+                    {isEditingPrizePool ? (
+                        <div className="edit-field">
+                            <textarea
+                                value={editedPrizePool}
+                                onChange={(e) => setEditedPrizePool(e.target.value)}
+                                placeholder="Призовой фонд"
+                                rows="4"
+                            />
+                            <button onClick={handleSavePrizePool}>Сохранить</button>
+                            <button onClick={() => setIsEditingPrizePool(false)}>Отмена</button>
+                        </div>
+                    ) : (
+                        <div className="info-content">
+                            <p>{tournament.prize_pool || 'Не указан'}</p>
+                            {isAdminOrCreator && (
+                                <button onClick={() => setIsEditingPrizePool(true)}>Редактировать</button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="info-block">
+                    <h3>Регламент</h3>
+                    <div className="info-content">
+                        <label className="show-full-description">
+                            <input
+                                type="checkbox"
+                                checked={showFullDescription}
+                                onChange={(e) => setShowFullDescription(e.target.checked)}
+                            />
+                            Показать полное описание и регламент
+                        </label>
+                        {showFullDescription && (
+                            <div className="full-description">
+                                <h4>Полное описание</h4>
+                                <p>{tournament.full_description || 'Нет полного описания'}</p>
+                                <h4>Регламент</h4>
+                                <p>{tournament.rules || 'Регламент не указан'}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             <p>
                 <strong>Формат:</strong> {tournament.format}
             </p>
@@ -1147,21 +1305,6 @@ function TournamentDetails() {
             )}
             {message && (
                 <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
-            )}
-            {tournament?.format === 'mix' && !tournament?.bracket && (
-                <div className="mix-settings">
-                    <h3>Настройки микса</h3>
-                    <div className="rating-type-selector">
-                        <label>Миксовать по рейтингу:</label>
-                        <select 
-                            value={ratingType}
-                            onChange={(e) => setRatingType(e.target.value)}
-                        >
-                            <option value="faceit">FACEit</option>
-                            <option value="premier">Steam Premier</option>
-                        </select>
-                    </div>
-                </div>
             )}
             {tournament?.bracket && tournament?.status === 'pending' && (
                 <div className="tournament-controls">
