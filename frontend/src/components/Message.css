@@ -57,10 +57,22 @@
     color: #a0a0b8;
 }
 
-/* Стили для изображений */
+/* Добавляю стили для сообщений с изображениями */
+.message-container .message .message-image {
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+/* Убираю фон для сообщений с изображениями - использую класс */
+.message.image-message {
+    background-color: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+
+/* Старый стиль для message-image можно упростить */
 .message-image {
     max-width: 100%;
-    overflow: hidden;
     border-radius: 12px;
 }
 
@@ -70,6 +82,7 @@
     object-fit: contain;
     cursor: pointer;
     border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Стили для документов */

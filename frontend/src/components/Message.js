@@ -4,7 +4,13 @@ import { formatDate } from '../utils/dateHelpers';
 
 function Message({ message, isOwn }) {
     // Выбор класса для сообщения в зависимости от отправителя
-    const messageClass = isOwn ? 'message own' : 'message';
+    const messageClass = () => {
+        let baseClass = isOwn ? 'message own' : 'message';
+        if (message.message_type === 'image') {
+            baseClass += ' image-message';
+        }
+        return baseClass;
+    };
     
     // Рендер содержимого сообщения в зависимости от его типа
     const renderMessageContent = () => {
@@ -84,7 +90,7 @@ function Message({ message, isOwn }) {
 
     return (
         <div className={`message-container ${isOwn ? 'own-container' : ''}`}>
-            <div className={messageClass}>
+            <div className={messageClass()}>
                 {renderMessageContent()}
             </div>
             <div className="message-meta">
