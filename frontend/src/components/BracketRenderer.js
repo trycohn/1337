@@ -174,7 +174,7 @@ const BracketRenderer = ({
                 }
                 .bracket-grid {
                     display: flex;
-                    gap: 40px;
+                    gap: 50px;
                     margin-bottom: 30px;
                     align-items: center;
                     margin: 10px;
