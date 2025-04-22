@@ -121,15 +121,7 @@ const wss = new WebSocket.Server({
 
 // Устанавливаю Socket.IO сервер для чата
 const io = new SocketIOServer(server, {
-  cors: { 
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://1337community.com', 'https://www.1337community.com']
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:5500'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-  },
-  path: '/socket.io'
+  cors: { origin: true, methods: ['GET', 'POST'], credentials: true }
 });
 setupChatSocketIO(io);
 

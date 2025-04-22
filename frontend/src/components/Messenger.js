@@ -22,74 +22,19 @@ function Messenger() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        // Проверка работоспособности токена
-        try {
-            const parsed = JSON.parse(atob(token.split('.')[1]));
-            const tokenExpiration = parsed.exp * 1000; // Преобразуем в миллисекунды
-            if (Date.now() > tokenExpiration) {
-                console.error('Токен устарел, требуется повторная аутентификация');
-                setError('Сессия устарела. Пожалуйста, войдите заново');
-                localStorage.removeItem('token');
-                return;
-            }
-        } catch (err) {
-            console.error('Ошибка проверки токена:', err);
-        }
-
-        // Сохраняем userId в localStorage для временных сообщений
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-            ).join(''));
-            
-            const decoded = JSON.parse(jsonPayload);
-            if (decoded.id) {
-                localStorage.setItem('userId', decoded.id);
-            }
-        } catch (error) {
-            console.error('Ошибка при декодировании токена:', error);
-        }
-
         const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
-        const socketClient = io(baseUrl, { 
-            query: { token },
-            path: '/socket.io',
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 20000,
-            transports: ['websocket', 'polling']
-        });
+        const socketClient = io(baseUrl, { query: { token } });
 
         socketClient.on('connect', () => {
             console.log('Socket.IO соединение установлено');
         });
 
-        socketClient.on('message', (message) => {
-            console.log('Получено сообщение от сервера:', message);
-            handleNewMessage(message);
-        });
+        socketClient.on('message', handleNewMessage);
         socketClient.on('read_status', updateMessageReadStatus);
 
         socketClient.on('error', (error) => {
             console.error('Socket.IO ошибка:', error);
             setError('Ошибка подключения к серверу чата');
-        });
-
-        socketClient.on('connect_error', (error) => {
-            console.error('Socket.IO ошибка подключения:', error);
-            setError(`Ошибка подключения к серверу чата: ${error.message}`);
-        });
-
-        // Обработка переподключения
-        socketClient.on('reconnect', (attemptNumber) => {
-            console.log(`Socket.IO переподключился после ${attemptNumber} попыток`);
-        });
-
-        socketClient.on('reconnect_error', (error) => {
-            console.error('Socket.IO ошибка переподключения:', error);
-            setError(`Не удалось восстановить соединение с чатом: ${error.message}`);
         });
 
         setSocket(socketClient);
@@ -117,26 +62,15 @@ function Messenger() {
     
     // Обработка нового сообщения
     const handleNewMessage = (message) => {
-        console.log('Обработка сообщения:', message);
-        
-        // Проверяем, если это объект с payload внутри (старый формат)
-        const actualMessage = message.payload || message;
-        
-        if (activeChat && Number(activeChat.id) === Number(actualMessage.chat_id)) {
+        if (activeChat && Number(activeChat.id) === Number(message.chat_id)) {
             // Если чат активен, добавляем сообщение в список и помечаем как прочитанное
-            setMessages(prevMessages => {
-                // Заменяем временное сообщение реальным или добавляем новое
-                const filtered = prevMessages.filter(msg => !msg.is_temp);
-                return [...filtered, actualMessage];
-            });
-            if (actualMessage.id) {
-                markMessageAsRead(actualMessage.id);
-            }
+            setMessages(prevMessages => [...prevMessages, message]);
+            markMessageAsRead(message.id);
         } else {
             // Если чат не активен, увеличиваем счетчик непрочитанных сообщений
             setUnreadCounts(prevCounts => ({
                 ...prevCounts,
-                [actualMessage.chat_id]: (prevCounts[actualMessage.chat_id] || 0) + 1
+                [message.chat_id]: (prevCounts[message.chat_id] || 0) + 1
             }));
             
             // Обновляем список чатов, чтобы показать последнее сообщение
@@ -202,40 +136,18 @@ function Messenger() {
             setError(err.response?.data?.error || 'Ошибка загрузки сообщений');
         }
     };
-
+    
     // Отправка сообщения
     const sendMessage = () => {
         if (!socket || !activeChat || !newMessage.trim()) return;
-        
-        console.log('Отправка сообщения:', {
-            chat_id: activeChat.id,
-            content: newMessage,
-            message_type: 'text'
-        });
-
         socket.emit('message', {
             chat_id: activeChat.id,
             content: newMessage,
             message_type: 'text'
         });
-        
-        // Временно добавляем сообщение локально (без id и timestamp, которые должен дать сервер)
-        const tempMessage = {
-            chat_id: activeChat.id,
-            content: newMessage,
-            message_type: 'text',
-            is_own: true,
-            sender_id: localStorage.getItem('userId') || 'temp',
-            created_at: new Date().toISOString(),
-            is_temp: true // Помечаем как временное сообщение, сервер должен заменить его актуальным
-        };
-        
-        // Добавляем временное сообщение в список для отображения
-        setMessages(prevMessages => [...prevMessages, tempMessage]);
-        
         setNewMessage('');
     };
-
+    
     // Пометка чата как прочитанного
     const markChatAsRead = async (chatId) => {
         try {
@@ -254,13 +166,13 @@ function Messenger() {
             console.error('Ошибка при пометке чата как прочитанного:', err);
         }
     };
-
+    
     // Пометка конкретного сообщения как прочитанного
     const markMessageAsRead = async (messageId) => {
         if (!socket) return;
         socket.emit('read_status', { message_id: messageId });
     };
-
+    
     // Отправка вложения
     const sendAttachment = async (file, type) => {
         if (!activeChat || !file) return;
@@ -284,23 +196,23 @@ function Messenger() {
             setError(err.response?.data?.error || 'Ошибка отправки вложения');
         }
     };
-
+    
     // Обработка изменения активного чата
     const handleChatSelect = (chat) => {
         setActiveChat(chat);
     };
-
+    
     // Обработчик ввода сообщения
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
     };
-
+    
     // Обработчик отправки формы
     const handleSubmit = (e) => {
         e.preventDefault();
         sendMessage();
     };
-
+    
     // Обработка нажатия Enter
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -308,7 +220,7 @@ function Messenger() {
             sendMessage();
         }
     };
-
+    
     // Функция для создания нового чата
     const createChat = async (userId) => {
         try {
@@ -354,4 +266,4 @@ function Messenger() {
     );
 }
 
-export default Messenger;
+export default Messenger; 

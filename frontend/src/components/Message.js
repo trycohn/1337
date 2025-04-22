@@ -3,13 +3,8 @@ import './Message.css';
 import { formatDate } from '../utils/dateHelpers';
 
 function Message({ message, isOwn }) {
-    // Проверяем, если временное сообщение либо установлен флаг is_own
-    const messageIsOwn = isOwn || message.is_own || false;
-    
     // Выбор класса для сообщения в зависимости от отправителя
-    const messageClass = messageIsOwn 
-        ? `message own${message.is_temp ? ' message-temp' : ''}` 
-        : 'message';
+    const messageClass = isOwn ? 'message own' : 'message';
     
     // Рендер содержимого сообщения в зависимости от его типа
     const renderMessageContent = () => {
@@ -77,10 +72,7 @@ function Message({ message, isOwn }) {
     
     // Индикатор статуса сообщения (прочитано/отправлено/доставлено)
     const renderMessageStatus = () => {
-        if (messageIsOwn) {
-            if (message.is_temp) {
-                return <span className="message-status sending">⏱</span>;
-            }
+        if (isOwn) {
             if (message.is_read) {
                 return <span className="message-status read">✅</span>;
             } else {

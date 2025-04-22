@@ -6,35 +6,19 @@ function setupChatSocketIO(io) {
   // Аутентификация по токену JWT при подключении
   io.use((socket, next) => {
     const token = socket.handshake.query.token;
-    console.log('Попытка подключения Socket.IO с токеном:', token ? 'получен' : 'не предоставлен');
     if (!token) {
       return next(new Error('Токен не предоставлен'));
     }
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.userId = decoded.id;
-      
-      // Дополнительная проверка, что пользователь существует в БД
-      pool.query('SELECT id FROM users WHERE id = $1', [decoded.id])
-        .then(result => {
-          if (result.rows.length === 0) {
-            return next(new Error('Пользователь не найден'));
-          }
-          console.log(`Пользователь ${decoded.id} прошел аутентификацию Socket.IO`);
-          next();
-        })
-        .catch(err => {
-          console.error('Ошибка при проверке пользователя:', err);
-          next(new Error('Ошибка проверки пользователя'));
-        });
+      next();
     } catch (err) {
-      console.error('Ошибка аутентификации Socket.IO:', err);
       return next(new Error('Ошибка аутентификации'));
     }
   });
 
   io.on('connection', socket => {
-    console.log(`Новое Socket.IO соединение для пользователя ${socket.userId}`);
     const userId = socket.userId;
 
     // Присоединяю пользователя к его комнатам чатов
@@ -50,7 +34,6 @@ function setupChatSocketIO(io) {
 
     // Обработка входящих сообщений в чат
     socket.on('message', async payload => {
-      console.log('Получен запрос на отправку сообщения:', payload);
       const { chat_id, content, message_type = 'text' } = payload;
       if (!chat_id || !content) return;
 
@@ -77,7 +60,6 @@ function setupChatSocketIO(io) {
         message.sender_username = userInfo.rows[0].username;
         message.sender_avatar = userInfo.rows[0].avatar_url;
 
-        console.log(`Отправляю сообщение в комнату chat_${chat_id}:`, message);
         // Отправляю сообщение всем участникам комнаты чата
         io.to(`chat_${chat_id}`).emit('message', message);
       } catch (err) {
@@ -87,7 +69,6 @@ function setupChatSocketIO(io) {
 
     // Обработка статуса прочтения сообщения
     socket.on('read_status', async payload => {
-      console.log('Получен запрос на обновление статуса прочтения:', payload);
       const { message_id } = payload;
       if (!message_id) return;
       try {
