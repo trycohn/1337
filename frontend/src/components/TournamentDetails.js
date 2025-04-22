@@ -1302,7 +1302,7 @@ function TournamentDetails() {
                                     <h4>{team.name}</h4>
                                     <ul>
                                         {team.members.map(member => (
-                                            <li key={member.user_id}>{member.name}</li>
+                                            <li key={member.participant_id || member.id}>{member.name}</li>
                                         ))}
                                     </ul>
                                 </div>

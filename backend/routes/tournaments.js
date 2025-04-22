@@ -1490,13 +1490,16 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         // Получаем параметры турнира
         const tourRes = await pool.query('SELECT team_size, created_by FROM tournaments WHERE id = $1', [id]);
         if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
-        const { team_size, created_by } = tourRes.rows[0];
+        const { team_size: sizeFromDb, created_by } = tourRes.rows[0];
+        const teamSize = parseInt(sizeFromDb, 10) || 1;
 
         // Получаем всех участников-игроков (solo)
         const partRes = await pool.query(
-            `SELECT tp.user_id, tp.name, u.faceit_elo as faceit_rating, u.cs2_premier_rank as premier_rating
+            `SELECT tp.id AS participant_id, tp.user_id, tp.name,
+                    COALESCE(u.faceit_elo, 0) as faceit_rating,
+                    COALESCE(u.cs2_premier_rank, 0) as premier_rating
              FROM tournament_participants tp
-             JOIN users u ON tp.user_id = u.id
+             LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1`,
             [id]
         );
@@ -1506,41 +1509,40 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         }
         // Проверяем, кратно ли число участников размеру команды
         const totalPlayers = participants.length;
-        const remainder = totalPlayers % team_size;
+        const remainder = totalPlayers % teamSize;
         if (remainder !== 0) {
-            const shortage = team_size - remainder;
+            const shortage = teamSize - remainder;
             return res.status(400).json({ error: `Не хватает ${shortage} участников для формирования полных команд` });
         }
-        const numTeams = totalPlayers / team_size;
+        const numTeams = totalPlayers / teamSize;
 
-        // Инициализация команд
-        const teams = Array.from({ length: numTeams }, () => ({ members: [], ratingSum: 0 }));
-
-        // Распределяем участников методом жадного балансирования
-        participants.forEach(p => {
-            teams.sort((a,b) => a.ratingSum - b.ratingSum);
-            teams[0].members.push(p);
-            teams[0].ratingSum += p.faceit_rating || 0;
-        });
-
+        // Перемешиваем участников случайным образом и формируем команды чанками по teamSize
+        for (let i = participants.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [participants[i], participants[j]] = [participants[j], participants[i]];
+        }
         // Сохраняем команды в БД
         const created = [];
-        for (let idx = 0; idx < teams.length; idx++) {
-            const team = teams[idx];
-            const name = `Команда ${idx+1}`;
+        for (let idx = 0; idx < participants.length; idx += teamSize) {
+            const group = participants.slice(idx, idx + teamSize);
+            const teamNumber = idx / teamSize + 1;
+            const name = `Команда ${teamNumber}`;
             const insTeam = await pool.query(
                 'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1,$2,$3) RETURNING id',
                 [id, name, created_by]
             );
             const teamId = insTeam.rows[0].id;
-            // Добавляем членов команды
-            for (const member of team.members) {
+            for (const member of group) {
                 await pool.query(
-                    'INSERT INTO tournament_team_members (team_id, user_id) VALUES ($1,$2)',
-                    [teamId, member.user_id]
+                    'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
+                    [teamId, member.user_id, member.participant_id]
                 );
             }
-            created.push({ id: teamId, name, members: team.members.map(m => ({ id: m.user_id, name: m.name })) });
+            created.push({
+                id: teamId,
+                name,
+                members: group.map(m => ({ participant_id: m.participant_id, user_id: m.user_id, name: m.name }))
+            });
         }
 
         // Переключаем тип турнира на командный
@@ -1557,7 +1559,6 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
 router.get('/:id/teams', authenticateToken, async (req, res) => {
     const { id } = req.params;
     try {
-        // Проверка существования турнира
         const tourCheck = await pool.query('SELECT participant_type FROM tournaments WHERE id = $1', [id]);
         if (tourCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
@@ -1571,15 +1572,17 @@ router.get('/:id/teams', authenticateToken, async (req, res) => {
                 tt.id,
                 tt.name,
                 COALESCE(
-                    json_agg(
-                        jsonb_build_object('id', u.id, 'name', u.username)
-                    ) FILTER (WHERE u.id IS NOT NULL), '[]'
+                    json_agg(jsonb_build_object(
+                        'participant_id', ttm.participant_id,
+                        'user_id', ttm.user_id,
+                        'name', COALESCE(tp.name, '')
+                    )), '[]'
                 ) AS members
             FROM tournament_teams tt
             LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
-            LEFT JOIN users u ON ttm.user_id = u.id
+            LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
             WHERE tt.tournament_id = $1
-            GROUP BY tt.id, tt.name
+            GROUP BY tt.id
             ORDER BY tt.id`,
             [id]
         );

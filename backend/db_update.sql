@@ -124,4 +124,14 @@ CREATE TABLE IF NOT EXISTS tournament_team_members (
 
 -- Индексы для оптимизации запросов
 CREATE INDEX IF NOT EXISTS idx_tournament_teams_tournament_id ON tournament_teams(tournament_id);
-CREATE INDEX IF NOT EXISTS idx_tournament_team_members_team_id ON tournament_team_members(team_id); 
+CREATE INDEX IF NOT EXISTS idx_tournament_team_members_team_id ON tournament_team_members(team_id);
+
+-- Таблицы для хранения участников команд
+-- Изменения для поддержки ссылок на участников
+ALTER TABLE tournament_team_members ADD COLUMN IF NOT EXISTS participant_id INTEGER REFERENCES tournament_participants(id) ON DELETE CASCADE;
+
+-- Разрешаем хранить nullable user_id, чтобы можно было сохранять участников без user_id
+ALTER TABLE tournament_team_members ALTER COLUMN user_id DROP NOT NULL;
+
+-- Создаем индекс для ускорения поиска по participant_id
+CREATE INDEX IF NOT EXISTS idx_tournament_team_members_participant_id ON tournament_team_members(participant_id); 
