@@ -1,21 +1,38 @@
+/* Добавляю новый контейнер для сообщения и времени */
+.message-container {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+/* Контейнер с собственными сообщениями выравниваем по правому краю */
+.message-container.own-container {
+    justify-content: flex-end;
+}
+
+/* Меняем порядок для собственных сообщений */
+.message-container.own-container .message-meta {
+    order: -1;
+    margin-right: 8px;
+    margin-left: 0;
+}
+
 .message {
     display: block;
     width: fit-content;
     position: relative;
     max-width: 70%;
-    padding: 8px 36px 8px 16px;
-    margin-bottom: 8px;
-    border-radius: 20px;
+    padding: 6px 10px;
+    border-radius: 12px;
     background-color: #34344a;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    align-self: flex-start;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
     word-break: break-word;
     color: #e0e0e5;
 }
 
 .message.own {
     background-color: #3a4db8;
-    align-self: flex-end;
 }
 
 .message-text {
@@ -24,9 +41,7 @@
 }
 
 .message-meta {
-    position: absolute;
-    bottom: 4px;
-    right: 10px;
+    margin-left: 8px;
     display: flex;
     align-items: center;
     font-size: 0.75rem;
