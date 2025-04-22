@@ -118,7 +118,7 @@
 .bracket-grid {
     display: flex;
     align-items: center;
-    gap: 40px;
+    gap: 50px;
     overflow-x: auto;
     padding-bottom: 15px;
     position: relative;
@@ -224,6 +224,11 @@
     background-color: #f0f0f0;
     border-radius: 3px;
     color: #000000;
+}
+
+/* Стили для плейсхолдера TBD */
+.team-name.placeholder {
+    font-weight: normal !important;
 }
 
 /* Финальные матчи */
