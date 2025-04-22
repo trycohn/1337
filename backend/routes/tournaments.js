@@ -817,7 +817,7 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
         // Получаем обновлённые данные турнира вместе с аватарками участников
         const updatedTournamentResult = await pool.query(
             'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(tp.* || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
             [id]
@@ -1032,7 +1032,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(tp.* || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
             [id]
@@ -1326,7 +1326,7 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(tp.* || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
             [matchIdNum]
