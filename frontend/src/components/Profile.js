@@ -59,6 +59,9 @@ function Profile() {
     const [searchPerformed, setSearchPerformed] = useState(false);
     const searchTimeoutRef = useRef(null);
 
+    // Добавляем новое состояние для отправленных заявок в друзья
+    const [sentFriendRequests, setSentFriendRequests] = useState([]);
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -370,6 +373,8 @@ function Profile() {
             fetchFriends();
             // Загружаем заявки в друзья
             fetchFriendRequests();
+            // Загружаем отправленные заявки в друзья
+            fetchSentFriendRequests();
             // Загружаем историю матчей
             fetchMatchHistory();
         }
@@ -879,7 +884,42 @@ function Profile() {
         );
     };
 
-    // Handle search
+    // Добавляем функцию для загрузки отправленных заявок в друзья
+    const fetchSentFriendRequests = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/friends/requests/outgoing', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSentFriendRequests(response.data);
+        } catch (err) {
+            console.error('Ошибка загрузки отправленных заявок в друзья:', err);
+        }
+    };
+
+    // Обновляем функцию отправки заявки в друзья
+    const sendFriendRequest = async (userId) => {
+        try {
+            await api.post('/api/friends/request', { friendId: userId }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            // Обновляем список отправленных заявок
+            await fetchSentFriendRequests();
+            
+            // Обновляем список результатов поиска с учетом новой отправленной заявки
+            setSearchResults(prev => prev.map(user => {
+                if (user.id === userId) {
+                    return { ...user, requestSent: true };
+                }
+                return user;
+            }));
+        } catch (err) {
+            console.error('Ошибка отправки заявки в друзья:', err);
+        }
+    };
+
+    // Обновляем функцию поиска
     const handleSearchChange = async (e) => {
         const value = e.target.value;
         setSearchQuery(value);
@@ -902,10 +942,21 @@ function Profile() {
                 const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
-                // Отфильтруем пользователей, уже добавленных в друзья
+                // Фильтруем пользователей, уже добавленных в друзья
                 const data = response.data;
-                const filtered = data.filter(user => !friends.some(f => f.friend.id === user.id));
-                setSearchResults(filtered);
+                const friendIds = friends.map(f => f.friend.id);
+                const sentRequestIds = sentFriendRequests.map(req => req.friendId);
+                
+                // Отфильтруем пользователей, которые уже в друзьях
+                const filtered = data.filter(user => !friendIds.includes(user.id));
+                
+                // Отметим пользователей, которым уже отправлены заявки
+                const markedResults = filtered.map(user => ({
+                    ...user,
+                    requestSent: sentRequestIds.includes(user.id)
+                }));
+                
+                setSearchResults(markedResults);
                 setSearchPerformed(true);
             } catch (err) {
                 console.error('Ошибка поиска пользователей:', err);
@@ -913,18 +964,6 @@ function Profile() {
                 setIsSearching(false);
             }
         }, 500); // 500ms delay before executing search
-    };
-
-    const sendFriendRequest = async (userId) => {
-        try {
-            await api.post('/api/friends/request', { friendId: userId }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            // Удаляем пользователя из результатов поиска после отправки заявки
-            setSearchResults(searchResults.filter(u => u.id !== userId));
-        } catch (err) {
-            console.error('Ошибка отправки заявки в друзья:', err);
-        }
     };
 
     if (!user) return <p>Загрузка...</p>;
@@ -1169,9 +1208,15 @@ function Profile() {
                                             <div key={user.id} className="search-item">
                                                 <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
                                                 <span className="search-username">{user.username}</span>
-                                                <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">
-                                                    <i className="add-icon">+</i> Добавить
-                                                </button>
+                                                {user.requestSent ? (
+                                                    <button className="request-sent-btn" disabled>
+                                                        Отправлено
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">
+                                                        <i className="add-icon">+</i> Добавить
+                                                    </button>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
