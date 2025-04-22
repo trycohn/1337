@@ -976,11 +976,65 @@ function TournamentDetails() {
                             <button onClick={handleInvite}>Пригласить</button>
                         </div>
                     )}
+                    {isAdminOrCreator && (
+                        <div className="add-participant-section">
+                            <h3>Добавить участника</h3>
+                            <div className="search-container">
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        handleUserSearch(e.target.value);
+                                    }}
+                                    placeholder="Поиск пользователей..."
+                                />
+                                {userSearchResults.length > 0 && (
+                                    <ul className="search-results">
+                                        {userSearchResults.map(user => (
+                                            <li 
+                                                key={user.id}
+                                                onClick={() => {
+                                                    setSelectedUser(user);
+                                                    setAddParticipantName(user.username);
+                                                    setUserSearchResults([]);
+                                                }}
+                                            >
+                                                {user.username}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <input
+                                type="text"
+                                value={addParticipantName}
+                                onChange={(e) => setAddParticipantName(e.target.value)}
+                                placeholder="Имя участника"
+                            />
+                            <button onClick={handleAddParticipant}>Добавить участника</button>
+                        </div>
+                    )}
                     {!isAdminOrCreator && tournament?.status === 'active' && (
                         <button onClick={handleRequestAdmin} className="request-admin-btn">
                             Запросить права администратора
                         </button>
                     )}
+                </div>
+            )}
+            {tournament?.format === 'mix' && !tournament?.bracket && (
+                <div className="mix-settings">
+                    <h3>Настройки микса</h3>
+                    <div className="rating-type-selector">
+                        <label>Миксовать по рейтингу:</label>
+                        <select 
+                            value={ratingType}
+                            onChange={(e) => setRatingType(e.target.value)}
+                        >
+                            <option value="faceit">FACEit</option>
+                            <option value="premier">Steam Premier</option>
+                        </select>
+                    </div>
                 </div>
             )}
             <h3>Турнирная сетка</h3>
@@ -1135,45 +1189,6 @@ function TournamentDetails() {
                     >
                         Завершить турнир
                     </button>
-                </div>
-            )}
-            {isAdminOrCreator && (
-                <div className="add-participant-section">
-                    <h3>Добавить участника</h3>
-                    <div className="search-container">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                handleUserSearch(e.target.value);
-                            }}
-                            placeholder="Поиск пользователей..."
-                        />
-                        {userSearchResults.length > 0 && (
-                            <ul className="search-results">
-                                {userSearchResults.map(user => (
-                                    <li 
-                                        key={user.id}
-                                        onClick={() => {
-                                            setSelectedUser(user);
-                                            setAddParticipantName(user.username);
-                                            setUserSearchResults([]);
-                                        }}
-                                    >
-                                        {user.username}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                    <input
-                        type="text"
-                        value={addParticipantName}
-                        onChange={(e) => setAddParticipantName(e.target.value)}
-                        placeholder="Имя участника"
-                    />
-                    <button onClick={handleAddParticipant}>Добавить участника</button>
                 </div>
             )}
         </section>
