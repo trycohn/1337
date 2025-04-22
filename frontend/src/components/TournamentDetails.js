@@ -90,6 +90,14 @@ function TournamentDetails() {
     const [editedRules, setEditedRules] = useState('');
     const [mixedTeams, setMixedTeams] = useState([]);
 
+    // Карта участников и их команд
+    const participantTeamMap = {};
+    mixedTeams.forEach(team => {
+        team.members.forEach(m => {
+            if (m.participant_id) participantTeamMap[m.participant_id] = team.name;
+        });
+    });
+
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
         try {
@@ -1013,7 +1021,7 @@ function TournamentDetails() {
                 <h4>Участники ({tournament.participants.length})</h4>
                 <ul>
                     {tournament.participants.map((participant) => (
-                        <li key={participant.id} className="participant-item">
+                        <li key={participant.id} className="participant-item" title={`Команда: ${participantTeamMap[participant.id] || '—'}`}>
                             {/* Проверяем, является ли участник текущим авторизованным пользователем */}
                             <Link 
                                 to={user && participant.user_id === user.id ? '/profile' : `/user/${participant.user_id}`} 
@@ -1297,16 +1305,13 @@ function TournamentDetails() {
                     {mixedTeams.length > 0 && (
                         <div className="mixed-teams">
                             <h3>Сформированные команды</h3>
-                            {mixedTeams.map(team => (
-                                <div key={team.id} className="team-block">
-                                    <h4>{team.name}</h4>
-                                    <ul>
-                                        {team.members.map(member => (
-                                            <li key={member.participant_id || member.id}>{member.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
+                            <ul className="teams-list">
+                                {mixedTeams.map(team => (
+                                    <li key={team.id} title={team.members.map(m => m.name).join(', ')}>
+                                        {team.name}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
