@@ -1136,23 +1136,31 @@ function Profile() {
                         <div className="friends-tab">
                             {/* Поиск друзей */}
                             <div className="friend-search">
-                                <input
-                                    type="text"
-                                    placeholder="Поиск пользователя по нику..."
-                                    value={searchQuery}
-                                    onChange={handleSearchChange}
-                                />
-                                {isSearching && <p>Поиск...</p>}
+                                <div className="search-input-container">
+                                    <i className="search-icon">🔍</i>
+                                    <input
+                                        type="text"
+                                        placeholder="Поиск пользователя по нику..."
+                                        value={searchQuery}
+                                        onChange={handleSearchChange}
+                                    />
+                                </div>
+                                {isSearching && <p>Поиск пользователей...</p>}
                                 {searchResults.length > 0 && (
                                     <div className="search-results">
                                         {searchResults.map(user => (
                                             <div key={user.id} className="search-item">
                                                 <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
                                                 <span className="search-username">{user.username}</span>
-                                                <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">Добавить в друзья</button>
+                                                <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">
+                                                    <i className="add-icon">+</i> Добавить
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
+                                )}
+                                {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+                                    <p className="no-results">Пользователи не найдены</p>
                                 )}
                             </div>
                             {/* Секция друзей */}
