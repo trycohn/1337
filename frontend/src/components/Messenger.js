@@ -25,6 +25,7 @@ function Messenger() {
     const [attachmentType, setAttachmentType] = useState(null);
     const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState('');
     const [attachmentCaption, setAttachmentCaption] = useState('');
+    const [isClosing, setIsClosing] = useState(false);
 
     // Инициализация Socket.IO соединения
     useEffect(() => {
@@ -199,12 +200,13 @@ function Messenger() {
         setAttachmentPreviewUrl(url);
         setAttachmentCaption('');
         setShowAttachmentModal(true);
+        setIsClosing(false);
     };
 
     // Подтверждение отправки вложения
     const confirmSendAttachment = async () => {
         if (!attachmentFile) {
-            setShowAttachmentModal(false);
+            closeModal();
             return;
         }
         const formData = new FormData();
@@ -232,22 +234,26 @@ function Messenger() {
             setError(err.response?.data?.error || 'Ошибка отправки вложения');
         }
         // Очистка
-        URL.revokeObjectURL(attachmentPreviewUrl);
-        setShowAttachmentModal(false);
-        setAttachmentFile(null);
-        setAttachmentType(null);
-        setAttachmentPreviewUrl('');
-        setAttachmentCaption('');
+        closeModal();
+    };
+
+    // Функция для плавного закрытия модального окна
+    const closeModal = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            URL.revokeObjectURL(attachmentPreviewUrl);
+            setShowAttachmentModal(false);
+            setAttachmentFile(null);
+            setAttachmentType(null);
+            setAttachmentPreviewUrl('');
+            setAttachmentCaption('');
+            setIsClosing(false);
+        }, 300);
     };
 
     // Отмена отправки вложения
     const cancelSendAttachment = () => {
-        URL.revokeObjectURL(attachmentPreviewUrl);
-        setShowAttachmentModal(false);
-        setAttachmentFile(null);
-        setAttachmentType(null);
-        setAttachmentPreviewUrl('');
-        setAttachmentCaption('');
+        closeModal();
     };
     
     // Обработка изменения активного чата
@@ -317,7 +323,7 @@ function Messenger() {
             {error && <div className="messenger-error">{error}</div>}
 
             {showAttachmentModal && (
-                <div className="attachment-modal">
+                <div className={`attachment-modal ${isClosing ? 'closing' : ''}`}>
                     <div className="attachment-modal-content">
                         <h2>Send {attachmentType}</h2>
                         {attachmentType === 'image' && (
