@@ -1083,14 +1083,16 @@ function TournamentDetails() {
                 <div className="info-block">
                     <h3>Регламент</h3>
                     <div className="info-content">
-                        <label className="show-full-description">
-                            <input
-                                type="checkbox"
-                                checked={showFullDescription}
-                                onChange={(e) => setShowFullDescription(e.target.checked)}
-                            />
-                            Показать полное описание и регламент
-                        </label>
+                        {isAdminOrCreator && (
+                            <label className="show-full-description">
+                                <input
+                                    type="checkbox"
+                                    checked={showFullDescription}
+                                    onChange={(e) => setShowFullDescription(e.target.checked)}
+                                />
+                                Показать полное описание и регламент
+                            </label>
+                        )}
                         {showFullDescription && (
                             <div className="full-description">
                                 <h4>Полное описание</h4>
