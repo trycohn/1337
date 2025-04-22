@@ -107,12 +107,20 @@ function Messenger() {
         if (activeChatRef.current && Number(activeChatRef.current) === Number(message.chat_id)) {
             markMessageAsRead(message.id);
         } else {
-            // Иначе увеличиваем счётчик и обновляем список чатов
+            // Иначе увеличиваем счётчик и динамически обновляем список чатов
             setUnreadCounts(prevCounts => ({
                 ...prevCounts,
                 [message.chat_id]: (prevCounts[message.chat_id] || 0) + 1
             }));
-            fetchChats();
+            setChats(prevChats => {
+                // Переносим обновлённый чат наверх и обновляем его last_message
+                const otherChats = prevChats.filter(chat => chat.id !== message.chat_id);
+                const updated = prevChats.find(chat => chat.id === message.chat_id);
+                if (updated) {
+                    return [{ ...updated, last_message: message }, ...otherChats];
+                }
+                return prevChats;
+            });
         }
     };
     
