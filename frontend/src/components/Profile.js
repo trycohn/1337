@@ -1206,8 +1206,10 @@ function Profile() {
                                     <div className="search-results">
                                         {searchResults.map(user => (
                                             <div key={user.id} className="search-item">
-                                                <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
-                                                <span className="search-username">{user.username}</span>
+                                                <a href={`/user/${user.id}`} className="search-user-link">
+                                                    <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
+                                                    <span className="search-username">{user.username}</span>
+                                                </a>
                                                 {user.requestSent ? (
                                                     <button className="request-sent-btn" disabled>
                                                         Отправлено
