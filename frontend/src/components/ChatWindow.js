@@ -17,6 +17,9 @@ function ChatWindow({
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const fileInputRef = useRef(null);
     
+    // Деструктурируем информацию о собеседнике
+    const interlocutor = activeChat.interlocutor || {};
+    
     // Если нет активного чата, показываем заглушку
     if (!activeChat) {
         return (
@@ -106,17 +109,17 @@ function ChatWindow({
             <div className="chat-header">
                 <div className="chat-header-avatar">
                     <img 
-                        src={activeChat.avatar_url || '/default-avatar.png'} 
-                        alt={activeChat.name} 
+                        src={interlocutor.avatar_url || '/default-avatar.png'} 
+                        alt={interlocutor.username || activeChat.name} 
                     />
                 </div>
                 <div className="chat-header-info">
-                    <h2>{activeChat.name}</h2>
-                    {activeChat.online_status && (
-                        <div className={`online-status ${activeChat.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
-                            {activeChat.online_status === 'online'
+                    <h2>{interlocutor.username || activeChat.name}</h2>
+                    {interlocutor.online_status && (
+                        <div className={`online-status ${interlocutor.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
+                            {interlocutor.online_status === 'online'
                                 ? 'В сети'
-                                : `Был в сети ${formatDate(activeChat.last_online)}`
+                                : `Был в сети ${formatDate(interlocutor.last_online)}`
                             }
                         </div>
                     )}
