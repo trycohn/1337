@@ -1350,4 +1350,47 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
     }
 });
 
+// Обновление полного описания турнира
+router.put('/:id/full-description', authenticateToken, verifyEmailRequired, async (req, res) => {
+    const { id } = req.params;
+    const { full_description } = req.body;
+    const userId = req.user.id;
+
+    try {
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
+
+        if (tournament.created_by !== userId) {
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может обновлять полное описание турнира' });
+            }
+        }
+
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Турнир неактивен' });
+        }
+
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET full_description = $1 WHERE id = $2 RETURNING *',
+            [full_description, id]
+        );
+        if (updateResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Не удалось обновить полное описание турнира' });
+        }
+        const updatedTournament = updateResult.rows[0];
+
+        res.status(200).json({ message: 'Полное описание турнира успешно обновлено', tournament: updatedTournament });
+    } catch (err) {
+        console.error('❌ Ошибка обновления полного описания турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
