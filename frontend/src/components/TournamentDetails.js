@@ -1275,7 +1275,9 @@ function TournamentDetails() {
                             <option value="premier">Steam Premier</option>
                         </select>
                     </div>
-                    <button onClick={handleFormTeams}>Сформировать команды</button>
+                    {isAdminOrCreator && (
+                        <button onClick={handleFormTeams}>Сформировать команды</button>
+                    )}
 
                     {mixedTeams.length > 0 && (
                         <div className="mixed-teams">
