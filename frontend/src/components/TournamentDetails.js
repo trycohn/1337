@@ -1262,7 +1262,7 @@ function TournamentDetails() {
                     )}
                 </div>
             )}
-            {tournament?.format === 'mix' && !tournament?.bracket && (
+            {isAdminOrCreator && tournament?.format === 'mix' && !tournament?.bracket && (
                 <div className="mix-settings">
                     <h3>Настройки микса</h3>
                     <div className="rating-type-selector">
