@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+// Setup axios: in development use relative paths (proxy), in production use REACT_APP_API_URL
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
-    // Убедимся, что REACT_APP_API_URL в продакшене будет 'https://1337community.com'
+    baseURL: process.env.NODE_ENV === 'production'
+        ? process.env.REACT_APP_API_URL
+        : ''
 });
 
 console.log('🔍 axios baseURL:', api.defaults.baseURL);
