@@ -77,18 +77,20 @@ function Messenger() {
     
     // Обработка нового сообщения
     const handleNewMessage = (message) => {
+        // Избегаем дубликатов
+        setMessages(prevMessages => {
+            if (prevMessages.some(m => m.id === message.id)) return prevMessages;
+            return [...prevMessages, message];
+        });
+        // Если сообщение в активном чате, помечаем как прочитанное
         if (activeChatRef.current && Number(activeChatRef.current) === Number(message.chat_id)) {
-            // Если чат активен, добавляем сообщение в список и помечаем как прочитанное
-            setMessages(prevMessages => [...prevMessages, message]);
             markMessageAsRead(message.id);
         } else {
-            // Если чат не активен, увеличиваем счетчик непрочитанных сообщений
+            // Иначе увеличиваем счётчик и обновляем список чатов
             setUnreadCounts(prevCounts => ({
                 ...prevCounts,
                 [message.chat_id]: (prevCounts[message.chat_id] || 0) + 1
             }));
-            
-            // Обновляем список чатов, чтобы показать последнее сообщение
             fetchChats();
         }
     };
@@ -212,12 +214,20 @@ function Messenger() {
         formData.append('caption', attachmentCaption);
         try {
             const token = localStorage.getItem('token');
-            await api.post('/api/chats/attachment', formData, {
+            const response = await api.post('/api/chats/attachment', formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             });
+            // Оптимистичный рендер: добавляем сразу новое сообщение
+            if (response.data?.message) {
+                handleNewMessage(response.data.message);
+            }
+            // Обновляем список сообщений из сервера для корректности
+            if (activeChat) {
+                await fetchMessages(activeChat.id);
+            }
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка отправки вложения');
         }

@@ -430,13 +430,15 @@ router.post('/attachment', authenticateToken, upload.single('file'), async (req,
             RETURNING *
         `, [chat_id, req.user.id, fileUrl, messageType, contentMeta]);
         
-        // Оповещаем других участников чата о новом сообщении
-        // (реализовано в WebSocket-обработчике)
+        // Оповещаем участников чата через Socket.IO о новом сообщении
+        const io = req.app.get('io');
+        const newMessage = messageResult.rows[0];
+        io.to(`chat_${chat_id}`).emit('message', newMessage);
         
         res.status(201).json({ 
             message: 'Файл успешно загружен', 
             file_url: fileUrl,
-            message: messageResult.rows[0]
+            message: newMessage
         });
     } catch (err) {
         console.error('Ошибка загрузки файла:', err);

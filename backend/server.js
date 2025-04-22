@@ -121,9 +121,15 @@ const wss = new WebSocket.Server({
 
 // Устанавливаю Socket.IO сервер для чата
 const io = new SocketIOServer(server, {
-  cors: { origin: true, methods: ['GET', 'POST'], credentials: true }
+  cors: {
+    origin: [process.env.SERVER_URL || '*'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
 });
 setupChatSocketIO(io);
+// Делаю Socket.IO доступным через app для HTTP-эндпоинтов
+app.set('io', io);
 
 // Карта для хранения подключений пользователей
 const connectedClients = new Map();
