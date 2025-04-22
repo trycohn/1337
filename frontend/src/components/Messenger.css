@@ -4,10 +4,11 @@
     height: calc(100vh - 70px); /* Высота экрана минус высота хедера */
     max-width: 1200px;
     margin: 20px auto;
-    background: #fff;
+    background: #1a1a24;
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
     overflow: hidden;
+    color: #e0e0e5;
 }
 
 .messenger-container {
@@ -20,8 +21,8 @@
 .messenger-error {
     padding: 10px;
     margin: 10px;
-    background-color: #ffebee;
-    color: #c62828;
+    background-color: rgba(187, 77, 77, 0.2);
+    color: #ff7e7e;
     border-radius: 4px;
     text-align: center;
 } 
