@@ -22,6 +22,22 @@ function Messenger() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        // Сохраняем userId в localStorage для временных сообщений
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            ).join(''));
+            
+            const decoded = JSON.parse(jsonPayload);
+            if (decoded.id) {
+                localStorage.setItem('userId', decoded.id);
+            }
+        } catch (error) {
+            console.error('Ошибка при декодировании токена:', error);
+        }
+
         const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
         const socketClient = io(baseUrl, { query: { token } });
 
@@ -29,11 +45,19 @@ function Messenger() {
             console.log('Socket.IO соединение установлено');
         });
 
-        socketClient.on('message', handleNewMessage);
+        socketClient.on('message', (message) => {
+            console.log('Получено сообщение от сервера:', message);
+            handleNewMessage(message);
+        });
         socketClient.on('read_status', updateMessageReadStatus);
 
         socketClient.on('error', (error) => {
             console.error('Socket.IO ошибка:', error);
+            setError('Ошибка подключения к серверу чата');
+        });
+
+        socketClient.on('connect_error', (error) => {
+            console.error('Socket.IO ошибка подключения:', error);
             setError('Ошибка подключения к серверу чата');
         });
 
@@ -62,15 +86,26 @@ function Messenger() {
     
     // Обработка нового сообщения
     const handleNewMessage = (message) => {
-        if (activeChat && Number(activeChat.id) === Number(message.chat_id)) {
+        console.log('Обработка сообщения:', message);
+        
+        // Проверяем, если это объект с payload внутри (старый формат)
+        const actualMessage = message.payload || message;
+        
+        if (activeChat && Number(activeChat.id) === Number(actualMessage.chat_id)) {
             // Если чат активен, добавляем сообщение в список и помечаем как прочитанное
-            setMessages(prevMessages => [...prevMessages, message]);
-            markMessageAsRead(message.id);
+            setMessages(prevMessages => {
+                // Заменяем временное сообщение реальным или добавляем новое
+                const filtered = prevMessages.filter(msg => !msg.is_temp);
+                return [...filtered, actualMessage];
+            });
+            if (actualMessage.id) {
+                markMessageAsRead(actualMessage.id);
+            }
         } else {
             // Если чат не активен, увеличиваем счетчик непрочитанных сообщений
             setUnreadCounts(prevCounts => ({
                 ...prevCounts,
-                [message.chat_id]: (prevCounts[message.chat_id] || 0) + 1
+                [actualMessage.chat_id]: (prevCounts[actualMessage.chat_id] || 0) + 1
             }));
             
             // Обновляем список чатов, чтобы показать последнее сообщение
@@ -140,11 +175,33 @@ function Messenger() {
     // Отправка сообщения
     const sendMessage = () => {
         if (!socket || !activeChat || !newMessage.trim()) return;
+        
+        console.log('Отправка сообщения:', {
+            chat_id: activeChat.id,
+            content: newMessage,
+            message_type: 'text'
+        });
+
         socket.emit('message', {
             chat_id: activeChat.id,
             content: newMessage,
             message_type: 'text'
         });
+        
+        // Временно добавляем сообщение локально (без id и timestamp, которые должен дать сервер)
+        const tempMessage = {
+            chat_id: activeChat.id,
+            content: newMessage,
+            message_type: 'text',
+            is_own: true,
+            sender_id: localStorage.getItem('userId') || 'temp',
+            created_at: new Date().toISOString(),
+            is_temp: true // Помечаем как временное сообщение, сервер должен заменить его актуальным
+        };
+        
+        // Добавляем временное сообщение в список для отображения
+        setMessages(prevMessages => [...prevMessages, tempMessage]);
+        
         setNewMessage('');
     };
     
