@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import './ChatWindow.css';
 import Message from './Message';
 import { decodeTokenPayload } from '../utils/userHelpers';
+import { formatDate } from '../utils/dateHelpers';
 
 function ChatWindow({ 
     activeChat, 
@@ -109,7 +110,17 @@ function ChatWindow({
                         alt={activeChat.name} 
                     />
                 </div>
-                <h2>{activeChat.name}</h2>
+                <div className="chat-header-info">
+                    <h2>{activeChat.name}</h2>
+                    {activeChat.online_status && (
+                        <div className={`online-status ${activeChat.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
+                            {activeChat.online_status === 'online'
+                                ? 'В сети'
+                                : `Был в сети ${formatDate(activeChat.last_online)}`
+                            }
+                        </div>
+                    )}
+                </div>
             </div>
             
             <div className="chat-messages">
