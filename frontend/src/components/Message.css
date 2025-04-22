@@ -11,13 +11,6 @@
     justify-content: flex-end;
 }
 
-/* Меняем порядок для собственных сообщений */
-.message-container.own-container .message-meta {
-    order: -1;
-    margin-right: 8px;
-    margin-left: 0;
-}
-
 .message {
     display: block;
     width: fit-content;
