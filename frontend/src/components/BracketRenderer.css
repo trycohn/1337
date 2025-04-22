@@ -117,7 +117,7 @@
 /* Сетка с раундами */
 .bracket-grid {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: 40px;
     overflow-x: auto;
     padding-bottom: 15px;
@@ -164,6 +164,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     cursor: pointer;
+    margin: 10px;
 }
 
 .custom-seed:hover {
