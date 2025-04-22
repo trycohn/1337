@@ -45,12 +45,13 @@ router.get('/games', async (req, res) => {
 
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
-    const { name, game, format, participant_type, max_participants, start_date, description, bracket_type } = req.body;
+    const { name, game, format, participant_type, max_participants, start_date, description, bracket_type, team_size } = req.body;
     try {
         const result = await pool.query(
-            `INSERT INTO tournaments (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-            [name, game, format, req.user.id, 'active', participant_type, max_participants || null, start_date || null, description || null, bracket_type || null]
+            `INSERT INTO tournaments
+             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+            [name, game, format, req.user.id, 'active', participant_type, max_participants || null, start_date || null, description || null, bracket_type || null, team_size || 1]
         );
         console.log('🔍 Tournament created:', result.rows[0]);
         res.status(201).json(result.rows[0]);
@@ -1478,6 +1479,70 @@ router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (re
         res.status(200).json({ message: 'Призовой фонд успешно обновлен', tournament: updateResult.rows[0] });
     } catch (err) {
         console.error('❌ Ошибка при обновлении призового фонда турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Генерация команд для микс-турнира и переключение в командный режим
+router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Получаем параметры турнира
+        const tourRes = await pool.query('SELECT team_size, created_by FROM tournaments WHERE id = $1', [id]);
+        if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
+        const { team_size, created_by } = tourRes.rows[0];
+
+        // Получаем всех участников-игроков (solo)
+        const partRes = await pool.query(
+            `SELECT tp.user_id, tp.name, u.faceit_elo as faceit_rating, u.cs2_premier_rank as premier_rating
+             FROM tournament_participants tp
+             JOIN users u ON tp.user_id = u.id
+             WHERE tp.tournament_id = $1`,
+            [id]
+        );
+        const participants = partRes.rows;
+        if (!participants.length) return res.status(400).json({ error: 'Нет участников для формирования команд' });
+
+        // Сортируем по рейтингу в выбранном порядке (faceit)
+        participants.sort((a,b) => (b.faceit_rating||0) - (a.faceit_rating||0));
+
+        // Инициализация команд
+        const numTeams = Math.ceil(participants.length / team_size);
+        const teams = Array.from({ length: numTeams }, () => ({ members: [], ratingSum: 0 }));
+
+        // Распределяем участников методом жадного балансирования
+        participants.forEach(p => {
+            teams.sort((a,b) => a.ratingSum - b.ratingSum);
+            teams[0].members.push(p);
+            teams[0].ratingSum += p.faceit_rating || 0;
+        });
+
+        // Сохраняем команды в БД
+        const created = [];
+        for (let idx = 0; idx < teams.length; idx++) {
+            const team = teams[idx];
+            const name = `Команда ${idx+1}`;
+            const insTeam = await pool.query(
+                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1,$2,$3) RETURNING id',
+                [id, name, created_by]
+            );
+            const teamId = insTeam.rows[0].id;
+            // Добавляем членов команды
+            for (const member of team.members) {
+                await pool.query(
+                    'INSERT INTO tournament_team_members (team_id, user_id) VALUES ($1,$2)',
+                    [teamId, member.user_id]
+                );
+            }
+            created.push({ id: teamId, name, members: team.members.map(m => ({ id: m.user_id, name: m.name })) });
+        }
+
+        // Переключаем тип турнира на командный
+        await pool.query('UPDATE tournaments SET participant_type=$1 WHERE id=$2', ['team', id]);
+
+        res.json({ teams: created });
+    } catch (err) {
+        console.error('❌ Ошибка генерации mix-команд:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -88,6 +88,7 @@ function TournamentDetails() {
     const [isEditingRules, setIsEditingRules] = useState(false);
     const [editedFullDescription, setEditedFullDescription] = useState('');
     const [editedRules, setEditedRules] = useState('');
+    const [mixedTeams, setMixedTeams] = useState([]);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -891,6 +892,31 @@ function TournamentDetails() {
         }
     }, [tournament]);
 
+    // Логика формирования команд для микса
+    const handleFormTeams = () => {
+        if (!Array.isArray(tournament.participants) || tournament.participants.length === 0) return;
+        // Клонируем массив участников
+        const players = [...tournament.participants];
+        // Перемешивание Фишера-Йетса
+        for (let i = players.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [players[i], players[j]] = [players[j], players[i]];
+        }
+        // Размер команды
+        const size = tournament.team_size || 1;
+        const teams = [];
+        while (players.length > 0) {
+            teams.push(players.splice(0, size));
+        }
+        // Формируем структуру команд
+        const formatted = teams.map((teamPlayers, idx) => ({
+            id: `team-${idx + 1}`,
+            name: `Команда ${idx + 1}`,
+            members: teamPlayers
+        }));
+        setMixedTeams(formatted);
+    };
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -1249,6 +1275,23 @@ function TournamentDetails() {
                             <option value="premier">Steam Premier</option>
                         </select>
                     </div>
+                    <button onClick={handleFormTeams}>Сформировать команды</button>
+
+                    {mixedTeams.length > 0 && (
+                        <div className="mixed-teams">
+                            <h3>Сформированные команды</h3>
+                            {mixedTeams.map(team => (
+                                <div key={team.id} className="team-block">
+                                    <h4>{team.name}</h4>
+                                    <ul>
+                                        {team.members.map(member => (
+                                            <li key={member.user_id}>{member.name}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
             <h3>Турнирная сетка</h3>
@@ -1283,16 +1326,14 @@ function TournamentDetails() {
                     <p>Сетка ещё не сгенерирована</p>
                     {canGenerateBracket && (
                         <div className="generation-options">
-                            {tournament.format === 'single_elimination' && (
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        checked={thirdPlaceMatch}
-                                        onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                    />{' '}
-                                    Нужен матч за третье место?
-                                </label>
-                            )}
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={thirdPlaceMatch}
+                                    onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                />{' '}
+                                Нужен матч за третье место?
+                            </label>
                             <button className="generate-bracket-button" onClick={handleGenerateBracket}>
                                 Сгенерировать сетку
                             </button>

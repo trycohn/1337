@@ -99,4 +99,7 @@ ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules TEXT;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS prize_pool TEXT;
 
 -- Добавление столбца bracket_type в таблицу tournaments
-ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS bracket_type VARCHAR(50) DEFAULT 'single_elimination'; 
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS bracket_type VARCHAR(50) DEFAULT 'single_elimination';
+
+-- Добавление столбца team_size в таблицу tournaments
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS team_size INTEGER DEFAULT 1; 
