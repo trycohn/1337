@@ -47,36 +47,11 @@
     object-fit: cover;
 }
 
-.chat-header-info {
-    display: flex;
-    flex-direction: column;
-}
-
 .chat-header h2 {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
     color: #e4e4f0;
-}
-
-.chat-online-status {
-    font-size: 0.8rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-    display: inline-block;
-    margin-top: 3px;
-}
-
-.chat-online-status.status-online {
-    background-color: rgba(76, 217, 100, 0.1);
-    color: #4cd964;
-    border: 1px solid rgba(76, 217, 100, 0.3);
-}
-
-.chat-online-status.status-offline {
-    background-color: rgba(170, 170, 170, 0.1);
-    color: #aaaaaa;
-    border: 1px solid rgba(170, 170, 170, 0.3);
 }
 
 .chat-messages {

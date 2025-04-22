@@ -5,7 +5,6 @@ import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
 import './AttachmentModal.css';
 import { io } from 'socket.io-client';
-import { decodeTokenPayload } from '../utils/userHelpers';
 
 function Messenger() {
     const [chats, setChats] = useState([]);
@@ -74,7 +73,6 @@ function Messenger() {
         if (activeChat) {
             fetchMessages(activeChat.id);
             markChatAsRead(activeChat.id);
-            fetchChatUserStatus(activeChat);
         }
     }, [activeChat]);
     
@@ -296,32 +294,6 @@ function Messenger() {
             
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка создания чата');
-        }
-    };
-
-    // Добавляю функцию для получения статуса онлайн собеседника
-    const fetchChatUserStatus = async (chat) => {
-        if (!chat || !chat.participants || chat.participants.length === 0) return;
-        
-        try {
-            // Получаем ID собеседника (не текущего пользователя)
-            const currentUserId = decodeTokenPayload(localStorage.getItem('token'))?.id;
-            const otherParticipantId = chat.participants.find(id => id !== currentUserId);
-            
-            if (!otherParticipantId) return;
-            
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/api/users/online-status/${otherParticipantId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            // Обновляем статус онлайн в объекте активного чата
-            setActiveChat(prevChat => ({
-                ...prevChat,
-                online_status: response.data.online_status
-            }));
-        } catch (err) {
-            console.error('Ошибка получения статуса онлайн:', err);
         }
     };
 
