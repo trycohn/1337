@@ -919,6 +919,20 @@ function Profile() {
         }
     };
 
+    // Добавляю функцию для отмены исходящих заявок в друзья
+    const cancelSentFriendRequest = async (requestId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/friends/requests/outgoing/${requestId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            // Обновляем список исходящих заявок
+            await fetchSentFriendRequests();
+        } catch (err) {
+            console.error('Ошибка отмены исходящей заявки в друзья:', err);
+        }
+    };
+
     // Обновляем функцию поиска
     const handleSearchChange = async (e) => {
         const value = e.target.value;
@@ -1276,6 +1290,36 @@ function Profile() {
                                                         onClick={() => rejectFriendRequest(request.id)}
                                                     >
                                                         Отклонить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+                            {/* Секция исходящих заявок в друзья */}
+                            {sentFriendRequests.length > 0 && (
+                                <section className="friend-requests-section">
+                                    <h3>Исходящие заявки</h3>
+                                    <div className="friend-requests">
+                                        {sentFriendRequests.map(request => (
+                                            <div key={request.id} className="friend-request-item">
+                                                <div className="request-user">
+                                                    <img
+                                                        src={request.user.avatar_url || '/default-avatar.png'}
+                                                        alt={request.user.username}
+                                                        className="request-avatar"
+                                                    />
+                                                    <a href={`/user/${request.user.id}`} className="request-username">
+                                                        {request.user.username}
+                                                    </a>
+                                                </div>
+                                                <div className="request-actions">
+                                                    <button
+                                                        className="reject-request-btn"
+                                                        onClick={() => cancelSentFriendRequest(request.id)}
+                                                    >
+                                                        Отменить
                                                     </button>
                                                 </div>
                                             </div>
