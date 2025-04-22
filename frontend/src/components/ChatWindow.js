@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import './ChatWindow.css';
 import Message from './Message';
 import { decodeTokenPayload } from '../utils/userHelpers';
-import { formatDate } from '../utils/dateHelpers';
 
 function ChatWindow({ 
     activeChat, 
@@ -16,9 +15,6 @@ function ChatWindow({
 }) {
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const fileInputRef = useRef(null);
-    
-    // Деструктурируем информацию о собеседнике
-    const interlocutor = activeChat.interlocutor || {};
     
     // Если нет активного чата, показываем заглушку
     if (!activeChat) {
@@ -109,21 +105,11 @@ function ChatWindow({
             <div className="chat-header">
                 <div className="chat-header-avatar">
                     <img 
-                        src={interlocutor.avatar_url || '/default-avatar.png'} 
-                        alt={interlocutor.username || activeChat.name} 
+                        src={activeChat.avatar_url || '/default-avatar.png'} 
+                        alt={activeChat.name} 
                     />
                 </div>
-                <div className="chat-header-info">
-                    <h2>{interlocutor.username || activeChat.name}</h2>
-                    {interlocutor.online_status && (
-                        <div className={`online-status ${interlocutor.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
-                            {interlocutor.online_status === 'online'
-                                ? 'В сети'
-                                : `Был в сети ${formatDate(interlocutor.last_online)}`
-                            }
-                        </div>
-                    )}
-                </div>
+                <h2>{activeChat.name}</h2>
             </div>
             
             <div className="chat-messages">

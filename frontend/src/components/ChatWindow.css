@@ -54,24 +54,6 @@
     color: #e4e4f0;
 }
 
-.chat-header-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.online-status {
-    font-size: 0.75rem;
-    margin-top: 4px;
-}
-
-.status-online {
-    color: #4cd964;
-}
-
-.status-offline {
-    color: #aaaaaa;
-}
-
 .chat-messages {
     flex: 1;
     padding: 20px;
