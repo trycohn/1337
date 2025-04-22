@@ -1148,7 +1148,7 @@ function Profile() {
                                         onChange={handleSearchChange}
                                     />
                                 </div>
-                                {isSearching && <p>Поиск пользователей...</p>}
+                                {/* Индикатор загрузки поиска удален */}
                                 {searchResults.length > 0 && (
                                     <div className="search-results">
                                         {searchResults.map(user => (
