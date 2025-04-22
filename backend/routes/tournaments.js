@@ -1029,26 +1029,43 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             }
         }
 
-        // Получаем обновлённые данные турнира
-        const updatedTournament = await pool.query(
-            'SELECT t.*, ' +
-            '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
-            '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
-            'FROM tournaments t WHERE t.id = $1',
+        // Динамически подгружаем текущее состояние турнира
+        const tourInfoRes = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        const tourInfo = tourInfoRes.rows[0];
+        // Загружаем участников в зависимости от типа
+        let updatedParticipants;
+        if (tourInfo.participant_type === 'solo') {
+            const partsRes = await pool.query(
+                `SELECT tp.*, u.avatar_url
+                 FROM tournament_participants tp
+                 LEFT JOIN users u ON tp.user_id = u.id
+                 WHERE tp.tournament_id = $1`,
+                [id]
+            );
+            updatedParticipants = partsRes.rows;
+        } else {
+            const teamsRes = await pool.query(
+                `SELECT tt.*, u.avatar_url
+                 FROM tournament_teams tt
+                 LEFT JOIN users u ON tt.creator_id = u.id
+                 WHERE tt.tournament_id = $1`,
+                [id]
+            );
+            updatedParticipants = teamsRes.rows;
+        }
+        // Загружаем матчи
+        const matchesRes = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
             [id]
         );
-
-        const tournamentData = updatedTournament.rows[0] || {};
-        tournamentData.matches = Array.isArray(tournamentData.matches) && tournamentData.matches[0] !== null 
-            ? tournamentData.matches 
-            : [];
-        tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
-            ? tournamentData.participants 
-            : [];
-
-        // Отправляем обновления всем клиентам, просматривающим этот турнир
+        const tournamentData = {
+            ...tourInfo,
+            participants: updatedParticipants,
+            participant_count: updatedParticipants.length,
+            matches: matchesRes.rows
+        };
+        // Отправляем обновления всем клиентам
         broadcastTournamentUpdate(id, tournamentData);
-
         console.log('🔍 Match updated for tournament:', tournamentData);
         res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
     } catch (err) {
