@@ -19,6 +19,8 @@ function setupChatSocketIO(io) {
   });
 
   io.on('connection', socket => {
+    console.log('Socket.IO: пользователь подключился к чату, userId =', socket.userId);
+
     const userId = socket.userId;
 
     // Присоединяю пользователя к его комнатам чатов
@@ -34,34 +36,39 @@ function setupChatSocketIO(io) {
 
     // Обработка входящих сообщений в чат
     socket.on('message', async payload => {
-      const { chat_id, content, message_type = 'text' } = payload;
-      if (!chat_id || !content) return;
-
+      console.log('Socket.IO: получено событие message от userId =', socket.userId, 'payload =', payload);
+      const { chat_id } = payload;
+      // Убедимся, что отправитель присоединён к комнате данного чата
+      socket.join(`chat_${chat_id}`);
+      const { chat_id: id, content, message_type = 'text' } = payload;
+      if (!id || !content) return;
+      
       try {
         // Проверяю, что пользователь участник чата
         const participantCheck = await pool.query(
           'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
-          [chat_id, userId]
+          [chat_id, socket.userId]
         );
         if (participantCheck.rows.length === 0) return;
 
         // Сохраняю сообщение в БД
         const result = await pool.query(
           'INSERT INTO messages (chat_id, sender_id, content, message_type) VALUES ($1, $2, $3, $4) RETURNING *',
-          [chat_id, userId, content, message_type]
+          [chat_id, socket.userId, content, message_type]
         );
         const message = result.rows[0];
 
         // Получаю информацию об отправителе
         const userInfo = await pool.query(
           'SELECT username, avatar_url FROM users WHERE id = $1',
-          [userId]
+          [socket.userId]
         );
         message.sender_username = userInfo.rows[0].username;
         message.sender_avatar = userInfo.rows[0].avatar_url;
 
         // Отправляю сообщение всем участникам комнаты чата
         io.to(`chat_${chat_id}`).emit('message', message);
+        console.log('Socket.IO: событие message отправлено в комнату chat_' + chat_id, message);
       } catch (err) {
         console.error('Ошибка обработки сообщения чата:', err);
       }

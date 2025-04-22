@@ -23,8 +23,12 @@ function Messenger() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const baseUrl = process.env.REACT_APP_API_URL || window.location.origin;
-        const socketClient = io(baseUrl, { query: { token } });
+        // Подключаемся к тому же хосту, что и React-приложение (CRA proxy)
+        const socketClient = io(window.location.origin, {
+            transports: ['websocket'],
+            query: { token },
+            withCredentials: true
+        });
 
         socketClient.on('connect', () => {
             console.log('Socket.IO соединение установлено');

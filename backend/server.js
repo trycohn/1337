@@ -293,7 +293,7 @@ server.listen(PORT, async () => {
     }
 });
 
-// Обработка WebSocket upgrade только для уведомлений
+// Обработка WebSocket upgrade
 server.on('upgrade', (request, socket, head) => {
   try {
     const { pathname } = new URL(request.url, `http://${request.headers.host}`);
@@ -303,6 +303,11 @@ server.on('upgrade', (request, socket, head) => {
         wss.emit('connection', ws, request);
       });
       return;
+    }
+
+    // Пропускаем обработку для Socket.IO
+    if (pathname.startsWith('/socket.io')) {
+      return; // Socket.IO сам обработает этот upgrade
     }
 
     // Неизвестный путь для WebSocket
