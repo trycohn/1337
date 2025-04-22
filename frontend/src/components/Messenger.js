@@ -3,6 +3,7 @@ import api from '../axios';
 import './Messenger.css';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
+import './AttachmentModal.css';
 import { io } from 'socket.io-client';
 
 function Messenger() {
@@ -17,6 +18,13 @@ function Messenger() {
     
     const messagesEndRef = useRef(null);
     const activeChatRef = useRef(null);
+
+    // Состояние для предпросмотра вложения
+    const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+    const [attachmentFile, setAttachmentFile] = useState(null);
+    const [attachmentType, setAttachmentType] = useState(null);
+    const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState('');
+    const [attachmentCaption, setAttachmentCaption] = useState('');
 
     // Инициализация Socket.IO соединения
     useEffect(() => {
@@ -180,28 +188,56 @@ function Messenger() {
         socket.emit('read_status', { message_id: messageId });
     };
     
-    // Отправка вложения
-    const sendAttachment = async (file, type) => {
-        if (!activeChat || !file) return;
-        
+    // Переназначаем отправку вложения на показ модалки
+    const handleFileSelect = (file, type) => {
+        // Создаём preview
+        const url = URL.createObjectURL(file);
+        setAttachmentFile(file);
+        setAttachmentType(type);
+        setAttachmentPreviewUrl(url);
+        setAttachmentCaption('');
+        setShowAttachmentModal(true);
+    };
+
+    // Подтверждение отправки вложения
+    const confirmSendAttachment = async () => {
+        if (!attachmentFile) {
+            setShowAttachmentModal(false);
+            return;
+        }
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', attachmentFile);
         formData.append('chat_id', activeChat.id);
-        formData.append('type', type);
-        
+        formData.append('type', attachmentType);
+        formData.append('caption', attachmentCaption);
         try {
             const token = localStorage.getItem('token');
             await api.post('/api/chats/attachment', formData, {
-                headers: { 
+                headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            
-            // Сообщение будет добавлено через WebSocket
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка отправки вложения');
         }
+        // Очистка
+        URL.revokeObjectURL(attachmentPreviewUrl);
+        setShowAttachmentModal(false);
+        setAttachmentFile(null);
+        setAttachmentType(null);
+        setAttachmentPreviewUrl('');
+        setAttachmentCaption('');
+    };
+
+    // Отмена отправки вложения
+    const cancelSendAttachment = () => {
+        URL.revokeObjectURL(attachmentPreviewUrl);
+        setShowAttachmentModal(false);
+        setAttachmentFile(null);
+        setAttachmentType(null);
+        setAttachmentPreviewUrl('');
+        setAttachmentCaption('');
     };
     
     // Обработка изменения активного чата
@@ -263,12 +299,31 @@ function Messenger() {
                     onInputChange={handleInputChange}
                     onSubmit={handleSubmit}
                     onKeyPress={handleKeyPress}
-                    onSendAttachment={sendAttachment}
+                    onSendAttachment={handleFileSelect}
                     messagesEndRef={messagesEndRef}
                 />
             </div>
             
             {error && <div className="messenger-error">{error}</div>}
+
+            {showAttachmentModal && (
+                <div className="attachment-modal">
+                    <div className="attachment-modal-content">
+                        <h2>Send {attachmentType}</h2>
+                        {attachmentType === 'image' && (
+                            <img src={attachmentPreviewUrl} alt="preview" className="attachment-preview" />
+                        )}
+                        <textarea
+                            placeholder="Add a caption..."
+                            value={attachmentCaption}
+                            onChange={e => setAttachmentCaption(e.target.value)}
+                            className="attachment-caption"
+                        />
+                        <button className="attachment-send-btn" onClick={confirmSendAttachment}>Send</button>
+                        <button className="attachment-cancel-btn" onClick={cancelSendAttachment}>Cancel</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
