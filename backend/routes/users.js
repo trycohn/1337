@@ -1290,7 +1290,7 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT id, username, email FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10',
+            'SELECT id, username, avatar_url FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10',
             [`%${query}%`]
         );
         res.json(result.rows);

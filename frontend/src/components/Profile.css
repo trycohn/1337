@@ -1986,3 +1986,60 @@ input, button {
         text-align: left;
     }
 }
+
+.friends-tab .friend-search {
+    margin-bottom: 20px;
+}
+
+.friends-tab .friend-search input {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.friends-tab .search-results {
+    border: 1px solid #eee;
+    background: #fff;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.friends-tab .search-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.friends-tab .search-item:last-child {
+    border-bottom: none;
+}
+
+.friends-tab .search-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.friends-tab .search-username {
+    flex: 1;
+    font-size: 14px;
+}
+
+.friends-tab .add-friend-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.friends-tab .add-friend-btn:hover {
+    background-color: #0056b3;
+}

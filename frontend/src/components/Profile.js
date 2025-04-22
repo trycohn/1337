@@ -52,6 +52,11 @@ function Profile() {
     // Active tab state
     const [activeTab, setActiveTab] = useState('main');
 
+    // Поиск пользователей для добавления
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -872,6 +877,39 @@ function Profile() {
         );
     };
 
+    // Handle search
+    const handleSearchChange = async (e) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+        if (value.length < 2) {
+            setSearchResults([]);
+            return;
+        }
+        setIsSearching(true);
+        try {
+            const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setSearchResults(response.data);
+        } catch (err) {
+            console.error('Ошибка поиска пользователей:', err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const sendFriendRequest = async (userId) => {
+        try {
+            await api.post('/api/friends/request', { friendId: userId }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            // Удаляем пользователя из результатов поиска после отправки заявки
+            setSearchResults(searchResults.filter(u => u.id !== userId));
+        } catch (err) {
+            console.error('Ошибка отправки заявки в друзья:', err);
+        }
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -1096,6 +1134,27 @@ function Profile() {
                     {/* Вкладка друзей */}
                     {activeTab === 'friends' && (
                         <div className="friends-tab">
+                            {/* Поиск друзей */}
+                            <div className="friend-search">
+                                <input
+                                    type="text"
+                                    placeholder="Поиск пользователя по нику..."
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                />
+                                {isSearching && <p>Поиск...</p>}
+                                {searchResults.length > 0 && (
+                                    <div className="search-results">
+                                        {searchResults.map(user => (
+                                            <div key={user.id} className="search-item">
+                                                <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
+                                                <span className="search-username">{user.username}</span>
+                                                <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">Добавить в друзья</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             {/* Секция друзей */}
                             <section className="friends-section">
                                 <h3>Друзья</h3>
