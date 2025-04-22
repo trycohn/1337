@@ -1547,4 +1547,39 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
     }
 });
 
+// Получение команд и их участников для командных турниров
+router.get('/:id/teams', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Проверка существования турнира
+        const tourCheck = await pool.query('SELECT participant_type FROM tournaments WHERE id = $1', [id]);
+        if (tourCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        if (tourCheck.rows[0].participant_type !== 'team') {
+            return res.status(400).json({ error: 'У турнира нет команд' });
+        }
+        // Получаем команды и их участников
+        const teamsRes = await pool.query(
+            `SELECT tt.id, tt.name,
+                COALESCE(
+                    (SELECT json_agg(jsonb_build_object('id', tm.user_id, 'name', tm.name))
+                     FROM (
+                         SELECT ttm.user_id, tp.name
+                         FROM tournament_team_members ttm
+                         JOIN tournament_participants tp ON ttm.team_id = tp.team_id AND tp.user_id = ttm.user_id
+                         WHERE ttm.team_id = tt.id
+                     ) tm
+                    ), '[]') AS members
+             FROM tournament_teams tt
+             WHERE tt.tournament_id = $1`,
+            [id]
+        );
+        res.json(teamsRes.rows);
+    } catch (err) {
+        console.error('❌ Ошибка получения команд:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

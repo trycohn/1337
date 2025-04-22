@@ -892,30 +892,41 @@ function TournamentDetails() {
         }
     }, [tournament]);
 
-    // Логика формирования команд для микса
-    const handleFormTeams = () => {
-        if (!Array.isArray(tournament?.participants) || tournament.participants.length === 0) return;
-        // Клонируем и перемешиваем участников
-        const players = [...tournament.participants];
-        for (let i = players.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [players[i], players[j]] = [players[j], players[i]];
+    // Логика формирования команд для микса (сохранение на сервере)
+    const handleFormTeams = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Пожалуйста, войдите, чтобы сформировать команды');
+            return;
         }
-        // Определяем размер команды из настроек турнира
-        const size = parseInt(tournament.team_size, 10) || 1;
-        // Группируем участников по size
-        const groups = [];
-        for (let i = 0; i < players.length; i += size) {
-            groups.push(players.slice(i, i + size));
+        try {
+            const response = await api.post(
+                `/api/tournaments/${id}/mix-generate-teams`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMixedTeams(response.data.teams || []);
+            // переключаем тип турнира для отображения команд
+            setTournament(prev => ({ ...prev, participant_type: 'team' }));
+            setMessage('Команды успешно сформированы');
+        } catch (error) {
+            console.error('Ошибка при формировании команд:', error);
+            setMessage(error.response?.data?.error || 'Ошибка формирования команд');
         }
-        // Формируем структуры команд
-        const formatted = groups.map((members, idx) => ({
-            id: `team-${idx + 1}`,
-            name: `Команда ${idx + 1}`,
-            members
-        }));
-        setMixedTeams(formatted);
     };
+
+    // Загрузка сохраненных команд при загрузке турнира
+    useEffect(() => {
+        if (tournament?.format === 'mix' && tournament?.participant_type === 'team') {
+            const token = localStorage.getItem('token');
+            api.get(
+                `/api/tournaments/${id}/teams`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .then(res => setMixedTeams(res.data || []))
+            .catch(err => console.error('Ошибка загрузки команд для турнира:', err));
+        }
+    }, [tournament, id]);
 
     if (!tournament) return <p>Загрузка...</p>;
 
@@ -1279,7 +1290,7 @@ function TournamentDetails() {
                             <option value="premier">Steam Premier</option>
                         </select>
                     </div>
-                    {isAdminOrCreator && (
+                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
                         <button onClick={handleFormTeams}>Сформировать команды</button>
                     )}
 
