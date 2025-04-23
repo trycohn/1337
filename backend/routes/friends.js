@@ -190,13 +190,16 @@ router.post('/accept', authenticateToken, async (req, res) => {
             requester_id: req.user.id
         };
         
-        const notificationResult = await pool.query(
-            'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [notification.user_id, notification.message, notification.type, notification.requester_id, false]
-        );
-        
-        // Отправляем уведомление через WebSocket
-        sendNotification(friendRequest.user_id, notificationResult.rows[0]);
+        // Проверяем, чтобы не отправлять уведомление самому себе
+        if (friendRequest.user_id !== req.user.id) {
+            const notificationResult = await pool.query(
+                'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [notification.user_id, notification.message, notification.type, notification.requester_id, false]
+            );
+            
+            // Отправляем уведомление через WebSocket
+            sendNotification(friendRequest.user_id, notificationResult.rows[0]);
+        }
         
         res.json({ message: 'Заявка в друзья принята' });
     } catch (err) {
