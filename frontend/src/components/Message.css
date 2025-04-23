@@ -179,10 +179,10 @@
 /* Стили для объявлений */
 .message-announcement {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     background-color: rgba(255, 193, 7, 0.2);
     border-radius: 12px;
-    padding: 10px;
+    padding: 8px;
 }
 
 .announcement-icon {
@@ -195,51 +195,27 @@
     flex: 1;
     font-weight: 500;
     color: #ffd78c;
-    margin-bottom: 8px;
 }
 
 /* Стили для кнопок в уведомлениях */
 .announcement-actions {
-    margin-top: 10px;
-    align-self: flex-end;
+    margin-left: auto;
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 .announcement-actions button {
-    width: 40px;
-    height: 40px;
+    background: transparent;
     border: none;
-    border-radius: 50%;
     cursor: pointer;
-    font-size: 18px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 1.2rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
 }
-.announcement-actions .action-accept {
-    background-color: rgba(40, 167, 69, 0.2);
-    color: #a3ffb5;
-}
-.announcement-actions .action-accept:hover:not(:disabled) {
-    background-color: rgba(40, 167, 69, 0.4);
-}
-.announcement-actions .action-reject {
-    background-color: rgba(220, 53, 69, 0.2);
-    color: #ffadad;
-}
-.announcement-actions .action-reject:hover:not(:disabled) {
-    background-color: rgba(220, 53, 69, 0.4);
+.announcement-actions button:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 .announcement-actions button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
-}
-
-.announcement-response {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #a0a0b8;
-    font-style: italic;
-    text-align: right;
 } 

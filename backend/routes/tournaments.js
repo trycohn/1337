@@ -682,24 +682,20 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
             );
 
             const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" принят создателем ${req.user.username}`;
+            const notificationResult = await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
+                [requesterId, notificationMessage, 'admin_request_accepted', id]
+            );
             
-            // Проверяем, чтобы не отправлять уведомление самому себе
-            if (requesterId !== req.user.id) {
-                const notificationResult = await pool.query(
-                    'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
-                    [requesterId, notificationMessage, 'admin_request_accepted', id]
-                );
-                
-                const notification = notificationResult.rows[0];
-                sendNotification(requesterId, {
-                    id: notification.id,
-                    user_id: requesterId,
-                    message: notificationMessage,
-                    type: 'admin_request_accepted',
-                    tournament_id: id,
-                    created_at: new Date().toISOString(),
-                });
-            }
+            const notification = notificationResult.rows[0];
+            sendNotification(requesterId, {
+                id: notification.id,
+                user_id: requesterId,
+                message: notificationMessage,
+                type: 'admin_request_accepted',
+                tournament_id: id,
+                created_at: new Date().toISOString(),
+            });
         } else {
             // Если отклоняем запрос
             await pool.query(
@@ -708,24 +704,20 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
             );
 
             const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" отклонён создателем ${req.user.username}`;
+            const notificationResult = await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
+                [requesterId, notificationMessage, 'admin_request_rejected', id]
+            );
             
-            // Проверяем, чтобы не отправлять уведомление самому себе
-            if (requesterId !== req.user.id) {
-                const notificationResult = await pool.query(
-                    'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
-                    [requesterId, notificationMessage, 'admin_request_rejected', id]
-                );
-                
-                const notification = notificationResult.rows[0];
-                sendNotification(requesterId, {
-                    id: notification.id,
-                    user_id: requesterId,
-                    message: notificationMessage,
-                    type: 'admin_request_rejected',
-                    tournament_id: id,
-                    created_at: new Date().toISOString(),
-                });
-            }
+            const notification = notificationResult.rows[0];
+            sendNotification(requesterId, {
+                id: notification.id,
+                user_id: requesterId,
+                message: notificationMessage,
+                type: 'admin_request_rejected',
+                tournament_id: id,
+                created_at: new Date().toISOString(),
+            });
         }
 
         res.status(200).json({ message: `Запрос на администрирование ${action === 'accept' ? 'принят' : 'отклонён'}` });

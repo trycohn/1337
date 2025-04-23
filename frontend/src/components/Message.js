@@ -56,74 +56,19 @@ function Message({ message, isOwn, onDeleteMessage }) {
     
     // Обработчик действия по уведомлению (accept/reject)
     const handleNotificationAction = async (actionType) => {
-        if (!message.content_meta?.notification_id || !message.content_meta?.type) return;
-        
+        if (!message.content_meta?.notification_id) return;
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const notifId = message.content_meta.notification_id;
-            const notifType = message.content_meta.type;
-            
-            let endpoint = '';
-            let data = {};
-            
-            // Определяем эндпоинт и данные в зависимости от типа уведомления
-            if (notifType === 'friend_request') {
-                // Получаем список входящих заявок в друзья для определения requestId
-                const friendsResponse = await fetch('/api/friends/requests/incoming', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const friendRequests = await friendsResponse.json();
-                
-                // Ищем соответствующую заявку
-                const friendRequest = friendRequests.find(req => 
-                    req.user?.id === message.content_meta.requester_id
-                );
-                
-                if (!friendRequest) {
-                    throw new Error('Заявка в друзья не найдена');
-                }
-                
-                endpoint = `/api/friends/${actionType === 'accept' ? 'accept' : 'reject'}`;
-                data = { requestId: friendRequest.id };
-            } 
-            else if (notifType === 'admin_request') {
-                // Для запроса на администрирование
-                const tournamentId = message.content_meta.tournament_id;
-                endpoint = `/api/tournaments/${tournamentId}/respond-admin-request`;
-                data = { 
-                    requesterId: message.content_meta.requester_id,
-                    action: actionType
-                };
-            }
-            else if (notifType === 'tournament_invite') {
-                // Для приглашения в турнир
-                const invitationId = message.content_meta.invitation_id;
-                endpoint = `/api/tournaments/${invitationId}/handle-invitation`;
-                data = { action: actionType, invitation_id: invitationId };
-            }
-            
-            if (endpoint) {
-                await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                // Помечаем уведомление как прочитанное
-                await fetch(`/api/notifications/mark-read?notificationId=${notifId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                setResponded(true);
-            }
+            await fetch(`/api/notifications/respond?notificationId=${message.content_meta.notification_id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ action: actionType })
+            });
+            setResponded(true);
         } catch (err) {
             console.error('Ошибка при ответе на уведомление:', err);
         } finally {
@@ -192,27 +137,8 @@ function Message({ message, isOwn, onDeleteMessage }) {
                         <div className="announcement-text">{message.content}</div>
                         {canRespond && !responded && (
                             <div className="announcement-actions">
-                                <button 
-                                    className="action-accept" 
-                                    disabled={actionLoading} 
-                                    onClick={() => handleNotificationAction('accept')}
-                                    title="Принять"
-                                >
-                                    ✓
-                                </button>
-                                <button 
-                                    className="action-reject" 
-                                    disabled={actionLoading} 
-                                    onClick={() => handleNotificationAction('reject')}
-                                    title="Отклонить"
-                                >
-                                    ✗
-                                </button>
-                            </div>
-                        )}
-                        {responded && (
-                            <div className="announcement-response">
-                                Вы уже ответили на это уведомление
+                                <button disabled={actionLoading} onClick={() => handleNotificationAction('accept')}>✔️</button>
+                                <button disabled={actionLoading} onClick={() => handleNotificationAction('reject')}>❌</button>
                             </div>
                         )}
                     </div>
