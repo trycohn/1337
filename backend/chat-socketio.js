@@ -21,6 +21,12 @@ function setupChatSocketIO(io) {
   io.on('connection', socket => {
     console.log('Socket.IO: пользователь подключился к чату, userId =', socket.userId);
 
+    // Обработка запроса на присоединение к дополнительной комнате чата
+    socket.on('join_chat', (chatId) => {
+      socket.join(`chat_${chatId}`);
+      console.log(`Socket.IO: пользователь ${socket.userId} присоединился к комнате chat_${chatId}`);
+    });
+
     const userId = socket.userId;
 
     // Присоединяю пользователя к его комнатам чатов

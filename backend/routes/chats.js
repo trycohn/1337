@@ -34,6 +34,23 @@ const upload = multer({
 // Получение списка чатов пользователя
 router.get('/', authenticateToken, async (req, res) => {
     try {
+        // Ensure system chat exists and add user as participant pinned
+        const systemChatName = '1337community';
+        let systemChatRes = await pool.query("SELECT id FROM chats WHERE name = $1", [systemChatName]);
+        let systemChatId;
+        if (systemChatRes.rows.length === 0) {
+            const createChatRes = await pool.query("INSERT INTO chats (name, type) VALUES ($1, 'group') RETURNING id", [systemChatName]);
+            systemChatId = createChatRes.rows[0].id;
+        } else {
+            systemChatId = systemChatRes.rows[0].id;
+        }
+        await pool.query(
+            `INSERT INTO chat_participants (chat_id, user_id, is_pinned)
+             VALUES ($1, $2, true)
+             ON CONFLICT (chat_id, user_id) DO UPDATE SET is_pinned = true`,
+            [systemChatId, req.user.id]
+        );
+
         // Получаем список чатов с последним сообщением и информацией о собеседнике
         const result = await pool.query(`
             WITH last_messages AS (

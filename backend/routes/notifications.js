@@ -52,7 +52,21 @@ router.post('/', async (req, res) => {
     
     // Отправка уведомления через WebSocket
     sendNotification(user_id, notification);
-    
+
+    // Добавляем уведомление как сообщение в системный чат
+    const systemChatName = '1337community';
+    const chatRes = await pool.query('SELECT id FROM chats WHERE name = $1', [systemChatName]);
+    if (chatRes.rows.length > 0) {
+        const systemChatId = chatRes.rows[0].id;
+        const msgRes = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, content, message_type) VALUES ($1, NULL, $2, $3) RETURNING *',
+            [systemChatId, notification.message, 'announcement']
+        );
+        const newMsg = msgRes.rows[0];
+        const io = req.app.get('io');
+        io.to(`chat_${systemChatId}`).emit('message', newMsg);
+    }
+
     res.status(201).json(notification);
   } catch (err) {
     console.error('Ошибка создания уведомления:', err);

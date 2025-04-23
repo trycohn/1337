@@ -121,6 +121,8 @@ const io = new SocketIOServer(server, {
   }
 });
 setupChatSocketIO(io);
+// Устанавливаю экземпляр io в app для использования в маршрутах
+app.set('io', io);
 
 // Я настраиваю соединение для уведомлений через Socket.IO, чтобы пользователи автоматически подключались к своим комнатам
 io.on('connection', (socket) => {
