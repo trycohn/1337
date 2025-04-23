@@ -6,6 +6,7 @@ import { faComment, faEnvelope } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
+import { io } from 'socket.io-client';
 
 function Layout() {
     const [user, setUser] = useState(null);
@@ -27,49 +28,26 @@ function Layout() {
             });
             setUser(response.data);
             
-            // Создаем WebSocket соединение
-            const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
-            const webSocket = new WebSocket(`${wsUrl}/ws`);
-            
-            webSocket.onopen = () => {
-                console.log('WebSocket соединение установлено');
-                // После установления соединения отправляем идентификатор пользователя
-                webSocket.send(JSON.stringify({
-                    type: 'register',
-                    userId: response.data.id
-                }));
-            };
-            
-            webSocket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'notification') {
-                        console.log('Получено новое уведомление:', data.data);
-                        if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected') {
-                            // Обновить список уведомлений при получении ответа на запрос администрирования
-                            api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`)
-                               .then(res => setNotifications(res.data))
-                               .catch(err => console.error('Ошибка получения уведомлений:', err));
-                        } else {
-                            // Добавляем новое уведомление в список
-                            setNotifications((prev) => [data.data, ...prev]);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Ошибка при обработке сообщения WebSocket:', error);
+            // Создаем соединение Socket.IO для уведомлений
+            const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
+            socket.on('connect', () => {
+                console.log('Socket.IO соединение установлено');
+            });
+            socket.on('notification', (notification) => {
+                console.log('Получено новое уведомление:', notification);
+                if (['admin_request_accepted', 'admin_request_rejected'].includes(notification.type)) {
+                    api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`)
+                       .then(res => setNotifications(res.data))
+                       .catch(err => console.error('Ошибка получения уведомлений:', err));
+                } else {
+                    setNotifications((prev) => [notification, ...prev]);
                 }
-            };
-            
-            webSocket.onerror = (error) => {
-                console.error('WebSocket ошибка:', error);
-            };
-            
-            webSocket.onclose = () => {
-                console.log('WebSocket соединение закрыто');
-            };
-            
-            // Сохраняем ссылку на WebSocket
-            wsRef.current = webSocket;
+            });
+            socket.on('disconnect', (reason) => {
+                console.log('Socket.IO соединение закрыто:', reason);
+            });
+            // Сохраняем ссылку на Socket.IO клиент
+            wsRef.current = socket;
             
             // Получаем существующие уведомления (без обработанных запросов)
             const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`);
@@ -84,11 +62,11 @@ function Layout() {
         }
     };
     
-    // Закрываем WebSocket соединение при размонтировании компонента
+    // Закрываем Socket.IO соединение при размонтировании компонента
     useEffect(() => {
         return () => {
             if (wsRef.current) {
-                wsRef.current.close();
+                wsRef.current.disconnect();
             }
         };
     }, []);
@@ -205,8 +183,8 @@ function Layout() {
             const notificationsForDropdown = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=false`);
             setNotifications(notificationsForDropdown.data);
             
-            // Дополнительно вызываем событие, имитирующее WebSocket для обновления всех компонентов
-            if (wsRef.current && wsRef.current.readyState === 1) {
+            // Дополнительно вызываем событие, имитирующее Socket.IO для обновления всех компонентов
+            if (wsRef.current && wsRef.current.connected) {
                 const notificationMessage = {
                     type: 'notification',
                     data: {
@@ -215,10 +193,7 @@ function Layout() {
                     }
                 };
                 // Имитируем получение сообщения от сервера
-                const messageEvent = new MessageEvent('message', {
-                    data: JSON.stringify(notificationMessage)
-                });
-                wsRef.current.dispatchEvent(messageEvent);
+                wsRef.current.emit('notification', notificationMessage);
             }
             
             alert(response.data.message);

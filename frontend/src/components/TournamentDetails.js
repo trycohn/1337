@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, laz
 import { useParams, Link } from 'react-router-dom';
 import api from '../axios';
 import './TournamentDetails.css';
+import { io } from 'socket.io-client';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const BracketRenderer = lazy(() => 
@@ -110,50 +111,33 @@ function TournamentDetails() {
         }
     }, [id]);
 
-    // Настройка WebSocket для получения обновлений в реальном времени (определяем выше её использования)
+    // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
-        // Создаем WebSocket соединение
-        const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
-        const webSocket = new WebSocket(`${wsUrl}/ws`);
-        
-        webSocket.onopen = () => {
-            console.log('WebSocket соединение установлено в компоненте TournamentDetails');
-            // После установления соединения сообщаем, что просматриваем турнир
-            webSocket.send(JSON.stringify({
-                type: 'watch_tournament',
-                tournamentId: id
-            }));
-        };
-        
-        webSocket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('Получено сообщение WebSocket:', data);
-                
-                // Обрабатываем обновления турнира
-                if (data.type === 'tournament_update' && data.tournamentId === id) {
-                    console.log('Получено обновление турнира:', data.data);
-                    setTournament(data.data);
-                    
-                    if (Array.isArray(data.data.matches)) {
-                        setMatches(data.data.matches);
-                    }
+        const token = localStorage.getItem('token');
+        const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
+
+        socket.on('connect', () => {
+            console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
+            socket.emit('watch_tournament', id);
+        });
+
+        socket.on('tournament_update', (tournamentData) => {
+            if (tournamentData.tournamentId === id) {
+                console.log('Получено обновление турнира:', tournamentData);
+                const data = tournamentData.data || tournamentData;
+                setTournament(data);
+                const matchesData = data.matches || tournamentData.matches;
+                if (Array.isArray(matchesData)) {
+                    setMatches(matchesData);
                 }
-            } catch (error) {
-                console.error('Ошибка при обработке сообщения WebSocket:', error);
             }
-        };
-        
-        webSocket.onerror = (error) => {
-            console.error('WebSocket ошибка:', error);
-        };
-        
-        webSocket.onclose = () => {
-            console.log('WebSocket соединение закрыто');
-        };
-        
-        // Сохраняем ссылку на WebSocket
-        wsRef.current = webSocket;
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.log('Socket.IO соединение закрыто в компоненте TournamentDetails:', reason);
+        });
+
+        wsRef.current = socket;
     }, [id]);
 
     // Загрузка данных
@@ -176,16 +160,9 @@ function TournamentDetails() {
         setupWebSocket();
 
         return () => {
-            // Закрываем WebSocket при размонтировании компонента
             if (wsRef.current) {
-                // Отправляем сообщение о прекращении просмотра турнира
-                if (wsRef.current.readyState === WebSocket.OPEN) {
-                    wsRef.current.send(JSON.stringify({
-                        type: 'unwatch_tournament',
-                        tournamentId: id
-                    }));
-                }
-                wsRef.current.close();
+                wsRef.current.emit('unwatch_tournament', id);
+                wsRef.current.disconnect();
             }
         };
     }, [id, fetchTournamentData, setupWebSocket]);
@@ -440,7 +417,8 @@ function TournamentDetails() {
             setMessage(requestAdminResponse.data.message);
             setAdminRequestStatus('pending');
         } catch (error) {
-            setMessage(error.response?.data?.error || 'Ошибка при запросе прав администратора');
+            // Сервер возвращает { message: '...' } при ошибках авторизации
+            setMessage(error.response?.data?.message || error.response?.data?.error || 'Ошибка при запросе прав администратора');
         }
     };
 
