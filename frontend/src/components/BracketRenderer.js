@@ -174,8 +174,13 @@ const BracketRenderer = ({
                 }
                 .bracket-grid {
                     display: flex;
-                    gap: 40px;
+                    gap: 50px;
                     margin-bottom: 30px;
+                    align-items: center;
+                    margin: 10px;
+                    width: 100%;
+                    height: 100%;
+                    position: relative;
                 }
                 .round-column {
                     display: flex;
@@ -850,7 +855,7 @@ const BracketRenderer = ({
                                                             }
                                                         }}
                                                     >
-                                                        <span className="team-name">{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                        <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                         <span className="team-score">
                                                             {match.participants[0]?.score ?? '-'}
                                                         </span>
@@ -864,7 +869,7 @@ const BracketRenderer = ({
                                                              }
                                                          }}
                                                     >
-                                                        <span className="team-name">{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                        <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                         <span className="team-score">
                                                             {match.participants[1]?.score ?? '-'}
                                                         </span>
@@ -914,7 +919,7 @@ const BracketRenderer = ({
                                                                     }
                                                                 }}
                                                             >
-                                                                <span className="team-name">{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                                 <span className="team-score">
                                                                     {match.participants[0]?.score ?? '-'}
                                                                 </span>
@@ -928,7 +933,7 @@ const BracketRenderer = ({
                                                                      }
                                                                  }}
                                                             >
-                                                                <span className="team-name">{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                                 <span className="team-score">
                                                                     {match.participants[1]?.score ?? '-'}
                                                                 </span>
@@ -975,7 +980,7 @@ const BracketRenderer = ({
                                                         }
                                                     }}
                                                 >
-                                                    <span className="team-name">{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className={`team-name${!grandFinalMatch.participants[0]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {grandFinalMatch.participants[0]?.score ?? '-'}
                                                     </span>
@@ -989,7 +994,7 @@ const BracketRenderer = ({
                                                          }
                                                     }}
                                                 >
-                                                    <span className="team-name">{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className={`team-name${!grandFinalMatch.participants[1]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {grandFinalMatch.participants[1]?.score ?? '-'}
                                                     </span>
@@ -1021,7 +1026,7 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
-                                                    <span className="team-name">{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className={`team-name${!placementMatch.participants[0]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {placementMatch.participants[0]?.score ?? '-'}
                                                     </span>
@@ -1035,7 +1040,7 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
-                                                    <span className="team-name">{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className={`team-name${!placementMatch.participants[1]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {placementMatch.participants[1]?.score ?? '-'}
                                                     </span>

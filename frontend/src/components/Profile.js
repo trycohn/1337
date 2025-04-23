@@ -56,6 +56,11 @@ function Profile() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [searchPerformed, setSearchPerformed] = useState(false);
+    const searchTimeoutRef = useRef(null);
+
+    // Добавляем новое состояние для отправленных заявок в друзья
+    const [sentFriendRequests, setSentFriendRequests] = useState([]);
 
     const fetchUserData = async (token) => {
         try {
@@ -368,6 +373,8 @@ function Profile() {
             fetchFriends();
             // Загружаем заявки в друзья
             fetchFriendRequests();
+            // Загружаем отправленные заявки в друзья
+            fetchSentFriendRequests();
             // Загружаем историю матчей
             fetchMatchHistory();
         }
@@ -877,40 +884,100 @@ function Profile() {
         );
     };
 
-    // Handle search
-    const handleSearchChange = async (e) => {
-        const value = e.target.value;
-        setSearchQuery(value);
-        if (value.length < 2) {
-            setSearchResults([]);
-            return;
-        }
-        setIsSearching(true);
+    // Добавляем функцию для загрузки отправленных заявок в друзья
+    const fetchSentFriendRequests = async () => {
         try {
-            const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/friends/requests/outgoing', {
+                headers: { Authorization: `Bearer ${token}` }
             });
-            // Отфильтруем пользователей, уже добавленных в друзья
-            const data = response.data;
-            const filtered = data.filter(user => !friends.some(f => f.friend.id === user.id));
-            setSearchResults(filtered);
+            setSentFriendRequests(response.data);
         } catch (err) {
-            console.error('Ошибка поиска пользователей:', err);
-        } finally {
-            setIsSearching(false);
+            console.error('Ошибка загрузки отправленных заявок в друзья:', err);
         }
     };
 
+    // Обновляем функцию отправки заявки в друзья
     const sendFriendRequest = async (userId) => {
         try {
             await api.post('/api/friends/request', { friendId: userId }, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            // Удаляем пользователя из результатов поиска после отправки заявки
-            setSearchResults(searchResults.filter(u => u.id !== userId));
+            
+            // Обновляем список отправленных заявок
+            await fetchSentFriendRequests();
+            
+            // Обновляем список результатов поиска с учетом новой отправленной заявки
+            setSearchResults(prev => prev.map(user => {
+                if (user.id === userId) {
+                    return { ...user, requestSent: true };
+                }
+                return user;
+            }));
         } catch (err) {
             console.error('Ошибка отправки заявки в друзья:', err);
         }
+    };
+
+    // Добавляю функцию для отмены исходящих заявок в друзья
+    const cancelSentFriendRequest = async (requestId) => {
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/friends/requests/outgoing/${requestId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            // Обновляем список исходящих заявок
+            await fetchSentFriendRequests();
+        } catch (err) {
+            console.error('Ошибка отмены исходящей заявки в друзья:', err);
+        }
+    };
+
+    // Обновляем функцию поиска
+    const handleSearchChange = async (e) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+        
+        // Clear any existing timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+        
+        if (value.length < 2) {
+            setSearchResults([]);
+            setSearchPerformed(false);
+            return;
+        }
+        
+        // Set a new timeout (debounce)
+        searchTimeoutRef.current = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const response = await api.get(`/api/users/search?query=${encodeURIComponent(value)}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                // Фильтруем пользователей, уже добавленных в друзья
+                const data = response.data;
+                const friendIds = friends.map(f => f.friend.id);
+                const sentRequestIds = sentFriendRequests.map(req => req.friendId);
+                
+                // Отфильтруем пользователей, которые уже в друзьях
+                const filtered = data.filter(user => !friendIds.includes(user.id));
+                
+                // Отметим пользователей, которым уже отправлены заявки
+                const markedResults = filtered.map(user => ({
+                    ...user,
+                    requestSent: sentRequestIds.includes(user.id)
+                }));
+                
+                setSearchResults(markedResults);
+                setSearchPerformed(true);
+            } catch (err) {
+                console.error('Ошибка поиска пользователей:', err);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500); // 500ms delay before executing search
     };
 
     if (!user) return <p>Загрузка...</p>;
@@ -1152,17 +1219,27 @@ function Profile() {
                                 {searchResults.length > 0 && (
                                     <div className="search-results">
                                         {searchResults.map(user => (
-                                            <div key={user.id} className="search-item">
-                                                <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" />
-                                                <span className="search-username">{user.username}</span>
-                                                <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn">
-                                                    <i className="add-icon">+</i> Добавить
-                                                </button>
+                                            <div key={user.id} className="search-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0' }}>
+                                                <a href={`/user/${user.id}`} className="search-user-link" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flex: '0 0 auto', maxWidth: '60%' }}>
+                                                    <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" style={{ marginRight: '10px' }} />
+                                                    <span className="search-username" style={{ display: 'inline-block', verticalAlign: 'middle' }}>{user.username}</span>
+                                                </a>
+                                                <div style={{ flex: '0 0 auto', minWidth: '110px', textAlign: 'right' }}>
+                                                    {user.requestSent ? (
+                                                        <button className="request-sent-btn" disabled style={{ minWidth: '110px', padding: '5px 10px' }}>
+                                                            Отправлено
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={() => sendFriendRequest(user.id)} className="add-friend-btn" style={{ minWidth: '110px', padding: '5px 10px' }}>
+                                                            <i className="add-icon">+</i> Добавить
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
-                                {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+                                {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
                                     <p className="no-results">Пользователи не найдены</p>
                                 )}
                             </div>
@@ -1213,6 +1290,36 @@ function Profile() {
                                                         onClick={() => rejectFriendRequest(request.id)}
                                                     >
                                                         Отклонить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+                            {/* Секция исходящих заявок в друзья */}
+                            {sentFriendRequests.length > 0 && (
+                                <section className="friend-requests-section">
+                                    <h3>Исходящие заявки</h3>
+                                    <div className="friend-requests">
+                                        {sentFriendRequests.map(request => (
+                                            <div key={request.id} className="friend-request-item">
+                                                <div className="request-user">
+                                                    <img
+                                                        src={request.user.avatar_url || '/default-avatar.png'}
+                                                        alt={request.user.username}
+                                                        className="request-avatar"
+                                                    />
+                                                    <a href={`/user/${request.user.id}`} className="request-username">
+                                                        {request.user.username}
+                                                    </a>
+                                                </div>
+                                                <div className="request-actions">
+                                                    <button
+                                                        className="reject-request-btn"
+                                                        onClick={() => cancelSentFriendRequest(request.id)}
+                                                    >
+                                                        Отменить
                                                     </button>
                                                 </div>
                                             </div>

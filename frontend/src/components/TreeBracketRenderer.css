@@ -98,13 +98,19 @@
 /* Контейнер для раундов */
 .tree-rounds {
     display: flex;
+    align-items: stretch;
     gap: 50px;
     margin-bottom: 20px;
+    height: 100%;
 }
 
 /* Стили для отдельного раунда */
 .tree-round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
     min-width: 240px;
+    height: 100%;
 }
 
 /* Разделитель между верхней и нижней сетками */
@@ -119,7 +125,8 @@
 .tree-matches {
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    justify-content: space-evenly;
+    flex: 1;
 }
 
 /* Стили для отдельного матча */

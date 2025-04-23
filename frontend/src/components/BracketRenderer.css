@@ -117,11 +117,13 @@
 /* Сетка с раундами */
 .bracket-grid {
     display: flex;
-    gap: 40px;
+    align-items: center;
+    gap: 50px;
     overflow-x: auto;
     padding-bottom: 15px;
     position: relative;
     width: 100%;
+    height: 100%;
 }
 
 /* Разделитель между сетками */
@@ -139,8 +141,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    justify-content: space-evenly;
     min-width: 220px;
+    height: 100%;
 }
 
 .round-column h3 {
@@ -161,6 +164,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     cursor: pointer;
+    margin: 10px;
 }
 
 .custom-seed:hover {
@@ -220,6 +224,11 @@
     background-color: #f0f0f0;
     border-radius: 3px;
     color: #000000;
+}
+
+/* Стили для плейсхолдера TBD */
+.team-name.placeholder {
+    font-weight: normal !important;
 }
 
 /* Финальные матчи */

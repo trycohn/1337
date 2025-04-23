@@ -1277,23 +1277,26 @@ function TournamentDetails() {
                     )}
                 </div>
             )}
-            {isAdminOrCreator && tournament?.format === 'mix' && !tournament?.bracket && (
+            {tournament?.format === 'mix' && !tournament?.bracket && (
                 <div className="mix-settings">
-                    <h3>Настройки микса</h3>
-                    <div className="rating-type-selector">
-                        <label>Миксовать по рейтингу:</label>
-                        <select 
-                            value={ratingType}
-                            onChange={(e) => setRatingType(e.target.value)}
-                        >
-                            <option value="faceit">FACEit</option>
-                            <option value="premier">Steam Premier</option>
-                        </select>
-                    </div>
-                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                        <button onClick={handleFormTeams}>Сформировать команды</button>
+                    {isAdminOrCreator && (
+                        <>
+                            <h3>Настройки микса</h3>
+                            <div className="rating-type-selector">
+                                <label>Миксовать по рейтингу:</label>
+                                <select
+                                    value={ratingType}
+                                    onChange={(e) => setRatingType(e.target.value)}
+                                >
+                                    <option value="faceit">FACEit</option>
+                                    <option value="premier">Steam Premier</option>
+                                </select>
+                            </div>
+                            {tournament.participant_type === 'solo' && (
+                                <button onClick={handleFormTeams}>Сформировать команды</button>
+                            )}
+                        </>
                     )}
-
                     {mixedTeams.length > 0 && (
                         <div className="mixed-teams">
                             <h3>Сформированные команды</h3>

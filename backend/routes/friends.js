@@ -345,6 +345,28 @@ router.get('/requests/outgoing', authenticateToken, async (req, res) => {
     }
 });
 
+// Добавляю маршрут отмены исходящих заявок в друзья
+router.delete('/requests/outgoing/:requestId', authenticateToken, async (req, res) => {
+    const { requestId } = req.params;
+    if (!requestId) {
+        return res.status(400).json({ error: 'Не указан ID заявки' });
+    }
+    try {
+        const checkResult = await pool.query(
+            'SELECT * FROM friends WHERE id = $1 AND user_id = $2 AND status = $3',
+            [requestId, req.user.id, 'pending']
+        );
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Заявка не найдена или уже обработана' });
+        }
+        await pool.query('DELETE FROM friends WHERE id = $1', [requestId]);
+        res.json({ message: 'Заявка на дружбу отменена' });
+    } catch (err) {
+        console.error('Ошибка отмены исходящей заявки в друзья:', err);
+        res.status(500).json({ error: 'Ошибка сервера при отмене заявки' });
+    }
+});
+
 // Получение статуса дружбы с конкретным пользователем
 router.get('/status/:userId', authenticateToken, async (req, res) => {
     const { userId } = req.params;
