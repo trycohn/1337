@@ -20,13 +20,11 @@ const helmet = require('helmet');
 const path = require('path');
 const rateLimiter = require('express-rate-limit');
 const pool = require('./db');
-const { authenticateSocket } = require('./notifications');
 const { authenticateToken } = require('./middleware/auth');
 const { updateActivity } = require('./middleware/activity');
 const http = require('http');
 const puppeteer = require('puppeteer');
 const cookieParser = require('cookie-parser');
-const WebSocket = require('ws');
 const tournamentsRouter = require('./routes/tournaments');
 const nodemailer = require('nodemailer');
 const notifications = require('./notifications');
@@ -114,11 +112,6 @@ app.use('/api/playerStats', require('./routes/playerStats'));
 app.use('/api/friends', require('./routes/friends'));
 app.use('/api/chats', require('./routes/chats'));
 
-// Настройка WebSocket сервера уведомлений (используем режим noServer)
-const wss = new WebSocket.Server({
-  noServer: true
-});
-
 // Устанавливаю Socket.IO сервер для чата
 const io = new SocketIOServer(server, {
   cors: {
@@ -128,92 +121,25 @@ const io = new SocketIOServer(server, {
   }
 });
 setupChatSocketIO(io);
-// Делаю Socket.IO доступным через app для HTTP-эндпоинтов
-app.set('io', io);
 
-// Карта для хранения подключений пользователей
-const connectedClients = new Map();
-// Карта для хранения клиентов, просматривающих турниры (tournamentId -> [clients])
-const tournamentClients = new Map();
+// Я настраиваю соединение для уведомлений через Socket.IO, чтобы пользователи автоматически подключались к своим комнатам
+io.on('connection', (socket) => {
+  console.log('Socket.IO Notifications: пользователь подключился, userId =', socket.userId);
+  socket.join(`user_${socket.userId}`);
+  console.log(`Socket.IO Notifications: пользователь ${socket.userId} присоединился к комнате user_${socket.userId}`);
 
-wss.on('connection', (ws) => {
-    console.log('🔌 Новый клиент подключился');
+  // Обработка подписки на обновления турнира
+  socket.on('watch_tournament', (tournamentId) => {
+    socket.join(`tournament_${tournamentId}`);
+    console.log(`Socket.IO Notifications: пользователь ${socket.userId} подписался на турнир ${tournamentId}`);
+  });
 
-    // Обработка сообщений от клиента
-    ws.on('message', (message) => {
-        try {
-            const data = JSON.parse(message);
-            
-            // Обработка регистрации пользователя
-            if (data.type === 'register' && data.userId) {
-                connectedClients.set(data.userId, ws);
-                console.log(`Клиент зарегистрирован для пользователя ${data.userId}`);
-            }
-            
-            // Обработка регистрации просмотра турнира
-            if (data.type === 'watch_tournament' && data.tournamentId) {
-                ws.tournamentId = data.tournamentId;
-                
-                // Сохраняем клиента в списке наблюдателей за турниром
-                if (!tournamentClients.has(data.tournamentId)) {
-                    tournamentClients.set(data.tournamentId, new Set());
-                }
-                tournamentClients.get(data.tournamentId).add(ws);
-                
-                console.log(`Клиент начал просмотр турнира ${data.tournamentId}`);
-            }
-            
-            // Обработка отписки от турнира
-            if (data.type === 'unwatch_tournament' && data.tournamentId) {
-                if (tournamentClients.has(data.tournamentId)) {
-                    tournamentClients.get(data.tournamentId).delete(ws);
-                    
-                    // Удаляем пустые записи
-                    if (tournamentClients.get(data.tournamentId).size === 0) {
-                        tournamentClients.delete(data.tournamentId);
-                    }
-                }
-                
-                delete ws.tournamentId;
-                console.log(`Клиент прекратил просмотр турнира ${data.tournamentId}`);
-            }
-        } catch (error) {
-            console.error('Ошибка при обработке сообщения:', error);
-        }
-    });
-
-    // Обработка отключения клиента
-    ws.on('close', () => {
-        console.log('🔌 Клиент отключился');
-        // Удаляем отключившегося клиента из карты
-        for (const [userId, client] of connectedClients.entries()) {
-            if (client === ws) {
-                connectedClients.delete(userId);
-                console.log(`Пользователь ${userId} отключился`);
-                break;
-            }
-        }
-        
-        // Удаляем клиента из списка наблюдателей за турниром
-        if (ws.tournamentId && tournamentClients.has(ws.tournamentId)) {
-            tournamentClients.get(ws.tournamentId).delete(ws);
-            
-            // Удаляем пустые записи
-            if (tournamentClients.get(ws.tournamentId).size === 0) {
-                tournamentClients.delete(ws.tournamentId);
-            }
-            
-            console.log(`Клиент прекратил просмотр турнира ${ws.tournamentId} (отключение)`);
-        }
-    });
+  // Обработка отписки от обновлений турнира
+  socket.on('unwatch_tournament', (tournamentId) => {
+    socket.leave(`tournament_${tournamentId}`);
+    console.log(`Socket.IO Notifications: пользователь ${socket.userId} отписался от турнира ${tournamentId}`);
+  });
 });
-
-// Сохраняем WebSocket сервер в приложении для использования в других модулях
-app.set('wss', wss);
-app.set('connectedClients', connectedClients);
-app.set('tournamentClients', tournamentClients);
-
-// Настройка WebSocket для чата уже выполнена выше (chatWss)
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({
@@ -297,28 +223,4 @@ server.listen(PORT, async () => {
     } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
     }
-});
-
-// Обработка WebSocket upgrade
-server.on('upgrade', (request, socket, head) => {
-  try {
-    const { pathname } = new URL(request.url, `http://${request.headers.host}`);
-
-    if (pathname === '/ws') {
-      wss.handleUpgrade(request, socket, head, ws => {
-        wss.emit('connection', ws, request);
-      });
-      return;
-    }
-
-    // Пропускаем обработку для Socket.IO
-    if (pathname.startsWith('/socket.io')) {
-      return; // Socket.IO сам обработает этот upgrade
-    }
-
-    // Неизвестный путь для WebSocket
-    socket.destroy();
-  } catch (err) {
-    socket.destroy();
-  }
 });

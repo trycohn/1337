@@ -4,6 +4,7 @@ import axios from 'axios';
 import './Home.css';
 import { isCurrentUser } from '../utils/userHelpers';
 import InvitationNotification from './InvitationNotification';
+import { io } from 'socket.io-client';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -23,52 +24,34 @@ function Notifications() {
         .then((response) => {
           const userId = response.data.id;
           
-          // Создаем WebSocket соединение
-          const wsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:3000').replace(/^http/, 'ws');
-          const webSocket = new WebSocket(`${wsUrl}/ws`);
+          // Создаем соединение Socket.IO для уведомлений
+          const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
           
-          webSocket.onopen = () => {
-            console.log('WebSocket соединение установлено в компоненте Notifications');
-            // После установления соединения отправляем идентификатор пользователя
-            webSocket.send(JSON.stringify({
-              type: 'register',
-              userId: userId
-            }));
-          };
+          socket.on('connect', () => {
+            console.log('Socket.IO соединение установлено в компоненте Notifications');
+          });
           
-          webSocket.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              if (data.type === 'notification') {
-                console.log('Получено новое уведомление в Notifications:', data.data);
-                if (data.data.type === 'admin_request_accepted' || data.data.type === 'admin_request_rejected' || 
-                    data.data.type === 'friend_request_accepted') {
-                  // Обновить список уведомлений при получении ответа на запрос администрирования или заявку в друзья
-                  fetchNotifications(userId, token);
-                } else {
-                  // Добавляем новое уведомление в список
-                  setNotifications((prev) => [data.data, ...prev]);
-                  // Если это заявка в друзья, обновляем статусы дружбы
-                  if (data.data.type === 'friend_request' && data.data.requester_id) {
-                    fetchFriendshipStatus(data.data.requester_id, token);
-                  }
-                }
+          socket.on('notification', (notification) => {
+            console.log('Получено новое уведомление в Notifications:', notification);
+            if (['admin_request_accepted', 'admin_request_rejected', 'friend_request_accepted'].includes(notification.type)) {
+              // Обновить список уведомлений при получении ответа на запрос администрирования или заявку в друзья
+              fetchNotifications(userId, token);
+            } else {
+              // Добавляем новое уведомление в список
+              setNotifications((prev) => [notification, ...prev]);
+              // Если это заявка в друзья, обновляем статусы дружбы
+              if (notification.type === 'friend_request' && notification.requester_id) {
+                fetchFriendshipStatus(notification.requester_id, token);
               }
-            } catch (error) {
-              console.error('Ошибка при обработке сообщения WebSocket:', error);
             }
-          };
+          });
           
-          webSocket.onerror = (error) => {
-            console.error('WebSocket ошибка:', error);
-          };
+          socket.on('disconnect', (reason) => {
+            console.log('Socket.IO соединение закрыто:', reason);
+          });
           
-          webSocket.onclose = () => {
-            console.log('WebSocket соединение закрыто');
-          };
-          
-          // Сохраняем ссылку на WebSocket
-          wsRef.current = webSocket;
+          // Сохраняем ссылку на Socket.IO клиент
+          wsRef.current = socket;
           
           // Получаем существующие уведомления
           fetchNotifications(userId, token);
@@ -76,10 +59,10 @@ function Notifications() {
         .catch((err) => setError(err.response?.data?.error || 'Ошибка загрузки пользователя'));
     }
     
-    // Закрываем WebSocket соединение при размонтировании компонента
+    // Закрываем соединение Socket.IO при размонтировании компонента
     return () => {
       if (wsRef.current) {
-        wsRef.current.close();
+        wsRef.current.disconnect();
       }
     };
   }, []);
