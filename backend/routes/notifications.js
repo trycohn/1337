@@ -202,12 +202,29 @@ router.post('/respond', async (req, res) => {
                     );
 
                     // Создаем или обновляем обратную запись о дружбе (от получателя к отправителю)
-                    await pool.query(
-                        `INSERT INTO friends (user_id, friend_id, status)
-                         VALUES ($1, $2, 'accepted')
-                         ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'accepted', updated_at = NOW()`,
+                    // Сначала проверяем, существует ли уже такая запись
+                    const existingReverse = await pool.query(
+                        `SELECT id FROM friends 
+                         WHERE user_id = $1 AND friend_id = $2`,
                         [userId, notificationData.requester_id]
                     );
+                        
+                    if (existingReverse.rows.length === 0) {
+                        // Только если записи еще нет, создаем новую
+                        await pool.query(
+                            `INSERT INTO friends (user_id, friend_id, status)
+                             VALUES ($1, $2, 'accepted')`,
+                            [userId, notificationData.requester_id]
+                        );
+                    } else {
+                        // Иначе обновляем существующую
+                        await pool.query(
+                            `UPDATE friends 
+                             SET status = 'accepted', updated_at = NOW() 
+                             WHERE id = $1`,
+                            [existingReverse.rows[0].id]
+                        );
+                    }
 
                     // Отправляем уведомление о принятии заявки
                     await pool.query(
