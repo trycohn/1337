@@ -37,7 +37,14 @@ function setupChatSocketIO(io) {
         });
         
         // Специально проверяем наличие персонального системного чата
-        return pool.query("SELECT id FROM chats WHERE name = $1", [`1337community_${userId}`]);
+        return pool.query(`
+          SELECT c.id 
+          FROM chats c
+          JOIN chat_participants cp ON c.id = cp.chat_id
+          WHERE c.name = $1 AND cp.user_id = $2 AND c.type = 'system'
+          LIMIT 1`, 
+          ['1337community', userId]
+        );
       })
       .then(systemChatResult => {
         // Если персональный системный чат существует, убедимся что пользователь присоединён к нему
@@ -45,6 +52,8 @@ function setupChatSocketIO(io) {
           const systemChatId = systemChatResult.rows[0].id;
           socket.join(`chat_${systemChatId}`);
           console.log(`Socket.IO: пользователь ${userId} присоединён к персональному системному чату ${systemChatId}`);
+        } else {
+          console.log(`Socket.IO: персональный системный чат для пользователя ${userId} не найден`);
         }
       })
       .catch(err => {

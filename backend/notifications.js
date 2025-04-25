@@ -23,13 +23,13 @@ const sendNotification = async (userId, notification) => {
       }
 
       // Ищем персональный системный чат пользователя
-      const personalSystemChatName = `1337community_${userId}`;
+      const systemChatName = '1337community';
       const chatRes = await pool.query(`
         SELECT c.id FROM chats c
         JOIN chat_participants cp ON c.id = cp.chat_id
-        WHERE c.name = $1 AND cp.user_id = $2
+        WHERE c.name = $1 AND cp.user_id = $2 AND c.type = 'system'
         LIMIT 1
-      `, [personalSystemChatName, userId]);
+      `, [systemChatName, userId]);
       
       if (chatRes.rows.length === 0) {
         console.log(`⚠️ Не найден персональный системный чат для пользователя ${userId}. Создаем новый.`);
@@ -37,7 +37,7 @@ const sendNotification = async (userId, notification) => {
         // Создаем новый персональный системный чат для пользователя
         const createChatRes = await pool.query(
           "INSERT INTO chats (name, type) VALUES ($1, 'system') RETURNING id",
-          [personalSystemChatName]
+          [systemChatName]
         );
         
         const systemChatId = createChatRes.rows[0].id;
@@ -48,15 +48,50 @@ const sendNotification = async (userId, notification) => {
            VALUES ($1, $2, true)`,
           [systemChatId, userId]
         );
+        
+        // Сразу используем новый ID чата
+        const contentMeta = {
+          notification_id: notification.id,
+          type: notification.type,
+          timestamp: new Date()
+        };
+        
+        // Если есть дополнительные данные, добавляем их
+        if (notification.tournament_id) {
+          contentMeta.tournament_id = notification.tournament_id;
+        }
+        if (notification.requester_id) {
+          contentMeta.requester_id = notification.requester_id;
+        }
+        
+        // Если это заявка в друзья, пытаемся найти ID запроса
+        if (notification.type === 'friend_request') {
+          try {
+            const friendReqResult = await pool.query(
+              `SELECT id FROM friends 
+               WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+              [notification.requester_id, notification.user_id]
+            );
+            if (friendReqResult.rows.length > 0) {
+              contentMeta.request_id = friendReqResult.rows[0].id;
+            }
+          } catch (err) {
+            console.error('Не удалось получить ID заявки дружбы:', err);
+          }
+        }
+        
+        const msgRes = await pool.query(
+          'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
+          [systemChatId, notification.message, 'announcement', contentMeta]
+        );
+        
+        const newMsg = msgRes.rows[0];
+        io.to(`chat_${systemChatId}`).emit('message', newMsg);
+        console.log(`📣 Уведомление добавлено в новый персональный системный чат ${systemChatId} пользователя ${userId}`);
+        return;
       }
       
-      // Получаем ID чата (повторно запрашиваем, если пришлось создать новый)
-      const finalChatRes = await pool.query('SELECT id FROM chats WHERE name = $1', [personalSystemChatName]);
-      if (finalChatRes.rows.length === 0) {
-        throw new Error(`Не удалось найти или создать персональный системный чат для пользователя ${userId}`);
-      }
-      
-      const systemChatId = finalChatRes.rows[0].id;
+      const systemChatId = chatRes.rows[0].id;
       
       // Добавляем notification_id и type в content_meta для обработки действий
       const contentMeta = {

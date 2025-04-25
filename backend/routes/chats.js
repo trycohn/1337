@@ -34,11 +34,17 @@ const upload = multer({
 // Получение списка чатов пользователя
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        // Создаем персональный системный чат для этого пользователя вместо общего
-        const personalSystemChatName = `1337community_${req.user.id}`;
-        let systemChatRes = await pool.query(
-            "SELECT id FROM chats WHERE name = $1", 
-            [personalSystemChatName]
+        // Создаем персональный системный чат для этого пользователя
+        const systemChatName = '1337community'; // Убрали идентификатор пользователя из имени
+        
+        // Ищем персональный системный чат для этого пользователя
+        let systemChatRes = await pool.query(`
+            SELECT c.id 
+            FROM chats c
+            JOIN chat_participants cp ON c.id = cp.chat_id
+            WHERE c.name = $1 AND cp.user_id = $2 AND c.type = 'system'
+            LIMIT 1`, 
+            [systemChatName, req.user.id]
         );
         
         let systemChatId;
@@ -46,7 +52,7 @@ router.get('/', authenticateToken, async (req, res) => {
             // Создаем новый персональный системный чат
             const createChatRes = await pool.query(
                 "INSERT INTO chats (name, type) VALUES ($1, 'system') RETURNING id", 
-                [personalSystemChatName]
+                [systemChatName]
             );
             systemChatId = createChatRes.rows[0].id;
             
@@ -56,6 +62,8 @@ router.get('/', authenticateToken, async (req, res) => {
                  VALUES ($1, $2, true)`,
                 [systemChatId, req.user.id]
             );
+            
+            console.log(`Создан новый системный чат ${systemChatId} для пользователя ${req.user.id}`);
         } else {
             systemChatId = systemChatRes.rows[0].id;
             
