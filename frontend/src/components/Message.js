@@ -100,6 +100,35 @@ function Message({ message, isOwn, onDeleteMessage }) {
         }
     };
     
+    // Проверка, обработано ли уведомление
+    const isNotificationProcessed = () => {
+        return message.content_meta?.processed || message.content_meta?.action;
+    };
+    
+    // Получение типа действия для уведомления
+    const getActionType = () => {
+        return message.content_meta?.action || 'unknown';
+    };
+    
+    // Получение текста статуса для обработанного уведомления
+    const getProcessedStatusText = () => {
+        const action = getActionType();
+        const type = message.content_meta?.type;
+        
+        if (!type) return action === 'accept' ? 'Принято' : 'Отклонено';
+        
+        switch (type) {
+            case 'friend_request':
+                return action === 'accept' ? 'Заявка принята' : 'Заявка отклонена';
+            case 'admin_request':
+                return action === 'accept' ? 'Назначен администратором' : 'Запрос отклонен';
+            case 'tournament_invite':
+                return action === 'accept' ? 'Приглашение принято' : 'Приглашение отклонено';
+            default:
+                return action === 'accept' ? 'Принято' : 'Отклонено';
+        }
+    };
+    
     // Рендер содержимого сообщения в зависимости от его типа
     const renderMessageContent = () => {
         switch (message.message_type) {
@@ -156,13 +185,15 @@ function Message({ message, isOwn, onDeleteMessage }) {
                 const notifType = message.content_meta?.type;
                 const canRespond = notifId && ['friend_request', 'admin_request', 'tournament_invite'].includes(notifType);
                 const buttonTexts = getActionButtonsText();
+                const isProcessed = isNotificationProcessed();
                 
                 return (
                     <div className="message-announcement">
                         <div className="announcement-icon">📣</div>
                         <div className="announcement-content">
                             <div className="announcement-text">{message.content}</div>
-                            {canRespond && !responded && (
+                            
+                            {canRespond && !responded && !isProcessed && (
                                 <div className="announcement-actions">
                                     <button 
                                         className="action-button accept" 
@@ -180,9 +211,12 @@ function Message({ message, isOwn, onDeleteMessage }) {
                                     </button>
                                 </div>
                             )}
-                            {responded && (
+                            
+                            {(responded || isProcessed) && (
                                 <div className="announcement-response">
-                                    <span className="response-processed">Уведомление обработано</span>
+                                    <span className={`response-status ${getActionType() === 'accept' ? 'accepted' : 'rejected'}`}>
+                                        {isProcessed ? getProcessedStatusText() : 'Уведомление обработано'}
+                                    </span>
                                 </div>
                             )}
                         </div>

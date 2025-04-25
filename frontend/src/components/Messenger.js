@@ -396,6 +396,8 @@ function Messenger() {
     const handleNotificationUpdate = (data) => {
         if (!data || !data.id) return;
         
+        console.log('Получено обновление статуса уведомления:', data);
+        
         // Находим все сообщения, которые содержат ссылку на это уведомление
         setMessages(prevMessages => 
             prevMessages.map(msg => {
