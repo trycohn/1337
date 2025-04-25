@@ -46,15 +46,17 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
         
         if (message.is_read) return '✅ ';
         
+        // Не добавляем иконку для уведомлений, так как она уже добавляется в formatLastMessage
         switch (message.message_type) {
             case 'image':
-                return '📷 ';
+                return '';
             case 'file':
-                return '📎 ';
+                return '';
             case 'document':
-                return '📄 ';
+                return '';
             case 'announcement':
-                return '📣 ';
+                // Убираем иконку для уведомлений, чтобы избежать дублирования
+                return '';
             default:
                 return '';
         }
