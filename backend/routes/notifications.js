@@ -181,10 +181,10 @@ router.post('/respond', async (req, res) => {
                 break;
 
             case 'friend_request':
-                // Находим запрос в друзья
+                // Находим запрос в друзья в таблице friends
                 const friendRequest = await pool.query(
-                    `SELECT id FROM friend_requests 
-                     WHERE (from_user_id = $1 AND to_user_id = $2) OR (from_user_id = $2 AND to_user_id = $1)`,
+                    `SELECT id FROM friends 
+                     WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
                     [notificationData.requester_id, userId]
                 );
 
@@ -197,14 +197,14 @@ router.post('/respond', async (req, res) => {
                 if (action === 'accept') {
                     // Принимаем заявку - обновляем статус и создаем записи о дружбе
                     await pool.query(
-                        `UPDATE friend_requests SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
+                        `UPDATE friends SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
                         [requestId]
                     );
 
-                    // Создаем записи в таблице friends (в обе стороны)
+                    // Создаем или обновляем обратную запись о дружбе (от получателя к отправителю)
                     await pool.query(
-                        `INSERT INTO friends (user_id, friend_id, status) 
-                         VALUES ($1, $2, 'accepted'), ($2, $1, 'accepted')
+                        `INSERT INTO friends (user_id, friend_id, status)
+                         VALUES ($1, $2, 'accepted')
                          ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'accepted', updated_at = NOW()`,
                         [userId, notificationData.requester_id]
                     );
@@ -224,7 +224,7 @@ router.post('/respond', async (req, res) => {
                 } else {
                     // Отклоняем заявку
                     await pool.query(
-                        `UPDATE friend_requests SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
+                        `UPDATE friends SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
                         [requestId]
                     );
                 }
