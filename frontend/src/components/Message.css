@@ -121,6 +121,13 @@
     padding: 0;
 }
 
+/* Убираю стандартный фон для уведомлений */
+.message.announcement-wrapper {
+    background-color: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+
 /* Старый стиль для message-image можно упростить */
 .message-image {
     max-width: 100%;

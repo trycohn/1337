@@ -14,9 +14,14 @@ function Message({ message, isOwn, onDeleteMessage }) {
     // Выбор класса для сообщения в зависимости от отправителя
     const messageClass = () => {
         let baseClass = isOwn ? 'message own' : 'message';
-        if (message.message_type === 'image') {
+        
+        // Для уведомлений (announcement) используем специальный класс без стандартного фона
+        if (message.message_type === 'announcement') {
+            baseClass = 'message announcement-wrapper';
+        } else if (message.message_type === 'image') {
             baseClass += ' image-message';
         }
+        
         return baseClass;
     };
     
