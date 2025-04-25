@@ -156,18 +156,26 @@ router.post('/respond', async (req, res) => {
                 );
 
                 // Отправляем уведомление запрашивающему
-                await pool.query(
-                    `INSERT INTO notifications (user_id, message, type, tournament_id, is_read)
-                     VALUES ($1, $2, $3, $4, false)`,
+                const notificationMessage = `Ваш запрос на администрирование турнира "${
+                    (await pool.query('SELECT name FROM tournaments WHERE id = $1', [notificationData.tournament_id])).rows[0]?.name || 'Турнир'
+                }" был ${action === 'accept' ? 'принят' : 'отклонен'}`;
+                
+                const notificationInsertResult = await pool.query(
+                    `INSERT INTO notifications (user_id, message, type, tournament_id, requester_id, is_read)
+                     VALUES ($1, $2, $3, $4, $5, false) RETURNING *`,
                     [
                         notificationData.requester_id,
-                        `Ваш запрос на администрирование турнира "${
-                            (await pool.query('SELECT name FROM tournaments WHERE id = $1', [notificationData.tournament_id])).rows[0]?.name || 'Турнир'
-                        }" был ${action === 'accept' ? 'принят' : 'отклонен'}`,
+                        notificationMessage,
                         action === 'accept' ? 'admin_request_accepted' : 'admin_request_rejected',
-                        notificationData.tournament_id
+                        notificationData.tournament_id,
+                        userId
                     ]
                 );
+                
+                // Явно вызываем функцию отправки уведомления, чтобы оно появилось в чате пользователя
+                const newNotification = notificationInsertResult.rows[0];
+                console.log(`🔔 Отправка уведомления о результате запроса на администрирование пользователю ${notificationData.requester_id}`);
+                sendNotification(notificationData.requester_id, newNotification);
 
                 // Если принято, добавляем пользователя в админы турнира
                 if (action === 'accept') {
