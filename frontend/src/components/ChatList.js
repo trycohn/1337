@@ -158,10 +158,17 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
                                 <div className="chat-name">
                                     {getChatStatusPrefix(chat)}{chat.name}
                                 </div>
-                                <div className="chat-last-message">
-                                    {getSenderPrefix(chat)}
-                                    {getMessageStatusIndicator(chat.last_message)}
-                                    {formatLastMessage(chat.last_message)}
+                                <div className="chat-last-message-container">
+                                    <div className="chat-last-message">
+                                        {getSenderPrefix(chat)}
+                                        {getMessageStatusIndicator(chat.last_message)}
+                                        {formatLastMessage(chat.last_message)}
+                                    </div>
+                                    {unreadCounts[chat.id] > 0 && (
+                                        <div className="unread-count">
+                                            {unreadCounts[chat.id]}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             
@@ -169,12 +176,6 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
                                 {chat.last_message && (
                                     <div className="chat-time">
                                         {formatDate(chat.last_message.created_at)}
-                                    </div>
-                                )}
-                                
-                                {unreadCounts[chat.id] > 0 && (
-                                    <div className="unread-count">
-                                        {unreadCounts[chat.id]}
                                     </div>
                                 )}
                             </div>
