@@ -36,6 +36,22 @@ const sendNotification = async (userId, notification) => {
           contentMeta.requester_id = notification.requester_id;
         }
         
+        // Если это заявка в друзья, пытаемся найти ID запроса
+        if (notification.type === 'friend_request') {
+          try {
+            const friendReqResult = await pool.query(
+              `SELECT id FROM friends 
+               WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+              [notification.requester_id, notification.user_id]
+            );
+            if (friendReqResult.rows.length > 0) {
+              contentMeta.request_id = friendReqResult.rows[0].id;
+            }
+          } catch (err) {
+            console.error('Не удалось получить ID заявки дружбы:', err);
+          }
+        }
+        
         const msgRes = await pool.query(
           'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
           [systemChatId, notification.message, 'announcement', contentMeta]

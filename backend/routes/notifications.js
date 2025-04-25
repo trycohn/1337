@@ -181,69 +181,91 @@ router.post('/respond', async (req, res) => {
                 break;
 
             case 'friend_request':
-                // Находим запрос в друзья в таблице friends
-                const friendRequest = await pool.query(
-                    `SELECT id FROM friends 
-                     WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
-                    [notificationData.requester_id, userId]
-                );
-
-                if (friendRequest.rows.length === 0) {
-                    return res.status(404).json({ error: 'Заявка в друзья не найдена или уже обработана' });
-                }
-
-                const requestId = friendRequest.rows[0].id;
-
-                if (action === 'accept') {
-                    // Принимаем заявку - обновляем статус и создаем записи о дружбе
-                    await pool.query(
-                        `UPDATE friends SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
-                        [requestId]
+                try {
+                    // Проверяем существование заявки и то, что она адресована текущему пользователю
+                    const requestCheck = await pool.query(
+                        'SELECT f.*, u.username FROM friends f JOIN users u ON f.user_id = u.id WHERE f.id = $1 AND f.friend_id = $2 AND f.status = $3',
+                        [notificationData.content_meta?.request_id || 0, userId, 'pending']
                     );
-
-                    // Создаем или обновляем обратную запись о дружбе (от получателя к отправителю)
-                    // Сначала проверяем, существует ли уже такая запись
-                    const existingReverse = await pool.query(
-                        `SELECT id FROM friends 
-                         WHERE user_id = $1 AND friend_id = $2`,
-                        [userId, notificationData.requester_id]
-                    );
+                    
+                    if (requestCheck.rows.length === 0) {
+                        // Если ID не указан или не найден, ищем по отправителю-получателю
+                        const secondCheck = await pool.query(
+                            'SELECT f.*, u.username FROM friends f JOIN users u ON f.user_id = u.id WHERE f.user_id = $1 AND f.friend_id = $2 AND f.status = $3',
+                            [notificationData.requester_id, userId, 'pending']
+                        );
                         
-                    if (existingReverse.rows.length === 0) {
-                        // Только если записи еще нет, создаем новую
-                        await pool.query(
-                            `INSERT INTO friends (user_id, friend_id, status)
-                             VALUES ($1, $2, 'accepted')`,
-                            [userId, notificationData.requester_id]
-                        );
+                        if (secondCheck.rows.length === 0) {
+                            return res.status(404).json({ error: 'Заявка в друзья не найдена или уже обработана' });
+                        }
+                        
+                        const friendRequest = secondCheck.rows[0];
+                        
+                        if (action === 'accept') {
+                            // Принимаем заявку через тот же механизм, что и в friends.js
+                            await pool.query(
+                                'UPDATE friends SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                                ['accepted', friendRequest.id]
+                            );
+                            
+                            // Создаем уведомление для отправителя заявки
+                            const acceptNotification = {
+                                user_id: friendRequest.user_id,
+                                message: `Пользователь ${(await pool.query('SELECT username FROM users WHERE id = $1', [userId])).rows[0]?.username || 'Пользователь'} принял вашу заявку в друзья`,
+                                type: 'friend_request_accepted',
+                                requester_id: userId
+                            };
+                            
+                            const notificationResult = await pool.query(
+                                'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                                [acceptNotification.user_id, acceptNotification.message, acceptNotification.type, acceptNotification.requester_id, false]
+                            );
+                            
+                            // Отправляем уведомление через WebSocket
+                            sendNotification(friendRequest.user_id, notificationResult.rows[0]);
+                        } else {
+                            // Отклоняем заявку
+                            await pool.query(
+                                'UPDATE friends SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                                ['rejected', friendRequest.id]
+                            );
+                        }
                     } else {
-                        // Иначе обновляем существующую
-                        await pool.query(
-                            `UPDATE friends 
-                             SET status = 'accepted', updated_at = NOW() 
-                             WHERE id = $1`,
-                            [existingReverse.rows[0].id]
-                        );
+                        const friendRequest = requestCheck.rows[0];
+                        
+                        if (action === 'accept') {
+                            // Принимаем заявку
+                            await pool.query(
+                                'UPDATE friends SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                                ['accepted', friendRequest.id]
+                            );
+                            
+                            // Создаем уведомление для отправителя заявки
+                            const acceptNotification = {
+                                user_id: friendRequest.user_id,
+                                message: `Пользователь ${(await pool.query('SELECT username FROM users WHERE id = $1', [userId])).rows[0]?.username || 'Пользователь'} принял вашу заявку в друзья`,
+                                type: 'friend_request_accepted',
+                                requester_id: userId
+                            };
+                            
+                            const notificationResult = await pool.query(
+                                'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                                [acceptNotification.user_id, acceptNotification.message, acceptNotification.type, acceptNotification.requester_id, false]
+                            );
+                            
+                            // Отправляем уведомление через WebSocket
+                            sendNotification(friendRequest.user_id, notificationResult.rows[0]);
+                        } else {
+                            // Отклоняем заявку
+                            await pool.query(
+                                'UPDATE friends SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                                ['rejected', friendRequest.id]
+                            );
+                        }
                     }
-
-                    // Отправляем уведомление о принятии заявки
-                    await pool.query(
-                        `INSERT INTO notifications (user_id, message, type, requester_id, is_read)
-                         VALUES ($1, $2, 'friend_request_accepted', $3, false)`,
-                        [
-                            notificationData.requester_id,
-                            `Ваша заявка в друзья была принята пользователем ${
-                                (await pool.query('SELECT username FROM users WHERE id = $1', [userId])).rows[0]?.username || 'Пользователь'
-                            }`,
-                            userId
-                        ]
-                    );
-                } else {
-                    // Отклоняем заявку
-                    await pool.query(
-                        `UPDATE friends SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
-                        [requestId]
-                    );
+                } catch (err) {
+                    console.error('Ошибка обработки заявки в друзья:', err);
+                    return res.status(500).json({ error: 'Ошибка обработки заявки в друзья' });
                 }
                 break;
 
