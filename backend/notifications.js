@@ -14,52 +14,70 @@ const sendNotification = async (userId, notification) => {
     io.to(`user_${userId}`).emit('notification', notification);
     console.log(`📩 Уведомление отправлено пользователю ${userId}:`, notification);
 
-    // Добавляем уведомление в системный чат
+    // Добавляем уведомление в системный чат ТОЛЬКО того пользователя, которому адресовано уведомление
     const systemChatName = '1337community';
     try {
-      const chatRes = await pool.query('SELECT id FROM chats WHERE name = $1', [systemChatName]);
-      if (chatRes.rows.length > 0) {
-        const systemChatId = chatRes.rows[0].id;
-        
-        // Добавляем notification_id и type в content_meta для обработки действий
-        const contentMeta = {
-          notification_id: notification.id,
-          type: notification.type,
-          timestamp: new Date()
-        };
-        
-        // Если есть дополнительные данные, добавляем их
-        if (notification.tournament_id) {
-          contentMeta.tournament_id = notification.tournament_id;
-        }
-        if (notification.requester_id) {
-          contentMeta.requester_id = notification.requester_id;
-        }
-        
-        // Если это заявка в друзья, пытаемся найти ID запроса
-        if (notification.type === 'friend_request') {
-          try {
-            const friendReqResult = await pool.query(
-              `SELECT id FROM friends 
-               WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
-              [notification.requester_id, notification.user_id]
-            );
-            if (friendReqResult.rows.length > 0) {
-              contentMeta.request_id = friendReqResult.rows[0].id;
-            }
-          } catch (err) {
-            console.error('Не удалось получить ID заявки дружбы:', err);
-          }
-        }
-        
-        const msgRes = await pool.query(
-          'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
-          [systemChatId, notification.message, 'announcement', contentMeta]
-        );
-        const newMsg = msgRes.rows[0];
-        io.to(`chat_${systemChatId}`).emit('message', newMsg);
-        console.log(`📣 Уведомление добавлено в чат ${systemChatId}:`, newMsg);
+      // Сначала проверяем, что это уведомление предназначено именно этому пользователю
+      if (notification.user_id !== userId) {
+        console.log(`⚠️ Пропуск добавления сообщения: уведомление ${notification.id} не для пользователя ${userId}`);
+        return;
       }
+
+      // Найдем системный чат и проверим, участвует ли в нем пользователь
+      const chatParticipant = await pool.query(`
+        SELECT cp.chat_id FROM chat_participants cp
+        JOIN chats c ON cp.chat_id = c.id
+        WHERE c.name = $1 AND cp.user_id = $2
+        LIMIT 1
+      `, [systemChatName, userId]);
+      
+      if (chatParticipant.rows.length === 0) {
+        console.log(`⚠️ Пользователь ${userId} не имеет доступа к системному чату`);
+        return;
+      }
+      
+      const systemChatId = chatParticipant.rows[0].chat_id;
+      
+      // Добавляем notification_id и type в content_meta для обработки действий
+      const contentMeta = {
+        notification_id: notification.id,
+        type: notification.type,
+        timestamp: new Date()
+      };
+      
+      // Если есть дополнительные данные, добавляем их
+      if (notification.tournament_id) {
+        contentMeta.tournament_id = notification.tournament_id;
+      }
+      if (notification.requester_id) {
+        contentMeta.requester_id = notification.requester_id;
+      }
+      
+      // Если это заявка в друзья, пытаемся найти ID запроса
+      if (notification.type === 'friend_request') {
+        try {
+          const friendReqResult = await pool.query(
+            `SELECT id FROM friends 
+             WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+            [notification.requester_id, notification.user_id]
+          );
+          if (friendReqResult.rows.length > 0) {
+            contentMeta.request_id = friendReqResult.rows[0].id;
+          }
+        } catch (err) {
+          console.error('Не удалось получить ID заявки дружбы:', err);
+        }
+      }
+      
+      const msgRes = await pool.query(
+        'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
+        [systemChatId, notification.message, 'announcement', contentMeta]
+      );
+      const newMsg = msgRes.rows[0];
+      
+      // Отправляем сообщение только в комнату этого пользователя
+      io.to(`chat_${systemChatId}`).emit('message', newMsg);
+      console.log(`📣 Уведомление добавлено в чат ${systemChatId} для пользователя ${userId}:`, newMsg);
     } catch (e) {
       console.error('❌ Ошибка добавления уведомления в системный чат:', e);
     }
