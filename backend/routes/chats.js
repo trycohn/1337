@@ -34,22 +34,39 @@ const upload = multer({
 // Получение списка чатов пользователя
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        // Ensure system chat exists and add user as participant pinned
-        const systemChatName = '1337community';
-        let systemChatRes = await pool.query("SELECT id FROM chats WHERE name = $1", [systemChatName]);
+        // Создаем персональный системный чат для этого пользователя вместо общего
+        const personalSystemChatName = `1337community_${req.user.id}`;
+        let systemChatRes = await pool.query(
+            "SELECT id FROM chats WHERE name = $1", 
+            [personalSystemChatName]
+        );
+        
         let systemChatId;
         if (systemChatRes.rows.length === 0) {
-            const createChatRes = await pool.query("INSERT INTO chats (name, type) VALUES ($1, 'group') RETURNING id", [systemChatName]);
+            // Создаем новый персональный системный чат
+            const createChatRes = await pool.query(
+                "INSERT INTO chats (name, type) VALUES ($1, 'system') RETURNING id", 
+                [personalSystemChatName]
+            );
             systemChatId = createChatRes.rows[0].id;
+            
+            // Добавляем пользователя как участника и закрепляем чат
+            await pool.query(
+                `INSERT INTO chat_participants (chat_id, user_id, is_pinned)
+                 VALUES ($1, $2, true)`,
+                [systemChatId, req.user.id]
+            );
         } else {
             systemChatId = systemChatRes.rows[0].id;
+            
+            // Обновляем закрепление чата
+            await pool.query(
+                `UPDATE chat_participants
+                 SET is_pinned = true
+                 WHERE chat_id = $1 AND user_id = $2`,
+                [systemChatId, req.user.id]
+            );
         }
-        await pool.query(
-            `INSERT INTO chat_participants (chat_id, user_id, is_pinned)
-             VALUES ($1, $2, true)
-             ON CONFLICT (chat_id, user_id) DO UPDATE SET is_pinned = true`,
-            [systemChatId, req.user.id]
-        );
 
         // Получаем список чатов с последним сообщением и информацией о собеседнике
         const result = await pool.query(`

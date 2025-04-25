@@ -29,15 +29,26 @@ function setupChatSocketIO(io) {
 
     const userId = socket.userId;
 
-    // Присоединяю пользователя к его комнатам чатов
+    // Присоединяем пользователя к его комнатам чатов
     pool.query('SELECT chat_id FROM chat_participants WHERE user_id = $1', [userId])
       .then(result => {
         result.rows.forEach(row => {
           socket.join(`chat_${row.chat_id}`);
         });
+        
+        // Специально проверяем наличие персонального системного чата
+        return pool.query("SELECT id FROM chats WHERE name = $1", [`1337community_${userId}`]);
+      })
+      .then(systemChatResult => {
+        // Если персональный системный чат существует, убедимся что пользователь присоединён к нему
+        if (systemChatResult.rows.length > 0) {
+          const systemChatId = systemChatResult.rows[0].id;
+          socket.join(`chat_${systemChatId}`);
+          console.log(`Socket.IO: пользователь ${userId} присоединён к персональному системному чату ${systemChatId}`);
+        }
       })
       .catch(err => {
-        console.error('Ошибка получения чатов пользователя:', err);
+        console.error('Ошибка при подключении пользователя к комнатам чатов:', err);
       });
 
     // Обработка входящих сообщений в чат

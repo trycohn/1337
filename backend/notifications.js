@@ -14,8 +14,7 @@ const sendNotification = async (userId, notification) => {
     io.to(`user_${userId}`).emit('notification', notification);
     console.log(`📩 Уведомление отправлено пользователю ${userId}:`, notification);
 
-    // Добавляем уведомление в системный чат ТОЛЬКО того пользователя, которому адресовано уведомление
-    const systemChatName = '1337community';
+    // Добавляем уведомление в персональный системный чат получателя
     try {
       // Сначала проверяем, что это уведомление предназначено именно этому пользователю
       if (notification.user_id !== userId) {
@@ -23,20 +22,41 @@ const sendNotification = async (userId, notification) => {
         return;
       }
 
-      // Найдем системный чат и проверим, участвует ли в нем пользователь
-      const chatParticipant = await pool.query(`
-        SELECT cp.chat_id FROM chat_participants cp
-        JOIN chats c ON cp.chat_id = c.id
+      // Ищем персональный системный чат пользователя
+      const personalSystemChatName = `1337community_${userId}`;
+      const chatRes = await pool.query(`
+        SELECT c.id FROM chats c
+        JOIN chat_participants cp ON c.id = cp.chat_id
         WHERE c.name = $1 AND cp.user_id = $2
         LIMIT 1
-      `, [systemChatName, userId]);
+      `, [personalSystemChatName, userId]);
       
-      if (chatParticipant.rows.length === 0) {
-        console.log(`⚠️ Пользователь ${userId} не имеет доступа к системному чату`);
-        return;
+      if (chatRes.rows.length === 0) {
+        console.log(`⚠️ Не найден персональный системный чат для пользователя ${userId}. Создаем новый.`);
+        
+        // Создаем новый персональный системный чат для пользователя
+        const createChatRes = await pool.query(
+          "INSERT INTO chats (name, type) VALUES ($1, 'system') RETURNING id",
+          [personalSystemChatName]
+        );
+        
+        const systemChatId = createChatRes.rows[0].id;
+        
+        // Добавляем пользователя как участника
+        await pool.query(
+          `INSERT INTO chat_participants (chat_id, user_id, is_pinned)
+           VALUES ($1, $2, true)`,
+          [systemChatId, userId]
+        );
       }
       
-      const systemChatId = chatParticipant.rows[0].chat_id;
+      // Получаем ID чата (повторно запрашиваем, если пришлось создать новый)
+      const finalChatRes = await pool.query('SELECT id FROM chats WHERE name = $1', [personalSystemChatName]);
+      if (finalChatRes.rows.length === 0) {
+        throw new Error(`Не удалось найти или создать персональный системный чат для пользователя ${userId}`);
+      }
+      
+      const systemChatId = finalChatRes.rows[0].id;
       
       // Добавляем notification_id и type в content_meta для обработки действий
       const contentMeta = {
@@ -75,9 +95,9 @@ const sendNotification = async (userId, notification) => {
       );
       const newMsg = msgRes.rows[0];
       
-      // Отправляем сообщение только в комнату этого пользователя
+      // Отправляем сообщение в комнату чата
       io.to(`chat_${systemChatId}`).emit('message', newMsg);
-      console.log(`📣 Уведомление добавлено в чат ${systemChatId} для пользователя ${userId}:`, newMsg);
+      console.log(`📣 Уведомление добавлено в персональный системный чат ${systemChatId} пользователя ${userId}`);
     } catch (e) {
       console.error('❌ Ошибка добавления уведомления в системный чат:', e);
     }
