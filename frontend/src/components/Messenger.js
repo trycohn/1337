@@ -45,6 +45,7 @@ function Messenger() {
 
         socketClient.on('message', handleNewMessage);
         socketClient.on('read_status', updateMessageReadStatus);
+        socketClient.on('notification_update', handleNotificationUpdate);
 
         socketClient.on('error', (error) => {
             console.error('Socket.IO ошибка:', error);
@@ -111,7 +112,12 @@ function Messenger() {
             );
             return updatedChats
                 .slice()
-                .sort((a, b) => new Date(b.last_message?.created_at) - new Date(a.last_message?.created_at));
+                .sort((a, b) => {
+                    // Сначала закрепленные чаты
+                    if (a.is_pinned !== b.is_pinned) return b.is_pinned ? 1 : -1;
+                    // Затем по дате последнего сообщения
+                    return new Date(b.last_message?.created_at || b.updated_at) - new Date(a.last_message?.created_at || a.updated_at);
+                });
         });
         // Если сообщение в активном чате, отмечаем как прочитанное, иначе увеличиваем счетчик непрочитанных
         if (Number(activeChatRef.current) === chatId) {
@@ -384,6 +390,29 @@ function Messenger() {
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка удаления сообщения');
         }
+    };
+
+    // Обработка обновления уведомления в системном чате
+    const handleNotificationUpdate = (data) => {
+        if (!data || !data.id) return;
+        
+        // Находим все сообщения, которые содержат ссылку на это уведомление
+        setMessages(prevMessages => 
+            prevMessages.map(msg => {
+                if (msg.content_meta?.notification_id === data.id) {
+                    // Обновляем meta информацию, добавляя статус обработки
+                    return {
+                        ...msg,
+                        content_meta: {
+                            ...msg.content_meta,
+                            processed: true,
+                            action: data.action
+                        }
+                    };
+                }
+                return msg;
+            })
+        );
     };
 
     return (

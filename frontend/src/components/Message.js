@@ -60,7 +60,7 @@ function Message({ message, isOwn, onDeleteMessage }) {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            await fetch(`/api/notifications/respond?notificationId=${message.content_meta.notification_id}`, {
+            const response = await fetch(`/api/notifications/respond?notificationId=${message.content_meta.notification_id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -68,11 +68,35 @@ function Message({ message, isOwn, onDeleteMessage }) {
                 },
                 body: JSON.stringify({ action: actionType })
             });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Ошибка при обработке уведомления');
+            }
+            
             setResponded(true);
         } catch (err) {
             console.error('Ошибка при ответе на уведомление:', err);
+            alert(err.message);
         } finally {
             setActionLoading(false);
+        }
+    };
+    
+    // Преобразуем текст для кнопок в зависимости от типа уведомления
+    const getActionButtonsText = () => {
+        const type = message.content_meta?.type;
+        if (!type) return { accept: 'Принять', reject: 'Отклонить' };
+        
+        switch (type) {
+            case 'friend_request':
+                return { accept: 'Принять заявку', reject: 'Отклонить' };
+            case 'admin_request':
+                return { accept: 'Назначить админом', reject: 'Отклонить' };
+            case 'tournament_invite':
+                return { accept: 'Присоединиться', reject: 'Отказаться' };
+            default:
+                return { accept: 'Принять', reject: 'Отклонить' };
         }
     };
     
@@ -130,17 +154,38 @@ function Message({ message, isOwn, onDeleteMessage }) {
                 // Кнопки для уведомлений с возможностью ответа
                 const notifId = message.content_meta?.notification_id;
                 const notifType = message.content_meta?.type;
-                const canRespond = notifId && ['friend_request','admin_request','tournament_invite'].includes(notifType);
+                const canRespond = notifId && ['friend_request', 'admin_request', 'tournament_invite'].includes(notifType);
+                const buttonTexts = getActionButtonsText();
+                
                 return (
                     <div className="message-announcement">
                         <div className="announcement-icon">📣</div>
-                        <div className="announcement-text">{message.content}</div>
-                        {canRespond && !responded && (
-                            <div className="announcement-actions">
-                                <button disabled={actionLoading} onClick={() => handleNotificationAction('accept')}>✔️</button>
-                                <button disabled={actionLoading} onClick={() => handleNotificationAction('reject')}>❌</button>
-                            </div>
-                        )}
+                        <div className="announcement-content">
+                            <div className="announcement-text">{message.content}</div>
+                            {canRespond && !responded && (
+                                <div className="announcement-actions">
+                                    <button 
+                                        className="action-button accept" 
+                                        disabled={actionLoading} 
+                                        onClick={() => handleNotificationAction('accept')}
+                                    >
+                                        {actionLoading ? 'Обработка...' : buttonTexts.accept}
+                                    </button>
+                                    <button 
+                                        className="action-button reject" 
+                                        disabled={actionLoading} 
+                                        onClick={() => handleNotificationAction('reject')}
+                                    >
+                                        {actionLoading ? 'Обработка...' : buttonTexts.reject}
+                                    </button>
+                                </div>
+                            )}
+                            {responded && (
+                                <div className="announcement-response">
+                                    <span className="response-processed">Уведомление обработано</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
                 

@@ -161,46 +161,46 @@ function ChatWindow({
                     <span>Чат только для уведомлений</span>
                 </div>
             ) : (
-                <div className="chat-input-area">
-                    <form onSubmit={onSubmit}>
-                        <div className="attachment-button" onClick={handleAttachmentClick}>
-                            <i className="attachment-icon">📎</i>
-                            
-                            {showAttachmentOptions && (
-                                <div className="attachment-options">
-                                    <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('image')}>
-                                        <i>📷</i> Фото
-                                    </div>
-                                    <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('document')}>
-                                        <i>📄</i> Документ
-                                    </div>
-                                    <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('file')}>
-                                        <i>📁</i> Файл
-                                    </div>
+            <div className="chat-input-area">
+                <form onSubmit={onSubmit}>
+                    <div className="attachment-button" onClick={handleAttachmentClick}>
+                        <i className="attachment-icon">📎</i>
+                        
+                        {showAttachmentOptions && (
+                            <div className="attachment-options">
+                                <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('image')}>
+                                    <i>📷</i> Фото
                                 </div>
-                            )}
-                        </div>
-                        
-                        <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            style={{ display: 'none' }} 
-                            onChange={handleFileSelect}
-                        />
-                        
-                        <input 
-                            type="text" 
-                            placeholder="Введите сообщение..." 
-                            value={newMessage}
-                            onChange={onInputChange}
-                            onKeyPress={onKeyPress}
-                        />
-                        
-                        <button type="submit">
-                            <span>➤</span>
-                        </button>
-                    </form>
-                </div>
+                                <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('document')}>
+                                    <i>📄</i> Документ
+                                </div>
+                                <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('file')}>
+                                    <i>📁</i> Файл
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        style={{ display: 'none' }} 
+                        onChange={handleFileSelect}
+                    />
+                    
+                    <input 
+                        type="text" 
+                        placeholder="Введите сообщение..." 
+                        value={newMessage}
+                        onChange={onInputChange}
+                        onKeyPress={onKeyPress}
+                    />
+                    
+                    <button type="submit">
+                        <span>➤</span>
+                    </button>
+                </form>
+            </div>
             )}
         </div>
     );

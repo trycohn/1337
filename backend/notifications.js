@@ -20,9 +20,25 @@ const sendNotification = async (userId, notification) => {
       const chatRes = await pool.query('SELECT id FROM chats WHERE name = $1', [systemChatName]);
       if (chatRes.rows.length > 0) {
         const systemChatId = chatRes.rows[0].id;
+        
+        // Добавляем notification_id и type в content_meta для обработки действий
+        const contentMeta = {
+          notification_id: notification.id,
+          type: notification.type,
+          timestamp: new Date()
+        };
+        
+        // Если есть дополнительные данные, добавляем их
+        if (notification.tournament_id) {
+          contentMeta.tournament_id = notification.tournament_id;
+        }
+        if (notification.requester_id) {
+          contentMeta.requester_id = notification.requester_id;
+        }
+        
         const msgRes = await pool.query(
-          'INSERT INTO messages (chat_id, sender_id, content, message_type) VALUES ($1, NULL, $2, $3) RETURNING *',
-          [systemChatId, notification.message, 'announcement']
+          'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
+          [systemChatId, notification.message, 'announcement', contentMeta]
         );
         const newMsg = msgRes.rows[0];
         io.to(`chat_${systemChatId}`).emit('message', newMsg);
