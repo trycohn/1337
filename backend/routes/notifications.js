@@ -308,6 +308,30 @@ router.post('/respond', async (req, res) => {
             [notificationId]
         );
 
+        // Обновляем все сообщения в системном чате, которые содержат это уведомление
+        await pool.query(`
+            UPDATE messages 
+            SET content_meta = jsonb_set(
+                content_meta, 
+                '{processed}', 
+                'true'::jsonb
+            )
+            WHERE message_type = 'announcement' 
+            AND content_meta->>'notification_id' = $1
+        `, [notificationId]);
+
+        // Также добавляем информацию о действии
+        await pool.query(`
+            UPDATE messages 
+            SET content_meta = jsonb_set(
+                content_meta, 
+                '{action}', 
+                $1::jsonb
+            )
+            WHERE message_type = 'announcement' 
+            AND content_meta->>'notification_id' = $2
+        `, [JSON.stringify(action), notificationId]);
+
         // Отправляем уведомление через Socket.IO
         const io = req.app.get('io');
         if (io) {

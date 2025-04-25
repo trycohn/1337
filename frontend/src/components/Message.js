@@ -57,6 +57,13 @@ function Message({ message, isOwn, onDeleteMessage }) {
     // Обработчик действия по уведомлению (accept/reject)
     const handleNotificationAction = async (actionType) => {
         if (!message.content_meta?.notification_id) return;
+        
+        // Сначала проверим, не был ли этот запрос уже обработан
+        if (isNotificationProcessed()) {
+            alert('Это уведомление уже было обработано.');
+            return;
+        }
+        
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
