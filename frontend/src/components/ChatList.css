@@ -115,13 +115,20 @@
     text-overflow: ellipsis;
 }
 
+.chat-last-message-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
 .chat-last-message {
     color: #a0a0b8;
     font-size: 0.9rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%; /* Используем все доступное пространство */
+    max-width: calc(100% - 30px); /* Оставляем место для счетчика непрочитанных */
 }
 
 .chat-meta {
@@ -148,6 +155,8 @@
     justify-content: center;
     font-size: 0.75rem;
     padding: 0 4px;
+    margin-left: 5px;
+    flex-shrink: 0;
 }
 
 .no-chats {
