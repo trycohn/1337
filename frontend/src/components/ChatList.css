@@ -103,6 +103,7 @@
 .chat-info {
     flex: 1;
     min-width: 0; /* Чтобы текст корректно обрезался */
+    max-width: calc(100% - 120px); /* Ограничиваем максимальную ширину, оставляя место для аватара и метаданных */
 }
 
 .chat-name {
@@ -120,13 +121,14 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 100%; /* Используем все доступное пространство */
 }
 
 .chat-meta {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    min-width: 65px;
+    min-width: 55px; /* Уменьшаем минимальную ширину */
 }
 
 .chat-time {

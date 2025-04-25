@@ -14,8 +14,8 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
         
         // Ограничиваем длину сообщения
         let content = message.content;
-        if (content.length > 30) {
-            content = content.substring(0, 28) + '...';
+        if (content.length > 40) {
+            content = content.substring(0, 38) + '...';
         }
         
         // Добавляем префикс в зависимости от типа сообщения
