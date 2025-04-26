@@ -1396,29 +1396,26 @@ function TournamentDetails() {
                                                     </div>
                                                 </div>
                                                 <div className="search-result-actions">
-                                                    {isUserParticipant(user.id) ? (
-                                                        <span className="action-badge">уже участвует</span>
-                                                    ) : (
-                                                        <>
+                                                    <div className="action-links">
+                                                        {isUserParticipant(user.id) ? (
+                                                            <span className="already-participant">уже участвует</span>
+                                                        ) : (
                                                             <button 
-                                                                className="action-btn invite-btn"
+                                                                className="action-link"
                                                                 onClick={() => handleInviteUser(user.id, user.username)}
-                                                                title="Отправить приглашение на турнир"
                                                             >
                                                                 пригласить
                                                             </button>
-                                                            <span className="action-separator">|</span>
-                                                        </>
-                                                    )}
-                                                    <a 
-                                                        href={`/user/${user.id}`} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer"
-                                                        className="action-btn profile-btn"
-                                                        title="Открыть профиль пользователя"
-                                                    >
-                                                        профиль
-                                                    </a>
+                                                        )}
+                                                        <a 
+                                                            href={`/user/${user.id}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="action-link"
+                                                        >
+                                                            профиль
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </li>
                                         ))}
