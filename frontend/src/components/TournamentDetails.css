@@ -622,6 +622,44 @@
     box-shadow: none !important;
 }
 
+/* Общий стиль для кнопок в выпадающем списке */
+.search-result-action-button {
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: white !important;
+    cursor: pointer !important;
+    display: inline-block !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 5px 10px !important;
+    text-align: center !important;
+    text-decoration: none !important;
+    text-transform: lowercase !important;
+    transition: transform 0.2s !important;
+    outline: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+.search-result-action-button:hover,
+.search-result-action-button:focus,
+.search-result-action-button:active {
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: white !important;
+    text-decoration: underline !important;
+    transform: scale(1.05) !important;
+    outline: none !important;
+}
+
 .already-participant {
     color: #aaa;
     font-style: italic;

@@ -1401,7 +1401,7 @@ function TournamentDetails() {
                                                             <span className="already-participant">уже участвует</span>
                                                         ) : (
                                                             <button 
-                                                                className="action-link no-bg-button"
+                                                                className="action-link no-bg-button search-result-action-button"
                                                                 onClick={() => handleInviteUser(user.id, user.username)}
                                                             >
                                                                 пригласить
@@ -1411,7 +1411,7 @@ function TournamentDetails() {
                                                             href={`/user/${user.id}`} 
                                                             target="_blank" 
                                                             rel="noopener noreferrer"
-                                                            className="action-link no-bg-button"
+                                                            className="action-link no-bg-button search-result-action-button"
                                                         >
                                                             профиль
                                                         </a>
