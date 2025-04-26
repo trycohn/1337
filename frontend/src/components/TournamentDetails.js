@@ -95,6 +95,12 @@ function TournamentDetails() {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
 
+    // Функция для обеспечения HTTPS в URL
+    const ensureHttps = (url) => {
+        if (!url) return url;
+        return url.replace(/^http:\/\//i, 'https://');
+    };
+
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
         try {
@@ -414,20 +420,31 @@ function TournamentDetails() {
                         return {
                             ...user,
                             online: statusResponse.data.online,
-                            last_online: statusResponse.data.last_online
+                            last_online: statusResponse.data.last_online,
+                            avatar_url: ensureHttps(user.avatar_url) // Исправляем URL аватара
                         };
                     } catch (error) {
                         console.error(`Ошибка при получении статуса пользователя ${user.id}:`, error);
+                        // Если произошла ошибка при получении статуса, возвращаем пользователя без статуса онлайн
                         return {
                             ...user,
                             online: false,
-                            last_online: null
+                            last_online: null,
+                            avatar_url: ensureHttps(user.avatar_url) // Исправляем URL аватара
                         };
                     }
                 }));
                 
-                setSearchResults(usersWithStatus);
-                setShowSearchResults(true);
+                // Фильтруем результаты, чтобы убрать null записи и убедиться, что у нас есть результаты
+                const filteredResults = usersWithStatus.filter(user => user && user.id);
+                
+                if (filteredResults.length > 0) {
+                    setSearchResults(filteredResults);
+                    setShowSearchResults(true);
+                } else {
+                    setSearchResults([]);
+                    setShowSearchResults(false);
+                }
                 setIsSearching(false);
             } catch (error) {
                 console.error('Ошибка при поиске пользователей:', error);
@@ -1080,9 +1097,10 @@ function TournamentDetails() {
                             >
                                 <div className="participant-avatar">
                                     <img 
-                                        src={participant.avatar_url || '/default-avatar.png'} 
+                                        src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
                                         alt={`${participant.name} аватар`} 
                                         className="participant-avatar-img"
+                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
                                     />
                                 </div>
                                 <div className="participant-info">
@@ -1324,6 +1342,7 @@ function TournamentDetails() {
                                                     <img 
                                                         src={user.avatar_url || '/default-avatar.png'} 
                                                         alt={`${user.username} аватар`} 
+                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
                                                     />
                                                 </div>
                                                 <div className="search-result-info">

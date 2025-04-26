@@ -1317,16 +1317,40 @@ router.get('/:id/status', authenticateToken, async (req, res) => {
         
         const lastActivity = result.rows[0].last_activity_at;
         
-        // Считаем пользователя онлайн, если его последняя активность была не более 15 минут назад
-        const isOnline = lastActivity && (Date.now() - new Date(lastActivity).getTime()) < 15 * 60 * 1000;
+        // Проверяем, существует ли значение last_activity_at
+        if (!lastActivity) {
+            // Если значение отсутствует, просто возвращаем статус оффлайн
+            return res.json({
+                online: false,
+                last_online: null
+            });
+        }
         
-        res.json({
-            online: isOnline,
-            last_online: lastActivity
-        });
+        try {
+            // Преобразуем дату в объект Date и вычисляем разницу
+            const lastActivityDate = new Date(lastActivity);
+            // Считаем пользователя онлайн, если его последняя активность была не более 15 минут назад
+            const isOnline = (Date.now() - lastActivityDate.getTime()) < 15 * 60 * 1000;
+            
+            res.json({
+                online: isOnline,
+                last_online: lastActivity
+            });
+        } catch (dateError) {
+            console.error('Ошибка обработки даты для пользователя', userId, ':', dateError);
+            // В случае ошибки обработки даты возвращаем оффлайн
+            res.json({
+                online: false,
+                last_online: null
+            });
+        }
     } catch (err) {
         console.error('Ошибка получения статуса пользователя:', err);
-        res.status(500).json({ error: 'Ошибка сервера при получении статуса пользователя' });
+        // Возвращаем простой ответ вместо ошибки
+        res.json({
+            online: false,
+            last_online: null
+        });
     }
 });
 
