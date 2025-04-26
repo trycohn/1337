@@ -93,6 +93,7 @@ function TournamentDetails() {
     const [searchTimeout, setSearchTimeout] = useState(null);
     const [searchResults, setSearchResults] = useState([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -374,18 +375,42 @@ function TournamentDetails() {
         if (!query || query.length < 2) {
             setSearchResults([]);
             setShowSearchResults(false);
+            setIsSearching(false);
             return;
         }
         
-        // Устанавливаем новый таймер с задержкой 3 секунды
+        // Показываем индикатор загрузки
+        setIsSearching(true);
+        
+        // Устанавливаем новый таймер с задержкой 1 секунду
         const newTimeout = setTimeout(async () => {
             try {
-                const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`);
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.error('Токен авторизации отсутствует');
+                    setIsSearching(false);
+                    return;
+                }
+                
+                const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                // Проверяем наличие данных в ответе
+                if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+                    console.log('Пользователи не найдены');
+                    setSearchResults([]);
+                    setShowSearchResults(false);
+                    setIsSearching(false);
+                    return;
+                }
                 
                 // Получаем статусы онлайн для найденных пользователей
                 const usersWithStatus = await Promise.all(response.data.map(async (user) => {
                     try {
-                        const statusResponse = await api.get(`/api/users/${user.id}/status`);
+                        const statusResponse = await api.get(`/api/users/${user.id}/status`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
                         return {
                             ...user,
                             online: statusResponse.data.online,
@@ -403,12 +428,14 @@ function TournamentDetails() {
                 
                 setSearchResults(usersWithStatus);
                 setShowSearchResults(true);
+                setIsSearching(false);
             } catch (error) {
                 console.error('Ошибка при поиске пользователей:', error);
                 setSearchResults([]);
                 setShowSearchResults(false);
+                setIsSearching(false);
             }
-        }, 3000); // 3000 мс = 3 секунды
+        }, 1000); // 1000 мс = 1 секунда (было 3000 мс)
         
         setSearchTimeout(newTimeout);
     };
@@ -1274,6 +1301,12 @@ function TournamentDetails() {
                                     placeholder="Поиск пользователей..."
                                     className="search-input"
                                 />
+                                {isSearching && (
+                                    <div className="search-loading">Поиск...</div>
+                                )}
+                                {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                                    <div className="search-no-results">Пользователи не найдены</div>
+                                )}
                                 {showSearchResults && searchResults.length > 0 && (
                                     <ul className="search-results-dropdown">
                                         {searchResults.map(user => (
