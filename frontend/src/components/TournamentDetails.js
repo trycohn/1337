@@ -95,6 +95,7 @@ function TournamentDetails() {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const searchContainerRef = useRef(null);
+    const [invitedUsers, setInvitedUsers] = useState([]);
 
     // Функция для обеспечения HTTPS в URL
     const ensureHttps = (url) => {
@@ -169,6 +170,23 @@ function TournamentDetails() {
 
         fetchTournamentData();
         setupWebSocket();
+
+        // Загрузка списка отправленных приглашений
+        if (token) {
+            api.get(`/api/tournaments/${id}/invitations`, { 
+                headers: { Authorization: `Bearer ${token}` } 
+            })
+            .then(res => {
+                if (res.data && Array.isArray(res.data)) {
+                    // Извлекаем ID пользователей из списка приглашений
+                    const sentInvitationUserIds = res.data.map(invitation => invitation.user_id);
+                    setInvitedUsers(sentInvitationUserIds);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки отправленных приглашений:', error);
+            });
+        }
 
         return () => {
             if (wsRef.current) {
@@ -1026,12 +1044,20 @@ function TournamentDetails() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
+            // Добавляем пользователя в список приглашенных
+            setInvitedUsers(prev => [...prev, userId]);
+            
             setMessage(`Приглашение отправлено пользователю ${username}`);
-            setShowSearchResults(false);
+            // Не закрываем список после отправки приглашения
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
             setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
         }
+    };
+
+    // Проверка, было ли приглашение отправлено
+    const isInvitationSent = (userId) => {
+        return invitedUsers.includes(userId);
     };
 
     // Обработчик клика вне списка результатов
@@ -1399,6 +1425,13 @@ function TournamentDetails() {
                                                     <div className="action-links">
                                                         {isUserParticipant(user.id) ? (
                                                             <span className="already-participant">уже участвует</span>
+                                                        ) : isInvitationSent(user.id) ? (
+                                                            <button 
+                                                                className="action-link no-bg-button search-result-action-button"
+                                                                disabled
+                                                            >
+                                                                уже отправлено
+                                                            </button>
                                                         ) : (
                                                             <button 
                                                                 className="action-link no-bg-button search-result-action-button"
