@@ -616,6 +616,12 @@
     background: none;
 }
 
+.no-bg-button {
+    background-color: transparent !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+
 .already-participant {
     color: #aaa;
     font-style: italic;
