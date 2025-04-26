@@ -171,23 +171,6 @@ function TournamentDetails() {
         fetchTournamentData();
         setupWebSocket();
 
-        // Загрузка списка отправленных приглашений
-        if (token) {
-            api.get(`/api/tournaments/${id}/invitations`, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            })
-            .then(res => {
-                if (res.data && Array.isArray(res.data)) {
-                    // Извлекаем ID пользователей из списка приглашений
-                    const sentInvitationUserIds = res.data.map(invitation => invitation.user_id);
-                    setInvitedUsers(sentInvitationUserIds);
-                }
-            })
-            .catch(error => {
-                console.error('Ошибка загрузки отправленных приглашений:', error);
-            });
-        }
-
         return () => {
             if (wsRef.current) {
                 wsRef.current.emit('unwatch_tournament', id);
@@ -1038,9 +1021,14 @@ function TournamentDetails() {
                 return;
             }
 
+            // Исправляем параметры запроса согласно требованиям API
             const response = await api.post(
                 `/api/tournaments/${id}/invite`, 
-                { userId },
+                {
+                    // Используем формат параметров из существующего метода инвайта в компоненте
+                    method: 'username',
+                    username: username
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
@@ -1051,7 +1039,16 @@ function TournamentDetails() {
             // Не закрываем список после отправки приглашения
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
-            setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
+            // Если получили ошибку 400, но это из-за того, что приглашение уже было отправлено
+            if (error.response?.status === 400 && 
+                (error.response?.data?.error?.includes('уже отправлено') || 
+                 error.response?.data?.error?.includes('already invited'))) {
+                // Всё равно помечаем пользователя как приглашённого
+                setInvitedUsers(prev => [...prev, userId]);
+                setMessage(`Пользователь ${username} уже приглашён`);
+            } else {
+                setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
+            }
         }
     };
 
