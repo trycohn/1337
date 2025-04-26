@@ -1300,4 +1300,34 @@ router.get('/search', authenticateToken, async (req, res) => {
     }
 });
 
+// Получение статуса онлайн пользователя
+router.get('/:id/status', authenticateToken, async (req, res) => {
+    const userId = req.params.id;
+    
+    try {
+        // Получаем last_activity_at из таблицы users
+        const result = await pool.query(
+            'SELECT last_activity_at FROM users WHERE id = $1',
+            [userId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        const lastActivity = result.rows[0].last_activity_at;
+        
+        // Считаем пользователя онлайн, если его последняя активность была не более 15 минут назад
+        const isOnline = lastActivity && (Date.now() - new Date(lastActivity).getTime()) < 15 * 60 * 1000;
+        
+        res.json({
+            online: isOnline,
+            last_online: lastActivity
+        });
+    } catch (err) {
+        console.error('Ошибка получения статуса пользователя:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении статуса пользователя' });
+    }
+});
+
 module.exports = router;

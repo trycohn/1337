@@ -90,6 +90,9 @@ function TournamentDetails() {
     const [editedFullDescription, setEditedFullDescription] = useState('');
     const [editedRules, setEditedRules] = useState('');
     const [mixedTeams, setMixedTeams] = useState([]);
+    const [searchTimeout, setSearchTimeout] = useState(null);
+    const [searchResults, setSearchResults] = useState([]);
+    const [showSearchResults, setShowSearchResults] = useState(false);
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -358,19 +361,70 @@ function TournamentDetails() {
         }
     };
 
-    const handleUserSearch = async (query) => {
-        if (query.length < 2) {
-            setUserSearchResults([]);
+    // Функция для поиска пользователей с задержкой
+    const handleUserSearchWithDelay = (query) => {
+        setSearchQuery(query);
+        
+        // Очищаем предыдущий таймер, если он существует
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Если запрос пустой, скрываем результаты
+        if (!query || query.length < 2) {
+            setSearchResults([]);
+            setShowSearchResults(false);
             return;
         }
+        
+        // Устанавливаем новый таймер с задержкой 3 секунды
+        const newTimeout = setTimeout(async () => {
+            try {
+                const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`);
+                
+                // Получаем статусы онлайн для найденных пользователей
+                const usersWithStatus = await Promise.all(response.data.map(async (user) => {
+                    try {
+                        const statusResponse = await api.get(`/api/users/${user.id}/status`);
+                        return {
+                            ...user,
+                            online: statusResponse.data.online,
+                            last_online: statusResponse.data.last_online
+                        };
+                    } catch (error) {
+                        console.error(`Ошибка при получении статуса пользователя ${user.id}:`, error);
+                        return {
+                            ...user,
+                            online: false,
+                            last_online: null
+                        };
+                    }
+                }));
+                
+                setSearchResults(usersWithStatus);
+                setShowSearchResults(true);
+            } catch (error) {
+                console.error('Ошибка при поиске пользователей:', error);
+                setSearchResults([]);
+                setShowSearchResults(false);
+            }
+        }, 3000); // 3000 мс = 3 секунды
+        
+        setSearchTimeout(newTimeout);
+    };
 
-        try {
-            const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`);
-            setUserSearchResults(response.data);
-        } catch (error) {
-            console.error('Ошибка при поиске пользователей:', error);
-            setUserSearchResults([]);
-        }
+    // Форматирование даты последнего онлайна
+    const formatLastOnline = (lastOnlineDate) => {
+        if (!lastOnlineDate) return 'Неизвестно';
+        
+        const lastOnline = new Date(lastOnlineDate);
+        return lastOnline.toLocaleDateString('ru-RU', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     const handleAddParticipant = async () => {
@@ -1216,24 +1270,35 @@ function TournamentDetails() {
                                 <input
                                     type="text"
                                     value={searchQuery}
-                                    onChange={(e) => {
-                                        setSearchQuery(e.target.value);
-                                        handleUserSearch(e.target.value);
-                                    }}
+                                    onChange={(e) => handleUserSearchWithDelay(e.target.value)}
                                     placeholder="Поиск пользователей..."
+                                    className="search-input"
                                 />
-                                {userSearchResults.length > 0 && (
-                                    <ul className="search-results">
-                                        {userSearchResults.map(user => (
+                                {showSearchResults && searchResults.length > 0 && (
+                                    <ul className="search-results-dropdown">
+                                        {searchResults.map(user => (
                                             <li 
                                                 key={user.id}
+                                                className="search-result-item"
                                                 onClick={() => {
                                                     setSelectedUser(user);
                                                     setAddParticipantName(user.username);
-                                                    setUserSearchResults([]);
+                                                    setShowSearchResults(false);
+                                                    setSearchResults([]);
                                                 }}
                                             >
-                                                {user.username}
+                                                <div className="search-result-avatar">
+                                                    <img 
+                                                        src={user.avatar_url || '/default-avatar.png'} 
+                                                        alt={`${user.username} аватар`} 
+                                                    />
+                                                </div>
+                                                <div className="search-result-info">
+                                                    <span className="search-result-name">{user.username}</span>
+                                                    <span className={`search-result-status ${user.online ? 'online' : 'offline'}`}>
+                                                        {user.online ? 'Онлайн' : `Был онлайн: ${formatLastOnline(user.last_online)}`}
+                                                    </span>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>

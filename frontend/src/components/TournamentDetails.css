@@ -430,6 +430,100 @@
     color: white;
 }
 
+/* Стили для поиска участников */
+.search-container {
+    position: relative;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.search-result-item {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.search-result-avatar {
+    margin-right: 10px;
+}
+
+.search-result-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.search-result-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.search-result-name {
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.search-result-status {
+    font-size: 12px;
+    color: #777;
+}
+
+.search-result-status.online {
+    color: #4CAF50;
+}
+
+.search-result-status.offline {
+    color: #9E9E9E;
+}
+
+/* Кнопка запроса прав администратора */
+.request-admin-btn {
+    margin-top: 15px;
+    background-color: #607d8b;
+}
+
+.request-admin-btn:hover {
+    background-color: #455a64;
+}
+
 .show-full-description {
     display: flex;
     align-items: center;
