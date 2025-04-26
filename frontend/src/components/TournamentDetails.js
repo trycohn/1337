@@ -1021,12 +1021,11 @@ function TournamentDetails() {
                 return;
             }
 
-            // Исправляем параметры запроса согласно требованиям API
+            // Исправляем формат запроса по аналогии с существующим методом handleInvite
             const response = await api.post(
                 `/api/tournaments/${id}/invite`, 
                 {
-                    // Используем формат параметров из существующего метода инвайта в компоненте
-                    method: 'username',
+                    // Отправляем только username, без поля method
                     username: username
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
