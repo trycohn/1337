@@ -1038,15 +1038,26 @@ function TournamentDetails() {
             // Не закрываем список после отправки приглашения
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
-            // Если получили ошибку 400, но это из-за того, что приглашение уже было отправлено
-            if (error.response?.status === 400 && 
-                (error.response?.data?.error?.includes('уже отправлено') || 
-                 error.response?.data?.error?.includes('already invited'))) {
-                // Всё равно помечаем пользователя как приглашённого
+            
+            // Проверяем ошибки как 400, так и 500
+            const errorMessage = error.response?.data?.error || '';
+            const errorStatus = error.response?.status;
+            
+            // Проверяем на дублирование приглашения (может возвращаться как 400, так и 500)
+            if ((errorStatus === 400 && 
+                 (errorMessage.includes('уже отправлено') || 
+                  errorMessage.includes('already invited'))) ||
+                // Проверяем ошибку дублирования ключа в ошибке 500
+                (errorStatus === 500 && 
+                 (errorMessage.includes('duplicate key') || 
+                  errorMessage.includes('already exists') ||
+                  error.message.includes('500')))) {
+                
+                // Помечаем пользователя как приглашённого даже при ошибке
                 setInvitedUsers(prev => [...prev, userId]);
                 setMessage(`Пользователь ${username} уже приглашён`);
             } else {
-                setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
+                setMessage(errorMessage || 'Ошибка при отправке приглашения');
             }
         }
     };
