@@ -587,15 +587,15 @@
 }
 
 .action-links {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    height: 100%;
-    padding: 10px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    height: 100%;
+    justify-content: space-evenly;
+    padding: 10px;
+    width: 100%;
 }
 
 .action-link {
@@ -613,6 +613,7 @@
 .action-link:hover {
     text-decoration: underline;
     transform: scale(1.05);
+    background: none;
 }
 
 .already-participant {
