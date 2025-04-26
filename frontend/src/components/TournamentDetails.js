@@ -1397,15 +1397,18 @@ function TournamentDetails() {
                                                 </div>
                                                 <div className="search-result-actions">
                                                     {isUserParticipant(user.id) ? (
-                                                        <span className="action-badge already-participant">Уже участвует</span>
+                                                        <span className="action-badge">уже участвует</span>
                                                     ) : (
-                                                        <button 
-                                                            className="action-btn invite-btn"
-                                                            onClick={() => handleInviteUser(user.id, user.username)}
-                                                            title="Отправить приглашение на турнир"
-                                                        >
-                                                            Пригласить
-                                                        </button>
+                                                        <>
+                                                            <button 
+                                                                className="action-btn invite-btn"
+                                                                onClick={() => handleInviteUser(user.id, user.username)}
+                                                                title="Отправить приглашение на турнир"
+                                                            >
+                                                                пригласить
+                                                            </button>
+                                                            <span className="action-separator">|</span>
+                                                        </>
                                                     )}
                                                     <a 
                                                         href={`/user/${user.id}`} 
@@ -1414,7 +1417,7 @@ function TournamentDetails() {
                                                         className="action-btn profile-btn"
                                                         title="Открыть профиль пользователя"
                                                     >
-                                                        Профиль
+                                                        профиль
                                                     </a>
                                                 </div>
                                             </li>
