@@ -94,6 +94,7 @@ function TournamentDetails() {
     const [searchResults, setSearchResults] = useState([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const searchContainerRef = useRef(null);
 
     // Функция для обеспечения HTTPS в URL
     const ensureHttps = (url) => {
@@ -1004,6 +1005,53 @@ function TournamentDetails() {
         }
     }, [tournament, id]);
 
+    // Функция для проверки, является ли пользователь участником турнира
+    const isUserParticipant = (userId) => {
+        if (!tournament || !tournament.participants) return false;
+        return tournament.participants.some(p => p.user_id === userId);
+    };
+
+    // Функция для отправки приглашения участнику
+    const handleInviteUser = async (userId, username) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setMessage('Для отправки приглашения необходимо авторизоваться');
+                return;
+            }
+
+            const response = await api.post(
+                `/api/tournaments/${id}/invite`, 
+                { userId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            setMessage(`Приглашение отправлено пользователю ${username}`);
+            setShowSearchResults(false);
+        } catch (error) {
+            console.error('Ошибка при отправке приглашения:', error);
+            setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
+        }
+    };
+
+    // Обработчик клика вне списка результатов
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                searchContainerRef.current && 
+                !searchContainerRef.current.contains(event.target) && 
+                showSearchResults
+            ) {
+                setShowSearchResults(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSearchResults]);
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -1311,7 +1359,7 @@ function TournamentDetails() {
                     {isAdminOrCreator && (
                         <div className="add-participant-section">
                             <h3>Добавить участника</h3>
-                            <div className="search-container">
+                            <div className="search-container" ref={searchContainerRef}>
                                 <input
                                     type="text"
                                     value={searchQuery}
@@ -1327,32 +1375,55 @@ function TournamentDetails() {
                                 )}
                                 {showSearchResults && searchResults.length > 0 && (
                                     <ul className="search-results-dropdown">
-                                        {searchResults.map(user => (
+                                        {searchResults.slice(0, 10).map(user => (
                                             <li 
                                                 key={user.id}
                                                 className="search-result-item"
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setAddParticipantName(user.username);
-                                                    setShowSearchResults(false);
-                                                    setSearchResults([]);
-                                                }}
                                             >
-                                                <div className="search-result-avatar">
-                                                    <img 
-                                                        src={user.avatar_url || '/default-avatar.png'} 
-                                                        alt={`${user.username} аватар`} 
-                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                    />
+                                                <div className="search-result-content">
+                                                    <div className="search-result-avatar">
+                                                        <img 
+                                                            src={user.avatar_url || '/default-avatar.png'} 
+                                                            alt={`${user.username} аватар`} 
+                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        />
+                                                    </div>
+                                                    <div className="search-result-info">
+                                                        <span className="search-result-name">{user.username}</span>
+                                                        <span className={`search-result-status ${user.online ? 'online' : 'offline'}`}>
+                                                            {user.online ? 'Онлайн' : `Был онлайн: ${formatLastOnline(user.last_online)}`}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="search-result-info">
-                                                    <span className="search-result-name">{user.username}</span>
-                                                    <span className={`search-result-status ${user.online ? 'online' : 'offline'}`}>
-                                                        {user.online ? 'Онлайн' : `Был онлайн: ${formatLastOnline(user.last_online)}`}
-                                                    </span>
+                                                <div className="search-result-actions">
+                                                    {isUserParticipant(user.id) ? (
+                                                        <span className="action-badge already-participant">Уже участвует</span>
+                                                    ) : (
+                                                        <button 
+                                                            className="action-btn invite-btn"
+                                                            onClick={() => handleInviteUser(user.id, user.username)}
+                                                            title="Отправить приглашение на турнир"
+                                                        >
+                                                            Пригласить
+                                                        </button>
+                                                    )}
+                                                    <a 
+                                                        href={`/user/${user.id}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="action-btn profile-btn"
+                                                        title="Открыть профиль пользователя"
+                                                    >
+                                                        Профиль
+                                                    </a>
                                                 </div>
                                             </li>
                                         ))}
+                                        {searchResults.length > 10 && (
+                                            <li className="search-too-many-results">
+                                                Слишком много результатов
+                                            </li>
+                                        )}
                                     </ul>
                                 )}
                             </div>
