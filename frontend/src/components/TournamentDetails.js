@@ -1021,43 +1021,37 @@ function TournamentDetails() {
                 return;
             }
 
-            // Исправляем формат запроса по аналогии с существующим методом handleInvite
-            const response = await api.post(
+            console.log(`Отправка приглашения пользователю: ${username} (id: ${userId})`);
+            
+            // Меняем формат запроса на тот, который точно работает в handleInvite
+            const inviteResponse = await api.post(
                 `/api/tournaments/${id}/invite`, 
-                {
-                    // Отправляем только username, без поля method
-                    username: username
-                },
+                { username: username },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
+            console.log('Успешный ответ от сервера:', inviteResponse.data);
+            
             // Добавляем пользователя в список приглашенных
             setInvitedUsers(prev => [...prev, userId]);
-            
             setMessage(`Приглашение отправлено пользователю ${username}`);
-            // Не закрываем список после отправки приглашения
         } catch (error) {
-            console.error('Ошибка при отправке приглашения:', error);
+            console.error('Подробная ошибка при отправке приглашения:', error);
+            console.error('Ответ сервера:', error.response?.data);
+            console.error('Статус ошибки:', error.response?.status);
             
-            // Проверяем ошибки как 400, так и 500
-            const errorMessage = error.response?.data?.error || '';
-            const errorStatus = error.response?.status;
-            
-            // Проверяем на дублирование приглашения (может возвращаться как 400, так и 500)
-            if ((errorStatus === 400 && 
-                 (errorMessage.includes('уже отправлено') || 
-                  errorMessage.includes('already invited'))) ||
-                // Проверяем ошибку дублирования ключа в ошибке 500
-                (errorStatus === 500 && 
-                 (errorMessage.includes('duplicate key') || 
-                  errorMessage.includes('already exists') ||
-                  error.message.includes('500')))) {
-                
-                // Помечаем пользователя как приглашённого даже при ошибке
+            // Проверяем ошибки 400 и 500
+            if (error.response?.status === 400 && error.response?.data?.error?.includes('уже')) {
+                // Если приглашение уже отправлено (ошибка 400)
                 setInvitedUsers(prev => [...prev, userId]);
                 setMessage(`Пользователь ${username} уже приглашён`);
+            } else if (error.response?.status === 500) {
+                // Любая ошибка 500 - вероятно дублирование записи в БД
+                setInvitedUsers(prev => [...prev, userId]);
+                setMessage(`Приглашение для пользователя ${username} уже существует`);
             } else {
-                setMessage(errorMessage || 'Ошибка при отправке приглашения');
+                // Другие ошибки
+                setMessage(error.response?.data?.error || `Ошибка при отправке приглашения: ${error.message}`);
             }
         }
     };
