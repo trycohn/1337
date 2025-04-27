@@ -1313,6 +1313,9 @@ function TournamentDetails() {
 
     // Определение призёров
     let winners = [];
+    // Определение, завершен ли финальный матч
+    let isFinalMatchComplete = false;
+
     if (Array.isArray(matches) && matches.length > 0) {
         if (tournament.format === 'double_elimination') {
             // Для Double Elimination
@@ -1326,6 +1329,9 @@ function TournamentDetails() {
                         (p.id === grandFinalMatch.team1_id || p.id === grandFinalMatch.team2_id)
                 )?.name || '';
                 winners = [[1, firstPlace], [2, secondPlace]];
+                
+                // Если определен победитель финального матча, считаем, что финал завершен
+                isFinalMatchComplete = true;
 
                 // Находим финал нижней сетки (Losers Bracket Final) — последний матч с bracket_type = 'loser' перед Grand Final
                 const loserMatches = matches.filter((m) => m.bracket_type === 'loser');
@@ -1367,6 +1373,9 @@ function TournamentDetails() {
                         (p.id === finalMatch.team1_id || p.id === finalMatch.team2_id)
                 )?.name || '';
                 winners = [[1, firstPlace], [2, secondPlace]];
+                
+                // Если определен победитель финального матча, считаем, что финал завершен
+                isFinalMatchComplete = true;
 
                 if (tournament.format === 'single_elimination' && thirdPlaceMatch) {
                     const thirdPlaceMatchResult = matches.find((m) => m.is_third_place_match);
@@ -1893,8 +1902,9 @@ function TournamentDetails() {
                     )}
                 </div>
             )}
-            {tournament?.status === 'in_progress' && isAdminOrCreator && (
-                <div className="tournament-controls">
+            {/* Кнопка завершения турнира, если финальный матч сыгран, но турнир не завершен */}
+            {isFinalMatchComplete && tournament?.status === 'in_progress' && isAdminOrCreator && (
+                <div className="tournament-controls finish-above-bracket">
                     <button 
                         className="end-tournament"
                         onClick={handleEndTournament}

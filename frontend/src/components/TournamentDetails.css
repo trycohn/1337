@@ -786,4 +786,27 @@
 
 .reformate-teams-button:hover {
     background-color: #e67e22;
+}
+
+.finish-above-bracket {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f8eaea;
+    border-radius: 8px;
+    border: 1px solid #e74c3c;
+    display: flex;
+    justify-content: center;
+}
+
+.finish-above-bracket .end-tournament {
+    background-color: #e74c3c;
+    font-weight: bold;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+.finish-above-bracket .end-tournament:hover {
+    background-color: #c0392b;
+    transform: scale(1.05);
+    transition: transform 0.2s ease, background-color 0.3s ease;
 } 
