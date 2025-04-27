@@ -845,11 +845,11 @@ function TournamentDetails() {
         const token = localStorage.getItem('token');
         if (!token) {
             setMessage('Пожалуйста, войдите, чтобы ответить на приглашение');
+            toast.error('Пожалуйста, войдите, чтобы ответить на приглашение');
             return;
         }
 
         try {
-            // Первая попытка с основным форматом
             try {
                 const response = await api.post(
                     `/api/tournaments/${id}/handle-invitation`,
@@ -857,17 +857,20 @@ function TournamentDetails() {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setMessage(response.data.message);
+                toast.success(response.data.message);
                 fetchTournamentData();
             } catch (error) {
-                // Проверяем наличие ошибки с колонкой invited_user_id
-                if (error.response?.data?.error?.includes('invited_user_id')) {
-                    // Альтернативная попытка с дополнительным параметром
+                // Проверяем ошибку, связанную с отсутствующей колонкой в базе данных
+                if (error.response?.data?.error?.includes('column') ||
+                    error.response?.data?.error?.includes('does not exist')) {
+                    // Альтернативная попытка без дополнительных параметров
                     const alternativeResponse = await api.post(
                         `/api/tournaments/${id}/handle-invitation`,
-                        { action, invitation_id: invitationId, skip_id_check: true },
+                        { action, invitation_id: invitationId },
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     setMessage(alternativeResponse.data.message);
+                    toast.success(alternativeResponse.data.message);
                     fetchTournamentData();
                 } else {
                     // Другие ошибки
@@ -876,6 +879,7 @@ function TournamentDetails() {
             }
         } catch (error) {
             setMessage(error.response?.data?.error || 'Ошибка при обработке приглашения');
+            toast.error(error.response?.data?.error || 'Ошибка при обработке приглашения');
             console.error('Ошибка при обработке приглашения:', error);
         }
     };
@@ -1144,8 +1148,6 @@ function TournamentDetails() {
             }
             
             try {
-                // API требует username или email, а не user_id
-                // Исправляем ошибку с колонкой "invited_user_id", которая не существует
                 // Используем только параметр username для отправки приглашения
                 const inviteResponse = await api.post(
                     `/api/tournaments/${id}/invite`, 
@@ -1155,15 +1157,17 @@ function TournamentDetails() {
                 
                 console.log('Успешный ответ от сервера:', inviteResponse.data);
                 setMessage(`Приглашение отправлено пользователю ${username}`);
+                toast.success(`Приглашение отправлено пользователю ${username}`);
             } catch (apiError) {
                 console.error('Подробная ошибка при отправке приглашения:', apiError);
                 console.error('Ответ сервера:', apiError.response?.data);
                 console.error('Статус ошибки:', apiError.response?.status);
                 
                 // Обрабатываем ошибку дублирования приглашения
-                if (apiError.response?.status === 500 && 
-                    apiError.response?.data?.error?.includes('unique constraint')) {
+                if (apiError.response?.data?.error?.includes('unique constraint') ||
+                    apiError.response?.data?.error?.includes('уже приглашен')) {
                     setMessage(`Приглашение для пользователя ${username} уже существует`);
+                    toast.warning(`Приглашение для пользователя ${username} уже существует`);
                     return;
                 }
                 
@@ -1171,6 +1175,7 @@ function TournamentDetails() {
                 if (apiError.response?.status === 400) {
                     if (apiError.response?.data?.error?.includes('уже')) {
                         setMessage(`Пользователь ${username} уже приглашён`);
+                        toast.warning(`Пользователь ${username} уже приглашён`);
                     } else if (apiError.response?.data?.error?.includes('Укажите никнейм или email')) {
                         // Пробуем альтернативный вариант
                         try {
@@ -1181,41 +1186,50 @@ function TournamentDetails() {
                             );
                             console.log('Успешный ответ от второй попытки:', secondAttempt.data);
                             setMessage(`Приглашение отправлено пользователю ${username}`);
+                            toast.success(`Приглашение отправлено пользователю ${username}`);
                         } catch (secondError) {
                             console.error('Ошибка второй попытки:', secondError);
                             setMessage(`Не удалось отправить приглашение: ${apiError.response?.data?.error}`);
+                            toast.error(`Не удалось отправить приглашение: ${apiError.response?.data?.error}`);
                         }
                     } else {
                         setMessage(apiError.response?.data?.error || `Ошибка приглашения: ${apiError.message}`);
+                        toast.error(apiError.response?.data?.error || `Ошибка приглашения: ${apiError.message}`);
                     }
                 } else if (apiError.response?.status === 500) {
-                    // Если ошибка связана с колонкой "invited_user_id", попробуем другой подход
-                    if (apiError.response?.data?.error?.includes('invited_user_id')) {
+                    // Если ошибка связана с колонкой в базе данных, используем обходной путь
+                    if (apiError.response?.data?.error?.includes('column') || 
+                        apiError.response?.data?.error?.includes('does not exist')) {
                         try {
-                            // Используем только параметр username вместо user_id
+                            // Используем только параметр username без дополнительных параметров
                             const alternativeAttempt = await api.post(
                                 `/api/tournaments/${id}/invite`,
-                                { username: username, skip_id_check: true },
+                                { username: username },
                                 { headers: { Authorization: `Bearer ${token}` } }
                             );
                             console.log('Успешный ответ от альтернативной попытки:', alternativeAttempt.data);
                             setMessage(`Приглашение отправлено пользователю ${username}`);
+                            toast.success(`Приглашение отправлено пользователю ${username}`);
                         } catch (altError) {
                             console.error('Ошибка альтернативной попытки:', altError);
                             setMessage(`Сервер не может обработать приглашение. Попробуйте позже.`);
+                            toast.error(`Сервер не может обработать приглашение. Попробуйте позже.`);
                         }
                     } else {
                         // Другие ошибки 500
                         setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
+                        toast.error(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
                     }
                 } else {
                     // Другие ошибки
                     setMessage(apiError.response?.data?.error || `Ошибка при отправке приглашения: ${apiError.message}`);
+                    toast.error(apiError.response?.data?.error || `Ошибка при отправке приглашения: ${apiError.message}`);
                 }
             }
         } catch (error) {
             console.error('Неожиданная ошибка:', error);
             setMessage(`Произошла непредвиденная ошибка`);
+            toast.error(`Произошла непредвиденная ошибка`);
         }
     };
 

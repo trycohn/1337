@@ -443,6 +443,15 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Этот пользователь уже участвует в турнире' });
         }
 
+        // Проверяем, нет ли уже приглашения для этого пользователя
+        const inviteCheck = await pool.query(
+            'SELECT * FROM tournament_invitations WHERE tournament_id = $1 AND user_id = $2 AND status = $3',
+            [id, user.id, 'pending']
+        );
+        if (inviteCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Этот пользователь уже приглашен в турнир' });
+        }
+
         // Создаем приглашение
         const invitationResult = await pool.query(
             'INSERT INTO tournament_invitations (tournament_id, user_id, invited_by, status) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -484,20 +493,9 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
             'SELECT * FROM tournament_invitations WHERE id = $1 AND user_id = $2 AND tournament_id = $3 AND status = $4',
             [invitation_id, userId, id, 'pending']
         );
+        
         if (invitationResult.rows.length === 0) {
-            // Попробуем найти по invited_user_id, если этот вариант вызывает ошибку
-            try {
-                const altInvitationResult = await pool.query(
-                    'SELECT * FROM tournament_invitations WHERE id = $1 AND user_id = $2 AND tournament_id = $3 AND status = $4',
-                    [invitation_id, userId, id, 'pending']
-                );
-                if (altInvitationResult.rows.length === 0) {
-                    return res.status(404).json({ error: 'Приглашение не найдено или уже обработано' });
-                }
-            } catch (altErr) {
-                console.error('❌ Ошибка проверки приглашения (альтернативный метод):', altErr);
-                return res.status(404).json({ error: 'Приглашение не найдено или уже обработано' });
-            }
+            return res.status(404).json({ error: 'Приглашение не найдено или уже обработано' });
         }
 
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
