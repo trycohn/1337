@@ -230,15 +230,23 @@ function Notifications() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
+      // Находим уведомление по id приглашения
+      const notification = notifications.find(n => n.invitation_id === invitationId);
+      if (!notification) {
+        setError('Приглашение не найдено');
+        return;
+      }
+
+      // Используем ID турнира из уведомления
       const response = await axios.post(
-        `/api/tournaments/${invitationId}/handle-invitation`,
+        `/api/tournaments/${notification.tournament_id}/handle-invitation`,
         { action, invitation_id: invitationId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Отмечаем уведомление как прочитанное только после ответа
       await axios.post(
-        `/api/notifications/mark-read?userId=${notifications.find(n => n.invitation_id === invitationId)?.user_id}&notificationId=${invitationId}`,
+        `/api/notifications/mark-read?userId=${notification.user_id}&notificationId=${notification.id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -246,6 +254,7 @@ function Notifications() {
       // Обновляем список уведомлений
       setNotifications(notifications.filter(n => n.invitation_id !== invitationId));
     } catch (err) {
+      console.error('Ошибка при обработке приглашения:', err);
       setError('Ошибка при обработке приглашения');
     }
   };
