@@ -586,13 +586,33 @@ function TournamentDetails() {
         
         if (!canEditMatches) return;
         
-        setSelectedMatch(actualMatchId);
-        setSelectedWinnerId(teamId);
-        
         // Ищем матч
         const selectedGame = games.find(g => parseInt(g.id) === actualMatchId);
         
         if (selectedGame) {
+            // Получаем id команд
+            const team1Id = selectedGame.participants[0]?.id ? parseInt(selectedGame.participants[0].id) : null;
+            const team2Id = selectedGame.participants[1]?.id ? parseInt(selectedGame.participants[1].id) : null;
+            const selectedWinner = teamId ? parseInt(teamId) : null;
+            
+            // Определяем, является ли матч бай-матчем (только один участник)
+            const isByeMatch = (!team1Id && team2Id) || (team1Id && !team2Id);
+            
+            // Проверяем, все ли участники определены (только для обычных матчей, не для бай-матчей)
+            if (!isByeMatch) {
+                const isTeam1TBD = team1Id === null || selectedGame.participants[0]?.name === 'TBD';
+                const isTeam2TBD = team2Id === null || selectedGame.participants[1]?.name === 'TBD';
+                
+                // Если хотя бы один из участников не определен, показываем сообщение об ошибке
+                if (isTeam1TBD || isTeam2TBD) {
+                    setMessage('Невозможно определить победителя - один или оба участника еще не определены. Дождитесь завершения предыдущих матчей.');
+                    return;
+                }
+            }
+            
+            setSelectedMatch(actualMatchId);
+            setSelectedWinnerId(teamId);
+            
             // Получаем текущие счета из игры
             const team1Score = selectedGame.participants[0]?.score || 0;
             const team2Score = selectedGame.participants[1]?.score || 0;
@@ -602,22 +622,17 @@ function TournamentDetails() {
                 team2: team2Score
             });
             
-            // Получаем id команд
-            const team1Id = selectedGame.participants[0]?.id ? parseInt(selectedGame.participants[0].id) : null;
-            const team2Id = selectedGame.participants[1]?.id ? parseInt(selectedGame.participants[1].id) : null;
-            const selectedWinner = teamId ? parseInt(teamId) : null;
-            
             // Отладочная информация
             console.log('Данные матча:', {
                 match: selectedGame,
                 team1Id,
                 team2Id,
                 selectedWinner,
-                isByeMatch: (!team1Id && team2Id) || (team1Id && !team2Id)
+                isByeMatch: isByeMatch
             });
             
             // Для бай матча автоматически выбираем существующую команду как победителя
-            if ((!team1Id && team2Id) || (team1Id && !team2Id)) {
+            if (isByeMatch) {
                 // Это bye-матч, автоматически выбираем единственную команду победителем
                 const autoWinnerId = team1Id || team2Id;
                 setSelectedWinnerId(autoWinnerId.toString());
@@ -1315,8 +1330,13 @@ function TournamentDetails() {
     let winners = [];
     // Определение, завершен ли финальный матч
     let isFinalMatchComplete = false;
+    // Проверяем, все ли матчи в турнире завершены
+    let areAllMatchesComplete = false;
 
     if (Array.isArray(matches) && matches.length > 0) {
+        // Проверка, завершены ли все матчи
+        areAllMatchesComplete = matches.every(match => match.winner_team_id);
+        
         if (tournament.format === 'double_elimination') {
             // Для Double Elimination
             // Находим Grand Final (матч с bracket_type = 'grand_final')
@@ -1903,7 +1923,7 @@ function TournamentDetails() {
                 </div>
             )}
             {/* Кнопка завершения турнира, если финальный матч сыгран, но турнир не завершен */}
-            {isFinalMatchComplete && tournament?.status === 'in_progress' && isAdminOrCreator && (
+            {isFinalMatchComplete && areAllMatchesComplete && tournament?.status === 'in_progress' && isAdminOrCreator && (
                 <div className="tournament-controls finish-above-bracket">
                     <button 
                         className="end-tournament"
