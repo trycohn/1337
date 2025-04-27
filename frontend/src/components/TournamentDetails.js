@@ -6,6 +6,7 @@ import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 import './TournamentDetails.css';
 import { io } from 'socket.io-client';
+import { toast } from 'react-toastify';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const BracketRenderer = lazy(() => 
@@ -98,6 +99,7 @@ function TournamentDetails() {
     const [isSearching, setIsSearching] = useState(false);
     const searchContainerRef = useRef(null);
     const [invitedUsers, setInvitedUsers] = useState([]);
+    const [userIdToRemove, setUserIdToRemove] = useState('');
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -1167,6 +1169,90 @@ function TournamentDetails() {
         }
     }, [id]);
 
+    // Проверка актуальности кэша приглашений
+    const validateInvitationCache = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || !tournament) return;
+
+            // Запрашиваем актуальный список приглашений с сервера
+            const response = await api.get(`/api/tournaments/${id}/invitations`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // Получаем актуальные ID пользователей, которым отправлены приглашения
+            const actualInvitedUserIds = response.data.map(invitation => invitation.user_id);
+            console.log('Актуальные приглашения с сервера:', actualInvitedUserIds);
+            
+            // Получаем кэшированные ID из localStorage
+            const cachedInvitedUsers = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
+            console.log('Кэшированные приглашения:', cachedInvitedUsers);
+            
+            // Фильтруем кэш, оставляя только актуальные приглашения
+            const validatedCache = cachedInvitedUsers.filter(userId => 
+                actualInvitedUserIds.includes(userId));
+            
+            // Если есть изменения в кэше, обновляем его
+            if (JSON.stringify(validatedCache) !== JSON.stringify(cachedInvitedUsers)) {
+                console.log('Обновляем кэш приглашений. Новые данные:', validatedCache);
+                localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(validatedCache));
+                setInvitedUsers(validatedCache);
+                toast.info('Кэш приглашений обновлен');
+            } else {
+                console.log('Кэш приглашений актуален');
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке актуальности кэша приглашений:', error);
+            // В случае ошибки API, не очищаем кэш полностью
+        }
+    }, [id, tournament]);
+
+    // Проверяем актуальность кэша при загрузке турнира
+    useEffect(() => {
+        if (tournament) {
+            validateInvitationCache();
+        }
+    }, [tournament, validateInvitationCache]);
+
+    // Функция для очистки кэша приглашений для конкретного пользователя
+    const clearInvitationCache = (userId) => {
+        try {
+            // Получаем текущий список приглашенных пользователей
+            const currentInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
+            console.log(`Очистка кэша для пользователя ${userId}. Текущий кэш:`, currentInvited);
+            
+            // Фильтруем списки, исключая указанный userId
+            const updatedInvited = currentInvited.filter(id => id !== userId);
+            
+            // Обновляем localStorage и состояние
+            localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(updatedInvited));
+            setInvitedUsers(updatedInvited);
+            
+            console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
+            toast.success(`Кэш приглашения для пользователя #${userId} очищен`);
+        } catch (error) {
+            console.error('Ошибка при очистке кэша приглашения:', error);
+            toast.error('Ошибка при очистке кэша приглашения');
+        }
+    };
+
+    // Функция для полной очистки кэша приглашений
+    const clearAllInvitationsCache = () => {
+        try {
+            console.log('Очистка всего кэша приглашений');
+            
+            // Очищаем localStorage и состояние
+            localStorage.removeItem(`tournament_${id}_invited_users`);
+            setInvitedUsers([]);
+            
+            console.log('Кэш приглашений полностью очищен');
+            toast.success('Весь кэш приглашений очищен');
+        } catch (error) {
+            console.error('Ошибка при очистке всего кэша приглашений:', error);
+            toast.error('Ошибка при очистке кэша приглашений');
+        }
+    };
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -1515,12 +1601,20 @@ function TournamentDetails() {
                                                         {isUserParticipant(user.id) ? (
                                                             <span className="already-participant">уже участвует</span>
                                                         ) : isInvitationSent(user.id) ? (
-                                                            <button 
-                                                                className="action-link no-bg-button search-result-action-button"
-                                                                disabled
-                                                            >
-                                                                уже отправлено
-                                                            </button>
+                                                            <>
+                                                                <button 
+                                                                    className="action-link no-bg-button search-result-action-button"
+                                                                    disabled
+                                                                >
+                                                                    уже отправлено
+                                                                </button>
+                                                                <button 
+                                                                    className="action-link no-bg-button search-result-action-button reset-invitation"
+                                                                    onClick={() => clearInvitationCache(user.id)}
+                                                                >
+                                                                    сбросить кэш
+                                                                </button>
+                                                            </>
                                                         ) : (
                                                             <button 
                                                                 className="action-link no-bg-button search-result-action-button"
@@ -1556,6 +1650,22 @@ function TournamentDetails() {
                                 placeholder="Имя участника"
                             />
                             <button onClick={handleAddParticipant}>Добавить участника</button>
+                            
+                            {/* Блок администрирования кэша приглашений */}
+                            <div className="cache-management">
+                                <h4>Управление кэшем приглашений</h4>
+                                <div className="cache-buttons">
+                                    <button onClick={() => clearInvitationCache(34)} className="clear-cache-btn">
+                                        Очистить кэш пользователя #34
+                                    </button>
+                                    <button onClick={() => clearInvitationCache(100)} className="clear-cache-btn">
+                                        Очистить кэш пользователя #100
+                                    </button>
+                                    <button onClick={clearAllInvitationsCache} className="clear-all-cache-btn">
+                                        Очистить весь кэш приглашений
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                     {!isAdminOrCreator && tournament?.status === 'active' && (
