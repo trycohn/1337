@@ -12,9 +12,8 @@ import Notifications from './components/Notifications'; // Добавляем и
 import { LoaderProvider } from './context/LoaderContext';
 import { PrivateRoute } from './utils/PrivateRoute';
 import Messenger from './components/Messenger';
-// Добавляем базовый импорт ToastContainer
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// Импортируем наш собственный ToastProvider
+import { ToastProvider } from './components/Notifications/ToastContext';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -44,32 +43,26 @@ function AuthCallback() {
 function App() {
     return (
         <LoaderProvider>
-            <Router>
-                {/* Добавляем ToastContainer с базовыми настройками */}
-                <ToastContainer
-                    position="top-right"
-                    autoClose={3000}
-                    hideProgressBar={false}
-                    closeOnClick
-                    pauseOnHover
-                />
-                <Routes>
-                    <Route path="/" element={<Layout />}>
-                        <Route index element={<Home />} />
-                        <Route path="/tournaments" element={<TournamentsPage />} />
-                        <Route path="/tournaments/:id" element={<TournamentDetails />} />
-                        <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
-                        <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
-                        <Route path="/profile" element={<PrivateRoute component={Profile} />} /> {/* Маршрут для своего профиля */}
-                        <Route path="/user/:userId" element={<PrivateRoute component={UserProfile} />} /> {/* Маршрут для просмотра профиля по ID */}
-                        <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
-                        <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
-                        <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
-                        <Route path="/auth-callback" element={<AuthCallback />} />
-                        <Route path="/auth-error" element={<Navigate to="/login" />} />
-                    </Route>
-                </Routes>
-            </Router>
+            <ToastProvider>
+                <Router>
+                    <Routes>
+                        <Route path="/" element={<Layout />}>
+                            <Route index element={<Home />} />
+                            <Route path="/tournaments" element={<TournamentsPage />} />
+                            <Route path="/tournaments/:id" element={<TournamentDetails />} />
+                            <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
+                            <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
+                            <Route path="/profile" element={<PrivateRoute component={Profile} />} /> {/* Маршрут для своего профиля */}
+                            <Route path="/user/:userId" element={<PrivateRoute component={UserProfile} />} /> {/* Маршрут для просмотра профиля по ID */}
+                            <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
+                            <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
+                            <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
+                            <Route path="/auth-callback" element={<AuthCallback />} />
+                            <Route path="/auth-error" element={<Navigate to="/login" />} />
+                        </Route>
+                    </Routes>
+                </Router>
+            </ToastProvider>
         </LoaderProvider>
     );
 }
