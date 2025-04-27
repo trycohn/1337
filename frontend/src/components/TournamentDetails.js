@@ -1179,37 +1179,45 @@ function TournamentDetails() {
             const token = localStorage.getItem('token');
             if (!token || !tournament) return;
 
-            // Запрашиваем актуальный список приглашений с сервера
-            const response = await api.get(`/api/tournaments/${id}/invitations`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            // Получаем актуальные ID пользователей, которым отправлены приглашения
-            const actualInvitedUserIds = response.data.map(invitation => invitation.user_id);
-            console.log('Актуальные приглашения с сервера:', actualInvitedUserIds);
+            // Так как эндпоинт /api/tournaments/${id}/invitations не реализован на сервере (404),
+            // используем другой подход для валидации кэша
             
-            // Получаем кэшированные ID из localStorage
+            // 1. Получаем текущий кэш из localStorage
             const cachedInvitedUsers = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
             console.log('Кэшированные приглашения:', cachedInvitedUsers);
             
-            // Фильтруем кэш, оставляя только актуальные приглашения
-            const validatedCache = cachedInvitedUsers.filter(userId => 
-                actualInvitedUserIds.includes(userId));
+            // 2. Если кэш пустой, нет смысла его проверять
+            if (cachedInvitedUsers.length === 0) {
+                console.log('Кэш приглашений пуст, пропускаем проверку');
+                return;
+            }
+
+            // 3. Проверяем срок жизни кэша - очищаем записи старше суток
+            const currentTime = Date.now();
+            const oneDayMs = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
             
-            // Если есть изменения в кэше, обновляем его
-            if (JSON.stringify(validatedCache) !== JSON.stringify(cachedInvitedUsers)) {
-                console.log('Обновляем кэш приглашений. Новые данные:', validatedCache);
-                localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(validatedCache));
-                setInvitedUsers(validatedCache);
-                // Используем наше toast-уведомление
-                toast.info('Кэш приглашений обновлен');
-                setMessage('Кэш приглашений обновлен');
+            // Получаем метаданные кэша, если они существуют
+            const cacheMeta = JSON.parse(localStorage.getItem(`tournament_${id}_cache_meta`) || '{}');
+            
+            // Если метаданных нет или кэш старше суток, создаем новые
+            if (!cacheMeta.lastUpdated || (currentTime - cacheMeta.lastUpdated > oneDayMs)) {
+                console.log('Обновляем метаданные кэша');
+                localStorage.setItem(`tournament_${id}_cache_meta`, JSON.stringify({
+                    lastUpdated: currentTime
+                }));
+                
+                // Отображаем уведомление только если кэш был очищен из-за срока давности
+                if (cachedInvitedUsers.length > 0) {
+                    toast.info('Кэш приглашений обновлен (автоочистка)');
+                    setInvitedUsers([]);
+                    localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify([]));
+                }
             } else {
-                console.log('Кэш приглашений актуален');
+                console.log('Кэш приглашений актуален, последнее обновление:', new Date(cacheMeta.lastUpdated));
             }
         } catch (error) {
             console.error('Ошибка при проверке актуальности кэша приглашений:', error);
-            // В случае ошибки API, не очищаем кэш полностью
+            // В случае ошибки, не меняем кэш
         }
     }, [id, tournament, toast]);
 
