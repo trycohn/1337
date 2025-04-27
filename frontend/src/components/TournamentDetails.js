@@ -1261,13 +1261,13 @@ function TournamentDetails() {
                                 <div className="participant-avatar">
                                     <img 
                                         src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                        alt={`${participant.name} аватар`} 
+                                        alt={`${participant.name || participant.username || 'Участник'} аватар`} 
                                         className="participant-avatar-img"
                                         onError={(e) => {e.target.src = '/default-avatar.png'}}
                                     />
                                 </div>
                                 <div className="participant-info">
-                                    <span className="participant-name">{participant.name}</span>
+                                    <span className="participant-name">{participant.name || participant.username}</span>
                                     {participant.is_admin && <span className="admin-badge">Админ</span>}
                                 </div>
                             </Link>

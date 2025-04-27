@@ -165,10 +165,10 @@ const TournamentInfoSection = ({ tournament, onSave, currentUser, onRemovePartic
                         >
                             <img 
                                 src={participant.avatar || '/default-avatar.png'} 
-                                alt={participant.username}
+                                alt={participant.username || participant.name || 'Участник'}
                                 className="participant-avatar"
                             />
-                            <span className="participant-name">{participant.username}</span>
+                            <span className="participant-name">{participant.username || participant.name}</span>
                         </div>
                     ))}
                 </div>

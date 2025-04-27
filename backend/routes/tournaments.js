@@ -75,14 +75,14 @@ router.get('/:id', async (req, res) => {
         let participantsQuery;
         if (tournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url 
+                SELECT tp.*, u.avatar_url, u.username 
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
             `;
         } else {
             participantsQuery = `
-                SELECT tt.*, u.avatar_url
+                SELECT tt.*, u.avatar_url, u.username
                 FROM tournament_teams tt
                 LEFT JOIN users u ON tt.creator_id = u.id
                 WHERE tt.tournament_id = $1
