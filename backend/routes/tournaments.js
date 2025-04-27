@@ -1638,4 +1638,53 @@ router.get('/:id/teams', authenticateToken, async (req, res) => {
     }
 });
 
+// Маршрут для очистки результатов всех матчей в турнире
+router.post('/:id/clear-match-results', authenticateToken, async (req, res) => {
+    const tournamentId = req.params.id;
+
+    try {
+        // Получаем информацию о турнире
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
+        
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверяем, является ли пользователь создателем турнира
+        if (tournament.created_by !== req.user.id) {
+            return res.status(403).json({ error: 'Только создатель турнира может очищать результаты матчей' });
+        }
+        
+        // Сбрасываем результаты всех матчей в турнире
+        await pool.query(`
+            UPDATE matches 
+            SET winner_team_id = NULL, 
+                score1 = 0, 
+                score2 = 0
+            WHERE tournament_id = $1
+        `, [tournamentId]);
+        
+        // Получаем обновленные данные о турнире для отправки на клиент
+        const tournamentData = await getTournamentWithDetails(tournamentId);
+        
+        // Отправляем обновление через Socket.IO
+        if (io) {
+            io.to(`tournament_${tournamentId}`).emit('tournament_update', {
+                tournamentId: tournamentId,
+                data: tournamentData
+            });
+        }
+        
+        res.json({ 
+            message: 'Результаты матчей успешно очищены',
+            tournament: tournamentData
+        });
+    } catch (error) {
+        console.error('Ошибка при очистке результатов матчей:', error);
+        res.status(500).json({ error: 'Ошибка очистки результатов матчей' });
+    }
+});
+
 module.exports = router;

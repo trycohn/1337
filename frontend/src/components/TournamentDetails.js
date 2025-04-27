@@ -894,6 +894,40 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для очистки результатов матчей
+    const handleClearMatchResults = async () => {
+        if (!window.confirm('Вы действительно хотите очистить все результаты матчей? Это действие нельзя отменить.')) {
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setMessage('Необходимо авторизоваться для выполнения этого действия');
+                return;
+            }
+            
+            setMessage('Очистка результатов матчей...');
+            
+            // Отправляем запрос на очистку результатов
+            await api.post(
+                `/api/tournaments/${id}/clear-match-results`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Обновляем данные турнира
+            await fetchTournamentData();
+            
+            toast.success('Результаты матчей успешно очищены');
+            setMessage('Результаты матчей успешно очищены');
+        } catch (error) {
+            console.error('Ошибка при очистке результатов матчей:', error);
+            toast.error('Не удалось очистить результаты матчей: ' + (error.response?.data?.error || error.message));
+            setMessage('Ошибка при очистке результатов матчей: ' + (error.response?.data?.error || error.message));
+        }
+    };
+
     // Функция для сохранения изменений описания
     const handleSaveDescription = async () => {
         try {
@@ -1931,6 +1965,19 @@ function TournamentDetails() {
                     >
                         Завершить турнир
                     </button>
+                </div>
+            )}
+            {isAdminOrCreator && matches.length > 0 && (
+                <div className="tournament-admin-controls">
+                    {tournament?.status === 'in_progress' && isCreator && (
+                        <button 
+                            className="clear-results-button"
+                            onClick={handleClearMatchResults}
+                            title="Очистить все результаты матчей"
+                        >
+                            Очистить результаты матчей
+                        </button>
+                    )}
                 </div>
             )}
         </section>
