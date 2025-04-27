@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './Message.css';
 import { formatDate } from '../utils/dateHelpers';
+import axios from 'axios';
 
 function Message({ message, isOwn, onDeleteMessage }) {
     const [showContextMenu, setShowContextMenu] = useState(false);
@@ -77,7 +78,6 @@ function Message({ message, isOwn, onDeleteMessage }) {
                 return;
             }
 
-            const axios = require('axios');
             const response = await axios.post(
                 `/api/notifications/respond?notificationId=${message.content_meta.notification_id}`,
                 { action: actionType },
