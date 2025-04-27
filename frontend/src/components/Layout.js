@@ -8,7 +8,6 @@ import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { io } from 'socket.io-client';
 import { decodeTokenPayload, ensureHttps } from '../utils/userHelpers';
-import { useAuth } from '../context/AuthContext';
 
 function Layout() {
     const [user, setUser] = useState(null);
