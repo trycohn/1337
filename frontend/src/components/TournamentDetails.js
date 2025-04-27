@@ -983,18 +983,24 @@ function TournamentDetails() {
             return;
         }
         try {
+            // Проверяем, формируем команды впервые или переформируем
+            const isReforming = mixedTeams.length > 0;
+            
             const response = await api.post(
                 `/api/tournaments/${id}/mix-generate-teams`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setMixedTeams(response.data.teams || []);
-            // переключаем тип турнира для отображения команд
-            setTournament(prev => ({ ...prev, participant_type: 'team' }));
-            setMessage('Команды успешно сформированы');
+            // Удаляем строку, которая меняет тип участников
+            setMessage(isReforming ? 'Команды успешно переформированы' : 'Команды успешно сформированы');
+            
+            // Используем toast для дополнительного уведомления
+            toast.success(isReforming ? 'Команды успешно переформированы' : 'Команды успешно сформированы');
         } catch (error) {
             console.error('Ошибка при формировании команд:', error);
             setMessage(error.response?.data?.error || 'Ошибка формирования команд');
+            toast.error(error.response?.data?.error || 'Ошибка формирования команд');
         }
     };
 
@@ -1717,8 +1723,11 @@ function TournamentDetails() {
                                     <option value="premier">Steam Premier</option>
                                 </select>
                             </div>
-                            {tournament.participant_type === 'solo' && (
+                            {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
                                 <button onClick={handleFormTeams}>Сформировать команды</button>
+                            )}
+                            {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'pending' && (
+                                <button onClick={handleFormTeams} className="reformate-teams-button">Переформировать команды</button>
                             )}
                         </>
                     )}
@@ -1864,25 +1873,27 @@ function TournamentDetails() {
             {message && (
                 <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
             )}
-            {tournament?.bracket && tournament?.status === 'pending' && (
+            {matches.length > 0 && tournament?.status === 'pending' && (
                 <div className="tournament-controls">
-                    {isCreator && (
+                    {isAdminOrCreator && (
                         <button 
                             className="start-tournament"
                             onClick={handleStartTournament}
                         >
-                            Стартовать турнир
+                            Начать турнир
                         </button>
                     )}
-                    <button 
-                        className="regenerate-bracket"
-                        onClick={handleRegenerateBracket}
-                    >
-                        Пересоздать сетку
-                    </button>
+                    {isAdminOrCreator && (
+                        <button 
+                            className="regenerate-bracket"
+                            onClick={handleRegenerateBracket}
+                        >
+                            Пересоздать сетку
+                        </button>
+                    )}
                 </div>
             )}
-            {tournament?.status === 'in_progress' && isCreator && (
+            {tournament?.status === 'in_progress' && isAdminOrCreator && (
                 <div className="tournament-controls">
                     <button 
                         className="end-tournament"
