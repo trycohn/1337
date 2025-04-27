@@ -222,4 +222,108 @@
 .attachment-option i {
     margin-right: 10px;
     font-style: normal;
+}
+
+/* Медиа-запросы для мобильной адаптации */
+@media (max-width: 768px) {
+    .chat-window {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .chat-header {
+        padding: 10px;
+    }
+    
+    .chat-header-info h2 {
+        font-size: 18px;
+    }
+    
+    .chat-messages {
+        padding: 10px;
+        max-height: 60vh;
+    }
+    
+    .chat-input-area form {
+        padding: 8px;
+    }
+    
+    .chat-input-area form input {
+        font-size: 14px;
+    }
+    
+    .attachment-options {
+        width: 150px;
+    }
+}
+
+@media (max-width: 600px) {
+    .chat-header {
+        padding: 8px;
+    }
+    
+    .chat-header-info h2 {
+        font-size: 16px;
+    }
+    
+    .chat-avatar {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .online-status {
+        font-size: 11px;
+        padding: 2px 6px;
+    }
+    
+    .chat-messages {
+        padding: 8px;
+        max-height: 50vh;
+    }
+    
+    .message-group {
+        margin-bottom: 10px;
+    }
+    
+    .message-date-separator {
+        margin: 5px 0;
+    }
+    
+    .message-date-separator span {
+        font-size: 12px;
+        padding: 3px 8px;
+    }
+    
+    .chat-input-area form {
+        padding: 6px;
+    }
+    
+    .chat-input-area form input {
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+    
+    .chat-input-area form button {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .attachment-icon {
+        font-size: 16px;
+    }
+    
+    .attachment-options {
+        width: 130px;
+        right: -10px;
+    }
+    
+    .attachment-option {
+        padding: 6px;
+        font-size: 12px;
+    }
+    
+    .empty-chat .select-chat-message {
+        font-size: 14px;
+        padding: 30px 15px;
+    }
 } 

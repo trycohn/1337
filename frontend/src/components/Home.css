@@ -660,109 +660,217 @@ header.header {
 }
 
 /* Медиа-запросы для адаптивности */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  main {
+    max-width: 95%;
+    width: 95%;
+    padding: 10px 0;
+  }
+  
   .header {
-      flex-direction: column;
-      align-items: flex-start;
+    padding: 10px;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .nav-container {
-      width: 100%;
-      position: relative;
+    flex: 1;
+    justify-content: flex-start;
+  }
+
+  .auth-block {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .user-info {
+    gap: 5px;
+  }
+
+  .username-link {
+    display: none;
+  }
+
+  .tournaments-list table {
+    font-size: 14px;
+  }
+
+  .tournaments-list th, .tournaments-list td {
+    padding: 8px 4px;
+  }
+  
+  /* Профиль на мобильных устройствах */
+  .profile-container {
+    padding: 10px;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .profile-avatar-container {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  
+  .profile-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    margin-bottom: 15px;
+  }
+  
+  /* Чат на мобильных устройствах */
+  .messenger-container {
+    flex-direction: column;
+  }
+  
+  .chat-list, .chat-window {
+    width: 100%;
+  }
+  
+  .chat-messages {
+    max-height: 60vh;
+  }
+}
+
+@media (max-width: 600px) {
+  main {
+    max-width: 100%;
+    width: 100%;
+    padding: 5px;
+  }
+  
+  .header {
+    padding: 8px;
   }
 
   .hamburger {
-      display: block;
+    display: block;
   }
 
   .navigation {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      width: 100%;
-      background: #fff;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      z-index: 10;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 10px;
-      opacity: 0;
-      transform: translateY(-10px);
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    background: #fff;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    opacity: 0;
+    transform: translateY(-10px);
   }
 
   .navigation.open {
-      display: flex;
-      opacity: 1;
-      transform: translateY(0);
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .navigation a,
   .navigation button {
-      width: 100%;
-      text-align: left;
-      padding: 5px 0;
-  }
-
-  .auth-block {
-      width: 100%;
-      margin-top: 10px;
-  }
-
-  .login-form {
-      flex-direction: column;
-      align-items: flex-start;
-      width: 100%;
-  }
-
-  .login-form input,
-  .login-form button {
-      width: 100%;
-      margin-bottom: 5px;
-  }
-
-  .login-form .error {
-      margin-left: 0;
+    width: 100%;
+    text-align: left;
+    padding: 5px 0;
   }
 
   .user-info {
-      align-items: flex-start;
-      flex-direction: row;
+    gap: 2px;
   }
-
+  
   .user-info button {
-      margin-top: 5px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .notifications {
+    margin-left: auto;
   }
 
-  .tournament-bracket {
-      flex-direction: column;
-      gap: 20px;
+  /* Улучшенная адаптация для списка турниров */
+  .tournaments-list {
+    padding: 0 10px;
   }
-
-  .bracket-grid {
-      flex-direction: column;
+  
+  .tournaments-list table {
+    font-size: 12px;
+    display: block;
+    overflow-x: auto;
   }
-
-  .round-column {
-      min-width: 100%;
+  
+  .tournaments-list th {
+    min-width: 80px;
   }
-
-  .custom-seed {
-      width: 100%;
+  
+  .tournaments-list td {
+    white-space: normal;
+    word-break: break-word;
   }
-
-  .final-matches {
-      flex-direction: column;
-      gap: 20px;
-  }
-
-  .bracket h2 {
-    font-size: 20px;
-}
-.round-column h3 {
+  
+  /* Профиль на маленьких мобильных устройствах */
+  .profile-tabs .profile-tab {
+    padding: 8px 12px;
     font-size: 14px;
+  }
+  
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .profile-stats, .profile-edit-section {
+    width: 100%;
+  }
+  
+  /* Чат на маленьких мобильных устройствах */
+  .chat-header-info h2 {
+    font-size: 16px;
+  }
+  
+  .message-item {
+    max-width: 85%;
+    font-size: 14px;
+  }
+  
+  .chat-input-area form input {
+    font-size: 14px;
+  }
 }
+
+.tournament-bracket {
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bracket-grid {
+    flex-direction: column;
+}
+
+.round-column {
+    min-width: 100%;
+}
+
+.custom-seed {
+    width: 100%;
+}
+
+.final-matches {
+    flex-direction: column;
+    gap: 20px;
+}
+
+.bracket h2 {
+  font-size: 20px;
+}
+
+.round-column h3 {
+  font-size: 14px;
 }
 
 .username-link {
@@ -1158,4 +1266,162 @@ header.header {
 .view-profile-link:hover {
   background-color: #4682b4;
   color: white;
+}
+
+/* Стили для карточного представления турниров */
+.tournaments-view-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.view-mode-btn {
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  margin: 0 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.view-mode-btn.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.tournaments-filter-bar {
+  margin-bottom: 15px;
+  display: none;
+}
+
+.mobile-filter-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.tournaments-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 0 10px;
+}
+
+.tournament-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background-color: #fff;
+}
+
+.tournament-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tournament-name {
+  background-color: #f5f5f5;
+  padding: 12px 15px;
+  margin: 0;
+  font-size: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tournament-name a {
+  color: #333;
+  text-decoration: none;
+}
+
+.tournament-name a:hover {
+  color: #007bff;
+}
+
+.tournament-details {
+  padding: 15px;
+}
+
+.tournament-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.tournament-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.tournament-value {
+  color: #333;
+  font-weight: 400;
+}
+
+.tournament-status {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tournament-status.active {
+  background-color: #e6f7e6;
+  color: #2e7d32;
+}
+
+.tournament-status.completed {
+  background-color: #ffecb3;
+  color: #ff6f00;
+}
+
+@media (max-width: 768px) {
+  .tournaments-cards {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 15px;
+  }
+  
+  .tournaments-filter-bar {
+    display: block;
+  }
+  
+  .tournament-name {
+    font-size: 15px;
+    padding: 10px 12px;
+  }
+  
+  .tournament-details {
+    padding: 12px;
+  }
+  
+  .tournament-info {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .tournaments-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .view-mode-btn {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+  
+  .tournaments-filter-bar {
+    margin-bottom: 12px;
+  }
+  
+  .mobile-filter-input {
+    padding: 8px;
+    font-size: 13px;
+  }
 }
