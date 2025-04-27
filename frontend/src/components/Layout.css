@@ -90,4 +90,14 @@
             transform: translateY(0);
         }
     }
+}
+
+/* Дополнительные стили для мобильного меню */
+@media (max-width: 600px) {
+    .navigation.open {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        padding-bottom: 10px;
+    }
 } 
