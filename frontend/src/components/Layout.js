@@ -4,6 +4,7 @@ import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment, faEnvelope } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
+import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { io } from 'socket.io-client';

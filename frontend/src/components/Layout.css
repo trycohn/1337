@@ -1,0 +1,10 @@
+/* Стили для компонента Layout */
+
+/* Стиль для аватара в хедере */
+.header-avatar-link .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4a76a8;
+} 
