@@ -167,16 +167,8 @@ function TournamentDetails() {
         fetchTournamentData();
         setupWebSocket();
 
-        // Загружаем существующие приглашения для турнира
-        if (token) {
-            api.get(`/api/tournaments/${id}/invitations`, { headers: { Authorization: `Bearer ${token}` } })
-                .then(response => {
-                    // Извлекаем ID пользователей из приглашений
-                    const invitedUserIds = response.data.map(invitation => invitation.user_id);
-                    setInvitedUsers(invitedUserIds);
-                })
-                .catch(error => console.error('Ошибка загрузки существующих приглашений:', error));
-        }
+        // Эндпоинт для получения приглашений не реализован на бэкенде
+        // Будем полагаться на проверку при отправке приглашения
 
         return () => {
             if (wsRef.current) {
@@ -1028,53 +1020,60 @@ function TournamentDetails() {
                 return;
             }
 
-            // Проверяем, отправлено ли уже приглашение (локально)
+            // Проверяем, отправлено ли уже приглашение локально в текущей сессии
             if (isInvitationSent(userId)) {
                 setMessage(`Приглашение для пользователя ${username} уже отправлено`);
                 return;
             }
 
-            console.log(`Отправка приглашения пользователю: ${username} (id: ${userId})`);
-            
-            // Меняем формат запроса на тот, который точно работает в handleInvite
-            const inviteResponse = await api.post(
-                `/api/tournaments/${id}/invite`, 
-                { username: username },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            console.log('Успешный ответ от сервера:', inviteResponse.data);
-            
-            // Добавляем пользователя в список приглашенных
-            setInvitedUsers(prev => [...prev, userId]);
-            setMessage(`Приглашение отправлено пользователю ${username}`);
-        } catch (error) {
-            console.error('Подробная ошибка при отправке приглашения:', error);
-            console.error('Ответ сервера:', error.response?.data);
-            console.error('Статус ошибки:', error.response?.status);
-            
-            // Обрабатываем ошибку дублирования приглашения
-            if (error.response?.status === 500 && 
-                error.response?.data?.error?.includes('unique constraint') && 
-                error.response?.data?.error?.includes('tournament_id_user_id_status')) {
-                // Добавляем в локальный кэш и показываем сообщение
-                setInvitedUsers(prev => [...prev, userId]);
-                setMessage(`Приглашение для пользователя ${username} уже существует`);
+            // Проверяем, не является ли пользователь уже участником
+            if (isUserParticipant(userId)) {
+                setMessage(`Пользователь ${username} уже является участником турнира`);
                 return;
             }
+
+            console.log(`Отправка приглашения пользователю: ${username} (id: ${userId})`);
             
-            // Проверяем ошибки 400 и другие 500
-            if (error.response?.status === 400 && error.response?.data?.error?.includes('уже')) {
-                // Если приглашение уже отправлено (ошибка 400)
-                setInvitedUsers(prev => [...prev, userId]);
-                setMessage(`Пользователь ${username} уже приглашён`);
-            } else if (error.response?.status === 500) {
-                // Другие ошибки 500
-                setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
-            } else {
-                // Другие ошибки
-                setMessage(error.response?.data?.error || `Ошибка при отправке приглашения: ${error.message}`);
+            // Перед отправкой приглашения добавляем пользователя в локальный кэш,
+            // чтобы предотвратить повторные клики
+            setInvitedUsers(prev => [...prev, userId]);
+            
+            try {
+                const inviteResponse = await api.post(
+                    `/api/tournaments/${id}/invite`, 
+                    { username: username },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                
+                console.log('Успешный ответ от сервера:', inviteResponse.data);
+                setMessage(`Приглашение отправлено пользователю ${username}`);
+            } catch (apiError) {
+                console.error('Подробная ошибка при отправке приглашения:', apiError);
+                console.error('Ответ сервера:', apiError.response?.data);
+                console.error('Статус ошибки:', apiError.response?.status);
+                
+                // Обрабатываем ошибку дублирования приглашения
+                if (apiError.response?.status === 500 && 
+                    apiError.response?.data?.error?.includes('unique constraint') && 
+                    apiError.response?.data?.error?.includes('tournament_id_user_id_status')) {
+                    setMessage(`Приглашение для пользователя ${username} уже существует`);
+                    return;
+                }
+                
+                // Проверяем ошибки 400
+                if (apiError.response?.status === 400 && apiError.response?.data?.error?.includes('уже')) {
+                    setMessage(`Пользователь ${username} уже приглашён`);
+                } else if (apiError.response?.status === 500) {
+                    // Другие ошибки 500
+                    setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
+                } else {
+                    // Другие ошибки
+                    setMessage(apiError.response?.data?.error || `Ошибка при отправке приглашения: ${apiError.message}`);
+                }
             }
+        } catch (error) {
+            console.error('Неожиданная ошибка:', error);
+            setMessage(`Произошла непредвиденная ошибка`);
         }
     };
 
