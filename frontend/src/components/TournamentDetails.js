@@ -1064,10 +1064,10 @@ function TournamentDetails() {
             }
             
             try {
-                // Используем URL с явным указанием user_id вместо username для предотвращения ошибок
+                // API требует username или email, а не user_id
                 const inviteResponse = await api.post(
                     `/api/tournaments/${id}/invite`, 
-                    { user_id: userId },
+                    { username: username },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 
@@ -1086,8 +1086,28 @@ function TournamentDetails() {
                 }
                 
                 // Проверяем ошибки 400
-                if (apiError.response?.status === 400 && apiError.response?.data?.error?.includes('уже')) {
-                    setMessage(`Пользователь ${username} уже приглашён`);
+                if (apiError.response?.status === 400) {
+                    if (apiError.response?.data?.error?.includes('уже')) {
+                        setMessage(`Пользователь ${username} уже приглашён`);
+                    } else if (apiError.response?.data?.error?.includes('Укажите никнейм или email')) {
+                        // Пробуем альтернативный вариант с использованием объекта пользователя
+                        console.log('Пробуем отправить приглашение с использованием другого формата');
+                        
+                        try {
+                            const secondAttempt = await api.post(
+                                `/api/tournaments/${id}/invite`, 
+                                { invite_username: username },
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            console.log('Успешный ответ от второй попытки:', secondAttempt.data);
+                            setMessage(`Приглашение отправлено пользователю ${username}`);
+                        } catch (secondError) {
+                            console.error('Ошибка второй попытки:', secondError);
+                            setMessage(`Не удалось отправить приглашение: ${apiError.response?.data?.error}`);
+                        }
+                    } else {
+                        setMessage(apiError.response?.data?.error || `Ошибка приглашения: ${apiError.message}`);
+                    }
                 } else if (apiError.response?.status === 500) {
                     // Другие ошибки 500
                     setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
