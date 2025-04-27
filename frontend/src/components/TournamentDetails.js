@@ -6,8 +6,8 @@ import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 import './TournamentDetails.css';
 import { io } from 'socket.io-client';
-// Удаляем импорт toast
-// import { toast } from 'react-toastify';
+// Добавляем импорт toast
+import { toast } from 'react-toastify';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const BracketRenderer = lazy(() => 
@@ -1198,7 +1198,8 @@ function TournamentDetails() {
                 console.log('Обновляем кэш приглашений. Новые данные:', validatedCache);
                 localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(validatedCache));
                 setInvitedUsers(validatedCache);
-                // Удаляем toast
+                // Добавляем вызов toast
+                toast.info('Кэш приглашений обновлен');
                 setMessage('Кэш приглашений обновлен');
             } else {
                 console.log('Кэш приглашений актуален');
@@ -1231,11 +1232,13 @@ function TournamentDetails() {
             setInvitedUsers(updatedInvited);
             
             console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
-            // Удаляем toast
+            // Добавляем вызов toast
+            toast.success(`Кэш приглашения для пользователя #${userId} очищен`);
             setMessage(`Кэш приглашения для пользователя #${userId} очищен`);
         } catch (error) {
             console.error('Ошибка при очистке кэша приглашения:', error);
-            // Удаляем toast
+            // Добавляем вызов toast для ошибки
+            toast.error('Ошибка при очистке кэша приглашения');
             setMessage('Ошибка при очистке кэша приглашения');
         }
     };
@@ -1250,11 +1253,13 @@ function TournamentDetails() {
             setInvitedUsers([]);
             
             console.log('Кэш приглашений полностью очищен');
-            // Удаляем toast
+            // Добавляем вызов toast
+            toast.success('Весь кэш приглашений очищен');
             setMessage('Весь кэш приглашений очищен');
         } catch (error) {
             console.error('Ошибка при очистке всего кэша приглашений:', error);
-            // Удаляем toast
+            // Добавляем вызов toast
+            toast.error('Ошибка при очистке кэша приглашений');
             setMessage('Ошибка при очистке кэша приглашений');
         }
     };
