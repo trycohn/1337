@@ -89,7 +89,27 @@ function Message({ message, isOwn, onDeleteMessage }) {
                 }
             );
             
+            // Формируем конкретное сообщение в зависимости от типа уведомления и действия
+            let successMessage = 'Уведомление обработано';
+            const notifType = message.content_meta?.type;
+            
+            if (notifType === 'tournament_invite') {
+                successMessage = actionType === 'accept' ? 'Приглашение принято. Вы успешно присоединились к турниру!' : 'Приглашение отклонено';
+            } else if (notifType === 'friend_request') {
+                successMessage = actionType === 'accept' ? 'Заявка в друзья принята' : 'Заявка в друзья отклонена';
+            } else if (notifType === 'admin_request') {
+                successMessage = actionType === 'accept' ? 'Запрос на администрирование принят' : 'Запрос на администрирование отклонен';
+            }
+            
+            alert(successMessage);
             setResponded(true);
+            
+            // Обновляем метаданные сообщения для отображения статуса
+            if (message.content_meta) {
+                message.content_meta.action = actionType;
+                message.content_meta.processed = true;
+            }
+            
             console.log('Уведомление успешно обработано:', response.data);
         } catch (err) {
             console.error('Ошибка при ответе на уведомление:', err);
@@ -136,9 +156,9 @@ function Message({ message, isOwn, onDeleteMessage }) {
         
         switch (type) {
             case 'friend_request':
-                return action === 'accept' ? 'Заявка принята' : 'Заявка отклонена';
+                return action === 'accept' ? 'Заявка в друзья принята' : 'Заявка в друзья отклонена';
             case 'admin_request':
-                return action === 'accept' ? 'Назначен администратором' : 'Запрос отклонен';
+                return action === 'accept' ? 'Запрос на администрирование принят' : 'Запрос на администрирование отклонен';
             case 'tournament_invite':
                 return action === 'accept' ? 'Приглашение принято' : 'Приглашение отклонено';
             default:
