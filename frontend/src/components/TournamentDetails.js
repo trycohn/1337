@@ -1630,12 +1630,7 @@ function TournamentDetails() {
                                                                 >
                                                                     уже отправлено
                                                                 </button>
-                                                                <button 
-                                                                    className="action-link no-bg-button search-result-action-button reset-invitation"
-                                                                    onClick={() => clearInvitationCache(user.id)}
-                                                                >
-                                                                    сбросить кэш
-                                                                </button>
+                                                                {/* Удаляем кнопку сброса кэша, т.к. кэш очищается автоматически */}
                                                             </>
                                                         ) : (
                                                             <button 
@@ -1673,21 +1668,7 @@ function TournamentDetails() {
                             />
                             <button onClick={handleAddParticipant}>Добавить участника</button>
                             
-                            {/* Блок администрирования кэша приглашений */}
-                            <div className="cache-management">
-                                <h4>Управление кэшем приглашений</h4>
-                                <div className="cache-buttons">
-                                    <button onClick={() => clearInvitationCache(34)} className="clear-cache-btn">
-                                        Очистить кэш пользователя #34
-                                    </button>
-                                    <button onClick={() => clearInvitationCache(100)} className="clear-cache-btn">
-                                        Очистить кэш пользователя #100
-                                    </button>
-                                    <button onClick={clearAllInvitationsCache} className="clear-all-cache-btn">
-                                        Очистить весь кэш приглашений
-                                    </button>
-                                </div>
-                            </div>
+                            {/* Удаляем весь блок администрирования кэша приглашений */}
                         </div>
                     )}
                     {!isAdminOrCreator && tournament?.status === 'active' && (
