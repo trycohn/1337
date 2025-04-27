@@ -1071,6 +1071,8 @@ function TournamentDetails() {
             
             try {
                 // API требует username или email, а не user_id
+                // Исправляем ошибку с колонкой "invited_user_id", которая не существует
+                // Используем только параметр username для отправки приглашения
                 const inviteResponse = await api.post(
                     `/api/tournaments/${id}/invite`, 
                     { username: username },
@@ -1096,9 +1098,7 @@ function TournamentDetails() {
                     if (apiError.response?.data?.error?.includes('уже')) {
                         setMessage(`Пользователь ${username} уже приглашён`);
                     } else if (apiError.response?.data?.error?.includes('Укажите никнейм или email')) {
-                        // Пробуем альтернативный вариант с использованием объекта пользователя
-                        console.log('Пробуем отправить приглашение с использованием другого формата');
-                        
+                        // Пробуем альтернативный вариант
                         try {
                             const secondAttempt = await api.post(
                                 `/api/tournaments/${id}/invite`, 
@@ -1115,8 +1115,25 @@ function TournamentDetails() {
                         setMessage(apiError.response?.data?.error || `Ошибка приглашения: ${apiError.message}`);
                     }
                 } else if (apiError.response?.status === 500) {
-                    // Другие ошибки 500
-                    setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
+                    // Если ошибка связана с колонкой "invited_user_id", попробуем другой подход
+                    if (apiError.response?.data?.error?.includes('invited_user_id')) {
+                        try {
+                            // Используем только параметр username вместо user_id
+                            const alternativeAttempt = await api.post(
+                                `/api/tournaments/${id}/invite`,
+                                { username: username, skip_id_check: true },
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            console.log('Успешный ответ от альтернативной попытки:', alternativeAttempt.data);
+                            setMessage(`Приглашение отправлено пользователю ${username}`);
+                        } catch (altError) {
+                            console.error('Ошибка альтернативной попытки:', altError);
+                            setMessage(`Сервер не может обработать приглашение. Попробуйте позже.`);
+                        }
+                    } else {
+                        // Другие ошибки 500
+                        setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
+                    }
                 } else {
                     // Другие ошибки
                     setMessage(apiError.response?.data?.error || `Ошибка при отправке приглашения: ${apiError.message}`);
@@ -1207,10 +1224,17 @@ function TournamentDetails() {
                 }));
                 
                 // Отображаем уведомление только если кэш был очищен из-за срока давности
+                // И только если пользователь - администратор или создатель
                 if (cachedInvitedUsers.length > 0) {
-                    toast.info('Кэш приглашений обновлен (автоочистка)');
+                    // Очищаем кэш в любом случае
                     setInvitedUsers([]);
                     localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify([]));
+                    
+                    // Но уведомления показываем только администраторам
+                    if (isAdminOrCreator) {
+                        toast.info('Кэш приглашений обновлен (автоочистка)');
+                        setMessage('Кэш приглашений обновлен (автоочистка)');
+                    }
                 }
             } else {
                 console.log('Кэш приглашений актуален, последнее обновление:', new Date(cacheMeta.lastUpdated));
@@ -1219,7 +1243,7 @@ function TournamentDetails() {
             console.error('Ошибка при проверке актуальности кэша приглашений:', error);
             // В случае ошибки, не меняем кэш
         }
-    }, [id, tournament, toast]);
+    }, [id, tournament, toast, isAdminOrCreator]);
 
     // Проверяем актуальность кэша при загрузке турнира
     useEffect(() => {
