@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import './ChatWindow.css';
 import Message from './Message';
 import { decodeTokenPayload } from '../utils/userHelpers';
-import api from '../api';
+import api from '../axios';
 import { ensureHttps } from '../utils/userHelpers';
 
 function ChatWindow({ 
