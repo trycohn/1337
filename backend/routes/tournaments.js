@@ -531,14 +531,15 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
             // Отправляем уведомление создателю
             const creatorNotificationMessage = `Пользователь ${req.user.username} принял приглашение в турнир "${tournament.name}"`;
             await pool.query(
-                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
-                [tournament.created_by, creatorNotificationMessage, 'invitation_accepted', id]
+                'INSERT INTO notifications (user_id, message, type, tournament_id, invitation_id) VALUES ($1, $2, $3, $4, $5)',
+                [tournament.created_by, creatorNotificationMessage, 'invitation_accepted', id, invitation_id]
             );
             sendNotification(tournament.created_by, {
                 user_id: tournament.created_by,
                 message: creatorNotificationMessage,
                 type: 'invitation_accepted',
                 tournament_id: id,
+                invitation_id: invitation_id,
                 created_at: new Date().toISOString(),
             });
 
@@ -553,14 +554,15 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
             // Отправляем уведомление создателю
             const creatorNotificationMessage = `Пользователь ${req.user.username} отклонил приглашение в турнир "${tournament.name}"`;
             await pool.query(
-                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
-                [tournament.created_by, creatorNotificationMessage, 'invitation_rejected', id]
+                'INSERT INTO notifications (user_id, message, type, tournament_id, invitation_id) VALUES ($1, $2, $3, $4, $5)',
+                [tournament.created_by, creatorNotificationMessage, 'invitation_rejected', id, invitation_id]
             );
             sendNotification(tournament.created_by, {
                 user_id: tournament.created_by,
                 message: creatorNotificationMessage,
                 type: 'invitation_rejected',
                 tournament_id: id,
+                invitation_id: invitation_id,
                 created_at: new Date().toISOString(),
             });
 

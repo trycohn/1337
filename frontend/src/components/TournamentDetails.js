@@ -386,7 +386,7 @@ function TournamentDetails() {
             setIsSearching(false);
             return;
         }
-        
+
         // Показываем индикатор загрузки
         setIsSearching(true);
         
@@ -448,8 +448,8 @@ function TournamentDetails() {
                     setShowSearchResults(false);
                 }
                 setIsSearching(false);
-            } catch (error) {
-                console.error('Ошибка при поиске пользователей:', error);
+        } catch (error) {
+            console.error('Ошибка при поиске пользователей:', error);
                 setSearchResults([]);
                 setShowSearchResults(false);
                 setIsSearching(false);
