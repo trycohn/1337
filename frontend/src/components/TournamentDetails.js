@@ -1011,6 +1011,13 @@ function TournamentDetails() {
         return tournament.participants.some(p => p.user_id === userId);
     };
 
+    // Проверка, было ли приглашение отправлено
+    const isInvitationSent = useCallback((userId) => {
+        console.log('Проверка приглашения для пользователя:', userId);
+        console.log('Текущие приглашения:', invitedUsers);
+        return invitedUsers.includes(userId);
+    }, [invitedUsers]);
+
     // Функция для отправки приглашения участнику
     const handleInviteUser = async (userId, username) => {
         try {
@@ -1022,12 +1029,14 @@ function TournamentDetails() {
 
             // Проверяем, отправлено ли уже приглашение локально в текущей сессии
             if (isInvitationSent(userId)) {
+                console.log(`Приглашение для ${username} (${userId}) уже в кэше`);
                 setMessage(`Приглашение для пользователя ${username} уже отправлено`);
                 return;
             }
 
             // Проверяем, не является ли пользователь уже участником
             if (isUserParticipant(userId)) {
+                console.log(`Пользователь ${username} (${userId}) уже участник`);
                 setMessage(`Пользователь ${username} уже является участником турнира`);
                 return;
             }
@@ -1036,12 +1045,29 @@ function TournamentDetails() {
             
             // Перед отправкой приглашения добавляем пользователя в локальный кэш,
             // чтобы предотвратить повторные клики
-            setInvitedUsers(prev => [...prev, userId]);
+            setInvitedUsers(prev => {
+                console.log('Добавление в кэш пользователя:', userId);
+                console.log('Предыдущий кэш:', prev);
+                const newCache = [...prev, userId];
+                console.log('Новый кэш:', newCache);
+                return newCache;
+            });
+
+            // Небольшая задержка для гарантии обновления состояния
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Дополнительная проверка перед отправкой запроса
+            if (invitedUsers.includes(userId)) {
+                console.log(`Повторная проверка: приглашение для ${username} (${userId}) уже в кэше`);
+                setMessage(`Приглашение для пользователя ${username} уже отправлено`);
+                return;
+            }
             
             try {
+                // Используем URL с явным указанием user_id вместо username для предотвращения ошибок
                 const inviteResponse = await api.post(
                     `/api/tournaments/${id}/invite`, 
-                    { username: username },
+                    { user_id: userId },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 
@@ -1054,8 +1080,7 @@ function TournamentDetails() {
                 
                 // Обрабатываем ошибку дублирования приглашения
                 if (apiError.response?.status === 500 && 
-                    apiError.response?.data?.error?.includes('unique constraint') && 
-                    apiError.response?.data?.error?.includes('tournament_id_user_id_status')) {
+                    apiError.response?.data?.error?.includes('unique constraint')) {
                     setMessage(`Приглашение для пользователя ${username} уже существует`);
                     return;
                 }
@@ -1077,11 +1102,6 @@ function TournamentDetails() {
         }
     };
 
-    // Проверка, было ли приглашение отправлено
-    const isInvitationSent = (userId) => {
-        return invitedUsers.includes(userId);
-    };
-
     // Обработчик клика вне списка результатов
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -1099,6 +1119,33 @@ function TournamentDetails() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showSearchResults]);
+
+    // Сохраняем invitedUsers в localStorage для сохранения между ререндерами
+    useEffect(() => {
+        // Сохраняем каждое изменение invitedUsers в localStorage
+        if (invitedUsers.length > 0) {
+            try {
+                console.log('Сохраняем invitedUsers в localStorage:', invitedUsers);
+                localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(invitedUsers));
+            } catch (e) {
+                console.error('Ошибка сохранения invitedUsers в localStorage:', e);
+            }
+        }
+    }, [invitedUsers, id]);
+
+    // Загружаем invitedUsers из localStorage при монтировании
+    useEffect(() => {
+        try {
+            const savedInvitedUsers = localStorage.getItem(`tournament_${id}_invited_users`);
+            if (savedInvitedUsers) {
+                const parsedInvitedUsers = JSON.parse(savedInvitedUsers);
+                console.log('Загружаем invitedUsers из localStorage:', parsedInvitedUsers);
+                setInvitedUsers(parsedInvitedUsers);
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки invitedUsers из localStorage:', e);
+        }
+    }, [id]);
 
     if (!tournament) return <p>Загрузка...</p>;
 
