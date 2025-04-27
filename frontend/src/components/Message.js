@@ -72,24 +72,29 @@ function Message({ message, isOwn, onDeleteMessage }) {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/notifications/respond?notificationId=${message.content_meta.notification_id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ action: actionType })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Ошибка при обработке уведомления');
+            if (!token) {
+                alert('Необходимо авторизоваться');
+                return;
             }
+
+            const axios = require('axios');
+            const response = await axios.post(
+                `/api/notifications/respond?notificationId=${message.content_meta.notification_id}`,
+                { action: actionType },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
             
             setResponded(true);
+            console.log('Уведомление успешно обработано:', response.data);
         } catch (err) {
             console.error('Ошибка при ответе на уведомление:', err);
-            alert(err.message);
+            const errorMessage = err.response?.data?.error || err.message || 'Ошибка при обработке уведомления';
+            alert(errorMessage);
         } finally {
             setActionLoading(false);
         }

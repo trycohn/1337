@@ -292,7 +292,7 @@ router.post('/respond', async (req, res) => {
                 // Обновляем статус приглашения
                 await pool.query(
                     `UPDATE tournament_invitations 
-                     SET status = $1, responded_at = NOW()
+                     SET status = $1
                      WHERE tournament_id = $2 AND user_id = $3`,
                     [action === 'accept' ? 'accepted' : 'rejected', notificationData.tournament_id, userId]
                 );
