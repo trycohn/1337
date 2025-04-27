@@ -1,7 +1,7 @@
 // frontend/src/components/TournamentDetails.js
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '../api';
+import api from '../axios';
 import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 import './TournamentDetails.css';
