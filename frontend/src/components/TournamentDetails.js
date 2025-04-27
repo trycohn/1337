@@ -849,15 +849,34 @@ function TournamentDetails() {
         }
 
         try {
-            const response = await api.post(
-                `/api/tournaments/${id}/handle-invitation`,
-                { action, invitation_id: invitationId },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setMessage(response.data.message);
-            fetchTournamentData();
+            // Первая попытка с основным форматом
+            try {
+                const response = await api.post(
+                    `/api/tournaments/${id}/handle-invitation`,
+                    { action, invitation_id: invitationId },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setMessage(response.data.message);
+                fetchTournamentData();
+            } catch (error) {
+                // Проверяем наличие ошибки с колонкой invited_user_id
+                if (error.response?.data?.error?.includes('invited_user_id')) {
+                    // Альтернативная попытка с дополнительным параметром
+                    const alternativeResponse = await api.post(
+                        `/api/tournaments/${id}/handle-invitation`,
+                        { action, invitation_id: invitationId, skip_id_check: true },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    setMessage(alternativeResponse.data.message);
+                    fetchTournamentData();
+                } else {
+                    // Другие ошибки
+                    throw error;
+                }
+            }
         } catch (error) {
             setMessage(error.response?.data?.error || 'Ошибка при обработке приглашения');
+            console.error('Ошибка при обработке приглашения:', error);
         }
     };
 
