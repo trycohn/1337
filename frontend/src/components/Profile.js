@@ -772,7 +772,14 @@ function Profile() {
             
             setMatchHistory(response.data);
         } catch (err) {
-            console.error('Ошибка загрузки истории матчей:', err);
+            // Проверяем является ли ошибка 404
+            if (err.response && err.response.status === 404) {
+                // Если это 404, просто устанавливаем пустой массив
+                setMatchHistory([]);
+            } else {
+                // Логируем только если это не 404
+                console.error('Ошибка загрузки истории матчей:', err);
+            }
         } finally {
             setLoadingMatchHistory(false);
         }
