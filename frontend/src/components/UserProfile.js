@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../axios';
 import './Profile.css';
-import { redirectIfCurrentUser, isCurrentUser, decodeTokenPayload } from '../utils/userHelpers';
+import { redirectIfCurrentUser, isCurrentUser, decodeTokenPayload, ensureHttps } from '../utils/userHelpers';
+import { formatDate } from '../utils/dateHelpers';
 
 function UserProfile() {
     const { userId } = useParams();
@@ -236,7 +237,7 @@ function UserProfile() {
             <div className="profile-header">
                 <div className="avatar-container">
                     <img 
-                        src={user.avatar_url || '/default-avatar.png'} 
+                        src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
                         alt="Аватар пользователя" 
                         className="user-avatar"
                     />
@@ -397,7 +398,7 @@ function UserProfile() {
                                         <div key={friend.id} className="friend-item">
                                             <a href={isCurrentUser(friend.id) ? `/profile` : `/user/${friend.id}`} className="friend-link">
                                                 <img 
-                                                    src={friend.avatar_url || '/default-avatar.png'} 
+                                                    src={ensureHttps(friend.avatar_url) || '/default-avatar.png'} 
                                                     alt={friend.username} 
                                                     className="friend-avatar" 
                                                 />

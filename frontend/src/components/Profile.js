@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../axios';
 import './Profile.css';
-import { isCurrentUser } from '../utils/userHelpers';
+import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -861,7 +861,7 @@ function Profile() {
             <div key={friend.id} className="friend-item">
                 <a href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} className="friend-link">
                     <img 
-                        src={friend.friend.avatar_url || '/default-avatar.png'} 
+                        src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'} 
                         alt={friend.friend.username} 
                         className="friend-avatar"
                     />
@@ -996,7 +996,7 @@ function Profile() {
             <div className="profile-header">
                 <div className="avatar-container">
                     <img 
-                        src={avatar || '/default-avatar.png'} 
+                        src={ensureHttps(avatar) || '/default-avatar.png'} 
                         alt="Аватар пользователя" 
                         className="user-avatar"
                         onClick={openAvatarModal}
@@ -1228,7 +1228,12 @@ function Profile() {
                                         {searchResults.map(user => (
                                             <div key={user.id} className="search-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', margin: '4px 0' }}>
                                                 <a href={`/user/${user.id}`} className="search-user-link" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flex: '0 0 auto', maxWidth: '60%' }}>
-                                                    <img src={user.avatar_url || '/default-avatar.png'} alt={user.username} className="search-avatar" style={{ marginRight: '10px' }} />
+                                                    <img
+                                                        src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
+                                                        alt={user.username}
+                                                        className="search-avatar"
+                                                        style={{ marginRight: '10px' }}
+                                                    />
                                                     <span className="search-username" style={{ display: 'inline-block', verticalAlign: 'middle' }}>{user.username}</span>
                                                 </a>
                                                 <div style={{ flex: '0 0 auto', minWidth: '110px', textAlign: 'right' }}>
@@ -1276,10 +1281,10 @@ function Profile() {
                                         {friendRequests.map(request => (
                                             <div key={request.id} className="friend-request-item">
                                                 <div className="request-user">
-                                                    <img 
-                                                        src={request.user.avatar_url || '/default-avatar.png'} 
-                                                        alt={request.user.username} 
-                                                        className="request-avatar" 
+                                                    <img
+                                                        src={ensureHttps(request.user.avatar_url) || '/default-avatar.png'}
+                                                        alt={request.user.username}
+                                                        className="friend-request-avatar"
                                                     />
                                                     <a href={`/user/${request.user.id}`} className="request-username">
                                                         {request.user.username}
@@ -1313,9 +1318,9 @@ function Profile() {
                                             <div key={request.id} className="friend-request-item">
                                                 <div className="request-user">
                                                     <img
-                                                        src={request.user.avatar_url || '/default-avatar.png'}
+                                                        src={ensureHttps(request.user.avatar_url) || '/default-avatar.png'}
                                                         alt={request.user.username}
-                                                        className="request-avatar"
+                                                        className="friend-request-avatar"
                                                     />
                                                     <a href={`/user/${request.user.id}`} className="request-username">
                                                         {request.user.username}
@@ -1519,7 +1524,7 @@ function Profile() {
                         
                         <div className="avatar-preview">
                             <img 
-                                src={avatar || '/default-avatar.png'} 
+                                src={ensureHttps(avatar) || '/default-avatar.png'} 
                                 alt="Текущий аватар" 
                                 className="current-avatar"
                             />

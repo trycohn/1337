@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import './ChatWindow.css';
 import Message from './Message';
 import { decodeTokenPayload } from '../utils/userHelpers';
+import api from '../api';
+import { ensureHttps } from '../utils/userHelpers';
 
 function ChatWindow({ 
     activeChat, 
@@ -117,8 +119,9 @@ function ChatWindow({
             <div className="chat-header">
                 <div className="chat-header-avatar">
                     <img 
-                        src={activeChat.avatar_url || '/default-avatar.png'} 
+                        src={ensureHttps(activeChat.avatar_url) || '/default-avatar.png'} 
                         alt={activeChat.name} 
+                        className="chat-avatar"
                     />
                 </div>
                 <div className="chat-header-info">

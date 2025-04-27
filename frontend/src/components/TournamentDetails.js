@@ -1,7 +1,9 @@
 // frontend/src/components/TournamentDetails.js
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '../axios';
+import api from '../api';
+import { formatDate } from '../utils/dateHelpers';
+import { ensureHttps } from '../utils/userHelpers';
 import './TournamentDetails.css';
 import { io } from 'socket.io-client';
 
@@ -96,12 +98,6 @@ function TournamentDetails() {
     const [isSearching, setIsSearching] = useState(false);
     const searchContainerRef = useRef(null);
     const [invitedUsers, setInvitedUsers] = useState([]);
-
-    // Функция для обеспечения HTTPS в URL
-    const ensureHttps = (url) => {
-        if (!url) return url;
-        return url.replace(/^http:\/\//i, 'https://');
-    };
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
@@ -1410,9 +1406,9 @@ function TournamentDetails() {
                                                 <div className="search-result-content">
                                                     <div className="search-result-avatar">
                                                         <img 
-                                                            src={user.avatar_url || '/default-avatar.png'} 
-                                                            alt={`${user.username} аватар`} 
-                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
+                                                            alt={user.username}
+                                                            className="user-avatar"
                                                         />
                                                     </div>
                                                     <div className="search-result-info">

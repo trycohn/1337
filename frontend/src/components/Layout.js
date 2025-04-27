@@ -7,6 +7,7 @@ import './Home.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { io } from 'socket.io-client';
+import { decodeTokenPayload, ensureHttps } from '../utils/userHelpers';
 
 function Layout() {
     const [user, setUser] = useState(null);
@@ -242,9 +243,9 @@ function Layout() {
                         <div className="user-info">
                             <Link to="/profile" className="header-avatar-link">
                                 <img
-                                    src={user.avatar_url || '/default-avatar.png'}
-                                    alt="Аватар пользователя"
-                                    className="header-avatar"
+                                    src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
+                                    alt={user.username || 'User'}
+                                    className="profile-avatar"
                                 />
                             </Link>
                             <Link to="/profile" className="username-link">

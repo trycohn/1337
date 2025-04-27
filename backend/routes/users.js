@@ -934,8 +934,8 @@ router.post('/upload-avatar', authenticateToken, upload.single('avatar'), async 
 
         // Определяем базовый URL динамически (используем SERVER_URL в продакшене)
         const baseUrl = process.env.NODE_ENV === 'production'
-            ? process.env.SERVER_URL
-            : `${req.protocol}://${req.get('host')}`;
+            ? process.env.SERVER_URL || 'https://1337community.com'
+            : `https://${req.get('host')}`;
         const relativePath = `/uploads/avatars/${req.file.filename}`;
         const avatar_url = `${baseUrl}${relativePath}`;
 

@@ -58,4 +58,14 @@ export const redirectIfCurrentUser = (userId, navigateFn) => {
     return true;
   }
   return false;
+};
+
+/**
+ * Обеспечивает использование HTTPS вместо HTTP в URL
+ * @param {string} url URL, который нужно исправить
+ * @returns {string|null} URL с HTTPS вместо HTTP или исходный URL, если он не содержит протокол
+ */
+export const ensureHttps = (url) => {
+  if (!url) return url;
+  return url.replace(/^http:\/\//i, 'https://');
 }; 

@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ChatList.css';
 import { formatDate } from '../utils/dateHelpers';
+import { Link } from 'react-router-dom';
+import api from '../api';
+import { ensureHttps } from '../utils/userHelpers';
 
 function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -149,8 +152,9 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
                         >
                             <div className="chat-avatar">
                                 <img 
-                                    src={chat.avatar_url || '/default-avatar.png'} 
+                                    src={ensureHttps(chat.avatar_url) || '/default-avatar.png'} 
                                     alt={chat.name} 
+                                    className="chat-avatar"
                                 />
                             </div>
                             
@@ -206,7 +210,7 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
                                             onClick={() => handleFriendSelect(friend.friend.id)}
                                         >
                                             <img 
-                                                src={friend.friend.avatar_url || '/default-avatar.png'} 
+                                                src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'} 
                                                 alt={friend.friend.username} 
                                                 className="friend-avatar" 
                                             />
