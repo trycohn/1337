@@ -93,7 +93,7 @@ router.post('/register', async (req, res) => {
         const token = jwt.sign(
             { id: newUser.id, role: newUser.role, username: newUser.username },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '168h' }
         );
 
         res.status(201).json({ message: 'Пользователь создан', userId: newUser.id, token });
@@ -130,7 +130,7 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, role: user.role, username: user.username },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '168h' }
         );
 
         res.json({ token });
@@ -202,7 +202,7 @@ router.get('/steam-callback', async (req, res) => {
             const token = jwt.sign(
                 { id: user.id, role: user.role, username: user.username },
                 process.env.JWT_SECRET,
-                { expiresIn: '1h' }
+                { expiresIn: '168h' }
             );
             console.log('User exists, redirecting with token:', token);
             return res.redirect(`https://1337community.com/auth-callback?token=${token}`);
@@ -225,7 +225,7 @@ router.get('/steam-callback', async (req, res) => {
             const token = jwt.sign(
                 { id: newUser.id, role: newUser.role, username: newUser.username },
                 process.env.JWT_SECRET,
-                { expiresIn: '1h' }
+                { expiresIn: '168h' }
             );
             
             console.log('Created new user with Steam profile, redirecting with token:', newUser);
@@ -791,7 +791,7 @@ router.get('/faceit-callback', async (req, res) => {
                 const token = jwt.sign(
                     { id: user.id, role: user.role, username: user.username },
                     process.env.JWT_SECRET,
-                    { expiresIn: '1h' }
+                    { expiresIn: '168h' }
                 );
                 console.log('Existing user found, redirecting with token:', token);
                 return res.redirect(`https://1337community.com/auth-callback?token=${token}`);
@@ -823,7 +823,7 @@ router.get('/faceit-callback', async (req, res) => {
                 const token = jwt.sign(
                     { id: newUser.id, role: newUser.role, username: newUser.username },
                     process.env.JWT_SECRET,
-                    { expiresIn: '1h' }
+                    { expiresIn: '168h' }
                 );
                 
                 console.log('Created new user with FACEIT profile, redirecting with token:', newUser);
