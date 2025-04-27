@@ -167,6 +167,17 @@ function TournamentDetails() {
         fetchTournamentData();
         setupWebSocket();
 
+        // Загружаем существующие приглашения для турнира
+        if (token) {
+            api.get(`/api/tournaments/${id}/invitations`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(response => {
+                    // Извлекаем ID пользователей из приглашений
+                    const invitedUserIds = response.data.map(invitation => invitation.user_id);
+                    setInvitedUsers(invitedUserIds);
+                })
+                .catch(error => console.error('Ошибка загрузки существующих приглашений:', error));
+        }
+
         return () => {
             if (wsRef.current) {
                 wsRef.current.emit('unwatch_tournament', id);
@@ -1017,6 +1028,12 @@ function TournamentDetails() {
                 return;
             }
 
+            // Проверяем, отправлено ли уже приглашение (локально)
+            if (isInvitationSent(userId)) {
+                setMessage(`Приглашение для пользователя ${username} уже отправлено`);
+                return;
+            }
+
             console.log(`Отправка приглашения пользователю: ${username} (id: ${userId})`);
             
             // Меняем формат запроса на тот, который точно работает в handleInvite
@@ -1036,15 +1053,24 @@ function TournamentDetails() {
             console.error('Ответ сервера:', error.response?.data);
             console.error('Статус ошибки:', error.response?.status);
             
-            // Проверяем ошибки 400 и 500
+            // Обрабатываем ошибку дублирования приглашения
+            if (error.response?.status === 500 && 
+                error.response?.data?.error?.includes('unique constraint') && 
+                error.response?.data?.error?.includes('tournament_id_user_id_status')) {
+                // Добавляем в локальный кэш и показываем сообщение
+                setInvitedUsers(prev => [...prev, userId]);
+                setMessage(`Приглашение для пользователя ${username} уже существует`);
+                return;
+            }
+            
+            // Проверяем ошибки 400 и другие 500
             if (error.response?.status === 400 && error.response?.data?.error?.includes('уже')) {
                 // Если приглашение уже отправлено (ошибка 400)
                 setInvitedUsers(prev => [...prev, userId]);
                 setMessage(`Пользователь ${username} уже приглашён`);
             } else if (error.response?.status === 500) {
-                // Любая ошибка 500 - вероятно дублирование записи в БД
-                setInvitedUsers(prev => [...prev, userId]);
-                setMessage(`Приглашение для пользователя ${username} уже существует`);
+                // Другие ошибки 500
+                setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
             } else {
                 // Другие ошибки
                 setMessage(error.response?.data?.error || `Ошибка при отправке приглашения: ${error.message}`);
