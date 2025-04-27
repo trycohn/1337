@@ -6,8 +6,6 @@ import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 import './TournamentDetails.css';
 import { io } from 'socket.io-client';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const BracketRenderer = lazy(() => 
@@ -1198,14 +1196,6 @@ function TournamentDetails() {
                 console.log('Обновляем кэш приглашений. Новые данные:', validatedCache);
                 localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(validatedCache));
                 setInvitedUsers(validatedCache);
-                toast.info('Кэш приглашений обновлен', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true
-                });
                 setMessage('Кэш приглашений обновлен');
             } else {
                 console.log('Кэш приглашений актуален');
@@ -1238,25 +1228,9 @@ function TournamentDetails() {
             setInvitedUsers(updatedInvited);
             
             console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
-            toast.success(`Кэш приглашения для пользователя #${userId} очищен`, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true
-            });
             setMessage(`Кэш приглашения для пользователя #${userId} очищен`);
         } catch (error) {
             console.error('Ошибка при очистке кэша приглашения:', error);
-            toast.error('Ошибка при очистке кэша приглашения', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true
-            });
             setMessage('Ошибка при очистке кэша приглашения');
         }
     };
@@ -1271,25 +1245,9 @@ function TournamentDetails() {
             setInvitedUsers([]);
             
             console.log('Кэш приглашений полностью очищен');
-            toast.success('Весь кэш приглашений очищен', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true
-            });
             setMessage('Весь кэш приглашений очищен');
         } catch (error) {
             console.error('Ошибка при очистке всего кэша приглашений:', error);
-            toast.error('Ошибка при очистке кэша приглашений', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true
-            });
             setMessage('Ошибка при очистке кэша приглашений');
         }
     };

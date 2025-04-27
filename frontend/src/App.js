@@ -12,8 +12,9 @@ import Notifications from './components/Notifications'; // Добавляем и
 import { LoaderProvider } from './context/LoaderContext';
 import { PrivateRoute } from './utils/PrivateRoute';
 import Messenger from './components/Messenger';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// Временно удаляем ToastContainer, чтобы проверить работу приложения
+// import { ToastContainer } from 'react-toastify';
+// import 'react-toastify/dist/ReactToastify.css';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -44,6 +45,7 @@ function App() {
     return (
         <LoaderProvider>
             <Router>
+                {/* Временно отключаем ToastContainer
                 <ToastContainer
                     position="top-right"
                     autoClose={3000}
@@ -54,7 +56,7 @@ function App() {
                     pauseOnFocusLoss
                     draggable
                     pauseOnHover
-                />
+                /> */}
                 <Routes>
                     <Route path="/" element={<Layout />}>
                         <Route index element={<Home />} />
