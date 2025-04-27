@@ -6,7 +6,7 @@ import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 import './TournamentDetails.css';
 import { io } from 'socket.io-client';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
@@ -1407,17 +1407,6 @@ function TournamentDetails() {
 
     return (
         <section className="tournament-details">
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-            />
             <h2>
                 {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
             </h2>
