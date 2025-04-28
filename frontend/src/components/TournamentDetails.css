@@ -832,4 +832,174 @@
 
 .clear-results-button:hover {
     background-color: #c82333;
+}
+
+/* Стили для работы с картами в матчах CS2 */
+.maps-container {
+    margin-top: 15px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.map-entry {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: white;
+}
+
+.map-select-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.map-select {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.map-scores {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.map-scores .score-container {
+    flex: 1;
+}
+
+.remove-map-btn {
+    margin-left: 10px;
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.add-map-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.total-score {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: #f0f8ff;
+}
+
+.score-summary {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+}
+
+.team-score {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.team-name {
+    font-weight: bold;
+}
+
+.score-value {
+    background-color: #4CAF50;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+/* Стили для окна просмотра результатов матча */
+.match-details-modal {
+    max-width: 600px;
+    width: 90%;
+}
+
+.match-teams {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+.team-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+    flex: 1;
+}
+
+.team-info.winner {
+    background-color: rgba(76, 175, 80, 0.2);
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    font-weight: bold;
+}
+
+.winner-badge {
+    background-color: #4CAF50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.match-score {
+    font-size: 24px;
+    font-weight: bold;
+    padding: 0 20px;
+}
+
+.maps-results {
+    margin-top: 20px;
+}
+
+.maps-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.maps-table th, .maps-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.maps-table th {
+    background-color: #f2f2f2;
+}
+
+.maps-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.map-winner {
+    font-weight: bold;
+    color: #4CAF50;
 } 

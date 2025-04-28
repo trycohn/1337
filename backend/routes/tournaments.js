@@ -940,7 +940,7 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
 // Обновление результата матча
 router.post('/:id/update-match', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    let { matchId, winner_team_id, score1, score2 } = req.body;
+    let { matchId, winner_team_id, score1, score2, maps } = req.body;
     const userId = req.user.id;
 
     try {
@@ -994,11 +994,49 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Победитель должен быть одним из участников матча' });
         }
 
+        // Подготовка данных о картах (если они предоставлены)
+        let mapsData = null;
+        if (Array.isArray(maps) && maps.length > 0 && tournament.game === 'Counter-Strike 2') {
+            mapsData = JSON.stringify(maps);
+            
+            // Пересчитываем общий счет на основе выигранных карт
+            if (maps.length > 1) {
+                let team1Wins = 0;
+                let team2Wins = 0;
+                
+                maps.forEach(map => {
+                    if (parseInt(map.score1) > parseInt(map.score2)) {
+                        team1Wins++;
+                    } else if (parseInt(map.score2) > parseInt(map.score1)) {
+                        team2Wins++;
+                    }
+                });
+                
+                score1 = team1Wins;
+                score2 = team2Wins;
+                
+                // Определяем победителя на основе количества выигранных карт
+                if (team1Wins > team2Wins) {
+                    winner_team_id = match.team1_id;
+                } else if (team2Wins > team1Wins) {
+                    winner_team_id = match.team2_id;
+                }
+                // В случае ничьей (равное количество выигранных карт) winner_team_id остается как был передан
+            }
+        }
+
         // Обновление результата текущего матча
-        await pool.query(
-            'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4',
-            [winner_team_id, score1, score2, matchId]
-        );
+        if (mapsData) {
+            await pool.query(
+                'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5',
+                [winner_team_id, score1, score2, mapsData, matchId]
+            );
+        } else {
+            await pool.query(
+                'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4',
+                [winner_team_id, score1, score2, matchId]
+            );
+        }
 
         console.log(`Обновлен результат матча ${match.match_number}: победитель ${winner_team_id}, счет ${score1}:${score2}`);
 

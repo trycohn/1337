@@ -14,7 +14,8 @@ const BracketRenderer = ({
     selectedMatch,
     setSelectedMatch,
     handleTeamClick,
-    format
+    format,
+    onMatchClick
 }) => {
     console.log('BracketRenderer: Инициализация с параметрами', { 
         gamesCount: games?.length, 
@@ -980,10 +981,15 @@ const BracketRenderer = ({
                                                 key={match.id}
                                                 className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                 onClick={(e) => {
-                                                      if (canEditMatches && match.state !== 'DONE') {
-                                                          setSelectedMatch(isSelected ? null : safeParseInt(match.id));
-                                                      }
-                                                  }}
+                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                    if (onMatchClick && match.state === 'DONE') {
+                                                        onMatchClick(match.id);
+                                                    }
+                                                    // Иначе обычное поведение для выбора победителя
+                                                    else if (canEditMatches && match.state !== 'DONE') {
+                                                        setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                    }
+                                                }}
                                             >
                                                 <div className="match-number">{match.name}</div>
                                                 <div className="match-teams">

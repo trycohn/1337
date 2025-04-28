@@ -101,6 +101,43 @@ function TournamentDetails() {
     const searchContainerRef = useRef(null);
     const [invitedUsers, setInvitedUsers] = useState([]);
     const [userIdToRemove, setUserIdToRemove] = useState('');
+    // Состояния для просмотра деталей завершенного матча
+    const [viewingMatchDetails, setViewingMatchDetails] = useState(false);
+    const [matchDetails, setMatchDetails] = useState(null);
+    // Состояния для работы с картами в матчах CS2
+    const [maps, setMaps] = useState([{ map: 'de_dust2', score1: 0, score2: 0 }]);
+    const [showMapSelection, setShowMapSelection] = useState(false);
+    const csgoMaps = [
+        'de_dust2',
+        'de_mirage',
+        'de_nuke',
+        'de_train',
+        'de_anubis',
+        'de_ancient',
+        'de_inferno'
+    ];
+
+    const addMap = () => {
+        setMaps([...maps, { map: 'de_dust2', score1: 0, score2: 0 }]);
+    };
+
+    const removeMap = (index) => {
+        const newMaps = [...maps];
+        newMaps.splice(index, 1);
+        setMaps(newMaps);
+    };
+
+    const updateMapScore = (index, team, score) => {
+        const newMaps = [...maps];
+        newMaps[index][`score${team}`] = score;
+        setMaps(newMaps);
+    };
+
+    const updateMapSelection = (index, mapName) => {
+        const newMaps = [...maps];
+        newMaps[index].map = mapName;
+        setMaps(newMaps);
+    };
 
     // Получаем функции для отображения toast-уведомлений
     const toast = useToast();
@@ -773,7 +810,7 @@ function TournamentDetails() {
         if (!canEditMatches) return;
         
         try {
-        // Ищем матч
+            // Ищем матч
             const selectedGame = Array.isArray(games) ? games.find(g => g && g.id && parseInt(String(g.id)) === safeMatchId) : null;
             
             if (!selectedGame) {
@@ -825,6 +862,30 @@ function TournamentDetails() {
                 team1: team1Score,
                 team2: team2Score
             });
+
+            // Проверяем, сохранены ли данные о картах для этого матча
+            const matchData = matches.find(m => m.id === safeMatchId);
+            if (matchData && matchData.maps_data && tournament.game === 'Counter-Strike 2') {
+                try {
+                    const parsedMapsData = JSON.parse(matchData.maps_data);
+                    if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
+                        setMaps(parsedMapsData);
+                        setShowMapSelection(true);
+                    } else {
+                        // Если данные есть, но не валидны, сбрасываем к исходному состоянию
+                        setMaps([{ map: 'de_dust2', score1: 0, score2: 0 }]);
+                        setShowMapSelection(tournament.game === 'Counter-Strike 2');
+                    }
+                } catch (e) {
+                    console.error('Ошибка при разборе данных карт:', e);
+                    setMaps([{ map: 'de_dust2', score1: 0, score2: 0 }]);
+                    setShowMapSelection(tournament.game === 'Counter-Strike 2');
+                }
+            } else {
+                // Для новых матчей или не-CS2 матчей
+                setMaps([{ map: 'de_dust2', score1: 0, score2: 0 }]);
+                setShowMapSelection(tournament.game === 'Counter-Strike 2');
+            }
             
             // Отладочная информация
             console.log('Данные матча:', {
@@ -832,7 +893,8 @@ function TournamentDetails() {
                 team1Id,
                 team2Id,
                 selectedWinner,
-                isByeMatch: isByeMatch
+                isByeMatch: isByeMatch,
+                isCS2: tournament.game === 'Counter-Strike 2'
             });
             
             // Для бай матча автоматически выбираем существующую команду как победителя
@@ -841,8 +903,8 @@ function TournamentDetails() {
                 const autoWinnerId = team1Id || team2Id;
                 if (autoWinnerId) {
                     setSelectedWinnerId(String(autoWinnerId));
-                console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
-                setShowConfirmModal(true);
+                    console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
+                    setShowConfirmModal(true);
                 } else {
                     setMessage('Ошибка: не удалось определить победителя для bye-матча');
                 }
@@ -894,7 +956,8 @@ function TournamentDetails() {
                 score2,
                 team1_id: team1Id,
                 team2_id: team2Id,
-                isByeMatch
+                isByeMatch,
+                maps: showMapSelection ? maps : undefined
             });
             
             // Проверяем, что ID матча и ID победителя существуют
@@ -915,13 +978,18 @@ function TournamentDetails() {
                 }
             }
             
-            // Формируем данные запроса, только с обязательными полями
+            // Формируем данные запроса
             const requestData = {
                 matchId: parseInt(updatedMatch.id),
                 winner_team_id: winnerId,
                 score1: score1 || 0,
                 score2: score2 || 0
             };
+            
+            // Если включён выбор карт и это CS2, добавляем информацию о картах
+            if (showMapSelection && tournament.game === 'Counter-Strike 2') {
+                requestData.maps = maps;
+            }
             
             // Отправляем запрос к API только один раз
             let response = null;
@@ -1011,668 +1079,54 @@ function TournamentDetails() {
         setMatchScores({ team1: 0, team2: 0 });
     };
 
-    const handleConfirmWinner = (action) => {
-        if (action !== 'yes') {
-            handleCloseModal();
-            return;
-        }
-        
-        // Ищем выбранный матч
-        const matchToUpdate = games.find(g => parseInt(g.id) === selectedMatch);
-        
-        if (!matchToUpdate) {
-            console.error(`Матч с ID ${selectedMatch} не найден`);
-            handleCloseModal();
-            return;
-        }
-        
-        // Вызываем функцию обновления матча
-        handleUpdateMatch(matchToUpdate);
+    // Функция для закрытия модального окна с деталями матча
+    const closeMatchDetails = () => {
+        setViewingMatchDetails(false);
+        setMatchDetails(null);
     };
 
-    const handleInvite = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы отправить приглашение');
-            return;
-        }
+    // Функция для просмотра деталей завершенного матча
+    const viewMatchDetails = (matchId) => {
         try {
-            const payload =
-                inviteMethod === 'username' ? { username: inviteUsername } : { email: inviteEmail };
-            const inviteResponse = await api.post(`/api/tournaments/${id}/invite`, payload, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setMessage(inviteResponse.data.message);
-            setInviteUsername('');
-            setInviteEmail('');
-        } catch (error) {
-            setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
-        }
-    };
-
-    const handleInvitationResponse = async (invitationId, action) => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы ответить на приглашение');
-            toast.error('Пожалуйста, войдите, чтобы ответить на приглашение');
-            return;
-        }
-
-        try {
-        try {
-            const response = await api.post(
-                `/api/tournaments/${id}/handle-invitation`,
-                { action, invitation_id: invitationId },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setMessage(response.data.message);
-                toast.success(response.data.message);
-            fetchTournamentData();
-            } catch (error) {
-                // Проверяем ошибку, связанную с отсутствующей колонкой в базе данных
-                if (error.response?.data?.error?.includes('column') ||
-                    error.response?.data?.error?.includes('does not exist')) {
-                    // Альтернативная попытка без дополнительных параметров
-                    const alternativeResponse = await api.post(
-                        `/api/tournaments/${id}/handle-invitation`,
-                        { action, invitation_id: invitationId },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    setMessage(alternativeResponse.data.message);
-                    toast.success(alternativeResponse.data.message);
-                    fetchTournamentData();
-                } else {
-                    // Другие ошибки
-                    throw error;
-                }
+            const matchData = matches.find(m => m.id === parseInt(matchId));
+            if (!matchData) {
+                console.error(`Матч с ID ${matchId} не найден`);
+                return;
             }
-        } catch (error) {
-            setMessage(error.response?.data?.error || 'Ошибка при обработке приглашения');
-            toast.error(error.response?.data?.error || 'Ошибка при обработке приглашения');
-            console.error('Ошибка при обработке приглашения:', error);
-        }
-    };
 
-    const handleStartTournament = async () => {
-        try {
-            await api.post(`/api/tournaments/${id}/start`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            fetchTournamentData();
-        } catch (err) {
-            setError('Ошибка при старте турнира');
-        }
-    };
+            // Если матч не завершен, не показываем детали
+            if (!matchData.winner_team_id) {
+                return;
+            }
 
-    const handleEndTournament = async () => {
-        try {
-            await api.post(`/api/tournaments/${id}/end`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            fetchTournamentData();
-        } catch (err) {
-            setError('Ошибка при завершении турнира');
-        }
-    };
+            const match = {
+                id: matchData.id,
+                team1: tournament.participants.find(p => p.id === matchData.team1_id)?.name || 'Участник 1',
+                team2: tournament.participants.find(p => p.id === matchData.team2_id)?.name || 'Участник 2',
+                score1: matchData.score1,
+                score2: matchData.score2,
+                winner_id: matchData.winner_team_id,
+                maps: []
+            };
 
-    // Функция для повторной генерации сетки
-    const handleRegenerateBracket = async () => {
-        // Запрашиваем подтверждение у пользователя
-        if (!window.confirm('Вы действительно хотите перегенерировать сетку турнира? Все текущие результаты матчей будут удалены.')) {
-            return;
-        }
-        
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы регенерировать сетку');
-            toast.warning('Необходима авторизация');
-            return;
-        }
-
-        if (!isAdminOrCreator) {
-            setMessage('У вас нет прав для регенерации сетки');
-            toast.error('У вас нет прав для этого действия');
-            return;
-        }
-
-        try {
-            // Перед запросами, сбрасываем состояния
-            setMatches([]);
-            setMessage('Генерация новой сетки...');
-            toast.info('Начинаем генерацию новой сетки...');
-            
-            try {
-                console.log('🔍 Sending request to:', `/api/tournaments/${id}/generate-bracket`);
-                // Генерируем новую сетку
-                const generateResponse = await api.post(
-                    `/api/tournaments/${id}/generate-bracket`, 
-                    { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                
-                console.log('Новая сетка успешно сгенерирована:', generateResponse.data);
-                
-                // Немного ждем, чтобы сервер успел обработать изменения
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Обновляем данные турнира после перегенерации
-                console.log('🔍 Sending request to:', `/api/tournaments/${id}`);
-                const updatedTournamentData = await api.get(`/api/tournaments/${id}`);
-                
-                if (updatedTournamentData.data) {
-                    console.log('Данные турнира при загрузке:', updatedTournamentData.data);
-                    setTournament(updatedTournamentData.data);
-                    
-                    // Проверяем, что в ответе есть массив матчей
-                    if (Array.isArray(updatedTournamentData.data.matches)) {
-                        console.log(`Загруженные матчи:`, updatedTournamentData.data.matches);
-                        console.log(`Количество матчей: ${updatedTournamentData.data.matches.length}`);
-                        setMatches(updatedTournamentData.data.matches);
-                    } else {
-                        console.warn('В ответе от сервера отсутствуют матчи');
-                        setMatches([]);
-                    }
-                }
-                
-                setMessage('Сетка успешно регенерирована');
-                toast.success('Сетка успешно регенерирована!');
-                
-                // Запрашиваем актуальное состояние турнира через некоторое время
-                setTimeout(async () => {
-                    try {
-                        console.log('Повторный запрос данных турнира для обновления UI');
-                        await fetchTournamentData();
-                    } catch (retryError) {
-                        console.error('Ошибка при обновлении данных турнира:', retryError);
-                    }
-                }, 1000);
-                
-            } catch (innerError) {
-                console.error('Ошибка при регенерации сетки:', innerError);
-                
-                // Проверяем тип ошибки для информативного сообщения
-                let errorMessage = 'Ошибка при регенерации сетки';
-                
-                if (innerError.response) {
-                    // Серверная ошибка с ответом
-                    errorMessage = innerError.response.data?.error || 'Сервер вернул ошибку при регенерации сетки';
-                    console.log('Серверная ошибка:', innerError.response.data);
-                    
-                    if (innerError.response.status === 403) {
-                        errorMessage = 'У вас нет прав для регенерации сетки';
-                    } else if (innerError.response.status === 400) {
-                        // Обрабатываем конкретную ошибку 400
-                        if (innerError.response.data?.error === 'Недостаточно участников для генерации сетки') {
-                            errorMessage = 'Недостаточно участников для генерации сетки (минимум 2)';
-                        }
-                    }
-                } else if (innerError.request) {
-                    // Запрос был сделан, но ответа не получено
-                    errorMessage = 'Нет ответа от сервера. Проверьте подключение к интернету.';
-                    console.log('Нет ответа от сервера:', innerError.request);
-                } else {
-                    // Ошибка настройки запроса
-                    errorMessage = 'Ошибка при выполнении запроса: ' + innerError.message;
-                    console.log('Ошибка при выполнении запроса:', innerError.message);
-                }
-                
-                setMessage(errorMessage);
-                toast.error(errorMessage);
-                
-                // Попробуем все равно загрузить текущее состояние турнира
+            // Если есть данные о картах и это CS2, парсим их
+            if (matchData.maps_data && tournament.game === 'Counter-Strike 2') {
                 try {
-                    console.log('Попытка загрузить текущее состояние турнира после ошибки');
-                    const currentTournamentData = await api.get(`/api/tournaments/${id}`);
-                    if (currentTournamentData.data) {
-                        setTournament(currentTournamentData.data);
-                        if (Array.isArray(currentTournamentData.data.matches)) {
-                            setMatches(currentTournamentData.data.matches);
-                        }
+                    const parsedMapsData = JSON.parse(matchData.maps_data);
+                    if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
+                        match.maps = parsedMapsData;
                     }
-                } catch (loadError) {
-                    console.error('Не удалось загрузить текущее состояние турнира:', loadError);
-                }
-                
-                // В любом случае пытаемся обновить данные
-                setTimeout(async () => {
-                    try {
-                        await fetchTournamentData();
-                    } catch (retryError) {
-                        console.error('Ошибка при обновлении данных турнира:', retryError);
-                    }
-                }, 1000);
-            }
-        } catch (error) {
-            console.error('Неожиданная ошибка при регенерации сетки:', error);
-            setMessage('Произошла ошибка при регенерации сетки');
-            toast.error('Непредвиденная ошибка при регенерации сетки');
-            
-            // В любом случае пытаемся обновить данные
-            setTimeout(async () => {
-                try {
-                    await fetchTournamentData();
-                } catch (retryError) {
-                    console.error('Ошибка при обновлении данных турнира:', retryError);
-                }
-            }, 1000);
-        }
-    };
-
-    // Функция для очистки результатов матчей
-    const handleClearMatchResults = async () => {
-        if (!window.confirm('Вы действительно хотите очистить все результаты матчей? Это действие нельзя отменить.')) {
-            return;
-        }
-        
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setMessage('Необходимо авторизоваться для выполнения этого действия');
-                return;
-            }
-            
-            setMessage('Очистка результатов матчей...');
-            
-            // Отправляем запрос на очистку результатов
-            await api.post(
-                `/api/tournaments/${id}/clear-match-results`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            // Обновляем данные турнира
-            await fetchTournamentData();
-            
-            toast.success('Результаты матчей успешно очищены');
-            setMessage('Результаты матчей успешно очищены');
-        } catch (error) {
-            console.error('Ошибка при очистке результатов матчей:', error);
-            toast.error('Не удалось очистить результаты матчей: ' + (error.response?.data?.error || error.message));
-            setMessage('Ошибка при очистке результатов матчей: ' + (error.response?.data?.error || error.message));
-        }
-    };
-
-    // Функция для сохранения изменений описания
-    const handleSaveDescription = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.put(
-                `/api/tournaments/${id}/description`,
-                { description: editedDescription },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setTournament(prev => ({ ...prev, description: editedDescription }));
-            setIsEditingDescription(false);
-            setMessage('Описание успешно обновлено');
-        } catch (error) {
-            setMessage('Ошибка при обновлении описания');
-        }
-    };
-
-    // Функция для сохранения изменений призового фонда
-    const handleSavePrizePool = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.put(
-                `/api/tournaments/${id}/prize-pool`,
-                { prize_pool: editedPrizePool },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setTournament(prev => ({ ...prev, prize_pool: editedPrizePool }));
-            setIsEditingPrizePool(false);
-            setMessage('Призовой фонд успешно обновлен');
-        } catch (error) {
-            setMessage('Ошибка при обновлении призового фонда');
-        }
-    };
-
-    // Функция для сохранения изменений игры
-    const handleSaveGame = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.put(
-                `/api/tournaments/${id}/game`,
-                { game: editedGame },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setTournament(prev => ({ ...prev, game: editedGame }));
-            setIsEditingGame(false);
-            setMessage('Игра успешно обновлена');
-        } catch (error) {
-            setMessage('Ошибка при обновлении игры');
-        }
-    };
-
-    // Функция для сохранения изменений полного описания
-    const handleSaveFullDescription = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.put(
-                `/api/tournaments/${id}/full-description`,
-                { full_description: editedFullDescription },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setTournament(prev => ({ ...prev, full_description: editedFullDescription }));
-            setIsEditingFullDescription(false);
-            setMessage('Полное описание успешно обновлено');
-        } catch (error) {
-            setMessage('Ошибка при обновлении полного описания');
-        }
-    };
-
-    // Функция для сохранения изменений регламента
-    const handleSaveRules = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.put(
-                `/api/tournaments/${id}/rules`,
-                { rules: editedRules },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setTournament(prev => ({ ...prev, rules: editedRules }));
-            setIsEditingRules(false);
-            setMessage('Регламент успешно обновлен');
-        } catch (error) {
-            setMessage('Ошибка при обновлении регламента');
-        }
-    };
-
-    // Инициализация состояний при загрузке турнира
-    useEffect(() => {
-        if (tournament) {
-            setEditedDescription(tournament.description || '');
-            setEditedPrizePool(tournament.prize_pool || '');
-            setEditedGame(tournament.game || '');
-            setEditedFullDescription(tournament.full_description || '');
-            setEditedRules(tournament.rules || '');
-        }
-    }, [tournament]);
-
-    // Логика формирования команд для микса (сохранение на сервере)
-    const handleFormTeams = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы сформировать команды');
-            return;
-        }
-        try {
-            // Проверяем, формируем команды впервые или переформируем
-            const isReforming = mixedTeams.length > 0;
-            
-            const response = await api.post(
-                `/api/tournaments/${id}/mix-generate-teams`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setMixedTeams(response.data.teams || []);
-            // Удаляем строку, которая меняет тип участников
-            setMessage(isReforming ? 'Команды успешно переформированы' : 'Команды успешно сформированы');
-            
-            // Используем toast для дополнительного уведомления
-            toast.success(isReforming ? 'Команды успешно переформированы' : 'Команды успешно сформированы');
-        } catch (error) {
-            console.error('Ошибка при формировании команд:', error);
-            setMessage(error.response?.data?.error || 'Ошибка формирования команд');
-            toast.error(error.response?.data?.error || 'Ошибка формирования команд');
-        }
-    };
-
-    // Загрузка сохраненных команд при загрузке турнира
-    useEffect(() => {
-        if (tournament?.format === 'mix' && tournament?.participant_type === 'team') {
-            const token = localStorage.getItem('token');
-            api.get(
-                `/api/tournaments/${id}/teams`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            )
-            .then(res => setMixedTeams(res.data || []))
-            .catch(err => console.error('Ошибка загрузки команд для турнира:', err));
-        }
-    }, [tournament, id]);
-
-    // Функция для проверки, является ли пользователь участником турнира
-    const isUserParticipant = (userId) => {
-        if (!tournament || !tournament.participants) return false;
-        return tournament.participants.some(p => p.user_id === userId);
-    };
-
-    // Проверка, было ли приглашение отправлено
-    const isInvitationSent = useCallback((userId) => {
-        console.log('Проверка приглашения для пользователя:', userId);
-        console.log('Текущие приглашения:', invitedUsers);
-        return invitedUsers.includes(userId);
-    }, [invitedUsers]);
-
-    // Функция для отправки приглашения участнику
-    const handleInviteUser = async (userId, username) => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setMessage('Для отправки приглашения необходимо авторизоваться');
-                return;
-            }
-
-            // Проверяем, отправлено ли уже приглашение локально в текущей сессии
-            if (isInvitationSent(userId)) {
-                console.log(`Приглашение для ${username} (${userId}) уже в кэше`);
-                setMessage(`Приглашение для пользователя ${username} уже отправлено`);
-                return;
-            }
-
-            // Проверяем, не является ли пользователь уже участником
-            if (isUserParticipant(userId)) {
-                console.log(`Пользователь ${username} (${userId}) уже участник`);
-                setMessage(`Пользователь ${username} уже является участником турнира`);
-                return;
-            }
-
-            console.log(`Отправка приглашения пользователю: ${username} (id: ${userId})`);
-            
-            // Перед отправкой приглашения добавляем пользователя в локальный кэш,
-            // чтобы предотвратить повторные клики
-            setInvitedUsers(prev => {
-                console.log('Добавление в кэш пользователя:', userId);
-                console.log('Предыдущий кэш:', prev);
-                const newCache = [...prev, userId];
-                console.log('Новый кэш:', newCache);
-                return newCache;
-            });
-
-            // Небольшая задержка для гарантии обновления состояния
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-            // Дополнительная проверка перед отправкой запроса
-            if (invitedUsers.includes(userId)) {
-                console.log(`Повторная проверка: приглашение для ${username} (${userId}) уже в кэше`);
-                setMessage(`Приглашение для пользователя ${username} уже отправлено`);
-                return;
-            }
-            
-            try {
-                // Используем только параметр username для отправки приглашения
-                const inviteResponse = await api.post(
-                    `/api/tournaments/${id}/invite`, 
-                    { username: username },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                
-                console.log('Успешный ответ от сервера:', inviteResponse.data);
-                setMessage(`Приглашение отправлено пользователю ${username}`);
-                toast.success(`Приглашение отправлено пользователю ${username}`);
-            } catch (apiError) {
-                console.error('Подробная ошибка при отправке приглашения:', apiError);
-                console.error('Ответ сервера:', apiError.response?.data);
-                console.error('Статус ошибки:', apiError.response?.status);
-                
-                // Обрабатываем ошибку дублирования приглашения
-                if (apiError.response?.data?.error?.includes('unique constraint') ||
-                    apiError.response?.data?.error?.includes('уже приглашен')) {
-                    setMessage(`Приглашение для пользователя ${username} уже существует`);
-                    toast.warning(`Приглашение для пользователя ${username} уже существует`);
-                    return;
-                }
-                
-                // Проверяем ошибки 400
-                if (apiError.response?.status === 400) {
-                    if (apiError.response?.data?.error?.includes('уже')) {
-                        setMessage(`Пользователь ${username} уже приглашён`);
-                        toast.warning(`Пользователь ${username} уже приглашён`);
-                    } else if (apiError.response?.data?.error?.includes('Укажите никнейм или email')) {
-                        // Пробуем альтернативный вариант
-                        try {
-                            const secondAttempt = await api.post(
-                                `/api/tournaments/${id}/invite`, 
-                                { invite_username: username },
-                                { headers: { Authorization: `Bearer ${token}` } }
-                            );
-                            console.log('Успешный ответ от второй попытки:', secondAttempt.data);
-                            setMessage(`Приглашение отправлено пользователю ${username}`);
-                            toast.success(`Приглашение отправлено пользователю ${username}`);
-                        } catch (secondError) {
-                            console.error('Ошибка второй попытки:', secondError);
-                            setMessage(`Не удалось отправить приглашение: ${apiError.response?.data?.error}`);
-                            toast.error(`Не удалось отправить приглашение: ${apiError.response?.data?.error}`);
-                        }
-                    } else {
-                        setMessage(apiError.response?.data?.error || `Ошибка приглашения: ${apiError.message}`);
-                        toast.error(apiError.response?.data?.error || `Ошибка приглашения: ${apiError.message}`);
-                    }
-                } else if (apiError.response?.status === 500) {
-                    // Если ошибка связана с колонкой в базе данных, используем обходной путь
-                    if (apiError.response?.data?.error?.includes('column') || 
-                        apiError.response?.data?.error?.includes('does not exist')) {
-                        try {
-                            // Используем только параметр username без дополнительных параметров
-                            const alternativeAttempt = await api.post(
-                                `/api/tournaments/${id}/invite`,
-                                { username: username },
-                                { headers: { Authorization: `Bearer ${token}` } }
-                            );
-                            console.log('Успешный ответ от альтернативной попытки:', alternativeAttempt.data);
-                            setMessage(`Приглашение отправлено пользователю ${username}`);
-                            toast.success(`Приглашение отправлено пользователю ${username}`);
-                        } catch (altError) {
-                            console.error('Ошибка альтернативной попытки:', altError);
-                            setMessage(`Сервер не может обработать приглашение. Попробуйте позже.`);
-                            toast.error(`Сервер не может обработать приглашение. Попробуйте позже.`);
-                        }
-                    } else {
-                        // Другие ошибки 500
-                        setMessage(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
-                        toast.error(`Ошибка сервера при отправке приглашения. Попробуйте позже.`);
-                    }
-                } else {
-                    // Другие ошибки
-                    setMessage(apiError.response?.data?.error || `Ошибка при отправке приглашения: ${apiError.message}`);
-                    toast.error(apiError.response?.data?.error || `Ошибка при отправке приглашения: ${apiError.message}`);
+                } catch (e) {
+                    console.error('Ошибка при разборе данных карт:', e);
                 }
             }
+
+            setMatchDetails(match);
+            setViewingMatchDetails(true);
         } catch (error) {
-            console.error('Неожиданная ошибка:', error);
-            setMessage(`Произошла непредвиденная ошибка`);
-            toast.error(`Произошла непредвиденная ошибка`);
+            console.error('Ошибка при просмотре деталей матча:', error);
         }
     };
-
-    // Обработчик клика вне списка результатов
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (
-                searchContainerRef.current && 
-                !searchContainerRef.current.contains(event.target) && 
-                showSearchResults
-            ) {
-                setShowSearchResults(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showSearchResults]);
-
-    // Сохраняем invitedUsers в localStorage для сохранения между ререндерами
-    useEffect(() => {
-        // Сохраняем каждое изменение invitedUsers в localStorage
-        if (invitedUsers.length > 0) {
-            try {
-                console.log('Сохраняем invitedUsers в localStorage:', invitedUsers);
-                localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(invitedUsers));
-            } catch (e) {
-                console.error('Ошибка сохранения invitedUsers в localStorage:', e);
-            }
-        }
-    }, [invitedUsers, id]);
-
-    // Загружаем invitedUsers из localStorage при монтировании
-    useEffect(() => {
-        try {
-            const savedInvitedUsers = localStorage.getItem(`tournament_${id}_invited_users`);
-            if (savedInvitedUsers) {
-                const parsedInvitedUsers = JSON.parse(savedInvitedUsers);
-                console.log('Загружаем invitedUsers из localStorage:', parsedInvitedUsers);
-                setInvitedUsers(parsedInvitedUsers);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки invitedUsers из localStorage:', e);
-        }
-    }, [id]);
-
-    // Проверка актуальности кэша приглашений
-    const validateInvitationCache = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token || !tournament) return;
-
-            // Так как эндпоинт /api/tournaments/${id}/invitations не реализован на сервере (404),
-            // используем другой подход для валидации кэша
-            
-            // 1. Получаем текущий кэш из localStorage
-            const cachedInvitedUsers = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
-            console.log('Кэшированные приглашения:', cachedInvitedUsers);
-            
-            // 2. Если кэш пустой, нет смысла его проверять
-            if (cachedInvitedUsers.length === 0) {
-                console.log('Кэш приглашений пуст, пропускаем проверку');
-                return;
-            }
-
-            // 3. Проверяем срок жизни кэша - очищаем записи старше суток
-            const currentTime = Date.now();
-            const oneDayMs = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
-            
-            // Получаем метаданные кэша, если они существуют
-            const cacheMeta = JSON.parse(localStorage.getItem(`tournament_${id}_cache_meta`) || '{}');
-            
-            // Если метаданных нет или кэш старше суток, создаем новые
-            if (!cacheMeta.lastUpdated || (currentTime - cacheMeta.lastUpdated > oneDayMs)) {
-                console.log('Обновляем метаданные кэша');
-                localStorage.setItem(`tournament_${id}_cache_meta`, JSON.stringify({
-                    lastUpdated: currentTime
-                }));
-                
-                // Отображаем уведомление только если кэш был очищен из-за срока давности
-                // И только если пользователь - администратор или создатель
-                if (cachedInvitedUsers.length > 0) {
-                    // Очищаем кэш в любом случае
-                    setInvitedUsers([]);
-                    localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify([]));
-                    
-                    // Но уведомления показываем только администраторам
-                    if (isAdminOrCreator) {
-                        toast.info('Кэш приглашений обновлен (автоочистка)');
-                        setMessage('Кэш приглашений обновлен (автоочистка)');
-                    }
-                }
-            } else {
-                console.log('Кэш приглашений актуален, последнее обновление:', new Date(cacheMeta.lastUpdated));
-            }
-        } catch (error) {
-            console.error('Ошибка при проверке актуальности кэша приглашений:', error);
-            // В случае ошибки, не меняем кэш
-        }
-    }, [id, tournament, toast, isAdminOrCreator]);
 
     // Проверяем актуальность кэша при загрузке турнира
     useEffect(() => {
@@ -2194,6 +1648,7 @@ function TournamentDetails() {
                                             handleTeamClick={handleTeamClick}
                                             format={tournament.format}
                                             key={`bracket-${matches.length}-${selectedMatch}`}
+                                            onMatchClick={viewMatchDetails}
                                         />
                                                 );
                                             } catch (error) {
@@ -2289,37 +1744,187 @@ function TournamentDetails() {
                                     ?.participants.find((p) => p.id === selectedWinnerId)?.name || 'Не определён'}
                             </span>
                         </p>
-                        <div className="score-inputs">
-                            <div className="score-container">
-                                <span className="participant-name">
-                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name ||
-                                        'Участник 1'}
-                                </span>
-                                <input
-                                    type="number"
-                                    value={matchScores.team1}
-                                    onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
-                                    className="score-input"
-                                    min="0"
-                                />
+                        
+                        {showMapSelection ? (
+                            <div className="maps-container">
+                                <h4>Карты матча</h4>
+                                {maps.map((mapData, index) => (
+                                    <div key={index} className="map-entry">
+                                        <div className="map-select-container">
+                                            <select 
+                                                value={mapData.map}
+                                                onChange={(e) => updateMapSelection(index, e.target.value)}
+                                                className="map-select"
+                                            >
+                                                {csgoMaps.map(map => (
+                                                    <option key={map} value={map}>{map}</option>
+                                                ))}
+                                            </select>
+                                            {maps.length > 1 && (
+                                                <button 
+                                                    onClick={() => removeMap(index)}
+                                                    className="remove-map-btn"
+                                                    title="Удалить карту"
+                                                >
+                                                    ✖
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="map-scores">
+                                            <div className="score-container">
+                                                <span className="participant-name">
+                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name || 'Участник 1'}
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    value={mapData.score1}
+                                                    onChange={(e) => updateMapScore(index, 1, Number(e.target.value))}
+                                                    className="score-input"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <div className="score-container">
+                                                <span className="participant-name">
+                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    value={mapData.score2}
+                                                    onChange={(e) => updateMapScore(index, 2, Number(e.target.value))}
+                                                    className="score-input"
+                                                    min="0"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                <button 
+                                    onClick={addMap} 
+                                    className="add-map-btn"
+                                    title="Добавить карту"
+                                >
+                                    + Добавить карту
+                                </button>
+                                
+                                {maps.length > 1 && (
+                                    <div className="total-score">
+                                        <h4>Общий счет</h4>
+                                        <div className="score-summary">
+                                            <div className="team-score">
+                                                <span className="team-name">
+                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name || 'Участник 1'}:
+                                                </span>
+                                                <span className="score-value">
+                                                    {maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length}
+                                                </span>
+                                            </div>
+                                            <div className="team-score">
+                                                <span className="team-name">
+                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}:
+                                                </span>
+                                                <span className="score-value">
+                                                    {maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="score-container">
-                                <span className="participant-name">
-                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
-                                        'Участник 2'}
-                                </span>
-                                <input
-                                    type="number"
-                                    value={matchScores.team2}
-                                    onChange={(e) => setMatchScores({ ...matchScores, team2: Number(e.target.value) })}
-                                    className="score-input"
-                                    min="0"
-                                />
+                        ) : (
+                            <div className="score-inputs">
+                                <div className="score-container">
+                                    <span className="participant-name">
+                                        {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name ||
+                                            'Участник 1'}
+                                    </span>
+                                    <input
+                                        type="number"
+                                        value={matchScores.team1}
+                                        onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
+                                        className="score-input"
+                                        min="0"
+                                    />
+                                </div>
+                                <div className="score-container">
+                                    <span className="participant-name">
+                                        {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
+                                            'Участник 2'}
+                                    </span>
+                                    <input
+                                        type="number"
+                                        value={matchScores.team2}
+                                        onChange={(e) => setMatchScores({ ...matchScores, team2: Number(e.target.value) })}
+                                        className="score-input"
+                                        min="0"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
+                        
                         <div className="modal-buttons">
                             <button onClick={() => handleConfirmWinner('yes')}>Подтвердить</button>
                             <button onClick={handleCloseModal}>Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальное окно для просмотра деталей завершенного матча */}
+            {viewingMatchDetails && matchDetails && (
+                <div className="modal" onClick={() => setViewingMatchDetails(false)}>
+                    <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>Результаты матча</h3>
+                        
+                        <div className="match-teams">
+                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team1_id ? 'winner' : ''}`}>
+                                <span className="team-name">{matchDetails.team1}</span>
+                                {matchDetails.winner_id === matchDetails.team1_id && <span className="winner-badge">Победитель</span>}
+                            </div>
+                            <div className="match-score">
+                                <span>{matchDetails.score1} : {matchDetails.score2}</span>
+                            </div>
+                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
+                                <span className="team-name">{matchDetails.team2}</span>
+                                {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
+                            </div>
+                        </div>
+                        
+                        {matchDetails.maps && matchDetails.maps.length > 0 && (
+                            <div className="maps-results">
+                                <h4>Результаты по картам</h4>
+                                <table className="maps-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Карта</th>
+                                            <th>{matchDetails.team1}</th>
+                                            <th>{matchDetails.team2}</th>
+                                            <th>Результат</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {matchDetails.maps.map((map, index) => (
+                                            <tr key={index}>
+                                                <td>{map.map}</td>
+                                                <td>{map.score1}</td>
+                                                <td>{map.score2}</td>
+                                                <td>
+                                                    {parseInt(map.score1) > parseInt(map.score2) 
+                                                        ? <span className="map-winner">{matchDetails.team1}</span>
+                                                        : parseInt(map.score2) > parseInt(map.score1)
+                                                            ? <span className="map-winner">{matchDetails.team2}</span>
+                                                            : 'Ничья'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        
+                        <div className="modal-buttons">
+                            <button onClick={() => setViewingMatchDetails(false)}>Закрыть</button>
                         </div>
                     </div>
                 </div>
