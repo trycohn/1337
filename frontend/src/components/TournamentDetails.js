@@ -918,27 +918,61 @@ function TournamentDetails() {
                 return;
             }
             
-            // Используем прямой вызов generate-bracket с параметром force=true, 
-            // который должен перезаписать существующие матчи
-            setMessage('Пересоздание сетки...');
-            await api.post(
+            // Удаляем матчи по одному
+            if (matches && matches.length > 0) {
+                setMessage(`Удаление существующих матчей (0/${matches.length})...`);
+                
+                // Создаем копию массива матчей для безопасного удаления
+                const matchesToDelete = [...matches];
+                
+                // Удаляем каждый матч по отдельности
+                for (let i = 0; i < matchesToDelete.length; i++) {
+                    try {
+                        setMessage(`Удаление существующих матчей (${i+1}/${matchesToDelete.length})...`);
+                        await api.delete(
+                            `/api/tournaments/${id}/matches/${matchesToDelete[i].id}`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    } catch (deleteErr) {
+                        console.error(`Ошибка при удалении матча ${matchesToDelete[i].id}:`, deleteErr);
+                        // Продолжаем удаление следующих матчей даже если текущий не удалился
+                    }
+                }
+            }
+            
+            // Запрашиваем обновление данных турнира
+            await fetchTournamentData();
+            
+            // Генерируем новую сетку
+            setMessage('Генерация новой сетки...');
+            const response = await api.post(
                 `/api/tournaments/${id}/generate-bracket`, 
                 { 
-                    thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch,
-                    force: true
+                    thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
+            // Обновляем данные после генерации
+            if (response.data?.tournament) {
+                setTournament(response.data.tournament);
+                if (Array.isArray(response.data.tournament.matches)) {
+                    setMatches(response.data.tournament.matches);
+                }
+            } else {
+                await fetchTournamentData();
+            }
+            
             setMessage('Сетка успешно пересоздана');
-            await fetchTournamentData();
         } catch (err) {
             console.error('Ошибка при пересоздании сетки:', err);
+            setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
+            
+            // Пытаемся обновить данные после ошибки
             try {
-                // Сообщаем пользователю, что нужно удалить матчи вручную через базу данных
-                setMessage('Для пересоздания сетки нужно сначала удалить существующие матчи через базу данных: DELETE FROM matches WHERE tournament_id = ' + id);
-            } catch (innerErr) {
-                setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
+                await fetchTournamentData();
+            } catch (fetchErr) {
+                console.error('Ошибка при обновлении данных:', fetchErr);
             }
         }
     };
