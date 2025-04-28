@@ -985,10 +985,10 @@ function TournamentDetails() {
             
             // Формируем данные запроса
             const requestData = {
-                matchId: parseInt(updatedMatch.id),
-                winner_team_id: winnerId,
-                score1: score1 || 0,
-                score2: score2 || 0
+                matchId: Number(updatedMatch.id),
+                winner_team_id: Number(winnerId),
+                score1: Number(score1) || 0,
+                score2: Number(score2) || 0
             };
             
             // Если включён выбор карт и это CS2, добавляем информацию о картах
@@ -1011,8 +1011,13 @@ function TournamentDetails() {
                 );
                 requestSucceeded = true;
             } catch (requestError) {
-                console.log('⚠️ Запрос к API не удался, обновляем данные вручную');
-                
+                // Выводим текст ошибки из ответа сервера, если он есть
+                if (requestError.response && requestError.response.data && requestError.response.data.error) {
+                    setMessage(`Ошибка: ${requestError.response.data.error}`);
+                } else {
+                    setMessage('Не удалось автоматически обновить результаты, данные синхронизированы');
+                }
+                console.log('⚠️ Запрос к API не удался, обновляем данные вручную', requestError.response?.data);
                 // В случае ошибки API, не пытаемся отправить другой запрос,
                 // а просто обновляем турнир с сервера
                 requestSucceeded = false;
