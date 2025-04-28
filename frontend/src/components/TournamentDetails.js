@@ -177,44 +177,13 @@ function TournamentDetails() {
             const response = await api.get(`/api/tournaments/${id}`);
             setTournament(response.data);
             setMatches(response.data.matches || []);
-            
-            if (response.data.participants) {
-                if (response.data.participant_type === 'team') {
-                    // Обработка команд
-                } else {
-                    // Обработка индивидуальных участников
-                }
-            }
-            
-            // Проверка наличия пользователя в списке участников
-            checkParticipation(response.data);
-            
-            // Получаем текущий статус запроса на администрирование
-            if (user && user.id) {
-                try {
-                    const adminStatusResponse = await api.get(`/api/tournaments/${id}/admin-request-status`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    });
-                    setAdminRequestStatus(adminStatusResponse.data.status);
-                } catch (error) {
-                    console.error('Ошибка получения статуса запроса:', error);
-                }
-            }
-            
-            // Устанавливаем, является ли пользователь создателем или администратором
-            if (user) {
-                setIsCreator(user.id === response.data.created_by);
-                // TODO: добавить проверку на администратора
-                setIsAdminOrCreator(user.id === response.data.created_by);
-            }
-            
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
             setError('Ошибка загрузки данных турнира');
         } finally {
             setLoading(false);
         }
-    }, [id, user, checkParticipation]);
+    }, [id]);
 
     // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
@@ -309,70 +278,52 @@ function TournamentDetails() {
                         .catch((error) => console.error('Ошибка загрузки команд:', error));
                 })
                 .catch((error) => console.error('Ошибка загрузки пользователя:', error));
+        } else {
+            setUser(null);
+            setTeams([]);
         }
+    }, []);
 
+    useEffect(() => {
         fetchTournamentData();
+    }, [id]);
+
+    useEffect(() => {
         setupWebSocket();
-
-        // Эндпоинт для получения приглашений не реализован на бэкенде
-        // Будем полагаться на проверку при отправке приглашения
-
         return () => {
             if (wsRef.current) {
                 wsRef.current.emit('unwatch_tournament', id);
                 wsRef.current.disconnect();
             }
         };
-    }, [id, fetchTournamentData, setupWebSocket]);
+    }, [id]);
 
     useEffect(() => {
-        if (tournament && user) {
-            const participants = tournament.participants || [];
-            const participating = participants.some(
-                (p) =>
-                    (tournament.participant_type === 'solo' && p.user_id === user.id) ||
-                    (tournament.participant_type === 'team' && p.creator_id === user.id)
-            );
-            setIsParticipating(participating);
+        if (!user || !tournament) return;
+        // Проверка участия
+        const participants = tournament.participants || [];
+        const isParticipant = participants.some(
+            (p) =>
+                (tournament.participant_type === 'solo' && p.user_id === user.id) ||
+                (tournament.participant_type === 'team' && p.creator_id === user.id)
+        );
+        setIsParticipating(isParticipant);
 
-            if (localStorage.getItem('token')) {
-                api
-                    .get(`/api/tournaments/${id}/admin-request-status`, {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    })
-                    .then((statusResponse) => setAdminRequestStatus(statusResponse.data.status))
-                    .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
-            }
+        // Проверка прав администратора и создателя
+        setIsCreator(user.id === tournament.created_by);
+        const isAdmin = tournament.admins?.some(admin => admin.id === user.id);
+        setIsAdminOrCreator(user.id === tournament.created_by || isAdmin);
+
+        // Проверка статуса запроса на администрирование
+        if (localStorage.getItem('token')) {
+            api
+                .get(`/api/tournaments/${id}/admin-request-status`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                })
+                .then((statusResponse) => setAdminRequestStatus(statusResponse.data.status))
+                .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
         }
-    }, [tournament, user, id]);
-
-    useEffect(() => {
-        const checkAdminStatus = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) return;
-
-                const userResponse = await api.get('/api/users/me', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const currentUser = userResponse.data;
-                // setUser(currentUser); // УБРАНО, чтобы не было зацикливания
-
-                if (tournament) {
-                    const isCreator = tournament.created_by === currentUser.id;
-                    const isAdmin = tournament.admins?.some(admin => admin.id === currentUser.id);
-                    setIsAdminOrCreator(isCreator || isAdmin);
-                    setIsCreator(isCreator);
-                }
-            } catch (error) {
-                console.error('Ошибка при проверке статуса администратора:', error);
-            }
-        };
-
-        if (tournament) {
-            checkAdminStatus();
-        }
-    }, [tournament]);
+    }, [user, tournament, id]);
 
     // Загрузка истории сообщений чата турнира
     useEffect(() => {
