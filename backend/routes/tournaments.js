@@ -2026,4 +2026,44 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
     }
 });
 
+// Получение сообщений чата турнира
+router.get('/:tournamentId/chat/messages', authenticateToken, async (req, res) => {
+    const { tournamentId } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT tm.id, tm.tournament_id, tm.sender_id, u.username AS sender_username, u.avatar_url AS sender_avatar, tm.content, tm.created_at FROM tournament_messages tm JOIN users u ON tm.sender_id = u.id WHERE tm.tournament_id = $1 ORDER BY tm.created_at ASC',
+            [tournamentId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Ошибка получения сообщений чата турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении сообщений чата турнира' });
+    }
+});
+
+// Отправка сообщения в чат турнира
+router.post('/:tournamentId/chat/messages', authenticateToken, async (req, res) => {
+    const { tournamentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+    if (!content) return res.status(400).json({ error: 'Сообщение не может быть пустым' });
+    try {
+        const insertRes = await pool.query(
+            'INSERT INTO tournament_messages (tournament_id, sender_id, content) VALUES ($1, $2, $3) RETURNING id, tournament_id, sender_id, content, created_at',
+            [tournamentId, userId, content]
+        );
+        const message = insertRes.rows[0];
+        // Добавляем данные пользователя
+        message.sender_username = req.user.username;
+        message.sender_avatar = req.user.avatar_url;
+        // Эмитим через сокеты
+        const io = req.app.get('io');
+        io.to(`chat_tournament_${tournamentId}`).emit('tournament_message', message);
+        res.status(201).json(message);
+    } catch (err) {
+        console.error('Ошибка отправки сообщения в чат турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при отправке сообщения в чат турнира' });
+    }
+});
+
 module.exports = router;

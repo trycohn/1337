@@ -21,6 +21,12 @@ function setupChatSocketIO(io) {
   io.on('connection', socket => {
     console.log('Socket.IO: пользователь подключился к чату, userId =', socket.userId);
 
+    // Присоединение к чату турнира
+    socket.on('join_tournament_chat', (tournamentId) => {
+      socket.join(`chat_tournament_${tournamentId}`);
+      console.log(`Socket.IO: пользователь ${socket.userId} присоединился к комнате chat_tournament_${tournamentId}`);
+    });
+
     // Обработка запроса на присоединение к дополнительной комнате чата
     socket.on('join_chat', (chatId) => {
       socket.join(`chat_${chatId}`);
@@ -97,6 +103,33 @@ function setupChatSocketIO(io) {
         console.log('Socket.IO: событие message отправлено в комнату chat_' + chat_id, message);
       } catch (err) {
         console.error('Ошибка обработки сообщения чата:', err);
+      }
+    });
+
+    // Обработка сообщений чата турнира
+    socket.on('tournament_message', async payload => {
+      console.log('Socket.IO: получено событие tournament_message от userId =', socket.userId, 'payload =', payload);
+      const { tournamentId, content } = payload;
+      if (!tournamentId || !content) return;
+      try {
+        // Сохраняем сообщение в БД
+        const result = await pool.query(
+          'INSERT INTO tournament_messages (tournament_id, sender_id, content) VALUES ($1, $2, $3) RETURNING *',
+          [tournamentId, socket.userId, content]
+        );
+        const message = result.rows[0];
+        // Получаем информацию об отправителе
+        const userInfo = await pool.query(
+          'SELECT username, avatar_url FROM users WHERE id = $1',
+          [socket.userId]
+        );
+        message.sender_username = userInfo.rows[0].username;
+        message.sender_avatar = userInfo.rows[0].avatar_url;
+        // Отправляем сообщение всем участникам комнаты чата турнира
+        io.to(`chat_tournament_${tournamentId}`).emit('tournament_message', message);
+        console.log('Socket.IO: событие tournament_message отправлено в room', `chat_tournament_${tournamentId}`, message);
+      } catch (err) {
+        console.error('Ошибка обработки сообщения чата турнира:', err);
       }
     });
 

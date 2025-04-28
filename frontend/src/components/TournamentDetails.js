@@ -8,6 +8,7 @@ import './TournamentDetails.css';
 import { io } from 'socket.io-client';
 // Импортируем наш кастомный хук useToast
 import { useToast } from './Notifications/ToastContext';
+import ChatWindow from './ChatWindow';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const BracketRenderer = lazy(() => 
@@ -124,6 +125,10 @@ function TournamentDetails() {
         'de_ancient',
         'de_inferno'
     ];
+    // Состояния для чата турнира
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newChatMessage, setNewChatMessage] = useState('');
+    const chatEndRef = useRef(null);
 
     const addMap = () => {
         setMaps([...maps, { map: 'de_dust2', score1: 0, score2: 0 }]);
@@ -219,6 +224,8 @@ function TournamentDetails() {
         socket.on('connect', () => {
             console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
             socket.emit('watch_tournament', id);
+            // Присоединяемся к чату турнира
+            socket.emit('join_tournament_chat', id);
         });
 
         socket.on('tournament_update', (tournamentData) => {
@@ -278,6 +285,11 @@ function TournamentDetails() {
 
         socket.on('disconnect', (reason) => {
             console.log('Socket.IO соединение закрыто в компоненте TournamentDetails:', reason);
+        });
+
+        // Обработка новых сообщений чата турнира
+        socket.on('tournament_message', (message) => {
+            setChatMessages(prev => [...prev, message]);
         });
 
         wsRef.current = socket;
@@ -361,6 +373,40 @@ function TournamentDetails() {
             checkAdminStatus();
         }
     }, [tournament]);
+
+    // Загрузка истории сообщений чата турнира
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        api.get(`/api/tournaments/${id}/chat/messages`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => setChatMessages(res.data))
+        .catch(err => console.error('Ошибка загрузки сообщений чата турнира:', err));
+    }, [id]);
+
+    // Прокрутка чата вниз при новом сообщении
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [chatMessages]);
+
+    // Обработчики ввода и отправки сообщений
+    const handleChatInputChange = (e) => {
+        setNewChatMessage(e.target.value);
+    };
+    const handleChatSubmit = (e) => {
+        e.preventDefault();
+        if (!newChatMessage.trim() || !wsRef.current) return;
+        wsRef.current.emit('tournament_message', { tournamentId: id, content: newChatMessage });
+        setNewChatMessage('');
+    };
+    const handleChatKeyPress = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            handleChatSubmit(e);
+        }
+    };
 
     const getRoundName = (round, totalRounds) => {
         if (round === -1) return 'Предварительный раунд';
@@ -1684,387 +1730,389 @@ function TournamentDetails() {
 
     return (
         <section className="tournament-details">
-            <h2>
-                {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
-            </h2>
-            
-            <div className="tournament-info-section">
-                <div className="info-block">
-                    <h3>Описание</h3>
-                    {isEditingDescription ? (
-                        <div className="edit-field">
-                            <textarea
-                                value={editedDescription}
-                                onChange={(e) => setEditedDescription(e.target.value)}
-                                placeholder="Описание турнира"
-                                rows="4"
-                            />
-                            <button onClick={handleSaveDescription}>Сохранить</button>
-                            <button onClick={() => setIsEditingDescription(false)}>Отмена</button>
-                        </div>
-                    ) : (
-                        <div className="info-content">
-                            <p>{tournament.description || 'Нет описания'}</p>
-                            {isAdminOrCreator && (
-                                <button onClick={() => setIsEditingDescription(true)}>Редактировать</button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <div className="info-block">
-                    <h3>Призовой фонд</h3>
-                    {isEditingPrizePool ? (
-                        <div className="edit-field">
-                            <textarea
-                                value={editedPrizePool}
-                                onChange={(e) => setEditedPrizePool(e.target.value)}
-                                placeholder="Призовой фонд"
-                                rows="4"
-                            />
-                            <button onClick={handleSavePrizePool}>Сохранить</button>
-                            <button onClick={() => setIsEditingPrizePool(false)}>Отмена</button>
-                        </div>
-                    ) : (
-                        <div className="info-content">
-                            <p>{tournament.prize_pool || 'Не указан'}</p>
-                            {isAdminOrCreator && (
-                                <button onClick={() => setIsEditingPrizePool(true)}>Редактировать</button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {(isAdminOrCreator || showFullDescription) && (
-                <div className="info-block">
-                    <h3>Регламент</h3>
-                    <div className="info-content">
-                        {isAdminOrCreator && (
-                            <label className="show-full-description">
-                                <input
-                                    type="checkbox"
-                                    checked={showFullDescription}
-                                    onChange={(e) => setShowFullDescription(e.target.checked)}
-                                />
-                                Показать полное описание и регламент
-                            </label>
-                        )}
-                        {showFullDescription && (
-                            <div className="full-description">
-                                <h4>Полное описание</h4>
-                                {isEditingFullDescription ? (
-                                    <div className="edit-field">
-                                        <textarea
-                                            value={editedFullDescription}
-                                            onChange={(e) => setEditedFullDescription(e.target.value)}
-                                            placeholder="Полное описание турнира"
-                                            rows="4"
-                                        />
-                                        <button onClick={handleSaveFullDescription}>Сохранить</button>
-                                        <button onClick={() => setIsEditingFullDescription(false)}>Отмена</button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <p>{tournament.full_description || 'Нет полного описания'}</p>
-                                        {isAdminOrCreator && (
-                                            <button onClick={() => setIsEditingFullDescription(true)}>Редактировать</button>
-                                        )}
-                                    </div>
-                                )}
-                                <h4>Регламент</h4>
-                                {isEditingRules ? (
-                                    <div className="edit-field">
-                                        <textarea
-                                            value={editedRules}
-                                            onChange={(e) => setEditedRules(e.target.value)}
-                                            placeholder="Регламент турнира"
-                                            rows="4"
-                                        />
-                                        <button onClick={handleSaveRules}>Сохранить</button>
-                                        <button onClick={() => setIsEditingRules(false)}>Отмена</button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <p>{tournament.rules || 'Регламент не указан'}</p>
-                                        {isAdminOrCreator && (
-                                            <button onClick={() => setIsEditingRules(true)}>Редактировать</button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                )}
-            </div>
-
-            <p>
-                <strong>Формат:</strong> {tournament.format}
-            </p>
-            <p>
-                <strong>Дисциплина:</strong> {tournament.game || 'Не указана'}
-            </p>
-            <p>
-                <strong>Дата старта:</strong> {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
-            </p>
-            {tournament.end_date && (
-                <p>
-                    <strong>Дата окончания:</strong>{' '}
-                    {new Date(tournament.end_date).toLocaleDateString('ru-RU')}
-                </p>
-            )}
-            <p>
-                <strong>Участники ({tournament.participant_count || 0}):</strong>
-            </p>
-            {renderParticipants()}
-            {user && tournament.status === 'active' && (
-                <div className="participation-controls">
-                    {!isParticipating && matches.length === 0 ? (
-                        <>
-                            {tournament.format !== 'mix' && tournament.participant_type === 'team' && (
-                                <div className="team-selection">
-                                    <label>Выберите команду или создайте новую:</label>
-                                    <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}>
-                                        <option value="">Создать новую команду</option>
-                                        {(teams || []).map((team) => (
-                                            <option key={team.id} value={team.id}>
-                                                {team.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {!selectedTeam && (
-                                        <input
-                                            type="text"
-                                            placeholder="Название новой команды"
-                                            value={newTeamName}
-                                            onChange={(e) => setNewTeamName(e.target.value)}
-                                        />
+            <div className="tournament-layout">
+                <div className="tournament-main">
+                    <h2>
+                        {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
+                    </h2>
+                    
+                    <div className="tournament-info-section">
+                        <div className="info-block">
+                            <h3>Описание</h3>
+                            {isEditingDescription ? (
+                                <div className="edit-field">
+                                    <textarea
+                                        value={editedDescription}
+                                        onChange={(e) => setEditedDescription(e.target.value)}
+                                        placeholder="Описание турнира"
+                                        rows="4"
+                                    />
+                                    <button onClick={handleSaveDescription}>Сохранить</button>
+                                    <button onClick={() => setIsEditingDescription(false)}>Отмена</button>
+                                </div>
+                            ) : (
+                                <div className="info-content">
+                                    <p>{tournament.description || 'Нет описания'}</p>
+                                    {isAdminOrCreator && (
+                                        <button onClick={() => setIsEditingDescription(true)}>Редактировать</button>
                                     )}
                                 </div>
                             )}
-                            <button onClick={handleParticipate}>Участвовать в турнире</button>
-                        </>
-                    ) : (
-                        isParticipating &&
-                        matches.length === 0 && (
-                            <button onClick={handleWithdraw}>Отказаться от участия</button>
-                        )
-                    )}
-                    {isCreator && matches.length === 0 && (
-                        <div className="invite-participant">
-                            <h3>Выслать приглашение на турнир</h3>
-                            <select value={inviteMethod} onChange={(e) => setInviteMethod(e.target.value)}>
-                                <option value="username">По никнейму</option>
-                                <option value="email">По email</option>
-                            </select>
-                            {inviteMethod === 'username' ? (
-                                <input
-                                    type="text"
-                                    placeholder="Никнейм пользователя"
-                                    value={inviteUsername}
-                                    onChange={(e) => setInviteUsername(e.target.value)}
-                                />
+                        </div>
+
+                        <div className="info-block">
+                            <h3>Призовой фонд</h3>
+                            {isEditingPrizePool ? (
+                                <div className="edit-field">
+                                    <textarea
+                                        value={editedPrizePool}
+                                        onChange={(e) => setEditedPrizePool(e.target.value)}
+                                        placeholder="Призовой фонд"
+                                        rows="4"
+                                    />
+                                    <button onClick={handleSavePrizePool}>Сохранить</button>
+                                    <button onClick={() => setIsEditingPrizePool(false)}>Отмена</button>
+                                </div>
                             ) : (
-                                <input
-                                    type="email"
-                                    placeholder="Email пользователя"
-                                    value={inviteEmail}
-                                    onChange={(e) => setInviteEmail(e.target.value)}
-                                />
+                                <div className="info-content">
+                                    <p>{tournament.prize_pool || 'Не указан'}</p>
+                                    {isAdminOrCreator && (
+                                        <button onClick={() => setIsEditingPrizePool(true)}>Редактировать</button>
+                                    )}
+                                </div>
                             )}
-                            <button onClick={handleInvite}>Пригласить</button>
                         </div>
-                    )}
-                    {isAdminOrCreator && (
-                        <div className="add-participant-section">
-                            <h3>Добавить участника</h3>
-                            <div className="search-container" ref={searchContainerRef}>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => handleUserSearchWithDelay(e.target.value)}
-                                    placeholder="Поиск пользователей..."
-                                    className="search-input"
-                                />
-                                {isSearching && (
-                                    <div className="search-loading">Поиск...</div>
+
+                        {(isAdminOrCreator || showFullDescription) && (
+                        <div className="info-block">
+                            <h3>Регламент</h3>
+                            <div className="info-content">
+                                {isAdminOrCreator && (
+                                    <label className="show-full-description">
+                                        <input
+                                            type="checkbox"
+                                            checked={showFullDescription}
+                                            onChange={(e) => setShowFullDescription(e.target.checked)}
+                                        />
+                                        Показать полное описание и регламент
+                                    </label>
                                 )}
-                                {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
-                                    <div className="search-no-results">Пользователи не найдены</div>
-                                )}
-                                {showSearchResults && searchResults.length > 0 && (
-                                    <ul className="search-results-dropdown">
-                                        {searchResults.slice(0, 10).map(user => (
-                                            <li 
-                                                key={user.id}
-                                                className="search-result-item"
-                                            >
-                                                <div className="search-result-content">
-                                                    <div className="search-result-avatar">
-                                                        <img 
-                                                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
-                                                            alt={user.username}
-                                                            className="user-avatar"
-                                                        />
-                                                    </div>
-                                                    <div className="search-result-info">
-                                                        <span className="search-result-name">{user.username}</span>
-                                                        <span className={`search-result-status ${user.online ? 'online' : 'offline'}`}>
-                                                            {user.online ? 'Онлайн' : `Был онлайн: ${formatLastOnline(user.last_online)}`}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="search-result-actions">
-                                                    <div className="action-links">
-                                                        {isUserParticipant(user.id) ? (
-                                                            <span className="already-participant">уже участвует</span>
-                                                        ) : isInvitationSent(user.id) ? (
-                                                            <>
-                                                                <button 
-                                                                    className="action-link no-bg-button search-result-action-button"
-                                                                    disabled
-                                                                >
-                                                                    уже отправлено
-                                                                </button>
-                                                                {/* Удаляем кнопку сброса кэша, т.к. кэш очищается автоматически */}
-                                                            </>
-                                                        ) : (
-                                                            <button 
-                                                                className="action-link no-bg-button search-result-action-button"
-                                                                onClick={() => handleInviteUser(user.id, user.username)}
-                                                            >
-                                                                пригласить
-                                                            </button>
-                                                        )}
-                                                        <a 
-                                                            href={`/user/${user.id}`} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="action-link no-bg-button search-result-action-button"
-                                                        >
-                                                            профиль
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                        {searchResults.length > 10 && (
-                                            <li className="search-too-many-results">
-                                                Слишком много результатов
-                                            </li>
+                                {showFullDescription && (
+                                    <div className="full-description">
+                                        <h4>Полное описание</h4>
+                                        {isEditingFullDescription ? (
+                                            <div className="edit-field">
+                                                <textarea
+                                                    value={editedFullDescription}
+                                                    onChange={(e) => setEditedFullDescription(e.target.value)}
+                                                    placeholder="Полное описание турнира"
+                                                    rows="4"
+                                                />
+                                                <button onClick={handleSaveFullDescription}>Сохранить</button>
+                                                <button onClick={() => setIsEditingFullDescription(false)}>Отмена</button>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p>{tournament.full_description || 'Нет полного описания'}</p>
+                                                {isAdminOrCreator && (
+                                                    <button onClick={() => setIsEditingFullDescription(true)}>Редактировать</button>
+                                                )}
+                                            </div>
                                         )}
-                                    </ul>
+                                        <h4>Регламент</h4>
+                                        {isEditingRules ? (
+                                            <div className="edit-field">
+                                                <textarea
+                                                    value={editedRules}
+                                                    onChange={(e) => setEditedRules(e.target.value)}
+                                                    placeholder="Регламент турнира"
+                                                    rows="4"
+                                                />
+                                                <button onClick={handleSaveRules}>Сохранить</button>
+                                                <button onClick={() => setIsEditingRules(false)}>Отмена</button>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p>{tournament.rules || 'Регламент не указан'}</p>
+                                                {isAdminOrCreator && (
+                                                    <button onClick={() => setIsEditingRules(true)}>Редактировать</button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
-                            <input
-                                type="text"
-                                value={addParticipantName}
-                                onChange={(e) => setAddParticipantName(e.target.value)}
-                                placeholder="Имя участника"
-                            />
-                            <button onClick={handleAddParticipant}>Добавить участника</button>
-                            
-                            {/* Удаляем весь блок администрирования кэша приглашений */}
                         </div>
+                        )}
+                    </div>
+
+                    <p>
+                        <strong>Формат:</strong> {tournament.format}
+                    </p>
+                    <p>
+                        <strong>Дисциплина:</strong> {tournament.game || 'Не указана'}
+                    </p>
+                    <p>
+                        <strong>Дата старта:</strong> {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
+                    </p>
+                    {tournament.end_date && (
+                        <p>
+                            <strong>Дата окончания:</strong>{' '}
+                            {new Date(tournament.end_date).toLocaleDateString('ru-RU')}
+                        </p>
                     )}
-                    {!isAdminOrCreator && tournament?.status === 'active' && (
-                        <button onClick={handleRequestAdmin} className="request-admin-btn">
-                            Запросить права администратора
-                        </button>
-                    )}
-                </div>
-            )}
-            {tournament?.format === 'mix' && !tournament?.bracket && (
-                <div className="mix-settings">
-                    {isAdminOrCreator && (
-                        <>
-                            <h3>Настройки микса</h3>
-                            <div className="rating-type-selector">
-                                <label>Миксовать по рейтингу:</label>
-                                <select
-                                    value={ratingType}
-                                    onChange={(e) => setRatingType(e.target.value)}
-                                >
-                                    <option value="faceit">FACEit</option>
-                                    <option value="premier">Steam Premier</option>
-                                </select>
-                            </div>
-                            {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
-                                <button onClick={handleFormTeams}>Сформировать команды</button>
-                            )}
-                            {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'pending' && (
-                                <button onClick={handleFormTeams} className="reformate-teams-button">Переформировать команды</button>
-                            )}
-                        </>
-                    )}
-                    {mixedTeams.length > 0 && (
-                        <div className="mixed-teams">
-                            <h3>Сформированные команды</h3>
-                            <div className="mixed-teams-grid">
-                                {mixedTeams.map(team => (
-                                    <div key={team.id} className="team-card">
-                                        <table className="team-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>{team.name}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {team.members.map(member => (
-                                                    <tr key={member.participant_id || member.user_id || member.id}>
-                                                        <td>
-                                                            {member.user_id ? (
-                                                                <Link to={`/user/${member.user_id}`}>{member.name}</Link>
-                                                            ) : (
-                                                                member.name
-                                                            )}
-                                                        </td>
-                                                    </tr>
+                    <p>
+                        <strong>Участники ({tournament.participant_count || 0}):</strong>
+                    </p>
+                    {renderParticipants()}
+                    {user && tournament.status === 'active' && (
+                        <div className="participation-controls">
+                            {!isParticipating && matches.length === 0 ? (
+                                <>
+                                    {tournament.format !== 'mix' && tournament.participant_type === 'team' && (
+                                        <div className="team-selection">
+                                            <label>Выберите команду или создайте новую:</label>
+                                            <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}>
+                                                <option value="">Создать новую команду</option>
+                                                {(teams || []).map((team) => (
+                                                    <option key={team.id} value={team.id}>
+                                                        {team.name}
+                                                    </option>
                                                 ))}
-                                            </tbody>
-                                        </table>
+                                            </select>
+                                            {!selectedTeam && (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Название новой команды"
+                                                    value={newTeamName}
+                                                    onChange={(e) => setNewTeamName(e.target.value)}
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                    <button onClick={handleParticipate}>Участвовать в турнире</button>
+                                </>
+                            ) : (
+                                isParticipating &&
+                                matches.length === 0 && (
+                                    <button onClick={handleWithdraw}>Отказаться от участия</button>
+                                )
+                            )}
+                            {isCreator && matches.length === 0 && (
+                                <div className="invite-participant">
+                                    <h3>Выслать приглашение на турнир</h3>
+                                    <select value={inviteMethod} onChange={(e) => setInviteMethod(e.target.value)}>
+                                        <option value="username">По никнейму</option>
+                                        <option value="email">По email</option>
+                                    </select>
+                                    {inviteMethod === 'username' ? (
+                                        <input
+                                            type="text"
+                                            placeholder="Никнейм пользователя"
+                                            value={inviteUsername}
+                                            onChange={(e) => setInviteUsername(e.target.value)}
+                                        />
+                                    ) : (
+                                        <input
+                                            type="email"
+                                            placeholder="Email пользователя"
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                        />
+                                    )}
+                                    <button onClick={handleInvite}>Пригласить</button>
+                                </div>
+                            )}
+                            {isAdminOrCreator && (
+                                <div className="add-participant-section">
+                                    <h3>Добавить участника</h3>
+                                    <div className="search-container" ref={searchContainerRef}>
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => handleUserSearchWithDelay(e.target.value)}
+                                            placeholder="Поиск пользователей..."
+                                            className="search-input"
+                                        />
+                                        {isSearching && (
+                                            <div className="search-loading">Поиск...</div>
+                                        )}
+                                        {!isSearching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                                            <div className="search-no-results">Пользователи не найдены</div>
+                                        )}
+                                        {showSearchResults && searchResults.length > 0 && (
+                                            <ul className="search-results-dropdown">
+                                                {searchResults.slice(0, 10).map(user => (
+                                                    <li 
+                                                        key={user.id}
+                                                        className="search-result-item"
+                                                    >
+                                                        <div className="search-result-content">
+                                                            <div className="search-result-avatar">
+                                                                <img 
+                                                                    src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
+                                                                    alt={user.username}
+                                                                    className="user-avatar"
+                                                                />
+                                                            </div>
+                                                            <div className="search-result-info">
+                                                                <span className="search-result-name">{user.username}</span>
+                                                                <span className={`search-result-status ${user.online ? 'online' : 'offline'}`}>
+                                                                    {user.online ? 'Онлайн' : `Был онлайн: ${formatLastOnline(user.last_online)}`}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="search-result-actions">
+                                                            <div className="action-links">
+                                                                {isUserParticipant(user.id) ? (
+                                                                    <span className="already-participant">уже участвует</span>
+                                                                ) : isInvitationSent(user.id) ? (
+                                                                    <>
+                                                                        <button 
+                                                                            className="action-link no-bg-button search-result-action-button"
+                                                                            disabled
+                                                                        >
+                                                                            уже отправлено
+                                                                        </button>
+                                                                        {/* Удаляем кнопку сброса кэша, т.к. кэш очищается автоматически */}
+                                                                    </>
+                                                                ) : (
+                                                                    <button 
+                                                                        className="action-link no-bg-button search-result-action-button"
+                                                                        onClick={() => handleInviteUser(user.id, user.username)}
+                                                                    >
+                                                                        пригласить
+                                                                    </button>
+                                                                )}
+                                                                <a 
+                                                                    href={`/user/${user.id}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="action-link no-bg-button search-result-action-button"
+                                                                >
+                                                                    профиль
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                                {searchResults.length > 10 && (
+                                                    <li className="search-too-many-results">
+                                                        Слишком много результатов
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
+                                    <input
+                                        type="text"
+                                        value={addParticipantName}
+                                        onChange={(e) => setAddParticipantName(e.target.value)}
+                                        placeholder="Имя участника"
+                                    />
+                                    <button onClick={handleAddParticipant}>Добавить участника</button>
+                                    
+                                    {/* Удаляем весь блок администрирования кэша приглашений */}
+                                </div>
+                            )}
+                            {!isAdminOrCreator && tournament?.status === 'active' && (
+                                <button onClick={handleRequestAdmin} className="request-admin-btn">
+                                    Запросить права администратора
+                                </button>
+                            )}
                         </div>
                     )}
-                </div>
-            )}
-            <h3>Турнирная сетка</h3>
-            {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
-                <div className="tournament-controls">
-                    {isAdminOrCreator && (
-                        <button 
-                            className="start-tournament"
-                            onClick={handleStartTournament}
-                        >
-                            Начать турнир
-                        </button>
+                    {tournament?.format === 'mix' && !tournament?.bracket && (
+                        <div className="mix-settings">
+                            {isAdminOrCreator && (
+                                <>
+                                    <h3>Настройки микса</h3>
+                                    <div className="rating-type-selector">
+                                        <label>Миксовать по рейтингу:</label>
+                                        <select
+                                            value={ratingType}
+                                            onChange={(e) => setRatingType(e.target.value)}
+                                        >
+                                            <option value="faceit">FACEit</option>
+                                            <option value="premier">Steam Premier</option>
+                                        </select>
+                                    </div>
+                                    {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
+                                        <button onClick={handleFormTeams}>Сформировать команды</button>
+                                    )}
+                                    {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'pending' && (
+                                        <button onClick={handleFormTeams} className="reformate-teams-button">Переформировать команды</button>
+                                    )}
+                                </>
+                            )}
+                            {mixedTeams.length > 0 && (
+                                <div className="mixed-teams">
+                                    <h3>Сформированные команды</h3>
+                                    <div className="mixed-teams-grid">
+                                        {mixedTeams.map(team => (
+                                            <div key={team.id} className="team-card">
+                                                <table className="team-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>{team.name}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {team.members.map(member => (
+                                                            <tr key={member.participant_id || member.user_id || member.id}>
+                                                                <td>
+                                                                    {member.user_id ? (
+                                                                        <Link to={`/user/${member.user_id}`}>{member.name}</Link>
+                                                                    ) : (
+                                                                        member.name
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
-                    {isAdminOrCreator && (
-                        <button 
-                            className="regenerate-bracket"
-                            onClick={handleRegenerateBracket}
-                        >
-                            Пересоздать сетку
-                        </button>
+                    <h3>Турнирная сетка</h3>
+                    {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
+                        <div className="tournament-controls">
+                            {isAdminOrCreator && (
+                                <button 
+                                    className="start-tournament"
+                                    onClick={handleStartTournament}
+                                >
+                                    Начать турнир
+                                </button>
+                            )}
+                            {isAdminOrCreator && (
+                                <button 
+                                    className="regenerate-bracket"
+                                    onClick={handleRegenerateBracket}
+                                >
+                                    Пересоздать сетку
+                                </button>
+                            )}
+                        </div>
                     )}
-                </div>
-            )}
-            {Array.isArray(matches) && matches.length > 0 ? (
-                <>
-                    {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
-                    {console.log('Games для визуализации сетки:', games)}
-                    {Array.isArray(games) && games.length > 0 ? (
-                        <div className="custom-tournament-bracket">
-                            <div className="tournament-bracket">
-                                <ErrorBoundary>
-                                    <Suspense fallback={<div className="loading-bracket">Загрузка турнирной сетки...</div>}>
-                                        {(() => {
-                                            try {
-                                                console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
-                                                // Безопасный рендеринг сетки
-                                                return (
+                    {Array.isArray(matches) && matches.length > 0 ? (
+                        <>
+                            {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
+                            {console.log('Games для визуализации сетки:', games)}
+                            {Array.isArray(games) && games.length > 0 ? (
+                                <div className="custom-tournament-bracket">
+                                    <div className="tournament-bracket">
+                                        <ErrorBoundary>
+                                            <Suspense fallback={<div className="loading-bracket">Загрузка турнирной сетки...</div>}>
+                                                {(() => {
+                                                    try {
+                                                        console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
+                                                        // Безопасный рендеринг сетки
+                                                        return (
                                         <BracketRenderer
                                             games={games}
                                             canEditMatches={canEditMatches}
@@ -2075,339 +2123,355 @@ function TournamentDetails() {
                                             key={`bracket-${matches.length}-${selectedMatch}`}
                                             onMatchClick={viewMatchDetails}
                                         />
-                                                );
-                                            } catch (error) {
-                                                console.error('Ошибка при рендеринге турнирной сетки:', error);
-                                                return (
-                                                    <div className="bracket-error">
-                                                        Ошибка при отображении турнирной сетки. 
-                                                        Пожалуйста, обновите страницу или попробуйте позже.
-                                                        <br />
+                                                        );
+                                                    } catch (error) {
+                                                        console.error('Ошибка при рендеринге турнирной сетки:', error);
+                                                        return (
+                                                            <div className="bracket-error">
+                                                                Ошибка при отображении турнирной сетки. 
+                                                                Пожалуйста, обновите страницу или попробуйте позже.
+                                                                <br />
+                                                                <button 
+                                                                    onClick={() => window.location.reload()} 
+                                                                    className="reload-button"
+                                                                >
+                                                                    Обновить страницу
+                                                                </button>
+                                                                {isAdminOrCreator && (
+                                                                    <button 
+                                                                        onClick={handleRegenerateBracket} 
+                                                                        className="regenerate-button"
+                                                                    >
+                                                                        Пересоздать сетку
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+                                                })()}
+                                            </Suspense>
+                                        </ErrorBoundary>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bracket-error">
+                                <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
+                                    <button 
+                                        onClick={() => window.location.reload()} 
+                                        className="reload-button"
+                                    >
+                                        Обновить страницу
+                                    </button>
+                                    {isAdminOrCreator && (
+                                        <button 
+                                            onClick={handleRegenerateBracket} 
+                                            className="regenerate-button"
+                                        >
+                                            Пересоздать сетку
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <p>Сетка ещё не сгенерирована</p>
+                            {canGenerateBracket && (
+                                <div className="generation-options">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            checked={thirdPlaceMatch}
+                                            onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                        />{' '}
+                                        Нужен матч за третье место?
+                                    </label>
+                                    <button className="generate-bracket-button" onClick={handleGenerateBracket}>
+                                        Сгенерировать сетку
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {winners.length > 0 && (
+                        <div className="winners-list">
+                            <h3>Призёры турнира</h3>
+                            <ul>
+                                {winners.map(([place, name]) => (
+                                    <li key={place}>
+                                        {place} место: {name || 'Не определён'}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {showConfirmModal && selectedMatch && (
+                        <div className="modal" onClick={handleCloseModal}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                <h3>Подтверждение победителя</h3>
+                                <p>
+                                    Победитель:{' '}
+                                    <span className="winner-name">
+                                        {games
+                                            ?.find((m) => m.id === selectedMatch.toString())
+                                            ?.participants.find((p) => p.id === selectedWinnerId)?.name || 'Не определён'}
+                                    </span>
+                                </p>
+                                
+                                {showMapSelection ? (
+                                    <div className="maps-container">
+                                        <h4>Карты матча</h4>
+                                        {maps.map((mapData, index) => (
+                                            <div key={index} className="map-entry">
+                                                <div className="map-select-container">
+                                                    <select 
+                                                        value={mapData.map}
+                                                        onChange={(e) => updateMapSelection(index, e.target.value)}
+                                                        className="map-select"
+                                                    >
+                                                        {csgoMaps.map(map => (
+                                                            <option key={map} value={map}>{map}</option>
+                                                        ))}
+                                                    </select>
+                                                    {maps.length > 1 && (
                                                         <button 
-                                                            onClick={() => window.location.reload()} 
-                                                            className="reload-button"
+                                                            onClick={() => removeMap(index)}
+                                                            className="remove-map-btn"
+                                                            title="Удалить карту"
                                                         >
-                                                            Обновить страницу
+                                                            ✖
                                                         </button>
-                                                        {isAdminOrCreator && (
-                                                            <button 
-                                                                onClick={handleRegenerateBracket} 
-                                                                className="regenerate-button"
-                                                            >
-                                                                Пересоздать сетку
-                                                            </button>
-                                                        )}
+                                                    )}
+                                                </div>
+                                                <div className="map-scores">
+                                                    <div className="score-container">
+                                                        <span className="participant-name">
+                                                            {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name || 'Участник 1'}
+                                                        </span>
+                                                        <input
+                                                            type="number"
+                                                            value={mapData.score1}
+                                                            onChange={(e) => updateMapScore(index, 1, Number(e.target.value))}
+                                                            className="score-input"
+                                                            min="0"
+                                                        />
                                                     </div>
-                                                );
+                                                    <div className="score-container">
+                                                        <span className="participant-name">
+                                                            {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}
+                                                        </span>
+                                                        <input
+                                                            type="number"
+                                                            value={mapData.score2}
+                                                            onChange={(e) => updateMapScore(index, 2, Number(e.target.value))}
+                                                            className="score-input"
+                                                            min="0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        
+                                        <button 
+                                            onClick={addMap} 
+                                            className="add-map-btn"
+                                            title="Добавить карту"
+                                        >
+                                            + Добавить карту
+                                        </button>
+                                        
+                                        {maps.length > 1 && (
+                                            <div className="total-score">
+                                                <h4>Общий счет</h4>
+                                                <div className="score-summary">
+                                                    <div className="team-score">
+                                                        <span className="team-name">
+                                                            {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name || 'Участник 1'}:
+                                                        </span>
+                                                        <span className="score-value">
+                                                            {maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length}
+                                                        </span>
+                                                    </div>
+                                                    <div className="team-score">
+                                                        <span className="team-name">
+                                                            {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}:
+                                                        </span>
+                                                        <span className="score-value">
+                                                            {maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                <div className="score-inputs">
+                                    <div className="score-container">
+                                        <span className="participant-name">
+                                            {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name ||
+                                                'Участник 1'}
+                                        </span>
+                                        <input
+                                            type="number"
+                                            value={matchScores.team1}
+                                            onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
+                                            className="score-input"
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div className="score-container">
+                                        <span className="participant-name">
+                                            {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
+                                                'Участник 2'}
+                                        </span>
+                                        <input
+                                            type="number"
+                                            value={matchScores.team2}
+                                            onChange={(e) => setMatchScores({ ...matchScores, team2: Number(e.target.value) })}
+                                            className="score-input"
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                                )}
+                                
+                                <div className="modal-actions">
+                                    <button className="cancel-btn" onClick={handleCloseModal}>
+                                        Отмена
+                                    </button>
+                                    <button 
+                                        className="confirm-winner"
+                                        onClick={() => {
+                                            const matchInfo = games.find((m) => m.id === selectedMatch.toString());
+                                            if (matchInfo) {
+                                                handleUpdateMatch(matchInfo);
                                             }
-                                        })()}
-                                    </Suspense>
-                                </ErrorBoundary>
+                                        }}
+                                    >
+                                        Подтвердить победителя
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="bracket-error">
-                        <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
-                            <button 
-                                onClick={() => window.location.reload()} 
-                                className="reload-button"
-                            >
-                                Обновить страницу
-                            </button>
-                            {isAdminOrCreator && (
+                    )}
+
+                    {/* Модальное окно для просмотра деталей завершенного матча */}
+                    {viewingMatchDetails && matchDetails && (
+                        <div className="modal" onClick={() => setViewingMatchDetails(false)}>
+                            <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
+                                <h3>Результаты матча</h3>
+                                
+                                <div className="match-teams">
+                                    <div className={`team-info ${matchDetails.winner_id === matchDetails.team1_id ? 'winner' : ''}`}>
+                                        <span className="team-name">{matchDetails.team1}</span>
+                                        {matchDetails.winner_id === matchDetails.team1_id && <span className="winner-badge">Победитель</span>}
+                                    </div>
+                                    <div className="match-score">
+                                        <span>{matchDetails.score1} : {matchDetails.score2}</span>
+                                    </div>
+                                    <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
+                                        <span className="team-name">{matchDetails.team2}</span>
+                                        {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
+                                    </div>
+                                </div>
+                                
+                                {matchDetails.maps && matchDetails.maps.length > 0 && (
+                                    <div className="maps-results">
+                                        <h4>Результаты по картам</h4>
+                                        <table className="maps-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Карта</th>
+                                                    <th>{matchDetails.team1}</th>
+                                                    <th>{matchDetails.team2}</th>
+                                                    <th>Результат</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {matchDetails.maps.map((map, index) => (
+                                                    <tr key={index}>
+                                                        <td>{map.map}</td>
+                                                        <td>{map.score1}</td>
+                                                        <td>{map.score2}</td>
+                                                        <td>
+                                                            {parseInt(map.score1) > parseInt(map.score2) 
+                                                                ? <span className="map-winner">{matchDetails.team1}</span>
+                                                                : parseInt(map.score2) > parseInt(map.score1)
+                                                                    ? <span className="map-winner">{matchDetails.team2}</span>
+                                                                    : 'Ничья'
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                
+                                <div className="modal-buttons">
+                                    <button onClick={() => setViewingMatchDetails(false)}>Закрыть</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {message && (
+                        <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
+                    )}
+                    {tournament?.status === 'in_progress' && isAdminOrCreator && (
+                        <div className="tournament-controls finish-above-bracket">
                                 <button 
-                                    onClick={handleRegenerateBracket} 
-                                    className="regenerate-button"
-                                >
-                                    Пересоздать сетку
-                                </button>
+                                className="end-tournament"
+                                onClick={handleEndTournament}
+                            >
+                                Завершить турнир
+                            </button>
+                        </div>
+                    )}
+                    {isAdminOrCreator && matches.length > 0 && (
+                        <div className="tournament-admin-controls">
+                            {tournament?.status === 'in_progress' && (
+                            <button 
+                                    className="clear-results-button"
+                                    onClick={handleClearMatchResults}
+                                    title="Очистить все результаты матчей"
+                            >
+                                    Очистить результаты матчей
+                            </button>
                             )}
                         </div>
                     )}
-                </>
-            ) : (
-                <>
-                    <p>Сетка ещё не сгенерирована</p>
-                    {canGenerateBracket && (
-                        <div className="generation-options">
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={thirdPlaceMatch}
-                                    onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                />{' '}
-                                Нужен матч за третье место?
-                            </label>
-                            <button className="generate-bracket-button" onClick={handleGenerateBracket}>
-                                Сгенерировать сетку
-                            </button>
-                        </div>
-                    )}
-                </>
-            )}
-            {winners.length > 0 && (
-                <div className="winners-list">
-                    <h3>Призёры турнира</h3>
-                    <ul>
-                        {winners.map(([place, name]) => (
-                            <li key={place}>
-                                {place} место: {name || 'Не определён'}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-            {showConfirmModal && selectedMatch && (
-                <div className="modal" onClick={handleCloseModal}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h3>Подтверждение победителя</h3>
-                        <p>
-                            Победитель:{' '}
-                            <span className="winner-name">
-                                {games
-                                    ?.find((m) => m.id === selectedMatch.toString())
-                                    ?.participants.find((p) => p.id === selectedWinnerId)?.name || 'Не определён'}
-                            </span>
-                        </p>
-                        
-                        {showMapSelection ? (
-                            <div className="maps-container">
-                                <h4>Карты матча</h4>
-                                {maps.map((mapData, index) => (
-                                    <div key={index} className="map-entry">
-                                        <div className="map-select-container">
-                                            <select 
-                                                value={mapData.map}
-                                                onChange={(e) => updateMapSelection(index, e.target.value)}
-                                                className="map-select"
-                                            >
-                                                {csgoMaps.map(map => (
-                                                    <option key={map} value={map}>{map}</option>
-                                                ))}
-                                            </select>
-                                            {maps.length > 1 && (
-                                                <button 
-                                                    onClick={() => removeMap(index)}
-                                                    className="remove-map-btn"
-                                                    title="Удалить карту"
-                                                >
-                                                    ✖
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="map-scores">
-                                            <div className="score-container">
-                                                <span className="participant-name">
-                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name || 'Участник 1'}
-                                                </span>
-                                                <input
-                                                    type="number"
-                                                    value={mapData.score1}
-                                                    onChange={(e) => updateMapScore(index, 1, Number(e.target.value))}
-                                                    className="score-input"
-                                                    min="0"
-                                                />
-                                            </div>
-                                            <div className="score-container">
-                                                <span className="participant-name">
-                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}
-                                                </span>
-                                                <input
-                                                    type="number"
-                                                    value={mapData.score2}
-                                                    onChange={(e) => updateMapScore(index, 2, Number(e.target.value))}
-                                                    className="score-input"
-                                                    min="0"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                
-                                <button 
-                                    onClick={addMap} 
-                                    className="add-map-btn"
-                                    title="Добавить карту"
-                                >
-                                    + Добавить карту
-                                </button>
-                                
-                                {maps.length > 1 && (
-                                    <div className="total-score">
-                                        <h4>Общий счет</h4>
-                                        <div className="score-summary">
-                                            <div className="team-score">
-                                                <span className="team-name">
-                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name || 'Участник 1'}:
-                                                </span>
-                                                <span className="score-value">
-                                                    {maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length}
-                                                </span>
-                                            </div>
-                                            <div className="team-score">
-                                                <span className="team-name">
-                                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}:
-                                                </span>
-                                                <span className="score-value">
-                                                    {maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                        <div className="score-inputs">
-                            <div className="score-container">
-                                <span className="participant-name">
-                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name ||
-                                        'Участник 1'}
-                                </span>
-                                <input
-                                    type="number"
-                                    value={matchScores.team1}
-                                    onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
-                                    className="score-input"
-                                    min="0"
-                                />
-                            </div>
-                            <div className="score-container">
-                                <span className="participant-name">
-                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
-                                        'Участник 2'}
-                                </span>
-                                <input
-                                    type="number"
-                                    value={matchScores.team2}
-                                    onChange={(e) => setMatchScores({ ...matchScores, team2: Number(e.target.value) })}
-                                    className="score-input"
-                                    min="0"
-                                />
-                            </div>
-                        </div>
-                        )}
-                        
-                        <div className="modal-actions">
-                            <button className="cancel-btn" onClick={handleCloseModal}>
-                                Отмена
-                            </button>
-                            <button 
-                                className="confirm-winner"
-                                onClick={() => {
-                                    const matchInfo = games.find((m) => m.id === selectedMatch.toString());
-                                    if (matchInfo) {
-                                        handleUpdateMatch(matchInfo);
-                                    }
-                                }}
-                            >
-                                Подтвердить победителя
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Модальное окно для просмотра деталей завершенного матча */}
-            {viewingMatchDetails && matchDetails && (
-                <div className="modal" onClick={() => setViewingMatchDetails(false)}>
-                    <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
-                        <h3>Результаты матча</h3>
-                        
-                        <div className="match-teams">
-                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team1_id ? 'winner' : ''}`}>
-                                <span className="team-name">{matchDetails.team1}</span>
-                                {matchDetails.winner_id === matchDetails.team1_id && <span className="winner-badge">Победитель</span>}
-                            </div>
-                            <div className="match-score">
-                                <span>{matchDetails.score1} : {matchDetails.score2}</span>
-                            </div>
-                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
-                                <span className="team-name">{matchDetails.team2}</span>
-                                {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
-                            </div>
-                        </div>
-                        
-                        {matchDetails.maps && matchDetails.maps.length > 0 && (
-                            <div className="maps-results">
-                                <h4>Результаты по картам</h4>
-                                <table className="maps-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Карта</th>
-                                            <th>{matchDetails.team1}</th>
-                                            <th>{matchDetails.team2}</th>
-                                            <th>Результат</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {matchDetails.maps.map((map, index) => (
-                                            <tr key={index}>
-                                                <td>{map.map}</td>
-                                                <td>{map.score1}</td>
-                                                <td>{map.score2}</td>
-                                                <td>
-                                                    {parseInt(map.score1) > parseInt(map.score2) 
-                                                        ? <span className="map-winner">{matchDetails.team1}</span>
-                                                        : parseInt(map.score2) > parseInt(map.score1)
-                                                            ? <span className="map-winner">{matchDetails.team2}</span>
-                                                            : 'Ничья'
-                                                    }
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                        
-                        <div className="modal-buttons">
-                            <button onClick={() => setViewingMatchDetails(false)}>Закрыть</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {message && (
-                <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
-            )}
-            {tournament?.status === 'in_progress' && isAdminOrCreator && (
-                <div className="tournament-controls finish-above-bracket">
+                    {tournament?.status === "completed" && isAdminOrCreator && (
                         <button 
-                        className="end-tournament"
-                        onClick={handleEndTournament}
-                    >
-                        Завершить турнир
-                    </button>
-                </div>
-            )}
-            {isAdminOrCreator && matches.length > 0 && (
-                <div className="tournament-admin-controls">
-                    {tournament?.status === 'in_progress' && (
-                    <button 
+                            className="end-tournament-button"
+                            onClick={handleEndTournament}
+                        >
+                            Завершить турнир
+                        </button>
+                    )}
+                    {isAdminOrCreator && (
+                        <button 
                             className="clear-results-button"
                             onClick={handleClearMatchResults}
-                            title="Очистить все результаты матчей"
-                    >
-                            Очистить результаты матчей
-                    </button>
+                        >
+                            Сбросить результаты
+                        </button>
                     )}
                 </div>
-            )}
-            {tournament?.status === "completed" && isAdminOrCreator && (
-                <button 
-                    className="end-tournament-button"
-                    onClick={handleEndTournament}
-                >
-                    Завершить турнир
-                </button>
-            )}
-            {isAdminOrCreator && (
-                <button 
-                    className="clear-results-button"
-                    onClick={handleClearMatchResults}
-                >
-                    Сбросить результаты
-                </button>
-            )}
+                {/* Панель чата турнира */}
+                <div className="tournament-chat-panel">
+                    <ChatWindow
+                        activeChat={{ id, name: tournament.name, avatar_url: '/default-avatar.png' }}
+                        messages={chatMessages}
+                        newMessage={newChatMessage}
+                        onInputChange={handleChatInputChange}
+                        onSubmit={handleChatSubmit}
+                        onKeyPress={handleChatKeyPress}
+                        onSendAttachment={() => {}}
+                        onDeleteMessage={() => {}}
+                        messagesEndRef={chatEndRef}
+                    />
+                </div>
+            </div>
         </section>
     );
 }

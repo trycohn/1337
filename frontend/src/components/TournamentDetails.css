@@ -1002,4 +1002,26 @@
 .map-winner {
     font-weight: bold;
     color: #4CAF50;
+}
+
+/* Chat panel layout */
+.tournament-details .tournament-layout {
+    display: flex;
+    width: 100%;
+}
+
+.tournament-details .tournament-main {
+    flex: 3;
+    margin-right: 20px;
+}
+
+.tournament-details .tournament-chat-panel {
+    flex: 1;
+    max-width: 300px;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
 } 
