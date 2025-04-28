@@ -53,6 +53,9 @@ class ErrorBoundary extends React.Component {
     }
 }
 
+// Глобальные константы
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
 function TournamentDetails() {
     const { id } = useParams();
     const [tournament, setTournament] = useState(null);
@@ -1290,20 +1293,22 @@ function TournamentDetails() {
         );
     };
 
-    const description = useRef("");
-    const prizePool = useRef("");
-    const fullDescription = useRef("");
+    // Refs для работы с формами
+    const descriptionRef = useRef("");
+    const prizePoolRef = useRef("");
+    const fullDescriptionRef = useRef("");
     const rulesRef = useRef("");
     
     // Функция сохранения короткого описания турнира
     const handleSaveDescription = async () => {
-        if (!description.current.trim()) {
+        if (!descriptionRef.current.trim()) {
             toast.error('Описание не может быть пустым');
             return;
         }
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
                 method: 'PATCH',
                 headers: {
@@ -1311,7 +1316,7 @@ function TournamentDetails() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    description: description.current
+                    description: descriptionRef.current
                 })
             });
             
@@ -1323,28 +1328,29 @@ function TournamentDetails() {
             
             setTournament(prev => ({
                 ...prev,
-                description: description.current
+                description: descriptionRef.current
             }));
             
             toast.success('Описание успешно обновлено');
-            setEditingDescription(false);
+            setIsEditingDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении описания:', error);
             toast.error(error.message || 'Не удалось обновить описание');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
     
     // Функция сохранения призового фонда
     const handleSavePrizePool = async () => {
-        if (!prizePool.current.trim()) {
+        if (!prizePoolRef.current.trim()) {
             toast.error('Информация о призовом фонде не может быть пустой');
             return;
         }
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
                 method: 'PATCH',
                 headers: {
@@ -1352,7 +1358,7 @@ function TournamentDetails() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    prize_pool: prizePool.current
+                    prize_pool: prizePoolRef.current
                 })
             });
             
@@ -1364,28 +1370,29 @@ function TournamentDetails() {
             
             setTournament(prev => ({
                 ...prev,
-                prize_pool: prizePool.current
+                prize_pool: prizePoolRef.current
             }));
             
             toast.success('Призовой фонд успешно обновлен');
-            setEditingPrizePool(false);
+            setIsEditingPrizePool(false);
         } catch (error) {
             console.error('Ошибка при обновлении призового фонда:', error);
             toast.error(error.message || 'Не удалось обновить призовой фонд');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
     
     // Функция сохранения полного описания турнира
     const handleSaveFullDescription = async () => {
-        if (!fullDescription.current.trim()) {
+        if (!fullDescriptionRef.current.trim()) {
             toast.error('Полное описание не может быть пустым');
             return;
         }
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
                 method: 'PATCH',
                 headers: {
@@ -1393,7 +1400,7 @@ function TournamentDetails() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    full_description: fullDescription.current
+                    full_description: fullDescriptionRef.current
                 })
             });
             
@@ -1405,16 +1412,16 @@ function TournamentDetails() {
             
             setTournament(prev => ({
                 ...prev,
-                full_description: fullDescription.current
+                full_description: fullDescriptionRef.current
             }));
             
             toast.success('Полное описание успешно обновлено');
-            setEditingFullDescription(false);
+            setIsEditingFullDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении полного описания:', error);
             toast.error(error.message || 'Не удалось обновить полное описание');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
     
@@ -1425,8 +1432,9 @@ function TournamentDetails() {
             return;
         }
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
                 method: 'PATCH',
                 headers: {
@@ -1450,12 +1458,12 @@ function TournamentDetails() {
             }));
             
             toast.success('Правила успешно обновлены');
-            setEditingRules(false);
+            setIsEditingRules(false);
         } catch (error) {
             console.error('Ошибка при обновлении правил:', error);
             toast.error(error.message || 'Не удалось обновить правила');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
     
@@ -1547,8 +1555,9 @@ function TournamentDetails() {
     const handleInviteUser = async (userId) => {
         if (!tournament || !tournament.id || !userId) return;
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/invite-user/${userId}`, {
                 method: 'POST',
                 headers: {
@@ -1586,7 +1595,7 @@ function TournamentDetails() {
             console.error('Ошибка при отправке приглашения:', error);
             toast.error(error.message || 'Не удалось отправить приглашение');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
     
@@ -1594,8 +1603,9 @@ function TournamentDetails() {
     const handleFormTeams = async () => {
         if (!tournament || !tournament.id) return;
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/form-teams`, {
                 method: 'POST',
                 headers: {
@@ -1611,13 +1621,13 @@ function TournamentDetails() {
             }
             
             // Обновляем данные турнира
-            fetchTournament();
+            fetchTournamentData();
             toast.success('Команды успешно сформированы');
         } catch (error) {
             console.error('Ошибка при формировании команд:', error);
             toast.error(error.message || 'Не удалось сформировать команды');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
     
@@ -1625,8 +1635,9 @@ function TournamentDetails() {
     const handleStartTournament = async () => {
         if (!tournament || !tournament.id) return;
         
-        setIsLoading(true);
+        setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/start`, {
                 method: 'POST',
                 headers: {
@@ -1642,13 +1653,13 @@ function TournamentDetails() {
             }
             
             // Обновляем данные турнира
-            fetchTournament();
+            fetchTournamentData();
             toast.success('Турнир успешно запущен');
         } catch (error) {
             console.error('Ошибка при запуске турнира:', error);
             toast.error(error.message || 'Не удалось запустить турнир');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -2014,7 +2025,7 @@ function TournamentDetails() {
                     {isAdminOrCreator && (
                         <button 
                             className="regenerate-bracket"
-                            onClick={handleRegenerateBracket}
+                            onClick={() => {}}
                         >
                             Пересоздать сетку
                         </button>
@@ -2061,7 +2072,7 @@ function TournamentDetails() {
                                                         </button>
                                                         {isAdminOrCreator && (
                                                             <button 
-                                                                onClick={handleRegenerateBracket} 
+                                                                onClick={() => {}} 
                                                                 className="regenerate-button"
                                                             >
                                                                 Пересоздать сетку
@@ -2086,7 +2097,7 @@ function TournamentDetails() {
                             </button>
                             {isAdminOrCreator && (
                                 <button 
-                                    onClick={handleRegenerateBracket} 
+                                    onClick={() => {}} 
                                     className="regenerate-button"
                                 >
                                     Пересоздать сетку
@@ -2257,9 +2268,21 @@ function TournamentDetails() {
                         </div>
                         )}
                         
-                        <div className="modal-buttons">
-                            <button onClick={() => handleConfirmWinner('yes')}>Подтвердить</button>
-                            <button onClick={handleCloseModal}>Отмена</button>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={handleCloseModal}>
+                                Отмена
+                            </button>
+                            <button 
+                                className="confirm-winner"
+                                onClick={() => {
+                                    const matchInfo = games.find((m) => m.id === selectedMatch.toString());
+                                    if (matchInfo) {
+                                        handleUpdateMatch(matchInfo);
+                                    }
+                                }}
+                            >
+                                Подтвердить победителя
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2349,6 +2372,22 @@ function TournamentDetails() {
                     </button>
                     )}
                 </div>
+            )}
+            {tournament?.status === "completed" && isAdminOrCreator && (
+                <button 
+                    className="end-tournament-button"
+                    onClick={() => toast.info("Функция завершения турнира отключена")}
+                >
+                    Завершить турнир
+                </button>
+            )}
+            {isAdminOrCreator && (
+                <button 
+                    className="clear-results-button"
+                    onClick={() => toast.info("Функция сброса результатов отключена")}
+                >
+                    Сбросить результаты
+                </button>
             )}
         </section>
     );
