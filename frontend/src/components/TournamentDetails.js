@@ -774,7 +774,7 @@ function TournamentDetails() {
         if (!canEditMatches) return;
         
         try {
-            // Ищем матч
+        // Ищем матч
             const selectedGame = Array.isArray(games) ? games.find(g => g && g.id && parseInt(String(g.id)) === safeMatchId) : null;
             
             if (!selectedGame) {
@@ -842,8 +842,8 @@ function TournamentDetails() {
                 const autoWinnerId = team1Id || team2Id;
                 if (autoWinnerId) {
                     setSelectedWinnerId(String(autoWinnerId));
-                    console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
-                    setShowConfirmModal(true);
+                console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
+                setShowConfirmModal(true);
                 } else {
                     setMessage('Ошибка: не удалось определить победителя для bye-матча');
                 }
@@ -1060,15 +1060,15 @@ function TournamentDetails() {
         }
 
         try {
-            try {
-                const response = await api.post(
-                    `/api/tournaments/${id}/handle-invitation`,
-                    { action, invitation_id: invitationId },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                setMessage(response.data.message);
+        try {
+            const response = await api.post(
+                `/api/tournaments/${id}/handle-invitation`,
+                { action, invitation_id: invitationId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMessage(response.data.message);
                 toast.success(response.data.message);
-                fetchTournamentData();
+            fetchTournamentData();
             } catch (error) {
                 // Проверяем ошибку, связанную с отсутствующей колонкой в базе данных
                 if (error.response?.data?.error?.includes('column') ||
@@ -2208,15 +2208,15 @@ function TournamentDetails() {
                                                 console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
                                                 // Безопасный рендеринг сетки
                                                 return (
-                                                    <BracketRenderer
-                                                        games={games}
-                                                        canEditMatches={canEditMatches}
-                                                        selectedMatch={selectedMatch}
-                                                        setSelectedMatch={setSelectedMatch}
-                                                        handleTeamClick={handleTeamClick}
-                                                        format={tournament.format}
-                                                        key={`bracket-${matches.length}-${selectedMatch}`}
-                                                    />
+                                        <BracketRenderer
+                                            games={games}
+                                            canEditMatches={canEditMatches}
+                                            selectedMatch={selectedMatch}
+                                            setSelectedMatch={setSelectedMatch}
+                                            handleTeamClick={handleTeamClick}
+                                            format={tournament.format}
+                                            key={`bracket-${matches.length}-${selectedMatch}`}
+                                        />
                                                 );
                                             } catch (error) {
                                                 console.error('Ошибка при рендеринге турнирной сетки:', error);
@@ -2249,7 +2249,7 @@ function TournamentDetails() {
                         </div>
                     ) : (
                         <div className="bracket-error">
-                            <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
+                        <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
                             <button 
                                 onClick={() => window.location.reload()} 
                                 className="reload-button"
@@ -2351,7 +2351,7 @@ function TournamentDetails() {
             )}
             {isFinalMatchComplete && areAllMatchesComplete && tournament?.status === 'in_progress' && isAdminOrCreator && (
                 <div className="tournament-controls finish-above-bracket">
-                    <button 
+                        <button 
                         className="end-tournament"
                         onClick={handleEndTournament}
                     >
@@ -2362,13 +2362,13 @@ function TournamentDetails() {
             {isAdminOrCreator && matches.length > 0 && (
                 <div className="tournament-admin-controls">
                     {tournament?.status === 'in_progress' && (
-                        <button 
+                    <button 
                             className="clear-results-button"
                             onClick={handleClearMatchResults}
                             title="Очистить все результаты матчей"
-                        >
+                    >
                             Очистить результаты матчей
-                        </button>
+                    </button>
                     )}
                 </div>
             )}
