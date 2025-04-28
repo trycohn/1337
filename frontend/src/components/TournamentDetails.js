@@ -1179,20 +1179,16 @@ function TournamentDetails() {
     // Проверка кэша приглашений при загрузке турнира
     useEffect(() => {
         if (!tournament || !tournament.id) return;
-        
         try {
             // Получаем список приглашенных пользователей из кэша
             const cacheKey = `invitedUsers_${tournament.id}`;
             const cachedInvitedUsers = localStorage.getItem(cacheKey);
-            
             if (cachedInvitedUsers) {
                 const invitedUsers = JSON.parse(cachedInvitedUsers);
-                
                 // Проверяем, не стали ли некоторые приглашенные пользователи уже участниками
                 const updatedInvitedUsers = invitedUsers.filter(userId => {
                     return !tournament.participants.some(participant => participant.id === userId);
                 });
-                
                 // Обновляем кэш, если список изменился
                 if (updatedInvitedUsers.length !== invitedUsers.length) {
                     localStorage.setItem(cacheKey, JSON.stringify(updatedInvitedUsers));
@@ -1201,7 +1197,9 @@ function TournamentDetails() {
         } catch (error) {
             console.error('Ошибка при проверке кэша приглашений:', error);
             // В случае ошибки очищаем кэш для безопасности
-            localStorage.removeItem(`invitedUsers_${tournament.id}`);
+            if (tournament && tournament.id) {
+                localStorage.removeItem(`invitedUsers_${tournament.id}`);
+            }
         }
     }, [tournament]);
 
