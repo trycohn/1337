@@ -2002,7 +2002,7 @@ function TournamentDetails() {
             )}
             {isAdminOrCreator && matches.length > 0 && (
                 <div className="tournament-admin-controls">
-                    {tournament?.status === 'in_progress' && isCreator && (
+                    {tournament?.status === 'in_progress' && (
                         <button 
                             className="clear-results-button"
                             onClick={handleClearMatchResults}
