@@ -671,11 +671,20 @@ function TournamentDetails() {
 
         if (!canGenerateBracket) {
             setMessage('У вас нет прав для генерации сетки или сетка уже сгенерирована');
+            toast.warning('У вас нет прав для генерации сетки или сетка уже сгенерирована');
             return;
         }
 
         try {
             setMessage('Генерация сетки...');
+            toast.info('Начинаем генерацию сетки...');
+            
+            // Проверка количества участников
+            if (!tournament.participants || tournament.participants.length < 2) {
+                setMessage('Недостаточно участников для генерации сетки. Минимум 2 участника.');
+                toast.error('Недостаточно участников для генерации сетки. Минимум 2 участника.');
+                return;
+            }
             
             const generateBracketResponse = await api.post(
                 `/api/tournaments/${id}/generate-bracket`,
@@ -712,9 +721,32 @@ function TournamentDetails() {
             }
             
             setMessage('Сетка успешно сгенерирована');
+            toast.success('Сетка успешно сгенерирована!');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
-            setMessage(error.response?.data?.error || 'Ошибка при генерации сетки');
+            
+            // Проверяем тип ошибки для информативного сообщения
+            let errorMessage = 'Ошибка при генерации сетки';
+            
+            if (error.response) {
+                // Структурированное сообщение об ошибке от сервера
+                if (error.response.status === 400) {
+                    errorMessage = error.response.data.error || 'Неверные параметры для генерации сетки';
+                } else if (error.response.status === 401) {
+                    errorMessage = 'Необходима авторизация';
+                } else if (error.response.status === 403) {
+                    errorMessage = 'У вас нет прав на выполнение этого действия';
+                } else if (error.response.status === 404) {
+                    errorMessage = 'API маршрут не найден. Возможно, требуется обновление сервера.';
+                } else if (error.response.status === 500) {
+                    errorMessage = 'Ошибка сервера при генерации сетки. Попробуйте позже.';
+                } else {
+                    errorMessage = error.response.data.error || 'Ошибка при генерации сетки';
+                }
+            }
+            
+            setMessage(errorMessage);
+            toast.error(errorMessage);
             
             // Пытаемся синхронизировать данные с сервера
             try {
@@ -1089,33 +1121,26 @@ function TournamentDetails() {
         const token = localStorage.getItem('token');
         if (!token) {
             setMessage('Пожалуйста, войдите, чтобы регенерировать сетку');
+            toast.warning('Необходима авторизация');
             return;
         }
 
         if (!isAdminOrCreator) {
             setMessage('У вас нет прав для регенерации сетки');
+            toast.error('У вас нет прав для этого действия');
             return;
         }
 
         try {
-            setMessage('Удаление текущей сетки...');
-
             // Перед запросами, сбрасываем состояния
             setMatches([]);
-
+            setMessage('Генерация новой сетки...');
+            toast.info('Начинаем генерацию новой сетки...');
+            
             try {
-                // Сначала удаляем текущую сетку
-                const deleteResponse = await api.delete(`/api/tournaments/${id}/bracket`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                console.log('Сетка успешно удалена:', deleteResponse.data);
-                
-                // Немного ждем, чтобы сервер успел обработать изменения
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-                // Немедленно генерируем новую сетку
-                setMessage('Генерация новой сетки...');
+                // Немедленно генерируем новую сетку без попытки удаления старой
+                // (маршрут DELETE /api/tournaments/${id}/bracket не существует)
+                console.log('Генерация новой сетки...');
                 const generateResponse = await api.post(
                     `/api/tournaments/${id}/generate-bracket`, 
                     { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
@@ -1143,6 +1168,7 @@ function TournamentDetails() {
                 }
                 
                 setMessage('Сетка успешно регенерирована');
+                toast.success('Сетка успешно регенерирована!');
                 
                 // Запрашиваем актуальное состояние турнира через некоторое время
                 setTimeout(async () => {
@@ -1155,7 +1181,29 @@ function TournamentDetails() {
                 
             } catch (innerError) {
                 console.error('Ошибка при регенерации сетки:', innerError);
-                setMessage(innerError.response?.data?.error || 'Ошибка при регенерации сетки');
+                
+                // Проверяем тип ошибки для информативного сообщения
+                let errorMessage = 'Ошибка при регенерации сетки';
+                
+                if (innerError.response) {
+                    // Структурированное сообщение об ошибке от сервера
+                    if (innerError.response.status === 400) {
+                        errorMessage = innerError.response.data.error || 'Неверные параметры для генерации сетки';
+                    } else if (innerError.response.status === 401) {
+                        errorMessage = 'Необходима авторизация';
+                    } else if (innerError.response.status === 403) {
+                        errorMessage = 'У вас нет прав на выполнение этого действия';
+                    } else if (innerError.response.status === 404) {
+                        errorMessage = 'API маршрут не найден. Возможно, требуется обновление сервера.';
+                    } else if (innerError.response.status === 500) {
+                        errorMessage = 'Ошибка сервера при генерации сетки. Попробуйте позже.';
+                    } else {
+                        errorMessage = innerError.response.data.error || 'Ошибка при регенерации сетки';
+                    }
+                }
+                
+                setMessage(errorMessage);
+                toast.error(errorMessage);
                 
                 // Повторно запрашиваем данные турнира
                 setTimeout(async () => {
@@ -1169,6 +1217,7 @@ function TournamentDetails() {
         } catch (error) {
             console.error('Неожиданная ошибка при регенерации сетки:', error);
             setMessage('Произошла ошибка при регенерации сетки');
+            toast.error('Непредвиденная ошибка при регенерации сетки');
             
             // В любом случае пытаемся обновить данные
             setTimeout(async () => {
