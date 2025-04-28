@@ -972,15 +972,15 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         }
         const match = matchResult.rows[0];
 
-        // Запрет изменения результата, если следующий матч уже содержит участников
+        // Запрет изменения результата, если следующий матч уже сыгран (есть winner_team_id)
         for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
             if (nextMatchId) {
                 const nextRes = await pool.query(
-                    'SELECT team1_id, team2_id FROM matches WHERE id = $1',
+                    'SELECT winner_team_id FROM matches WHERE id = $1',
                     [nextMatchId]
                 );
-                if (nextRes.rows.length && (nextRes.rows[0].team1_id || nextRes.rows[0].team2_id)) {
-                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже содержит участников' });
+                if (nextRes.rows.length && nextRes.rows[0].winner_team_id) {
+                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже сыгран' });
                 }
             }
         }
@@ -1336,15 +1336,15 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         }
         const match = matchResult.rows[0];
 
-        // Запрет изменения результата, если следующий матч уже содержит участников
+        // Запрет изменения результата, если следующий матч уже сыгран (есть winner_team_id)
         for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
             if (nextMatchId) {
                 const nextRes = await pool.query(
-                    'SELECT team1_id, team2_id FROM matches WHERE id = $1',
+                    'SELECT winner_team_id FROM matches WHERE id = $1',
                     [nextMatchId]
                 );
-                if (nextRes.rows.length && (nextRes.rows[0].team1_id || nextRes.rows[0].team2_id)) {
-                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже содержит участников' });
+                if (nextRes.rows.length && nextRes.rows[0].winner_team_id) {
+                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже сыгран' });
                 }
             }
         }
