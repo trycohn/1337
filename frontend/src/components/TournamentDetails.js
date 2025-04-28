@@ -105,6 +105,20 @@ function TournamentDetails() {
     // Получаем функции для отображения toast-уведомлений
     const toast = useToast();
 
+    // Функция для проверки участия пользователя в турнире
+    const checkParticipation = useCallback((tournamentData) => {
+        if (!user || !tournamentData || !tournamentData.participants) return;
+        
+        const participants = tournamentData.participants || [];
+        const isParticipant = participants.some(
+            (p) => 
+                (tournamentData.participant_type === 'solo' && p.user_id === user.id) ||
+                (tournamentData.participant_type === 'team' && p.creator_id === user.id)
+        );
+        
+        setIsParticipating(isParticipant);
+    }, [user]);
+
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
         setLoading(true);
