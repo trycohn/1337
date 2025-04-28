@@ -110,6 +110,86 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Начало турнира (изменение статуса на in_progress)
+router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        // Проверка существования турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверка текущего статуса
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Можно начать только активный турнир' });
+        }
+        
+        // Проверка наличия сгенерированной сетки
+        const matchesResult = await pool.query('SELECT COUNT(*) FROM matches WHERE tournament_id = $1', [id]);
+        if (parseInt(matchesResult.rows[0].count) === 0) {
+            return res.status(400).json({ error: 'Перед началом турнира необходимо сгенерировать сетку' });
+        }
+        
+        // Изменение статуса турнира
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET status = $1 WHERE id = $2 RETURNING *',
+            ['in_progress', id]
+        );
+        
+        // Получаем обновленные данные турнира
+        const updatedTournament = updateResult.rows[0];
+        
+        // Получаем данные участников
+        let participantsQuery;
+        if (updatedTournament.participant_type === 'solo') {
+            participantsQuery = `
+                SELECT tp.*, u.avatar_url, u.username 
+                FROM tournament_participants tp 
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT tt.*, u.avatar_url, u.username
+                FROM tournament_teams tt
+                LEFT JOIN users u ON tt.creator_id = u.id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
+        const participantsResult = await pool.query(participantsQuery, [id]);
+        
+        // Получаем матчи
+        const matchesResult2 = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [id]
+        );
+        
+        const responseData = {
+            ...updatedTournament,
+            participants: participantsResult.rows,
+            participant_count: participantsResult.rows.length,
+            matches: matchesResult2.rows,
+        };
+        
+        // Отправляем обновление через WebSocket
+        broadcastTournamentUpdate(id, responseData);
+        
+        // Возвращаем успешный ответ
+        res.status(200).json({
+            message: 'Турнир успешно начат',
+            tournament: responseData
+        });
+    } catch (err) {
+        console.error('❌ Ошибка при начале турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Участие в турнире
 router.post('/:id/participate', authenticateToken, async (req, res) => {
     const { id } = req.params;
