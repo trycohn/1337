@@ -1185,7 +1185,7 @@ function TournamentDetails() {
             const cachedInvitedUsers = localStorage.getItem(cacheKey);
             if (cachedInvitedUsers) {
                 const invitedUsers = JSON.parse(cachedInvitedUsers);
-                // Проверяем, не стали ли некоторые приглашенные пользователи уже участниками
+                // Проверяем, не стали ли некоторые приглашённые пользователи уже участниками
                 const updatedInvitedUsers = invitedUsers.filter(userId => {
                     return !tournament.participants.some(participant => participant.id === userId);
                 });
