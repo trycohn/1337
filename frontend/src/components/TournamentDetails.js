@@ -136,13 +136,30 @@ function TournamentDetails() {
         });
 
         socket.on('tournament_update', (tournamentData) => {
-            if (tournamentData.tournamentId === id) {
-                console.log('Получено обновление турнира:', tournamentData);
+            if (tournamentData.tournamentId === id || tournamentData.id === parseInt(id)) {
+                console.log('Получено обновление турнира через WebSocket:', tournamentData);
+                
+                // Обрабатываем различные форматы данных
                 const data = tournamentData.data || tournamentData;
-                setTournament(data);
-                const matchesData = data.matches || tournamentData.matches;
+                
+                // Обновляем данные турнира
+                setTournament(prev => {
+                    // Если получены только определенные поля, сохраняем остальные
+                    return { ...prev, ...data };
+                });
+                
+                // Обновляем список матчей, учитывая разные форматы
+                const matchesData = data.matches || tournamentData.matches || [];
                 if (Array.isArray(matchesData)) {
+                    console.log(`Получено ${matchesData.length} матчей через WebSocket`);
                     setMatches(matchesData);
+                }
+                
+                // Устанавливаем сообщение для пользователя
+                if (tournamentData.message) {
+                    setMessage(tournamentData.message);
+                    // Очищаем сообщение через 3 секунды
+                    setTimeout(() => setMessage(''), 3000);
                 }
             }
         });
@@ -928,11 +945,21 @@ function TournamentDetails() {
             
             console.log('Ответ после удаления матчей:', deleteResponse.data);
             
-            // Обновляем данные турнира после удаления матчей
+            // Проверяем, пришли ли данные турнира в ответе и обновляем локальное состояние
             if (deleteResponse.data?.tournament) {
+                console.log('Обновляем турнир после удаления матчей:', deleteResponse.data.tournament);
                 setTournament(deleteResponse.data.tournament);
-                setMatches([]);
+                setMatches(deleteResponse.data.tournament.matches || []);
+                
+                // Прерываем и отображаем сообщение, что нужно генерировать новую сетку
+                setMessage('Матчи удалены. Нажмите кнопку "Генерировать сетку" для создания новой сетки');
+                
+                // Обновляем данные для гарантии
+                await fetchTournamentData();
+                
+                return;
             } else {
+                // Если в ответе нет данных турнира - обновляем вручную
                 await fetchTournamentData();
             }
             
@@ -946,15 +973,26 @@ function TournamentDetails() {
             
             // Обновляем данные после генерации сетки
             if (response.data?.tournament) {
+                console.log('Обновляем турнир после генерации сетки:', response.data.tournament);
                 setTournament(response.data.tournament);
+                
                 if (Array.isArray(response.data.tournament.matches)) {
+                    console.log(`Установлено ${response.data.tournament.matches.length} матчей`);
                     setMatches(response.data.tournament.matches);
                 }
+                
                 setMessage('Сетка успешно пересоздана');
             } else {
+                // Если в ответе нет данных турнира - обновляем вручную
                 await fetchTournamentData();
                 setMessage('Сетка успешно пересоздана');
             }
+            
+            // Принудительно обновляем данные для гарантии
+            setTimeout(() => {
+                fetchTournamentData();
+            }, 1000);
+            
         } catch (err) {
             console.error('Ошибка при пересоздании сетки:', err);
             
