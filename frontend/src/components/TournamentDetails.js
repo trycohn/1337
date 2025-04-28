@@ -907,6 +907,10 @@ function TournamentDetails() {
     };
 
     const handleRegenerateBracket = async () => {
+        if (!window.confirm('Вы действительно хотите пересоздать сетку? Все текущие матчи будут удалены. Это действие нельзя отменить.')) {
+            return;
+        }
+        
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -914,19 +918,15 @@ function TournamentDetails() {
                 return;
             }
             
-            // Сначала очищаем все существующие матчи
-            setMessage('Очистка существующих матчей...');
-            await api.post(
-                `/api/tournaments/${id}/clear-match-results`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            // Затем генерируем новую сетку
-            setMessage('Генерация новой сетки...');
+            // Используем прямой вызов generate-bracket с параметром force=true, 
+            // который должен перезаписать существующие матчи
+            setMessage('Пересоздание сетки...');
             await api.post(
                 `/api/tournaments/${id}/generate-bracket`, 
-                { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
+                { 
+                    thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch,
+                    force: true
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
@@ -934,8 +934,12 @@ function TournamentDetails() {
             await fetchTournamentData();
         } catch (err) {
             console.error('Ошибка при пересоздании сетки:', err);
-            setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
-            setError('Ошибка при пересоздании сетки');
+            try {
+                // Сообщаем пользователю, что нужно удалить матчи вручную через базу данных
+                setMessage('Для пересоздания сетки нужно сначала удалить существующие матчи через базу данных: DELETE FROM matches WHERE tournament_id = ' + id);
+            } catch (innerErr) {
+                setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
+            }
         }
     };
 
