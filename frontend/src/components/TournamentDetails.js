@@ -1136,15 +1136,10 @@ function TournamentDetails() {
         }
     };
 
-    // Проверяем актуальность кэша при загрузке турнира
-    useEffect(() => {
-        if (tournament) {
-            validateInvitationCache();
-        }
-    }, [tournament, validateInvitationCache]);
-
     // Функция для проверки и валидации кэша приглашений
     const validateInvitationCache = useCallback(() => {
+        if (!tournament) return; // Добавляем проверку, чтобы избежать ошибок
+        
         try {
             // Проверяем кэш приглашенных пользователей
             const cachedInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
@@ -1175,6 +1170,40 @@ function TournamentDetails() {
             setInvitedUsers([]);
         }
     }, [id, tournament]);
+
+    // Проверяем актуальность кэша при загрузке турнира
+    useEffect(() => {
+        validateInvitationCache();
+    }, [validateInvitationCache]);
+
+    // Проверка кэша приглашений при загрузке турнира
+    useEffect(() => {
+        if (!tournament || !tournament.id) return;
+        
+        try {
+            // Получаем список приглашенных пользователей из кэша
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
+            
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                
+                // Проверяем, не стали ли некоторые приглашенные пользователи уже участниками
+                const updatedInvitedUsers = invitedUsers.filter(userId => {
+                    return !tournament.participants.some(participant => participant.id === userId);
+                });
+                
+                // Обновляем кэш, если список изменился
+                if (updatedInvitedUsers.length !== invitedUsers.length) {
+                    localStorage.setItem(cacheKey, JSON.stringify(updatedInvitedUsers));
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке кэша приглашений:', error);
+            // В случае ошибки очищаем кэш для безопасности
+            localStorage.removeItem(`invitedUsers_${tournament.id}`);
+        }
+    }, [tournament]);
 
     // Функция для очистки кэша приглашений для конкретного пользователя
     const clearInvitationCache = (userId) => {
@@ -1470,32 +1499,38 @@ function TournamentDetails() {
     const handleInvite = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы отправить приглашение');
+            toast.error('Пожалуйста, войдите, чтобы отправить приглашение');
+            return;
+        }
+
+        if (inviteMethod === 'username' && !inviteUsername) {
+            toast.error('Пожалуйста, укажите никнейм пользователя');
+            return;
+        }
+
+        if (inviteMethod === 'email' && !inviteEmail) {
+            toast.error('Пожалуйста, укажите email пользователя');
             return;
         }
 
         try {
             const response = await api.post(`/api/tournaments/${id}/invite`, {
-                method: 'POST',
+                username: inviteMethod === 'username' ? inviteUsername : null,
+                email: inviteMethod === 'email' ? inviteEmail : null
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    inviteMethod,
-                    inviteUsername,
-                    inviteEmail
-                })
+                }
             });
 
-            setMessage(response.data.message);
+            toast.success(response.data.message || 'Приглашение успешно отправлено');
             setInviteUsername('');
             setInviteEmail('');
         } catch (error) {
-            setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
+            toast.error(error.response?.data?.error || 'Ошибка при отправке приглашения');
         }
     };
-
+    
     // Проверка кэша приглашений при загрузке турнира
     useEffect(() => {
         if (!tournament || !tournament.id) return;
