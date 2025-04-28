@@ -356,7 +356,7 @@ function TournamentDetails() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const currentUser = userResponse.data;
-                setUser(currentUser);
+                // setUser(currentUser); // УБРАНО, чтобы не было зацикливания
 
                 if (tournament) {
                     const isCreator = tournament.created_by === currentUser.id;
