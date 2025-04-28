@@ -792,6 +792,12 @@ const BracketRenderer = ({
         return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
     }
 
+    // Функция для безопасного преобразования ID в число
+    const safeParseInt = (id) => {
+        if (id === undefined || id === null) return null;
+        return typeof id === 'string' ? parseInt(id) : id;
+    };
+
     return (
         // Внешний контейнер для обработчиков и overflow
         <div
@@ -833,14 +839,14 @@ const BracketRenderer = ({
                                             : `Раунд ${round}`}
                                     </h3>
                                     {roundMatches.map((match) => {
-                                        const isSelected = selectedMatch === parseInt(match.id);
+                                        const isSelected = selectedMatch === safeParseInt(match.id);
                                         return (
                                             <div
                                                 key={match.id}
                                                 className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                 onClick={(e) => {
                                                       if (canEditMatches && match.state !== 'DONE') {
-                                                          setSelectedMatch(isSelected ? null : parseInt(match.id));
+                                                          setSelectedMatch(isSelected ? null : safeParseInt(match.id));
                                                       }
                                                   }}
                                             >
@@ -897,14 +903,14 @@ const BracketRenderer = ({
                                         <div key={`l-${round}`} className="round-column">
                                             <h3>Раунд {round}</h3>
                                             {roundMatches.map((match) => {
-                                                const isSelected = selectedMatch === parseInt(match.id);
+                                                const isSelected = selectedMatch === safeParseInt(match.id);
                                                 return (
                                                     <div
                                                         key={match.id}
                                                         className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                          onClick={(e) => {
                                                                if (canEditMatches && match.state !== 'DONE') {
-                                                                   setSelectedMatch(isSelected ? null : parseInt(match.id));
+                                                                   setSelectedMatch(isSelected ? null : safeParseInt(match.id));
                                                                }
                                                            }}
                                                     >
@@ -962,10 +968,10 @@ const BracketRenderer = ({
                                         <h3 className="match-title">Большой финал</h3>
                                         <div
                                             key={grandFinalMatch.id}
-                                            className={`custom-seed ${selectedMatch === parseInt(grandFinalMatch.id) ? 'selected' : ''}`}
+                                            className={`custom-seed ${selectedMatch === safeParseInt(grandFinalMatch.id) ? 'selected' : ''}`}
                                             onClick={(e) => {
                                                 if (canEditMatches && grandFinalMatch.state !== 'DONE') {
-                                                    setSelectedMatch(selectedMatch === parseInt(grandFinalMatch.id) ? null : parseInt(grandFinalMatch.id));
+                                                    setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
                                                 }
                                             }}
                                         >
@@ -1008,10 +1014,10 @@ const BracketRenderer = ({
                                         <h3 className="match-title">Матч за 3-е место</h3>
                                         <div
                                             key={placementMatch.id}
-                                            className={`custom-seed ${selectedMatch === parseInt(placementMatch.id) ? 'selected' : ''}`}
+                                            className={`custom-seed ${selectedMatch === safeParseInt(placementMatch.id) ? 'selected' : ''}`}
                                             onClick={(e) => {
                                                 if (canEditMatches && placementMatch.state !== 'DONE') {
-                                                    setSelectedMatch(selectedMatch === parseInt(placementMatch.id) ? null : parseInt(placementMatch.id));
+                                                    setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
                                                 }
                                             }}
                                         >
