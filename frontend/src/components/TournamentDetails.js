@@ -918,57 +918,91 @@ function TournamentDetails() {
                 return;
             }
             
-            // Удаляем матчи по одному
-            if (matches && matches.length > 0) {
-                setMessage(`Удаление существующих матчей (0/${matches.length})...`);
-                
-                // Создаем копию массива матчей для безопасного удаления
-                const matchesToDelete = [...matches];
-                
-                // Удаляем каждый матч по отдельности
-                for (let i = 0; i < matchesToDelete.length; i++) {
-                    try {
-                        setMessage(`Удаление существующих матчей (${i+1}/${matchesToDelete.length})...`);
-                        await api.delete(
-                            `/api/tournaments/${id}/matches/${matchesToDelete[i].id}`,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                    } catch (deleteErr) {
-                        console.error(`Ошибка при удалении матча ${matchesToDelete[i].id}:`, deleteErr);
-                        // Продолжаем удаление следующих матчей даже если текущий не удалился
-                    }
-                }
-            }
-            
-            // Запрашиваем обновление данных турнира
-            await fetchTournamentData();
-            
-            // Генерируем новую сетку
-            setMessage('Генерация новой сетки...');
-            const response = await api.post(
-                `/api/tournaments/${id}/generate-bracket`, 
-                { 
-                    thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch
-                },
+            // Шаг 1: Удаляем все существующие матчи
+            setMessage('Удаление существующих матчей...');
+            const deleteResponse = await api.post(
+                `/api/tournaments/${id}/delete-all-matches`,
+                {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
-            // Обновляем данные после генерации
+            console.log('Ответ после удаления матчей:', deleteResponse.data);
+            
+            // Обновляем данные турнира после удаления матчей
+            if (deleteResponse.data?.tournament) {
+                setTournament(deleteResponse.data.tournament);
+                setMatches([]);
+            } else {
+                await fetchTournamentData();
+            }
+            
+            // Шаг 2: Генерируем новую сетку
+            setMessage('Генерация новой сетки...');
+            const response = await api.post(
+                `/api/tournaments/${id}/generate-bracket`, 
+                { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Обновляем данные после генерации сетки
             if (response.data?.tournament) {
                 setTournament(response.data.tournament);
                 if (Array.isArray(response.data.tournament.matches)) {
                     setMatches(response.data.tournament.matches);
                 }
+                setMessage('Сетка успешно пересоздана');
             } else {
                 await fetchTournamentData();
+                setMessage('Сетка успешно пересоздана');
             }
-            
-            setMessage('Сетка успешно пересоздана');
         } catch (err) {
             console.error('Ошибка при пересоздании сетки:', err);
-            setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
             
-            // Пытаемся обновить данные после ошибки
+            // В случае ошибки с новым API, показываем SQL-запрос
+            if (err.response?.status === 404 || err.response?.status === 500) {
+                const sqlQuery = `DELETE FROM matches WHERE tournament_id = ${id};`;
+                
+                // Создаем блок для копирования SQL-запроса
+                const sqlBlock = document.createElement('div');
+                sqlBlock.className = 'sql-copy-block';
+                sqlBlock.innerHTML = `
+                    <p>Для пересоздания сетки необходимо выполнить следующий SQL-запрос в pgAdmin:</p>
+                    <pre id="sql-query">${sqlQuery}</pre>
+                    <button id="copy-sql-btn">Копировать SQL</button>
+                    <p>После выполнения запроса обновите страницу и нажмите кнопку "Генерировать сетку".</p>
+                `;
+                
+                // Сначала проверяем, нет ли уже этого блока на странице
+                const existingBlock = document.querySelector('.sql-copy-block');
+                if (existingBlock) {
+                    existingBlock.remove();
+                }
+                
+                // Добавляем блок перед элементом с сообщением
+                const messageElement = document.querySelector('.tournament-details p.error, .tournament-details p.success');
+                if (messageElement) {
+                    messageElement.parentNode.insertBefore(sqlBlock, messageElement);
+                    
+                    // Добавляем функционал копирования
+                    document.getElementById('copy-sql-btn').addEventListener('click', () => {
+                        const sqlText = document.getElementById('sql-query').textContent;
+                        navigator.clipboard.writeText(sqlText)
+                            .then(() => {
+                                setMessage('SQL-запрос скопирован в буфер обмена');
+                            })
+                            .catch(err => {
+                                console.error('Ошибка при копировании:', err);
+                                setMessage('Не удалось скопировать SQL-запрос');
+                            });
+                    });
+                }
+                
+                setMessage('Ошибка при пересоздании сетки: необходимо сначала удалить существующие матчи. Используйте SQL-запрос выше.');
+            } else {
+                setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
+            }
+            
+            // Пытаемся обновить данные
             try {
                 await fetchTournamentData();
             } catch (fetchErr) {

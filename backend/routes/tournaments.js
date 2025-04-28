@@ -1697,4 +1697,138 @@ router.post('/:id/clear-match-results', authenticateToken, async (req, res) => {
     }
 });
 
+// Удаление всех матчей турнира
+router.post('/:id/delete-all-matches', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        // Проверка турнира и прав доступа
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
+
+        // Проверка, что пользователь имеет права (использует verifyAdminOrCreator middleware)
+        console.log(`Удаление всех матчей для турнира ${id} пользователем ${userId}`);
+
+        // Выполняем SQL-запрос для удаления всех матчей этого турнира
+        const deleteResult = await pool.query(
+            'DELETE FROM matches WHERE tournament_id = $1 RETURNING *',
+            [id]
+        );
+
+        console.log(`Удалено ${deleteResult.rowCount} матчей для турнира ${id}`);
+
+        // Отправляем оповещение о обновлении турнира
+        const updatedTournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        const tournamentData = updatedTournamentResult.rows[0];
+        tournamentData.matches = []; // Пустой массив, так как все матчи удалены
+        
+        // Получаем участников
+        let participantsQuery;
+        if (tournament.participant_type === 'solo') {
+            participantsQuery = `
+                SELECT tp.*, u.avatar_url, u.username 
+                FROM tournament_participants tp 
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT tt.*, u.avatar_url, u.username
+                FROM tournament_teams tt
+                LEFT JOIN users u ON tt.creator_id = u.id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
+        const participantsResult = await pool.query(participantsQuery, [id]);
+        tournamentData.participants = participantsResult.rows;
+        tournamentData.participant_count = participantsResult.rowCount;
+
+        // Уведомляем всех клиентов, просматривающих этот турнир
+        broadcastTournamentUpdate(id, tournamentData);
+
+        res.status(200).json({ 
+            message: `Успешно удалено ${deleteResult.rowCount} матчей`,
+            tournament: tournamentData
+        });
+    } catch (err) {
+        console.error('❌ Ошибка удаления матчей турнира:', err);
+        res.status(500).json({ error: 'Ошибка очистки результатов матчей: ' + err.message });
+    }
+});
+
+// Очистка результатов матчей (без удаления самих матчей)
+router.post('/:id/clear-match-results', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        // Проверка турнира и прав доступа
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
+
+        // Проверка, что пользователь имеет права (использует verifyAdminOrCreator middleware)
+        console.log(`Очистка результатов матчей для турнира ${id} пользователем ${userId}`);
+
+        // Выполняем SQL-запрос для сброса результатов матчей
+        const updateResult = await pool.query(
+            'UPDATE matches SET winner_team_id = NULL, score1 = 0, score2 = 0 WHERE tournament_id = $1 RETURNING *',
+            [id]
+        );
+
+        console.log(`Очищены результаты ${updateResult.rowCount} матчей для турнира ${id}`);
+
+        // Получаем обновленные данные турнира
+        const updatedTournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        const tournamentData = updatedTournamentResult.rows[0];
+        
+        // Получаем матчи
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [id]
+        );
+        tournamentData.matches = matchesResult.rows;
+        
+        // Получаем участников
+        let participantsQuery;
+        if (tournament.participant_type === 'solo') {
+            participantsQuery = `
+                SELECT tp.*, u.avatar_url, u.username 
+                FROM tournament_participants tp 
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT tt.*, u.avatar_url, u.username
+                FROM tournament_teams tt
+                LEFT JOIN users u ON tt.creator_id = u.id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
+        const participantsResult = await pool.query(participantsQuery, [id]);
+        tournamentData.participants = participantsResult.rows;
+        tournamentData.participant_count = participantsResult.rowCount;
+
+        // Уведомляем всех клиентов, просматривающих этот турнир
+        broadcastTournamentUpdate(id, tournamentData);
+
+        res.status(200).json({ 
+            message: `Успешно очищены результаты ${updateResult.rowCount} матчей`,
+            tournament: tournamentData
+        });
+    } catch (err) {
+        console.error('❌ Ошибка очистки результатов матчей турнира:', err);
+        res.status(500).json({ error: 'Ошибка очистки результатов матчей: ' + err.message });
+    }
+});
+
 module.exports = router;
