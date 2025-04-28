@@ -8,7 +8,6 @@ import './TournamentDetails.css';
 import { io } from 'socket.io-client';
 // Импортируем наш кастомный хук useToast
 import { useToast } from './Notifications/ToastContext';
-import ChatWindow from './ChatWindow';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const BracketRenderer = lazy(() => 
@@ -2559,20 +2558,6 @@ function TournamentDetails() {
                             Завершить турнир
                         </button>
                     )}
-                </div>
-                {/* Панель чата турнира */}
-                <div className="tournament-chat-panel">
-                    <ChatWindow
-                        activeChat={{ id, name: tournament.name, avatar_url: '/default-avatar.png' }}
-                        messages={chatMessages}
-                        newMessage={newChatMessage}
-                        onInputChange={handleChatInputChange}
-                        onSubmit={handleChatSubmit}
-                        onKeyPress={handleChatKeyPress}
-                        onSendAttachment={() => {}}
-                        onDeleteMessage={() => {}}
-                        messagesEndRef={chatEndRef}
-                    />
                 </div>
             </div>
             
