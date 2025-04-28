@@ -2448,14 +2448,6 @@ function TournamentDetails() {
                             Завершить турнир
                         </button>
                     )}
-                    {isAdminOrCreator && (
-                        <button 
-                            className="clear-results-button"
-                            onClick={handleClearMatchResults}
-                        >
-                            Сбросить результаты
-                        </button>
-                    )}
                 </div>
                 {/* Панель чата турнира */}
                 <div className="tournament-chat-panel">
