@@ -1914,4 +1914,78 @@ router.post('/:id/clear-match-results', authenticateToken, verifyAdminOrCreator,
     }
 });
 
+// Завершение турнира
+router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        // Проверка существования турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверка текущего статуса (можно завершить только активный или идущий турнир)
+        if (tournament.status !== 'active' && tournament.status !== 'in_progress') {
+            return res.status(400).json({ error: 'Можно завершить только активный или идущий турнир' });
+        }
+        
+        // Устанавливаем дату окончания и меняем статус на 'completed'
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET status = $1, end_date = NOW() WHERE id = $2 RETURNING *',
+            ['completed', id]
+        );
+        
+        // Получаем обновленные данные турнира
+        const updatedTournament = updateResult.rows[0];
+        
+        // Получаем данные участников
+        let participantsQuery;
+        if (updatedTournament.participant_type === 'solo') {
+            participantsQuery = `
+                SELECT tp.*, u.avatar_url, u.username 
+                FROM tournament_participants tp 
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT tt.*, u.avatar_url, u.username
+                FROM tournament_teams tt
+                LEFT JOIN users u ON tt.creator_id = u.id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
+        const participantsResult = await pool.query(participantsQuery, [id]);
+        
+        // Получаем матчи
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [id]
+        );
+        
+        const responseData = {
+            ...updatedTournament,
+            participants: participantsResult.rows,
+            participant_count: participantsResult.rows.length,
+            matches: matchesResult.rows,
+        };
+        
+        // Отправляем обновление через WebSocket
+        broadcastTournamentUpdate(id, responseData);
+        
+        // Возвращаем успешный ответ
+        res.status(200).json({
+            message: 'Турнир успешно завершен',
+            tournament: responseData
+        });
+    } catch (err) {
+        console.error('❌ Ошибка при завершении турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

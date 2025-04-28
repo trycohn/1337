@@ -107,51 +107,50 @@ function TournamentDetails() {
 
     // Функция для загрузки данных турнира (определяем выше её использования)
     const fetchTournamentData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const tournamentResponse = await api.get(`/api/tournaments/${id}`);
-            console.log('Данные турнира при загрузке:', tournamentResponse.data);
+            const response = await api.get(`/api/tournaments/${id}`);
+            setTournament(response.data);
+            setMatches(response.data.matches || []);
             
-            const tournament = tournamentResponse.data;
-            const loadedMatches = Array.isArray(tournament.matches) ? tournament.matches : [];
-            
-            console.log('Загруженные матчи:', loadedMatches);
-            console.log('Количество матчей:', loadedMatches.length);
-            
-            // Проверяем наличие участников перед установкой данных
-            if (!Array.isArray(tournament.participants) || tournament.participants.length === 0) {
-                console.warn('Нет данных об участниках в полученных данных');
+            if (response.data.participants) {
+                if (response.data.participant_type === 'team') {
+                    // Обработка команд
+                } else {
+                    // Обработка индивидуальных участников
+                }
             }
             
-            // Убедимся, что для каждого матча есть соответствующие участники
-            const participantsMap = {};
-            (tournament.participants || []).forEach(p => {
-                if (p.id) {
-                    participantsMap[p.id] = p;
-                }
-            });
+            // Проверка наличия пользователя в списке участников
+            checkParticipation(response.data);
             
-            loadedMatches.forEach(match => {
-                if (match.team1_id && !participantsMap[match.team1_id]) {
-                    console.warn(`Матч ${match.id} содержит team1_id=${match.team1_id}, но такой участник не найден`);
+            // Получаем текущий статус запроса на администрирование
+            if (user && user.id) {
+                try {
+                    const adminStatusResponse = await api.get(`/api/tournaments/${id}/admin-request-status`, {
+                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    });
+                    setAdminRequestStatus(adminStatusResponse.data.status);
+                } catch (error) {
+                    console.error('Ошибка получения статуса запроса:', error);
                 }
-                if (match.team2_id && !participantsMap[match.team2_id]) {
-                    console.warn(`Матч ${match.id} содержит team2_id=${match.team2_id}, но такой участник не найден`);
-                }
-            });
+            }
             
-            setTournament(tournament);
-            setMatches(loadedMatches);
+            // Устанавливаем, является ли пользователь создателем или администратором
+            if (user) {
+                setIsCreator(user.id === response.data.created_by);
+                // TODO: добавить проверку на администратора
+                setIsAdminOrCreator(user.id === response.data.created_by);
+            }
             
-            // Добавляем небольшую задержку перед обновлением компонента
-            setTimeout(() => {
-                // Это форсирует обновление компонента
-                setMessage(prev => prev);
-            }, 100);
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
-            setMessage('Ошибка загрузки данных турнира');
+            setError('Ошибка загрузки данных турнира');
+        } finally {
+            setLoading(false);
         }
-    }, [id]);
+    }, [id, user, checkParticipation]);
 
     // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
@@ -1728,78 +1727,28 @@ function TournamentDetails() {
     // Проверяем, все ли матчи в турнире завершены
     let areAllMatchesComplete = false;
 
-    if (Array.isArray(matches) && matches.length > 0) {
+    // Проверяем, что у нас есть матчи для анализа
+    if (matches && matches.length > 0) {
         // Проверка, завершены ли все матчи
         areAllMatchesComplete = matches.every(match => match.winner_team_id);
         
-        if (tournament.format === 'double_elimination') {
-            // Для Double Elimination
-            // Находим Grand Final (матч с bracket_type = 'grand_final')
-            const grandFinalMatch = matches.find((m) => m.bracket_type === 'grand_final');
-            if (grandFinalMatch && grandFinalMatch.winner_team_id) {
-                const firstPlace = (tournament.participants || []).find((p) => p.id === grandFinalMatch.winner_team_id)?.name || '';
-                const secondPlace = (tournament.participants || []).find(
-                    (p) =>
-                        p.id !== grandFinalMatch.winner_team_id &&
-                        (p.id === grandFinalMatch.team1_id || p.id === grandFinalMatch.team2_id)
-                )?.name || '';
-                winners = [[1, firstPlace], [2, secondPlace]];
-                
-                // Если определен победитель финального матча, считаем, что финал завершен
-                isFinalMatchComplete = true;
-
-                // Находим финал нижней сетки (Losers Bracket Final) — последний матч с bracket_type = 'loser' перед Grand Final
-                const loserMatches = matches.filter((m) => m.bracket_type === 'loser');
-                const maxLoserRound = Math.max(...loserMatches.map((m) => m.round));
-                const loserFinalMatch = loserMatches.find((m) => m.round === maxLoserRound);
-
-                if (loserFinalMatch && loserFinalMatch.winner_team_id) {
-                    const thirdPlace = (tournament.participants || []).find(
-                        (p) =>
-                            p.id !== loserFinalMatch.winner_team_id &&
-                            (p.id === loserFinalMatch.team1_id || p.id === loserFinalMatch.team2_id)
-                    )?.name || '';
-                    winners.push([3, thirdPlace]);
-                }
+        // Определение финального матча для текущего формата турнира
+        const finalMatch = matches.find(match => {
+            // Для Single Elimination последний раунд с наивысшим номером
+            if (tournament.format === 'single_elimination') {
+                const maxRound = Math.max(...matches.map(m => m.round));
+                return match.round === maxRound && !match.is_third_place_match;
             }
-        } else {
-            // Для Single Elimination (старая логика)
-            let finalMatch = null;
-            const rounds = matches.map((m) => m.round);
-            const maxRound = rounds.length > 0 ? Math.max(...rounds) : -1;
-            if (maxRound !== -1) {
-                const relevantMatches = matches.filter(
-                    (m) => m.round === maxRound && !m.is_third_place_match
-                );
-                const matchNumbers = relevantMatches.map((m) => m.match_number);
-                const maxMatchNumber = matchNumbers.length > 0 ? Math.max(...matchNumbers) : -1;
-                if (maxMatchNumber !== -1) {
-                    finalMatch = relevantMatches.find(
-                        (m) => m.match_number === maxMatchNumber
-                    );
-                }
+            // Для Double Elimination последний матч финального этапа
+            else if (tournament.format === 'double_elimination') {
+                return match.next_match_id === null && !match.is_third_place_match;
             }
-
-            if (finalMatch && finalMatch.winner_team_id) {
-                const firstPlace = (tournament.participants || []).find((p) => p.id === finalMatch.winner_team_id)?.name || '';
-                const secondPlace = (tournament.participants || []).find(
-                    (p) =>
-                        p.id !== finalMatch.winner_team_id &&
-                        (p.id === finalMatch.team1_id || p.id === finalMatch.team2_id)
-                )?.name || '';
-                winners = [[1, firstPlace], [2, secondPlace]];
-                
-                // Если определен победитель финального матча, считаем, что финал завершен
-                isFinalMatchComplete = true;
-
-                if (tournament.format === 'single_elimination' && thirdPlaceMatch) {
-                    const thirdPlaceMatchResult = matches.find((m) => m.is_third_place_match);
-                    const thirdPlace = thirdPlaceMatchResult?.winner_team_id
-                        ? (tournament.participants || []).find((p) => p.id === thirdPlaceMatchResult.winner_team_id)?.name
-                        : '';
-                    if (thirdPlace) winners.push([3, thirdPlace]);
-                }
-            }
+            return false;
+        });
+        
+        // Проверяем, завершен ли финальный матч
+        if (finalMatch && finalMatch.winner_team_id) {
+            isFinalMatchComplete = true;
         }
     }
 
@@ -2364,9 +2313,9 @@ function TournamentDetails() {
             {message && (
                 <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
             )}
-            {isFinalMatchComplete && areAllMatchesComplete && tournament?.status === 'in_progress' && isAdminOrCreator && (
+            {tournament?.status === 'in_progress' && isAdminOrCreator && (
                 <div className="tournament-controls finish-above-bracket">
-                        <button 
+                    <button 
                         className="end-tournament"
                         onClick={handleEndTournament}
                     >
