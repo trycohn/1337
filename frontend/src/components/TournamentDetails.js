@@ -334,6 +334,11 @@ function TournamentDetails() {
         }
         
         return matches.map(match => {
+            if (!match || typeof match.id === 'undefined') {
+                console.error('Найден некорректный матч без ID:', match);
+                return null;
+            }
+
             // Получаем данные о первом участнике
             let team1 = "TBD";
             if (match.team1_id) {
@@ -369,23 +374,29 @@ function TournamentDetails() {
             // Определяем результаты
             const team1Result = match.team1_score !== null ? match.team1_score : null;
             const team2Result = match.team2_score !== null ? match.team2_score : null;
-            
+
+            // Безопасное преобразование ID в строки
+            const matchId = match.id ? match.id.toString() : 'unknown';
+            const nextMatchId = match.next_match_id ? match.next_match_id.toString() : null;
+            const team1Id = match.team1_id ? match.team1_id.toString() : 'tbd1';
+            const team2Id = match.team2_id ? match.team2_id.toString() : 'tbd2';
+
             return {
-                id: match.id.toString(),
-                nextMatchId: match.next_match_id ? match.next_match_id.toString() : null,
+                id: matchId,
+                nextMatchId: nextMatchId,
                 tournamentRoundText: `Раунд ${match.round || '?'}`,
                 startTime: match.scheduled_time || '',
                 state: status,
                 participants: [
                     {
-                        id: match.team1_id ? match.team1_id.toString() : 'tbd1',
+                        id: team1Id,
                         resultText: team1Result !== null ? team1Result.toString() : null,
                         isWinner: match.winner_id === match.team1_id,
                         status: match.team1_id ? 'PLAYED' : 'NO_SHOW',
                         name: team1
                     },
                     {
-                        id: match.team2_id ? match.team2_id.toString() : 'tbd2',
+                        id: team2Id,
                         resultText: team2Result !== null ? team2Result.toString() : null,
                         isWinner: match.winner_id === match.team2_id,
                         status: match.team2_id ? 'PLAYED' : 'NO_SHOW',
@@ -393,7 +404,7 @@ function TournamentDetails() {
                     }
                 ]
             };
-        });
+        }).filter(game => game !== null); // Фильтруем некорректные матчи
     }, [matches, tournament]);
 
     // После каждого обновления matches или tournament, форсируем обновление компонента BracketRenderer
@@ -1028,55 +1039,84 @@ function TournamentDetails() {
         try {
             setMessage('Удаление текущей сетки...');
 
-            // Сначала удаляем текущую сетку
-            const deleteResponse = await api.delete(`/api/tournaments/${id}/bracket`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // Перед запросами, сбрасываем состояния
+            setMatches([]);
 
-            console.log('Сетка успешно удалена:', deleteResponse.data);
-            
-            // Немедленно генерируем новую сетку
-            setMessage('Генерация новой сетки...');
-            const generateResponse = await api.post(
-                `/api/tournaments/${id}/generate-bracket`, 
-                { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            console.log('Новая сетка успешно сгенерирована:', generateResponse.data);
-            
-            // Обновляем данные в компоненте
-            if (generateResponse.data.tournament) {
-                const tournamentData = generateResponse.data.tournament;
+            try {
+                // Сначала удаляем текущую сетку
+                const deleteResponse = await api.delete(`/api/tournaments/${id}/bracket`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                console.log('Сетка успешно удалена:', deleteResponse.data);
                 
-                // Проверяем участников и матчи
-                if (!tournamentData.participants || tournamentData.participants.length === 0) {
-                    console.warn('В ответе от сервера отсутствуют участники');
-                }
+                // Немного ждем, чтобы сервер успел обработать изменения
+                await new Promise(resolve => setTimeout(resolve, 300));
                 
-                if (!tournamentData.matches || tournamentData.matches.length === 0) {
-                    console.warn('В ответе от сервера отсутствуют матчи');
-                    // Повторный запрос данных с сервера
-                    await fetchTournamentData();
-                } else {
-                    console.log(`Получено ${tournamentData.matches.length} матчей после регенерации`);
-                    setTournament(tournamentData);
-                    setMatches(tournamentData.matches);
+                // Немедленно генерируем новую сетку
+                setMessage('Генерация новой сетки...');
+                const generateResponse = await api.post(
+                    `/api/tournaments/${id}/generate-bracket`, 
+                    { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                
+                console.log('Новая сетка успешно сгенерирована:', generateResponse.data);
+                
+                // Немного ждем, чтобы сервер успел обработать изменения
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Обновляем данные турнира после перегенерации
+                const updatedTournamentData = await api.get(`/api/tournaments/${id}`);
+                if (updatedTournamentData.data) {
+                    setTournament(updatedTournamentData.data);
                     
-                    // Добавляем таймер для гарантированного обновления
-                    setTimeout(async () => {
-                        await fetchTournamentData();
-                    }, 500);
+                    // Проверяем, что в ответе есть массив матчей
+                    if (Array.isArray(updatedTournamentData.data.matches)) {
+                        console.log(`Получено ${updatedTournamentData.data.matches.length} матчей после регенерации`);
+                        setMatches(updatedTournamentData.data.matches);
+                    } else {
+                        console.warn('В ответе от сервера отсутствуют матчи');
+                        setMatches([]);
+                    }
                 }
-            } else {
-                // Если сервер не вернул данные, запрашиваем их отдельно
-                await fetchTournamentData();
+                
+                setMessage('Сетка успешно регенерирована');
+                
+                // Запрашиваем актуальное состояние турнира через некоторое время
+                setTimeout(async () => {
+                    try {
+                        await fetchTournamentData();
+                    } catch (retryError) {
+                        console.error('Ошибка при обновлении данных турнира:', retryError);
+                    }
+                }, 1000);
+                
+            } catch (innerError) {
+                console.error('Ошибка при регенерации сетки:', innerError);
+                setMessage(innerError.response?.data?.error || 'Ошибка при регенерации сетки');
+                
+                // Повторно запрашиваем данные турнира
+                setTimeout(async () => {
+                    try {
+                        await fetchTournamentData();
+                    } catch (retryError) {
+                        console.error('Ошибка при обновлении данных турнира:', retryError);
+                    }
+                }, 1000);
             }
-            
-            setMessage('Сетка успешно регенерирована');
         } catch (error) {
-            console.error('Ошибка при регенерации сетки:', error);
-            setMessage(error.response?.data?.error || 'Ошибка при регенерации сетки');
+            console.error('Неожиданная ошибка при регенерации сетки:', error);
+            setMessage('Произошла ошибка при регенерации сетки');
+            
+            // В любом случае пытаемся обновить данные
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentData();
+                } catch (retryError) {
+                    console.error('Ошибка при обновлении данных турнира:', retryError);
+                }
+            }, 1000);
         }
     };
 
