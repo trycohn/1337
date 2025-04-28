@@ -914,7 +914,16 @@ function TournamentDetails() {
                 return;
             }
             
-            // Используем правильный эндпоинт generate-bracket вместо regenerate 
+            // Сначала очищаем все существующие матчи
+            setMessage('Очистка существующих матчей...');
+            await api.post(
+                `/api/tournaments/${id}/clear-match-results`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Затем генерируем новую сетку
+            setMessage('Генерация новой сетки...');
             await api.post(
                 `/api/tournaments/${id}/generate-bracket`, 
                 { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
