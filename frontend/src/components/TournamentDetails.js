@@ -1861,6 +1861,26 @@ function TournamentDetails() {
                 </div>
             )}
             <h3>Турнирная сетка</h3>
+            {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
+                <div className="tournament-controls">
+                    {isAdminOrCreator && (
+                        <button 
+                            className="start-tournament"
+                            onClick={handleStartTournament}
+                        >
+                            Начать турнир
+                        </button>
+                    )}
+                    {isAdminOrCreator && (
+                        <button 
+                            className="regenerate-bracket"
+                            onClick={handleRegenerateBracket}
+                        >
+                            Пересоздать сетку
+                        </button>
+                    )}
+                </div>
+            )}
             {Array.isArray(matches) && matches.length > 0 ? (
                 <>
                     {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
@@ -1969,27 +1989,6 @@ function TournamentDetails() {
             {message && (
                 <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
             )}
-            {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
-                <div className="tournament-controls">
-                    {isAdminOrCreator && (
-                        <button 
-                            className="start-tournament"
-                            onClick={handleStartTournament}
-                        >
-                            Начать турнир
-                        </button>
-                    )}
-                    {isAdminOrCreator && (
-                        <button 
-                            className="regenerate-bracket"
-                            onClick={handleRegenerateBracket}
-                        >
-                            Пересоздать сетку
-                        </button>
-                    )}
-                </div>
-            )}
-            {/* Кнопка завершения турнира, если финальный матч сыгран, но турнир не завершен */}
             {isFinalMatchComplete && areAllMatchesComplete && tournament?.status === 'in_progress' && isAdminOrCreator && (
                 <div className="tournament-controls finish-above-bracket">
                     <button 
