@@ -309,6 +309,57 @@
     text-align: center;
 }
 
+/* Стили для сообщений об ошибках */
+.bracket-error {
+    text-align: center;
+    padding: 20px;
+    background-color: #fff3f3;
+    border: 1px solid #ffcccc;
+    border-radius: 5px;
+    margin: 20px 0;
+    color: #d84a4a;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.reload-button, 
+.regenerate-button {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    margin: 10px 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.reload-button:hover, 
+.regenerate-button:hover {
+    background-color: #356ac3;
+}
+
+.regenerate-button {
+    background-color: #34a853;
+}
+
+.regenerate-button:hover {
+    background-color: #2d8c46;
+}
+
+.empty-bracket-message {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    color: #6c757d;
+    font-size: 16px;
+    margin: 20px auto;
+    max-width: 500px;
+    padding: 20px;
+    text-align: center;
+}
+
 /* Медиа-запросы для адаптивности */
 @media (max-width: 600px) {
     .bracket-grid {

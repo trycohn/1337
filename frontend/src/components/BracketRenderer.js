@@ -2,6 +2,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
 
+// Выносим вспомогательную функцию для безопасного преобразования ID в число за пределы компонента
+const safeParseInt = (id) => {
+    if (id === undefined || id === null) return null;
+    return typeof id === 'string' ? parseInt(id) : id;
+};
+
 const BracketRenderer = ({
     games,
     canEditMatches,
@@ -10,31 +16,12 @@ const BracketRenderer = ({
     handleTeamClick,
     format
 }) => {
-    // Защитная проверка входных данных
-    try {
-        console.log('BracketRenderer: Инициализация с параметрами', { 
-            gamesCount: games?.length, 
-            canEditMatches, 
-            selectedMatch, 
-            format 
-        });
-        
-        // Проверяем структуру данных games
-        if (!games || !Array.isArray(games)) {
-            console.error('BracketRenderer: games не является массивом или не определен', games);
-            return <div className="empty-bracket-message">Ошибка: Неверный формат данных для отображения сетки.</div>;
-        }
-        
-        // Проверяем, что все элементы games имеют id и participants
-        const invalidGames = games.filter(game => !game || !game.id || !Array.isArray(game.participants));
-        if (invalidGames.length > 0) {
-            console.error('BracketRenderer: обнаружены некорректные игры', invalidGames);
-            return <div className="empty-bracket-message">Ошибка: Некорректные данные матчей. Попробуйте регенерировать сетку.</div>;
-        }
-    } catch (error) {
-        console.error('BracketRenderer: ошибка при валидации входных данных', error);
-        return <div className="empty-bracket-message">Произошла ошибка при обработке данных турнирной сетки.</div>;
-    }
+    console.log('BracketRenderer: Инициализация с параметрами', { 
+        gamesCount: games?.length, 
+        canEditMatches, 
+        selectedMatch, 
+        format 
+    });
 
     // Состояния для масштабирования и позиционирования
     const [scale, setScale] = useState(1);
@@ -44,96 +31,107 @@ const BracketRenderer = ({
     const [groupedMatches, setGroupedMatches] = useState({ winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null });
     // Добавляем состояние, которое гарантирует инициализацию обработчиков
     const [isInitialized, setIsInitialized] = useState(false);
+    // Добавляем состояние для отслеживания ошибок данных
+    const [dataError, setDataError] = useState(null);
 
     // Ссылки для работы с DOM
     const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
     const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
     
-    // Группировка матчей по раундам и сеткам
+    // Группировка матчей по раундам и сеткам (без ранних возвратов)
     const groupMatchesByRoundAndBracket = useCallback(() => {
+        let result = { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
+        
+        // Защитная проверка данных
         if (!games || !Array.isArray(games) || games.length === 0) {
-            return { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
+            return result;
         }
         
         console.log('Группировка матчей, проверяем bracket_type:', games.map(g => ({id: g.id, bracket_type: g.bracket_type, round: g.round, is_third_place_match: g.is_third_place_match})));
         
-        // Если у матчей отсутствует bracket_type, считаем их принадлежащими к winners bracket
-        const winnerMatches = games.filter(
-            (m) => (m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type) && !m.is_third_place_match
-        );
-        const loserMatches = games.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match);
-        // Матч за 3-е место (placement) или помеченный флагом is_third_place_match
-        const placementMatch = games.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
-        const grandFinalMatch = games.find((m) => m.bracket_type === 'grand_final');
+        try {
+            // Если у матчей отсутствует bracket_type, считаем их принадлежащими к winners bracket
+            const winnerMatches = games.filter(
+                (m) => (m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type) && !m.is_third_place_match
+            );
+            const loserMatches = games.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match);
+            // Матч за 3-е место (placement) или помеченный флагом is_third_place_match
+            const placementMatch = games.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
+            const grandFinalMatch = games.find((m) => m.bracket_type === 'grand_final');
 
-        console.log('После фильтрации:');
-        console.log('Winner matches:', winnerMatches.length);
-        console.log('Loser matches:', loserMatches.length);
-        console.log('Placement match:', placementMatch ? 'да' : 'нет');
-        console.log('Grand final match:', grandFinalMatch ? 'да' : 'нет');
+            console.log('После фильтрации:');
+            console.log('Winner matches:', winnerMatches.length);
+            console.log('Loser matches:', loserMatches.length);
+            console.log('Placement match:', placementMatch ? 'да' : 'нет');
+            console.log('Grand final match:', grandFinalMatch ? 'да' : 'нет');
 
-        // Определяем максимальный раунд для верхней и нижней сетки
-        const winnerRoundValues = winnerMatches.map(m => m.round);
-        console.log('Раунды в winner matches:', winnerRoundValues);
-        
-        // Чтобы предварительный раунд (-1) не влиял на maxWinnerRound, 
-        // сначала фильтруем положительные раунды, затем находим максимум
-        const positiveWinnerRounds = winnerRoundValues.filter(r => r >= 0);
-        const maxWinnerRound = positiveWinnerRounds.length > 0 ? Math.max(...positiveWinnerRounds) : 0;
-        
-        const maxLoserRound = loserMatches.length > 0 ? Math.max(...loserMatches.map(m => m.round), 0) : 0;
+            // Определяем максимальный раунд для верхней и нижней сетки
+            const winnerRoundValues = winnerMatches.map(m => m.round);
+            console.log('Раунды в winner matches:', winnerRoundValues);
+            
+            // Чтобы предварительный раунд (-1) не влиял на maxWinnerRound, 
+            // сначала фильтруем положительные раунды, затем находим максимум
+            const positiveWinnerRounds = winnerRoundValues.filter(r => r >= 0);
+            const maxWinnerRound = positiveWinnerRounds.length > 0 ? Math.max(...positiveWinnerRounds) : 0;
+            
+            const maxLoserRound = loserMatches.length > 0 ? Math.max(...loserMatches.map(m => m.round), 0) : 0;
 
-        console.log('Max Winner Round:', maxWinnerRound);
-        console.log('Max Loser Round:', maxLoserRound);
+            console.log('Max Winner Round:', maxWinnerRound);
+            console.log('Max Loser Round:', maxLoserRound);
 
-        // Группировка верхней сетки по раундам (начиная с round = 0)
-        const winnerRounds = {};
-        for (let round = 0; round <= maxWinnerRound; round++) {
-            const roundMatches = winnerMatches.filter(m => m.round === round);
-            // Сортируем матчи по match_number, чтобы они всегда отображались в одинаковом порядке
-            roundMatches.sort((a, b) => {
+            // Группировка верхней сетки по раундам (начиная с round = 0)
+            const winnerRounds = {};
+            for (let round = 0; round <= maxWinnerRound; round++) {
+                const roundMatches = winnerMatches.filter(m => m.round === round);
+                // Сортируем матчи по match_number, чтобы они всегда отображались в одинаковом порядке
+                roundMatches.sort((a, b) => {
+                    // Проверяем наличие match_number перед парсингом
+                    const numA = a.match_number ? parseInt(a.match_number) : 0;
+                    const numB = b.match_number ? parseInt(b.match_number) : 0;
+                    return numA - numB;
+                });
+                if (roundMatches.length > 0) {
+                    winnerRounds[round] = roundMatches;
+                }
+            }
+
+            // Добавляем предварительный раунд (round = -1) если есть такие матчи
+            const prelimMatches = winnerMatches.filter(m => m.round === -1);
+            // Сортируем предварительные матчи по match_number
+            prelimMatches.sort((a, b) => {
                 // Проверяем наличие match_number перед парсингом
                 const numA = a.match_number ? parseInt(a.match_number) : 0;
                 const numB = b.match_number ? parseInt(b.match_number) : 0;
                 return numA - numB;
             });
-            if (roundMatches.length > 0) {
-                winnerRounds[round] = roundMatches;
+            if (prelimMatches.length > 0) {
+                winnerRounds[-1] = prelimMatches;
             }
-        }
 
-        // Добавляем предварительный раунд (round = -1) если есть такие матчи
-        const prelimMatches = winnerMatches.filter(m => m.round === -1);
-        // Сортируем предварительные матчи по match_number
-        prelimMatches.sort((a, b) => {
-            // Проверяем наличие match_number перед парсингом
-            const numA = a.match_number ? parseInt(a.match_number) : 0;
-            const numB = b.match_number ? parseInt(b.match_number) : 0;
-            return numA - numB;
-        });
-        if (prelimMatches.length > 0) {
-            winnerRounds[-1] = prelimMatches;
-        }
+            console.log('Winner rounds после группировки:', Object.keys(winnerRounds));
 
-        console.log('Winner rounds после группировки:', Object.keys(winnerRounds));
-
-        // Группировка нижней сетки по раундам (начиная с round = 1)
-        const loserRounds = {};
-        for (let round = 1; round <= maxLoserRound; round++) {
-            const roundMatches = loserMatches.filter(m => m.round === round);
-            // Сортируем матчи по match_number
-            roundMatches.sort((a, b) => {
-                // Проверяем наличие match_number перед парсингом
-                const numA = a.match_number ? parseInt(a.match_number) : 0;
-                const numB = b.match_number ? parseInt(b.match_number) : 0;
-                return numA - numB;
-            });
-            if (roundMatches.length > 0) {
-                loserRounds[round] = roundMatches;
+            // Группировка нижней сетки по раундам (начиная с round = 1)
+            const loserRounds = {};
+            for (let round = 1; round <= maxLoserRound; round++) {
+                const roundMatches = loserMatches.filter(m => m.round === round);
+                // Сортируем матчи по match_number
+                roundMatches.sort((a, b) => {
+                    // Проверяем наличие match_number перед парсингом
+                    const numA = a.match_number ? parseInt(a.match_number) : 0;
+                    const numB = b.match_number ? parseInt(b.match_number) : 0;
+                    return numA - numB;
+                });
+                if (roundMatches.length > 0) {
+                    loserRounds[round] = roundMatches;
+                }
             }
-        }
 
-        return { winnerRounds, loserRounds, placementMatch, grandFinalMatch };
+            result = { winnerRounds, loserRounds, placementMatch, grandFinalMatch };
+        } catch (error) {
+            console.error('Ошибка при группировке матчей:', error);
+        }
+        
+        return result;
     }, [games]);
     
     // ВАЖНО: Определяем все useCallback хуки в начале компонента, чтобы соблюдать правила хуков
@@ -787,7 +785,36 @@ const BracketRenderer = ({
         // return () => clearTimeout(timer);
     }, [scale]);
 
-    // --- Конец логики перетаскивания и масштабирования ---
+    // Защитная проверка входных данных (после объявления всех хуков)
+    useEffect(() => {
+        try {
+            // Проверяем структуру данных games
+            if (!games || !Array.isArray(games)) {
+                console.error('BracketRenderer: games не является массивом или не определен', games);
+                setDataError('Ошибка: Неверный формат данных для отображения сетки.');
+                return;
+            }
+            
+            // Проверяем, что все элементы games имеют id и participants
+            const invalidGames = games.filter(game => !game || !game.id || !Array.isArray(game.participants));
+            if (invalidGames.length > 0) {
+                console.error('BracketRenderer: обнаружены некорректные игры', invalidGames);
+                setDataError('Ошибка: Некорректные данные матчей. Попробуйте регенерировать сетку.');
+                return;
+            }
+            
+            // Если все проверки прошли успешно, сбрасываем ошибку
+            setDataError(null);
+        } catch (error) {
+            console.error('BracketRenderer: ошибка при валидации входных данных', error);
+            setDataError('Произошла ошибка при обработке данных турнирной сетки.');
+        }
+    }, [games]);
+
+    // Рендеринг ошибки данных, если она есть
+    if (dataError) {
+        return <div className="empty-bracket-message">{dataError}</div>;
+    }
 
     // Если нет данных для отображения, показываем сообщение
     if (!games || !Array.isArray(games) || games.length === 0) {
@@ -810,12 +837,6 @@ const BracketRenderer = ({
         console.log('BracketRenderer: нет матчей для отображения после группировки');
         return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
     }
-
-    // Функция для безопасного преобразования ID в число
-    const safeParseInt = (id) => {
-        if (id === undefined || id === null) return null;
-        return typeof id === 'string' ? parseInt(id) : id;
-    };
 
     return (
         // Внешний контейнер для обработчиков и overflow
