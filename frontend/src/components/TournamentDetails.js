@@ -117,8 +117,36 @@ function TournamentDetails() {
             console.log('Загруженные матчи:', loadedMatches);
             console.log('Количество матчей:', loadedMatches.length);
             
+            // Проверяем наличие участников перед установкой данных
+            if (!Array.isArray(tournament.participants) || tournament.participants.length === 0) {
+                console.warn('Нет данных об участниках в полученных данных');
+            }
+            
+            // Убедимся, что для каждого матча есть соответствующие участники
+            const participantsMap = {};
+            (tournament.participants || []).forEach(p => {
+                if (p.id) {
+                    participantsMap[p.id] = p;
+                }
+            });
+            
+            loadedMatches.forEach(match => {
+                if (match.team1_id && !participantsMap[match.team1_id]) {
+                    console.warn(`Матч ${match.id} содержит team1_id=${match.team1_id}, но такой участник не найден`);
+                }
+                if (match.team2_id && !participantsMap[match.team2_id]) {
+                    console.warn(`Матч ${match.id} содержит team2_id=${match.team2_id}, но такой участник не найден`);
+                }
+            });
+            
             setTournament(tournament);
             setMatches(loadedMatches);
+            
+            // Добавляем небольшую задержку перед обновлением компонента
+            setTimeout(() => {
+                // Это форсирует обновление компонента
+                setMessage(prev => prev);
+            }, 100);
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
             setMessage('Ошибка загрузки данных турнира');
@@ -145,14 +173,40 @@ function TournamentDetails() {
                 // Обновляем данные турнира
                 setTournament(prev => {
                     // Если получены только определенные поля, сохраняем остальные
-                    return { ...prev, ...data };
+                    const updatedTournament = { ...prev, ...data };
+                    console.log('Обновленные данные турнира:', updatedTournament);
+                    return updatedTournament;
                 });
                 
                 // Обновляем список матчей, учитывая разные форматы
                 const matchesData = data.matches || tournamentData.matches || [];
                 if (Array.isArray(matchesData)) {
                     console.log(`Получено ${matchesData.length} матчей через WebSocket`);
+                    
+                    // Проверяем наличие team_id для каждого матча
+                    matchesData.forEach(match => {
+                        if (!match.team1_id && !match.team2_id) {
+                            console.warn(`Матч ${match.id} не имеет участников (TBD)`);
+                        }
+                    });
+                    
                     setMatches(matchesData);
+                    
+                    // Форсируем обновление компонента после получения новых данных
+                    setTimeout(() => {
+                        setMessage(prev => {
+                            // Если есть предыдущее сообщение, сохраняем его
+                            // иначе устанавливаем временное сообщение, которое скоро исчезнет
+                            return prev || 'Данные турнира обновлены';
+                        });
+                        
+                        // Очищаем сообщение через 2 секунды, если это наше временное сообщение
+                        setTimeout(() => {
+                            setMessage(currentMessage => 
+                                currentMessage === 'Данные турнира обновлены' ? '' : currentMessage
+                            );
+                        }, 2000);
+                    }, 100);
                 }
                 
                 // Устанавливаем сообщение для пользователя
@@ -260,75 +314,97 @@ function TournamentDetails() {
         return `1/${stage} финала`;
     };
 
+    // Подготовка данных для отображения сетки
     const games = useMemo(() => {
-        if (!tournament || !Array.isArray(matches)) return [];
-
-        const participantCount = tournament.participants?.length || 0;
-        const totalRounds = Math.ceil(Math.log2(participantCount));
-
-        console.log('Формирование игр для BracketRenderer');
-        console.log('Matches в состоянии:', matches);
-        console.log('Participants в состоянии:', tournament.participants);
-
-        // Создаем карту участников для быстрого поиска
+        if (!matches || matches.length === 0) return [];
+        
+        console.log('Генерация данных для BracketRenderer с', matches.length, 'матчами');
+        
+        // Создаем карту участников для быстрого доступа
         const participantsMap = {};
-        if (Array.isArray(tournament.participants)) {
-            tournament.participants.forEach(p => {
-                if (p.id) {
-                    participantsMap[p.id] = p;
-                }
+        if (tournament && tournament.participants) {
+            tournament.participants.forEach(participant => {
+                participantsMap[participant.id] = participant;
             });
         }
-        console.log('Карта участников:', participantsMap);
-
-        return matches.map((match) => {
-            // Находим участников по ID
-            const homeParticipant = match.team1_id ? participantsMap[match.team1_id] : null;
-            const visitorParticipant = match.team2_id ? participantsMap[match.team2_id] : null;
-                
-            // Определяем bracket_type по умолчанию, если он отсутствует
-            let bracket_type = match.bracket_type;
-            if (!bracket_type) {
-                if (match.is_third_place_match) {
-                    bracket_type = 'placement';
+        
+        // Проверяем, есть ли у нас все участники
+        if (Object.keys(participantsMap).length === 0 && matches.some(m => m.team1_id || m.team2_id)) {
+            console.warn('Список участников пуст, но у матчей есть участники. Данные могут отображаться неправильно.');
+        }
+        
+        return matches.map(match => {
+            // Получаем данные о первом участнике
+            let team1 = "TBD";
+            if (match.team1_id) {
+                const participant = participantsMap[match.team1_id];
+                if (participant) {
+                    team1 = participant.name || participant.username || participant.team_name || "Unnamed";
                 } else {
-                    bracket_type = 'winner';
+                    console.warn(`Участник с ID ${match.team1_id} не найден в списке участников`);
                 }
             }
-
+            
+            // Получаем данные о втором участнике
+            let team2 = "TBD";
+            if (match.team2_id) {
+                const participant = participantsMap[match.team2_id];
+                if (participant) {
+                    team2 = participant.name || participant.username || participant.team_name || "Unnamed";
+                } else {
+                    console.warn(`Участник с ID ${match.team2_id} не найден в списке участников`);
+                }
+            }
+            
+            // Определяем статус и счет
+            let status = 'SCHEDULED';
+            if (match.winner_id) {
+                status = 'DONE';
+            } else if (match.team1_id && match.team2_id) {
+                status = 'SCHEDULED';
+            } else {
+                status = 'NO_SHOW';
+            }
+            
+            // Определяем результаты
+            const team1Result = match.team1_score !== null ? match.team1_score : null;
+            const team2Result = match.team2_score !== null ? match.team2_score : null;
+            
             return {
                 id: match.id.toString(),
-                name: match.is_third_place_match ? 'Матч за 3-е место' : `Match ${match.match_number}`,
-                tournamentRoundText: match.is_third_place_match
-                    ? 'Матч за 3-е место'
-                    : getRoundName(match.round, totalRounds),
-                startTime: match.scheduled ? new Date(match.scheduled).toISOString() : new Date().toISOString(),
-                state: match.winner_team_id ? 'DONE' : 'NO_PARTY',
+                nextMatchId: match.next_match_id ? match.next_match_id.toString() : null,
+                tournamentRoundText: `Раунд ${match.round || '?'}`,
+                startTime: match.scheduled_time || '',
+                state: status,
                 participants: [
                     {
-                        id: match.team1_id ? match.team1_id.toString() : null,
-                        name: homeParticipant ? homeParticipant.name : 'TBD',
-                        isWinner: match.winner_team_id === match.team1_id,
-                        score: match.score1 || 0,
-                        resultText: null,
-                        status: null,
+                        id: match.team1_id ? match.team1_id.toString() : 'tbd1',
+                        resultText: team1Result !== null ? team1Result.toString() : null,
+                        isWinner: match.winner_id === match.team1_id,
+                        status: match.team1_id ? 'PLAYED' : 'NO_SHOW',
+                        name: team1
                     },
                     {
-                        id: match.team2_id ? match.team2_id.toString() : null,
-                        name: visitorParticipant ? visitorParticipant.name : 'TBD',
-                        isWinner: match.winner_team_id === match.team2_id,
-                        score: match.score2 || 0,
-                        resultText: null,
-                        status: null,
-                    },
-                ],
-                nextMatchId: match.next_match_id ? match.next_match_id.toString() : null,
-                is_third_place_match: match.is_third_place_match || false,
-                bracket_type: bracket_type,
-                round: match.round,
+                        id: match.team2_id ? match.team2_id.toString() : 'tbd2',
+                        resultText: team2Result !== null ? team2Result.toString() : null,
+                        isWinner: match.winner_id === match.team2_id,
+                        status: match.team2_id ? 'PLAYED' : 'NO_SHOW',
+                        name: team2
+                    }
+                ]
             };
         });
     }, [matches, tournament]);
+
+    // После каждого обновления matches или tournament, форсируем обновление компонента BracketRenderer
+    useEffect(() => {
+        if (Array.isArray(matches) && matches.length > 0 && tournament && Array.isArray(tournament.participants)) {
+            console.log('Обновление данных для BracketRenderer:', {
+                matchesCount: matches.length,
+                participantsCount: tournament.participants.length
+            });
+        }
+    }, [matches, tournament?.participants]);
 
     // Эффект для инициализации отображения турнирной сетки
     useEffect(() => {
@@ -544,6 +620,7 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для генерации сетки турнира
     const handleGenerateBracket = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -568,7 +645,7 @@ function TournamentDetails() {
             console.log('Ответ от сервера:', generateBracketResponse.data);
             
             // Обновления турнира должны прийти через WebSocket,
-            // но на всякий случай обновляем данные из ответа
+            // но дополнительно обновляем данные из ответа
             if (generateBracketResponse.data.tournament) {
                 const tournamentData = generateBracketResponse.data.tournament;
                 
@@ -576,12 +653,24 @@ function TournamentDetails() {
                     // Если matches пустой, запрашиваем данные заново
                     await fetchTournamentData();
                 } else {
+                    // Проверяем данные на корректность
+                    console.log('Проверка данных турнира:', {
+                        participants: tournamentData.participants?.length || 0,
+                        matches: tournamentData.matches.length
+                    });
+                    
+                    // Обновляем состояние с полученными данными
                     setTournament(tournamentData);
                     setMatches(tournamentData.matches);
+                    
+                    // Добавляем таймер для гарантированного обновления
+                    setTimeout(async () => {
+                        await fetchTournamentData();
+                    }, 500);
                 }
             }
             
-            setMessage('');
+            setMessage('Сетка успешно сгенерирована');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
             setMessage(error.response?.data?.error || 'Ошибка при генерации сетки');
@@ -923,129 +1012,71 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для повторной генерации сетки
     const handleRegenerateBracket = async () => {
-        if (!window.confirm('Вы действительно хотите пересоздать сетку? Все текущие матчи будут удалены. Это действие нельзя отменить.')) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Пожалуйста, войдите, чтобы регенерировать сетку');
             return;
         }
-        
+
+        if (!isAdminOrCreator) {
+            setMessage('У вас нет прав для регенерации сетки');
+            return;
+        }
+
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setMessage('Необходимо авторизоваться для выполнения действия');
-                return;
-            }
+            setMessage('Удаление текущей сетки...');
+
+            // Сначала удаляем текущую сетку
+            const deleteResponse = await api.delete(`/api/tournaments/${id}/bracket`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            console.log('Сетка успешно удалена:', deleteResponse.data);
             
-            // Шаг 1: Удаляем все существующие матчи
-            setMessage('Удаление существующих матчей...');
-            const deleteResponse = await api.post(
-                `/api/tournaments/${id}/delete-all-matches`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            console.log('Ответ после удаления матчей:', deleteResponse.data);
-            
-            // Проверяем, пришли ли данные турнира в ответе и обновляем локальное состояние
-            if (deleteResponse.data?.tournament) {
-                console.log('Обновляем турнир после удаления матчей:', deleteResponse.data.tournament);
-                setTournament(deleteResponse.data.tournament);
-                setMatches(deleteResponse.data.tournament.matches || []);
-                
-                // Прерываем и отображаем сообщение, что нужно генерировать новую сетку
-                setMessage('Матчи удалены. Нажмите кнопку "Генерировать сетку" для создания новой сетки');
-                
-                // Обновляем данные для гарантии
-                await fetchTournamentData();
-                
-                return;
-            } else {
-                // Если в ответе нет данных турнира - обновляем вручную
-                await fetchTournamentData();
-            }
-            
-            // Шаг 2: Генерируем новую сетку
+            // Немедленно генерируем новую сетку
             setMessage('Генерация новой сетки...');
-            const response = await api.post(
+            const generateResponse = await api.post(
                 `/api/tournaments/${id}/generate-bracket`, 
                 { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             
-            // Обновляем данные после генерации сетки
-            if (response.data?.tournament) {
-                console.log('Обновляем турнир после генерации сетки:', response.data.tournament);
-                setTournament(response.data.tournament);
+            console.log('Новая сетка успешно сгенерирована:', generateResponse.data);
+            
+            // Обновляем данные в компоненте
+            if (generateResponse.data.tournament) {
+                const tournamentData = generateResponse.data.tournament;
                 
-                if (Array.isArray(response.data.tournament.matches)) {
-                    console.log(`Установлено ${response.data.tournament.matches.length} матчей`);
-                    setMatches(response.data.tournament.matches);
+                // Проверяем участников и матчи
+                if (!tournamentData.participants || tournamentData.participants.length === 0) {
+                    console.warn('В ответе от сервера отсутствуют участники');
                 }
                 
-                setMessage('Сетка успешно пересоздана');
-            } else {
-                // Если в ответе нет данных турнира - обновляем вручную
-                await fetchTournamentData();
-                setMessage('Сетка успешно пересоздана');
-            }
-            
-            // Принудительно обновляем данные для гарантии
-            setTimeout(() => {
-                fetchTournamentData();
-            }, 1000);
-            
-        } catch (err) {
-            console.error('Ошибка при пересоздании сетки:', err);
-            
-            // В случае ошибки с новым API, показываем SQL-запрос
-            if (err.response?.status === 404 || err.response?.status === 500) {
-                const sqlQuery = `DELETE FROM matches WHERE tournament_id = ${id};`;
-                
-                // Создаем блок для копирования SQL-запроса
-                const sqlBlock = document.createElement('div');
-                sqlBlock.className = 'sql-copy-block';
-                sqlBlock.innerHTML = `
-                    <p>Для пересоздания сетки необходимо выполнить следующий SQL-запрос в pgAdmin:</p>
-                    <pre id="sql-query">${sqlQuery}</pre>
-                    <button id="copy-sql-btn">Копировать SQL</button>
-                    <p>После выполнения запроса обновите страницу и нажмите кнопку "Генерировать сетку".</p>
-                `;
-                
-                // Сначала проверяем, нет ли уже этого блока на странице
-                const existingBlock = document.querySelector('.sql-copy-block');
-                if (existingBlock) {
-                    existingBlock.remove();
-                }
-                
-                // Добавляем блок перед элементом с сообщением
-                const messageElement = document.querySelector('.tournament-details p.error, .tournament-details p.success');
-                if (messageElement) {
-                    messageElement.parentNode.insertBefore(sqlBlock, messageElement);
+                if (!tournamentData.matches || tournamentData.matches.length === 0) {
+                    console.warn('В ответе от сервера отсутствуют матчи');
+                    // Повторный запрос данных с сервера
+                    await fetchTournamentData();
+                } else {
+                    console.log(`Получено ${tournamentData.matches.length} матчей после регенерации`);
+                    setTournament(tournamentData);
+                    setMatches(tournamentData.matches);
                     
-                    // Добавляем функционал копирования
-                    document.getElementById('copy-sql-btn').addEventListener('click', () => {
-                        const sqlText = document.getElementById('sql-query').textContent;
-                        navigator.clipboard.writeText(sqlText)
-                            .then(() => {
-                                setMessage('SQL-запрос скопирован в буфер обмена');
-                            })
-                            .catch(err => {
-                                console.error('Ошибка при копировании:', err);
-                                setMessage('Не удалось скопировать SQL-запрос');
-                            });
-                    });
+                    // Добавляем таймер для гарантированного обновления
+                    setTimeout(async () => {
+                        await fetchTournamentData();
+                    }, 500);
                 }
-                
-                setMessage('Ошибка при пересоздании сетки: необходимо сначала удалить существующие матчи. Используйте SQL-запрос выше.');
             } else {
-                setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
+                // Если сервер не вернул данные, запрашиваем их отдельно
+                await fetchTournamentData();
             }
             
-            // Пытаемся обновить данные
-            try {
-                await fetchTournamentData();
-            } catch (fetchErr) {
-                console.error('Ошибка при обновлении данных:', fetchErr);
-            }
+            setMessage('Сетка успешно регенерирована');
+        } catch (error) {
+            console.error('Ошибка при регенерации сетки:', error);
+            setMessage(error.response?.data?.error || 'Ошибка при регенерации сетки');
         }
     };
 
