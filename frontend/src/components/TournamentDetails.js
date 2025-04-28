@@ -129,6 +129,8 @@ function TournamentDetails() {
     const [chatMessages, setChatMessages] = useState([]);
     const [newChatMessage, setNewChatMessage] = useState('');
     const chatEndRef = useRef(null);
+    // Модальное окно для подтверждения завершения турнира
+    const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
 
     const addMap = () => {
         setMaps([...maps, { map: 'de_dust2', score1: 0, score2: 0 }]);
@@ -1792,7 +1794,43 @@ function TournamentDetails() {
     
     // Функция для завершения турнира
     const handleEndTournament = () => {
-        toast.info("Функция завершения турнира отключена");
+        setShowEndTournamentModal(true);
+    };
+
+    // Функция для фактического завершения турнира после подтверждения
+    const confirmEndTournament = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                toast.error('Необходима авторизация');
+                return;
+            }
+            
+            const response = await api.post(`/api/tournaments/${id}/end`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем данные турнира
+            setTournament(prev => ({
+                ...prev,
+                status: 'completed',
+                end_date: new Date().toISOString()
+            }));
+            
+            toast.success('Турнир успешно завершен!');
+            setMessage('Турнир успешно завершен!');
+            
+            // Обновляем данные с сервера, чтобы получить актуальное состояние
+            fetchTournamentData();
+        } catch (error) {
+            console.error('Ошибка при завершении турнира:', error);
+            toast.error(error.response?.data?.error || 'Ошибка при завершении турнира');
+            setMessage(error.response?.data?.error || 'Ошибка при завершении турнира');
+        } finally {
+            setLoading(false);
+            setShowEndTournamentModal(false);
+        }
     };
     
     // Функция для сброса результатов матчей
@@ -2537,6 +2575,87 @@ function TournamentDetails() {
                     />
                 </div>
             </div>
+            
+            {/* Модальное окно подтверждения завершения турнира */}
+            {showEndTournamentModal && (
+                <div className="modal" onClick={() => setShowEndTournamentModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Подтверждение завершения турнира</h3>
+                        <p>Вы уверены, что хотите завершить турнир?</p>
+                        <p>После завершения турнир перейдет в статус "Завершен" и изменение результатов матчей будет недоступно.</p>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowEndTournamentModal(false)}>
+                                Отмена
+                            </button>
+                            <button 
+                                className="confirm-winner"
+                                onClick={confirmEndTournament}
+                            >
+                                Завершить турнир
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {viewingMatchDetails && matchDetails && (
+                <div className="modal" onClick={() => setViewingMatchDetails(false)}>
+                    <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>Результаты матча</h3>
+                        
+                        <div className="match-teams">
+                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team1_id ? 'winner' : ''}`}>
+                                <span className="team-name">{matchDetails.team1}</span>
+                                {matchDetails.winner_id === matchDetails.team1_id && <span className="winner-badge">Победитель</span>}
+                            </div>
+                            <div className="match-score">
+                                <span>{matchDetails.score1} : {matchDetails.score2}</span>
+                            </div>
+                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
+                                <span className="team-name">{matchDetails.team2}</span>
+                                {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
+                            </div>
+                        </div>
+                        
+                        {matchDetails.maps && matchDetails.maps.length > 0 && (
+                            <div className="maps-results">
+                                <h4>Результаты по картам</h4>
+                                <table className="maps-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Карта</th>
+                                            <th>{matchDetails.team1}</th>
+                                            <th>{matchDetails.team2}</th>
+                                            <th>Результат</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {matchDetails.maps.map((map, index) => (
+                                            <tr key={index}>
+                                                <td>{map.map}</td>
+                                                <td>{map.score1}</td>
+                                                <td>{map.score2}</td>
+                                                <td>
+                                                    {parseInt(map.score1) > parseInt(map.score2) 
+                                                        ? <span className="map-winner">{matchDetails.team1}</span>
+                                                        : parseInt(map.score2) > parseInt(map.score1)
+                                                            ? <span className="map-winner">{matchDetails.team2}</span>
+                                                            : 'Ничья'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        
+                        <div className="modal-buttons">
+                            <button onClick={() => setViewingMatchDetails(false)}>Закрыть</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }
