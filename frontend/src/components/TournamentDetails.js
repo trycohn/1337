@@ -356,50 +356,35 @@ function TournamentDetails() {
         // Формируем массив игр с безопасным преобразованием всех значений
         const safeGames = [];
         
+        console.log('Подробный анализ матчей перед трансформацией:', 
+            matches.map(m => ({
+                id: m.id,
+                team1_id: m.team1_id,
+                team2_id: m.team2_id,
+                winner_team_id: m.winner_team_id,
+                round: m.round,
+                bracket_type: m.bracket_type || 'winner'
+            }))
+        );
+        
         for (let i = 0; i < matches.length; i++) {
             const match = matches[i];
             
-            // Проверяем наличие обязательных полей
-            if (!match || typeof match.id === 'undefined') {
-                console.error('Обнаружен матч без ID', match);
-                continue;
-            }
-            
-            // Получаем данные о первом участнике
-            let team1 = "TBD";
-            if (match.team1_id) {
-                const participant = participantsMap[match.team1_id];
-                if (participant) {
-                    team1 = participant.name || participant.username || participant.team_name || "Unnamed";
-                } else {
-                    console.warn(`Участник с ID ${match.team1_id} не найден в списке участников`);
-                }
-            }
-            
-            // Получаем данные о втором участнике
-            let team2 = "TBD";
-            if (match.team2_id) {
-                const participant = participantsMap[match.team2_id];
-                if (participant) {
-                    team2 = participant.name || participant.username || participant.team_name || "Unnamed";
-                } else {
-                    console.warn(`Участник с ID ${match.team2_id} не найден в списке участников`);
-                }
-            }
-            
-            // Определяем статус и счет
+            // Определяем статус матча
             let status = 'SCHEDULED';
-            if (match.winner_id) {
+            if (match.winner_team_id) {
                 status = 'DONE';
             } else if (match.team1_id && match.team2_id) {
-                status = 'SCHEDULED';
-            } else {
-                status = 'NO_SHOW';
+                status = 'READY';
             }
             
-            // Определяем результаты
-            const team1Result = match.team1_score !== null ? match.team1_score : null;
-            const team2Result = match.team2_score !== null ? match.team2_score : null;
+            // Получаем имена участников
+            const team1 = match.team1_id ? participantsMap[match.team1_id]?.name : null;
+            const team2 = match.team2_id ? participantsMap[match.team2_id]?.name : null;
+            
+            // Определяем результаты (счет, если есть)
+            const team1Result = match.score1 !== null ? match.score1 : null;
+            const team2Result = match.score2 !== null ? match.score2 : null;
             
             // Создаем безопасный объект игры со всеми строковыми ID
             const safeGame = {
@@ -417,14 +402,14 @@ function TournamentDetails() {
                         match.team1_id, 
                         team1,
                         team1Result,
-                        match.winner_id === match.team1_id,
+                        match.winner_team_id === match.team1_id, // Используем winner_team_id вместо winner_id
                         match.team1_id ? 'PLAYED' : 'NO_SHOW'
                     ),
                     createSafeParticipant(
                         match.team2_id,
                         team2,
                         team2Result,
-                        match.winner_id === match.team2_id,
+                        match.winner_team_id === match.team2_id, // Используем winner_team_id вместо winner_id
                         match.team2_id ? 'PLAYED' : 'NO_SHOW'
                     )
                 ]
@@ -434,6 +419,7 @@ function TournamentDetails() {
         }
         
         console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
+        console.log('Games для визуализации сетки:', safeGames);
         return safeGames;
     }, [matches, tournament]);
 
@@ -1118,6 +1104,11 @@ function TournamentDetails() {
 
     // Функция для повторной генерации сетки
     const handleRegenerateBracket = async () => {
+        // Запрашиваем подтверждение у пользователя
+        if (!window.confirm('Вы действительно хотите перегенерировать сетку турнира? Все текущие результаты матчей будут удалены.')) {
+            return;
+        }
+        
         const token = localStorage.getItem('token');
         if (!token) {
             setMessage('Пожалуйста, войдите, чтобы регенерировать сетку');
@@ -1138,9 +1129,8 @@ function TournamentDetails() {
             toast.info('Начинаем генерацию новой сетки...');
             
             try {
-                // Немедленно генерируем новую сетку без попытки удаления старой
-                // (маршрут DELETE /api/tournaments/${id}/bracket не существует)
-                console.log('Генерация новой сетки...');
+                console.log('🔍 Sending request to:', `/api/tournaments/${id}/generate-bracket`);
+                // Генерируем новую сетку
                 const generateResponse = await api.post(
                     `/api/tournaments/${id}/generate-bracket`, 
                     { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
@@ -1153,13 +1143,17 @@ function TournamentDetails() {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
                 // Обновляем данные турнира после перегенерации
+                console.log('🔍 Sending request to:', `/api/tournaments/${id}`);
                 const updatedTournamentData = await api.get(`/api/tournaments/${id}`);
+                
                 if (updatedTournamentData.data) {
+                    console.log('Данные турнира при загрузке:', updatedTournamentData.data);
                     setTournament(updatedTournamentData.data);
                     
                     // Проверяем, что в ответе есть массив матчей
                     if (Array.isArray(updatedTournamentData.data.matches)) {
-                        console.log(`Получено ${updatedTournamentData.data.matches.length} матчей после регенерации`);
+                        console.log(`Загруженные матчи:`, updatedTournamentData.data.matches);
+                        console.log(`Количество матчей: ${updatedTournamentData.data.matches.length}`);
                         setMatches(updatedTournamentData.data.matches);
                     } else {
                         console.warn('В ответе от сервера отсутствуют матчи');
@@ -1173,6 +1167,7 @@ function TournamentDetails() {
                 // Запрашиваем актуальное состояние турнира через некоторое время
                 setTimeout(async () => {
                     try {
+                        console.log('Повторный запрос данных турнира для обновления UI');
                         await fetchTournamentData();
                     } catch (retryError) {
                         console.error('Ошибка при обновлении данных турнира:', retryError);
@@ -1186,26 +1181,46 @@ function TournamentDetails() {
                 let errorMessage = 'Ошибка при регенерации сетки';
                 
                 if (innerError.response) {
-                    // Структурированное сообщение об ошибке от сервера
-                    if (innerError.response.status === 400) {
-                        errorMessage = innerError.response.data.error || 'Неверные параметры для генерации сетки';
-                    } else if (innerError.response.status === 401) {
-                        errorMessage = 'Необходима авторизация';
-                    } else if (innerError.response.status === 403) {
-                        errorMessage = 'У вас нет прав на выполнение этого действия';
-                    } else if (innerError.response.status === 404) {
-                        errorMessage = 'API маршрут не найден. Возможно, требуется обновление сервера.';
-                    } else if (innerError.response.status === 500) {
-                        errorMessage = 'Ошибка сервера при генерации сетки. Попробуйте позже.';
-                    } else {
-                        errorMessage = innerError.response.data.error || 'Ошибка при регенерации сетки';
+                    // Серверная ошибка с ответом
+                    errorMessage = innerError.response.data?.error || 'Сервер вернул ошибку при регенерации сетки';
+                    console.log('Серверная ошибка:', innerError.response.data);
+                    
+                    if (innerError.response.status === 403) {
+                        errorMessage = 'У вас нет прав для регенерации сетки';
+                    } else if (innerError.response.status === 400) {
+                        // Обрабатываем конкретную ошибку 400
+                        if (innerError.response.data?.error === 'Недостаточно участников для генерации сетки') {
+                            errorMessage = 'Недостаточно участников для генерации сетки (минимум 2)';
+                        }
                     }
+                } else if (innerError.request) {
+                    // Запрос был сделан, но ответа не получено
+                    errorMessage = 'Нет ответа от сервера. Проверьте подключение к интернету.';
+                    console.log('Нет ответа от сервера:', innerError.request);
+                } else {
+                    // Ошибка настройки запроса
+                    errorMessage = 'Ошибка при выполнении запроса: ' + innerError.message;
+                    console.log('Ошибка при выполнении запроса:', innerError.message);
                 }
                 
                 setMessage(errorMessage);
                 toast.error(errorMessage);
                 
-                // Повторно запрашиваем данные турнира
+                // Попробуем все равно загрузить текущее состояние турнира
+                try {
+                    console.log('Попытка загрузить текущее состояние турнира после ошибки');
+                    const currentTournamentData = await api.get(`/api/tournaments/${id}`);
+                    if (currentTournamentData.data) {
+                        setTournament(currentTournamentData.data);
+                        if (Array.isArray(currentTournamentData.data.matches)) {
+                            setMatches(currentTournamentData.data.matches);
+                        }
+                    }
+                } catch (loadError) {
+                    console.error('Не удалось загрузить текущее состояние турнира:', loadError);
+                }
+                
+                // В любом случае пытаемся обновить данные
                 setTimeout(async () => {
                     try {
                         await fetchTournamentData();

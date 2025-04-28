@@ -799,8 +799,11 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
 
         // Проверка, что сетка ещё не сгенерирована
         const existingMatches = await pool.query('SELECT * FROM matches WHERE tournament_id = $1', [id]);
+        
+        // Если матчи существуют, удаляем их перед генерацией новой сетки
         if (existingMatches.rows.length > 0) {
-            return res.status(400).json({ error: 'Сетка уже сгенерирована' });
+            console.log(`Удаление ${existingMatches.rows.length} существующих матчей для турнира ${id} перед регенерацией сетки`);
+            await pool.query('DELETE FROM matches WHERE tournament_id = $1', [id]);
         }
 
         // Получение участников в зависимости от типа турнира
