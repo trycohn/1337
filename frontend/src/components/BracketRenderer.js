@@ -10,12 +10,31 @@ const BracketRenderer = ({
     handleTeamClick,
     format
 }) => {
-    console.log('BracketRenderer: Инициализация с параметрами', { 
-        gamesCount: games?.length, 
-        canEditMatches, 
-        selectedMatch, 
-        format 
-    });
+    // Защитная проверка входных данных
+    try {
+        console.log('BracketRenderer: Инициализация с параметрами', { 
+            gamesCount: games?.length, 
+            canEditMatches, 
+            selectedMatch, 
+            format 
+        });
+        
+        // Проверяем структуру данных games
+        if (!games || !Array.isArray(games)) {
+            console.error('BracketRenderer: games не является массивом или не определен', games);
+            return <div className="empty-bracket-message">Ошибка: Неверный формат данных для отображения сетки.</div>;
+        }
+        
+        // Проверяем, что все элементы games имеют id и participants
+        const invalidGames = games.filter(game => !game || !game.id || !Array.isArray(game.participants));
+        if (invalidGames.length > 0) {
+            console.error('BracketRenderer: обнаружены некорректные игры', invalidGames);
+            return <div className="empty-bracket-message">Ошибка: Некорректные данные матчей. Попробуйте регенерировать сетку.</div>;
+        }
+    } catch (error) {
+        console.error('BracketRenderer: ошибка при валидации входных данных', error);
+        return <div className="empty-bracket-message">Произошла ошибка при обработке данных турнирной сетки.</div>;
+    }
 
     // Состояния для масштабирования и позиционирования
     const [scale, setScale] = useState(1);

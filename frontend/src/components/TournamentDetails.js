@@ -324,7 +324,9 @@ function TournamentDetails() {
         const participantsMap = {};
         if (tournament && tournament.participants) {
             tournament.participants.forEach(participant => {
-                participantsMap[participant.id] = participant;
+                if (participant && participant.id) {
+                    participantsMap[participant.id] = participant;
+                }
             });
         }
         
@@ -333,12 +335,36 @@ function TournamentDetails() {
             console.warn('Список участников пуст, но у матчей есть участники. Данные могут отображаться неправильно.');
         }
         
-        return matches.map(match => {
+        // Вспомогательная функция для безопасного преобразования в строку
+        const safeToString = (value) => {
+            if (value === null || value === undefined) return '';
+            return String(value);
+        };
+        
+        // Безопасное создание результата участника
+        const createSafeParticipant = (teamId, name, resultText, isWinner, status = 'PLAYED') => {
+            return {
+                id: teamId ? safeToString(teamId) : 'tbd',
+                resultText: resultText !== null ? safeToString(resultText) : null,
+                isWinner: Boolean(isWinner),
+                status: status || 'NO_SHOW',
+                name: name || 'TBD',
+                score: resultText
+            };
+        };
+        
+        // Формируем массив игр с безопасным преобразованием всех значений
+        const safeGames = [];
+        
+        for (let i = 0; i < matches.length; i++) {
+            const match = matches[i];
+            
+            // Проверяем наличие обязательных полей
             if (!match || typeof match.id === 'undefined') {
-                console.error('Найден некорректный матч без ID:', match);
-                return null;
+                console.error('Обнаружен матч без ID', match);
+                continue;
             }
-
+            
             // Получаем данные о первом участнике
             let team1 = "TBD";
             if (match.team1_id) {
@@ -374,37 +400,41 @@ function TournamentDetails() {
             // Определяем результаты
             const team1Result = match.team1_score !== null ? match.team1_score : null;
             const team2Result = match.team2_score !== null ? match.team2_score : null;
-
-            // Безопасное преобразование ID в строки
-            const matchId = match.id ? match.id.toString() : 'unknown';
-            const nextMatchId = match.next_match_id ? match.next_match_id.toString() : null;
-            const team1Id = match.team1_id ? match.team1_id.toString() : 'tbd1';
-            const team2Id = match.team2_id ? match.team2_id.toString() : 'tbd2';
-
-            return {
-                id: matchId,
-                nextMatchId: nextMatchId,
+            
+            // Создаем безопасный объект игры со всеми строковыми ID
+            const safeGame = {
+                id: safeToString(match.id),
+                nextMatchId: match.next_match_id ? safeToString(match.next_match_id) : null,
                 tournamentRoundText: `Раунд ${match.round || '?'}`,
                 startTime: match.scheduled_time || '',
                 state: status,
+                name: match.name || `Матч ${match.id}`,
+                bracket_type: match.bracket_type || 'winner',
+                round: match.round !== undefined ? match.round : 0,
+                is_third_place_match: Boolean(match.is_third_place_match),
                 participants: [
-                    {
-                        id: team1Id,
-                        resultText: team1Result !== null ? team1Result.toString() : null,
-                        isWinner: match.winner_id === match.team1_id,
-                        status: match.team1_id ? 'PLAYED' : 'NO_SHOW',
-                        name: team1
-                    },
-                    {
-                        id: team2Id,
-                        resultText: team2Result !== null ? team2Result.toString() : null,
-                        isWinner: match.winner_id === match.team2_id,
-                        status: match.team2_id ? 'PLAYED' : 'NO_SHOW',
-                        name: team2
-                    }
+                    createSafeParticipant(
+                        match.team1_id, 
+                        team1,
+                        team1Result,
+                        match.winner_id === match.team1_id,
+                        match.team1_id ? 'PLAYED' : 'NO_SHOW'
+                    ),
+                    createSafeParticipant(
+                        match.team2_id,
+                        team2,
+                        team2Result,
+                        match.winner_id === match.team2_id,
+                        match.team2_id ? 'PLAYED' : 'NO_SHOW'
+                    )
                 ]
             };
-        }).filter(game => game !== null); // Фильтруем некорректные матчи
+            
+            safeGames.push(safeGame);
+        }
+        
+        console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
+        return safeGames;
     }, [matches, tournament]);
 
     // После каждого обновления matches или tournament, форсируем обновление компонента BracketRenderer
@@ -696,21 +726,47 @@ function TournamentDetails() {
     };
 
     const handleTeamClick = (teamId, matchId) => {
-        // Если это классическая сетка, то matchId предоставляется отдельно
-        const actualMatchId = typeof matchId === 'number' ? matchId : parseInt(matchId);
+        // Защита от undefined и null значений
+        if (teamId === undefined || teamId === null || matchId === undefined || matchId === null) {
+            console.error(`Некорректные параметры в handleTeamClick: teamId=${teamId}, matchId=${matchId}`);
+            setMessage('Ошибка при выборе команды: некорректный ID');
+            return;
+        }
         
-        console.log(`Клик по команде: teamId=${teamId}, matchId=${actualMatchId}`);
+        // Безопасное преобразование ID в числа или строки
+        const safeTeamId = typeof teamId === 'string' ? teamId : String(teamId);
+        const safeMatchId = typeof matchId === 'number' ? matchId : parseInt(String(matchId));
+        
+        console.log(`Клик по команде: teamId=${safeTeamId}, matchId=${safeMatchId}`);
         
         if (!canEditMatches) return;
         
-        // Ищем матч
-        const selectedGame = games.find(g => parseInt(g.id) === actualMatchId);
-        
-        if (selectedGame) {
-            // Получаем id команд
-            const team1Id = selectedGame.participants[0]?.id ? parseInt(selectedGame.participants[0].id) : null;
-            const team2Id = selectedGame.participants[1]?.id ? parseInt(selectedGame.participants[1].id) : null;
-            const selectedWinner = teamId ? parseInt(teamId) : null;
+        try {
+            // Ищем матч
+            const selectedGame = Array.isArray(games) ? games.find(g => g && g.id && parseInt(String(g.id)) === safeMatchId) : null;
+            
+            if (!selectedGame) {
+                console.error(`Матч с ID ${safeMatchId} не найден`);
+                setMessage(`Матч не найден`);
+                return;
+            }
+            
+            // Получаем id команд (с проверками)
+            const team1Id = selectedGame.participants?.[0]?.id ? 
+                            (typeof selectedGame.participants[0].id === 'string' ? 
+                                parseInt(selectedGame.participants[0].id) : 
+                                selectedGame.participants[0].id) : 
+                            null;
+            
+            const team2Id = selectedGame.participants?.[1]?.id ? 
+                            (typeof selectedGame.participants[1].id === 'string' ? 
+                                parseInt(selectedGame.participants[1].id) : 
+                                selectedGame.participants[1].id) : 
+                            null;
+            
+            // Пробуем различные варианты преобразования teamId для надежного сравнения
+            const safeTeamIdAsNum = typeof safeTeamId === 'string' ? parseInt(safeTeamId) : safeTeamId;
+            const selectedWinner = safeTeamIdAsNum || null;
             
             // Определяем, является ли матч бай-матчем (только один участник)
             const isByeMatch = (!team1Id && team2Id) || (team1Id && !team2Id);
@@ -727,8 +783,8 @@ function TournamentDetails() {
                 }
             }
             
-            setSelectedMatch(actualMatchId);
-            setSelectedWinnerId(teamId);
+            setSelectedMatch(safeMatchId);
+            setSelectedWinnerId(safeTeamId);
             
             // Получаем текущие счета из игры
             const team1Score = selectedGame.participants[0]?.score || 0;
@@ -752,9 +808,13 @@ function TournamentDetails() {
             if (isByeMatch) {
                 // Это bye-матч, автоматически выбираем единственную команду победителем
                 const autoWinnerId = team1Id || team2Id;
-                setSelectedWinnerId(autoWinnerId.toString());
-                console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
-                setShowConfirmModal(true);
+                if (autoWinnerId) {
+                    setSelectedWinnerId(String(autoWinnerId));
+                    console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
+                    setShowConfirmModal(true);
+                } else {
+                    setMessage('Ошибка: не удалось определить победителя для bye-матча');
+                }
             } 
             // Для обычного матча проверяем, что победитель определен
             else if (selectedWinner) {
@@ -762,8 +822,9 @@ function TournamentDetails() {
             } else {
                 setMessage('Невозможно выбрать неопределенную команду (TBD) как победителя');
             }
-        } else {
-            console.error(`Матч с ID ${actualMatchId} не найден`);
+        } catch (error) {
+            console.error(`Ошибка в handleTeamClick: ${error.message}`, error);
+            setMessage(`Произошла ошибка при выборе команды: ${error.message}`);
         }
     };
 
@@ -2093,21 +2154,68 @@ function TournamentDetails() {
                             <div className="tournament-bracket">
                                 <ErrorBoundary>
                                     <Suspense fallback={<div className="loading-bracket">Загрузка турнирной сетки...</div>}>
-                                        <BracketRenderer
-                                            games={games}
-                                            canEditMatches={canEditMatches}
-                                            selectedMatch={selectedMatch}
-                                            setSelectedMatch={setSelectedMatch}
-                                            handleTeamClick={handleTeamClick}
-                                            format={tournament.format}
-                                            key={`bracket-${matches.length}-${selectedMatch}`}
-                                        />
+                                        {(() => {
+                                            try {
+                                                console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
+                                                // Безопасный рендеринг сетки
+                                                return (
+                                                    <BracketRenderer
+                                                        games={games}
+                                                        canEditMatches={canEditMatches}
+                                                        selectedMatch={selectedMatch}
+                                                        setSelectedMatch={setSelectedMatch}
+                                                        handleTeamClick={handleTeamClick}
+                                                        format={tournament.format}
+                                                        key={`bracket-${matches.length}-${selectedMatch}`}
+                                                    />
+                                                );
+                                            } catch (error) {
+                                                console.error('Ошибка при рендеринге турнирной сетки:', error);
+                                                return (
+                                                    <div className="bracket-error">
+                                                        Ошибка при отображении турнирной сетки. 
+                                                        Пожалуйста, обновите страницу или попробуйте позже.
+                                                        <br />
+                                                        <button 
+                                                            onClick={() => window.location.reload()} 
+                                                            className="reload-button"
+                                                        >
+                                                            Обновить страницу
+                                                        </button>
+                                                        {isAdminOrCreator && (
+                                                            <button 
+                                                                onClick={handleRegenerateBracket} 
+                                                                className="regenerate-button"
+                                                            >
+                                                                Пересоздать сетку
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
                                     </Suspense>
                                 </ErrorBoundary>
                             </div>
                         </div>
                     ) : (
-                        <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
+                        <div className="bracket-error">
+                            <p>Ошибка формирования данных для сетки. Пожалуйста, обновите страницу.</p>
+                            <button 
+                                onClick={() => window.location.reload()} 
+                                className="reload-button"
+                            >
+                                Обновить страницу
+                            </button>
+                            {isAdminOrCreator && (
+                                <button 
+                                    onClick={handleRegenerateBracket} 
+                                    className="regenerate-button"
+                                >
+                                    Пересоздать сетку
+                                </button>
+                            )}
+                        </div>
                     )}
                 </>
             ) : (
