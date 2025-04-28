@@ -2333,18 +2333,6 @@ function TournamentDetails() {
                             )}
                         </>
                     )}
-                    {winners.length > 0 && (
-                        <div className="winners-list">
-                            <h3>Призёры турнира</h3>
-                            <ul>
-                                {winners.map(([place, name]) => (
-                                    <li key={place}>
-                                        {place} место: {name || 'Не определён'}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
                     {showConfirmModal && selectedMatch && (
                         <div className="modal" onClick={handleCloseModal}>
                             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
