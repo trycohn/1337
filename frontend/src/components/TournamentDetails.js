@@ -1969,7 +1969,7 @@ function TournamentDetails() {
             {message && (
                 <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
             )}
-            {matches.length > 0 && tournament?.status === 'pending' && (
+            {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
                 <div className="tournament-controls">
                     {isAdminOrCreator && (
                         <button 
