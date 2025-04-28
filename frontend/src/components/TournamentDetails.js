@@ -908,11 +908,24 @@ function TournamentDetails() {
 
     const handleRegenerateBracket = async () => {
         try {
-            await api.post(`/api/tournaments/${id}/regenerate`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            fetchTournamentData();
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setMessage('Необходимо авторизоваться для выполнения действия');
+                return;
+            }
+            
+            // Используем правильный эндпоинт generate-bracket вместо regenerate 
+            await api.post(
+                `/api/tournaments/${id}/generate-bracket`, 
+                { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            setMessage('Сетка успешно пересоздана');
+            await fetchTournamentData();
         } catch (err) {
+            console.error('Ошибка при пересоздании сетки:', err);
+            setMessage('Ошибка при пересоздании сетки: ' + (err.response?.data?.error || err.message));
             setError('Ошибка при пересоздании сетки');
         }
     };
