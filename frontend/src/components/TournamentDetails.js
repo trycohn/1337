@@ -810,7 +810,7 @@ function TournamentDetails() {
         if (!canEditMatches) return;
         
         try {
-            // Ищем матч
+        // Ищем матч
             const selectedGame = Array.isArray(games) ? games.find(g => g && g.id && parseInt(String(g.id)) === safeMatchId) : null;
             
             if (!selectedGame) {
@@ -862,7 +862,7 @@ function TournamentDetails() {
                 team1: team1Score,
                 team2: team2Score
             });
-
+            
             // Проверяем, сохранены ли данные о картах для этого матча
             const matchData = matches.find(m => m.id === safeMatchId);
             if (matchData && matchData.maps_data && tournament.game === 'Counter-Strike 2') {
@@ -903,8 +903,8 @@ function TournamentDetails() {
                 const autoWinnerId = team1Id || team2Id;
                 if (autoWinnerId) {
                     setSelectedWinnerId(String(autoWinnerId));
-                    console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
-                    setShowConfirmModal(true);
+                console.log('Автоматически выбран победитель для bye-матча:', autoWinnerId);
+                setShowConfirmModal(true);
                 } else {
                     setMessage('Ошибка: не удалось определить победителя для bye-матча');
                 }
@@ -1091,13 +1091,13 @@ function TournamentDetails() {
             const matchData = matches.find(m => m.id === parseInt(matchId));
             if (!matchData) {
                 console.error(`Матч с ID ${matchId} не найден`);
-                return;
-            }
+            return;
+        }
 
             // Если матч не завершен, не показываем детали
             if (!matchData.winner_team_id) {
-                return;
-            }
+            return;
+        }
 
             const match = {
                 id: matchData.id,
@@ -1134,6 +1134,39 @@ function TournamentDetails() {
             validateInvitationCache();
         }
     }, [tournament, validateInvitationCache]);
+
+    // Функция для проверки и валидации кэша приглашений
+    const validateInvitationCache = useCallback(() => {
+        try {
+            // Проверяем кэш приглашенных пользователей
+            const cachedInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
+            
+            // Если кэш не пуст, проверяем, есть ли какие-то изменения в составе участников
+            if (cachedInvited.length > 0 && tournament && tournament.participants) {
+                // Фильтруем кэш, исключая пользователей, которые уже стали участниками
+                const filteredCache = cachedInvited.filter(userId => {
+                    return !tournament.participants.some(participant => 
+                        participant.user_id === userId || participant.creator_id === userId
+                    );
+                });
+                
+                // Если были изменения, обновляем кэш
+                if (filteredCache.length !== cachedInvited.length) {
+                    localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(filteredCache));
+                    setInvitedUsers(filteredCache);
+                } else {
+                    setInvitedUsers(cachedInvited);
+                }
+            } else {
+                setInvitedUsers(cachedInvited);
+            }
+        } catch (error) {
+            console.error('Ошибка при валидации кэша приглашений:', error);
+            // При ошибке очищаем кэш для безопасности
+            localStorage.removeItem(`tournament_${id}_invited_users`);
+            setInvitedUsers([]);
+        }
+    }, [id, tournament]);
 
     // Функция для очистки кэша приглашений для конкретного пользователя
     const clearInvitationCache = (userId) => {
@@ -1215,7 +1248,7 @@ function TournamentDetails() {
         });
         
         // Проверяем, завершен ли финальный матч
-        if (finalMatch && finalMatch.winner_team_id) {
+            if (finalMatch && finalMatch.winner_team_id) {
             isFinalMatchComplete = true;
         }
     }
@@ -1255,6 +1288,368 @@ function TournamentDetails() {
                 </ul>
             </div>
         );
+    };
+
+    const description = useRef("");
+    const prizePool = useRef("");
+    const fullDescription = useRef("");
+    const rulesRef = useRef("");
+    
+    // Функция сохранения короткого описания турнира
+    const handleSaveDescription = async () => {
+        if (!description.current.trim()) {
+            toast.error('Описание не может быть пустым');
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    description: description.current
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось обновить описание');
+            }
+            
+            setTournament(prev => ({
+                ...prev,
+                description: description.current
+            }));
+            
+            toast.success('Описание успешно обновлено');
+            setEditingDescription(false);
+        } catch (error) {
+            console.error('Ошибка при обновлении описания:', error);
+            toast.error(error.message || 'Не удалось обновить описание');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Функция сохранения призового фонда
+    const handleSavePrizePool = async () => {
+        if (!prizePool.current.trim()) {
+            toast.error('Информация о призовом фонде не может быть пустой');
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    prize_pool: prizePool.current
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось обновить призовой фонд');
+            }
+            
+            setTournament(prev => ({
+                ...prev,
+                prize_pool: prizePool.current
+            }));
+            
+            toast.success('Призовой фонд успешно обновлен');
+            setEditingPrizePool(false);
+        } catch (error) {
+            console.error('Ошибка при обновлении призового фонда:', error);
+            toast.error(error.message || 'Не удалось обновить призовой фонд');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Функция сохранения полного описания турнира
+    const handleSaveFullDescription = async () => {
+        if (!fullDescription.current.trim()) {
+            toast.error('Полное описание не может быть пустым');
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    full_description: fullDescription.current
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось обновить полное описание');
+            }
+            
+            setTournament(prev => ({
+                ...prev,
+                full_description: fullDescription.current
+            }));
+            
+            toast.success('Полное описание успешно обновлено');
+            setEditingFullDescription(false);
+        } catch (error) {
+            console.error('Ошибка при обновлении полного описания:', error);
+            toast.error(error.message || 'Не удалось обновить полное описание');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Функция сохранения правил турнира
+    const handleSaveRules = async () => {
+        if (!rulesRef.current.trim()) {
+            toast.error('Правила не могут быть пустыми');
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    rules: rulesRef.current
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось обновить правила');
+            }
+            
+            setTournament(prev => ({
+                ...prev,
+                rules: rulesRef.current
+            }));
+            
+            toast.success('Правила успешно обновлены');
+            setEditingRules(false);
+        } catch (error) {
+            console.error('Ошибка при обновлении правил:', error);
+            toast.error(error.message || 'Не удалось обновить правила');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Приглашение пользователя по username или email
+    const handleInvite = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Пожалуйста, войдите, чтобы отправить приглашение');
+            return;
+        }
+
+        try {
+            const response = await api.post(`/api/tournaments/${id}/invite`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    inviteMethod,
+                    inviteUsername,
+                    inviteEmail
+                })
+            });
+
+            setMessage(response.data.message);
+            setInviteUsername('');
+            setInviteEmail('');
+        } catch (error) {
+            setMessage(error.response?.data?.error || 'Ошибка при отправке приглашения');
+        }
+    };
+
+    // Проверка кэша приглашений при загрузке турнира
+    useEffect(() => {
+        if (!tournament || !tournament.id) return;
+        
+        try {
+            // Получаем список приглашенных пользователей из кэша
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
+            
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                
+                // Проверяем, не стали ли некоторые приглашенные пользователи уже участниками
+                const updatedInvitedUsers = invitedUsers.filter(userId => {
+                    return !tournament.participants.some(participant => participant.id === userId);
+                });
+                
+                // Обновляем кэш, если список изменился
+                if (updatedInvitedUsers.length !== invitedUsers.length) {
+                    localStorage.setItem(cacheKey, JSON.stringify(updatedInvitedUsers));
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке кэша приглашений:', error);
+            // В случае ошибки очищаем кэш для безопасности
+            localStorage.removeItem(`invitedUsers_${tournament.id}`);
+        }
+    }, [tournament]);
+    
+    // Проверка, является ли пользователь участником турнира
+    const isUserParticipant = (userId) => {
+        if (!tournament || !tournament.participants) return false;
+        return tournament.participants.some(participant => participant.id === userId);
+    };
+    
+    // Проверка, было ли отправлено приглашение пользователю
+    const isInvitationSent = (userId) => {
+        if (!tournament || !tournament.id) return false;
+        
+        try {
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
+            
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                return invitedUsers.includes(userId);
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке статуса приглашения:', error);
+        }
+        
+        return false;
+    };
+    
+    // Обработчик приглашения конкретного пользователя
+    const handleInviteUser = async (userId) => {
+        if (!tournament || !tournament.id || !userId) return;
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/invite-user/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось отправить приглашение');
+            }
+            
+            // Добавляем пользователя в кэш приглашенных
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            let invitedUsers = [];
+            
+            try {
+                const cachedInvitedUsers = localStorage.getItem(cacheKey);
+                if (cachedInvitedUsers) {
+                    invitedUsers = JSON.parse(cachedInvitedUsers);
+                }
+            } catch (error) {
+                console.error('Ошибка при чтении кэша приглашений:', error);
+            }
+            
+            if (!invitedUsers.includes(userId)) {
+                invitedUsers.push(userId);
+                localStorage.setItem(cacheKey, JSON.stringify(invitedUsers));
+            }
+            
+            toast.success('Приглашение успешно отправлено');
+        } catch (error) {
+            console.error('Ошибка при отправке приглашения:', error);
+            toast.error(error.message || 'Не удалось отправить приглашение');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Обработчик формирования команд
+    const handleFormTeams = async () => {
+        if (!tournament || !tournament.id) return;
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/form-teams`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось сформировать команды');
+            }
+            
+            // Обновляем данные турнира
+            fetchTournament();
+            toast.success('Команды успешно сформированы');
+        } catch (error) {
+            console.error('Ошибка при формировании команд:', error);
+            toast.error(error.message || 'Не удалось сформировать команды');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Обработчик запуска турнира
+    const handleStartTournament = async () => {
+        if (!tournament || !tournament.id) return;
+        
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Не удалось запустить турнир');
+            }
+            
+            // Обновляем данные турнира
+            fetchTournament();
+            toast.success('Турнир успешно запущен');
+        } catch (error) {
+            console.error('Ошибка при запуске турнира:', error);
+            toast.error(error.message || 'Не удалось запустить турнир');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -1832,34 +2227,34 @@ function TournamentDetails() {
                                 )}
                             </div>
                         ) : (
-                            <div className="score-inputs">
-                                <div className="score-container">
-                                    <span className="participant-name">
-                                        {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name ||
-                                            'Участник 1'}
-                                    </span>
-                                    <input
-                                        type="number"
-                                        value={matchScores.team1}
-                                        onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
-                                        className="score-input"
-                                        min="0"
-                                    />
-                                </div>
-                                <div className="score-container">
-                                    <span className="participant-name">
-                                        {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
-                                            'Участник 2'}
-                                    </span>
-                                    <input
-                                        type="number"
-                                        value={matchScores.team2}
-                                        onChange={(e) => setMatchScores({ ...matchScores, team2: Number(e.target.value) })}
-                                        className="score-input"
-                                        min="0"
-                                    />
-                                </div>
+                        <div className="score-inputs">
+                            <div className="score-container">
+                                <span className="participant-name">
+                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[0]?.name ||
+                                        'Участник 1'}
+                                </span>
+                                <input
+                                    type="number"
+                                    value={matchScores.team1}
+                                    onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
+                                    className="score-input"
+                                    min="0"
+                                />
                             </div>
+                            <div className="score-container">
+                                <span className="participant-name">
+                                    {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
+                                        'Участник 2'}
+                                </span>
+                                <input
+                                    type="number"
+                                    value={matchScores.team2}
+                                    onChange={(e) => setMatchScores({ ...matchScores, team2: Number(e.target.value) })}
+                                    className="score-input"
+                                    min="0"
+                                />
+                            </div>
+                        </div>
                         )}
                         
                         <div className="modal-buttons">
@@ -1934,7 +2329,7 @@ function TournamentDetails() {
             )}
             {tournament?.status === 'in_progress' && isAdminOrCreator && (
                 <div className="tournament-controls finish-above-bracket">
-                    <button 
+                        <button 
                         className="end-tournament"
                         onClick={handleEndTournament}
                     >
