@@ -110,6 +110,11 @@ function TournamentDetails() {
     // Состояния для работы с картами в матчах CS2
     const [maps, setMaps] = useState([{ map: 'de_dust2', score1: 0, score2: 0 }]);
     const [showMapSelection, setShowMapSelection] = useState(false);
+    // Refs для работы с формами
+    const descriptionRef = useRef("");
+    const prizePoolRef = useRef("");
+    const fullDescriptionRef = useRef("");
+    const rulesRef = useRef("");
     const csgoMaps = [
         'de_dust2',
         'de_mirage',
@@ -1293,12 +1298,6 @@ function TournamentDetails() {
         );
     };
 
-    // Refs для работы с формами
-    const descriptionRef = useRef("");
-    const prizePoolRef = useRef("");
-    const fullDescriptionRef = useRef("");
-    const rulesRef = useRef("");
-    
     // Функция сохранения короткого описания турнира
     const handleSaveDescription = async () => {
         if (!descriptionRef.current.trim()) {
@@ -1663,6 +1662,21 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для пересоздания сетки турнира
+    const handleRegenerateBracket = () => {
+        toast.info("Функция пересоздания сетки отключена");
+    };
+    
+    // Функция для завершения турнира
+    const handleEndTournament = () => {
+        toast.info("Функция завершения турнира отключена");
+    };
+    
+    // Функция для сброса результатов матчей
+    const handleClearMatchResults = () => {
+        toast.info("Функция сброса результатов отключена");
+    };
+
     return (
         <section className="tournament-details">
             <h2>
@@ -2025,7 +2039,7 @@ function TournamentDetails() {
                     {isAdminOrCreator && (
                         <button 
                             className="regenerate-bracket"
-                            onClick={() => {}}
+                            onClick={handleRegenerateBracket}
                         >
                             Пересоздать сетку
                         </button>
@@ -2072,7 +2086,7 @@ function TournamentDetails() {
                                                         </button>
                                                         {isAdminOrCreator && (
                                                             <button 
-                                                                onClick={() => {}} 
+                                                                onClick={handleRegenerateBracket} 
                                                                 className="regenerate-button"
                                                             >
                                                                 Пересоздать сетку
@@ -2097,7 +2111,7 @@ function TournamentDetails() {
                             </button>
                             {isAdminOrCreator && (
                                 <button 
-                                    onClick={() => {}} 
+                                    onClick={handleRegenerateBracket} 
                                     className="regenerate-button"
                                 >
                                     Пересоздать сетку
@@ -2376,7 +2390,7 @@ function TournamentDetails() {
             {tournament?.status === "completed" && isAdminOrCreator && (
                 <button 
                     className="end-tournament-button"
-                    onClick={() => toast.info("Функция завершения турнира отключена")}
+                    onClick={handleEndTournament}
                 >
                     Завершить турнир
                 </button>
@@ -2384,7 +2398,7 @@ function TournamentDetails() {
             {isAdminOrCreator && (
                 <button 
                     className="clear-results-button"
-                    onClick={() => toast.info("Функция сброса результатов отключена")}
+                    onClick={handleClearMatchResults}
                 >
                     Сбросить результаты
                 </button>
