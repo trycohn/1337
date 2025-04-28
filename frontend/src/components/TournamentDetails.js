@@ -1263,6 +1263,85 @@ function TournamentDetails() {
     // Проверяем, все ли матчи в турнире завершены
     let areAllMatchesComplete = false;
 
+    // Получение победителей турнира
+    const getTournamentWinners = () => {
+        if (!matches || matches.length === 0 || tournament.status !== 'completed') {
+            return [];
+        }
+
+        const result = [];
+        
+        // Определяем финальный матч
+        let finalMatch = matches.find(match => {
+            if (tournament.format === 'single_elimination' || tournament.format === 'mix') {
+                const maxRound = Math.max(...matches.map(m => m.round));
+                return match.round === maxRound && !match.is_third_place_match;
+            } else if (tournament.format === 'double_elimination') {
+                return match.next_match_id === null && !match.is_third_place_match;
+            }
+            return false;
+        });
+
+        // Если финал не найден или нет победителя, возвращаем пустой массив
+        if (!finalMatch || !finalMatch.winner_team_id) {
+            return [];
+        }
+
+        // Находим имя победителя (1 место)
+        const firstPlaceId = finalMatch.winner_team_id;
+        const firstPlaceParticipant = tournament.participants.find(p => p.id === firstPlaceId);
+        if (firstPlaceParticipant) {
+            result.push({ 
+                place: 1, 
+                name: firstPlaceParticipant.name || firstPlaceParticipant.username, 
+                id: firstPlaceId,
+                members: tournament.participant_type === 'team' ? 
+                    // Для команд ищем членов команды
+                    tournament.participants
+                    .filter(p => p.team_id === firstPlaceId)
+                    .map(m => ({ name: m.name || m.username, id: m.id })) : 
+                    null
+            });
+        }
+
+        // Находим второе место (проигравший в финале)
+        const secondPlaceId = finalMatch.team1_id === firstPlaceId ? finalMatch.team2_id : finalMatch.team1_id;
+        const secondPlaceParticipant = tournament.participants.find(p => p.id === secondPlaceId);
+        if (secondPlaceParticipant) {
+            result.push({ 
+                place: 2, 
+                name: secondPlaceParticipant.name || secondPlaceParticipant.username, 
+                id: secondPlaceId,
+                members: tournament.participant_type === 'team' ? 
+                    tournament.participants
+                    .filter(p => p.team_id === secondPlaceId)
+                    .map(m => ({ name: m.name || m.username, id: m.id })) : 
+                    null
+            });
+        }
+
+        // Находим матч за третье место, если он есть
+        const thirdPlaceMatch = matches.find(m => m.is_third_place_match === true);
+        if (thirdPlaceMatch && thirdPlaceMatch.winner_team_id) {
+            const thirdPlaceId = thirdPlaceMatch.winner_team_id;
+            const thirdPlaceParticipant = tournament.participants.find(p => p.id === thirdPlaceId);
+            if (thirdPlaceParticipant) {
+                result.push({ 
+                    place: 3, 
+                    name: thirdPlaceParticipant.name || thirdPlaceParticipant.username, 
+                    id: thirdPlaceId,
+                    members: tournament.participant_type === 'team' ? 
+                        tournament.participants
+                        .filter(p => p.team_id === thirdPlaceId)
+                        .map(m => ({ name: m.name || m.username, id: m.id })) : 
+                        null
+                });
+            }
+        }
+
+        return result;
+    };
+
     // Проверяем, что у нас есть матчи для анализа
     if (matches && matches.length > 0) {
         // Проверка, завершены ли все матчи
@@ -1287,6 +1366,43 @@ function TournamentDetails() {
             isFinalMatchComplete = true;
         }
     }
+
+    // Компонент для рендеринга призёров турнира
+    const renderWinners = () => {
+        const tournamentWinners = getTournamentWinners();
+        if (!tournamentWinners || tournamentWinners.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="winners-section">
+                <h3>Призёры турнира</h3>
+                <div className="winners-podium">
+                    {tournamentWinners.map(winner => (
+                        <div key={winner.id} className={`winner-card place-${winner.place}`}>
+                            <div className="medal-icon">
+                                {winner.place === 1 && <span className="gold-medal">🥇</span>}
+                                {winner.place === 2 && <span className="silver-medal">🥈</span>}
+                                {winner.place === 3 && <span className="bronze-medal">🥉</span>}
+                            </div>
+                            <div className="winner-name">
+                                <strong>{winner.name}</strong>
+                            </div>
+                            {winner.members && winner.members.length > 0 && (
+                                <div className="team-members">
+                                    <ul>
+                                        {winner.members.map((member, idx) => (
+                                            <li key={idx}>{member.name}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     // Отображение участников турнира с аватарами
     const renderParticipants = () => {
@@ -1821,6 +1937,7 @@ function TournamentDetails() {
                         <strong>Участники ({tournament.participant_count || 0}):</strong>
                     </p>
                     {renderParticipants()}
+                    {tournament.status === 'completed' && renderWinners()}
                     {user && tournament.status === 'active' && (
                         <div className="participation-controls">
                             {!isParticipating && matches.length === 0 ? (
