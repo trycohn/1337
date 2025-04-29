@@ -84,37 +84,33 @@ const TeamGenerator = ({
           {isAdminOrCreator && (
             <>
               <h3>Настройки микса</h3>
-              <div className="mix-controls-row">
-                <div className="mix-form-group">
-                  <div className="rating-type-selector">
-                    <label>Миксовать по рейтингу:</label>
-                    <select
-                      value={ratingType}
-                      onChange={(e) => setRatingType(e.target.value)}
-                    >
-                      <option value="faceit">FACEit</option>
-                      <option value="premier">Steam Premier</option>
-                    </select>
-                  </div>
-                  {tournament.participant_type === 'solo' && (!teamsExist || teamsList.length === 0) && (
-                    <button 
-                      onClick={handleFormTeams} 
-                      className="form-teams-button"
-                      disabled={loading}
-                    >
-                      {loading ? 'Создание команд...' : 'Сформировать команды'}
-                    </button>
-                  )}
-                  {tournament.participant_type === 'solo' && (teamsExist || teamsList.length > 0) && tournament.status === 'pending' && (
-                    <button 
-                      onClick={handleFormTeams} 
-                      className="reformate-teams-button"
-                      disabled={loading}
-                    >
-                      {loading ? 'Пересоздание команд...' : 'Переформировать команды'}
-                    </button>
-                  )}
-                </div>
+              <div className="rating-type-selector">
+                <label>Миксовать по рейтингу:</label>
+                <select
+                  value={ratingType}
+                  onChange={(e) => setRatingType(e.target.value)}
+                >
+                  <option value="faceit">FACEit</option>
+                  <option value="premier">Steam Premier</option>
+                </select>
+                {tournament.participant_type === 'solo' && (!teamsExist || teamsList.length === 0) && (
+                  <button 
+                    onClick={handleFormTeams} 
+                    className="form-teams-button"
+                    disabled={loading}
+                  >
+                    {loading ? 'Создание команд...' : 'Сформировать команды из участников'}
+                  </button>
+                )}
+                {tournament.participant_type === 'solo' && (teamsExist || teamsList.length > 0) && tournament.status === 'pending' && (
+                  <button 
+                    onClick={handleFormTeams} 
+                    className="reformate-teams-button"
+                    disabled={loading}
+                  >
+                    {loading ? 'Пересоздание команд...' : 'Переформировать команды'}
+                  </button>
+                )}
               </div>
             </>
           )}
