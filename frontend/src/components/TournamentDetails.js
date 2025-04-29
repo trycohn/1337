@@ -95,7 +95,7 @@ import { useHandleViewMatchDetails } from '../context/HandleViewMatchDetailsCont
 import { useHandleValidateInvitationCache } from '../context/HandleValidateInvitationCacheContext'; 
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
-const BracketRenderer = lazy(() => 
+const LazyBracketRenderer = React.lazy(() => 
     import('./BracketRenderer').catch(err => {
         console.error('Ошибка при загрузке BracketRenderer:', err);
         // Возвращаем fallback компонент в случае ошибки
@@ -2433,7 +2433,7 @@ function TournamentDetails() {
                                                         console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
                                                         // Безопасный рендеринг сетки
                                                         return (
-                                        <BracketRenderer
+                                        <LazyBracketRenderer
                                             games={games}
                                             canEditMatches={canEditMatches}
                                             selectedMatch={selectedMatch}
