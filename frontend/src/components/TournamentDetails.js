@@ -1,5 +1,5 @@
 // Импорты React и связанные
-import React, { useState, useRef, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useRef, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
@@ -14,85 +14,13 @@ import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 
 // Импорт уведомлений и тостов
-import { useNotification } from '../context/NotificationContext';
 import { useToast } from './Notifications/ToastContext';
 
 // Импортируем TournamentChat
 import TournamentChat from './TournamentChat';
 
-// Кастомные хуки контекстов - только один экземпляр каждого
+// Кастомные хуки контекстов - только импортируем те, которые у нас есть
 import { useUser } from '../context/UserContext';
-import { useTeam } from '../context/TeamContext';
-import { useTournament } from '../context/TournamentContext';
-import { useMatch } from '../context/MatchContext';
-import { useParticipant } from '../context/ParticipantContext';
-import { useInvitation } from '../context/InvitationContext';
-import { useAdminRequest } from '../context/AdminRequestContext';
-import { useRatingType } from '../context/RatingTypeContext';
-import { useGame } from '../context/GameContext';
-import { useStatus } from '../context/StatusContext';
-import { useDescription } from '../context/DescriptionContext';
-import { usePrizePool } from '../context/PrizePoolContext';
-import { useRules } from '../context/RulesContext';
-import { useFullDescription } from '../context/FullDescriptionContext';
-import { useMixedTeams } from '../context/MixedTeamsContext';
-import { useSearchResults } from '../context/SearchResultsContext';
-import { useInvitedUsers } from '../context/InvitedUsersContext';
-import { useViewingMatchDetails } from '../context/ViewingMatchDetailsContext';
-import { useMatchDetails } from '../context/MatchDetailsContext';
-import { useMaps } from '../context/MapsContext';
-import { useShowMapSelection } from '../context/ShowMapSelectionContext';
-import { useSearchQuery } from '../context/SearchQueryContext';
-import { useAddParticipantName } from '../context/AddParticipantNameContext';
-import { useAdminRequestStatus } from '../context/AdminRequestStatusContext';
-import { useMatches } from '../context/MatchesContext';
-import { useSelectedMatch } from '../context/SelectedMatchContext';
-import { useSelectedWinnerId } from '../context/SelectedWinnerIdContext';
-import { useThirdPlaceMatch } from '../context/ThirdPlaceMatchContext';
-import { useMatchScores } from '../context/MatchScoresContext';
-import { useSelectedUser } from '../context/SelectedUserContext';
-import { useUserIdToRemove } from '../context/UserIdToRemoveContext';
-import { useTournamentStatus } from '../context/TournamentStatusContext';
-import { useTournamentFormat } from '../context/TournamentFormatContext';
-import { useCanRequestAdmin } from '../context/CanRequestAdminContext';
-import { useCanGenerateBracket } from '../context/CanGenerateBracketContext';
-import { useCanEditMatches } from '../context/CanEditMatchesContext';
-import { useUserSearchResults } from '../context/UserSearchResultsContext';
-import { useIsSearching } from '../context/IsSearchingContext';
-import { useSearchContainerRef } from '../context/SearchContainerRefContext';
-import { useIsUserParticipant } from '../context/IsUserParticipantContext';
-import { useIsInvitationSent } from '../context/IsInvitationSentContext';
-import { useIsAdminOrCreator } from '../context/IsAdminOrCreatorContext';
-import { useInviteMethod } from '../context/InviteMethodContext';
-import { useInviteUsername } from '../context/InviteUsernameContext';
-import { useInviteEmail } from '../context/InviteEmailContext';
-import { useShowConfirmModal } from '../context/ShowConfirmModalContext';
-import { useShowEndTournamentModal } from '../context/ShowEndTournamentModalContext';
-import { useClearInvitationCache } from '../context/ClearInvitationCacheContext';
-import { useClearAllInvitationsCache } from '../context/ClearAllInvitationsCacheContext';
-
-// Кастомные хуки для обработчиков
-import { useHandleClearMatchResults } from '../context/HandleClearMatchResultsContext';
-import { useHandleUpdateMatch } from '../context/HandleUpdateMatchContext';
-import { useHandleCloseModal } from '../context/HandleCloseModalContext';
-import { useHandleTeamClick } from '../context/HandleTeamClickContext';
-import { useHandleRegenerateBracket } from '../context/HandleRegenerateBracketContext';
-import { useHandleEndTournament } from '../context/HandleEndTournamentContext';
-import { useHandleConfirmEndTournament } from '../context/HandleConfirmEndTournamentContext';
-import { useHandleRequestAdmin } from '../context/HandleRequestAdminContext';
-import { useHandleAddParticipant } from '../context/HandleAddParticipantContext';
-import { useHandleFormTeams } from '../context/HandleFormTeamsContext';
-import { useHandleStartTournament } from '../context/HandleStartTournamentContext';
-import { useHandleParticipate } from '../context/HandleParticipateContext';
-import { useHandleWithdraw } from '../context/HandleWithdrawContext';
-import { useHandleInvite } from '../context/HandleInviteContext';
-import { useHandleInviteUser } from '../context/HandleInviteUserContext';
-import { useHandleUserSearchWithDelay } from '../context/HandleUserSearchWithDelayContext';
-import { useFormatLastOnline } from '../context/FormatLastOnlineContext';
-import { useHandleAddParticipantName } from '../context/HandleAddParticipantNameContext';
-import { useHandleGenerateBracket } from '../context/HandleGenerateBracketContext';
-import { useHandleViewMatchDetails } from '../context/HandleViewMatchDetailsContext';
-import { useHandleValidateInvitationCache } from '../context/HandleValidateInvitationCacheContext'; 
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const LazyBracketRenderer = React.lazy(() => 
@@ -167,7 +95,8 @@ function TournamentDetails() {
     const [loading, setLoading] = useState(true);
     // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
-    const [ratingType, setRatingType] = useState('faceit');
+    // Удаляем неиспользуемую переменную состояния
+    // const [ratingType, setRatingType] = useState('faceit');
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
     const [userSearchResults, setUserSearchResults] = useState([]);
@@ -597,6 +526,13 @@ function TournamentDetails() {
             return () => clearTimeout(timer);
         }
     }, [games, tournament]); // Добавил tournament в зависимости
+
+    // Обработчик успешной генерации команд в TeamGenerator
+    const handleTeamsGenerated = (teams) => {
+        if (teams && Array.isArray(teams)) {
+            setMixedTeams(teams);
+        }
+    };
 
     const handleParticipate = async () => {
         const token = localStorage.getItem('token');
@@ -1878,38 +1814,6 @@ function TournamentDetails() {
         }
     };
     
-    // Обработчик формирования команд
-    const handleFormTeams = async () => {
-        if (!tournament || !tournament.id) return;
-        
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/form-teams`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось сформировать команды');
-            }
-            
-            // Обновляем данные турнира
-            fetchTournamentData();
-            toast.success('Команды успешно сформированы');
-        } catch (error) {
-            console.error('Ошибка при формировании команд:', error);
-            toast.error(error.message || 'Не удалось сформировать команды');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
     // Обработчик запуска турнира
     const handleStartTournament = async () => {
         if (!tournament || !tournament.id) return;
@@ -2129,7 +2033,10 @@ function TournamentDetails() {
                     <p>
                         <strong>Участники ({tournament.participant_count || 0}):</strong>
                     </p>
-                    {renderParticipants()}
+                    {/* Если это не микс-турнир, показываем стандартное отображение участников, 
+                        иначе этим займется TeamGenerator */}
+                    {tournament.format !== 'mix' && renderParticipants()}
+                    
                     {tournament.status === 'completed' && renderWinners()}
                     {user && tournament.status === 'active' && (
                         <div className="participation-controls">
@@ -2288,116 +2195,20 @@ function TournamentDetails() {
                             )}
                         </div>
                     )}
-                    {tournament?.format === 'mix' && !tournament?.bracket && (
-                        <div className="mix-settings">
-                            {isAdminOrCreator && (
-                                <>
-                                    <h3>Настройки микса</h3>
-                                    <div className="rating-type-selector">
-                                        <label>Миксовать по рейтингу:</label>
-                                        <select
-                                            value={ratingType}
-                                            onChange={(e) => setRatingType(e.target.value)}
-                                        >
-                                            <option value="faceit">FACEit</option>
-                                            <option value="premier">Steam Premier</option>
-                                        </select>
-                                    </div>
-                                    {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
-                                        <button onClick={handleFormTeams} className="form-teams-button">
-                                            Сформировать команды из участников
-                                        </button>
-                                    )}
-                                    {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'pending' && (
-                                        <button onClick={handleFormTeams} className="reformate-teams-button">
-                                            Переформировать команды
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                            
-                            {/* Секция зарегистрированных игроков - показываем всегда */}
-                            <h3>Зарегистрированные игроки</h3>
-                            <div className="mix-players-list">
-                                {tournament.participants && tournament.participants.length > 0 ? (
-                                    <div className="participants-grid">
-                                        {tournament.participants.map((participant) => (
-                                            <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
-                                                <div className="participant-info">
-                                                    <div className="participant-avatar">
-                                                        {participant && participant.avatar_url ? (
-                                                            <img 
-                                                                src={ensureHttps(participant.avatar_url)} 
-                                                                alt={((participant && participant.name) || '?').charAt(0)} 
-                                                            />
-                                                        ) : (
-                                                            ((participant && participant.name) || '?').charAt(0).toUpperCase()
-                                                        )}
-                                                    </div>
-                                                    {participant && participant.user_id ? (
-                                                        <Link 
-                                                            to={`/user/${participant.user_id}`} 
-                                                            className="participant-name"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                        >
-                                                            {participant.name || 'Участник'}
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="participant-name">{participant?.name || 'Участник'}</span>
-                                                    )}
-                                                    {isAdminOrCreator && participant && participant.id && (
-                                                        <button
-                                                            onClick={() => setUserIdToRemove(participant.id)}
-                                                            className="remove-participant"
-                                                            title="Удалить участника"
-                                                        >
-                                                            ✖
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="no-participants">Нет зарегистрированных игроков</p>
-                                )}
-                            </div>
-                            
-                            {/* Секция сформированных команд - показываем если они есть */}
-                            {mixedTeams.length > 0 && (
-                                <div className="mixed-teams">
-                                    <h3>Сформированные команды</h3>
-                                    <div className="mixed-teams-grid">
-                                        {mixedTeams.map(team => (
-                                            <div key={team.id || `team-${Math.random()}`} className="team-card">
-                                                <table className="team-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>{team?.name || 'Команда'}</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {team.members && team.members.map(member => (
-                                                            <tr key={member?.participant_id || member?.user_id || member?.id || `member-${Math.random()}`}>
-                                                                <td>
-                                                                    {member && member.user_id ? (
-                                                                        <Link to={`/user/${member.user_id}`}>{member.name || 'Участник'}</Link>
-                                                                    ) : (
-                                                                        member?.name || 'Участник'
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                    
+                    {/* Заменяем секцию микс-турнира на компонент TeamGenerator */}
+                    {tournament?.format === 'mix' && (
+                        <TeamGenerator
+                            tournament={tournament}
+                            participants={tournament.participants || []}
+                            onTeamsGenerated={handleTeamsGenerated}
+                            onTeamsUpdated={fetchTournamentData}
+                            onRemoveParticipant={setUserIdToRemove}
+                            isAdminOrCreator={isAdminOrCreator}
+                            toast={toast}
+                        />
                     )}
+
                     <h3>Турнирная сетка</h3>
                     {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
                         <div className="tournament-controls">
