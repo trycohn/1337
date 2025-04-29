@@ -403,18 +403,13 @@ function TournamentDetails() {
         
         // Безопасное создание результата участника
         const createSafeParticipant = (teamId, name, resultText, isWinner, status = 'PLAYED') => {
-            // Получаем информацию об участнике из карты, если она доступна
-            const participantInfo = teamId ? participantsMap[teamId] : null;
-            
             return {
                 id: teamId ? safeToString(teamId) : 'tbd',
                 resultText: resultText !== null ? safeToString(resultText) : null,
                 isWinner: Boolean(isWinner),
                 status: status || 'NO_SHOW',
                 name: name || 'TBD',
-                score: resultText,
-                // Добавляем аватар участника, если он доступен
-                avatarUrl: participantInfo?.avatar_url ? ensureHttps(participantInfo.avatar_url) : null
+                score: resultText
             };
         };
         
