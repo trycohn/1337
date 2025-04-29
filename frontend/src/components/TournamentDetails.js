@@ -2232,8 +2232,23 @@ function TournamentDetails() {
                                         {tournament.participants.map((participant) => (
                                             <div key={participant.id} className="participant-card">
                                                 <div className="participant-info">
+                                                    <div className="participant-avatar">
+                                                        {participant.avatar_url ? (
+                                                            <img 
+                                                                src={ensureHttps(participant.avatar_url)} 
+                                                                alt={participant.name.charAt(0)} 
+                                                            />
+                                                        ) : (
+                                                            participant.name.charAt(0).toUpperCase()
+                                                        )}
+                                                    </div>
                                                     {participant.user_id ? (
-                                                        <Link to={`/user/${participant.user_id}`} className="participant-name">
+                                                        <Link 
+                                                            to={`/user/${participant.user_id}`} 
+                                                            className="participant-name"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
                                                             {participant.name}
                                                         </Link>
                                                     ) : (
