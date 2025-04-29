@@ -128,20 +128,25 @@ const MixTournament = () => {
             </div>
 
             <div className="controls-container">
-                <div className="rating-type-selector">
-                    <button 
-                        className={ratingType === 'faceit' ? 'active' : ''}
-                        onClick={() => handleRatingTypeChange('faceit')}
-                    >
-                        FACEit Рейтинг
-                    </button>
-                    <button 
-                        className={ratingType === 'premier' ? 'active' : ''}
-                        onClick={() => handleRatingTypeChange('premier')}
-                    >
-                        Premier Ранг
-                    </button>
-                    {!isTeamsFormed && (
+                <div className="rating-selector-group">
+                    <label>Миксовать по рейтингу:</label>
+                    <div className="rating-type-selector">
+                        <button 
+                            className={ratingType === 'faceit' ? 'active' : ''}
+                            onClick={() => handleRatingTypeChange('faceit')}
+                        >
+                            FACEit Рейтинг
+                        </button>
+                        <button 
+                            className={ratingType === 'premier' ? 'active' : ''}
+                            onClick={() => handleRatingTypeChange('premier')}
+                        >
+                            Premier Ранг
+                        </button>
+                    </div>
+                </div>
+
+                {!isTeamsFormed && (
                     <button 
                         className="form-teams-button"
                         onClick={formTeams}
@@ -150,9 +155,6 @@ const MixTournament = () => {
                         Сформировать команды
                     </button>
                 )}
-                </div>
-
-
             </div>
 
             {!isTeamsFormed ? (
