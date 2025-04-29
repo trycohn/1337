@@ -20,11 +20,11 @@
   gap: 15px;
 }
 
-/* Новый родительский блок для группы элементов формы */
+/* Родительский блок для группы элементов формы */
 .mix-form-group {
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  background-color: #fff;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 10px 15px;
@@ -32,30 +32,27 @@
   width: 100%;
 }
 
-.rating-type-selector {
-  display: flex;
-  align-items: center;
-  background-color: #fff;
-  border-radius: 4px;
-  padding: 10px 15px;
-  margin-bottom: 15px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.rating-type-selector label {
+.mix-form-group label {
   margin-right: 10px;
   font-weight: 500;
   white-space: nowrap;
+  min-width: 180px;
 }
 
-.rating-type-selector select {
+.mix-form-group select {
   padding: 8px 12px;
   border-radius: 4px;
   border: 1px solid #ccc;
   background-color: #fff;
   margin-right: 15px;
+  flex: 0 1 auto;
+}
+
+/* Удаляю неиспользуемые стили рейтинг-селектора, заменяя их на */
+.rating-type-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .form-teams-button,
@@ -226,17 +223,17 @@
   }
   
   /* Адаптивность для формы микса */
-  .rating-type-selector {
+  .mix-form-group {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .rating-type-selector label {
+  .mix-form-group label {
     margin-right: 0;
     margin-bottom: 8px;
   }
   
-  .rating-type-selector select {
+  .mix-form-group select {
     margin-right: 0;
     margin-bottom: 10px;
     width: 100%;

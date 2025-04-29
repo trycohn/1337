@@ -94,6 +94,7 @@ const TeamGenerator = ({
                     <option value="faceit">FACEit</option>
                     <option value="premier">Steam Premier</option>
                   </select>
+                
                   {tournament.participant_type === 'solo' && (!teamsExist || teamsList.length === 0) && (
                     <button 
                       onClick={handleFormTeams} 
