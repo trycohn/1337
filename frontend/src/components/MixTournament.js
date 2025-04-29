@@ -127,19 +127,31 @@ const MixTournament = () => {
                 <p>Размер команды: {tournament.team_size} игроков</p>
             </div>
 
-            <div className="rating-type-selector">
-                <button 
-                    className={ratingType === 'faceit' ? 'active' : ''}
-                    onClick={() => handleRatingTypeChange('faceit')}
-                >
-                    FACEit Рейтинг
-                </button>
-                <button 
-                    className={ratingType === 'premier' ? 'active' : ''}
-                    onClick={() => handleRatingTypeChange('premier')}
-                >
-                    Premier Ранг
-                </button>
+            <div className="controls-container">
+                <div className="rating-type-selector">
+                    <button 
+                        className={ratingType === 'faceit' ? 'active' : ''}
+                        onClick={() => handleRatingTypeChange('faceit')}
+                    >
+                        FACEit Рейтинг
+                    </button>
+                    <button 
+                        className={ratingType === 'premier' ? 'active' : ''}
+                        onClick={() => handleRatingTypeChange('premier')}
+                    >
+                        Premier Ранг
+                    </button>
+                </div>
+
+                {!isTeamsFormed && (
+                    <button 
+                        className="form-teams-button"
+                        onClick={formTeams}
+                        disabled={players.length < tournament.team_size * 2}
+                    >
+                        Сформировать команды
+                    </button>
+                )}
             </div>
 
             {!isTeamsFormed ? (
@@ -186,32 +198,20 @@ const MixTournament = () => {
                 </div>
             )}
 
-            {!isBracketGenerated && (
+            {!isBracketGenerated && isTeamsFormed && (
                 <div className="actions">
-                    {!isTeamsFormed ? (
-                        <button 
-                            className="form-teams-button"
-                            onClick={formTeams}
-                            disabled={players.length < tournament.team_size * 2}
-                        >
-                            Сформировать команды
-                        </button>
-                    ) : (
-                        <>
-                            <button 
-                                className="form-teams-button"
-                                onClick={formTeams}
-                            >
-                                Перемешать команды
-                            </button>
-                            <button 
-                                className="generate-bracket-button"
-                                onClick={generateBracket}
-                            >
-                                Генерация турнирной сетки
-                            </button>
-                        </>
-                    )}
+                    <button 
+                        className="form-teams-button"
+                        onClick={formTeams}
+                    >
+                        Перемешать команды
+                    </button>
+                    <button 
+                        className="generate-bracket-button"
+                        onClick={generateBracket}
+                    >
+                        Генерация турнирной сетки
+                    </button>
                 </div>
             )}
         </div>
