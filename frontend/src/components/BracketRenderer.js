@@ -996,12 +996,21 @@ const BracketRenderer = ({
                                                     <div
                                                         className={`team ${match.participants[0]?.isWinner ? 'winner' : ''}`}
                                                         onClick={(e) => {
-                                                            e.stopPropagation(); // Важно, чтобы клик по команде не выбирал весь матч
+                                                            e.stopPropagation();
                                                             if (match.participants[0]?.id && canEditMatches) {
                                                               handleTeamClick(match.participants[0].id, match.id);
                                                             }
                                                         }}
                                                     >
+                                                        {match.participants[0]?.avatarUrl && (
+                                                            <div className="team-avatar">
+                                                                <img 
+                                                                    src={match.participants[0].avatarUrl} 
+                                                                    alt={`${match.participants[0]?.name || 'TBD'}`}
+                                                                    onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                />
+                                                            </div>
+                                                        )}
                                                         <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                         <span className="team-score">
                                                             {match.participants[0]?.score ?? '-'}
@@ -1016,6 +1025,15 @@ const BracketRenderer = ({
                                                              }
                                                          }}
                                                     >
+                                                        {match.participants[1]?.avatarUrl && (
+                                                            <div className="team-avatar">
+                                                                <img 
+                                                                    src={match.participants[1].avatarUrl} 
+                                                                    alt={`${match.participants[1]?.name || 'TBD'}`}
+                                                                    onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                />
+                                                            </div>
+                                                        )}
                                                         <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                         <span className="team-score">
                                                             {match.participants[1]?.score ?? '-'}
@@ -1066,6 +1084,15 @@ const BracketRenderer = ({
                                                                     }
                                                                 }}
                                                             >
+                                                                {match.participants[0]?.avatarUrl && (
+                                                                    <div className="team-avatar">
+                                                                        <img 
+                                                                            src={match.participants[0].avatarUrl} 
+                                                                            alt={`${match.participants[0]?.name || 'TBD'}`}
+                                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                                 <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                                 <span className="team-score">
                                                                     {match.participants[0]?.score ?? '-'}
@@ -1080,6 +1107,15 @@ const BracketRenderer = ({
                                                                      }
                                                                  }}
                                                             >
+                                                                {match.participants[1]?.avatarUrl && (
+                                                                    <div className="team-avatar">
+                                                                        <img 
+                                                                            src={match.participants[1].avatarUrl} 
+                                                                            alt={`${match.participants[1]?.name || 'TBD'}`}
+                                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                                 <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                                 <span className="team-score">
                                                                     {match.participants[1]?.score ?? '-'}
@@ -1127,6 +1163,15 @@ const BracketRenderer = ({
                                                         }
                                                     }}
                                                 >
+                                                    {grandFinalMatch.participants[0]?.avatarUrl && (
+                                                        <div className="team-avatar">
+                                                            <img 
+                                                                src={grandFinalMatch.participants[0].avatarUrl} 
+                                                                alt={`${grandFinalMatch.participants[0]?.name || 'TBD'}`}
+                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <span className={`team-name${!grandFinalMatch.participants[0]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {grandFinalMatch.participants[0]?.score ?? '-'}
@@ -1141,6 +1186,15 @@ const BracketRenderer = ({
                                                          }
                                                     }}
                                                 >
+                                                    {grandFinalMatch.participants[1]?.avatarUrl && (
+                                                        <div className="team-avatar">
+                                                            <img 
+                                                                src={grandFinalMatch.participants[1].avatarUrl} 
+                                                                alt={`${grandFinalMatch.participants[1]?.name || 'TBD'}`}
+                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <span className={`team-name${!grandFinalMatch.participants[1]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {grandFinalMatch.participants[1]?.score ?? '-'}
@@ -1173,6 +1227,15 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
+                                                    {placementMatch.participants[0]?.avatarUrl && (
+                                                        <div className="team-avatar">
+                                                            <img 
+                                                                src={placementMatch.participants[0].avatarUrl} 
+                                                                alt={`${placementMatch.participants[0]?.name || 'TBD'}`}
+                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <span className={`team-name${!placementMatch.participants[0]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {placementMatch.participants[0]?.score ?? '-'}
@@ -1187,6 +1250,15 @@ const BracketRenderer = ({
                                                          }
                                                      }}
                                                 >
+                                                    {placementMatch.participants[1]?.avatarUrl && (
+                                                        <div className="team-avatar">
+                                                            <img 
+                                                                src={placementMatch.participants[1].avatarUrl} 
+                                                                alt={`${placementMatch.participants[1]?.name || 'TBD'}`}
+                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <span className={`team-name${!placementMatch.participants[1]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
                                                     <span className="team-score">
                                                         {placementMatch.participants[1]?.score ?? '-'}

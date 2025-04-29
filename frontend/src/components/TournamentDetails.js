@@ -79,7 +79,9 @@ function TournamentDetails() {
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const [selectedUser, setSelectedUser] = useState(null);
     const wsRef = useRef(null);
+    // eslint-disable-next-line no-unused-vars
     const [loading, setLoading] = useState(true);
+    // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
     const [ratingType, setRatingType] = useState('faceit');
     const [isCreator, setIsCreator] = useState(false);
@@ -110,6 +112,7 @@ function TournamentDetails() {
     const [matchDetails, setMatchDetails] = useState(null);
     // Состояния для работы с картами в матчах CS2
     const [maps, setMaps] = useState([{ map: 'de_dust2', score1: 0, score2: 0 }]);
+    // eslint-disable-next-line no-unused-vars
     const [showMapSelection, setShowMapSelection] = useState(false);
     // Refs для работы с формами
     const descriptionRef = useRef("");
@@ -400,13 +403,18 @@ function TournamentDetails() {
         
         // Безопасное создание результата участника
         const createSafeParticipant = (teamId, name, resultText, isWinner, status = 'PLAYED') => {
+            // Получаем информацию об участнике из карты, если она доступна
+            const participantInfo = teamId ? participantsMap[teamId] : null;
+            
             return {
                 id: teamId ? safeToString(teamId) : 'tbd',
                 resultText: resultText !== null ? safeToString(resultText) : null,
                 isWinner: Boolean(isWinner),
                 status: status || 'NO_SHOW',
                 name: name || 'TBD',
-                score: resultText
+                score: resultText,
+                // Добавляем аватар участника, если он доступен
+                avatarUrl: participantInfo?.avatar_url ? ensureHttps(participantInfo.avatar_url) : null
             };
         };
         
@@ -504,7 +512,7 @@ function TournamentDetails() {
             
             return () => clearTimeout(timer);
         }
-    }, [games]);
+    }, [games, tournament]); // Добавил tournament в зависимости
 
     const handleParticipate = async () => {
         const token = localStorage.getItem('token');
@@ -1480,7 +1488,7 @@ function TournamentDetails() {
                 <h4>Участники ({tournament.participants.length})</h4>
                 <ul>
                     {tournament.participants.map((participant) => (
-                        <li key={participant.id} className="participant-item">
+                        <li key={participant?.id || `participant-${Math.random()}`} className="participant-item">
                             {/* Проверяем, является ли участник текущим авторизованным пользователем */}
                             <Link 
                                 to={user && participant.user_id === user.id ? '/profile' : `/user/${participant.user_id}`} 
@@ -2230,31 +2238,31 @@ function TournamentDetails() {
                                 {tournament.participants && tournament.participants.length > 0 ? (
                                     <div className="participants-grid">
                                         {tournament.participants.map((participant) => (
-                                            <div key={participant.id} className="participant-card">
+                                            <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
                                                 <div className="participant-info">
                                                     <div className="participant-avatar">
-                                                        {participant.avatar_url ? (
+                                                        {participant && participant.avatar_url ? (
                                                             <img 
                                                                 src={ensureHttps(participant.avatar_url)} 
-                                                                alt={participant.name.charAt(0)} 
+                                                                alt={((participant && participant.name) || '?').charAt(0)} 
                                                             />
                                                         ) : (
-                                                            participant.name.charAt(0).toUpperCase()
+                                                            ((participant && participant.name) || '?').charAt(0).toUpperCase()
                                                         )}
                                                     </div>
-                                                    {participant.user_id ? (
+                                                    {participant && participant.user_id ? (
                                                         <Link 
                                                             to={`/user/${participant.user_id}`} 
                                                             className="participant-name"
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                         >
-                                                            {participant.name}
+                                                            {participant.name || 'Участник'}
                                                         </Link>
                                                     ) : (
-                                                        <span className="participant-name">{participant.name}</span>
+                                                        <span className="participant-name">{participant?.name || 'Участник'}</span>
                                                     )}
-                                                    {isAdminOrCreator && (
+                                                    {isAdminOrCreator && participant && participant.id && (
                                                         <button
                                                             onClick={() => setUserIdToRemove(participant.id)}
                                                             className="remove-participant"
@@ -2278,21 +2286,21 @@ function TournamentDetails() {
                                     <h3>Сформированные команды</h3>
                                     <div className="mixed-teams-grid">
                                         {mixedTeams.map(team => (
-                                            <div key={team.id} className="team-card">
+                                            <div key={team.id || `team-${Math.random()}`} className="team-card">
                                                 <table className="team-table">
                                                     <thead>
                                                         <tr>
-                                                            <th>{team.name}</th>
+                                                            <th>{team?.name || 'Команда'}</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {team.members.map(member => (
-                                                            <tr key={member.participant_id || member.user_id || member.id}>
+                                                        {team.members && team.members.map(member => (
+                                                            <tr key={member?.participant_id || member?.user_id || member?.id || `member-${Math.random()}`}>
                                                                 <td>
-                                                                    {member.user_id ? (
-                                                                        <Link to={`/user/${member.user_id}`}>{member.name}</Link>
+                                                                    {member && member.user_id ? (
+                                                                        <Link to={`/user/${member.user_id}`}>{member.name || 'Участник'}</Link>
                                                                     ) : (
-                                                                        member.name
+                                                                        member?.name || 'Участник'
                                                                     )}
                                                                 </td>
                                                             </tr>
