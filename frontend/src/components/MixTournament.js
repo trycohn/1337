@@ -141,9 +141,7 @@ const MixTournament = () => {
                     >
                         Premier Ранг
                     </button>
-                </div>
-
-                {!isTeamsFormed && (
+                    {!isTeamsFormed && (
                     <button 
                         className="form-teams-button"
                         onClick={formTeams}
@@ -152,6 +150,9 @@ const MixTournament = () => {
                         Сформировать команды
                     </button>
                 )}
+                </div>
+
+
             </div>
 
             {!isTeamsFormed ? (
