@@ -732,6 +732,35 @@
 }
 
 /* Сетка для микс-команд */
+.mixed-teams {
+    margin-top: 30px;
+    background-color: #f0f8ff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #b0e0e6;
+    position: relative;
+}
+
+.mixed-teams::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.mixed-teams h3 {
+    text-align: center;
+    margin-top: 0;
+    color: #2c3e50;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #cee2f2;
+    margin-bottom: 20px;
+}
+
 .mixed-teams-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -740,11 +769,17 @@
 }
 
 .team-card {
-    background-color: #f9f9f9;
+    background-color: white;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 8px;
     padding: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.team-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
 }
 
 .team-table {
@@ -753,17 +788,29 @@
 }
 
 .team-table th {
-    background-color: #007bff;
+    background-color: #3498db;
     color: white;
-    padding: 8px;
+    padding: 10px;
     text-align: center;
-    font-size: 1em;
+    font-size: 1.1em;
+    border-radius: 5px 5px 0 0;
 }
 
 .team-table td {
-    padding: 6px;
-    border-top: 1px solid #ddd;
-    font-size: 0.9em;
+    padding: 8px;
+    border-top: 1px solid #eee;
+    font-size: 0.95em;
+    text-align: center;
+}
+
+.team-table td a {
+    color: #2980b9;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.team-table td a:hover {
+    text-decoration: underline;
 }
 
 @media (max-width: 768px) {
@@ -776,16 +823,24 @@
     background-color: #f39c12;
     color: #fff;
     border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
+    padding: 10px 20px;
+    border-radius: 5px;
     font-weight: bold;
-    margin-top: 10px;
-    transition: background-color 0.3s;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 350px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .reformate-teams-button:hover {
     background-color: #e67e22;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .finish-above-bracket {
@@ -1202,4 +1257,99 @@
     .place-3 {
         order: 3;
     }
+}
+
+.mix-players-list {
+    margin: 20px 0;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #eee;
+}
+
+.participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.participant-card {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.participant-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.participant-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.participant-name {
+    font-weight: bold;
+    text-decoration: none;
+    color: #333;
+}
+
+a.participant-name:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+.remove-participant {
+    background: none;
+    border: none;
+    color: #ff5252;
+    cursor: pointer;
+    padding: 0 5px;
+    font-size: 18px;
+    margin: 0;
+}
+
+.remove-participant:hover {
+    color: #ff0000;
+    background: none;
+}
+
+.no-participants {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .participants-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+.form-teams-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 350px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.form-teams-button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 } 

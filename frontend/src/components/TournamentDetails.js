@@ -1252,6 +1252,40 @@ function TournamentDetails() {
         }
     };
 
+    // Удаление участника турнира
+    useEffect(() => {
+        if (!userIdToRemove) return;
+        
+        const removeParticipant = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    toast.error('Необходима авторизация для удаления участника');
+                    return;
+                }
+                
+                await api.delete(`/api/tournaments/${id}/participants/${userIdToRemove}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                // Обновляем список участников
+                await fetchTournamentData();
+                toast.success('Участник успешно удален');
+            } catch (error) {
+                toast.error(error.response?.data?.error || 'Ошибка при удалении участника');
+                console.error('Ошибка при удалении участника:', error);
+            } finally {
+                setUserIdToRemove('');
+            }
+        };
+        
+        if (window.confirm('Вы уверены, что хотите удалить этого участника?')) {
+            removeParticipant();
+        } else {
+            setUserIdToRemove('');
+        }
+    }, [userIdToRemove, id, toast, fetchTournamentData]);
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -2178,13 +2212,52 @@ function TournamentDetails() {
                                         </select>
                                     </div>
                                     {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
-                                        <button onClick={handleFormTeams}>Сформировать команды</button>
+                                        <button onClick={handleFormTeams} className="form-teams-button">
+                                            Сформировать команды из участников
+                                        </button>
                                     )}
                                     {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'pending' && (
-                                        <button onClick={handleFormTeams} className="reformate-teams-button">Переформировать команды</button>
+                                        <button onClick={handleFormTeams} className="reformate-teams-button">
+                                            Переформировать команды
+                                        </button>
                                     )}
                                 </>
                             )}
+                            
+                            {/* Секция зарегистрированных игроков - показываем всегда */}
+                            <h3>Зарегистрированные игроки</h3>
+                            <div className="mix-players-list">
+                                {tournament.participants && tournament.participants.length > 0 ? (
+                                    <div className="participants-grid">
+                                        {tournament.participants.map((participant) => (
+                                            <div key={participant.id} className="participant-card">
+                                                <div className="participant-info">
+                                                    {participant.user_id ? (
+                                                        <Link to={`/user/${participant.user_id}`} className="participant-name">
+                                                            {participant.name}
+                                                        </Link>
+                                                    ) : (
+                                                        <span className="participant-name">{participant.name}</span>
+                                                    )}
+                                                    {isAdminOrCreator && (
+                                                        <button
+                                                            onClick={() => setUserIdToRemove(participant.id)}
+                                                            className="remove-participant"
+                                                            title="Удалить участника"
+                                                        >
+                                                            ✖
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="no-participants">Нет зарегистрированных игроков</p>
+                                )}
+                            </div>
+                            
+                            {/* Секция сформированных команд - показываем если они есть */}
                             {mixedTeams.length > 0 && (
                                 <div className="mixed-teams">
                                     <h3>Сформированные команды</h3>
