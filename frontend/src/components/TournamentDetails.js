@@ -7,7 +7,6 @@ import api from '../utils/api';
 import UserContext from '../context/UserContext';
 import './TournamentDetails.css';
 import BracketRenderer from './BracketRenderer';
-import { isMobile } from 'react-device-detect';
 import TeamGenerator from './TeamGenerator';
 import { debounce } from 'lodash';
 import { formatDate } from '../utils/dateHelpers';
