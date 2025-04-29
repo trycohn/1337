@@ -10,15 +10,26 @@
   margin-bottom: 20px;
 }
 
-.rating-type-selector {
-  margin-bottom: 15px;
+/* Добавляем стили для контейнера элементов в одной строке */
+.mix-controls-row {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.rating-type-selector {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
 }
 
 .rating-type-selector label {
   margin-right: 10px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .rating-type-selector select {
@@ -38,7 +49,7 @@
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
-  margin-bottom: 15px;
+  white-space: nowrap;
 }
 
 .form-teams-button:hover,
