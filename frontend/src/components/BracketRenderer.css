@@ -191,6 +191,32 @@
     width: 100%;
 }
 
+/* Контейнер для матча с двумя участниками */
+.match-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.match-container .custom-seed {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: none;
+}
+
+.match-container .custom-seed:first-child {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.match-container .custom-seed:last-child {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom: 1px solid #ccc;
+}
+
 .team {
     display: flex;
     justify-content: flex-start;
@@ -268,6 +294,12 @@
     align-items: flex-start;
     width: auto;
     min-width: 250px;
+}
+
+.placement-match .match-container,
+.grand-final .match-container {
+    width: 100%;
+    margin-bottom: 0;
 }
 
 /* Сообщение о пустой сетке */

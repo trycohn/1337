@@ -977,50 +977,60 @@ const BracketRenderer = ({
                                     {roundMatches.map((match) => {
                                         const isSelected = selectedMatch === safeParseInt(match.id);
                                         return (
-                                            <div
-                                                key={match.id}
-                                                className={`custom-seed ${isSelected ? 'selected' : ''}`}
-                                                onClick={(e) => {
-                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                    if (onMatchClick && match.state === 'DONE') {
-                                                        onMatchClick(match.id);
-                                                    }
-                                                    // Иначе обычное поведение для выбора победителя
-                                                    else if (canEditMatches && match.state !== 'DONE') {
-                                                        setSelectedMatch(isSelected ? null : safeParseInt(match.id));
-                                                    }
-                                                }}
-                                            >
-                                                <div className="match-number">{match.name}</div>
-                                                <div className="match-teams">
-                                                    <div
-                                                        className={`team ${match.participants[0]?.isWinner ? 'winner' : ''}`}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (match.participants[0]?.id && canEditMatches) {
-                                                              handleTeamClick(match.participants[0].id, match.id);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                        <span className="team-score">
-                                                            {match.participants[0]?.score ?? '-'}
-                                                        </span>
-                                                    </div>
-                                                    <div
-                                                        className={`team ${match.participants[1]?.isWinner ? 'winner' : ''}`}
-                                                         onClick={(e) => {
-                                                             e.stopPropagation();
-                                                             if (match.participants[1]?.id && canEditMatches) {
-                                                               handleTeamClick(match.participants[1].id, match.id);
-                                                             }
-                                                         }}
-                                                    >
-                                                        <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                        <span className="team-score">
-                                                            {match.participants[1]?.score ?? '-'}
-                                                        </span>
-                                                    </div>
+                                            <div key={match.id} className="match-container">
+                                                <div
+                                                    className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                    onClick={(e) => {
+                                                        // Если есть функция просмотра деталей матча и матч завершен
+                                                        if (onMatchClick && match.state === 'DONE') {
+                                                            onMatchClick(match.id);
+                                                        }
+                                                        // Иначе обычное поведение для выбора победителя
+                                                        else if (canEditMatches && match.state !== 'DONE') {
+                                                            setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                        }
+                                                    }}
+                                                >
+                                                    {match.participants[0]?.avatarUrl && (
+                                                        <div className="team-avatar">
+                                                            <img 
+                                                                src={match.participants[0].avatarUrl} 
+                                                                alt={`${match.participants[0]?.name || 'TBD'}`}
+                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score">
+                                                        {match.participants[0]?.score ?? '-'}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                    onClick={(e) => {
+                                                        // Если есть функция просмотра деталей матча и матч завершен
+                                                        if (onMatchClick && match.state === 'DONE') {
+                                                            onMatchClick(match.id);
+                                                        }
+                                                        // Иначе обычное поведение для выбора победителя
+                                                        else if (canEditMatches && match.state !== 'DONE') {
+                                                            setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                        }
+                                                    }}
+                                                >
+                                                    {match.participants[1]?.avatarUrl && (
+                                                        <div className="team-avatar">
+                                                            <img 
+                                                                src={match.participants[1].avatarUrl} 
+                                                                alt={`${match.participants[1]?.name || 'TBD'}`}
+                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                    <span className="team-score">
+                                                        {match.participants[1]?.score ?? '-'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
@@ -1046,45 +1056,50 @@ const BracketRenderer = ({
                                             {roundMatches.map((match) => {
                                                 const isSelected = selectedMatch === safeParseInt(match.id);
                                                 return (
-                                                    <div
-                                                        key={match.id}
-                                                        className={`custom-seed ${isSelected ? 'selected' : ''}`}
-                                                         onClick={(e) => {
-                                                               if (canEditMatches && match.state !== 'DONE') {
-                                                                   setSelectedMatch(isSelected ? null : safeParseInt(match.id));
-                                                               }
-                                                           }}
-                                                    >
-                                                        <div className="match-number">{match.name}</div>
-                                                        <div className="match-teams">
-                                                            <div
-                                                                className={`team ${match.participants[0]?.isWinner ? 'winner' : ''}`}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    if (match.participants[0]?.id && canEditMatches) {
-                                                                        handleTeamClick(match.participants[0].id, match.id);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                                <span className="team-score">
-                                                                    {match.participants[0]?.score ?? '-'}
-                                                                </span>
-                                                            </div>
-                                                            <div
-                                                                className={`team ${match.participants[1]?.isWinner ? 'winner' : ''}`}
-                                                                 onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     if (match.participants[1]?.id && canEditMatches) {
-                                                                        handleTeamClick(match.participants[1].id, match.id);
-                                                                     }
-                                                                 }}
-                                                            >
-                                                                <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                                <span className="team-score">
-                                                                    {match.participants[1]?.score ?? '-'}
-                                                                </span>
-                                                            </div>
+                                                    <div key={match.id} className="match-container">
+                                                        <div
+                                                            className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                            onClick={(e) => {
+                                                                if (canEditMatches && match.state !== 'DONE') {
+                                                                    setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                                }
+                                                            }}
+                                                        >
+                                                            {match.participants[0]?.avatarUrl && (
+                                                                <div className="team-avatar">
+                                                                    <img 
+                                                                        src={match.participants[0].avatarUrl} 
+                                                                        alt={`${match.participants[0]?.name || 'TBD'}`}
+                                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <span className={`team-name${!match.participants[0]?.name ? ' placeholder' : ''}`}>{match.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                            <span className="team-score">
+                                                                {match.participants[0]?.score ?? '-'}
+                                                            </span>
+                                                        </div>
+                                                        <div
+                                                            className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                            onClick={(e) => {
+                                                                if (canEditMatches && match.state !== 'DONE') {
+                                                                    setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                                }
+                                                            }}
+                                                        >
+                                                            {match.participants[1]?.avatarUrl && (
+                                                                <div className="team-avatar">
+                                                                    <img 
+                                                                        src={match.participants[1].avatarUrl} 
+                                                                        alt={`${match.participants[1]?.name || 'TBD'}`}
+                                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <span className={`team-name${!match.participants[1]?.name ? ' placeholder' : ''}`}>{match.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                            <span className="team-score">
+                                                                {match.participants[1]?.score ?? '-'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 );
@@ -1107,45 +1122,50 @@ const BracketRenderer = ({
                                 {grandFinalMatch && (
                                     <div className="bracket grand-final">
                                         <h3 className="match-title">Большой финал</h3>
-                                        <div
-                                            key={grandFinalMatch.id}
-                                            className={`custom-seed ${selectedMatch === safeParseInt(grandFinalMatch.id) ? 'selected' : ''}`}
-                                            onClick={(e) => {
-                                                if (canEditMatches && grandFinalMatch.state !== 'DONE') {
-                                                    setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
-                                                }
-                                            }}
-                                        >
-                                            <div className="match-number">{grandFinalMatch.name}</div>
-                                            <div className="match-teams">
-                                                <div
-                                                    className={`team ${grandFinalMatch.participants[0]?.isWinner ? 'winner' : ''}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (grandFinalMatch.participants[0]?.id && canEditMatches) {
-                                                            handleTeamClick(grandFinalMatch.participants[0].id, grandFinalMatch.id);
-                                                        }
-                                                    }}
-                                                >
-                                                    <span className={`team-name${!grandFinalMatch.participants[0]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {grandFinalMatch.participants[0]?.score ?? '-'}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={`team ${grandFinalMatch.participants[1]?.isWinner ? 'winner' : ''}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                         if (grandFinalMatch.participants[1]?.id && canEditMatches) {
-                                                            handleTeamClick(grandFinalMatch.participants[1].id, grandFinalMatch.id);
-                                                         }
-                                                    }}
-                                                >
-                                                    <span className={`team-name${!grandFinalMatch.participants[1]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {grandFinalMatch.participants[1]?.score ?? '-'}
-                                                    </span>
-                                                </div>
+                                        <div className="match-container">
+                                            <div
+                                                className={`custom-seed ${selectedMatch === safeParseInt(grandFinalMatch.id) ? 'selected' : ''}`}
+                                                onClick={(e) => {
+                                                    if (canEditMatches && grandFinalMatch.state !== 'DONE') {
+                                                        setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
+                                                    }
+                                                }}
+                                            >
+                                                {grandFinalMatch.participants[0]?.avatarUrl && (
+                                                    <div className="team-avatar">
+                                                        <img 
+                                                            src={grandFinalMatch.participants[0].avatarUrl} 
+                                                            alt={`${grandFinalMatch.participants[0]?.name || 'TBD'}`}
+                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <span className={`team-name${!grandFinalMatch.participants[0]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                <span className="team-score">
+                                                    {grandFinalMatch.participants[0]?.score ?? '-'}
+                                                </span>
+                                            </div>
+                                            <div
+                                                className={`custom-seed ${selectedMatch === safeParseInt(grandFinalMatch.id) ? 'selected' : ''}`}
+                                                onClick={(e) => {
+                                                    if (canEditMatches && grandFinalMatch.state !== 'DONE') {
+                                                        setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
+                                                    }
+                                                }}
+                                            >
+                                                {grandFinalMatch.participants[1]?.avatarUrl && (
+                                                    <div className="team-avatar">
+                                                        <img 
+                                                            src={grandFinalMatch.participants[1].avatarUrl} 
+                                                            alt={`${grandFinalMatch.participants[1]?.name || 'TBD'}`}
+                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <span className={`team-name${!grandFinalMatch.participants[1]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                <span className="team-score">
+                                                    {grandFinalMatch.participants[1]?.score ?? '-'}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1153,49 +1173,54 @@ const BracketRenderer = ({
                                 {placementMatch && (
                                     <div className="bracket placement-match">
                                         <h3 className="match-title">Матч за 3-е место</h3>
-                                        <div
-                                            key={placementMatch.id}
-                                            className={`custom-seed ${selectedMatch === safeParseInt(placementMatch.id) ? 'selected' : ''}`}
-                                            onClick={(e) => {
-                                                if (canEditMatches && placementMatch.state !== 'DONE') {
-                                                    setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
-                                                }
-                                            }}
-                                        >
-                                            <div className="match-number">{placementMatch.name}</div>
-                                            <div className="match-teams">
-                                                <div
-                                                    className={`team ${placementMatch.participants[0]?.isWinner ? 'winner' : ''}`}
-                                                     onClick={(e) => {
-                                                         e.stopPropagation();
-                                                         if (placementMatch.participants[0]?.id && canEditMatches) {
-                                                            handleTeamClick(placementMatch.participants[0].id, placementMatch.id);
-                                                         }
-                                                     }}
-                                                >
-                                                    <span className={`team-name${!placementMatch.participants[0]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {placementMatch.participants[0]?.score ?? '-'}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={`team ${placementMatch.participants[1]?.isWinner ? 'winner' : ''}`}
-                                                     onClick={(e) => {
-                                                         e.stopPropagation();
-                                                         if (placementMatch.participants[1]?.id && canEditMatches) {
-                                                             handleTeamClick(placementMatch.participants[1].id, placementMatch.id);
-                                                         }
-                                                     }}
-                                                >
-                                                    <span className={`team-name${!placementMatch.participants[1]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {placementMatch.participants[1]?.score ?? '-'}
-                                                    </span>
-                                                </div>
+                                        <div className="match-container">
+                                            <div
+                                                className={`custom-seed ${selectedMatch === safeParseInt(placementMatch.id) ? 'selected' : ''}`}
+                                                onClick={(e) => {
+                                                    if (canEditMatches && placementMatch.state !== 'DONE') {
+                                                        setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
+                                                    }
+                                                }}
+                                            >
+                                                {placementMatch.participants[0]?.avatarUrl && (
+                                                    <div className="team-avatar">
+                                                        <img 
+                                                            src={placementMatch.participants[0].avatarUrl} 
+                                                            alt={`${placementMatch.participants[0]?.name || 'TBD'}`}
+                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <span className={`team-name${!placementMatch.participants[0]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                <span className="team-score">
+                                                    {placementMatch.participants[0]?.score ?? '-'}
+                                                </span>
+                                            </div>
+                                            <div
+                                                className={`custom-seed ${selectedMatch === safeParseInt(placementMatch.id) ? 'selected' : ''}`}
+                                                onClick={(e) => {
+                                                    if (canEditMatches && placementMatch.state !== 'DONE') {
+                                                        setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
+                                                    }
+                                                }}
+                                            >
+                                                {placementMatch.participants[1]?.avatarUrl && (
+                                                    <div className="team-avatar">
+                                                        <img 
+                                                            src={placementMatch.participants[1].avatarUrl} 
+                                                            alt={`${placementMatch.participants[1]?.name || 'TBD'}`}
+                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <span className={`team-name${!placementMatch.participants[1]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                <span className="team-score">
+                                                    {placementMatch.participants[1]?.score ?? '-'}
+                                                </span>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </>

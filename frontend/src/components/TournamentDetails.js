@@ -403,13 +403,18 @@ function TournamentDetails() {
         
         // Безопасное создание результата участника
         const createSafeParticipant = (teamId, name, resultText, isWinner, status = 'PLAYED') => {
+            // Получаем информацию об участнике из карты, если она доступна
+            const participantInfo = teamId ? participantsMap[teamId] : null;
+            
             return {
                 id: teamId ? safeToString(teamId) : 'tbd',
                 resultText: resultText !== null ? safeToString(resultText) : null,
                 isWinner: Boolean(isWinner),
                 status: status || 'NO_SHOW',
                 name: name || 'TBD',
-                score: resultText
+                score: resultText,
+                // Добавляем аватар участника, если он доступен
+                avatarUrl: participantInfo?.avatar_url ? ensureHttps(participantInfo.avatar_url) : null
             };
         };
         
@@ -481,7 +486,7 @@ function TournamentDetails() {
         console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
         console.log('Games для визуализации сетки:', safeGames);
         return safeGames;
-    }, [matches, tournament]);
+    }, [matches, tournament, ensureHttps]);
 
     // После каждого обновления matches или tournament, форсируем обновление компонента BracketRenderer
     useEffect(() => {
