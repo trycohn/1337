@@ -24,7 +24,7 @@
 .mix-form-group {
   display: flex;
   align-items: center;
-  background-color: #fff;
+  justify-content: space-around;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 10px 15px;
