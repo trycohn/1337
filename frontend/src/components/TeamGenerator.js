@@ -247,62 +247,85 @@ const TeamGenerator = ({
             <div className="mixed-teams">
               <h3>Сформированные команды</h3>
               <div className="mixed-teams-grid">
-                {teamsList.map(team => (
-                  <div key={team.id || `team-${Math.random()}`} className="team-card">
-                    <div className="team-header">
-                      <h4>{team?.name || 'Команда'}</h4>
-                    </div>
-                    
-                    <div className="team-members-list">
-                      {team.members && team.members.map(member => (
-                        <div 
-                          key={member?.participant_id || member?.user_id || member?.id || `member-${Math.random()}`} 
-                          className="team-member-card"
-                        >
-                          <div className="member-avatar">
-                            {member && member.avatar_url ? (
-                              <img 
-                                src={ensureHttps(member.avatar_url)} 
-                                alt={((member && member.name) || '?').charAt(0)} 
-                                onError={(e) => {e.target.src = '/default-avatar.png'}}
-                              />
-                            ) : (
-                              <div className="avatar-placeholder">
-                                {((member && member.name) || '?').charAt(0).toUpperCase()}
+                {teamsList.map(team => {
+                  // Получаем членов команды с полными данными
+                  const teamMembers = team.members && team.members.map(member => {
+                    // Если у члена команды нет информации о рейтинге, ищем её у участника
+                    if (!member.faceit_rating || !member.premier_rank) {
+                      const participant = displayParticipants.find(p => 
+                        p.id === member.participant_id || p.user_id === member.user_id
+                      );
+                      if (participant) {
+                        member = {
+                          ...member,
+                          avatar_url: participant.avatar_url,
+                          faceit_rating: participant.faceit_rating || participant.faceit_elo || 0,
+                          premier_rank: participant.premier_rank || participant.cs2_premier_rank || 0
+                        };
+                      }
+                    }
+                    return member;
+                  });
+
+                  return (
+                    <div key={team.id || `team-${Math.random()}`} className="team-card">
+                      <div className="team-header">
+                        <h4>{team?.name || 'Команда'}</h4>
+                      </div>
+                      
+                      <div className="team-members-list">
+                        {teamMembers && teamMembers.map(member => (
+                          <div 
+                            key={member?.participant_id || member?.user_id || member?.id || `member-${Math.random()}`} 
+                            className="team-member-card"
+                          >
+                            <div className="member-avatar">
+                              {member && member.avatar_url ? (
+                                <img 
+                                  src={ensureHttps(member.avatar_url)} 
+                                  alt={((member && member.name) || '?').charAt(0)} 
+                                  onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                />
+                              ) : (
+                                <div className="avatar-placeholder">
+                                  {((member && member.name) || '?').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="member-info">
+                              {member && member.user_id ? (
+                                <Link 
+                                  to={`/user/${member.user_id}`} 
+                                  className="member-name"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {member.name || 'Участник'}
+                                </Link>
+                              ) : (
+                                <span className="member-name">
+                                  {member?.name || 'Участник'}
+                                </span>
+                              )}
+                              <div className="member-ratings">
+                                {(member.faceit_rating !== undefined || member.faceit_elo !== undefined) && (
+                                  <span className="member-rating faceit">
+                                    FACEit: {member.faceit_rating || member.faceit_elo || 0}
+                                  </span>
+                                )}
+                                {(member.premier_rank !== undefined || member.cs2_premier_rank !== undefined) && (
+                                  <span className="member-rating premier">
+                                    Premier: {member.premier_rank || member.cs2_premier_rank || 0}
+                                  </span>
+                                )}
                               </div>
-                            )}
+                            </div>
                           </div>
-                          <div className="member-info">
-                            {member && member.user_id ? (
-                              <Link 
-                                to={`/user/${member.user_id}`} 
-                                className="member-name"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {member.name || 'Участник'}
-                              </Link>
-                            ) : (
-                              <span className="member-name">
-                                {member?.name || 'Участник'}
-                              </span>
-                            )}
-                            {member.faceit_rating && (
-                              <span className="member-rating faceit">
-                                FACEit: {member.faceit_rating}
-                              </span>
-                            )}
-                            {member.premier_rank && (
-                              <span className="member-rating premier">
-                                Premier: {member.premier_rank}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
