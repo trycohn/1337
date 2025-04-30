@@ -2094,6 +2094,15 @@ function TournamentDetails() {
                     <p>
                         <strong>Участники ({tournament.participant_count || 0}):</strong>
                     </p>
+                    
+                    {/* Отображаем оригинальный список участников - показываем всегда */}
+                    {tournament && (
+                        <OriginalParticipantsList 
+                            participants={originalParticipants.length > 0 ? originalParticipants : tournament.participants} 
+                            tournament={tournament}
+                        />
+                    )}
+                    
                     {/* Если это не микс-турнир, показываем стандартное отображение участников, 
                         иначе этим займется TeamGenerator */}
                     {tournament.format !== 'mix' && renderParticipants()}
@@ -2710,14 +2719,6 @@ function TournamentDetails() {
                         </div>
                     </div>
                 </div>
-            )}
-            
-            {/* Оригинальный список участников - показываем всегда */}
-            {tournament && (
-                <OriginalParticipantsList 
-                    participants={originalParticipants.length > 0 ? originalParticipants : tournament.participants} 
-                    tournament={tournament}
-                />
             )}
         </section>
     );
