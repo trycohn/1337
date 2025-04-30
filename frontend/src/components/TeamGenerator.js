@@ -249,26 +249,58 @@ const TeamGenerator = ({
               <div className="mixed-teams-grid">
                 {teamsList.map(team => (
                   <div key={team.id || `team-${Math.random()}`} className="team-card">
-                    <table className="team-table">
-                      <thead>
-                        <tr>
-                          <th>{team?.name || 'Команда'}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {team.members && team.members.map(member => (
-                          <tr key={member?.participant_id || member?.user_id || member?.id || `member-${Math.random()}`}>
-                            <td>
-                              {member && member.user_id ? (
-                                <Link to={`/user/${member.user_id}`}>{member.name || 'Участник'}</Link>
-                              ) : (
-                                member?.name || 'Участник'
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="team-header">
+                      <h4>{team?.name || 'Команда'}</h4>
+                    </div>
+                    
+                    <div className="team-members-list">
+                      {team.members && team.members.map(member => (
+                        <div 
+                          key={member?.participant_id || member?.user_id || member?.id || `member-${Math.random()}`} 
+                          className="team-member-card"
+                        >
+                          <div className="member-avatar">
+                            {member && member.avatar_url ? (
+                              <img 
+                                src={ensureHttps(member.avatar_url)} 
+                                alt={((member && member.name) || '?').charAt(0)} 
+                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                              />
+                            ) : (
+                              <div className="avatar-placeholder">
+                                {((member && member.name) || '?').charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="member-info">
+                            {member && member.user_id ? (
+                              <Link 
+                                to={`/user/${member.user_id}`} 
+                                className="member-name"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {member.name || 'Участник'}
+                              </Link>
+                            ) : (
+                              <span className="member-name">
+                                {member?.name || 'Участник'}
+                              </span>
+                            )}
+                            {member.faceit_rating && (
+                              <span className="member-rating faceit">
+                                FACEit: {member.faceit_rating}
+                              </span>
+                            )}
+                            {member.premier_rank && (
+                              <span className="member-rating premier">
+                                Premier: {member.premier_rank}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
