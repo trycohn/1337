@@ -197,12 +197,6 @@ const limiter = rateLimiter({
 });
 app.use(limiter);
 
-// Маршруты API
-app.use('/api', (req, res) => {
-    console.log(`404 для пути: ${req.path}`);
-    res.status(404).json({ error: 'API маршрут не найден' });
-});
-
 // Обработка 404
 app.use((req, res) => {
     console.log(`404 для пути: ${req.path}`);
