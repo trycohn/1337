@@ -2066,4 +2066,96 @@ router.post('/:tournamentId/chat/messages', authenticateToken, async (req, res) 
     }
 });
 
+// Формирование команд из участников для микс-турнира
+router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { ratingType } = req.body;
+    
+    try {
+        // Получаем параметры турнира
+        const tourRes = await pool.query('SELECT team_size, format, status, participant_type FROM tournaments WHERE id = $1', [id]);
+        if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
+        
+        const tournament = tourRes.rows[0];
+        if (tournament.format !== 'mix') {
+            return res.status(400).json({ error: 'Формирование команд доступно только для микс-турниров' });
+        }
+        
+        if (tournament.participant_type !== 'solo') {
+            return res.status(400).json({ error: 'Формирование команд доступно только для соло-участников' });
+        }
+        
+        const teamSize = parseInt(tournament.team_size, 10) || 5;
+        
+        // Получаем всех участников-игроков с рейтингами
+        const partRes = await pool.query(
+            `SELECT tp.id AS participant_id, tp.user_id, tp.name,
+                    COALESCE(u.faceit_elo, 0) as faceit_rating,
+                    COALESCE(u.cs2_premier_rank, 0) as premier_rating
+             FROM tournament_participants tp
+             LEFT JOIN users u ON tp.user_id = u.id
+             WHERE tp.tournament_id = $1`,
+            [id]
+        );
+        
+        const participants = partRes.rows;
+        if (!participants.length) {
+            return res.status(400).json({ error: 'Нет участников для формирования команд' });
+        }
+        
+        // Проверяем, кратно ли число участников размеру команды
+        const totalPlayers = participants.length;
+        const remainder = totalPlayers % teamSize;
+        if (remainder !== 0) {
+            const shortage = teamSize - remainder;
+            return res.status(400).json({ error: `Не хватает ${shortage} участников для формирования полных команд` });
+        }
+        
+        // Сортируем игроков по рейтингу (в зависимости от выбранного типа)
+        const sortedParticipants = [...participants].sort((a, b) => {
+            if (ratingType === 'faceit') {
+                return b.faceit_rating - a.faceit_rating;
+            } else if (ratingType === 'premier') {
+                return b.premier_rating - a.premier_rating;
+            } else {
+                return b.faceit_rating - a.faceit_rating;
+            }
+        });
+        
+        // Формируем команды с равномерным распределением по рейтингу
+        const teams = [];
+        const numTeams = totalPlayers / teamSize;
+        
+        // Создаем пустые команды
+        for (let i = 0; i < numTeams; i++) {
+            teams.push({
+                name: `Команда ${i + 1}`,
+                members: []
+            });
+        }
+        
+        // Распределяем игроков змейкой для баланса команд
+        // Сначала лучшие игроки, затем послабее
+        for (let i = 0; i < teamSize; i++) {
+            // Прямой порядок для четных итераций, обратный для нечетных
+            const teamOrder = i % 2 === 0 
+                ? Array.from({ length: numTeams }, (_, idx) => idx) 
+                : Array.from({ length: numTeams }, (_, idx) => numTeams - 1 - idx);
+            
+            for (let teamIndex of teamOrder) {
+                const playerIndex = i * numTeams + (i % 2 === 0 ? teamIndex : numTeams - 1 - teamIndex);
+                if (playerIndex < sortedParticipants.length) {
+                    teams[teamIndex].members.push(sortedParticipants[playerIndex]);
+                }
+            }
+        }
+
+        // Возвращаем сформированные команды
+        res.json({ teams });
+    } catch (err) {
+        console.error('❌ Ошибка формирования команд:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
