@@ -2069,13 +2069,13 @@ router.post('/:tournamentId/chat/messages', authenticateToken, async (req, res) 
 // Формирование команд из участников для микс-турнира
 router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
-    const { ratingType } = req.body;
+    const { ratingType, teamSize: requestedTeamSize } = req.body;
     
     console.log(`🔍 Получен запрос на формирование команд для турнира ${id} с рейтингом ${ratingType}`);
     
     try {
         // Получаем параметры турнира
-        const tourRes = await pool.query('SELECT team_size, format, status, participant_type FROM tournaments WHERE id = $1', [id]);
+        const tourRes = await pool.query('SELECT team_size, format, status, participant_type, created_by FROM tournaments WHERE id = $1', [id]);
         if (!tourRes.rows.length) {
             console.log(`❌ Турнир с ID ${id} не найден`);
             return res.status(404).json({ error: 'Турнир не найден' });
@@ -2094,7 +2094,12 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
             return res.status(400).json({ error: 'Формирование команд доступно только для соло-участников' });
         }
         
-        const teamSize = parseInt(tournament.team_size, 10) || 5;
+        // Используем размер команды из запроса, если передан, иначе берем из турнира
+        const teamSize = requestedTeamSize ? parseInt(requestedTeamSize, 10) : parseInt(tournament.team_size, 10) || 5;
+        
+        if (![2, 5].includes(teamSize)) {
+            return res.status(400).json({ error: 'Неверный размер команды. Допустимые значения: 2 или 5' });
+        }
         
         // Получаем всех участников-игроков с рейтингами
         const partRes = await pool.query(
@@ -2165,10 +2170,110 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
 
         console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
         
+        // Удаляем старые команды, если они есть
+        await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
+        await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
+        
+        // Если есть существующие команды в ответе, то они уже будут на фронте
+        const createdTeams = [];
+        
+        // Сохраняем новые команды в БД
+        for (const team of teams) {
+            // Создаем команду
+            const teamResult = await pool.query(
+                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
+                [id, team.name, tournament.created_by]
+            );
+            
+            const teamId = teamResult.rows[0].id;
+            const members = [];
+            
+            // Добавляем участников команды
+            for (const member of team.members) {
+                await pool.query(
+                    'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
+                    [teamId, member.user_id, member.participant_id]
+                );
+                
+                members.push({
+                    participant_id: member.participant_id,
+                    user_id: member.user_id,
+                    name: member.name
+                });
+            }
+            
+            createdTeams.push({
+                id: teamId,
+                name: team.name,
+                members: members
+            });
+        }
+        
+        // Обновляем тип участников в турнире на team
+        await pool.query('UPDATE tournaments SET participant_type = $1 WHERE id = $2', ['team', id]);
+        
         // Возвращаем сформированные команды
-        res.json({ teams });
+        res.json({ teams: createdTeams });
     } catch (err) {
         console.error('❌ Ошибка формирования команд:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Обновление размера команды для микс-турнира
+router.patch('/:id/team-size', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { teamSize } = req.body;
+    
+    if (!teamSize || ![2, 5].includes(parseInt(teamSize, 10))) {
+        return res.status(400).json({ error: 'Неверный размер команды. Допустимые значения: 2 или 5' });
+    }
+    
+    try {
+        // Проверяем существование турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверяем формат турнира
+        if (tournament.format !== 'mix') {
+            return res.status(400).json({ error: 'Изменение размера команды доступно только для mix-турниров' });
+        }
+        
+        // Проверяем, не начался ли уже турнир
+        if (tournament.status !== 'active' && tournament.status !== 'pending') {
+            return res.status(400).json({ error: 'Изменение размера команды доступно только для турниров в статусе active или pending' });
+        }
+        
+        // Проверяем, не сгенерирована ли уже сетка
+        const bracketCheck = await pool.query('SELECT COUNT(*) FROM matches WHERE tournament_id = $1', [id]);
+        if (parseInt(bracketCheck.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Нельзя изменить размер команды после генерации сетки турнира' });
+        }
+        
+        // Проверяем, не созданы ли уже команды
+        const teamsCheck = await pool.query('SELECT COUNT(*) FROM tournament_teams WHERE tournament_id = $1', [id]);
+        if (parseInt(teamsCheck.rows[0].count) > 0) {
+            // Удаляем существующие команды, так как размер изменился
+            await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
+            await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
+        }
+        
+        // Обновляем размер команды
+        const updateResult = await pool.query(
+            'UPDATE tournaments SET team_size = $1 WHERE id = $2 RETURNING *',
+            [teamSize, id]
+        );
+        
+        res.status(200).json({
+            message: `Размер команды успешно обновлен до ${teamSize}`,
+            tournament: updateResult.rows[0]
+        });
+    } catch (err) {
+        console.error('❌ Ошибка при обновлении размера команды:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -68,6 +68,57 @@ class ErrorBoundary extends React.Component {
 // Глобальные константы
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
+// Компонент для отображения оригинального списка участников
+const OriginalParticipantsList = ({ participants, tournament }) => {
+  if (!participants || participants.length === 0) {
+    return (
+      <div className="original-participants-list-wrapper">
+        <h3>Зарегистрированные игроки (0)</h3>
+        <p className="no-participants">Нет зарегистрированных игроков</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="original-participants-list-wrapper">
+      <h3>Зарегистрированные игроки ({participants.length})</h3>
+      <div className="original-participants-grid">
+        {participants.map((participant) => (
+          <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
+            <div className="participant-info">
+              <div className="participant-avatar">
+                {participant && participant.avatar_url ? (
+                  <img 
+                    src={ensureHttps(participant.avatar_url)} 
+                    alt={((participant && participant.name) || '?').charAt(0)} 
+                    onError={(e) => {e.target.src = '/default-avatar.png'}}
+                  />
+                ) : (
+                  <div className="avatar-placeholder">
+                    {((participant && participant.name) || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              {participant && participant.user_id ? (
+                <Link 
+                  to={`/user/${participant.user_id}`} 
+                  className="participant-name"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {participant.name || 'Участник'}
+                </Link>
+              ) : (
+                <span className="participant-name">{participant?.name || 'Участник'}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 function TournamentDetails() {
     const { id } = useParams();
     const [tournament, setTournament] = useState(null);
@@ -146,6 +197,7 @@ function TournamentDetails() {
     const chatEndRef = useRef(null);
     // Модальное окно для подтверждения завершения турнира
     const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
+    const [originalParticipants, setOriginalParticipants] = useState([]);
 
     const addMap = () => {
         setMaps([...maps, { map: 'de_dust2', score1: 0, score2: 0 }]);
@@ -194,6 +246,11 @@ function TournamentDetails() {
             const response = await api.get(`/api/tournaments/${id}`);
             setTournament(response.data);
             setMatches(response.data.matches || []);
+            
+            // Сохраняем исходный список участников при загрузке турнира
+            if (response.data.participants && response.data.participants.length > 0) {
+                setOriginalParticipants(response.data.participants);
+            }
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
             setError('Ошибка загрузки данных турнира');
@@ -530,6 +587,11 @@ function TournamentDetails() {
     const handleTeamsGenerated = (teams) => {
         if (teams && Array.isArray(teams)) {
             setMixedTeams(teams);
+            
+            // Сохраняем текущий список участников до формирования команд
+            if (tournament && tournament.participants && tournament.participants.length > 0) {
+                setOriginalParticipants([...tournament.participants]);
+            }
         }
     };
 
@@ -2648,6 +2710,14 @@ function TournamentDetails() {
                         </div>
                     </div>
                 </div>
+            )}
+            
+            {/* Оригинальный список участников - показываем всегда */}
+            {tournament && (
+                <OriginalParticipantsList 
+                    participants={originalParticipants.length > 0 ? originalParticipants : tournament.participants} 
+                    tournament={tournament}
+                />
             )}
         </section>
     );
