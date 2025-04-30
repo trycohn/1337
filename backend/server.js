@@ -13,29 +13,35 @@ console.log("🔍 FACEIT_CLIENT_ID:", process.env.FACEIT_CLIENT_ID ? '[Уста�
 console.log("🔍 FACEIT_CLIENT_SECRET:", process.env.FACEIT_CLIENT_SECRET ? '[Установлен]' : '[Отсутствует]');
 console.log("🔍 FACEIT_REDIRECT_URI:", process.env.FACEIT_REDIRECT_URI ? '[Установлен]' : '[Отсутствует]');
 
+// Импорты из обоих файлов
 const express = require('express');
-const morgan = require('morgan');
 const cors = require('cors');
-const helmet = require('helmet');
 const path = require('path');
-const rateLimiter = require('express-rate-limit');
+const http = require('http');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+const { Server: SocketIOServer } = require('socket.io');
 const pool = require('./db');
+const { setupChatSocketIO } = require('./chat-socketio');
+const nodemailer = require('nodemailer');
+const rateLimiter = require('express-rate-limit');
 const { authenticateToken } = require('./middleware/auth');
 const { updateActivity } = require('./middleware/activity');
-const http = require('http');
-const puppeteer = require('puppeteer');
-const cookieParser = require('cookie-parser');
 const tournamentsRouter = require('./routes/tournaments');
-const nodemailer = require('nodemailer');
-const notifications = require('./notifications');
-const { Server: SocketIOServer } = require('socket.io');
-const { setupChatSocketIO } = require('./chat-socketio');
+const { broadcastTournamentUpdate } = require('./notifications');
 
+// Создаем Express приложение
 const app = express();
 // Установка глобальной переменной для доступа из других модулей
 global.app = app;
 
+// Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
+
+// Middleware для обработки JSON-запросов
+app.use(express.json());
+app.use(cookieParser());
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
@@ -44,7 +50,6 @@ app.use((req, res, next) => {
       : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
   const origin = req.headers.origin || 'https://1337community.com';
   console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
-  console.log(`🔍 Все заголовки запроса:`, req.headers);
   console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`);
   console.log(`🔍 Разрешённые origins: ${allowedOrigins}`);
   // Временно разрешаем любой origin для теста
@@ -65,8 +70,8 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.json());
-app.use(cookieParser());
+// Обслуживание статических файлов из папки frontend/build
+app.use(express.static(path.join(__dirname, '../frontend/build'), { cacheControl: false }));
 
 // Добавляем middleware для обновления активности пользователя после аутентификации
 app.use((req, res, next) => {
@@ -100,17 +105,43 @@ app.get('/testdb', async (req, res) => {
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/favicon.png', (req, res) => res.status(204).end());
 
-// API-маршруты
-app.use('/api/users', require('./routes/users'));
-app.use('/api/tournaments', tournamentsRouter);
-app.use('/api/teams', require('./routes/teams'));
-app.use('/api/tournamentPlayers', require('./routes/tournamentPlayers'));
-app.use('/api/matches', require('./routes/matches'));
-app.use('/api/statistics', require('./routes/statistics'));
-app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/playerStats', require('./routes/playerStats'));
-app.use('/api/friends', require('./routes/friends'));
-app.use('/api/chats', require('./routes/chats'));
+// API-маршруты из app.js
+app.use('/api/users', require('./routes/users')); // Маршруты пользователей
+app.use('/api/auth', require('./routes/auth')); // Маршруты аутентификации
+app.use('/api/tournaments', tournamentsRouter); // Маршруты турниров
+app.use('/api/teams', require('./routes/teams')); // Маршруты команд
+app.use('/api/tournamentPlayers', require('./routes/tournamentPlayers')); // Маршруты игроков турнира
+app.use('/api/matches', require('./routes/matches')); // Маршруты матчей
+app.use('/api/statistics', require('./routes/statistics')); // Маршруты статистики
+app.use('/api/notifications', require('./routes/notifications')); // Маршруты уведомлений
+app.use('/api/playerStats', require('./routes/playerStats')); // Маршруты статистики игроков
+app.use('/api/friends', require('./routes/friends')); // Маршруты друзей
+app.use('/api/chats', require('./routes/chats')); // Маршруты чатов
+
+// Настройка middleware
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.urlencoded({ extended: true }));
+
+// Обслуживание статических файлов из папки uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Главный роут для проверки работы API
+app.get('/', (req, res) => {
+    res.json({ message: 'Сервер 1337 Community API работает!' });
+});
+
+// Настройка лимита запросов
+const limiter = rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 100 // максимум 100 запросов на IP
+});
+app.use(limiter);
+
+// Catch-all для SPA (React Router) - перенаправление на index.html
+app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
 
 // Устанавливаю Socket.IO сервер для чата
 const io = new SocketIOServer(server, {
@@ -165,39 +196,7 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
-// Middleware
-app.use(cors({
-    origin: ['http://localhost:3000', 'https://1337community.com'], // Разрешенные источники для CORS
-    credentials: true,
-}));
-app.use(express.json()); // Парсинг JSON в body
-app.use(express.urlencoded({ extended: true })); // Парсинг URL-encoded в body
-
-// Обслуживание статических файлов из папки uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Главный роут для проверки работы API
-app.get('/', (req, res) => {
-    res.json({ message: 'Сервер 1337 Community API работает!' });
-});
-
-// Настройка middleware
-app.use(helmet());
-app.use(morgan('dev'));
-app.use(cors());
-app.use(express.json());
-
-// Статические файлы
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Настройка лимита запросов
-const limiter = rateLimiter({
-    windowMs: 15 * 60 * 1000, // 15 минут
-    max: 100 // максимум 100 запросов на IP
-});
-app.use(limiter);
-
-// Обработка 404
+// Обработка 404 для остальных маршрутов (должна идти после всех других маршрутов)
 app.use((req, res) => {
     console.log(`404 для пути: ${req.path}`);
     res.status(404).json({ error: 'Маршрут не найден' });

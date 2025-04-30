@@ -2071,17 +2071,26 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
     const { id } = req.params;
     const { ratingType } = req.body;
     
+    console.log(`🔍 Получен запрос на формирование команд для турнира ${id} с рейтингом ${ratingType}`);
+    
     try {
         // Получаем параметры турнира
         const tourRes = await pool.query('SELECT team_size, format, status, participant_type FROM tournaments WHERE id = $1', [id]);
-        if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
+        if (!tourRes.rows.length) {
+            console.log(`❌ Турнир с ID ${id} не найден`);
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
         
         const tournament = tourRes.rows[0];
+        console.log(`🔍 Данные турнира: ${JSON.stringify(tournament)}`);
+        
         if (tournament.format !== 'mix') {
+            console.log(`❌ Формат турнира ${tournament.format} не является 'mix'`);
             return res.status(400).json({ error: 'Формирование команд доступно только для микс-турниров' });
         }
         
         if (tournament.participant_type !== 'solo') {
+            console.log(`❌ Тип участников турнира ${tournament.participant_type} не является 'solo'`);
             return res.status(400).json({ error: 'Формирование команд доступно только для соло-участников' });
         }
         
@@ -2099,7 +2108,10 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
         );
         
         const participants = partRes.rows;
+        console.log(`🔍 Найдено ${participants.length} участников для турнира ${id}`);
+        
         if (!participants.length) {
+            console.log(`❌ Нет участников для формирования команд в турнире ${id}`);
             return res.status(400).json({ error: 'Нет участников для формирования команд' });
         }
         
@@ -2108,6 +2120,7 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
         const remainder = totalPlayers % teamSize;
         if (remainder !== 0) {
             const shortage = teamSize - remainder;
+            console.log(`❌ Недостаточно участников: не хватает ${shortage} для формирования полных команд`);
             return res.status(400).json({ error: `Не хватает ${shortage} участников для формирования полных команд` });
         }
         
@@ -2150,6 +2163,8 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
             }
         }
 
+        console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
+        
         // Возвращаем сформированные команды
         res.json({ teams });
     } catch (err) {
