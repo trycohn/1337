@@ -123,10 +123,6 @@ function TournamentsList() {
             return 0;
         });
 
-    const toggleViewMode = () => {
-        setViewMode(viewMode === 'table' ? 'card' : 'table');
-    };
-
     const renderTableView = () => (
         <table>
             <thead>

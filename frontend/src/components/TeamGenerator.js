@@ -30,7 +30,6 @@ const TeamGenerator = ({
   const [loading, setLoading] = useState(false);
   const [mixedTeams, setMixedTeams] = useState([]);
   const [originalParticipants, setOriginalParticipants] = useState([]);
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
   
   // При инициализации устанавливаем размер команды из турнира, если он есть
   useEffect(() => {

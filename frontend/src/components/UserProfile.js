@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './Profile.css';
 import { redirectIfCurrentUser, isCurrentUser, decodeTokenPayload, ensureHttps } from '../utils/userHelpers';
-import { formatDate } from '../utils/dateHelpers';
 
 function UserProfile() {
     const { userId } = useParams();
@@ -170,7 +169,7 @@ function UserProfile() {
         if (!friendStatus) return null;
         
         const currentUserId = decodeTokenPayload(localStorage.getItem('token'))?.id;
-        if (currentUserId == userId) return null; // Не показываем кнопку на своем профиле
+        if (currentUserId === userId) return null; // Не показываем кнопку на своем профиле
         
         switch (friendStatus.status) {
             case 'none':
