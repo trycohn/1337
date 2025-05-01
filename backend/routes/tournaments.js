@@ -195,12 +195,12 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
         
         // Отправляем обновление через WebSocket
         broadcastTournamentUpdate(id, responseData);
-+        // Отправляем объявление в чат турнира о начале
-+        await sendTournamentChatAnnouncement(
-+            updatedTournament.name,
-+            `Турнир "${updatedTournament.name}" начат`,
-+            id
-+        );
+        // Отправляем объявление в чат турнира о начале
+        await sendTournamentChatAnnouncement(
+            updatedTournament.name,
+            `Турнир "${updatedTournament.name}" начат`,
+            id
+        );
         
         // Возвращаем успешный ответ
         res.status(200).json({
@@ -959,12 +959,12 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
 
         // Отправляем обновления всем клиентам, просматривающим этот турнир
         broadcastTournamentUpdate(id, tournamentData);
-+        // Отправляем объявление в чат турнира о генерации сетки
-+        await sendTournamentChatAnnouncement(
-+            tournamentData.name,
-+            `Сетка турнира "${tournamentData.name}" сгенерирована`,
-+            id
-+        );
+        // Отправляем объявление в чат турнира о генерации сетки
+        await sendTournamentChatAnnouncement(
+            tournamentData.name,
+            `Сетка турнира "${tournamentData.name}" сгенерирована`,
+            id
+        );
         console.log('🔍 Bracket generated for tournament:', tournamentData);
         res.status(200).json({ message: 'Сетка успешно сгенерирована', tournament: tournamentData });
     } catch (err) {
@@ -1248,26 +1248,26 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         };
         // Отправляем обновления всем клиентам
         broadcastTournamentUpdate(id, tournamentData);
-+       // Отправляем объявление в групповой чат турнира при обновлении результата матча
-+       {
-+           // Получаем имена команд/участников
-+           const pType = tournament.participant_type;
-+           let team1Name, team2Name;
-+           if (pType === 'solo') {
-+               const p1 = await pool.query('SELECT name FROM tournament_participants WHERE id=$1', [match.team1_id]);
-+               team1Name = p1.rows[0]?.name;
-+               const p2 = await pool.query('SELECT name FROM tournament_participants WHERE id=$1', [match.team2_id]);
-+               team2Name = p2.rows[0]?.name;
-+           } else {
-+               const t1 = await pool.query('SELECT name FROM tournament_teams WHERE id=$1', [match.team1_id]);
-+               team1Name = t1.rows[0]?.name;
-+               const t2 = await pool.query('SELECT name FROM tournament_teams WHERE id=$1', [match.team2_id]);
-+               team2Name = t2.rows[0]?.name;
-+           }
-+           const winName = winner_team_id ? (winner_team_id === match.team1_id ? team1Name : team2Name) : '';
-+           const announcement = `Матч ${match.match_number} ${team1Name} vs ${team2Name} завершен со счетом ${score1}:${score2}${winName ? `, победил ${winName}` : ''}. Ссылка на сетку: /tournaments/${id}`;
-+           await sendTournamentChatAnnouncement(tournament.name, announcement, id);
-+       }
+        // Отправляем объявление в групповой чат турнира при обновлении результата матча
+        {
+            // Получаем имена команд/участников
+            const pType = tournament.participant_type;
+            let team1Name, team2Name;
+            if (pType === 'solo') {
+                const p1 = await pool.query('SELECT name FROM tournament_participants WHERE id=$1', [match.team1_id]);
+                team1Name = p1.rows[0]?.name;
+                const p2 = await pool.query('SELECT name FROM tournament_participants WHERE id=$1', [match.team2_id]);
+                team2Name = p2.rows[0]?.name;
+            } else {
+                const t1 = await pool.query('SELECT name FROM tournament_teams WHERE id=$1', [match.team1_id]);
+                team1Name = t1.rows[0]?.name;
+                const t2 = await pool.query('SELECT name FROM tournament_teams WHERE id=$1', [match.team2_id]);
+                team2Name = t2.rows[0]?.name;
+            }
+            const winName = winner_team_id ? (winner_team_id === match.team1_id ? team1Name : team2Name) : '';
+            const announcement = `Матч ${match.match_number} ${team1Name} vs ${team2Name} завершен со счетом ${score1}:${score2}${winName ? `, победил ${winName}` : ''}. Ссылка на сетку: /tournaments/${id}`;
+            await sendTournamentChatAnnouncement(tournament.name, announcement, id);
+        }
         console.log('🔍 Match updated for tournament:', tournamentData);
         res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
     } catch (err) {
@@ -1779,14 +1779,14 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
 
         // Переключаем тип турнира на командный
         await pool.query('UPDATE tournaments SET participant_type=$1 WHERE id=$2', ['team', id]);
-+        // Отправляем объявление в чат турнира о формировании команд
-+        const tourNameRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [id]);
-+        const tourName = tourNameRes.rows[0]?.name;
-+        await sendTournamentChatAnnouncement(
-+            tourName,
-+            `Сформированы команды для турнира "${tourName}"`,
-+            id
-+        );
+        // Отправляем объявление в чат турнира о формировании команд
+        const tourNameRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [id]);
+        const tourName = tourNameRes.rows[0]?.name;
+        await sendTournamentChatAnnouncement(
+            tourName,
+            `Сформированы команды для турнира "${tourName}"`,
+            id
+        );
 
         res.json({ teams: created });
     } catch (err) {
@@ -2083,12 +2083,12 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         
         // Отправляем обновление через WebSocket
         broadcastTournamentUpdate(id, responseData);
-+        // Отправляем объявление в чат турнира о завершении
-+        await sendTournamentChatAnnouncement(
-+            updatedTournament.name,
-+            `Турнир "${updatedTournament.name}" завершён`,
-+            id
-+        );
+        // Отправляем объявление в чат турнира о завершении
+        await sendTournamentChatAnnouncement(
+            updatedTournament.name,
+            `Турнир "${updatedTournament.name}" завершён`,
+            id
+        );
         
         // Возвращаем успешный ответ
         res.status(200).json({
