@@ -864,11 +864,11 @@ header.header {
 }
 
 .username-link {
-  color: #007bff;
+  color: #ffffff;
   text-decoration: none;
 }
 .username-link:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Стили для страницы авторизации */
