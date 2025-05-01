@@ -1531,4 +1531,6 @@ a.participant-name:hover {
   flex-wrap: nowrap;
   justify-content: flex-start;
   width: 100%;
+  align-items: flex-end;
+  gap: 10px;
 }
