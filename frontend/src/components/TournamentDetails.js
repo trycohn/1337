@@ -2058,12 +2058,12 @@ function TournamentDetails() {
                                 <div className="add-participant-section">
                                     <h3>Добавление участников</h3>
                                     <div className="search-container" ref={searchContainerRef}>
-                                        <input className="add-participant-placeholder"
+                                        <input 
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => handleUserSearchWithDelay(e.target.value)}
                                             placeholder="Поиск пользователей..."
-                                            className="search-input"
+                                            className="search-input add-participant-placeholder"
                                         />
                                         {isSearching && (
                                             <div className="search-loading">Поиск...</div>
