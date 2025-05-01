@@ -1,123 +1,53 @@
 .team-generator {
-  margin: 20px 0;
-  width: 100%;
-}
-
-.mix-settings {
-  background-color: #f5f5f5;
-  border-radius: 8px;
   padding: 20px;
-  margin-bottom: 20px;
-}
-
-/* Добавляем стили для контейнера элементов в одной строке */
-.mix-controls-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 15px;
-}
-
-/* Родительский блок для группы элементов формы */
-.mix-form-group {
-  display: flex;
-  align-items: center;
   background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 10px 15px;
-  gap: 15px;
-  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.mix-form-group label {
-  margin-right: 10px;
-  font-weight: 500;
-  white-space: nowrap;
-  min-width: 180px;
+.original-participants-section {
+  margin-bottom: 30px;
 }
 
-.mix-form-group select {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  margin-right: 15px;
-  flex: 0 1 auto;
+.original-participants-section h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
 }
 
-/* Удаляю неиспользуемые стили рейтинг-селектора, заменяя их на */
-.rating-type-selector {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.form-teams-button,
-.reformate-teams-button {
-  background-color: #4a6da7;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-  margin-left: auto;
-}
-
-.form-teams-button:hover,
-.reformate-teams-button:hover {
-  background-color: #3a5a8a;
-}
-
-.form-teams-button:disabled,
-.reformate-teams-button:disabled {
-  background-color: #a0a0a0;
-  cursor: not-allowed;
-}
-
-.reformate-teams-button {
-  background-color: #e67e22;
-}
-
-.reformate-teams-button:hover {
-  background-color: #d35400;
+.mix-players-list {
+  margin-top: 20px;
 }
 
 .participants-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .participant-card {
-  background-color: #fff;
-  border-radius: 6px;
-  padding: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.participant-info {
   display: flex;
   align-items: center;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
+}
+
+.participant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .participant-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-right: 10px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #e0e0e0;
+  margin-right: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .participant-avatar img {
@@ -126,242 +56,162 @@
   object-fit: cover;
 }
 
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
+.participant-info {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #3498db;
-  color: white;
-  font-weight: bold;
-  font-size: 18px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .participant-name {
   font-weight: 500;
-  text-decoration: none;
-  color: #333;
+  color: #2c3e50;
 }
 
-.participant-name:hover {
-  color: #3498db;
-  text-decoration: underline;
+.participant-rating {
+  font-size: 0.9rem;
+  color: #666;
 }
 
 .remove-participant {
   position: absolute;
-  right: 0;
-  background: none;
-  border: none;
-  color: #e74c3c;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 2px 6px;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #dc3545;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .remove-participant:hover {
-  background-color: rgba(231, 76, 60, 0.1);
+  background-color: #dc3545;
+  color: #fff;
 }
 
 .no-participants {
-  color: #777;
+  text-align: center;
+  padding: 40px;
+  color: #666;
   font-style: italic;
-  text-align: center;
-  padding: 20px;
-}
-
-/* Стили для сформированных команд */
-.mixed-teams {
-  margin-top: 25px;
-  background-color: #f0f8ff;
+  background-color: #f8f9fa;
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #c3d8f0;
 }
 
-.mixed-teams h3 {
-  text-align: center;
-  font-size: 1.3rem;
+.mix-controls-row {
   margin-bottom: 20px;
-  color: #333;
-  border-bottom: 1px solid #c3d8f0;
-  padding-bottom: 10px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.mix-form-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mix-form-group label {
+  font-weight: 500;
+  color: #2c3e50;
+  min-width: 150px;
+}
+
+.mix-form-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  min-width: 150px;
+}
+
+.form-teams-button,
+.reformate-teams-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #3498db;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.form-teams-button:hover,
+.reformate-teams-button:hover {
+  background-color: #2980b9;
+}
+
+.form-teams-button:disabled,
+.reformate-teams-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.reformate-teams-button {
+  background-color: #2ecc71;
+}
+
+.reformate-teams-button:hover {
+  background-color: #27ae60;
+}
+
+.mixed-teams-section {
+  margin-top: 30px;
+}
+
+.mixed-teams-section h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
 }
 
 .mixed-teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.team-card {
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e0e0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.team-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.team-header {
-  background-color: #3498db;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 8px 8px 0 0;
-}
-
-.team-header h4 {
-  margin: 0;
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.team-members-list {
-  padding: 15px;
-  max-height: 350px;
-  overflow-y: auto;
-}
-
-.team-member-card {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  margin-bottom: 8px;
-  border-radius: 5px;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  transition: background-color 0.2s ease;
-}
-
-.team-member-card:hover {
-  background-color: #e9f5ff;
-}
-
-.team-member-card:last-child {
-  margin-bottom: 0;
-}
-
-.member-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-right: 10px;
-  background-color: #e0e0e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.member-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.member-avatar .avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: #555;
-}
-
-.member-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.member-name {
-  font-weight: 500;
-  color: #333;
-  text-decoration: none;
-  margin-bottom: 3px;
-  font-size: 0.95rem;
-}
-
-a.member-name:hover {
-  color: #2980b9;
-  text-decoration: underline;
-}
-
-.member-ratings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.member-rating {
-  font-size: 0.8rem;
-  color: #666;
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-top: 3px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.member-rating.faceit {
-  background-color: #f0e68c;
-  color: #333;
-  border-left: 2px solid #ffc107;
-}
-
-.member-rating.premier {
-  background-color: #d0e8ff;
-  color: #0066cc;
-  border-left: 2px solid #2196f3;
-}
-
-/* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
-  .participants-grid,
-  .mixed-teams-grid {
+  .team-generator {
+    padding: 16px;
+  }
+
+  .participants-grid {
     grid-template-columns: 1fr;
   }
-  
-  /* Адаптивность для формы микса */
+
   .mix-form-group {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
-  
+
   .mix-form-group label {
-    margin-right: 0;
-    margin-bottom: 8px;
+    min-width: auto;
   }
-  
+
   .mix-form-group select {
-    margin-right: 0;
-    margin-bottom: 10px;
     width: 100%;
   }
-  
+
   .form-teams-button,
   .reformate-teams-button {
-    margin-left: 0;
     width: 100%;
+    margin-top: 12px;
   }
-  
+
   .mixed-teams-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .team-card {
-    margin-bottom: 15px;
   }
 } 
