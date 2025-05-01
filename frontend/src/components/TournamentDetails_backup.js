@@ -1922,6 +1922,17 @@ function TournamentDetails() {
         toast.info("Функция сброса результатов отключена");
     };
 
+    // Объект с безопасными данными турнира для сетки
+    const safeData = useMemo(() => {
+        // ... existing code ...
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tournament, matches, selectedMatch]);
+
+    useEffect(() => {
+        // ... existing code ...
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <section className="tournament-details">
             <div className="tournament-layout">
