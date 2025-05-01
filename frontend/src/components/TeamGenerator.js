@@ -31,6 +31,7 @@ const TeamGenerator = ({
     const [loading, setLoading] = useState(false);
     const [mixedTeams, setMixedTeams] = useState([]);
     const [originalParticipants, setOriginalParticipants] = useState([]);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
 
     // При инициализации устанавливаем размер команды из турнира
     useEffect(() => {
@@ -38,10 +39,37 @@ const TeamGenerator = ({
             setTeamSize(tournament.team_size.toString());
         }
         
+        // При инициализации сохраняем полученных участников и загружаем оригинальных если
+        // это турнир в режиме team (уже были сформированы команды)
         if (participants && participants.length > 0) {
             setOriginalParticipants(participants);
         }
+        
+        // Загружаем оригинальных участников, если это турнир с командами
+        if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix') {
+            fetchOriginalParticipants();
+        }
     }, [tournament, participants]);
+
+    // Функция для загрузки оригинальных участников
+    const fetchOriginalParticipants = async () => {
+        if (!tournament || !tournament.id) return;
+        
+        setLoadingParticipants(true);
+        try {
+            const response = await api.get(`/api/tournaments/${tournament.id}/original-participants`);
+            if (response.data && Array.isArray(response.data)) {
+                setOriginalParticipants(response.data);
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке оригинальных участников:', error);
+            if (toast) {
+                toast.error('Не удалось загрузить список участников');
+            }
+        } finally {
+            setLoadingParticipants(false);
+        }
+    };
 
     // Функция для обновления размера команды на сервере
     const updateTeamSize = async (newSize) => {
@@ -105,6 +133,9 @@ const TeamGenerator = ({
                     onTeamsUpdated();
                 }
                 
+                // После формирования команд загружаем оригинальных участников для отображения
+                fetchOriginalParticipants();
+                
                 if (toast) {
                     toast.success('Команды успешно сформированы');
                 }
@@ -130,7 +161,9 @@ const TeamGenerator = ({
                     <div className="original-participants-section">
                         <h3>Зарегистрированные игроки ({displayParticipants?.length || 0})</h3>
                         <div className="mix-players-list">
-                            {displayParticipants && displayParticipants.length > 0 ? (
+                            {loadingParticipants ? (
+                                <p className="loading-participants">Загрузка участников...</p>
+                            ) : displayParticipants && displayParticipants.length > 0 ? (
                                 <div className="participants-grid">
                                     {displayParticipants.map((participant) => (
                                         <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
@@ -153,7 +186,7 @@ const TeamGenerator = ({
                                                     }
                                                 </span>
                                             </div>
-                                            {isAdminOrCreator && (
+                                            {isAdminOrCreator && tournament.participant_type === 'solo' && (
                                                 <button 
                                                     className="remove-participant"
                                                     onClick={() => onRemoveParticipant(participant.id)}

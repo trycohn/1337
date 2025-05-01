@@ -3,35 +3,61 @@ import { ensureHttps } from '../utils/userHelpers';
 import './TeamCard.css';
 
 const TeamCard = ({ team, index, ratingType }) => {
+    // Определяем, какое свойство использовать для участников
+    const teamMembers = team.members || team.players || [];
+    
+    const getFaceitRating = (player) => {
+        return player.faceit_elo || player.faceit_rating || 1000;
+    };
+    
+    const getPremierRating = (player) => {
+        return player.premier_rank || player.cs2_premier_rank || 5;
+    };
+    
+    const getPlayerRating = (player) => {
+        if (ratingType === 'faceit') {
+            return `FACEIT: ${getFaceitRating(player)}`;
+        } else {
+            return `Premier: ${getPremierRating(player)}`;
+        }
+    };
+    
+    const getPlayerAvatar = (player) => {
+        return ensureHttps(player.avatar_url) || '/default-avatar.png';
+    };
+    
+    const getPlayerName = (player) => {
+        return player.name || player.username || 'Участник';
+    };
+    
     return (
         <div className="team-card">
             <div className="team-card-header">
-                <h3>Команда {index + 1}</h3>
-                <span className="team-rating">
-                    Общий рейтинг: {Math.round(team.totalRating)}
-                </span>
+                <h3>{team.name || `Команда ${index + 1}`}</h3>
+                {team.totalRating && (
+                    <span className="team-rating">
+                        Общий рейтинг: {Math.round(team.totalRating)}
+                    </span>
+                )}
             </div>
             <div className="team-players">
-                {team.players.map((player, playerIndex) => (
+                {teamMembers.map((player, playerIndex) => (
                     <div key={playerIndex} className="player-row">
                         <div className="player-info">
                             <div className="player-avatar">
                                 <img 
-                                    src={ensureHttps(player.avatar_url) || '/default-avatar.png'} 
-                                    alt={`${player.name} avatar`}
+                                    src={getPlayerAvatar(player)} 
+                                    alt={`${getPlayerName(player)} avatar`}
                                     onError={(e) => {
                                         e.target.onerror = null;
                                         e.target.src = '/default-avatar.png';
                                     }}
                                 />
                             </div>
-                            <span className="player-name">{player.name}</span>
+                            <span className="player-name">{getPlayerName(player)}</span>
                         </div>
                         <span className="player-rating">
-                            {ratingType === 'faceit' 
-                                ? `FACEIT: ${player.faceit_elo || 1000}`
-                                : `Premier: ${player.premier_rank || 5}`
-                            }
+                            {getPlayerRating(player)}
                         </span>
                     </div>
                 ))}

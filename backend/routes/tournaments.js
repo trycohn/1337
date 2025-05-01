@@ -2278,4 +2278,185 @@ router.patch('/:id/team-size', authenticateToken, verifyAdminOrCreator, async (r
     }
 });
 
+// Получение оригинальных участников турнира, даже если он переключен в командный режим
+router.get('/:id/original-participants', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Проверяем существование турнира
+        const tourCheck = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tourCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        // Получаем всех участников, независимо от типа турнира
+        const participantsRes = await pool.query(
+            `SELECT tp.id, tp.user_id, tp.name, tp.tournament_id,
+                    u.avatar_url, u.username, u.faceit_elo, u.cs2_premier_rank
+             FROM tournament_participants tp
+             LEFT JOIN users u ON tp.user_id = u.id
+             WHERE tp.tournament_id = $1`,
+            [id]
+        );
+
+        res.json(participantsRes.rows);
+    } catch (err) {
+        console.error('❌ Ошибка получения оригинальных участников:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Сохраняем оригинальных участников турнира при переключении в режим команды
+router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { ratingType, teamSize: requestedTeamSize } = req.body;
+    
+    console.log(`🔍 Получен запрос на формирование команд для турнира ${id} с рейтингом ${ratingType}`);
+    
+    try {
+        // Получаем параметры турнира
+        const tourRes = await pool.query('SELECT team_size, format, status, participant_type, created_by FROM tournaments WHERE id = $1', [id]);
+        if (!tourRes.rows.length) {
+            console.log(`❌ Турнир с ID ${id} не найден`);
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tourRes.rows[0];
+        console.log(`🔍 Данные турнира: ${JSON.stringify(tournament)}`);
+        
+        if (tournament.format !== 'mix') {
+            console.log(`❌ Формат турнира ${tournament.format} не является 'mix'`);
+            return res.status(400).json({ error: 'Формирование команд доступно только для микс-турниров' });
+        }
+        
+        if (tournament.participant_type !== 'solo') {
+            console.log(`❌ Тип участников турнира ${tournament.participant_type} не является 'solo'`);
+            return res.status(400).json({ error: 'Формирование команд доступно только для соло-участников' });
+        }
+        
+        // Используем размер команды из запроса, если передан, иначе берем из турнира
+        const teamSize = requestedTeamSize ? parseInt(requestedTeamSize, 10) : parseInt(tournament.team_size, 10) || 5;
+        
+        if (![2, 5].includes(teamSize)) {
+            return res.status(400).json({ error: 'Неверный размер команды. Допустимые значения: 2 или 5' });
+        }
+        
+        // Получаем всех участников-игроков с рейтингами
+        const partRes = await pool.query(
+            `SELECT tp.id AS participant_id, tp.user_id, tp.name,
+                    COALESCE(u.faceit_elo, 0) as faceit_rating,
+                    COALESCE(u.cs2_premier_rank, 0) as premier_rating
+             FROM tournament_participants tp
+             LEFT JOIN users u ON tp.user_id = u.id
+             WHERE tp.tournament_id = $1`,
+            [id]
+        );
+        
+        const participants = partRes.rows;
+        console.log(`🔍 Найдено ${participants.length} участников для турнира ${id}`);
+        
+        if (!participants.length) {
+            console.log(`❌ Нет участников для формирования команд в турнире ${id}`);
+            return res.status(400).json({ error: 'Нет участников для формирования команд' });
+        }
+        
+        // Проверяем, кратно ли число участников размеру команды
+        const totalPlayers = participants.length;
+        const remainder = totalPlayers % teamSize;
+        if (remainder !== 0) {
+            const shortage = teamSize - remainder;
+            console.log(`❌ Недостаточно участников: не хватает ${shortage} для формирования полных команд`);
+            return res.status(400).json({ error: `Не хватает ${shortage} участников для формирования полных команд` });
+        }
+        
+        // Сортируем игроков по рейтингу (в зависимости от выбранного типа)
+        const sortedParticipants = [...participants].sort((a, b) => {
+            if (ratingType === 'faceit') {
+                return b.faceit_rating - a.faceit_rating;
+            } else if (ratingType === 'premier') {
+                return b.premier_rating - a.premier_rating;
+            } else {
+                return b.faceit_rating - a.faceit_rating;
+            }
+        });
+        
+        // Формируем команды с равномерным распределением по рейтингу
+        const teams = [];
+        const numTeams = totalPlayers / teamSize;
+        
+        // Создаем пустые команды
+        for (let i = 0; i < numTeams; i++) {
+            teams.push({
+                name: `Команда ${i + 1}`,
+                members: []
+            });
+        }
+        
+        // Распределяем игроков змейкой для баланса команд
+        // Сначала лучшие игроки, затем послабее
+        for (let i = 0; i < teamSize; i++) {
+            // Прямой порядок для четных итераций, обратный для нечетных
+            const teamOrder = i % 2 === 0 
+                ? Array.from({ length: numTeams }, (_, idx) => idx) 
+                : Array.from({ length: numTeams }, (_, idx) => numTeams - 1 - idx);
+            
+            for (let teamIndex of teamOrder) {
+                const playerIndex = i * numTeams + (i % 2 === 0 ? teamIndex : numTeams - 1 - teamIndex);
+                if (playerIndex < sortedParticipants.length) {
+                    teams[teamIndex].members.push(sortedParticipants[playerIndex]);
+                }
+            }
+        }
+
+        console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
+        
+        // Удаляем старые команды, если они есть
+        await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
+        await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
+        
+        // Если есть существующие команды в ответе, то они уже будут на фронте
+        const createdTeams = [];
+        
+        // Сохраняем новые команды в БД
+        for (const team of teams) {
+            // Создаем команду
+            const teamResult = await pool.query(
+                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
+                [id, team.name, tournament.created_by]
+            );
+            
+            const teamId = teamResult.rows[0].id;
+            const members = [];
+            
+            // Добавляем участников команды
+            for (const member of team.members) {
+                await pool.query(
+                    'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
+                    [teamId, member.user_id, member.participant_id]
+                );
+                
+                members.push({
+                    participant_id: member.participant_id,
+                    user_id: member.user_id,
+                    name: member.name
+                });
+            }
+            
+            createdTeams.push({
+                id: teamId,
+                name: team.name,
+                members: members
+            });
+        }
+        
+        // Обновляем тип участников в турнире на team
+        await pool.query('UPDATE tournaments SET participant_type = $1 WHERE id = $2', ['team', id]);
+        
+        // Возвращаем сформированные команды
+        res.json({ teams: createdTeams });
+    } catch (err) {
+        console.error('❌ Ошибка формирования команд:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

@@ -1,67 +1,63 @@
 .team-card {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.team-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    background: #1f2937;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 450px;
 }
 
 .team-card-header {
-    border-bottom: 1px solid #eaeaea;
-    padding-bottom: 12px;
-    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #374151;
+    padding-bottom: 8px;
 }
 
 .team-card-header h3 {
-    color: #2c3e50;
-    margin: 0 0 8px 0;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+    color: #f3f4f6;
+    margin: 0;
 }
 
 .team-rating {
-    color: #666;
     font-size: 0.9rem;
-    font-weight: 500;
+    color: #d1d5db;
+    background-color: #111827;
+    padding: 3px 8px;
+    border-radius: 12px;
 }
 
 .team-players {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .player-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
-}
-
-.player-row:hover {
-    background-color: #f0f2f5;
+    background-color: #111827;
+    padding: 8px 12px;
+    border-radius: 6px;
 }
 
 .player-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .player-avatar {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #374151;
 }
 
 .player-avatar img {
@@ -72,16 +68,15 @@
 
 .player-name {
     font-weight: 500;
-    color: #2c3e50;
+    color: #f3f4f6;
 }
 
 .player-rating {
-    font-size: 0.9rem;
-    color: #666;
-    background-color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 0.85rem;
+    color: #9ca3af;
+    background-color: #1f2937;
+    padding: 3px 8px;
+    border-radius: 12px;
 }
 
 @media (max-width: 768px) {
