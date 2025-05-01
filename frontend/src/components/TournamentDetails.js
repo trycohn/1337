@@ -2057,8 +2057,8 @@ function TournamentDetails() {
                             {isCreator && matches.length === 0 && (
                                 <div className="add-participant-section">
                                     <h3>Добавление участников</h3>
-                                    <div className="search-container add-participant-placeholder" ref={searchContainerRef}>
-                                        <input
+                                    <div className="search-container" ref={searchContainerRef}>
+                                        <input className="add-participant-placeholder"
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => handleUserSearchWithDelay(e.target.value)}
@@ -2132,14 +2132,14 @@ function TournamentDetails() {
                                             </ul>
                                         )}
                                     </div>
-                                    <div className="add-unregistered-participant add-participant-placeholder">
-                                        <input
+                                    <div className="add-unregistered-participant">
+                                        <input className="add-participant-placeholder"
                                             type="text"
                                             value={addParticipantName}
                                             onChange={(e) => setAddParticipantName(e.target.value)}
                                             placeholder="Имя незарегистрированного участника"
                                         />
-                                        <button onClick={handleAddParticipant}>Добавить незарегистрированного участника</button>
+                                        <button className="add-participant-button" onClick={handleAddParticipant}>Добавить незарегистрированного участника</button>
                                     </div>
                                 </div>
                             )}

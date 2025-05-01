@@ -1508,3 +1508,10 @@ a.participant-name:hover {
   justify-content: flex-start;
   width: 150px;
 }
+
+.add-participant-button {
+    background-color: #444444;
+    color: #fff;
+    
+
+}
