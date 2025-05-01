@@ -276,15 +276,6 @@ header.header {
   background-color: #f0f0f0;
 }
 
-.tournaments-list a {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.tournaments-list a:hover {
-  text-decoration: underline;
-}
-
 /* Стили для деталей турнира */
 .tournament-details {
   margin-bottom: 20px;
@@ -1276,9 +1267,13 @@ header.header {
 }
 
 .view-mode-btn.active {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.view-mode-btn.active:hover {
+  background-color: #7b7b7b;
+  color: #ffffff;
 }
 
 .tournaments-filter-bar {

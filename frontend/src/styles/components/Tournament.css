@@ -79,7 +79,6 @@
 
 .tournaments-list a:hover {
   color: var(--primary-hover);
-  text-decoration: underline;
 }
 
 .tournaments-list tr:nth-child(even) {
