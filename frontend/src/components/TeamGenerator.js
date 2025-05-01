@@ -158,6 +158,7 @@ const TeamGenerator = ({
         <div className="team-generator">
             {tournament?.format === 'mix' && !tournament?.bracket && (
                 <>
+                    {/* Секция с исходными участниками */}
                     <div className="original-participants-section">
                         <h3>Зарегистрированные игроки ({displayParticipants?.length || 0})</h3>
                         <div className="mix-players-list">
@@ -203,8 +204,26 @@ const TeamGenerator = ({
                         </div>
                     </div>
 
+                    {/* Секция сформированных команд - переместили сюда, сразу после исходных участников */}
+                    {(teamsExist || teamsList.length > 0) && (
+                        <div className="mixed-teams-section">
+                            <h3>Сформированные команды</h3>
+                            <div className="mixed-teams-grid">
+                                {teamsList.map((team, index) => (
+                                    <TeamCard
+                                        key={index}
+                                        team={team}
+                                        index={index}
+                                        ratingType={ratingType}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Секция с настройками микса */}
                     {isAdminOrCreator && (
-                        <>
+                        <div className="mix-settings-section">
                             <h3>Настройки микса</h3>
                             <div className="mix-controls-row">
                                 <div className="mix-form-group">
@@ -222,10 +241,8 @@ const TeamGenerator = ({
                                         <option value="5">5 игроков</option>
                                     </select>
                                 </div>
-                            </div>
                             
-                            <div className="mix-controls-row">
-                                <div className="mix-form-group">
+                                <div className="mix-form-group rating-group">
                                     <label>Миксовать по рейтингу:</label>
                                     <select
                                         value={ratingType}
@@ -234,43 +251,28 @@ const TeamGenerator = ({
                                         <option value="faceit">FACEit</option>
                                         <option value="premier">Steam Premier</option>
                                     </select>
-                                
-                                    {tournament.participant_type === 'solo' && (!teamsExist || teamsList.length === 0) && (
-                                        <button 
-                                            onClick={handleFormTeams} 
-                                            className="form-teams-button"
-                                            disabled={loading}
-                                        >
-                                            {loading ? 'Создание команд...' : 'Сформировать команды из участников'}
-                                        </button>
-                                    )}
-                                    {tournament.participant_type === 'solo' && (teamsExist || teamsList.length > 0) && tournament.status === 'pending' && (
-                                        <button 
-                                            onClick={handleFormTeams} 
-                                            className="reformate-teams-button"
-                                            disabled={loading}
-                                        >
-                                            {loading ? 'Пересоздание команд...' : 'Переформировать команды'}
-                                        </button>
-                                    )}
                                 </div>
                             </div>
-                        </>
-                    )}
 
-                    {/* Секция сформированных команд */}
-                    {(teamsExist || teamsList.length > 0) && (
-                        <div className="mixed-teams-section">
-                            <h3>Сформированные команды</h3>
-                            <div className="mixed-teams-grid">
-                                {teamsList.map((team, index) => (
-                                    <TeamCard
-                                        key={index}
-                                        team={team}
-                                        index={index}
-                                        ratingType={ratingType}
-                                    />
-                                ))}
+                            <div className="mix-buttons-row">
+                                {tournament.participant_type === 'solo' && (!teamsExist || teamsList.length === 0) && (
+                                    <button 
+                                        onClick={handleFormTeams} 
+                                        className="form-teams-button"
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Создание команд...' : 'Сформировать команды из участников'}
+                                    </button>
+                                )}
+                                {tournament.participant_type === 'solo' && (teamsExist || teamsList.length > 0) && tournament.status === 'pending' && (
+                                    <button 
+                                        onClick={handleFormTeams} 
+                                        className="reformate-teams-button"
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Пересоздание команд...' : 'Переформировать команды'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}

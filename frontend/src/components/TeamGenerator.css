@@ -11,7 +11,7 @@
 }
 
 .original-participants-section h3 {
-  color: #2c3e50;
+  color: #f3f4f6;
   margin-bottom: 20px;
   font-size: 1.25rem;
 }
@@ -34,6 +34,11 @@
   padding: 10px;
   border-radius: 6px;
   position: relative;
+  transition: transform 0.1s ease;
+}
+
+.participant-card:hover {
+  transform: translateY(-2px);
 }
 
 .participant-avatar {
@@ -95,6 +100,19 @@
   padding: 20px;
 }
 
+.mix-settings-section {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #111827;
+  border-radius: 8px;
+}
+
+.mix-settings-section h3 {
+  color: #f3f4f6;
+  margin-bottom: 15px;
+  font-size: 1.25rem;
+}
+
 .mix-controls-row {
   display: flex;
   gap: 15px;
@@ -117,6 +135,7 @@
   font-weight: 500;
   color: #d1d5db;
   margin-right: 5px;
+  min-width: 150px;
 }
 
 .mix-form-group select {
@@ -128,12 +147,18 @@
   min-width: 150px;
 }
 
+.mix-buttons-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 15px;
+}
+
 .form-teams-button,
 .reformate-teams-button {
   background-color: #3b82f6;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
@@ -160,13 +185,14 @@
 
 .mixed-teams-section {
   margin-top: 20px;
+  margin-bottom: 20px;
   padding: 16px;
   background-color: #111827;
   border-radius: 8px;
 }
 
 .mixed-teams-section h3 {
-  color: #2c3e50;
+  color: #f3f4f6;
   margin-bottom: 20px;
   font-size: 1.25rem;
 }
@@ -180,34 +206,43 @@
 
 @media (max-width: 768px) {
   .team-generator {
-    padding: 16px;
+    padding: 0;
   }
 
   .participants-grid {
     grid-template-columns: 1fr;
   }
 
-  .mix-form-group {
+  .mix-controls-row {
     flex-direction: column;
-    align-items: stretch;
     gap: 12px;
+  }
+
+  .mix-form-group {
+    width: 100%;
   }
 
   .mix-form-group label {
     min-width: auto;
+    width: 100%;
+    margin-bottom: 5px;
   }
 
   .mix-form-group select {
     width: 100%;
   }
 
+  .mixed-teams-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mix-buttons-row {
+    flex-direction: column;
+  }
+
   .form-teams-button,
   .reformate-teams-button {
     width: 100%;
-    margin-top: 12px;
-  }
-
-  .mixed-teams-grid {
-    grid-template-columns: 1fr;
+    margin-top: 10px;
   }
 } 

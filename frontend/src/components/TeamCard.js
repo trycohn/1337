@@ -29,16 +29,34 @@ const TeamCard = ({ team, index, ratingType }) => {
     const getPlayerName = (player) => {
         return player.name || player.username || 'Участник';
     };
+
+    // Расчет среднего рейтинга команды
+    const calculateAverageRating = () => {
+        if (!teamMembers || teamMembers.length === 0) return 0;
+        
+        if (ratingType === 'faceit') {
+            const total = teamMembers.reduce((sum, player) => sum + getFaceitRating(player), 0);
+            return Math.round(total / teamMembers.length);
+        } else {
+            const total = teamMembers.reduce((sum, player) => sum + getPremierRating(player), 0);
+            return Math.round(total / teamMembers.length);
+        }
+    };
+    
+    const averageRating = team.totalRating ? Math.round(team.totalRating) : calculateAverageRating();
     
     return (
         <div className="team-card">
             <div className="team-card-header">
-                <h3>{team.name || `Команда ${index + 1}`}</h3>
-                {team.totalRating && (
-                    <span className="team-rating">
-                        Общий рейтинг: {Math.round(team.totalRating)}
+                <div className="team-title">
+                    <h3>{team.name || `Команда ${index + 1}`}</h3>
+                    <span className="team-members-count">
+                        {teamMembers.length} участников
                     </span>
-                )}
+                </div>
+                <span className="team-rating">
+                    {ratingType === 'faceit' ? 'FACEIT:' : 'Premier:'} {averageRating}
+                </span>
             </div>
             <div className="team-players">
                 {teamMembers.map((player, playerIndex) => (
@@ -56,7 +74,7 @@ const TeamCard = ({ team, index, ratingType }) => {
                             </div>
                             <span className="player-name">{getPlayerName(player)}</span>
                         </div>
-                        <span className="player-rating">
+                        <span className="player-rating" title={getPlayerRating(player)}>
                             {getPlayerRating(player)}
                         </span>
                     </div>
