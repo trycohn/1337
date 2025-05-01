@@ -49,7 +49,14 @@ const TeamGenerator = ({
         if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix') {
             fetchOriginalParticipants();
         }
-    }, [tournament, participants]);
+
+        // Отладочная информация по командам
+        console.log('TeamGenerator useEffect:', {
+            tournamentTeams: tournament?.teams,
+            hasTeams: tournament?.teams && tournament.teams.length > 0,
+            mixedTeamsState: mixedTeams
+        });
+    }, [tournament, participants, mixedTeams]);
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = async () => {
@@ -122,6 +129,7 @@ const TeamGenerator = ({
             
             if (response.data) {
                 if (response.data.teams) {
+                    console.log('Получены команды от сервера:', response.data.teams);
                     setMixedTeams(response.data.teams);
                 }
                 
@@ -153,6 +161,15 @@ const TeamGenerator = ({
     const teamsExist = tournament?.teams && tournament.teams.length > 0;
     const teamsList = teamsExist ? tournament.teams : mixedTeams;
     const displayParticipants = originalParticipants.length > 0 ? originalParticipants : participants;
+    
+    // Отладочная информация для проверки команд
+    console.log('TeamGenerator render:', {
+        teamsExist,
+        tournamentTeams: tournament?.teams,
+        mixedTeamsLength: mixedTeams.length,
+        teamsListLength: teamsList.length,
+        shouldShowTeams: teamsExist || teamsList.length > 0
+    });
 
     return (
         <div className="team-generator">
@@ -204,22 +221,24 @@ const TeamGenerator = ({
                         </div>
                     </div>
 
-                    {/* Секция сформированных команд - переместили сюда, сразу после исходных участников */}
-                    {(teamsExist || teamsList.length > 0) && (
-                        <div className="mixed-teams-section">
-                            <h3>Сформированные команды</h3>
-                            <div className="mixed-teams-grid">
-                                {teamsList.map((team, index) => (
+                    {/* Секция сформированных команд - всегда отображаем этот блок */}
+                    <div className="mixed-teams-section">
+                        <h3>Сформированные команды {teamsList.length > 0 ? `(${teamsList.length})` : '(нет команд)'}</h3>
+                        <div className="mixed-teams-grid">
+                            {teamsList.length > 0 ? (
+                                teamsList.map((team, index) => (
                                     <TeamCard
                                         key={index}
                                         team={team}
                                         index={index}
                                         ratingType={ratingType}
                                     />
-                                ))}
-                            </div>
+                                ))
+                            ) : (
+                                <p className="no-teams-message">Команды еще не сформированы</p>
+                            )}
                         </div>
-                    )}
+                    </div>
 
                     {/* Секция с настройками микса */}
                     {isAdminOrCreator && (

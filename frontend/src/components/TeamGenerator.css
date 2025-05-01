@@ -204,6 +204,17 @@
   margin-top: 16px;
 }
 
+.no-teams-message {
+  color: #9ca3af;
+  text-align: center;
+  padding: 20px;
+  font-size: 1rem;
+  background-color: #1f2937;
+  border-radius: 6px;
+  width: 100%;
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 768px) {
   .team-generator {
     padding: 0;
