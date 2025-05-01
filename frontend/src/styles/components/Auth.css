@@ -109,9 +109,9 @@
   padding: var(--spacing-md);
   border: none;
   border-radius: var(--border-radius-sm);
-  background-color: var(--light-text);
-  color: var(--dark-text);
-  font-size: var(--font-size-normal);
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 20px;
   font-weight: 500;
   text-transform: uppercase;
   line-height: 1.55;
@@ -121,8 +121,8 @@
 }
 
 .auth-button:hover {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
+  background-color: #7b7b7b;
+  color: #ffffff;
 }
 
 .social-login-buttons {
@@ -152,8 +152,8 @@
 }
 
 .steam-button:hover {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
+  background-color: #7b7b7b;
+  color: #ffffff;
 }
 
 .faceit-button {
@@ -176,8 +176,8 @@
 }
 
 .faceit-button:hover {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
+  background-color: #7b7b7b;
+  color: #ffffff;
 }
 
 .error-message {

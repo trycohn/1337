@@ -3,20 +3,46 @@
 
 /* Навигация */
 nav {
-  background-color: var(--background-color);
+  background-color: #000;
 }
 
 nav a, nav button {
-  color: var(--light-text);
+  color: #ffffff;
   text-transform: uppercase;
   font-family: var(--font-family);
   background: none;
   border: none;
+  transition: color var(--transition-normal);
 }
 
 nav a:hover, nav button:hover {
-  color: var(--secondary-color);
+  color: #ffffff;
   text-decoration: none;
+}
+
+/* Кнопки навигации и авторизации */
+.nav-button, .auth-button {
+  color: #000000;
+  background-color: #ffffff;
+  font-size: 20px;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.55;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.nav-button:hover, .auth-button:hover {
+  color: #ffffff;
+  background-color: #7b7b7b;
+}
+
+/* Иконки в навигации */
+.nav-icon, nav .icon {
+  color: #ffffff;
 }
 
 /* Кнопки */
