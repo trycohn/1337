@@ -1814,48 +1814,44 @@ function TournamentDetails() {
     };
     
     // Обработчик приглашения конкретного пользователя
-    const handleInviteUser = async (userId) => {
-        if (!tournament || !tournament.id || !userId) return;
+    const handleInviteUser = async (userId, username) => {
+        if (!tournament || !tournament.id || !userId || !username) return;
         
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/invite-user/${userId}`, {
-                method: 'POST',
+            const response = await api.post(`/api/tournaments/${tournament.id}/invite`, {
+                username: username
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             });
             
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось отправить приглашение');
-            }
-            
-            // Добавляем пользователя в кэш приглашенных
-            const cacheKey = `invitedUsers_${tournament.id}`;
-            let invitedUsers = [];
-            
-            try {
-                const cachedInvitedUsers = localStorage.getItem(cacheKey);
-                if (cachedInvitedUsers) {
-                    invitedUsers = JSON.parse(cachedInvitedUsers);
+            if (response.data) {
+                // Добавляем пользователя в кэш приглашенных
+                const cacheKey = `invitedUsers_${tournament.id}`;
+                let invitedUsers = [];
+                
+                try {
+                    const cachedInvitedUsers = localStorage.getItem(cacheKey);
+                    if (cachedInvitedUsers) {
+                        invitedUsers = JSON.parse(cachedInvitedUsers);
+                    }
+                } catch (error) {
+                    console.error('Ошибка при чтении кэша приглашений:', error);
                 }
-            } catch (error) {
-                console.error('Ошибка при чтении кэша приглашений:', error);
+                
+                if (!invitedUsers.includes(userId)) {
+                    invitedUsers.push(userId);
+                    localStorage.setItem(cacheKey, JSON.stringify(invitedUsers));
+                }
+                
+                toast.success('Приглашение успешно отправлено');
             }
-            
-            if (!invitedUsers.includes(userId)) {
-                invitedUsers.push(userId);
-                localStorage.setItem(cacheKey, JSON.stringify(invitedUsers));
-            }
-            
-            toast.success('Приглашение успешно отправлено');
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
-            toast.error(error.message || 'Не удалось отправить приглашение');
+            toast.error(error.response?.data?.error || 'Не удалось отправить приглашение');
         } finally {
             setLoading(false);
         }
