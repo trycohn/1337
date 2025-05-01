@@ -75,7 +75,7 @@ router.get('/:id', async (req, res) => {
         let participantsQuery;
         if (tournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username 
+                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
@@ -147,7 +147,7 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
         let participantsQuery;
         if (updatedTournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username 
+                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
@@ -1182,7 +1182,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         let updatedParticipants;
         if (tourInfo.participant_type === 'solo') {
             const partsRes = await pool.query(
-                `SELECT tp.*, u.avatar_url
+                `SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                  FROM tournament_participants tp
                  LEFT JOIN users u ON tp.user_id = u.id
                  WHERE tp.tournament_id = $1`,
@@ -1851,7 +1851,7 @@ router.post('/:id/delete-all-matches', authenticateToken, verifyAdminOrCreator, 
         let participantsQuery;
         if (tournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username 
+                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
@@ -1921,7 +1921,7 @@ router.post('/:id/clear-match-results', authenticateToken, verifyAdminOrCreator,
         let participantsQuery;
         if (tournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username 
+                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
@@ -1983,7 +1983,7 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         let participantsQuery;
         if (updatedTournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username 
+                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
