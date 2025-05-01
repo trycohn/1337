@@ -179,6 +179,7 @@ function TournamentDetails() {
     const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
     const [originalParticipants, setOriginalParticipants] = useState([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [sentInvitations, setSentInvitations] = useState([]);
     
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
@@ -2053,31 +2054,6 @@ function TournamentDetails() {
                                 )
                             )}
                             {isCreator && matches.length === 0 && (
-                                <div className="invite-participant">
-                                    <h3>Выслать приглашение на турнир</h3>
-                                    <select value={inviteMethod} onChange={(e) => setInviteMethod(e.target.value)}>
-                                        <option value="username">По никнейму</option>
-                                        <option value="email">По email</option>
-                                    </select>
-                                    {inviteMethod === 'username' ? (
-                                        <input
-                                            type="text"
-                                            placeholder="Никнейм пользователя"
-                                            value={inviteUsername}
-                                            onChange={(e) => setInviteUsername(e.target.value)}
-                                        />
-                                    ) : (
-                                        <input
-                                            type="email"
-                                            placeholder="Email пользователя"
-                                            value={inviteEmail}
-                                            onChange={(e) => setInviteEmail(e.target.value)}
-                                        />
-                                    )}
-                                    <button onClick={handleInvite}>Пригласить</button>
-                                </div>
-                            )}
-                            {isAdminOrCreator && (
                                 <div className="add-participant-section">
                                     <h3>Добавить участника</h3>
                                     <div className="search-container" ref={searchContainerRef}>
