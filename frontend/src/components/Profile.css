@@ -26,11 +26,11 @@
 }
 
 .profile button {
-    padding: 8px 15px;
-    background-color: #007bff;
-    color: white;
+    padding: 0px 5px;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
     border: none;
-    border-radius: 4px;
+    border-radius: 0px;
     cursor: pointer;
 }
 
@@ -166,12 +166,12 @@ input, button {
 }
 
 .modal-buttons button {
-    padding: 8px 16px;
+    padding: 0px 5px;
     cursor: pointer;
     border: none;
     border-radius: 4px;
-    background-color: #4682b4;
-    color: white;
+    background-color: #ffffff;
+    color: #000000;
     font-size: 14px;
     transition: background-color 0.3s;
 }
@@ -318,7 +318,7 @@ input, button {
     color: #473d2e;
     border: none;
     margin-left: 15px;
-    padding: 10px 15px;
+    padding: 0px 5px;
     border-radius: 6px;
     font-weight: bold;
     transition: background-color 0.3s, transform 0.2s;
@@ -446,13 +446,13 @@ input, button {
 }
 
 .profile button {
-    padding: 8px 15px;
+    padding: 0px 5px;
     margin-right: 10px;
     margin-bottom: 10px;
-    background-color: #007bff;
-    color: white;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
     border: none;
-    border-radius: 4px;
+    border-radius: 0x;
     cursor: pointer;
 }
 
@@ -537,11 +537,11 @@ input, button {
 }
 
 .avatar-options button {
-    padding: 10px;
-    background-color: #4a76a8;
-    color: white;
+    padding: 0px 5px;
+    background-color: #ffffff;
+    color: #000000;
     border: none;
-    border-radius: 5px;
+    border-radius: 0px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
@@ -1153,11 +1153,11 @@ input, button {
 }
 
 .main-tab button {
-    padding: 12px 20px;
-    background-color: #4a6dce;
-    color: white;
+    padding: 0px 5px;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
     border: none;
-    border-radius: 8px;
+    border-radius: 0px;
     font-size: 15px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
@@ -1317,11 +1317,11 @@ input, button {
 
 /* Button styling for unlink and update buttons */
 .unlink-button {
-    padding: 10px 18px;
-    background-color: #bb4d4d;
-    color: white;
+    padding: 0px 5px;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
     border: none;
-    border-radius: 8px;
+    border-radius: 0px;
     font-size: 14px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
@@ -1336,11 +1336,11 @@ input, button {
 }
 
 .update-stats-button {
-    padding: 12px 20px;
-    background-color: #4dbb63;
-    color: white;
+    padding: 0px 5px;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
     border: none;
-    border-radius: 8px;
+    border-radius: 0px;
     font-size: 15px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
@@ -1477,7 +1477,7 @@ input, button {
     color: #473d2e;
     border: none;
     margin-left: 15px;
-    padding: 10px 15px;
+    padding: 0px 5px;
     border-radius: 6px;
     font-weight: bold;
     transition: background-color 0.3s, transform 0.2s;
@@ -2260,7 +2260,7 @@ input, button {
     }
     
     .form-button {
-        padding: 8px 16px;
+        padding: 0px 5px;
         font-size: 13px;
     }
     

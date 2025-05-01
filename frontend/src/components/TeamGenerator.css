@@ -155,11 +155,11 @@
 
 .form-teams-button,
 .reformate-teams-button {
-  background-color: #3b82f6;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 0px 5px;
+  border-radius: 0px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
@@ -167,10 +167,6 @@
 
 .form-teams-button:hover {
   background-color: #2563eb;
-}
-
-.reformate-teams-button {
-  background-color: #6366f1;
 }
 
 .reformate-teams-button:hover {

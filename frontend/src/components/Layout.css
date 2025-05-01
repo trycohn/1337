@@ -21,7 +21,7 @@
     }
     
     .navigation a, .navigation button {
-        padding: 6px 10px;
+        padding: 0px 5px;
     }
 }
 
@@ -54,7 +54,7 @@
     
     .user-info button {
         font-size: 12px;
-        padding: 4px 6px;
+        padding: 0px 5px;
         height: 24px;
     }
     

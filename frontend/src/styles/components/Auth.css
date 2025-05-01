@@ -138,8 +138,8 @@
   justify-content: center;
   width: 100%;
   padding: var(--spacing-md);
-  background-color: #171a21;
-  color: white;
+  background-color: #ffffff;
+  color: #000000;
   border: none;
   border-radius: var(--border-radius-sm);
   font-weight: 500;
@@ -162,8 +162,8 @@
   justify-content: center;
   width: 100%;
   padding: var(--spacing-md);
-  background-color: #ff5500;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: var(--border-radius-sm);
   font-weight: 500;

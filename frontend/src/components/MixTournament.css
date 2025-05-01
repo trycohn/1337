@@ -55,9 +55,9 @@
 }
 
 .rating-type-selector button {
-    padding: 8px 16px;
+    padding: 0px 5px;
     border: none;
-    border-radius: 4px;
+    border-radius: 0px;
     background-color: #e0e0e0;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -70,11 +70,11 @@
 
 .form-teams-button, 
 .generate-bracket-button {
-    padding: 10px 20px;
+    padding: 0px 5px;
     border: none;
-    border-radius: 4px;
-    background-color: #3498db;
-    color: white;
+    border-radius: 0px;
+    background-color: #ffffff;
+    color: #000000;
     cursor: pointer;
     font-weight: 500;
     transition: all 0.3s ease;
@@ -91,11 +91,12 @@
 }
 
 .generate-bracket-button {
-    background-color: #2ecc71;
+    background-color: #ffffff;
 }
 
 .generate-bracket-button:hover {
-    background-color: #27ae60;
+    background-color: #7d7d7d;
+    color: #ffffff;
 }
 
 .teams-section {

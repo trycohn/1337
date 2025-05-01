@@ -74,7 +74,7 @@ header.header {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 8px 12px;
+    padding: 0px 5px;
     font-family: inherit;
     font-size: 16px;
     line-height: 1;
@@ -202,7 +202,7 @@ header.header {
 }
 
 .create-tournament button {
-  padding: 8px;
+  padding: 0px 5px;
   background-color: #ffffff;
   color: rgb(0, 0, 0);
   border: none;
@@ -337,11 +337,11 @@ header.header {
 }
 
 .add-participant button {
-  padding: 10px 20px;
-  background-color: #28a745;
-  color: white;
+  padding: 0px 5px;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
 }
 
@@ -350,11 +350,11 @@ header.header {
 }
 
 .invite-participant button {
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
+  padding: 0px 5px;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
 }
 
@@ -377,9 +377,9 @@ header.header {
 }
 
 .admin-request-actions button {
-  padding: 5px 10px;
+  padding: 0px 5px;
   border: none;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
 }
 
@@ -565,9 +565,9 @@ header.header {
 
 .register button {
   width: 100%;
-  padding: 10px;
-  background-color: #007bff;
-  color: white;
+  padding: 0px 5px;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -755,7 +755,7 @@ header.header {
   .navigation button {
     width: 100%;
     text-align: left;
-    padding: 12px 15px;
+    padding: 0px 5px;
     border-bottom: 1px solid #e0e0e0;
     justify-content: flex-start;
     height: auto;
@@ -766,7 +766,7 @@ header.header {
   }
   
   .user-info button {
-    padding: 4px 8px;
+    padding: 0px 5px;
     font-size: 12px;
   }
   
@@ -959,9 +959,9 @@ header.header {
 
 .auth-button {
   width: 100%;
-  padding: 12px;
-  background-color: #007bff;
-  color: white;
+  padding: 0px 5px;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: 4px;
   font-size: 16px;
@@ -985,11 +985,11 @@ header.header {
 }
 
 .steam-button {
-  background-color: #171a21;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  padding: 10px;
-  border-radius: 4px;
+  padding: 0px 5px;
+  border-radius: 0px;
   cursor: pointer;
   width: 100%;
   font-size: 14px;
@@ -1004,11 +1004,11 @@ header.header {
 }
 
 .faceit-button {
-  background-color: #fd5a00;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  padding: 10px;
-  border-radius: 4px;
+  padding: 0px 5px;
+  border-radius: 0px;
   cursor: pointer;
   width: 100%;
   font-size: 14px;
@@ -1067,10 +1067,10 @@ header.header {
 }
 
 .login-button {
-  background-color: #007bff;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 4px;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+  padding: 0px 5px;
+  border-radius: 0px;
   text-decoration: none;
   font-weight: 600;
   transition: background-color 0.3s;
@@ -1200,7 +1200,7 @@ header.header {
 }
 
 .friend-request-actions button {
-  padding: 5px 10px;
+  padding: 0px 5px;
   border: none;
   border-radius: 4px;
   font-size: 14px;
