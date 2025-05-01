@@ -23,7 +23,6 @@ main section {
 /* Стили для header */
 header.header {
   width: 100%;
-  background-color: #f5f5f5;
   padding: 10px 0;
 }
 
@@ -32,7 +31,7 @@ header.header {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  color: #2a2a2a;
+  color: #ffffff;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -58,7 +57,7 @@ header.header {
 }
 
 .hamburger:hover svg path {
-  fill: #0056b3;
+  fill: #7b7b7b;
 }
 
 .navigation {
@@ -71,7 +70,7 @@ header.header {
 .navigation a,
 .navigation button {
     text-decoration: none;
-    color: #2a2a2a;
+    color: #ffffff;
     background: none;
     border: none;
     cursor: pointer;
@@ -87,9 +86,15 @@ header.header {
     white-space: nowrap; /* Предотвращает перенос текста */
 }
 
+.navigation button {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+
 .navigation a:hover,
 .navigation button:hover {
-    color: #0056b3;
+    color: #ffffff;
 }
 
 /* Стили для авторизации и профиля */
@@ -101,7 +106,7 @@ header.header {
 .auth-block input,
 .auth-block button,
 .auth-block span {
-  color: #2a2a2a;
+  color: #ffffff;
 }
 
 .user-info {
@@ -137,15 +142,15 @@ header.header {
 
 .user-info button {
   padding: 5px 10px;
-  background-color: #007bff;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
 }
 
 .user-info button:hover {
-  background-color: #0056b3;
+  background-color: #7b7b7b;
 }
 
 .login-form {
@@ -156,21 +161,21 @@ header.header {
 
 .login-form input {
   padding: 5px;
-  border: 1px solid #ddd;
+  border: 1px solid;
   border-radius: 4px;
 }
 
 .login-form button {
   padding: 5px 10px;
-  background-color: #007bff;
-  color: white;
+  background-color: #ffffff;
+  color: #000000;
   border: none;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
 }
 
 .login-form button:hover {
-  background-color: #0056b3;
+  background-color: #7b7b7b;
 }
 
 .login-form .error {
@@ -198,15 +203,15 @@ header.header {
 
 .create-tournament button {
   padding: 8px;
-  background-color: #007bff;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   border: none;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
 }
 
 .create-tournament button:hover {
-  background-color: #0056b3;
+  background-color: #7b7b7b;
 }
 
 /* Стили для списка турниров */
