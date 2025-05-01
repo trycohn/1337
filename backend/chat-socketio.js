@@ -1,6 +1,29 @@
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
 
+// Максимальное количество попыток переподключения
+const MAX_RECONNECT_ATTEMPTS = 3;
+// Задержка между попытками в миллисекундах
+const RECONNECT_DELAY = 2000;
+
+// Функция для повторения запроса к БД с заданным числом попыток
+async function retryQuery(queryFn, maxAttempts = MAX_RECONNECT_ATTEMPTS, delay = RECONNECT_DELAY) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await queryFn();
+    } catch (err) {
+      lastError = err;
+      console.error(`Попытка ${attempt}/${maxAttempts} не удалась:`, err.message);
+      if (attempt < maxAttempts) {
+        console.log(`Повторная попытка через ${delay/1000} сек...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError; // если все попытки не удались, выбрасываем последнюю ошибку
+}
+
 // Устанавливаю обработку событий Socket.IO для чата
 function setupChatSocketIO(io) {
   // Аутентификация по токену JWT при подключении
@@ -21,6 +44,9 @@ function setupChatSocketIO(io) {
   io.on('connection', socket => {
     console.log('Socket.IO: пользователь подключился к чату, userId =', socket.userId);
 
+    // Флаг для отслеживания статуса подключения к комнатам
+    let roomsJoined = false;
+
     // Присоединение к чату турнира
     socket.on('join_tournament_chat', (tournamentId) => {
       socket.join(`chat_tournament_${tournamentId}`);
@@ -35,25 +61,32 @@ function setupChatSocketIO(io) {
 
     const userId = socket.userId;
 
-    // Присоединяем пользователя к его комнатам чатов
-    pool.query('SELECT chat_id FROM chat_participants WHERE user_id = $1', [userId])
-      .then(result => {
+    // Функция для присоединения пользователя к комнатам чатов с повторными попытками
+    const joinUserChatRooms = async () => {
+      try {
+        // Используем функцию повторных попыток для запроса чатов
+        const result = await retryQuery(() => 
+          pool.query('SELECT chat_id FROM chat_participants WHERE user_id = $1', [userId])
+        );
+        
+        // Присоединяем к каждой комнате
         result.rows.forEach(row => {
           socket.join(`chat_${row.chat_id}`);
         });
         
-        // Специально проверяем наличие персонального системного чата
-        return pool.query(`
-          SELECT c.id 
-          FROM chats c
-          JOIN chat_participants cp ON c.id = cp.chat_id
-          WHERE c.name = $1 AND cp.user_id = $2 AND c.type = 'system'
-          LIMIT 1`, 
-          ['1337community', userId]
+        // Проверяем наличие персонального системного чата с повторными попытками
+        const systemChatResult = await retryQuery(() => 
+          pool.query(`
+            SELECT c.id 
+            FROM chats c
+            JOIN chat_participants cp ON c.id = cp.chat_id
+            WHERE c.name = $1 AND cp.user_id = $2 AND c.type = 'system'
+            LIMIT 1`, 
+            ['1337community', userId]
+          )
         );
-      })
-      .then(systemChatResult => {
-        // Если персональный системный чат существует, убедимся что пользователь присоединён к нему
+        
+        // Если персональный системный чат существует, присоединяемся к нему
         if (systemChatResult.rows.length > 0) {
           const systemChatId = systemChatResult.rows[0].id;
           socket.join(`chat_${systemChatId}`);
@@ -61,40 +94,96 @@ function setupChatSocketIO(io) {
         } else {
           console.log(`Socket.IO: персональный системный чат для пользователя ${userId} не найден`);
         }
-      })
-      .catch(err => {
+        
+        roomsJoined = true;
+        return true;
+      } catch (err) {
         console.error('Ошибка при подключении пользователя к комнатам чатов:', err);
-      });
+        socket.emit('chat_connection_error', {
+          message: 'Не удалось подключиться к чатам. Пожалуйста, попробуйте позже.'
+        });
+        return false;
+      }
+    };
+    
+    // Функция для проверки соединения и переподключения к комнатам при необходимости
+    const ensureRoomsJoined = async () => {
+      if (!roomsJoined) {
+        return await joinUserChatRooms();
+      }
+      return true;
+    };
+
+    // Запускаем первичное присоединение к комнатам
+    joinUserChatRooms().catch(err => {
+      console.error('Критическая ошибка при подключении к комнатам чатов:', err);
+    });
+
+    // Событие для ручного запроса переподключения от клиента
+    socket.on('reconnect_chat_rooms', async () => {
+      console.log(`Socket.IO: запрос на переподключение к комнатам от пользователя ${userId}`);
+      try {
+        await joinUserChatRooms();
+        socket.emit('rooms_reconnected', { success: true });
+      } catch (err) {
+        console.error('Ошибка при переподключении к комнатам чатов:', err);
+        socket.emit('rooms_reconnected', { 
+          success: false,
+          error: 'Не удалось переподключиться к комнатам чатов'
+        });
+      }
+    });
 
     // Обработка входящих сообщений в чат
     socket.on('message', async payload => {
       console.log('Socket.IO: получено событие message от userId =', socket.userId, 'payload =', payload);
       const { chat_id } = payload;
+      
+      // Проверяем соединение с комнатами перед обработкой сообщения
+      if (!(await ensureRoomsJoined())) {
+        socket.emit('message_error', { 
+          error: 'Потеряно соединение с чатами. Пожалуйста, обновите страницу.' 
+        });
+        return;
+      }
+      
       // Убедимся, что отправитель присоединён к комнате данного чата
       socket.join(`chat_${chat_id}`);
       const { chat_id: id, content, message_type = 'text' } = payload;
       if (!id || !content) return;
       
       try {
-        // Проверяю, что пользователь участник чата
-        const participantCheck = await pool.query(
-          'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
-          [chat_id, socket.userId]
+        // Проверяю, что пользователь участник чата с повторными попытками
+        const participantCheck = await retryQuery(() => 
+          pool.query(
+            'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+            [chat_id, socket.userId]
+          )
         );
-        if (participantCheck.rows.length === 0) return;
+        
+        if (participantCheck.rows.length === 0) {
+          socket.emit('message_error', { error: 'Вы не являетесь участником этого чата' });
+          return;
+        }
 
-        // Сохраняю сообщение в БД
-        const result = await pool.query(
-          'INSERT INTO messages (chat_id, sender_id, content, message_type) VALUES ($1, $2, $3, $4) RETURNING *',
-          [chat_id, socket.userId, content, message_type]
+        // Сохраняю сообщение в БД с повторными попытками
+        const result = await retryQuery(() => 
+          pool.query(
+            'INSERT INTO messages (chat_id, sender_id, content, message_type) VALUES ($1, $2, $3, $4) RETURNING *',
+            [chat_id, socket.userId, content, message_type]
+          )
         );
+        
         const message = result.rows[0];
 
-        // Получаю информацию об отправителе
-        const userInfo = await pool.query(
-          'SELECT username, avatar_url FROM users WHERE id = $1',
-          [socket.userId]
+        // Получаю информацию об отправителе с повторными попытками
+        const userInfo = await retryQuery(() => 
+          pool.query(
+            'SELECT username, avatar_url FROM users WHERE id = $1',
+            [socket.userId]
+          )
         );
+        
         message.sender_username = userInfo.rows[0].username;
         message.sender_avatar = userInfo.rows[0].avatar_url;
 
@@ -103,6 +192,9 @@ function setupChatSocketIO(io) {
         console.log('Socket.IO: событие message отправлено в комнату chat_' + chat_id, message);
       } catch (err) {
         console.error('Ошибка обработки сообщения чата:', err);
+        socket.emit('message_error', { 
+          error: 'Не удалось отправить сообщение. Пожалуйста, попробуйте еще раз.' 
+        });
       }
     });
 
