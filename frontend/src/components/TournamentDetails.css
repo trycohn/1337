@@ -1507,6 +1507,11 @@ a.participant-name:hover {
   flex-wrap: nowrap;
   justify-content: flex-start;
   width: 150px;
+  height: 32px;
+  border: #c4c4c4;
+  color: #333;
+  border-radius: 5px;
+  padding: 5px;
 }
 
 .add-participant-button {
@@ -1514,4 +1519,12 @@ a.participant-name:hover {
     color: #fff;
     
 
+}
+
+.add-unregistered-participant {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  width: 100%;
 }

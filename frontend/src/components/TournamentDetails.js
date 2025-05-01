@@ -2137,7 +2137,7 @@ function TournamentDetails() {
                                             type="text"
                                             value={addParticipantName}
                                             onChange={(e) => setAddParticipantName(e.target.value)}
-                                            placeholder="Имя незарегистрированного участника"
+                                            placeholder="Имя участника"
                                         />
                                         <button className="add-participant-button" onClick={handleAddParticipant}>Добавить незарегистрированного участника</button>
                                     </div>
