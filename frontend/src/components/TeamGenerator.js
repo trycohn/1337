@@ -148,7 +148,7 @@ const TeamGenerator = ({
                                                 <span className="participant-name">{participant.name}</span>
                                                 <span className="participant-rating">
                                                     {ratingType === 'faceit' 
-                                                        ? `FACEit: ${participant.faceit_rating || 1000}`
+                                                        ? `FACEIT: ${participant.faceit_elo || 1000}`
                                                         : `Premier: ${participant.premier_rank || 5}`
                                                     }
                                                 </span>

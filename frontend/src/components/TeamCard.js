@@ -29,7 +29,7 @@ const TeamCard = ({ team, index, ratingType }) => {
                         </div>
                         <span className="player-rating">
                             {ratingType === 'faceit' 
-                                ? `FACEit: ${player.faceit_rating || 1000}`
+                                ? `FACEIT: ${player.faceit_elo || 1000}`
                                 : `Premier: ${player.premier_rank || 5}`
                             }
                         </span>
