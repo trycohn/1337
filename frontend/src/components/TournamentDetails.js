@@ -105,6 +105,7 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
               ) : (
                 <span className="participant-name">{participant?.name || 'Участник'}</span>
               )}
+              <span className="participant-rating">FACEIT: {participant.faceit_rating || 1000}</span>
             </div>
           </div>
         ))}
