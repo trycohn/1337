@@ -2056,8 +2056,8 @@ function TournamentDetails() {
                             )}
                             {isCreator && matches.length === 0 && (
                                 <div className="add-participant-section">
-                                    <h3>Добавить участника</h3>
-                                    <div className="search-container" ref={searchContainerRef}>
+                                    <h3>Добавление участников</h3>
+                                    <div className="search-container add-participant-placeholder" ref={searchContainerRef}>
                                         <input
                                             type="text"
                                             value={searchQuery}
@@ -2132,7 +2132,7 @@ function TournamentDetails() {
                                             </ul>
                                         )}
                                     </div>
-                                    <div className="add-unregistered-participant">
+                                    <div className="add-unregistered-participant add-participant-placeholder">
                                         <input
                                             type="text"
                                             value={addParticipantName}

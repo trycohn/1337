@@ -1500,3 +1500,11 @@ a.participant-name:hover {
   border-radius: 5px;
   margin: 10px 0;
 } 
+
+.add-participant-placeholder {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  width: 150px;
+}
