@@ -141,12 +141,9 @@ function TournamentDetails() {
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const [selectedUser, setSelectedUser] = useState(null);
     const wsRef = useRef(null);
-    // eslint-disable-next-line no-unused-vars
     const [loading, setLoading] = useState(true);
-    // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
     // Удаляем неиспользуемую переменную состояния
-    // const [ratingType, setRatingType] = useState('faceit');
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
     const [userSearchResults, setUserSearchResults] = useState([]);
@@ -175,7 +172,6 @@ function TournamentDetails() {
     const [matchDetails, setMatchDetails] = useState(null);
     // Состояния для работы с картами в матчах CS2
     const [maps, setMaps] = useState([{ map: 'de_dust2', score1: 0, score2: 0 }]);
-    // eslint-disable-next-line no-unused-vars
     const [showMapSelection, setShowMapSelection] = useState(false);
     // Refs для работы с формами
     const descriptionRef = useRef("");

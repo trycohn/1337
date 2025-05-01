@@ -39,9 +39,18 @@ global.app = app;
 // Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
 
-// Middleware для обработки JSON-запросов
-app.use(express.json());
+// Настройка middleware в правильном порядке
+app.use(helmet()); // Безопасность должна быть в начале
+app.use(morgan('dev')); // Логгирование запросов
+app.use(express.json()); // Парсинг JSON
+app.use(express.urlencoded({ extended: true })); // Парсинг URL-encoded
 app.use(cookieParser());
+
+// Middleware для логирования запросов
+app.use((req, res, next) => {
+    console.log(`🔍 Входящий запрос: ${req.method} ${req.originalUrl}`);
+    next();
+});
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
@@ -65,13 +74,18 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-    console.log(`🔍 Входящий запрос: ${req.method} ${req.originalUrl}`);
-    next();
+// Настройка лимита запросов
+const limiter = rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 100 // максимум 100 запросов на IP
 });
+app.use(limiter);
 
 // Обслуживание статических файлов из папки frontend/build
 app.use(express.static(path.join(__dirname, '../frontend/build'), { cacheControl: false }));
+
+// Обслуживание статических файлов из папки uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Добавляем middleware для обновления активности пользователя после аутентификации
 app.use((req, res, next) => {
@@ -91,6 +105,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Маршрут для иконок
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get('/favicon.png', (req, res) => res.status(204).end());
+
 // Тестовый маршрут
 app.get('/testdb', async (req, res) => {
     try {
@@ -102,8 +120,10 @@ app.get('/testdb', async (req, res) => {
     }
 });
 
-app.get('/favicon.ico', (req, res) => res.status(204).end());
-app.get('/favicon.png', (req, res) => res.status(204).end());
+// Главный роут для проверки работы API
+app.get('/', (req, res) => {
+    res.json({ message: 'Сервер 1337 Community API работает!' });
+});
 
 // API-маршруты из app.js
 app.use('/api/users', require('./routes/users')); // Маршруты пользователей
@@ -117,26 +137,6 @@ app.use('/api/notifications', require('./routes/notifications')); // Маршр�
 app.use('/api/playerStats', require('./routes/playerStats')); // Маршруты статистики игроков
 app.use('/api/friends', require('./routes/friends')); // Маршруты друзей
 app.use('/api/chats', require('./routes/chats')); // Маршруты чатов
-
-// Настройка middleware
-app.use(helmet());
-app.use(morgan('dev'));
-app.use(express.urlencoded({ extended: true }));
-
-// Обслуживание статических файлов из папки uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Главный роут для проверки работы API
-app.get('/', (req, res) => {
-    res.json({ message: 'Сервер 1337 Community API работает!' });
-});
-
-// Настройка лимита запросов
-const limiter = rateLimiter({
-    windowMs: 15 * 60 * 1000, // 15 минут
-    max: 100 // максимум 100 запросов на IP
-});
-app.use(limiter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {
