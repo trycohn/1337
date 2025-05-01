@@ -257,7 +257,7 @@ function Layout() {
                                     <FontAwesomeIcon
                                         icon={faComment}
                                         className="bell-icon"
-                                        style={{ color: '#000000' }}
+                                        style={{ color: '#FFFFFF' }}
                                     />
                                     {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
                                 </div>
@@ -265,7 +265,7 @@ function Layout() {
                                     <FontAwesomeIcon
                                         icon={faEnvelope}
                                         className="messages-icon"
-                                        style={{ color: '#000000' }}
+                                        style={{ color: '#FFFFFF' }}
                                     />
                                 </Link>
                                 {showNotifications && (
