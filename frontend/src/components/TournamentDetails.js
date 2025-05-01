@@ -128,22 +128,15 @@ function TournamentDetails() {
     const [adminRequestStatus, setAdminRequestStatus] = useState(null);
     const [matches, setMatches] = useState([]);
     const [selectedMatch, setSelectedMatch] = useState(null);
-    const [inviteMethod, setInviteMethod] = useState('username');
-    const [inviteUsername, setInviteUsername] = useState('');
-    const [inviteEmail, setInviteEmail] = useState('');
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [selectedWinnerId, setSelectedWinnerId] = useState(null);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const [selectedUser, setSelectedUser] = useState(null);
     const wsRef = useRef(null);
-    // eslint-disable-next-line no-unused-vars
     const [loading, setLoading] = useState(true);
-    // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
-    // eslint-disable-next-line no-unused-vars
     const [userSearchResults, setUserSearchResults] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -155,23 +148,18 @@ function TournamentDetails() {
     const [isEditingRules, setIsEditingRules] = useState(false);
     const [editedFullDescription, setEditedFullDescription] = useState('');
     const [editedRules, setEditedRules] = useState('');
-    // eslint-disable-next-line no-unused-vars
     const [mixedTeams, setMixedTeams] = useState([]);
     const [searchTimeout, setSearchTimeout] = useState(null);
     const [searchResults, setSearchResults] = useState([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const searchContainerRef = useRef(null);
-    // eslint-disable-next-line no-unused-vars
     const [invitedUsers, setInvitedUsers] = useState([]);
     const [userIdToRemove, setUserIdToRemove] = useState('');
-    // Состояния для просмотра деталей завершенного матча
     const [viewingMatchDetails, setViewingMatchDetails] = useState(false);
     const [matchDetails, setMatchDetails] = useState(null);
-    // Состояния для работы с картами в матчах CS2
     const [maps, setMaps] = useState([{ map: 'de_dust2', score1: 0, score2: 0 }]);
     const [showMapSelection, setShowMapSelection] = useState(false);
-    // Refs для работы с формами
     const descriptionRef = useRef("");
     const prizePoolRef = useRef("");
     const fullDescriptionRef = useRef("");
@@ -185,13 +173,12 @@ function TournamentDetails() {
         'de_ancient',
         'de_inferno'
     ];
-    // Состояния для чата турнира
     const [chatMessages, setChatMessages] = useState([]);
     const [newChatMessage, setNewChatMessage] = useState('');
     const chatEndRef = useRef(null);
-    // Модальное окно для подтверждения завершения турнира
     const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
     const [originalParticipants, setOriginalParticipants] = useState([]);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
@@ -1749,42 +1736,6 @@ function TournamentDetails() {
         }
     };
     
-    // Приглашение пользователя по username или email
-    const handleInvite = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            toast.error('Пожалуйста, войдите, чтобы отправить приглашение');
-            return;
-        }
-
-        if (inviteMethod === 'username' && !inviteUsername) {
-            toast.error('Пожалуйста, укажите никнейм пользователя');
-            return;
-        }
-
-        if (inviteMethod === 'email' && !inviteEmail) {
-            toast.error('Пожалуйста, укажите email пользователя');
-            return;
-        }
-
-        try {
-            const response = await api.post(`/api/tournaments/${id}/invite`, {
-                username: inviteMethod === 'username' ? inviteUsername : null,
-                email: inviteMethod === 'email' ? inviteEmail : null
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            toast.success(response.data.message || 'Приглашение успешно отправлено');
-            setInviteUsername('');
-            setInviteEmail('');
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Ошибка при отправке приглашения');
-        }
-    };
-    
     // Проверка кэша приглашений при загрузке турнира
     
     
@@ -2170,15 +2121,12 @@ function TournamentDetails() {
                                                                 {isUserParticipant(user.id) ? (
                                                                     <span className="already-participant">уже участвует</span>
                                                                 ) : isInvitationSent(user.id) ? (
-                                                                    <>
-                                                                        <button 
-                                                                            className="action-link no-bg-button search-result-action-button"
-                                                                            disabled
-                                                                        >
-                                                                            уже отправлено
-                                                                        </button>
-                                                                        {/* Удаляем кнопку сброса кэша, т.к. кэш очищается автоматически */}
-                                                                    </>
+                                                                    <button 
+                                                                        className="action-link no-bg-button search-result-action-button"
+                                                                        disabled
+                                                                    >
+                                                                        уже отправлено
+                                                                    </button>
                                                                 ) : (
                                                                     <button 
                                                                         className="action-link no-bg-button search-result-action-button"
@@ -2207,15 +2155,15 @@ function TournamentDetails() {
                                             </ul>
                                         )}
                                     </div>
-                                    <input
-                                        type="text"
-                                        value={addParticipantName}
-                                        onChange={(e) => setAddParticipantName(e.target.value)}
-                                        placeholder="Имя участника"
-                                    />
-                                    <button onClick={handleAddParticipant}>Добавить участника</button>
-                                    
-                                    {/* Удаляем весь блок администрирования кэша приглашений */}
+                                    <div className="add-unregistered-participant">
+                                        <input
+                                            type="text"
+                                            value={addParticipantName}
+                                            onChange={(e) => setAddParticipantName(e.target.value)}
+                                            placeholder="Имя незарегистрированного участника"
+                                        />
+                                        <button onClick={handleAddParticipant}>Добавить незарегистрированного участника</button>
+                                    </div>
                                 </div>
                             )}
                             {!isAdminOrCreator && tournament?.status === 'active' && (
