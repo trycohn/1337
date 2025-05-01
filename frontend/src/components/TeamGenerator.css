@@ -183,6 +183,17 @@
   padding: 15px;
 }
 
+.loading-teams {
+  color: #9ca3af;
+  text-align: center;
+  padding: 15px;
+  font-size: 1rem;
+  grid-column: 1 / -1;
+  width: 100%;
+  background-color: #1f2937;
+  border-radius: 6px;
+}
+
 .mixed-teams-section {
   margin-top: 20px;
   margin-bottom: 20px;

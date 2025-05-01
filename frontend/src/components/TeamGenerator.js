@@ -32,8 +32,9 @@ const TeamGenerator = ({
     const [mixedTeams, setMixedTeams] = useState([]);
     const [originalParticipants, setOriginalParticipants] = useState([]);
     const [loadingParticipants, setLoadingParticipants] = useState(false);
+    const [loadingTeams, setLoadingTeams] = useState(false);
 
-    // При инициализации устанавливаем размер команды из турнира
+    // При инициализации устанавливаем размер команды из турнира и загружаем команды
     useEffect(() => {
         if (tournament && tournament.team_size) {
             setTeamSize(tournament.team_size.toString());
@@ -48,15 +49,47 @@ const TeamGenerator = ({
         // Загружаем оригинальных участников, если это турнир с командами
         if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix') {
             fetchOriginalParticipants();
+            
+            // Загружаем команды турнира, если они есть
+            if (tournament.participant_type === 'team') {
+                fetchTeams();
+            }
+        }
+
+        // Если у турнира есть команды, устанавливаем их в состояние
+        if (tournament && tournament.teams && tournament.teams.length > 0) {
+            setMixedTeams(tournament.teams);
         }
 
         // Отладочная информация по командам
         console.log('TeamGenerator useEffect:', {
             tournamentTeams: tournament?.teams,
             hasTeams: tournament?.teams && tournament.teams.length > 0,
-            mixedTeamsState: mixedTeams
+            mixedTeamsState: mixedTeams,
+            participantType: tournament?.participant_type
         });
-    }, [tournament, participants, mixedTeams]);
+    }, [tournament, participants]);
+
+    // Функция для загрузки команд турнира
+    const fetchTeams = async () => {
+        if (!tournament || !tournament.id) return;
+        
+        setLoadingTeams(true);
+        try {
+            const response = await api.get(`/api/tournaments/${tournament.id}/teams`);
+            if (response.data && Array.isArray(response.data)) {
+                console.log('Загруженные команды турнира:', response.data);
+                setMixedTeams(response.data);
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке команд турнира:', error);
+            if (toast) {
+                toast.error('Не удалось загрузить команды');
+            }
+        } finally {
+            setLoadingTeams(false);
+        }
+    };
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = async () => {
@@ -158,6 +191,7 @@ const TeamGenerator = ({
         }
     };
 
+    // Используем команды из турнира или из локального состояния
     const teamsExist = tournament?.teams && tournament.teams.length > 0;
     const teamsList = teamsExist ? tournament.teams : mixedTeams;
     const displayParticipants = originalParticipants.length > 0 ? originalParticipants : participants;
@@ -225,7 +259,9 @@ const TeamGenerator = ({
                     <div className="mixed-teams-section">
                         <h3>Сформированные команды {teamsList.length > 0 ? `(${teamsList.length})` : '(нет команд)'}</h3>
                         <div className="mixed-teams-grid">
-                            {teamsList.length > 0 ? (
+                            {loadingTeams ? (
+                                <p className="loading-teams">Загрузка команд...</p>
+                            ) : teamsList.length > 0 ? (
                                 teamsList.map((team, index) => (
                                     <TeamCard
                                         key={index}
