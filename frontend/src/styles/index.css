@@ -1,19 +1,22 @@
 /* Главный файл стилей */
 
-/* Импорт переменных */
+/* Импорты основных стилей */
 @import './variables.css';
-
-/* Импорт базовых стилей */
 @import './base.css';
-
-/* Импорт общих компонентов */
 @import './components.css';
-
-/* Импорт стилей макета */
-@import './layout.css';
-
-/* Импорт утилит */
 @import './utilities.css';
+@import './layout.css';
+@import './animations.css';
 
-/* Импорт анимаций */
-@import './animations.css'; 
+/* HTML страницы на русском языке */
+html {
+  font-family: 'Play', Arial, sans-serif;
+  font-size: 20px;
+}
+
+body {
+  font-family: 'Play', Arial, sans-serif;
+  font-size: 20px;
+  background-color: #000;
+  color: #ffffff;
+} 

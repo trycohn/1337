@@ -21,6 +21,7 @@ body {
   color: var(--text-color);
   background-color: var(--background-color);
   line-height: 1.5;
+  font-size: var(--font-size-normal);
 }
 
 code {
@@ -32,6 +33,11 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-color);
 }
 
+h3 {
+  color: #d00000;
+  text-transform: uppercase;
+}
+
 a {
   color: var(--primary-color);
   text-decoration: none;
@@ -40,6 +46,7 @@ a {
 
 a:hover {
   color: var(--primary-hover);
+  text-decoration: none;
 }
 
 img {
@@ -54,6 +61,19 @@ ul, ol {
 
 button {
   cursor: pointer;
+  color: var(--dark-text);
+  background-color: var(--light-text);
+  font-size: var(--font-size-normal);
+  text-transform: uppercase;
+  line-height: 1.55;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all var(--transition-normal);
+}
+
+button:hover {
+  color: var(--light-text);
+  background-color: var(--secondary-color);
 }
 
 /* Общие контейнеры */

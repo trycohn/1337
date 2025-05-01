@@ -14,7 +14,7 @@
 .auth-container {
   width: 100%;
   max-width: 400px;
-  background-color: white;
+  background-color: var(--card-background);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -34,14 +34,16 @@
   font-weight: 500;
   transition: all var(--transition-normal);
   border-bottom: 3px solid transparent;
+  color: var(--text-color);
+  text-transform: uppercase;
 }
 
 .auth-tab:hover {
-  background-color: rgba(0, 123, 255, 0.05);
+  background-color: rgba(255, 0, 0, 0.1);
 }
 
 .auth-tab.active {
-  background-color: white;
+  background-color: var(--card-background);
   border-bottom-color: var(--primary-color);
   color: var(--primary-color);
 }
@@ -79,6 +81,7 @@
   text-align: center;
   color: var(--primary-color);
   font-size: var(--font-size-large);
+  text-transform: uppercase;
 }
 
 .form-group {
@@ -91,6 +94,8 @@
   border: 1px solid var(--light-gray);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-normal);
+  background-color: var(--background-color);
+  color: var(--text-color);
   transition: border-color var(--transition-normal);
 }
 
@@ -104,17 +109,20 @@
   padding: var(--spacing-md);
   border: none;
   border-radius: var(--border-radius-sm);
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--light-text);
+  color: var(--dark-text);
   font-size: var(--font-size-normal);
   font-weight: 500;
+  text-transform: uppercase;
+  line-height: 1.55;
   cursor: pointer;
-  transition: background-color var(--transition-normal);
+  transition: all var(--transition-normal);
   margin-top: var(--spacing-md);
 }
 
 .auth-button:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--secondary-color);
+  color: var(--light-text);
 }
 
 .social-login-buttons {
@@ -138,10 +146,14 @@
   cursor: pointer;
   transition: background-color var(--transition-normal);
   gap: var(--spacing-sm);
+  text-transform: uppercase;
+  line-height: 1.55;
+  font-size: var(--font-size-normal);
 }
 
 .steam-button:hover {
-  background-color: #2a475e;
+  background-color: var(--secondary-color);
+  color: var(--light-text);
 }
 
 .faceit-button {
@@ -158,10 +170,14 @@
   cursor: pointer;
   transition: background-color var(--transition-normal);
   gap: var(--spacing-sm);
+  text-transform: uppercase;
+  line-height: 1.55;
+  font-size: var(--font-size-normal);
 }
 
 .faceit-button:hover {
-  background-color: #ff7733;
+  background-color: var(--secondary-color);
+  color: var(--light-text);
 }
 
 .error-message {
@@ -219,7 +235,7 @@
 
 .forgot-password a:hover {
   color: var(--primary-hover);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .form-footer {
@@ -237,7 +253,7 @@
 
 .form-footer a:hover {
   color: var(--primary-hover);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Медиа-запросы */

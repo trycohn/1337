@@ -22,13 +22,14 @@
 .home-hero h1 {
   font-size: var(--font-size-xlarge);
   margin-bottom: var(--spacing-md);
-  color: var(--primary-color);
+  color: var(--text-color);
 }
 
 .home-hero p {
   font-size: var(--font-size-medium);
   max-width: 700px;
   margin: 0 auto var(--spacing-lg);
+  color: var(--secondary-text);
 }
 
 .home-features {
@@ -45,6 +46,7 @@
   max-width: 300px;
   padding: var(--spacing-md);
   border-radius: var(--border-radius-md);
+  background-color: var(--card-background);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
@@ -63,22 +65,25 @@
 .feature-title {
   font-size: var(--font-size-medium);
   margin-bottom: var(--spacing-sm);
+  color: var(--text-color);
+  text-transform: uppercase;
 }
 
 .feature-description {
-  color: var(--text-color);
+  color: var(--secondary-text);
 }
 
 .home-cta {
-  background-color: var(--primary-color);
-  color: var(--light-text);
+  background-color: var(--card-background);
+  color: var(--text-color);
   padding: var(--spacing-xl) 0;
   margin: var(--spacing-xl) 0;
 }
 
 .home-cta h2 {
-  color: var(--light-text);
+  color: var(--text-color);
   margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
 }
 
 .home-cta-buttons {
@@ -102,6 +107,8 @@
 .tournaments-title {
   font-size: var(--font-size-large);
   margin: 0;
+  text-transform: uppercase;
+  color: var(--text-color);
 }
 
 .view-all-link {
@@ -109,11 +116,12 @@
   text-decoration: none;
   font-weight: 500;
   transition: color var(--transition-normal);
+  text-transform: uppercase;
 }
 
 .view-all-link:hover {
   color: var(--primary-hover);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .tournament-cards {
@@ -125,6 +133,7 @@
 .tournament-card {
   border-radius: var(--border-radius-md);
   overflow: hidden;
+  background-color: var(--card-background);
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
@@ -135,13 +144,15 @@
 }
 
 .tournament-card-header {
-  background-color: var(--primary-color);
-  color: var(--light-text);
+  background-color: var(--card-background);
+  color: var(--primary-color);
   padding: var(--spacing-md);
+  border-bottom: 1px solid var(--light-gray);
 }
 
 .tournament-card-body {
   padding: var(--spacing-md);
+  color: var(--text-color);
 }
 
 .tournament-card-footer {
@@ -150,6 +161,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: var(--card-background);
 }
 
 .tournament-info {
@@ -157,6 +169,7 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   margin-bottom: var(--spacing-sm);
+  color: var(--secondary-text);
 }
 
 .tournament-info-item {
