@@ -1796,39 +1796,44 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
 });
 
 // Получение команд и их участников для командных турниров
-router.get('/:id/teams', authenticateToken, async (req, res) => {
+router.get('/:id/teams', async (req, res) => {
     const { id } = req.params;
     try {
-        const tourCheck = await pool.query('SELECT participant_type FROM tournaments WHERE id = $1', [id]);
+        // Проверяем существование турнира
+        const tourCheck = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         if (tourCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
         }
-        if (tourCheck.rows[0].participant_type !== 'team') {
-            return res.status(400).json({ error: 'У турнира нет команд' });
-        }
-        // Получаем команды и их участников
+
+        // Получаем все команды турнира
         const teamsRes = await pool.query(
-            `SELECT
-                tt.id,
-                tt.name,
-                COALESCE(
-                    json_agg(jsonb_build_object(
-                        'participant_id', ttm.participant_id,
-                        'user_id', ttm.user_id,
-                        'name', COALESCE(tp.name, '')
-                    )), '[]'
-                ) AS members
-            FROM tournament_teams tt
-            LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
-            LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
-            WHERE tt.tournament_id = $1
-            GROUP BY tt.id, tt.name
-            ORDER BY tt.id`,
+            `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
+             FROM tournament_teams tt
+             WHERE tt.tournament_id = $1`,
             [id]
         );
-        res.json(teamsRes.rows);
+
+        // Для каждой команды получаем участников
+        const teams = await Promise.all(teamsRes.rows.map(async (team) => {
+            const membersRes = await pool.query(
+                `SELECT tm.team_id, tm.user_id, tm.participant_id, 
+                        tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
+                 FROM tournament_team_members tm
+                 LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
+                 LEFT JOIN users u ON tm.user_id = u.id
+                 WHERE tm.team_id = $1`,
+                [team.id]
+            );
+
+            return {
+                ...team,
+                members: membersRes.rows
+            };
+        }));
+
+        res.json(teams);
     } catch (err) {
-        console.error('❌ Ошибка получения команд:', err);
+        console.error('❌ Ошибка получения команд турнира:', err);
         res.status(500).json({ error: err.message });
     }
 });
