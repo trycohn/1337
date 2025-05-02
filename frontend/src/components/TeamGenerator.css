@@ -6,12 +6,12 @@
 .original-participants-section {
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #ffffff;
+  background-color: #0e0e0e;
   border-radius: 8px;
 }
 
 .original-participants-section h3 {
-  color: #2a2a2a;
+  color: #ffffff;
   margin-bottom: 20px;
   font-size: 1.25rem;
 }
@@ -62,7 +62,7 @@
 
 .participant-name {
   font-weight: 500;
-  color: #f3f4f6;
+  color: #ffffff;
   display: block;
   margin-bottom: 4px;
 }
@@ -78,8 +78,8 @@
   right: 5px;
   width: 24px;
   height: 24px;
-  background-color: #ef4444;
-  color: white;
+  background-color: #ffffff;
+  color: #000000;
   border: none;
   border-radius: 50%;
   font-size: 12px;
@@ -91,10 +91,10 @@
 }
 
 .remove-participant:hover {
-  background-color: #dc2626;
+  background-color: #7d7d7d;
 }
 
-.no-participants {
+.no-participants {  
   color: #9ca3af;
   text-align: center;
   padding: 20px;
@@ -103,12 +103,12 @@
 .mix-settings-section {
   margin-top: 20px;
   padding: 16px;
-  background-color: #ffffff;
+  background-color: #0e0e0e;
   border-radius: 8px;
 }
 
 .mix-settings-section h3 {
-  color: #2a2a2a;
+  color: #ffffff;
   margin-bottom: 15px;
   font-size: 1.25rem;
 }
@@ -166,11 +166,11 @@
 }
 
 .form-teams-button:hover {
-  background-color: #2563eb;
+  background-color: #7d7d7d;
 }
 
 .reformate-teams-button:hover {
-  background-color: #4f46e5;
+  background-color: #7d7d7d;
 }
 
 .loading-participants {
@@ -194,12 +194,12 @@
   margin-top: 20px;
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #ffffff;
+  background-color: #0e0e0e;
   border-radius: 8px;
 }
 
 .mixed-teams-section h3 {
-  color: #2a2a2a;
+  color: #ffffff;
   margin-bottom: 20px;
   font-size: 1.25rem;
 }

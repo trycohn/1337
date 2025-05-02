@@ -85,14 +85,14 @@
     top: -10px;
     left: 0;
     transform: none;
-    background: rgba(240, 240, 240, 0.9);
+    background: #ffffff;
     padding: 4px 12px;
     border-radius: 4px;
     font-size: 1.2em;
     margin: 0 0 5px 0;
     white-space: nowrap;
     display: inline-block;
-    color: #333;
+    color: #000000;
     text-align: center;
     border: none;
 }
@@ -169,11 +169,11 @@
 }
 
 .custom-seed:hover {
-    background-color: #f5f5f5;
+    background-color: #7d7d7d;
 }
 
 .custom-seed.selected {
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    box-shadow: 0 0 5px #ffffff;
 }
 
 .match-number {

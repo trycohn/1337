@@ -843,7 +843,7 @@
 }
 
 .reformate-teams-button:hover {
-    background-color: #e67e22;
+    background-color: #7d7d7d;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -853,20 +853,20 @@
     padding: 10px;
     background-color: #f8eaea;
     border-radius: 8px;
-    border: 1px solid #e74c3c;
+    border: 1px solid #e6e6e6;
     display: flex;
     justify-content: center;
 }
 
 .finish-above-bracket .end-tournament {
-    background-color: #e74c3c;
+    background-color: #ffffff;
     font-weight: bold;
     padding: 10px 20px;
     font-size: 16px;
 }
 
 .finish-above-bracket .end-tournament:hover {
-    background-color: #c0392b;
+    background-color: #7d7d7d;
     transform: scale(1.05);
     transition: transform 0.2s ease, background-color 0.3s ease;
 }
@@ -874,7 +874,7 @@
 .tournament-admin-controls {
     margin: 20px 0;
     padding: 15px;
-    background-color: #f5f5f5;
+    background-color: #0e0e0e;
     border-radius: 8px;
     border: 1px solid #ddd;
 }
@@ -891,7 +891,7 @@
 }
 
 .clear-results-button:hover {
-    background-color: #c82333;
+    background-color: #7d7d7d;
 }
 
 /* Стили для работы с картами в матчах CS2 */
@@ -1266,7 +1266,6 @@
 
 .mix-players-list {
     margin: 20px 0;
-    background-color: #f9f9f9;
     padding: 15px;
     border-radius: 8px;
     border: 1px solid #eee;
@@ -1281,7 +1280,7 @@
 
 .participant-card {
     display: inline-flex;
-    background-color: #212121;
+    background-color: #1f2937;
     border: 1px solid #ffffff;
     border-radius: 20px;
     padding: 5px 12px 5px 5px;

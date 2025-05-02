@@ -272,7 +272,6 @@ const BracketRenderer = ({
                 .bracket-title {
                     font-size: 1.2em;
                     margin: 20px 0 10px 0;
-                    color: #333;
                     font-weight: bold;
                 }
                 .bracket-divider {
