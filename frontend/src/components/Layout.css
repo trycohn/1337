@@ -22,6 +22,8 @@
     
     .navigation a, .navigation button {
         padding: 0px 5px;
+        color: #000;
+        background-color: #ffffff;
     }
 }
 
@@ -76,9 +78,6 @@
     }
     
     /* Анимация появления меню */
-    .navigation.open {
-        animation: slideDown 0.3s ease forwards;
-    }
     
     @keyframes slideDown {
         from {
@@ -97,7 +96,11 @@
     .navigation.open {
         display: flex;
         flex-direction: column;
-        width: 100%;
+        width: 100vw;
         padding-bottom: 10px;
+        animation: slideDown 0.3s ease forwards;
+        height: auto;
+        background-color: #ffffff;
+        color: #000;
     }
 } 

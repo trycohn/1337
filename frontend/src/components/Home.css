@@ -747,10 +747,6 @@ header.header {
     z-index: 1000;
   }
 
-  .navigation.open {
-    display: flex;
-  }
-
   .navigation a,
   .navigation button {
     width: 100%;

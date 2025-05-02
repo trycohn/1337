@@ -77,8 +77,9 @@
 
 .navigation a:hover, 
 .navigation button:hover {
-  color: #ffffff;
+  color: #000000;
   text-decoration: none;
+  background-color: #7d7d7d;
 }
 
 /* Мобильное меню */
@@ -230,19 +231,16 @@
     left: 0;
     width: 100%;
     flex-direction: column;
-    background-color: #000;
+    background-color: #ffffff;
     padding: var(--spacing-md) 0;
     box-shadow: var(--shadow-md);
-  }
-  
-  .navigation.open {
-    display: flex;
+    color: #000;
   }
   
   .navigation a, 
   .navigation button {
     padding: var(--spacing-sm) var(--spacing-md);
-    width: 100%;
+    width: 100vw;
     text-align: left;
   }
   
