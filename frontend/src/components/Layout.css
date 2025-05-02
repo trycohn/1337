@@ -98,6 +98,7 @@
         flex-direction: column;
         width: 100vw;
         padding-bottom: 10px;
+        padding-top: 10px;
         animation: slideDown 0.3s ease forwards;
         height: auto;
         background-color: #ffffff;
