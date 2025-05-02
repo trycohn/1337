@@ -21,8 +21,8 @@
 
 .tournament-details button {
     padding: 0px 5px;
-    background-color: #0e0e0e;
-    color: #ffffff;
+    background-color: #ffffff;
+    color: #000000;
     border: none;
     border-radius: 0px;
     cursor: pointer;
@@ -132,7 +132,7 @@
     padding: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    background-color: #7d7d7d;
+    background-color: #0e0e0e;
 }
 
 .winners-list {
@@ -373,7 +373,7 @@
 }
 
 .info-block {
-    background-color: #7d7d7d;
+    background-color: #1f2937;
     color: #ffffff;
     padding: 15px;
     border-radius: 5px;
