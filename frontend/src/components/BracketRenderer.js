@@ -977,6 +977,10 @@ const BracketRenderer = ({
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && match.state !== 'DONE') {
                                                             setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                            // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
+                                                            if (handleTeamClick && !isSelected && match.participants[0]?.id) {
+                                                                handleTeamClick(match.participants[0].id, match.id);
+                                                            }
                                                         }
                                                     }}
                                                 >
@@ -1004,6 +1008,10 @@ const BracketRenderer = ({
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && match.state !== 'DONE') {
                                                             setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                            // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
+                                                            if (handleTeamClick && !isSelected && match.participants[1]?.id) {
+                                                                handleTeamClick(match.participants[1].id, match.id);
+                                                            }
                                                         }
                                                     }}
                                                 >
@@ -1051,6 +1059,10 @@ const BracketRenderer = ({
                                                             onClick={(e) => {
                                                                 if (canEditMatches && match.state !== 'DONE') {
                                                                     setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                                    // Добавляем вызов handleTeamClick
+                                                                    if (handleTeamClick && !isSelected && match.participants[0]?.id) {
+                                                                        handleTeamClick(match.participants[0].id, match.id);
+                                                                    }
                                                                 }
                                                             }}
                                                         >
@@ -1073,6 +1085,10 @@ const BracketRenderer = ({
                                                             onClick={(e) => {
                                                                 if (canEditMatches && match.state !== 'DONE') {
                                                                     setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                                    // Добавляем вызов handleTeamClick
+                                                                    if (handleTeamClick && !isSelected && match.participants[1]?.id) {
+                                                                        handleTeamClick(match.participants[1].id, match.id);
+                                                                    }
                                                                 }
                                                             }}
                                                         >
@@ -1117,6 +1133,10 @@ const BracketRenderer = ({
                                                 onClick={(e) => {
                                                     if (canEditMatches && grandFinalMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
+                                                        // Добавляем вызов handleTeamClick
+                                                        if (handleTeamClick && selectedMatch !== safeParseInt(grandFinalMatch.id) && grandFinalMatch.participants[0]?.id) {
+                                                            handleTeamClick(grandFinalMatch.participants[0].id, grandFinalMatch.id);
+                                                        }
                                                     }
                                                 }}
                                             >
@@ -1139,6 +1159,10 @@ const BracketRenderer = ({
                                                 onClick={(e) => {
                                                     if (canEditMatches && grandFinalMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
+                                                        // Добавляем вызов handleTeamClick
+                                                        if (handleTeamClick && selectedMatch !== safeParseInt(grandFinalMatch.id) && grandFinalMatch.participants[1]?.id) {
+                                                            handleTeamClick(grandFinalMatch.participants[1].id, grandFinalMatch.id);
+                                                        }
                                                     }
                                                 }}
                                             >
@@ -1168,6 +1192,10 @@ const BracketRenderer = ({
                                                 onClick={(e) => {
                                                     if (canEditMatches && placementMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
+                                                        // Добавляем вызов handleTeamClick
+                                                        if (handleTeamClick && selectedMatch !== safeParseInt(placementMatch.id) && placementMatch.participants[0]?.id) {
+                                                            handleTeamClick(placementMatch.participants[0].id, placementMatch.id);
+                                                        }
                                                     }
                                                 }}
                                             >
@@ -1190,6 +1218,10 @@ const BracketRenderer = ({
                                                 onClick={(e) => {
                                                     if (canEditMatches && placementMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
+                                                        // Добавляем вызов handleTeamClick
+                                                        if (handleTeamClick && selectedMatch !== safeParseInt(placementMatch.id) && placementMatch.participants[1]?.id) {
+                                                            handleTeamClick(placementMatch.participants[1].id, placementMatch.id);
+                                                        }
                                                     }
                                                 }}
                                             >
