@@ -57,7 +57,7 @@ header.header {
 }
 
 .hamburger:hover svg path {
-  fill: #7b7b7b;
+  fill: #111111;
 }
 
 .navigation {
