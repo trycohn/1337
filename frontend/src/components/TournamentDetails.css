@@ -373,7 +373,8 @@
 }
 
 .info-block {
-    background-color: #f9f9f9;
+    background-color: #7d7d7d;
+    color: #ffffff;
     padding: 15px;
     border-radius: 5px;
     border: 1px solid #eee;
@@ -381,7 +382,7 @@
 
 .info-block h3 {
     margin: 0 0 15px 0;
-    color: #333;
+    color: #ffffff;
     font-size: 1.2em;
 }
 
