@@ -668,7 +668,7 @@ header.header {
   }
 
   .user-info {
-    gap: 5px;
+    gap: 10px;
   }
 
   .username-link {
@@ -755,10 +755,6 @@ header.header {
     border-bottom: 1px solid #e0e0e0;
     justify-content: flex-start;
     height: auto;
-  }
-
-  .user-info {
-    gap: 2px;
   }
   
   .user-info button {
