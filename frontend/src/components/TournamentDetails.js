@@ -1028,7 +1028,7 @@ function TournamentDetails() {
                 team1_id: team1Id,
                 team2_id: team2Id,
                 isByeMatch,
-                maps: showMapSelection ? maps : undefined
+                maps: tournament.game === 'Counter-Strike 2' ? maps : undefined
             });
             
             // Проверяем, что ID матча и ID победителя существуют
@@ -1049,16 +1049,32 @@ function TournamentDetails() {
                 }
             }
             
+            // Если игра CS2 и есть карты, обновляем счет на основе побед на картах
+            let finalScore1 = score1;
+            let finalScore2 = score2;
+            
+            if (tournament && tournament.game === 'Counter-Strike 2' && maps.length > 0) {
+                // Считаем победы на картах
+                const team1Wins = maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length;
+                const team2Wins = maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length;
+                
+                // Обновляем счет
+                finalScore1 = team1Wins;
+                finalScore2 = team2Wins;
+                
+                console.log('Обновлен счет на основе карт:', { team1Wins, team2Wins });
+            }
+            
             // Формируем данные запроса
             const requestData = {
                 matchId: Number(updatedMatch.id),
                 winner_team_id: Number(winnerId),
-                score1: Number(score1) || 0,
-                score2: Number(score2) || 0
+                score1: Number(finalScore1) || 0,
+                score2: Number(finalScore2) || 0
             };
             
             // Если включён выбор карт и это CS2, добавляем информацию о картах
-            if (showMapSelection && tournament.game === 'Counter-Strike 2') {
+            if (tournament.game === 'Counter-Strike 2') {
                 requestData.maps = maps;
             }
             
@@ -2292,7 +2308,7 @@ function TournamentDetails() {
                                     </span>
                                 </p>
                                 
-                                {showMapSelection ? (
+                                {tournament && tournament.game === 'Counter-Strike 2' ? (
                                     <div className="maps-container">
                                         <h4>Карты матча</h4>
                                         {maps.map((mapData, index) => (
@@ -2346,13 +2362,15 @@ function TournamentDetails() {
                                             </div>
                                         ))}
                                         
-                                        <button 
-                                            onClick={addMap} 
-                                            className="add-map-btn"
-                                            title="Добавить карту"
-                                        >
-                                            + Добавить карту
-                                        </button>
+                                        {maps.length < 7 && (
+                                            <button 
+                                                onClick={addMap} 
+                                                className="add-map-btn"
+                                                title="Добавить карту"
+                                            >
+                                                + Добавить карту
+                                            </button>
+                                        )}
                                         
                                         {maps.length > 1 && (
                                             <div className="total-score">
@@ -2418,6 +2436,19 @@ function TournamentDetails() {
                                         onClick={() => {
                                             const matchInfo = games.find((m) => m.id === selectedMatch.toString());
                                             if (matchInfo) {
+                                                // Если это CS2 и у нас есть карты, обновляем общий счет на основе карт
+                                                if (tournament && tournament.game === 'Counter-Strike 2' && maps.length > 0) {
+                                                    // Рассчитываем общий счет по победам на картах
+                                                    const team1Wins = maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length;
+                                                    const team2Wins = maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length;
+                                                    
+                                                    // Обновляем счет матча перед отправкой
+                                                    setMatchScores({
+                                                        team1: team1Wins,
+                                                        team2: team2Wins
+                                                    });
+                                                }
+                                                
                                                 handleUpdateMatch(matchInfo);
                                             }
                                         }}
