@@ -348,11 +348,6 @@
   color: var(--primary-color);
 }
 
-.bracket-grid {
-  display: flex;
-  justify-content: space-between;
-}
-
 .round-column {
   display: flex;
   flex-direction: column;

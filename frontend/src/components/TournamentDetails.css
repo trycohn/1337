@@ -6,7 +6,7 @@
 
 .tournament-details h2 {
     margin-bottom: 20px;
-    color: #ffffff;
+    color: #000000;
 }
 
 .tournament-details p {
@@ -16,7 +16,7 @@
 .tournament-details h3 {
     margin-top: 30px;
     margin-bottom: 15px;
-    color: #333;
+    color: #ffffff;
 }
 
 .tournament-details button {

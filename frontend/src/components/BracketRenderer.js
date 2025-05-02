@@ -228,17 +228,7 @@ const BracketRenderer = ({
                     min-width: fit-content;
                     overflow: auto;
                 }
-                .bracket-grid {
-                    display: flex;
-                    gap: 50px;
-                    margin-bottom: 30px;
-                    align-items: center;
-                    margin: 10px;
-                    width: 100%;
-                    height: 100%;
-                    position: relative;
-                }
-                .round-column {
+                                .round-column {
                     display: flex;
                     flex-direction: column;
                     gap: 15px;

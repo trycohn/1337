@@ -118,7 +118,7 @@
 .bracket-grid {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
+    align-items: center;
     gap: 50px;
     overflow-x: auto;
     padding-bottom: 15px;
