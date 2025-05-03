@@ -238,18 +238,58 @@ function TournamentDetails() {
         try {
             if (!gameName) return;
             
-            // Если карты для этой игры уже загружены, не делаем повторный запрос
+            // Если карты для этой игры уже загружены в состоянии, не делаем повторный запрос
             if (availableMaps[gameName] && availableMaps[gameName].length > 0) {
                 return;
             }
             
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/api/maps?game=${encodeURIComponent(gameName)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // Проверяем, есть ли карты в localStorage
+            const cacheKey = `maps_cache_${gameName}`;
+            const cachedMaps = localStorage.getItem(cacheKey);
+            const cacheTimestampKey = `maps_cache_timestamp_${gameName}`;
+            const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+            const cacheValidityPeriod = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
+            
+            // Если есть валидный кеш (не старше 24 часов), используем его
+            if (cachedMaps && cacheTimestamp) {
+                const now = new Date().getTime();
+                const timestamp = parseInt(cacheTimestamp, 10);
+                
+                if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
+                    try {
+                        const parsedMaps = JSON.parse(cachedMaps);
+                        if (Array.isArray(parsedMaps) && parsedMaps.length > 0) {
+                            console.log(`Используем кешированные карты для игры ${gameName}`);
+                            setAvailableMaps(prev => ({
+                                ...prev,
+                                [gameName]: parsedMaps
+                            }));
+                            return;
+                        }
+                    } catch (parseError) {
+                        console.error('Ошибка при разборе кешированных карт:', parseError);
+                        // Если произошла ошибка при разборе, очищаем кеш
+                        localStorage.removeItem(cacheKey);
+                        localStorage.removeItem(cacheTimestampKey);
+                    }
+                } else {
+                    // Кеш устарел, очищаем его
+                    localStorage.removeItem(cacheKey);
+                    localStorage.removeItem(cacheTimestampKey);
+                }
+            }
+            
+            // Если нет валидного кеша, делаем запрос к API
+            console.log(`Загружаем карты для игры ${gameName} с сервера...`);
+            
+            const response = await api.get(`/api/maps?game=${encodeURIComponent(gameName)}`);
             
             if (response.data && Array.isArray(response.data)) {
-                // Обновляем availableMaps, сохраняя уже загруженные карты для других игр
+                // Сохраняем карты в кеш
+                localStorage.setItem(cacheKey, JSON.stringify(response.data));
+                localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+                
+                // Обновляем состояние
                 setAvailableMaps(prev => ({
                     ...prev,
                     [gameName]: response.data
@@ -261,6 +301,9 @@ function TournamentDetails() {
             
             // В случае ошибки, используем запасной вариант со стандартными картами для CS2
             if (isCounterStrike2(gameName)) {
+                console.log(`Используем стандартные карты для игры ${gameName}`);
+                
+                // Базовый набор карт для CS2
                 const defaultMaps = [
                     { id: 1, name: 'de_dust2', game: 'Counter-Strike 2', display_name: 'Dust II' },
                     { id: 2, name: 'de_mirage', game: 'Counter-Strike 2', display_name: 'Mirage' },
@@ -273,11 +316,14 @@ function TournamentDetails() {
                     { id: 9, name: 'de_overpass', game: 'Counter-Strike 2', display_name: 'Overpass' }
                 ];
                 
+                // Сохраняем стандартные карты в кеш и состояние
+                localStorage.setItem(`maps_cache_${gameName}`, JSON.stringify(defaultMaps));
+                localStorage.setItem(`maps_cache_timestamp_${gameName}`, new Date().getTime().toString());
+                
                 setAvailableMaps(prev => ({
                     ...prev,
                     [gameName]: defaultMaps
                 }));
-                console.log(`Используем стандартные карты для игры ${gameName}`);
             }
         }
     }, [availableMaps]);

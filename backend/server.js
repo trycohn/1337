@@ -76,19 +76,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Настройка лимита запросов
-const limiter = rateLimiter({
-    windowMs: 15 * 60 * 1000, // 15 минут
-    max: 100 // максимум 100 запросов на IP
-});
-app.use(limiter);
-
-// Обслуживание статических файлов из папки frontend/build
-app.use(express.static(path.join(__dirname, '../frontend/build'), { cacheControl: false }));
-
-// Обслуживание статических файлов из папки uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // Публичные маршруты API, не требующие аутентификации
 const publicRoutes = [
   /^\/api\/maps($|\/)/,  // Маршруты /api/maps и /api/maps/:id
@@ -101,6 +88,35 @@ const publicRoutes = [
 function isPublicRoute(path) {
   return publicRoutes.some(pattern => pattern.test(path));
 }
+
+// Настройка лимита запросов - более строгий лимит для неавторизованных запросов
+const strictLimiter = rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 100, // максимум 100 запросов на IP
+    // Пропускаем публичные маршруты
+    skip: (req) => isPublicRoute(req.path)
+});
+app.use(strictLimiter);
+
+// Отдельный rate limiter для публичных маршрутов с более высоким лимитом
+const publicRoutesLimiter = rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 300, // максимум 300 запросов на IP для публичных маршрутов
+});
+
+// Применяем лимитер только к публичным маршрутам
+app.use((req, res, next) => {
+    if (isPublicRoute(req.path)) {
+        return publicRoutesLimiter(req, res, next);
+    }
+    next();
+});
+
+// Обслуживание статических файлов из папки frontend/build
+app.use(express.static(path.join(__dirname, '../frontend/build'), { cacheControl: false }));
+
+// Обслуживание статических файлов из папки uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Добавляем middleware для обновления активности пользователя после аутентификации
 app.use((req, res, next) => {
