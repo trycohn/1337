@@ -134,4 +134,36 @@ ALTER TABLE tournament_team_members ADD COLUMN IF NOT EXISTS participant_id INTE
 ALTER TABLE tournament_team_members ALTER COLUMN user_id DROP NOT NULL;
 
 -- Создаем индекс для ускорения поиска по participant_id
-CREATE INDEX IF NOT EXISTS idx_tournament_team_members_participant_id ON tournament_team_members(participant_id); 
+CREATE INDEX IF NOT EXISTS idx_tournament_team_members_participant_id ON tournament_team_members(participant_id);
+
+-- Создаем таблицу maps, если она еще не существует
+CREATE TABLE IF NOT EXISTS maps (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    game VARCHAR(255) NOT NULL,
+    display_name VARCHAR(255),
+    image_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Создаем индекс для быстрого поиска по игре
+CREATE INDEX IF NOT EXISTS idx_maps_game ON maps(game);
+
+-- Добавляем карты для Counter-Strike 2, если их еще нет
+DO $$
+BEGIN
+    -- Проверяем, есть ли карты для CS2
+    IF NOT EXISTS (SELECT 1 FROM maps WHERE game = 'Counter-Strike 2' LIMIT 1) THEN
+        -- Вставляем карты для CS2
+        INSERT INTO maps (name, game, display_name, created_at) VALUES
+            ('de_dust2', 'Counter-Strike 2', 'Dust II', NOW()),
+            ('de_mirage', 'Counter-Strike 2', 'Mirage', NOW()),
+            ('de_nuke', 'Counter-Strike 2', 'Nuke', NOW()),
+            ('de_train', 'Counter-Strike 2', 'Train', NOW()),
+            ('de_anubis', 'Counter-Strike 2', 'Anubis', NOW()),
+            ('de_ancient', 'Counter-Strike 2', 'Ancient', NOW()),
+            ('de_inferno', 'Counter-Strike 2', 'Inferno', NOW()),
+            ('de_vertigo', 'Counter-Strike 2', 'Vertigo', NOW()),
+            ('de_overpass', 'Counter-Strike 2', 'Overpass', NOW());
+    END IF;
+END $$; 

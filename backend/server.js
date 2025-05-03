@@ -13,7 +13,7 @@ console.log("🔍 FACEIT_CLIENT_ID:", process.env.FACEIT_CLIENT_ID ? '[Уста�
 console.log("🔍 FACEIT_CLIENT_SECRET:", process.env.FACEIT_CLIENT_SECRET ? '[Установлен]' : '[Отсутствует]');
 console.log("🔍 FACEIT_REDIRECT_URI:", process.env.FACEIT_REDIRECT_URI ? '[Установлен]' : '[Отсутствует]');
 
-// Импорты из обоих файлов
+// Библиотеки и модули
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -30,6 +30,8 @@ const { authenticateToken } = require('./middleware/auth');
 const { updateActivity } = require('./middleware/activity');
 const tournamentsRouter = require('./routes/tournaments');
 const { broadcastTournamentUpdate } = require('./notifications');
+const multer = require('multer');
+const fs = require('fs');
 
 // Создаем Express приложение
 const app = express();
@@ -125,18 +127,33 @@ app.get('/', (req, res) => {
     res.json({ message: 'Сервер 1337 Community API работает!' });
 });
 
-// API-маршруты из app.js
-app.use('/api/users', require('./routes/users')); // Маршруты пользователей
-app.use('/api/auth', require('./routes/auth')); // Маршруты аутентификации
-app.use('/api/tournaments', tournamentsRouter); // Маршруты турниров
-app.use('/api/teams', require('./routes/teams')); // Маршруты команд
-app.use('/api/tournamentPlayers', require('./routes/tournamentPlayers')); // Маршруты игроков турнира
-app.use('/api/matches', require('./routes/matches')); // Маршруты матчей
-app.use('/api/statistics', require('./routes/statistics')); // Маршруты статистики
-app.use('/api/notifications', require('./routes/notifications')); // Маршруты уведомлений
-app.use('/api/playerStats', require('./routes/playerStats')); // Маршруты статистики игроков
-app.use('/api/friends', require('./routes/friends')); // Маршруты друзей
-app.use('/api/chats', require('./routes/chats')); // Маршруты чатов
+// Импорт маршрутов
+const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
+const teamsRouter = require('./routes/teams');
+const gamesRouter = require('./routes/games');
+const mapsRouter = require('./routes/maps');
+const tournamentPlayersRouter = require('./routes/tournamentPlayers');
+const matchesRouter = require('./routes/matches');
+const statisticsRouter = require('./routes/statistics');
+const notificationsRouter = require('./routes/notifications');
+const playerStatsRouter = require('./routes/playerStats');
+const friendsRouter = require('./routes/friends');
+const chatsRouter = require('./routes/chats');
+
+// Маршруты API
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/teams', teamsRouter);
+app.use('/api/tournaments', tournamentsRouter);
+app.use('/api/tournamentPlayers', tournamentPlayersRouter);
+app.use('/api/matches', matchesRouter);
+app.use('/api/statistics', statisticsRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/playerStats', playerStatsRouter);
+app.use('/api/friends', friendsRouter);
+app.use('/api/chats', chatsRouter);
+app.use('/api/maps', mapsRouter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {

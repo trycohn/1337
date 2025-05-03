@@ -62,6 +62,58 @@ class ErrorBoundary extends React.Component {
 // Глобальные константы
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
+// Конфигурация для игр с картами
+const GAME_CONFIGS = {
+    COUNTER_STRIKE_2: {
+        id: 21,
+        name: 'Counter-Strike 2',
+        hasMaps: true
+    },
+    // Здесь можно добавить другие игры в будущем
+    // Например:
+    // VALORANT: {
+    //     id: 3,
+    //     name: 'Valorant',
+    //     hasMaps: true
+    // },
+};
+
+// Универсальная функция для проверки игры по ID или имени
+const isGame = (gameToCheck, gameConfig) => {
+    return gameToCheck === gameConfig.name || 
+           gameToCheck === gameConfig.id || 
+           gameToCheck === String(gameConfig.id);
+};
+
+// Функция для проверки, является ли игра Counter-Strike 2
+const isCounterStrike2 = (game) => {
+    return isGame(game, GAME_CONFIGS.COUNTER_STRIKE_2);
+};
+
+// Функция для проверки, поддерживает ли игра карты
+const gameHasMaps = (game) => {
+    if (isCounterStrike2(game)) {
+        return true;
+    }
+    
+    // Добавлять проверки для других игр по мере необходимости
+    // if (isValorant(game)) return true;
+    
+    return false;
+};
+
+// Функция для получения списка карт для конкретной игры
+const getMapsForGame = (game) => {
+    if (isCounterStrike2(game)) {
+        return GAME_CONFIGS.COUNTER_STRIKE_2.maps;
+    }
+    
+    // Добавлять карты для других игр по мере необходимости
+    // if (isValorant(game)) return GAME_CONFIGS.VALORANT.maps;
+    
+    return [];
+};
+
 // Компонент для отображения оригинального списка участников
 const OriginalParticipantsList = ({ participants, tournament }) => {
   if (!participants || participants.length === 0) {
@@ -112,11 +164,6 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
       </div>
     </div>
   );
-};
-
-// Функция для проверки, является ли игра Counter-Strike 2
-const isCounterStrike2 = (game) => {
-    return game === 'Counter-Strike 2' || game === 21 || game === '21';
 };
 
 function TournamentDetails() {
@@ -170,15 +217,6 @@ function TournamentDetails() {
     const prizePoolRef = useRef("");
     const fullDescriptionRef = useRef("");
     const rulesRef = useRef("");
-    const csgoMaps = [
-        'de_dust2',
-        'de_mirage',
-        'de_nuke',
-        'de_train',
-        'de_anubis',
-        'de_ancient',
-        'de_inferno'
-    ];
     const [chatMessages, setChatMessages] = useState([]);
     const [newChatMessage, setNewChatMessage] = useState('');
     const chatEndRef = useRef(null);
@@ -187,13 +225,98 @@ function TournamentDetails() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [sentInvitations, setSentInvitations] = useState([]);
     
+    // Добавляем новое состояние для хранения карт для разных игр
+    const [availableMaps, setAvailableMaps] = useState({});
+    
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
         // ... implementation ...
     }, [tournament, user]);
     
+    // Функция для загрузки карт из БД
+    const fetchMapsForGame = useCallback(async (gameName) => {
+        try {
+            if (!gameName) return;
+            
+            // Если карты для этой игры уже загружены, не делаем повторный запрос
+            if (availableMaps[gameName] && availableMaps[gameName].length > 0) {
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            const response = await api.get(`/api/maps?game=${encodeURIComponent(gameName)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data && Array.isArray(response.data)) {
+                // Обновляем availableMaps, сохраняя уже загруженные карты для других игр
+                setAvailableMaps(prev => ({
+                    ...prev,
+                    [gameName]: response.data
+                }));
+                console.log(`Загружены карты для игры ${gameName}:`, response.data);
+            }
+        } catch (error) {
+            console.error(`Ошибка при загрузке карт для игры ${gameName}:`, error);
+            
+            // В случае ошибки, используем запасной вариант со стандартными картами для CS2
+            if (isCounterStrike2(gameName)) {
+                const defaultMaps = [
+                    { id: 1, name: 'de_dust2', game: 'Counter-Strike 2', display_name: 'Dust II' },
+                    { id: 2, name: 'de_mirage', game: 'Counter-Strike 2', display_name: 'Mirage' },
+                    { id: 3, name: 'de_nuke', game: 'Counter-Strike 2', display_name: 'Nuke' },
+                    { id: 4, name: 'de_train', game: 'Counter-Strike 2', display_name: 'Train' },
+                    { id: 5, name: 'de_anubis', game: 'Counter-Strike 2', display_name: 'Anubis' },
+                    { id: 6, name: 'de_ancient', game: 'Counter-Strike 2', display_name: 'Ancient' },
+                    { id: 7, name: 'de_inferno', game: 'Counter-Strike 2', display_name: 'Inferno' },
+                    { id: 8, name: 'de_vertigo', game: 'Counter-Strike 2', display_name: 'Vertigo' },
+                    { id: 9, name: 'de_overpass', game: 'Counter-Strike 2', display_name: 'Overpass' }
+                ];
+                
+                setAvailableMaps(prev => ({
+                    ...prev,
+                    [gameName]: defaultMaps
+                }));
+                console.log(`Используем стандартные карты для игры ${gameName}`);
+            }
+        }
+    }, [availableMaps]);
+    
+    // Функция для получения карт для конкретной игры
+    const getGameMaps = useCallback((game) => {
+        // Пробуем определить игру
+        let gameName = '';
+        
+        if (isCounterStrike2(game)) {
+            gameName = 'Counter-Strike 2';
+        }
+        // Добавить другие игры при необходимости
+        
+        // Если у нас есть карты для этой игры, возвращаем их
+        if (gameName && availableMaps[gameName] && availableMaps[gameName].length > 0) {
+            return availableMaps[gameName];
+        }
+        
+        // Возвращаем пустой массив, если карты не найдены
+        return [];
+    }, [availableMaps]);
+    
+    // Функция для получения одной карты по умолчанию для данной игры
+    const getDefaultMap = useCallback((game) => {
+        const maps = getGameMaps(game);
+        return maps.length > 0 ? maps[0].name : '';
+    }, [getGameMaps]);
+    
+    // Загружаем карты при загрузке турнира
+    useEffect(() => {
+        if (tournament && tournament.game) {
+            fetchMapsForGame(tournament.game);
+        }
+    }, [tournament, fetchMapsForGame]);
+    
     const addMap = () => {
-        setMaps([...maps, { map: 'de_dust2', score1: 0, score2: 0 }]);
+        const defaultMap = getDefaultMap(tournament?.game);
+        setMaps([...maps, { map: defaultMap, score1: 0, score2: 0 }]);
     };
 
     const removeMap = (index) => {
@@ -941,7 +1064,7 @@ function TournamentDetails() {
             
             // Проверяем, сохранены ли данные о картах для этого матча
             const matchData = matches.find(m => m.id === safeMatchId);
-            if (matchData && matchData.maps_data && isCounterStrike2(tournament.game)) {
+            if (matchData && matchData.maps_data && gameHasMaps(tournament.game)) {
                 try {
                     const parsedMapsData = JSON.parse(matchData.maps_data);
                     if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
@@ -949,18 +1072,19 @@ function TournamentDetails() {
                         setShowMapSelection(true);
                     } else {
                         // Если данные есть, но не валидны, сбрасываем к исходному состоянию
-                        setMaps([{ map: 'de_dust2', score1: 0, score2: 0 }]);
-                        setShowMapSelection(isCounterStrike2(tournament.game));
+                        setMaps([{ map: getGameMaps(tournament.game)[0] || '', score1: 0, score2: 0 }]);
+                        setShowMapSelection(gameHasMaps(tournament.game));
                     }
                 } catch (e) {
                     console.error('Ошибка при разборе данных карт:', e);
-                    setMaps([{ map: 'de_dust2', score1: 0, score2: 0 }]);
-                    setShowMapSelection(isCounterStrike2(tournament.game));
+                    setMaps([{ map: getGameMaps(tournament.game)[0] || '', score1: 0, score2: 0 }]);
+                    setShowMapSelection(gameHasMaps(tournament.game));
                 }
             } else {
-                // Для новых матчей или не-CS2 матчей
-                setMaps([{ map: 'de_dust2', score1: 0, score2: 0 }]);
-                setShowMapSelection(isCounterStrike2(tournament.game));
+                // Для новых матчей или игр без карт
+                const defaultMap = getGameMaps(tournament.game)[0] || '';
+                setMaps([{ map: defaultMap, score1: 0, score2: 0 }]);
+                setShowMapSelection(gameHasMaps(tournament.game));
             }
             
             // Отладочная информация
@@ -970,7 +1094,7 @@ function TournamentDetails() {
                 team2Id,
                 selectedWinner,
                 isByeMatch: isByeMatch,
-                isCS2: isCounterStrike2(tournament.game)
+                gameWithMaps: gameHasMaps(tournament.game)
             });
             
             // Для бай матча автоматически выбираем существующую команду как победителя
@@ -1033,7 +1157,7 @@ function TournamentDetails() {
                 team1_id: team1Id,
                 team2_id: team2Id,
                 isByeMatch,
-                maps: isCounterStrike2(tournament.game) ? maps : undefined
+                maps: gameHasMaps(tournament.game) ? maps : undefined
             });
             
             // Проверяем, что ID матча и ID победителя существуют
@@ -1054,11 +1178,11 @@ function TournamentDetails() {
                 }
             }
             
-            // Если игра CS2 и есть карты, обновляем счет на основе побед на картах
+            // Если игра поддерживает карты и есть карты, обновляем счет на основе побед на картах
             let finalScore1 = score1;
             let finalScore2 = score2;
             
-            if (tournament && isCounterStrike2(tournament.game) && maps.length > 0) {
+            if (tournament && gameHasMaps(tournament.game) && maps.length > 0) {
                 // Считаем победы на картах
                 const team1Wins = maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length;
                 const team2Wins = maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length;
@@ -1078,8 +1202,8 @@ function TournamentDetails() {
                 score2: Number(finalScore2) || 0
             };
             
-            // Если включён выбор карт и это CS2, добавляем информацию о картах
-            if (isCounterStrike2(tournament.game)) {
+            // Если включён выбор карт и игра поддерживает карты, добавляем информацию о картах
+            if (gameHasMaps(tournament.game)) {
                 requestData.maps = maps;
             }
             
@@ -1207,7 +1331,7 @@ function TournamentDetails() {
             };
 
             // Если есть данные о картах и это CS2, парсим их
-            if (matchData.maps_data && isCounterStrike2(tournament.game)) {
+            if (matchData.maps_data && gameHasMaps(tournament.game)) {
                 try {
                     const parsedMapsData = JSON.parse(matchData.maps_data);
                     if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
@@ -2313,7 +2437,7 @@ function TournamentDetails() {
                                     </span>
                                 </p>
                                 
-                                {tournament && isCounterStrike2(tournament.game) ? (
+                                {tournament && gameHasMaps(tournament.game) ? (
                                     <div className="maps-container">
                                         <h4>Карты матча</h4>
                                         {maps.map((mapData, index) => (
@@ -2324,8 +2448,8 @@ function TournamentDetails() {
                                                         onChange={(e) => updateMapSelection(index, e.target.value)}
                                                         className="map-select"
                                                     >
-                                                        {csgoMaps.map(map => (
-                                                            <option key={map} value={map}>{map}</option>
+                                                        {getGameMaps(tournament.game).map(map => (
+                                                            <option key={map.name} value={map.name}>{map.name}</option>
                                                         ))}
                                                     </select>
                                                     {maps.length > 1 && (
