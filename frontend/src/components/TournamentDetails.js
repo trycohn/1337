@@ -390,8 +390,58 @@ function TournamentDetails() {
     const fetchTournamentData = useCallback(async () => {
         setLoading(true);
         setError(null);
+        
+        // Проверяем кеш в localStorage
+        const cacheKey = `tournament_cache_${id}`;
+        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+        const cachedTournament = localStorage.getItem(cacheKey);
+        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+        const cacheValidityPeriod = 2 * 60 * 1000; // 2 минуты в миллисекундах
+        
+        // Если есть валидный кеш (не старше 2 минут), используем его
+        if (cachedTournament && cacheTimestamp) {
+            const now = new Date().getTime();
+            const timestamp = parseInt(cacheTimestamp, 10);
+            
+            if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
+                try {
+                    const parsedTournament = JSON.parse(cachedTournament);
+                    if (parsedTournament && parsedTournament.id) {
+                        console.log(`Используем кешированные данные турнира ${id}`);
+                        setTournament(parsedTournament);
+                        setMatches(parsedTournament.matches || []);
+                        
+                        // Сохраняем исходный список участников при загрузке турнира
+                        if (parsedTournament.participants && parsedTournament.participants.length > 0) {
+                            setOriginalParticipants(parsedTournament.participants);
+                        }
+                        
+                        setLoading(false);
+                        return;
+                    }
+                } catch (parseError) {
+                    console.error('Ошибка при разборе кешированных данных турнира:', parseError);
+                    // Если произошла ошибка при разборе, очищаем кеш
+                    localStorage.removeItem(cacheKey);
+                    localStorage.removeItem(cacheTimestampKey);
+                }
+            } else {
+                // Кеш устарел, очищаем его
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+            }
+        }
+        
+        // Если нет валидного кеша, делаем запрос к API
+        console.log(`Загружаем данные турнира ${id} с сервера...`);
+        
         try {
             const response = await api.get(`/api/tournaments/${id}`);
+            
+            // Кешируем результаты в localStorage
+            localStorage.setItem(cacheKey, JSON.stringify(response.data));
+            localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+            
             setTournament(response.data);
             setMatches(response.data.matches || []);
             
@@ -402,6 +452,27 @@ function TournamentDetails() {
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
             setError('Ошибка загрузки данных турнира');
+            
+            // Пробуем использовать данные из кеша, даже если они устаревшие
+            try {
+                const oldCache = localStorage.getItem(cacheKey);
+                if (oldCache) {
+                    const parsedOldCache = JSON.parse(oldCache);
+                    if (parsedOldCache && parsedOldCache.id) {
+                        console.log(`Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
+                        setTournament(parsedOldCache);
+                        setMatches(parsedOldCache.matches || []);
+                        
+                        if (parsedOldCache.participants && parsedOldCache.participants.length > 0) {
+                            setOriginalParticipants(parsedOldCache.participants);
+                        }
+                        
+                        setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
+                    }
+                }
+            } catch (cacheError) {
+                console.error('Ошибка при попытке использовать устаревший кеш:', cacheError);
+            }
         } finally {
             setLoading(false);
         }

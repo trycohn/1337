@@ -38,21 +38,76 @@ function TournamentsList() {
 
     useEffect(() => {
         const fetchTournaments = async () => {
+            // Проверяем кеш в localStorage
+            const cacheKey = 'tournaments_cache';
+            const cacheTimestampKey = 'tournaments_cache_timestamp';
+            const cachedTournaments = localStorage.getItem(cacheKey);
+            const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+            const cacheValidityPeriod = 5 * 60 * 1000; // 5 минут в миллисекундах
+            
+            // Если есть валидный кеш (не старше 5 минут), используем его
+            if (cachedTournaments && cacheTimestamp) {
+                const now = new Date().getTime();
+                const timestamp = parseInt(cacheTimestamp, 10);
+                
+                if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
+                    try {
+                        const parsedTournaments = JSON.parse(cachedTournaments);
+                        if (Array.isArray(parsedTournaments) && parsedTournaments.length > 0) {
+                            console.log('Используем кешированные данные о турнирах');
+                            setTournaments(parsedTournaments);
+                            return;
+                        }
+                    } catch (parseError) {
+                        console.error('Ошибка при разборе кешированных данных о турнирах:', parseError);
+                        // Если произошла ошибка при разборе, очищаем кеш
+                        localStorage.removeItem(cacheKey);
+                        localStorage.removeItem(cacheTimestampKey);
+                    }
+                } else {
+                    // Кеш устарел, очищаем его
+                    localStorage.removeItem(cacheKey);
+                    localStorage.removeItem(cacheTimestampKey);
+                }
+            }
+            
+            // Если нет валидного кеша, делаем запрос к API
+            console.log('Загружаем данные о турнирах с сервера...');
+            
             try {
-                const response = await api.get('/api/tournaments'); // Добавили /api/
+                const response = await api.get('/api/tournaments');
                 // Проверяем, что response.data — это массив
                 if (Array.isArray(response.data)) {
+                    // Кешируем результаты в localStorage
+                    localStorage.setItem(cacheKey, JSON.stringify(response.data));
+                    localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+                    
                     setTournaments(response.data);
                     console.log('🔍 Tournaments data:', response.data);
                 } else {
                     console.error('❌ Ожидался массив турниров, получено:', response.data);
                     setError('Ошибка загрузки турниров: данные не в ожидаемом формате');
-                    setTournaments([]); // Исправили setTournament на setTournaments
+                    setTournaments([]);
                 }
             } catch (error) {
                 console.error('❌ Ошибка получения турниров:', error.response ? error.response.data : error.message);
                 setError('Ошибка загрузки турниров');
-                setTournaments([]); // Исправили setTournament на setTournaments
+                setTournaments([]);
+                
+                // Пробуем использовать данные из кеша, даже если они устаревшие
+                try {
+                    const oldCache = localStorage.getItem(cacheKey);
+                    if (oldCache) {
+                        const parsedOldCache = JSON.parse(oldCache);
+                        if (Array.isArray(parsedOldCache) && parsedOldCache.length > 0) {
+                            console.log('Используем устаревшие кешированные данные о турнирах из-за ошибки API');
+                            setTournaments(parsedOldCache);
+                            setError('Использованы кешированные данные. Попробуйте обновить страницу позже.');
+                        }
+                    }
+                } catch (cacheError) {
+                    console.error('Ошибка при попытке использовать устаревший кеш:', cacheError);
+                }
             }
         };
         fetchTournaments();

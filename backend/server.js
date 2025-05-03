@@ -89,24 +89,36 @@ function isPublicRoute(path) {
   return publicRoutes.some(pattern => pattern.test(path));
 }
 
+// Маршруты, полностью исключенные из rate limiting
+const excludedFromRateLimiting = [
+  /^\/api\/tournaments($|\/)/  // Все маршруты /api/tournaments, включая подпути
+];
+
+// Функция для проверки, исключен ли маршрут из rate limiting
+function isExcludedFromRateLimiting(path) {
+  return excludedFromRateLimiting.some(pattern => pattern.test(path));
+}
+
 // Настройка лимита запросов - более строгий лимит для неавторизованных запросов
 const strictLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 100, // максимум 100 запросов на IP
-    // Пропускаем публичные маршруты
-    skip: (req) => isPublicRoute(req.path)
+    max: 500, // максимум 500 запросов на IP
+    // Пропускаем публичные маршруты и исключенные из rate limiting
+    skip: (req) => isPublicRoute(req.path) || isExcludedFromRateLimiting(req.path)
 });
 app.use(strictLimiter);
 
 // Отдельный rate limiter для публичных маршрутов с более высоким лимитом
 const publicRoutesLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 300, // максимум 300 запросов на IP для публичных маршрутов
+    max: 1000, // максимум 1000 запросов на IP для публичных маршрутов
+    // Пропускаем маршруты, исключенные из rate limiting
+    skip: (req) => isExcludedFromRateLimiting(req.path)
 });
 
-// Применяем лимитер только к публичным маршрутам
+// Применяем лимитер только к публичным маршрутам, но не к исключенным
 app.use((req, res, next) => {
-    if (isPublicRoute(req.path)) {
+    if (isPublicRoute(req.path) && !isExcludedFromRateLimiting(req.path)) {
         return publicRoutesLimiter(req, res, next);
     }
     next();
