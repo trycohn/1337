@@ -6,6 +6,8 @@ import api from '../utils/api';
 import './TournamentDetails.css';
 import TeamGenerator from './TeamGenerator';
 import { ensureHttps } from '../utils/userHelpers';
+// Импортируем вспомогательные функции для работы с картами
+import { isCounterStrike2, gameHasMaps, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
 
 // Импорт уведомлений и тостов
 import { useToast } from './Notifications/ToastContext';
@@ -168,6 +170,8 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
 
 function TournamentDetails() {
     const { id } = useParams();
+    const toast = useToast(); // Получаем функции для отображения toast-уведомлений
+    
     // eslint-disable-next-line no-unused-vars
     const [tournament, setTournament] = useState(null);
     // eslint-disable-next-line no-unused-vars
@@ -228,10 +232,128 @@ function TournamentDetails() {
     // Добавляем новое состояние для хранения карт для разных игр
     const [availableMaps, setAvailableMaps] = useState({});
     
+    // Проверяем, соединились ли с вебсокетом
+    const [wsConnected, setWsConnected] = useState(false);
+    
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
         // ... implementation ...
     }, [tournament, user]);
+    
+    const addMap = () => {
+        const defaultMap = getDefaultMapHelper(tournament?.game);
+        setMaps([...maps, { map: defaultMap, score1: 0, score2: 0 }]);
+    };
+
+    const removeMap = (index) => {
+        const newMaps = [...maps];
+        newMaps.splice(index, 1);
+        setMaps(newMaps);
+    };
+
+    const updateMapScore = (index, team, score) => {
+        const newMaps = [...maps];
+        newMaps[index][`score${team}`] = score;
+        setMaps(newMaps);
+    };
+
+    const updateMapSelection = (index, mapName) => {
+        const newMaps = [...maps];
+        newMaps[index].map = mapName;
+        setMaps(newMaps);
+    };
+    
+    // Функция для проверки участия пользователя в турнире
+    const fetchTournamentData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        
+        // Проверяем кеш в localStorage
+        const cacheKey = `tournament_cache_${id}`;
+        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+        const cachedTournament = localStorage.getItem(cacheKey);
+        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+        const cacheValidityPeriod = 2 * 60 * 1000; // 2 минуты в миллисекундах
+        
+        // Если есть валидный кеш (не старше 2 минут), используем его
+        if (cachedTournament && cacheTimestamp) {
+            const now = new Date().getTime();
+            const timestamp = parseInt(cacheTimestamp, 10);
+            
+            if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
+                try {
+                    const parsedTournament = JSON.parse(cachedTournament);
+                    if (parsedTournament && parsedTournament.id) {
+                        console.log(`Используем кешированные данные турнира ${id}`);
+                        setTournament(parsedTournament);
+                        setMatches(parsedTournament.matches || []);
+                        
+                        // Сохраняем исходный список участников при загрузке турнира
+                        if (parsedTournament.participants && parsedTournament.participants.length > 0) {
+                            setOriginalParticipants(parsedTournament.participants);
+                        }
+                        
+                        setLoading(false);
+                        return;
+                    }
+                } catch (parseError) {
+                    console.error('Ошибка при разборе кешированных данных турнира:', parseError);
+                    // Если произошла ошибка при разборе, очищаем кеш
+                    localStorage.removeItem(cacheKey);
+                    localStorage.removeItem(cacheTimestampKey);
+                }
+            } else {
+                // Кеш устарел, очищаем его
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+            }
+        }
+        
+        // Если нет валидного кеша, делаем запрос к API
+        console.log(`Загружаем данные турнира ${id} с сервера...`);
+        
+        try {
+            const response = await api.get(`/api/tournaments/${id}`);
+            
+            // Кешируем результаты в localStorage
+            localStorage.setItem(cacheKey, JSON.stringify(response.data));
+            localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+            
+            setTournament(response.data);
+            setMatches(response.data.matches || []);
+            
+            // Сохраняем исходный список участников при загрузке турнира
+            if (response.data.participants && response.data.participants.length > 0) {
+                setOriginalParticipants(response.data.participants);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки турнира:', error);
+            setError('Ошибка загрузки данных турнира');
+            
+            // Пробуем использовать данные из кеша, даже если они устаревшие
+            try {
+                const oldCache = localStorage.getItem(cacheKey);
+                if (oldCache) {
+                    const parsedOldCache = JSON.parse(oldCache);
+                    if (parsedOldCache && parsedOldCache.id) {
+                        console.log(`Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
+                        setTournament(parsedOldCache);
+                        setMatches(parsedOldCache.matches || []);
+                        
+                        if (parsedOldCache.participants && parsedOldCache.participants.length > 0) {
+                            setOriginalParticipants(parsedOldCache.participants);
+                        }
+                        
+                        setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
+                    }
+                }
+            } catch (cacheError) {
+                console.error('Ошибка при попытке использовать устаревший кеш:', cacheError);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
     
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
@@ -244,7 +366,7 @@ function TournamentDetails() {
             }
             
             // Устанавливаем флаг, что мы начали загружать карты для этой игры,
-            // чтобы предотвратить повторные запросы
+            // чтобы предотвратить множественные запросы
             setAvailableMaps(prev => ({
                 ...prev,
                 [gameName]: prev[gameName] || [],
@@ -318,17 +440,7 @@ function TournamentDetails() {
                     console.log(`Используем стандартные карты для игры ${gameName}`);
                     
                     // Базовый набор карт для CS2
-                    const defaultMaps = [
-                        { id: 1, name: 'de_dust2', game: 'Counter-Strike 2', display_name: 'Dust II' },
-                        { id: 2, name: 'de_mirage', game: 'Counter-Strike 2', display_name: 'Mirage' },
-                        { id: 3, name: 'de_nuke', game: 'Counter-Strike 2', display_name: 'Nuke' },
-                        { id: 4, name: 'de_train', game: 'Counter-Strike 2', display_name: 'Train' },
-                        { id: 5, name: 'de_anubis', game: 'Counter-Strike 2', display_name: 'Anubis' },
-                        { id: 6, name: 'de_ancient', game: 'Counter-Strike 2', display_name: 'Ancient' },
-                        { id: 7, name: 'de_inferno', game: 'Counter-Strike 2', display_name: 'Inferno' },
-                        { id: 8, name: 'de_vertigo', game: 'Counter-Strike 2', display_name: 'Vertigo' },
-                        { id: 9, name: 'de_overpass', game: 'Counter-Strike 2', display_name: 'Overpass' }
-                    ];
+                    const defaultMaps = getDefaultCS2Maps();
                     
                     // Сохраняем стандартные карты в кеш и состояние
                     localStorage.setItem(`maps_cache_${gameName}`, JSON.stringify(defaultMaps));
@@ -358,7 +470,32 @@ function TournamentDetails() {
                 [`${gameName}_loading`]: false
             }));
         }
-    }, [isCounterStrike2]);
+    }, [isCounterStrike2, availableMaps]);
+    
+    // Функция для получения карт для конкретной игры
+    const getGameMaps = useCallback((game) => {
+        // Пробуем определить игру
+        let gameName = '';
+        
+        if (isCounterStrike2(game)) {
+            gameName = 'Counter-Strike 2';
+        }
+        // Добавить другие игры при необходимости
+        
+        // Если у нас есть карты для этой игры, возвращаем их
+        if (gameName && availableMaps[gameName] && availableMaps[gameName].length > 0) {
+            return availableMaps[gameName];
+        }
+        
+        // Возвращаем пустой массив, если карты не найдены
+        return [];
+    }, [availableMaps, isCounterStrike2]);
+    
+    // Функция для получения одной карты по умолчанию для данной игры
+    const getDefaultMap = useCallback((game) => {
+        const maps = getGameMaps(game);
+        return maps.length > 0 ? maps[0].name : '';
+    }, [getGameMaps]);
     
     // Используем useMemo, чтобы уменьшить количество перерисовок
     const memoizedGameData = useMemo(() => {
@@ -371,7 +508,32 @@ function TournamentDetails() {
         };
     }, [tournament?.game, availableMaps, gameHasMaps]);
     
-    // Загружаем карты при загрузке турнира - используем memoizedGameData
+    // Загружаем данные пользователя
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            api
+                .get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
+                .then((userResponse) => {
+                    setUser(userResponse.data);
+                    api
+                        .get(`/api/teams?userId=${userResponse.data.id}`, { headers: { Authorization: `Bearer ${token}` } })
+                        .then((res) => setTeams(res.data || []))
+                        .catch((error) => console.error('Ошибка загрузки команд:', error));
+                })
+                .catch((error) => console.error('Ошибка загрузки пользователя:', error));
+        } else {
+            setUser(null);
+            setTeams([]);
+        }
+    }, []);
+    
+    // Загружаем данные турнира
+    useEffect(() => {
+        fetchTournamentData();
+    }, [id, fetchTournamentData]);
+    
+    // Загружаем карты для турнира
     useEffect(() => {
         const { tournamentGame, availableMapsForGame, isMapLoading } = memoizedGameData;
         
@@ -380,9 +542,114 @@ function TournamentDetails() {
         // 2. У нас нет карт для этой игры
         // 3. Мы еще не начали загрузку карт
         if (tournamentGame && availableMapsForGame.length === 0 && !isMapLoading) {
+            console.log(`Инициирую загрузку карт для ${tournamentGame}`);
             fetchMapsForGame(tournamentGame);
         }
     }, [memoizedGameData, fetchMapsForGame]);
+    
+    // Настройка Socket.IO для получения обновлений турнира
+    useEffect(() => {
+        // Только установим соединение, если у нас есть токен и ID турнира
+        if (!user || !tournament?.id) {
+            console.log('Отложена инициализация WebSocket: нет пользователя или ID турнира');
+            return;
+        }
+        
+        console.log('Инициализация WebSocket соединения для турнира', tournament.id);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('Отсутствует токен для WebSocket подключения');
+            return;
+        }
+        
+        // Если уже есть соединение, закрываем его перед созданием нового
+        if (wsRef.current) {
+            console.log('Закрываем существующее WebSocket соединение');
+            wsRef.current.disconnect();
+            wsRef.current = null;
+        }
+        
+        // Создаем новое соединение с улучшенными параметрами подключения
+        const socket = io(API_URL, {
+            query: { token },
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 10000
+        });
+        
+        socket.on('connect', () => {
+            console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
+            socket.emit('watch_tournament', id);
+            socket.emit('join_tournament_chat', id);
+        });
+        
+        socket.on('disconnect', (reason) => {
+            console.log('Socket.IO соединение закрыто:', reason);
+        });
+        
+        socket.on('error', (error) => {
+            console.error('Ошибка Socket.IO соединения:', error);
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('Ошибка подключения Socket.IO:', error);
+        });
+        
+        socket.on('tournament_update', (tournamentData) => {
+            if (tournamentData.tournamentId === parseInt(id) || tournamentData.id === parseInt(id)) {
+                console.log('Получено обновление турнира через WebSocket');
+                fetchTournamentData();
+            }
+        });
+        
+        socket.on('tournament_message', (message) => {
+            if (message.tournamentId === parseInt(id)) {
+                setChatMessages(prev => [...prev, message]);
+                if (chatEndRef.current) {
+                    chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+        
+        wsRef.current = socket;
+        
+        // Очистка при размонтировании
+        return () => {
+            console.log('Закрываем Socket.IO соединение при размонтировании');
+            if (socket) {
+                socket.disconnect();
+            }
+        };
+    }, [id, user, tournament, fetchTournamentData, API_URL]);
+    
+    // Проверка участия пользователя и прав администратора
+    useEffect(() => {
+        if (!user || !tournament) return;
+        // Проверка участия
+        const participants = tournament.participants || [];
+        const isParticipant = participants.some(
+            (p) =>
+                (tournament.participant_type === 'solo' && p.user_id === user.id) ||
+                (tournament.participant_type === 'team' && p.creator_id === user.id)
+        );
+        setIsParticipating(isParticipant);
+
+        // Проверка прав администратора и создателя
+        setIsCreator(user.id === tournament.created_by);
+        const isAdmin = tournament.admins?.some(admin => admin.id === user.id);
+        setIsAdminOrCreator(user.id === tournament.created_by || isAdmin);
+
+        // Проверка статуса запроса на администрирование
+        if (localStorage.getItem('token')) {
+            api
+                .get(`/api/tournaments/${id}/admin-request-status`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                })
+                .then((statusResponse) => setAdminRequestStatus(statusResponse.data.status))
+                .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
+        }
+    }, [user, tournament, id]);
     
     // Функция для получения карт для конкретной игры
     const getGameMaps = useCallback((game) => {
@@ -606,31 +873,6 @@ function TournamentDetails() {
         wsRef.current = socket;
     }, [id]);
 
-    // Загрузка данных
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            api
-                .get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
-                .then((userResponse) => {
-                    setUser(userResponse.data);
-                    api
-                        .get(`/api/teams?userId=${userResponse.data.id}`, { headers: { Authorization: `Bearer ${token}` } })
-                        .then((res) => setTeams(res.data || []))
-                        .catch((error) => console.error('Ошибка загрузки команд:', error));
-                })
-                .catch((error) => console.error('Ошибка загрузки пользователя:', error));
-        } else {
-            setUser(null);
-            setTeams([]);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchTournamentData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]);
-    
     useEffect(() => {
         setupWebSocket();
         return () => {
@@ -640,33 +882,6 @@ function TournamentDetails() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
-
-    useEffect(() => {
-        if (!user || !tournament) return;
-        // Проверка участия
-        const participants = tournament.participants || [];
-        const isParticipant = participants.some(
-            (p) =>
-                (tournament.participant_type === 'solo' && p.user_id === user.id) ||
-                (tournament.participant_type === 'team' && p.creator_id === user.id)
-        );
-        setIsParticipating(isParticipant);
-
-        // Проверка прав администратора и создателя
-        setIsCreator(user.id === tournament.created_by);
-        const isAdmin = tournament.admins?.some(admin => admin.id === user.id);
-        setIsAdminOrCreator(user.id === tournament.created_by || isAdmin);
-
-        // Проверка статуса запроса на администрирование
-        if (localStorage.getItem('token')) {
-            api
-                .get(`/api/tournaments/${id}/admin-request-status`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                })
-                .then((statusResponse) => setAdminRequestStatus(statusResponse.data.status))
-                .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
-        }
-    }, [user, tournament, id]);
 
     // Загрузка истории сообщений чата турнира
     useEffect(() => {
@@ -2160,93 +2375,6 @@ function TournamentDetails() {
     const handleClearMatchResults = () => {
         toast.info("Функция сброса результатов отключена");
     };
-
-    // Инициализация WebSocket соединения
-    useEffect(() => {
-        // Функция для настройки WebSocket подключения
-        const setupWebSocket = () => {
-            if (!user || !user.token || !tournament || !tournament.id) return;
-            
-            // Очищаем существующее соединение, если оно есть
-            if (wsRef.current) {
-                console.log('Закрываем предыдущее WebSocket соединение');
-                wsRef.current.disconnect();
-                wsRef.current = null;
-            }
-            
-            try {
-                // Создаем новое соединение только если оно еще не существует
-                if (!wsRef.current) {
-                    console.log('Устанавливаем новое WebSocket соединение');
-                    wsRef.current = io(API_URL, {
-                        query: { token: user.token },
-                        transports: ['websocket', 'polling'],
-                        reconnectionAttempts: 5,
-                        reconnectionDelay: 1000,
-                        timeout: 10000
-                    });
-                
-                    wsRef.current.on('connect', () => {
-                        console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
-                        // Подписываемся на канал турнира
-                        wsRef.current.emit('joinTournamentRoom', tournament.id);
-                    });
-                
-                    wsRef.current.on('disconnect', (reason) => {
-                        console.log(`Socket.IO соединение разорвано: ${reason}`);
-                    });
-                
-                    wsRef.current.on('error', (error) => {
-                        console.error('Ошибка Socket.IO соединения:', error);
-                    });
-                
-                    wsRef.current.on('connect_error', (error) => {
-                        console.error('Ошибка подключения Socket.IO:', error);
-                    });
-                
-                    // Слушаем события обновления турнира
-                    wsRef.current.on('tournamentUpdate', (data) => {
-                        console.log('Получено обновление турнира через websocket:', data);
-                        if (data.tournamentId === parseInt(id)) {
-                            // Обновляем только если данные относятся к текущему турниру
-                            fetchTournamentData();
-                        }
-                    });
-                
-                    wsRef.current.on('matchUpdate', (data) => {
-                        console.log('Получено обновление матча через websocket:', data);
-                        if (data.tournamentId === parseInt(id)) {
-                            fetchTournamentData();
-                        }
-                    });
-                
-                    wsRef.current.on('newChatMessage', (message) => {
-                        if (message.tournamentId === parseInt(id)) {
-                            setChatMessages((prevMessages) => [...prevMessages, message]);
-                            // Прокручиваем чат вниз при новом сообщении
-                            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Ошибка при настройке WebSocket соединения:', error);
-            }
-        };
-        
-        // Проверяем, есть ли все необходимые данные перед вызовом setupWebSocket
-        if (user && user.token && tournament && tournament.id) {
-            setupWebSocket();
-        }
-        
-        // Очищаем соединение при размонтировании
-        return () => {
-            if (wsRef.current) {
-                console.log('Закрываем WebSocket соединение при размонтировании компонента');
-                wsRef.current.disconnect();
-                wsRef.current = null;
-            }
-        };
-    }, [id, user, tournament, fetchTournamentData]);
 
     return (
         <section className="tournament-details">
