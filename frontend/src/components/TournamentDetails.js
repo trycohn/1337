@@ -80,18 +80,6 @@ const GAME_CONFIGS = {
     // },
 };
 
-// Универсальная функция для проверки игры по ID или имени
-const isGame = (gameToCheck, gameConfig) => {
-    return gameToCheck === gameConfig.name || 
-           gameToCheck === gameConfig.id || 
-           gameToCheck === String(gameConfig.id);
-};
-
-// Функция для проверки, является ли игра Counter-Strike 2
-const isCounterStrike2 = (game) => {
-    return isGame(game, GAME_CONFIGS.COUNTER_STRIKE_2);
-};
-
 // Функция для проверки, поддерживает ли игра карты
 const gameHasMaps = (game) => {
     if (isCounterStrike2(game)) {
@@ -102,18 +90,6 @@ const gameHasMaps = (game) => {
     // if (isValorant(game)) return true;
     
     return false;
-};
-
-// Функция для получения списка карт для конкретной игры
-const getMapsForGame = (game) => {
-    if (isCounterStrike2(game)) {
-        return GAME_CONFIGS.COUNTER_STRIKE_2.maps;
-    }
-    
-    // Добавлять карты для других игр по мере необходимости
-    // if (isValorant(game)) return GAME_CONFIGS.VALORANT.maps;
-    
-    return [];
 };
 
 // Компонент для отображения оригинального списка участников
@@ -472,31 +448,18 @@ function TournamentDetails() {
         }
     }, [isCounterStrike2, availableMaps]);
     
-    // Функция для получения карт для конкретной игры
-    const getGameMaps = useCallback((game) => {
-        // Пробуем определить игру
-        let gameName = '';
-        
-        if (isCounterStrike2(game)) {
-            gameName = 'Counter-Strike 2';
-        }
-        // Добавить другие игры при необходимости
-        
-        // Если у нас есть карты для этой игры, возвращаем их
-        if (gameName && availableMaps[gameName] && availableMaps[gameName].length > 0) {
-            return availableMaps[gameName];
-        }
-        
-        // Возвращаем пустой массив, если карты не найдены
-        return [];
-    }, [availableMaps, isCounterStrike2]);
+// Функция для получения карт для конкретной игры с использованием хелпера
+const getGameMaps = useCallback((game) => {
+    return getGameMapsHelper(game, availableMaps);
+}, [availableMaps]);
+
     
-    // Функция для получения одной карты по умолчанию для данной игры
-    const getDefaultMap = useCallback((game) => {
-        const maps = getGameMaps(game);
-        return maps.length > 0 ? maps[0].name : '';
-    }, [getGameMaps]);
-    
+// Функция для получения одной карты по умолчанию для данной игры
+const getDefaultMap = useCallback((game) => {
+    return getDefaultMapHelper(game, availableMaps);
+}, [availableMaps]);
+
+
     // Используем useMemo, чтобы уменьшить количество перерисовок
     const memoizedGameData = useMemo(() => {
         // Этот объект будет пересоздаваться только когда изменятся availableMaps или tournament
@@ -652,149 +615,18 @@ function TournamentDetails() {
     }, [user, tournament, id]);
     
     // Функция для получения карт для конкретной игры
-    const getGameMaps = useCallback((game) => {
-        // Пробуем определить игру
-        let gameName = '';
-        
-        if (isCounterStrike2(game)) {
-            gameName = 'Counter-Strike 2';
-        }
-        // Добавить другие игры при необходимости
-        
-        // Если у нас есть карты для этой игры, возвращаем их
-        if (gameName && availableMaps[gameName] && availableMaps[gameName].length > 0) {
-            return availableMaps[gameName];
-        }
-        
-        // Возвращаем пустой массив, если карты не найдены
-        return [];
-    }, [availableMaps]);
+// Функция для получения карт для конкретной игры с использованием хелпера
+const getGameMaps = useCallback((game) => {
+    return getGameMapsHelper(game, availableMaps);
+}, [availableMaps]);
     
-    // Функция для получения одной карты по умолчанию для данной игры
-    const getDefaultMap = useCallback((game) => {
-        const maps = getGameMaps(game);
-        return maps.length > 0 ? maps[0].name : '';
-    }, [getGameMaps]);
-    
-    const addMap = () => {
-        const defaultMap = getDefaultMap(tournament?.game);
-        setMaps([...maps, { map: defaultMap, score1: 0, score2: 0 }]);
-    };
+// Функция для получения одной карты по умолчанию для данной игры
+const getDefaultMap = useCallback((game) => {
+    return getDefaultMapHelper(game, availableMaps);
+}, [availableMaps]);
 
-    const removeMap = (index) => {
-        const newMaps = [...maps];
-        newMaps.splice(index, 1);
-        setMaps(newMaps);
-    };
 
-    const updateMapScore = (index, team, score) => {
-        const newMaps = [...maps];
-        newMaps[index][`score${team}`] = score;
-        setMaps(newMaps);
-    };
-
-    const updateMapSelection = (index, mapName) => {
-        const newMaps = [...maps];
-        newMaps[index].map = mapName;
-        setMaps(newMaps);
-    };
-
-    // Получаем функции для отображения toast-уведомлений
-    const toast = useToast();
-
-    // Функция для проверки участия пользователя в турнире
-    const fetchTournamentData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        
-        // Проверяем кеш в localStorage
-        const cacheKey = `tournament_cache_${id}`;
-        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-        const cachedTournament = localStorage.getItem(cacheKey);
-        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
-        const cacheValidityPeriod = 2 * 60 * 1000; // 2 минуты в миллисекундах
-        
-        // Если есть валидный кеш (не старше 2 минут), используем его
-        if (cachedTournament && cacheTimestamp) {
-            const now = new Date().getTime();
-            const timestamp = parseInt(cacheTimestamp, 10);
-            
-            if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
-                try {
-                    const parsedTournament = JSON.parse(cachedTournament);
-                    if (parsedTournament && parsedTournament.id) {
-                        console.log(`Используем кешированные данные турнира ${id}`);
-                        setTournament(parsedTournament);
-                        setMatches(parsedTournament.matches || []);
-                        
-                        // Сохраняем исходный список участников при загрузке турнира
-                        if (parsedTournament.participants && parsedTournament.participants.length > 0) {
-                            setOriginalParticipants(parsedTournament.participants);
-                        }
-                        
-                        setLoading(false);
-                        return;
-                    }
-                } catch (parseError) {
-                    console.error('Ошибка при разборе кешированных данных турнира:', parseError);
-                    // Если произошла ошибка при разборе, очищаем кеш
-                    localStorage.removeItem(cacheKey);
-                    localStorage.removeItem(cacheTimestampKey);
-                }
-            } else {
-                // Кеш устарел, очищаем его
-                localStorage.removeItem(cacheKey);
-                localStorage.removeItem(cacheTimestampKey);
-            }
-        }
-        
-        // Если нет валидного кеша, делаем запрос к API
-        console.log(`Загружаем данные турнира ${id} с сервера...`);
-        
-        try {
-            const response = await api.get(`/api/tournaments/${id}`);
-            
-            // Кешируем результаты в localStorage
-            localStorage.setItem(cacheKey, JSON.stringify(response.data));
-            localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
-            
-            setTournament(response.data);
-            setMatches(response.data.matches || []);
-            
-            // Сохраняем исходный список участников при загрузке турнира
-            if (response.data.participants && response.data.participants.length > 0) {
-                setOriginalParticipants(response.data.participants);
-            }
-        } catch (error) {
-            console.error('Ошибка загрузки турнира:', error);
-            setError('Ошибка загрузки данных турнира');
-            
-            // Пробуем использовать данные из кеша, даже если они устаревшие
-            try {
-                const oldCache = localStorage.getItem(cacheKey);
-                if (oldCache) {
-                    const parsedOldCache = JSON.parse(oldCache);
-                    if (parsedOldCache && parsedOldCache.id) {
-                        console.log(`Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
-                        setTournament(parsedOldCache);
-                        setMatches(parsedOldCache.matches || []);
-                        
-                        if (parsedOldCache.participants && parsedOldCache.participants.length > 0) {
-                            setOriginalParticipants(parsedOldCache.participants);
-                        }
-                        
-                        setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
-                    }
-                }
-            } catch (cacheError) {
-                console.error('Ошибка при попытке использовать устаревший кеш:', cacheError);
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, [id]);
-
-    // Настройка Socket.IO для получения обновлений турнира
+        // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
         const token = localStorage.getItem('token');
         const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
