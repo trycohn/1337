@@ -80,6 +80,18 @@ const GAME_CONFIGS = {
     // },
 };
 
+// Функция для проверки, поддерживает ли игра карты
+const gameHasMaps = (game) => {
+    if (isCounterStrike2(game)) {
+        return true;
+    }
+    
+    // Добавлять проверки для других игр по мере необходимости
+    // if (isValorant(game)) return true;
+    
+    return false;
+};
+
 // Компонент для отображения оригинального списка участников
 const OriginalParticipantsList = ({ participants, tournament }) => {
   if (!participants || participants.length === 0) {
@@ -602,6 +614,18 @@ const getDefaultMap = useCallback((game) => {
         }
     }, [user, tournament, id]);
     
+    // Функция для получения карт для конкретной игры
+// Функция для получения карт для конкретной игры с использованием хелпера
+const getGameMaps = useCallback((game) => {
+    return getGameMapsHelper(game, availableMaps);
+}, [availableMaps]);
+    
+// Функция для получения одной карты по умолчанию для данной игры
+const getDefaultMap = useCallback((game) => {
+    return getDefaultMapHelper(game, availableMaps);
+}, [availableMaps]);
+
+
         // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
         const token = localStorage.getItem('token');
