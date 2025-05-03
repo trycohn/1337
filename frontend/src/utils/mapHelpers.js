@@ -1,89 +1,63 @@
 // Утилиты для работы с картами в турнирах
 
 /**
- * Проверяет, является ли игра Counter-Strike 2
- * @param {string} game - Название игры
- * @returns {boolean} - true если это CS2, иначе false
+ * Проверяет, является ли указанная игра Counter-Strike 2
+ * @param {string} game - название игры
+ * @returns {boolean} - true, если игра CS2, иначе false
  */
 export const isCounterStrike2 = (game) => {
     if (!game) return false;
-    const gameLower = game.toLowerCase();
-    return gameLower === 'counter-strike 2' || 
-           gameLower === 'cs2' || 
-           gameLower === 'counter strike 2' || 
-           gameLower === 'counter-strike2';
+    const gameLower = typeof game === 'string' ? game.toLowerCase() : '';
+    return gameLower.includes('counter') && gameLower.includes('strike') && (gameLower.includes('2') || gameLower.includes('cs2'));
 };
 
 /**
- * Проверяет, поддерживает ли игра карты
- * @param {string} game - Название игры
- * @returns {boolean} - true если игра поддерживает карты, иначе false
+ * Проверяет, поддерживает ли игра выбор карт
+ * @param {string} game - название игры
+ * @returns {boolean} - true, если игра поддерживает выбор карт
  */
 export const gameHasMaps = (game) => {
-    if (isCounterStrike2(game)) {
-        return true;
-    }
+    if (!game) return false;
+    const gameLower = typeof game === 'string' ? game.toLowerCase() : '';
     
-    // Добавлять проверки для других игр по мере необходимости
-    // if (isValorant(game)) return true;
-    
-    return false;
+    // Список игр, которые поддерживают выбор карт
+    return (
+        gameLower.includes('counter') && gameLower.includes('strike') ||
+        gameLower.includes('cs2') ||
+        gameLower.includes('valorant') ||
+        gameLower.includes('overwatch') ||
+        gameLower.includes('dota') ||
+        gameLower.includes('lol') ||
+        gameLower.includes('league of legends')
+    );
 };
 
 /**
  * Возвращает список карт для указанной игры
- * @param {string} game - Название игры
- * @param {Object} availableMaps - Объект с доступными картами по играм
- * @returns {Array} - Массив карт для игры
+ * @param {string} game - название игры
+ * @param {Object} availableMaps - объект с доступными картами по играм
+ * @returns {Array} - массив карт для выбранной игры
  */
 export const getGameMaps = (game, availableMaps = {}) => {
     if (!game) return [];
     
-    // Если у нас есть кэшированные карты для этой игры, используем их
-    if (availableMaps[game] && Array.isArray(availableMaps[game]) && availableMaps[game].length > 0) {
+    // Проверяем, есть ли карты в кэше
+    if (availableMaps && availableMaps[game] && availableMaps[game].length > 0) {
         return availableMaps[game];
     }
     
-    // Запасной вариант для CS2
+    // Запасные варианты карт для разных игр
     if (isCounterStrike2(game)) {
         return getDefaultCS2Maps();
     }
     
+    // Для других игр возвращаем пустой массив - будет загружено с сервера
     return [];
 };
 
 /**
- * Возвращает карту по умолчанию для указанной игры
- * @param {string} game - Название игры
- * @param {Object} availableMaps - Объект с доступными картами по играм
- * @returns {string} - Название карты по умолчанию
- */
-export const getDefaultMap = (game, availableMaps = {}) => {
-    if (!game) return '';
-    
-    const maps = getGameMaps(game, availableMaps);
-    if (maps.length > 0) {
-        // Если это объект с name, возвращаем name
-        if (typeof maps[0] === 'object' && maps[0].name) {
-            return maps[0].name;
-        }
-        // Если это строка, возвращаем её
-        if (typeof maps[0] === 'string') {
-            return maps[0];
-        }
-    }
-    
-    // Запасной вариант для CS2
-    if (isCounterStrike2(game)) {
-        return 'de_dust2';
-    }
-    
-    return '';
-};
-
-/**
- * Возвращает стандартный набор карт для CS2
- * @returns {Array} - Массив стандартных карт CS2
+ * Возвращает список стандартных карт CS2
+ * @returns {Array} - массив стандартных карт CS2
  */
 export const getDefaultCS2Maps = () => {
     return [
@@ -91,8 +65,36 @@ export const getDefaultCS2Maps = () => {
         { name: 'de_mirage', displayName: 'Mirage' },
         { name: 'de_inferno', displayName: 'Inferno' },
         { name: 'de_nuke', displayName: 'Nuke' },
-        { name: 'de_vertigo', displayName: 'Vertigo' },
         { name: 'de_overpass', displayName: 'Overpass' },
-        { name: 'de_ancient', displayName: 'Ancient' }
+        { name: 'de_ancient', displayName: 'Ancient' },
+        { name: 'de_vertigo', displayName: 'Vertigo' },
+        { name: 'de_anubis', displayName: 'Anubis' }
     ];
+};
+
+/**
+ * Возвращает карту по умолчанию для игры
+ * @param {string} game - название игры
+ * @param {Object} availableMaps - объект с доступными картами
+ * @returns {string} - название карты по умолчанию
+ */
+export const getDefaultMap = (game, availableMaps = {}) => {
+    if (!game) return 'de_dust2'; // Значение по умолчанию
+    
+    const maps = getGameMaps(game, availableMaps);
+    if (maps && maps.length > 0) {
+        // Проверка формата данных карт
+        if (typeof maps[0] === 'string') {
+            return maps[0];
+        } else if (maps[0] && maps[0].name) {
+            return maps[0].name;
+        }
+    }
+    
+    // Если никаких карт не найдено, используем стандартные для известных игр
+    if (isCounterStrike2(game)) {
+        return 'de_dust2';
+    }
+    
+    return '';
 }; 

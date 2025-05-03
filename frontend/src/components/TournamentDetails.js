@@ -7,7 +7,13 @@ import './TournamentDetails.css';
 import TeamGenerator from './TeamGenerator';
 import { ensureHttps } from '../utils/userHelpers';
 // Импортируем вспомогательные функции для работы с картами
-import { isCounterStrike2, gameHasMaps, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
+import { 
+  isCounterStrike2, 
+  gameHasMaps, 
+  getGameMaps as getGameMapsHelper, 
+  getDefaultMap as getDefaultMapHelper, 
+  getDefaultCS2Maps 
+} from '../utils/mapHelpers';
 
 // Импорт уведомлений и тостов
 import { useToast } from './Notifications/ToastContext';
@@ -205,7 +211,7 @@ function TournamentDetails() {
     }, [tournament, user]);
     
     const addMap = () => {
-        const defaultMap = getDefaultMapHelper(tournament?.game);
+        const defaultMap = getDefaultMap(tournament?.game, availableMaps);
         setMaps([...maps, { map: defaultMap, score1: 0, score2: 0 }]);
     };
 
@@ -436,17 +442,15 @@ function TournamentDetails() {
         }
     }, [isCounterStrike2, availableMaps]);
     
-// Функция для получения карт для конкретной игры с использованием хелпера
-const getGameMaps = useCallback((game) => {
-    return getGameMapsHelper(game, availableMaps);
-}, [availableMaps]);
+    // Функция для получения карт для конкретной игры с использованием хелпера
+    const getGameMaps = useCallback((game) => {
+        return getGameMapsHelper(game, availableMaps);
+    }, [availableMaps]);
 
-    
-// Функция для получения одной карты по умолчанию для данной игры
-const getDefaultMap = useCallback((game) => {
-    return getDefaultMapHelper(game, availableMaps);
-}, [availableMaps]);
-
+    // Функция для получения одной карты по умолчанию для данной игры
+    const getDefaultMap = useCallback((game) => {
+        return getDefaultMapHelper(game, availableMaps);
+    }, [availableMaps]);
 
     // Используем useMemo, чтобы уменьшить количество перерисовок
     const memoizedGameData = useMemo(() => {
