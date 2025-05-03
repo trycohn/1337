@@ -1,5 +1,5 @@
 // Импорты React и связанные
-import React, { useState, useRef, useEffect, Suspense, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
@@ -23,20 +23,8 @@ import TournamentChat from './TournamentChat';
 // eslint-disable-next-line no-unused-vars
 import { useUser } from '../context/UserContext';
 
-// Используем React.lazy для асинхронной загрузки тяжелого компонента
-const LazyBracketRenderer = React.lazy(() => 
-    import('./BracketRenderer').catch(err => {
-        console.error('Ошибка при загрузке BracketRenderer:', err);
-        // Возвращаем fallback компонент в случае ошибки
-        return { 
-            default: () => (
-                <div className="bracket-error">
-                    Не удалось загрузить турнирную сетку. Пожалуйста, обновите страницу.
-                </div>
-            ) 
-        };
-    })
-);
+// Импортируем BracketRenderer напрямую вместо использования React.lazy
+import BracketRenderer from './BracketRenderer';
 
 // Компонент для случаев ошибок при рендеринге сетки
 class ErrorBoundary extends React.Component {
@@ -2510,49 +2498,16 @@ function TournamentDetails() {
                                 <div className="custom-tournament-bracket">
                                     <div className="tournament-bracket">
                                         <ErrorBoundary>
-                                            <Suspense fallback={<div className="loading-bracket">Загрузка турнирной сетки...</div>}>
-                                                {(() => {
-                                                    try {
-                                                        console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
-                                                        // Безопасный рендеринг сетки
-                                                        return (
-                                        <LazyBracketRenderer
-                                            games={games}
-                                            canEditMatches={canEditMatches}
-                                            selectedMatch={selectedMatch}
-                                            setSelectedMatch={setSelectedMatch}
-                                            handleTeamClick={handleTeamClick}
-                                            format={tournament.format}
-                                            key={`bracket-${matches.length}-${selectedMatch}`}
-                                            onMatchClick={viewMatchDetails}
-                                        />
-                                                        );
-                                                    } catch (error) {
-                                                        console.error('Ошибка при рендеринге турнирной сетки:', error);
-                                                        return (
-                                                            <div className="bracket-error">
-                                                                Ошибка при отображении турнирной сетки. 
-                                                                Пожалуйста, обновите страницу или попробуйте позже.
-                                                                <br />
-                                                                <button 
-                                                                    onClick={() => window.location.reload()} 
-                                                                    className="reload-button"
-                                                                >
-                                                                    Обновить страницу
-                                                                </button>
-                                                                {isAdminOrCreator && (
-                                                                    <button 
-                                                                        onClick={handleRegenerateBracket} 
-                                                                        className="regenerate-button"
-                                                                    >
-                                                                        Пересоздать сетку
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    }
-                                                })()}
-                                            </Suspense>
+                                            <BracketRenderer
+                                                games={games}
+                                                canEditMatches={canEditMatches}
+                                                selectedMatch={selectedMatch}
+                                                setSelectedMatch={setSelectedMatch}
+                                                handleTeamClick={handleTeamClick}
+                                                format={tournament.format}
+                                                key={`bracket-${matches.length}-${selectedMatch}`}
+                                                onMatchClick={viewMatchDetails}
+                                            />
                                         </ErrorBoundary>
                                     </div>
                                 </div>
