@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { authenticateToken } = require('../auth');
+const { authenticateToken } = require('../middleware/auth');
 
 /**
  * @route GET /api/maps
@@ -14,6 +14,8 @@ router.get('/', async (req, res) => {
         const gameFilter = req.query.game ? `WHERE game = $1` : '';
         const queryParams = req.query.game ? [req.query.game] : [];
 
+        console.log(`Поиск карт${req.query.game ? ` для игры ${req.query.game}` : ''}`);
+
         const mapsQuery = `
             SELECT id, name, game, display_name, image_url, created_at
             FROM maps
@@ -22,6 +24,7 @@ router.get('/', async (req, res) => {
         `;
         
         const result = await db.query(mapsQuery, queryParams);
+        console.log(`Найдено ${result.rows.length} карт`);
         
         res.json(result.rows);
     } catch (error) {

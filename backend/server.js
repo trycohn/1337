@@ -89,8 +89,26 @@ app.use(express.static(path.join(__dirname, '../frontend/build'), { cacheControl
 // Обслуживание статических файлов из папки uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Публичные маршруты API, не требующие аутентификации
+const publicRoutes = [
+  /^\/api\/maps($|\/)/,  // Маршруты /api/maps и /api/maps/:id
+  /^\/api\/games($|\/)/,  // Маршруты /api/games и /api/games/:id
+  /^\/api\/tournaments($|\/\d+$)/,  // Маршруты /api/tournaments и /api/tournaments/:id
+  /^\/testdb$/  // Тестовый маршрут
+];
+
+// Функция для проверки, является ли маршрут публичным
+function isPublicRoute(path) {
+  return publicRoutes.some(pattern => pattern.test(path));
+}
+
 // Добавляем middleware для обновления активности пользователя после аутентификации
 app.use((req, res, next) => {
+  // Если маршрут публичный или метод OPTIONS, пропускаем проверку аутентификации
+  if (req.method === 'OPTIONS' || isPublicRoute(req.path)) {
+    return next();
+  }
+
   // Проверяем наличие токена в заголовке Authorization
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
