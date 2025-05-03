@@ -243,6 +243,14 @@ function TournamentDetails() {
                 return;
             }
             
+            // Устанавливаем флаг, что мы начали загружать карты для этой игры,
+            // чтобы предотвратить повторные запросы
+            setAvailableMaps(prev => ({
+                ...prev,
+                [gameName]: prev[gameName] || [],
+                [`${gameName}_loading`]: true
+            }));
+            
             // Проверяем, есть ли карты в localStorage
             const cacheKey = `maps_cache_${gameName}`;
             const cachedMaps = localStorage.getItem(cacheKey);
@@ -262,7 +270,8 @@ function TournamentDetails() {
                             console.log(`Используем кешированные карты для игры ${gameName}`);
                             setAvailableMaps(prev => ({
                                 ...prev,
-                                [gameName]: parsedMaps
+                                [gameName]: parsedMaps,
+                                [`${gameName}_loading`]: false
                             }));
                             return;
                         }
@@ -282,51 +291,98 @@ function TournamentDetails() {
             // Если нет валидного кеша, делаем запрос к API
             console.log(`Загружаем карты для игры ${gameName} с сервера...`);
             
-            const response = await api.get(`/api/maps?game=${encodeURIComponent(gameName)}`);
+            // Добавляем задержку между повторными запросами
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            if (response.data && Array.isArray(response.data)) {
-                // Сохраняем карты в кеш
-                localStorage.setItem(cacheKey, JSON.stringify(response.data));
-                localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+            try {
+                const response = await api.get(`/api/maps?game=${encodeURIComponent(gameName)}`);
                 
-                // Обновляем состояние
-                setAvailableMaps(prev => ({
-                    ...prev,
-                    [gameName]: response.data
-                }));
-                console.log(`Загружены карты для игры ${gameName}:`, response.data);
+                if (response.data && Array.isArray(response.data)) {
+                    // Сохраняем карты в кеш
+                    localStorage.setItem(cacheKey, JSON.stringify(response.data));
+                    localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+                    
+                    // Обновляем состояние
+                    setAvailableMaps(prev => ({
+                        ...prev,
+                        [gameName]: response.data,
+                        [`${gameName}_loading`]: false
+                    }));
+                    console.log(`Загружены карты для игры ${gameName}:`, response.data);
+                }
+            } catch (apiError) {
+                console.error(`Ошибка при загрузке карт для игры ${gameName}:`, apiError);
+                
+                // В случае ошибки, используем запасной вариант со стандартными картами для CS2
+                if (isCounterStrike2(gameName)) {
+                    console.log(`Используем стандартные карты для игры ${gameName}`);
+                    
+                    // Базовый набор карт для CS2
+                    const defaultMaps = [
+                        { id: 1, name: 'de_dust2', game: 'Counter-Strike 2', display_name: 'Dust II' },
+                        { id: 2, name: 'de_mirage', game: 'Counter-Strike 2', display_name: 'Mirage' },
+                        { id: 3, name: 'de_nuke', game: 'Counter-Strike 2', display_name: 'Nuke' },
+                        { id: 4, name: 'de_train', game: 'Counter-Strike 2', display_name: 'Train' },
+                        { id: 5, name: 'de_anubis', game: 'Counter-Strike 2', display_name: 'Anubis' },
+                        { id: 6, name: 'de_ancient', game: 'Counter-Strike 2', display_name: 'Ancient' },
+                        { id: 7, name: 'de_inferno', game: 'Counter-Strike 2', display_name: 'Inferno' },
+                        { id: 8, name: 'de_vertigo', game: 'Counter-Strike 2', display_name: 'Vertigo' },
+                        { id: 9, name: 'de_overpass', game: 'Counter-Strike 2', display_name: 'Overpass' }
+                    ];
+                    
+                    // Сохраняем стандартные карты в кеш и состояние
+                    localStorage.setItem(`maps_cache_${gameName}`, JSON.stringify(defaultMaps));
+                    localStorage.setItem(`maps_cache_timestamp_${gameName}`, new Date().getTime().toString());
+                    
+                    setAvailableMaps(prev => ({
+                        ...prev,
+                        [gameName]: defaultMaps,
+                        [`${gameName}_loading`]: false
+                    }));
+                } else {
+                    // Если это не CS2, устанавливаем пустой массив
+                    setAvailableMaps(prev => ({
+                        ...prev,
+                        [gameName]: [],
+                        [`${gameName}_loading`]: false
+                    }));
+                }
             }
         } catch (error) {
-            console.error(`Ошибка при загрузке карт для игры ${gameName}:`, error);
+            console.error(`Ошибка при получении карт для игры ${gameName}:`, error);
             
-            // В случае ошибки, используем запасной вариант со стандартными картами для CS2
-            if (isCounterStrike2(gameName)) {
-                console.log(`Используем стандартные карты для игры ${gameName}`);
-                
-                // Базовый набор карт для CS2
-                const defaultMaps = [
-                    { id: 1, name: 'de_dust2', game: 'Counter-Strike 2', display_name: 'Dust II' },
-                    { id: 2, name: 'de_mirage', game: 'Counter-Strike 2', display_name: 'Mirage' },
-                    { id: 3, name: 'de_nuke', game: 'Counter-Strike 2', display_name: 'Nuke' },
-                    { id: 4, name: 'de_train', game: 'Counter-Strike 2', display_name: 'Train' },
-                    { id: 5, name: 'de_anubis', game: 'Counter-Strike 2', display_name: 'Anubis' },
-                    { id: 6, name: 'de_ancient', game: 'Counter-Strike 2', display_name: 'Ancient' },
-                    { id: 7, name: 'de_inferno', game: 'Counter-Strike 2', display_name: 'Inferno' },
-                    { id: 8, name: 'de_vertigo', game: 'Counter-Strike 2', display_name: 'Vertigo' },
-                    { id: 9, name: 'de_overpass', game: 'Counter-Strike 2', display_name: 'Overpass' }
-                ];
-                
-                // Сохраняем стандартные карты в кеш и состояние
-                localStorage.setItem(`maps_cache_${gameName}`, JSON.stringify(defaultMaps));
-                localStorage.setItem(`maps_cache_timestamp_${gameName}`, new Date().getTime().toString());
-                
-                setAvailableMaps(prev => ({
-                    ...prev,
-                    [gameName]: defaultMaps
-                }));
-            }
+            // Сбрасываем флаг загрузки и устанавливаем пустой массив
+            setAvailableMaps(prev => ({
+                ...prev,
+                [gameName]: [],
+                [`${gameName}_loading`]: false
+            }));
         }
-    }, [availableMaps]);
+    }, [isCounterStrike2]);
+    
+    // Используем useMemo, чтобы уменьшить количество перерисовок
+    const memoizedGameData = useMemo(() => {
+        // Этот объект будет пересоздаваться только когда изменятся availableMaps или tournament
+        return {
+            tournamentGame: tournament?.game,
+            gameSupportsMap: tournament?.game ? gameHasMaps(tournament.game) : false,
+            availableMapsForGame: tournament?.game ? (availableMaps[tournament.game] || []) : [],
+            isMapLoading: tournament?.game ? !!availableMaps[`${tournament.game}_loading`] : false
+        };
+    }, [tournament?.game, availableMaps, gameHasMaps]);
+    
+    // Загружаем карты при загрузке турнира - используем memoizedGameData
+    useEffect(() => {
+        const { tournamentGame, availableMapsForGame, isMapLoading } = memoizedGameData;
+        
+        // Загружаем карты только если:
+        // 1. Есть игра
+        // 2. У нас нет карт для этой игры
+        // 3. Мы еще не начали загрузку карт
+        if (tournamentGame && availableMapsForGame.length === 0 && !isMapLoading) {
+            fetchMapsForGame(tournamentGame);
+        }
+    }, [memoizedGameData, fetchMapsForGame]);
     
     // Функция для получения карт для конкретной игры
     const getGameMaps = useCallback((game) => {
@@ -352,13 +408,6 @@ function TournamentDetails() {
         const maps = getGameMaps(game);
         return maps.length > 0 ? maps[0].name : '';
     }, [getGameMaps]);
-    
-    // Загружаем карты при загрузке турнира
-    useEffect(() => {
-        if (tournament && tournament.game) {
-            fetchMapsForGame(tournament.game);
-        }
-    }, [tournament, fetchMapsForGame]);
     
     const addMap = () => {
         const defaultMap = getDefaultMap(tournament?.game);
@@ -862,93 +911,72 @@ function TournamentDetails() {
     };
 
     // Функция для поиска пользователей с задержкой
-    const handleUserSearchWithDelay = (query) => {
-        setSearchQuery(query);
-        
-        // Очищаем предыдущий таймер, если он существует
+    const handleUserSearchWithDelay = useCallback((query) => {
+        // Очищаем предыдущий таймаут, если он существует
         if (searchTimeout) {
             clearTimeout(searchTimeout);
         }
         
-        // Если запрос пустой, скрываем результаты
+        setSearchQuery(query);
+        
+        // Если запрос короткий, не выполняем поиск
         if (!query || query.length < 2) {
             setSearchResults([]);
             setShowSearchResults(false);
             setIsSearching(false);
             return;
         }
-
-        // Показываем индикатор загрузки
+        
+        // Сохраняем флаг, что идет поиск
         setIsSearching(true);
         
-        // Устанавливаем новый таймер с задержкой 1 секунду
+        // Устанавливаем таймаут перед отправкой запроса
         const newTimeout = setTimeout(async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    console.error('Токен авторизации отсутствует');
-                    setIsSearching(false);
-                    return;
-                }
+                // Проверяем кеш для экономии запросов
+                const cacheKey = `userSearch_${query}`;
+                const cachedResults = localStorage.getItem(cacheKey);
                 
-                const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                
-                // Проверяем наличие данных в ответе
-                if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
-                    console.log('Пользователи не найдены');
-                    setSearchResults([]);
-                    setShowSearchResults(false);
-                    setIsSearching(false);
-                    return;
-                }
-                
-                // Получаем статусы онлайн для найденных пользователей
-                const usersWithStatus = await Promise.all(response.data.map(async (user) => {
-                    try {
-                        const statusResponse = await api.get(`/api/users/${user.id}/status`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                        return {
-                            ...user,
-                            online: statusResponse.data.online,
-                            last_online: statusResponse.data.last_online,
-                            avatar_url: ensureHttps(user.avatar_url) // Исправляем URL аватара
-                        };
-                    } catch (error) {
-                        console.error(`Ошибка при получении статуса пользователя ${user.id}:`, error);
-                        // Если произошла ошибка при получении статуса, возвращаем пользователя без статуса онлайн
-                        return {
-                            ...user,
-                            online: false,
-                            last_online: null,
-                            avatar_url: ensureHttps(user.avatar_url) // Исправляем URL аватара
-                        };
-                    }
-                }));
-                
-                // Фильтруем результаты, чтобы убрать null записи и убедиться, что у нас есть результаты
-                const filteredResults = usersWithStatus.filter(user => user && user.id);
-                
-                if (filteredResults.length > 0) {
-                    setSearchResults(filteredResults);
+                if (cachedResults) {
+                    const parsedResults = JSON.parse(cachedResults);
+                    console.log(`Использую кешированные результаты поиска для "${query}"`);
+                    setSearchResults(parsedResults);
                     setShowSearchResults(true);
+                    setIsSearching(false);
+                    return;
+                }
+                
+                // Если в кеше нет, делаем запрос на сервер
+                console.log(`Поиск пользователей по запросу: "${query}"`);
+                const response = await api.get(`/api/users/search?query=${encodeURIComponent(query)}`);
+                
+                if (response.data && response.data.length > 0) {
+                    // Фильтруем результаты, исключая пользователей, которые уже участвуют в турнире
+                    const filteredResults = response.data.filter(
+                        (user) => !isUserParticipant(user.id) && !isInvitationSent(user.id)
+                    );
+                    
+                    // Кешируем результаты на 10 минут
+                    localStorage.setItem(cacheKey, JSON.stringify(filteredResults));
+                    localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+                    
+                    setSearchResults(filteredResults);
                 } else {
                     setSearchResults([]);
-                    setShowSearchResults(false);
                 }
+                
+                setShowSearchResults(true);
                 setIsSearching(false);
-        } catch (error) {
-            console.error('Ошибка при поиске пользователей:', error);
+            } catch (error) {
+                console.error("Ошибка при поиске пользователей:", error);
                 setSearchResults([]);
                 setShowSearchResults(false);
                 setIsSearching(false);
             }
-        }, 1000); // 1000 мс = 1 секунда (было 3000 мс)
+        }, 500); // Добавляем задержку в 500 мс
         
         setSearchTimeout(newTimeout);
-    };
+    }, [isUserParticipant, isInvitationSent, searchTimeout]);
 
     // Форматирование даты последнего онлайна
     const formatLastOnline = (lastOnlineDate) => {
@@ -2132,6 +2160,93 @@ function TournamentDetails() {
     const handleClearMatchResults = () => {
         toast.info("Функция сброса результатов отключена");
     };
+
+    // Инициализация WebSocket соединения
+    useEffect(() => {
+        // Функция для настройки WebSocket подключения
+        const setupWebSocket = () => {
+            if (!user || !user.token || !tournament || !tournament.id) return;
+            
+            // Очищаем существующее соединение, если оно есть
+            if (wsRef.current) {
+                console.log('Закрываем предыдущее WebSocket соединение');
+                wsRef.current.disconnect();
+                wsRef.current = null;
+            }
+            
+            try {
+                // Создаем новое соединение только если оно еще не существует
+                if (!wsRef.current) {
+                    console.log('Устанавливаем новое WebSocket соединение');
+                    wsRef.current = io(API_URL, {
+                        query: { token: user.token },
+                        transports: ['websocket', 'polling'],
+                        reconnectionAttempts: 5,
+                        reconnectionDelay: 1000,
+                        timeout: 10000
+                    });
+                
+                    wsRef.current.on('connect', () => {
+                        console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
+                        // Подписываемся на канал турнира
+                        wsRef.current.emit('joinTournamentRoom', tournament.id);
+                    });
+                
+                    wsRef.current.on('disconnect', (reason) => {
+                        console.log(`Socket.IO соединение разорвано: ${reason}`);
+                    });
+                
+                    wsRef.current.on('error', (error) => {
+                        console.error('Ошибка Socket.IO соединения:', error);
+                    });
+                
+                    wsRef.current.on('connect_error', (error) => {
+                        console.error('Ошибка подключения Socket.IO:', error);
+                    });
+                
+                    // Слушаем события обновления турнира
+                    wsRef.current.on('tournamentUpdate', (data) => {
+                        console.log('Получено обновление турнира через websocket:', data);
+                        if (data.tournamentId === parseInt(id)) {
+                            // Обновляем только если данные относятся к текущему турниру
+                            fetchTournamentData();
+                        }
+                    });
+                
+                    wsRef.current.on('matchUpdate', (data) => {
+                        console.log('Получено обновление матча через websocket:', data);
+                        if (data.tournamentId === parseInt(id)) {
+                            fetchTournamentData();
+                        }
+                    });
+                
+                    wsRef.current.on('newChatMessage', (message) => {
+                        if (message.tournamentId === parseInt(id)) {
+                            setChatMessages((prevMessages) => [...prevMessages, message]);
+                            // Прокручиваем чат вниз при новом сообщении
+                            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка при настройке WebSocket соединения:', error);
+            }
+        };
+        
+        // Проверяем, есть ли все необходимые данные перед вызовом setupWebSocket
+        if (user && user.token && tournament && tournament.id) {
+            setupWebSocket();
+        }
+        
+        // Очищаем соединение при размонтировании
+        return () => {
+            if (wsRef.current) {
+                console.log('Закрываем WebSocket соединение при размонтировании компонента');
+                wsRef.current.disconnect();
+                wsRef.current = null;
+            }
+        };
+    }, [id, user, tournament, fetchTournamentData]);
 
     return (
         <section className="tournament-details">
