@@ -166,4 +166,33 @@ BEGIN
             ('de_vertigo', 'Counter-Strike 2', 'Vertigo', NOW()),
             ('de_overpass', 'Counter-Strike 2', 'Overpass', NOW());
     END IF;
+END $$;
+
+-- Создаем таблицу games, если она еще не существует
+CREATE TABLE IF NOT EXISTS games (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    image_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Добавляем игры, если их еще нет
+DO $$
+BEGIN
+    -- Проверяем, есть ли уже игры в таблице
+    IF NOT EXISTS (SELECT 1 FROM games LIMIT 1) THEN
+        -- Вставляем базовые игры
+        INSERT INTO games (name, description, created_at) VALUES
+            ('Counter-Strike 2', 'Командный тактический шутер от первого лица', NOW()),
+            ('Dota 2', 'Многопользовательская командная игра в жанре MOBA', NOW()),
+            ('League of Legends', 'Многопользовательская командная игра в жанре MOBA', NOW()),
+            ('Valorant', 'Тактический шутер от первого лица', NOW()),
+            ('Apex Legends', 'Королевская битва от первого лица', NOW()),
+            ('Fortnite', 'Королевская битва от третьего лица', NOW()),
+            ('PUBG', 'Королевская битва от первого лица', NOW()),
+            ('Rocket League', 'Футбол на автомобилях', NOW()),
+            ('Overwatch 2', 'Командный шутер от первого лица', NOW()),
+            ('Rainbow Six Siege', 'Тактический шутер от первого лица', NOW());
+    END IF;
 END $$; 
