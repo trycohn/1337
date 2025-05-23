@@ -17,6 +17,7 @@ function Messenger() {
     const [unreadCounts, setUnreadCounts] = useState({});
     const messagesEndRef = useRef(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [showNavigation, setShowNavigation] = useState(false);
     
     // Состояние для предпросмотра вложения
     const [showAttachmentModal, setShowAttachmentModal] = useState(false);
@@ -355,6 +356,16 @@ function Messenger() {
         setActiveChat(null);
     };
     
+    // Функция для показа навигационного меню
+    const handleShowNavigation = () => {
+        setShowNavigation(true);
+    };
+    
+    // Функция для закрытия навигационного меню
+    const handleCloseNavigation = () => {
+        setShowNavigation(false);
+    };
+    
     // Обработчик ввода сообщения
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
@@ -473,10 +484,30 @@ function Messenger() {
                     onDeleteMessage={deleteMessage}
                     onBackToChats={handleBackToChats}
                     isMobile={isMobile}
+                    onShowNavigation={handleShowNavigation}
                 />
             </div>
             
             {error && <div className="messenger-error">{error}</div>}
+
+            {/* Навигационное меню для мобильных устройств */}
+            {showNavigation && isMobile && (
+                <div className="mobile-navigation-overlay" onClick={handleCloseNavigation}>
+                    <div className="mobile-navigation-menu" onClick={e => e.stopPropagation()}>
+                        <div className="mobile-nav-header">
+                            <h3>Навигация</h3>
+                            <button className="close-nav-button" onClick={handleCloseNavigation}>×</button>
+                        </div>
+                        <div className="mobile-nav-links">
+                            <a href="/" onClick={handleCloseNavigation}>Главная</a>
+                            <a href="/tournaments" onClick={handleCloseNavigation}>Турниры</a>
+                            <a href="/create" onClick={handleCloseNavigation}>Создать турнир</a>
+                            <a href="/profile" onClick={handleCloseNavigation}>Мой профиль</a>
+                            <a href="/messages" onClick={handleCloseNavigation}>Чаты</a>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showAttachmentModal && (
                 <div className={`attachment-modal ${isClosing ? 'closing' : ''}`}>

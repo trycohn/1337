@@ -131,6 +131,19 @@
     border-top: 1px solid #36365a;
 }
 
+.chat-input-area.read-only {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.chat-input-area.read-only span {
+    color: #a0a0b8;
+    font-style: italic;
+    font-size: 14px;
+}
+
 .chat-input-area form {
     display: flex;
     align-items: center;
@@ -176,6 +189,22 @@
 /* Скрываем кнопку возврата на десктопе */
 .back-to-chats {
     display: none;
+}
+
+/* Кнопка навигации */
+.nav-menu-button {
+    display: none;
+    background: none;
+    border: none;
+    color: #e0e0e5;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 10px;
+}
+
+.nav-menu-button svg {
+    width: 20px;
+    height: 20px;
 }
 
 .attachment-button {
@@ -304,6 +333,13 @@
     .attachment-options {
         width: 150px;
         bottom: 40px;
+    }
+    
+    /* Кнопка навигации на мобильных */
+    .nav-menu-button {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
     }
 }
 
