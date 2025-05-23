@@ -16,8 +16,7 @@ function ChatWindow({
     messagesEndRef,
     onDeleteMessage,
     onBackToChats,
-    isMobile,
-    onShowNavigation
+    isMobile
 }) {
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const fileInputRef = useRef(null);
@@ -121,18 +120,9 @@ function ChatWindow({
         <div className="chat-window">
             <div className="chat-header">
                 {isMobile && (
-                    <>
-                        <button className="back-to-chats" onClick={onBackToChats}>
-                            Назад
-                        </button>
-                        <button className="nav-menu-button" onClick={onShowNavigation}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 6H21V8H3V6Z" fill="currentColor"/>
-                                <path d="M3 11H21V13H3V11Z" fill="currentColor"/>
-                                <path d="M3 16H21V18H3V16Z" fill="currentColor"/>
-                            </svg>
-                        </button>
-                    </>
+                    <button className="back-to-chats" onClick={onBackToChats}>
+                        Назад
+                    </button>
                 )}
                 <div className="chat-header-avatar">
                     <img 
@@ -176,52 +166,51 @@ function ChatWindow({
                 <div ref={messagesEndRef} />
             </div>
             
-            {/* Проверяем, является ли чат системным чатом для уведомлений */}
-            {activeChat && activeChat.name && activeChat.name === '1337community' ? (
+            {activeChat.name === '1337community' ? (
                 <div className="chat-input-area read-only">
                     <span>Чат только для уведомлений</span>
                 </div>
             ) : (
-                <div className="chat-input-area">
-                    <form onSubmit={onSubmit}>
-                        <div className="attachment-button" onClick={handleAttachmentClick}>
-                            <i className="attachment-icon">📎</i>
-                            
-                            {showAttachmentOptions && (
-                                <div className="attachment-options">
-                                    <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('image')}>
-                                        <i>📷</i> Фото
-                                    </div>
-                                    <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('document')}>
-                                        <i>📄</i> Документ
-                                    </div>
-                                    <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('file')}>
-                                        <i>📁</i> Файл
-                                    </div>
+            <div className="chat-input-area">
+                <form onSubmit={onSubmit}>
+                    <div className="attachment-button" onClick={handleAttachmentClick}>
+                        <i className="attachment-icon">📎</i>
+                        
+                        {showAttachmentOptions && (
+                            <div className="attachment-options">
+                                <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('image')}>
+                                    <i>📷</i> Фото
                                 </div>
-                            )}
-                        </div>
-                        
-                        <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            style={{ display: 'none' }} 
-                            onChange={handleFileSelect}
-                        />
-                        
-                        <input 
-                            type="text" 
-                            placeholder="Введите сообщение..." 
-                            value={newMessage}
-                            onChange={onInputChange}
-                            onKeyPress={onKeyPress}
-                        />
-                        
-                        <button type="submit">
-                            <span>➤</span>
-                        </button>
-                    </form>
-                </div>
+                                <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('document')}>
+                                    <i>📄</i> Документ
+                                </div>
+                                <div className="attachment-option" onClick={() => handleAttachmentTypeSelect('file')}>
+                                    <i>📁</i> Файл
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        style={{ display: 'none' }} 
+                        onChange={handleFileSelect}
+                    />
+                    
+                    <input 
+                        type="text" 
+                        placeholder="Введите сообщение..." 
+                        value={newMessage}
+                        onChange={onInputChange}
+                        onKeyPress={onKeyPress}
+                    />
+                    
+                    <button type="submit">
+                        <span>➤</span>
+                    </button>
+                </form>
+            </div>
             )}
         </div>
     );
