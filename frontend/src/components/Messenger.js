@@ -38,6 +38,20 @@ function Messenger() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Добавляем класс к main элементу для переопределения стилей
+    useEffect(() => {
+        const mainElement = document.querySelector('main');
+        if (mainElement) {
+            mainElement.classList.add('messenger-page');
+        }
+        
+        return () => {
+            if (mainElement) {
+                mainElement.classList.remove('messenger-page');
+            }
+        };
+    }, []);
+
     // Инициализация Socket.IO соединения
     useEffect(() => {
         const token = localStorage.getItem('token');

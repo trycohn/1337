@@ -21,6 +21,7 @@ function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const { loading, setLoading } = useLoader();
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     const fetchUser = async (token) => {
         setLoading(true);
@@ -213,144 +214,156 @@ function Layout() {
     };
     const visibleNotifications = notifications.slice(0, getNotificationLimit());
 
+    // Отслеживаем изменение размера окна
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <div className="home-container">
             {loading && <Loader />}
-            <header className="header">
-                <div className="nav-container">
-                    <button className="hamburger" onClick={toggleMenu}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
-                            <path d="M3 11H21V13H3V11Z" fill="#ffffff"/>
-                            <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
-                        </svg>
-                    </button>
-                    <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
-                        <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
-                        <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
-                        {user && (
-                            <>
-                                <Link to="/create" onClick={() => setIsMenuOpen(false)}>
-                                    Создать турнир
-                                </Link>
-                                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
-                                <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
-                            </>
-                        )}
-                    </nav>
-                </div>
-                <div className="auth-block">
-                    {user ? (
-                        <div className="user-info">
-                            <Link to="/profile" className="header-avatar-link">
-                                <img
-                                    src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
-                                    alt={user.username || 'User'}
-                                    className="profile-avatar"
-                                />
-                            </Link>
-                            <Link to="/profile" className="username-link">
-                                {user.username}
-                            </Link>
-                            <div className="notifications">
-                                <div className="bell-container" onClick={toggleNotifications}>
-                                    <FontAwesomeIcon
-                                        icon={faComment}
-                                        className="bell-icon"
-                                        style={{ color: '#FFFFFF' }}
-                                    />
-                                    {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
-                                </div>
-                                <Link to="/messages" className="messages-link">
-                                    <FontAwesomeIcon
-                                        icon={faEnvelope}
-                                        className="messages-icon"
-                                        style={{ color: '#FFFFFF' }}
+            {!(isMobile && location.pathname === '/messages') && (
+                <header className="header">
+                    <div className="nav-container">
+                        <button className="hamburger" onClick={toggleMenu}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
+                                <path d="M3 11H21V13H3V11Z" fill="#ffffff"/>
+                                <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
+                            </svg>
+                        </button>
+                        <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
+                            <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
+                            <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
+                            {user && (
+                                <>
+                                    <Link to="/create" onClick={() => setIsMenuOpen(false)}>
+                                        Создать турнир
+                                    </Link>
+                                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
+                                    <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
+                                </>
+                            )}
+                        </nav>
+                    </div>
+                    <div className="auth-block">
+                        {user ? (
+                            <div className="user-info">
+                                <Link to="/profile" className="header-avatar-link">
+                                    <img
+                                        src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
+                                        alt={user.username || 'User'}
+                                        className="profile-avatar"
                                     />
                                 </Link>
-                                {showNotifications && (
-                                    <div className="notification-dropdown-wrapper" ref={notificationRef}>
-                                        <div className="notification-dropdown">
-                                            {visibleNotifications.length > 0 ? (
-                                                visibleNotifications.map((notification) => (
-                                                    <div
-                                                        key={notification.id}
-                                                        className={`notification-item ${notification.is_read ? '' : 'unread'}`}
-                                                    >
-                                                        {notification.message ? (
-                                                            <>
-                                                                {notification.type === 'admin_request' && notification.tournament_id && notification.requester_id ? (
-                                                                    <>
-                                                                        {notification.message.split(' для турнира ')[0]} для турнира{' '}
-                                                                        <Link to={`/tournaments/${notification.tournament_id}`}>
-                                                                            "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
-                                                                        </Link>{' '}
-                                                                        - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                        <div className="admin-request-actions">
-                                                                            <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
-                                                                                Принять
-                                                                            </button>
-                                                                            <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
-                                                                                Отклонить
-                                                                            </button>
-                                                                        </div>
-                                                                    </>
-                                                                ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
-                                                                    <>
-                                                                        {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                        <div className="admin-request-status">
-                                                                            <span className="status-accepted">Запрос принят</span>
-                                                                        </div>
-                                                                    </>
-                                                                ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
-                                                                    <>
-                                                                        {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                        <div className="admin-request-status">
-                                                                            <span className="status-rejected">Запрос отклонен</span>
-                                                                        </div>
-                                                                    </>
-                                                                ) : notification.tournament_id ? (
-                                                                    <>
-                                                                        {notification.message.split(' турнира ')[0]} турнира{' '}
-                                                                        <Link to={`/tournaments/${notification.tournament_id}`}>
-                                                                            "{notification.message.split(' турнира ')[1]?.split('"')[1] || 'турнир'}"
-                                                                        </Link>{' '}
-                                                                        - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                    </>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <>Неизвестное уведомление - {new Date(notification.created_at).toLocaleString('ru-RU')}</>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="no-notifications">Уведомлений пока нет</div>
-                                            )}
-                                        </div>
-                                        <div className="notification-footer">
-                                            <Link to="/notifications" className="show-all" onClick={() => setShowNotifications(false)}>
-                                                Показать все
-                                            </Link>
-                                        </div>
+                                <Link to="/profile" className="username-link">
+                                    {user.username}
+                                </Link>
+                                <div className="notifications">
+                                    <div className="bell-container" onClick={toggleNotifications}>
+                                        <FontAwesomeIcon
+                                            icon={faComment}
+                                            className="bell-icon"
+                                            style={{ color: '#FFFFFF' }}
+                                        />
+                                        {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
                                     </div>
-                                )}
+                                    <Link to="/messages" className="messages-link">
+                                        <FontAwesomeIcon
+                                            icon={faEnvelope}
+                                            className="messages-icon"
+                                            style={{ color: '#FFFFFF' }}
+                                        />
+                                    </Link>
+                                    {showNotifications && (
+                                        <div className="notification-dropdown-wrapper" ref={notificationRef}>
+                                            <div className="notification-dropdown">
+                                                {visibleNotifications.length > 0 ? (
+                                                    visibleNotifications.map((notification) => (
+                                                        <div
+                                                            key={notification.id}
+                                                            className={`notification-item ${notification.is_read ? '' : 'unread'}`}
+                                                        >
+                                                            {notification.message ? (
+                                                                <>
+                                                                    {notification.type === 'admin_request' && notification.tournament_id && notification.requester_id ? (
+                                                                        <>
+                                                                            {notification.message.split(' для турнира ')[0]} для турнира{' '}
+                                                                            <Link to={`/tournaments/${notification.tournament_id}`}>
+                                                                                "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
+                                                                            </Link>{' '}
+                                                                            - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                            <div className="admin-request-actions">
+                                                                                <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
+                                                                                    Принять
+                                                                                </button>
+                                                                                <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
+                                                                                    Отклонить
+                                                                                </button>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
+                                                                        <>
+                                                                            {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                            <div className="admin-request-status">
+                                                                                <span className="status-accepted">Запрос принят</span>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
+                                                                        <>
+                                                                            {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                            <div className="admin-request-status">
+                                                                                <span className="status-rejected">Запрос отклонен</span>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : notification.tournament_id ? (
+                                                                        <>
+                                                                            {notification.message.split(' турнира ')[0]} турнира{' '}
+                                                                            <Link to={`/tournaments/${notification.tournament_id}`}>
+                                                                                "{notification.message.split(' турнира ')[1]?.split('"')[1] || 'турнир'}"
+                                                                            </Link>{' '}
+                                                                            - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
+                                                                        </>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <>Неизвестное уведомление - {new Date(notification.created_at).toLocaleString('ru-RU')}</>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="no-notifications">Уведомлений пока нет</div>
+                                                )}
+                                            </div>
+                                            <div className="notification-footer">
+                                                <Link to="/notifications" className="show-all" onClick={() => setShowNotifications(false)}>
+                                                    Показать все
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <button onClick={handleLogout}>Выйти</button>
                             </div>
-                            <button onClick={handleLogout}>Выйти</button>
-                        </div>
-                    ) : (
-                        <div className="login-button-container">
-                            <Link to="/auth" className="login-button">Войти</Link>
-                        </div>
-                    )}
-                </div>
-            </header>
+                        ) : (
+                            <div className="login-button-container">
+                                <Link to="/auth" className="login-button">Войти</Link>
+                            </div>
+                        )}
+                    </div>
+                </header>
+            )}
 
-            <main>
+            <main className={isMobile && location.pathname === '/messages' ? 'messenger-page' : ''}>
                 <Outlet />
             </main>
         </div>
