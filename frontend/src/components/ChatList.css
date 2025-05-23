@@ -121,6 +121,7 @@
     align-items: center;
     width: 100%;
     position: relative; /* Для правильного позиционирования */
+    padding-right: 25px; /* Оставляем место для счетчика */
 }
 
 .chat-last-message {
@@ -129,7 +130,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 30px); /* Оставляем место для счетчика непрочитанных */
+    flex: 1;
 }
 
 .chat-meta {
@@ -156,11 +157,11 @@
     justify-content: center;
     font-size: 0.75rem;
     padding: 0 5px;
-    margin-left: 6px;
     flex-shrink: 0;
     position: absolute; /* Абсолютное позиционирование */
-    right: -10px; /* Смещение вправо, изменено с -25px на -10px */
-    top: 0; /* Выравнивание по верхнему краю родительского элемента */
+    right: 0; /* Выравнивание по правому краю */
+    top: 50%; /* Центрирование по вертикали */
+    transform: translateY(-50%); /* Центрирование по вертикали */
 }
 
 .no-chats {
@@ -264,4 +265,81 @@
 
 .close-friends-modal:hover {
     background-color: #3c3c54;
+}
+
+/* Медиа-запросы для мобильной адаптации */
+@media (max-width: 768px) {
+    .chat-list {
+        width: 100%;
+        border-right: none;
+    }
+    
+    .chat-list-header {
+        padding: 12px 15px;
+    }
+    
+    .chat-list-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .new-chat-btn {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+    
+    .chat-search {
+        padding: 8px 12px;
+    }
+    
+    .chat-search input {
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+    
+    .chat-item {
+        padding: 10px 12px;
+    }
+    
+    .chat-avatar {
+        width: 45px;
+        height: 45px;
+        margin-right: 10px;
+    }
+    
+    .chat-name {
+        font-size: 0.95rem;
+    }
+    
+    .chat-last-message {
+        font-size: 0.85rem;
+    }
+    
+    .chat-time {
+        font-size: 0.75rem;
+    }
+    
+    .unread-count {
+        min-width: 18px;
+        height: 18px;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .chat-list-header {
+        padding: 10px 12px;
+    }
+    
+    .chat-list-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .chat-item {
+        padding: 8px 10px;
+    }
+    
+    .chat-avatar {
+        width: 40px;
+        height: 40px;
+    }
 } 

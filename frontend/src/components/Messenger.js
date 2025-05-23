@@ -15,10 +15,9 @@ function Messenger() {
     const [socket, setSocket] = useState(null);
     const [newMessage, setNewMessage] = useState('');
     const [unreadCounts, setUnreadCounts] = useState({});
-    
     const messagesEndRef = useRef(null);
-    const activeChatRef = useRef(null);
-
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    
     // Состояние для предпросмотра вложения
     const [showAttachmentModal, setShowAttachmentModal] = useState(false);
     const [attachmentFile, setAttachmentFile] = useState(null);
@@ -26,6 +25,18 @@ function Messenger() {
     const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState('');
     const [attachmentCaption, setAttachmentCaption] = useState('');
     const [isClosing, setIsClosing] = useState(false);
+
+    const activeChatRef = useRef(null);
+
+    // Отслеживаем изменение размера окна
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Инициализация Socket.IO соединения
     useEffect(() => {
@@ -320,6 +331,14 @@ function Messenger() {
     // Обработка изменения активного чата
     const handleChatSelect = (chat) => {
         setActiveChat(chat);
+        setNewMessage('');
+        fetchMessages(chat.id);
+        markChatAsRead(chat.id);
+    };
+    
+    // Функция для возврата к списку чатов на мобильных устройствах
+    const handleBackToChats = () => {
+        setActiveChat(null);
     };
     
     // Обработчик ввода сообщения
@@ -419,7 +438,7 @@ function Messenger() {
 
     return (
         <div className="messenger">
-            <div className="messenger-container">
+            <div className={`messenger-container ${activeChat && isMobile ? 'chat-active' : ''}`}>
                 <ChatList 
                     chats={chats} 
                     activeChat={activeChat} 
@@ -438,6 +457,8 @@ function Messenger() {
                     onSendAttachment={handleFileSelect}
                     messagesEndRef={messagesEndRef}
                     onDeleteMessage={deleteMessage}
+                    onBackToChats={handleBackToChats}
+                    isMobile={isMobile}
                 />
             </div>
             

@@ -173,6 +173,11 @@
     transform: translateY(-2px);
 }
 
+/* Скрываем кнопку возврата на десктопе */
+.back-to-chats {
+    display: none;
+}
+
 .attachment-button {
     position: relative;
     cursor: pointer;
@@ -233,27 +238,72 @@
     
     .chat-header {
         padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    /* Кнопка возврата к списку чатов */
+    .back-to-chats {
+        display: flex;
+        align-items: center;
+        background: none;
+        border: none;
+        color: #e0e0e5;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 5px;
+        margin-right: 5px;
+    }
+    
+    .back-to-chats:before {
+        content: '←';
+        margin-right: 5px;
+        font-size: 18px;
+    }
+    
+    .chat-header-avatar {
+        width: 35px;
+        height: 35px;
+        margin-right: 8px;
     }
     
     .chat-header-info h2 {
-        font-size: 18px;
+        font-size: 16px;
     }
     
     .chat-messages {
         padding: 10px;
-        max-height: 60vh;
+        max-height: calc(100vh - 160px);
+    }
+    
+    .chat-input-area {
+        padding: 10px;
     }
     
     .chat-input-area form {
-        padding: 8px;
+        padding: 0;
     }
     
     .chat-input-area form input {
         font-size: 14px;
+        padding: 8px 12px;
+        margin: 0 8px;
+    }
+    
+    .attachment-button {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .chat-input-area button {
+        width: 32px;
+        height: 32px;
     }
     
     .attachment-options {
         width: 150px;
+        bottom: 40px;
     }
 }
 
@@ -315,11 +365,6 @@
     .attachment-options {
         width: 130px;
         right: -10px;
-    }
-    
-    .attachment-option {
-        padding: 6px;
-        font-size: 12px;
     }
     
     .empty-chat .select-chat-message {

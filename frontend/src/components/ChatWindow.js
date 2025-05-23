@@ -14,7 +14,9 @@ function ChatWindow({
     onKeyPress,
     onSendAttachment,
     messagesEndRef,
-    onDeleteMessage 
+    onDeleteMessage,
+    onBackToChats,
+    isMobile
 }) {
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const fileInputRef = useRef(null);
@@ -117,6 +119,11 @@ function ChatWindow({
     return (
         <div className="chat-window">
             <div className="chat-header">
+                {isMobile && (
+                    <button className="back-to-chats" onClick={onBackToChats}>
+                        Назад
+                    </button>
+                )}
                 <div className="chat-header-avatar">
                     <img 
                         src={ensureHttps(activeChat.avatar_url) || '/default-avatar.png'} 

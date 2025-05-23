@@ -25,4 +25,66 @@
     color: #ff7e7e;
     border-radius: 4px;
     text-align: center;
+}
+
+/* Медиа-запросы для мобильной адаптации */
+@media (max-width: 768px) {
+    .messenger {
+        margin: 0;
+        height: calc(100vh - 60px);
+        border-radius: 0;
+    }
+    
+    .messenger-container {
+        position: relative;
+    }
+    
+    /* На мобильных показываем либо список чатов, либо окно чата */
+    .chat-list {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: 10;
+        transition: transform 0.3s ease;
+    }
+    
+    .chat-window {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: 5;
+    }
+    
+    /* Когда чат активен, скрываем список чатов */
+    .messenger-container.chat-active .chat-list {
+        transform: translateX(-100%);
+    }
+    
+    /* Кнопка возврата к списку чатов */
+    .chat-window .back-to-chats {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        background: none;
+        border: none;
+        color: #e0e0e5;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .chat-window .back-to-chats:before {
+        content: '←';
+        margin-right: 8px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 600px) {
+    .messenger {
+        height: calc(100vh - 50px);
+    }
 } 
