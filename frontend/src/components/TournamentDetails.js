@@ -15,6 +15,9 @@ import {
   getDefaultCS2Maps 
 } from '../utils/mapHelpers';
 
+// Импорт утилитарной функции для безопасного преобразования ID
+import { safeParseInt } from '../utils/safeParseInt';
+
 // Импорт уведомлений и тостов
 import { useToast } from './Notifications/ToastContext';
 
@@ -26,11 +29,6 @@ import { useUser } from '../context/UserContext';
 // Импортируем BracketRenderer напрямую вместо использования React.lazy
 import BracketRenderer from './BracketRenderer';
 
-// Вспомогательная функция для безопасного преобразования ID в число
-const safeParseInt = (id) => {
-    if (id === undefined || id === null) return null;
-    return typeof id === 'string' ? parseInt(id) : id;
-};
 
 // Компонент для случаев ошибок при рендеринге сетки
 class ErrorBoundary extends React.Component {

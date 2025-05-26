@@ -1,12 +1,7 @@
 // frontend/src/components/BracketRenderer.js
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
-
-// Используем глобальную функцию window.safeParseInt
-const safeParseInt = window.safeParseInt || ((id) => {
-    if (id === undefined || id === null) return null;
-    return typeof id === 'string' ? parseInt(id) : id;
-});
+import { safeParseInt } from '../utils/safeParseInt';
 
 const BracketRenderer = ({
     games,
