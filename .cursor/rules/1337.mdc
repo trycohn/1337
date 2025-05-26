@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+I am working on a project hosted on a remote VDS server. The project is updated via GitHub, where the repository is pulled to the server to deploy changes. Please provide code, configurations, or instructions that account for the following:
+
+The project runs on a remote VDS server (Linux-based, e.g., Ubuntu/CentOS).
+The server uses Git to fetch updates from a GitHub repository (e.g., via git pull or automated CI/CD pipelines).
+Ensure compatibility with common server tools like Nginx, SSH, and SFTP for file management.
+Include steps for checking the latest changes (e.g., git log, git diff) and restarting services (e.g., systemctl reload nginx) after updates.
+If relevant, suggest best practices for securing the server (e.g., SSH key authentication, firewall settings) and automating deployments (e.g., GitHub Actions or webhooks).
+Provide clear, concise commands or scripts that can be executed on the server via SSH or a terminal.
+Focus on practical, server-side implementation and avoid local development assumptions. If specific tools, frameworks, or languages are needed, ask for clarification or suggest the most common options (e.g., Node.js, Python, PHP). Include error-handling tips for common issues (e.g., Git conflicts, permission errors).

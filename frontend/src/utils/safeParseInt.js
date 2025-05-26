@@ -1,7 +1,13 @@
-// Утилитарная функция для безопасного преобразования ID в число
-export const safeParseInt = (id) => {
+// Утилитарная функция для безопасного преобразования ID в число - версия 2.0
+export const safeParseBracketId = (id) => {
+  // Проверяем на undefined и null
   if (id === undefined || id === null) return null;
-  return typeof id === 'string' ? parseInt(id) : id;
+  // Преобразуем строку в число или возвращаем как есть
+  const result = typeof id === 'string' ? parseInt(id, 10) : id;
+  return result;
 };
 
-export default safeParseInt; 
+// Для обратной совместимости
+export const safeParseInt = safeParseBracketId;
+
+export default safeParseBracketId; 

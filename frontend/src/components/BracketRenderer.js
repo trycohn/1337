@@ -1,7 +1,7 @@
 // frontend/src/components/BracketRenderer.js
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
-import { safeParseInt } from '../utils/safeParseInt';
+import { safeParseBracketId } from '../utils/safeParseInt';
 
 const BracketRenderer = ({
     games,
@@ -959,7 +959,7 @@ const BracketRenderer = ({
                                             : `Раунд ${round}`}
                                     </h3>
                                     {roundMatches.map((match) => {
-                                        const isSelected = selectedMatch === safeParseInt(match.id);
+                                        const isSelected = selectedMatch === safeParseBracketId(match.id);
                                         return (
                                             <div key={match.id} className="match-container">
                                                 <div
@@ -971,7 +971,7 @@ const BracketRenderer = ({
                                                         }
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && match.state !== 'DONE') {
-                                                            setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                            setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                             // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
                                                             if (handleTeamClick && !isSelected && match.participants[0]?.id) {
                                                                 handleTeamClick(match.participants[0].id, match.id);
@@ -1002,7 +1002,7 @@ const BracketRenderer = ({
                                                         }
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && match.state !== 'DONE') {
-                                                            setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                            setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                             // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
                                                             if (handleTeamClick && !isSelected && match.participants[1]?.id) {
                                                                 handleTeamClick(match.participants[1].id, match.id);
@@ -1046,14 +1046,14 @@ const BracketRenderer = ({
                                         <div key={`l-${round}`} className="round-column">
                                             <h3>Раунд {round}</h3>
                                             {roundMatches.map((match) => {
-                                                const isSelected = selectedMatch === safeParseInt(match.id);
+                                                const isSelected = selectedMatch === safeParseBracketId(match.id);
                                                 return (
                                                     <div key={match.id} className="match-container">
                                                         <div
                                                             className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                             onClick={(e) => {
                                                                 if (canEditMatches && match.state !== 'DONE') {
-                                                                    setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                                    setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                     // Добавляем вызов handleTeamClick
                                                                     if (handleTeamClick && !isSelected && match.participants[0]?.id) {
                                                                         handleTeamClick(match.participants[0].id, match.id);
@@ -1079,7 +1079,7 @@ const BracketRenderer = ({
                                                             className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                             onClick={(e) => {
                                                                 if (canEditMatches && match.state !== 'DONE') {
-                                                                    setSelectedMatch(isSelected ? null : safeParseInt(match.id));
+                                                                    setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                     // Добавляем вызов handleTeamClick
                                                                     if (handleTeamClick && !isSelected && match.participants[1]?.id) {
                                                                         handleTeamClick(match.participants[1].id, match.id);
@@ -1124,12 +1124,12 @@ const BracketRenderer = ({
                                         <h3 className="match-title">Большой финал</h3>
                                         <div className="match-container">
                                             <div
-                                                className={`custom-seed ${selectedMatch === safeParseInt(grandFinalMatch.id) ? 'selected' : ''}`}
+                                                className={`custom-seed ${selectedMatch === safeParseBracketId(grandFinalMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
                                                     if (canEditMatches && grandFinalMatch.state !== 'DONE') {
-                                                        setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
+                                                        setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
                                                         // Добавляем вызов handleTeamClick
-                                                        if (handleTeamClick && selectedMatch !== safeParseInt(grandFinalMatch.id) && grandFinalMatch.participants[0]?.id) {
+                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[0]?.id) {
                                                             handleTeamClick(grandFinalMatch.participants[0].id, grandFinalMatch.id);
                                                         }
                                                     }
@@ -1150,12 +1150,12 @@ const BracketRenderer = ({
                                                 </span>
                                             </div>
                                             <div
-                                                className={`custom-seed ${selectedMatch === safeParseInt(grandFinalMatch.id) ? 'selected' : ''}`}
+                                                className={`custom-seed ${selectedMatch === safeParseBracketId(grandFinalMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
                                                     if (canEditMatches && grandFinalMatch.state !== 'DONE') {
-                                                        setSelectedMatch(selectedMatch === safeParseInt(grandFinalMatch.id) ? null : safeParseInt(grandFinalMatch.id));
+                                                        setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
                                                         // Добавляем вызов handleTeamClick
-                                                        if (handleTeamClick && selectedMatch !== safeParseInt(grandFinalMatch.id) && grandFinalMatch.participants[1]?.id) {
+                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[1]?.id) {
                                                             handleTeamClick(grandFinalMatch.participants[1].id, grandFinalMatch.id);
                                                         }
                                                     }
@@ -1183,12 +1183,12 @@ const BracketRenderer = ({
                                         <h3 className="match-title">Матч за 3-е место</h3>
                                         <div className="match-container">
                                             <div
-                                                className={`custom-seed ${selectedMatch === safeParseInt(placementMatch.id) ? 'selected' : ''}`}
+                                                className={`custom-seed ${selectedMatch === safeParseBracketId(placementMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
                                                     if (canEditMatches && placementMatch.state !== 'DONE') {
-                                                        setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
+                                                        setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
                                                         // Добавляем вызов handleTeamClick
-                                                        if (handleTeamClick && selectedMatch !== safeParseInt(placementMatch.id) && placementMatch.participants[0]?.id) {
+                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[0]?.id) {
                                                             handleTeamClick(placementMatch.participants[0].id, placementMatch.id);
                                                         }
                                                     }
@@ -1209,12 +1209,12 @@ const BracketRenderer = ({
                                                 </span>
                                             </div>
                                             <div
-                                                className={`custom-seed ${selectedMatch === safeParseInt(placementMatch.id) ? 'selected' : ''}`}
+                                                className={`custom-seed ${selectedMatch === safeParseBracketId(placementMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
                                                     if (canEditMatches && placementMatch.state !== 'DONE') {
-                                                        setSelectedMatch(selectedMatch === safeParseInt(placementMatch.id) ? null : safeParseInt(placementMatch.id));
+                                                        setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
                                                         // Добавляем вызов handleTeamClick
-                                                        if (handleTeamClick && selectedMatch !== safeParseInt(placementMatch.id) && placementMatch.participants[1]?.id) {
+                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[1]?.id) {
                                                             handleTeamClick(placementMatch.participants[1].id, placementMatch.id);
                                                         }
                                                     }
