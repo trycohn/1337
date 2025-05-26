@@ -2,11 +2,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
 
-// Выносим вспомогательную функцию для безопасного преобразования ID в число за пределы компонента
-const safeParseInt = (id) => {
+// Используем глобальную функцию window.safeParseInt
+const safeParseInt = window.safeParseInt || ((id) => {
     if (id === undefined || id === null) return null;
     return typeof id === 'string' ? parseInt(id) : id;
-};
+});
 
 const BracketRenderer = ({
     games,
