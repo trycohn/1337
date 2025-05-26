@@ -1627,6 +1627,7 @@ a.participant-name:hover {
     display: flex;
     align-items: center;
     margin: 10px 0;
+    justify-content: center;
 }
 
 .creator-display {

@@ -2523,7 +2523,7 @@ function TournamentDetails() {
                     )}
                     {/* Информация о создателе турнира */}
                     <p className="creator-info">
-                        <strong>Создатель:</strong>{' '}
+                        <strong>Создатель: </strong>{' '}
                         {creator ? (
                             <span className="creator-display">
                                 <span className="creator-avatar">
