@@ -1621,3 +1621,16 @@ a.participant-name:hover {
   align-items: flex-end;
   gap: 10px;
 }
+
+/* Стили для ссылки на профиль создателя */
+.creator-link {
+    color: #0077cc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.creator-link:hover {
+    color: #0055aa;
+    text-decoration: underline;
+}

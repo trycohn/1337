@@ -193,6 +193,9 @@ function TournamentDetails() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [sentInvitations, setSentInvitations] = useState([]);
     
+    // Состояние для хранения информации о создателе турнира
+    const [creator, setCreator] = useState(null);
+    
     // Добавляем новое состояние для хранения карт для разных игр
     const [availableMaps, setAvailableMaps] = useState({});
     
@@ -282,6 +285,11 @@ function TournamentDetails() {
                             setOriginalParticipants(parsedTournament.participants);
                         }
                         
+                        // Загружаем информацию о создателе турнира
+                        if (parsedTournament.created_by) {
+                            fetchCreatorInfo(parsedTournament.created_by);
+                        }
+                        
                         setLoading(false);
                         return;
                     }
@@ -315,6 +323,11 @@ function TournamentDetails() {
             if (response.data.participants && response.data.participants.length > 0) {
                 setOriginalParticipants(response.data.participants);
             }
+            
+            // Загружаем информацию о создателе турнира
+            if (response.data.created_by) {
+                fetchCreatorInfo(response.data.created_by);
+            }
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
             setError('Ошибка загрузки данных турнира');
@@ -333,6 +346,11 @@ function TournamentDetails() {
                             setOriginalParticipants(parsedOldCache.participants);
                         }
                         
+                        // Загружаем информацию о создателе турнира из кеша
+                        if (parsedOldCache.created_by) {
+                            fetchCreatorInfo(parsedOldCache.created_by);
+                        }
+                        
                         setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
                     }
                 }
@@ -343,6 +361,39 @@ function TournamentDetails() {
             setLoading(false);
         }
     }, [id]);
+    
+    // Функция для загрузки информации о создателе турнира
+    const fetchCreatorInfo = async (creatorId) => {
+        if (!creatorId) return;
+        
+        try {
+            // Сначала проверяем кеш
+            const cacheKey = `user_${creatorId}`;
+            const cachedUser = localStorage.getItem(cacheKey);
+            if (cachedUser) {
+                try {
+                    const parsedUser = JSON.parse(cachedUser);
+                    if (parsedUser && parsedUser.id === creatorId) {
+                        setCreator(parsedUser);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при разборе кешированных данных пользователя:', error);
+                }
+            }
+            
+            // Если нет в кеше, делаем запрос к API
+            const response = await api.get(`/api/users/${creatorId}`);
+            if (response.data) {
+                setCreator(response.data);
+                // Кешируем результат на 10 минут
+                localStorage.setItem(cacheKey, JSON.stringify(response.data));
+                localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке данных создателя турнира:', error);
+        }
+    };
     
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
@@ -2420,6 +2471,17 @@ function TournamentDetails() {
                             {new Date(tournament.end_date).toLocaleDateString('ru-RU')}
                         </p>
                     )}
+                    {/* Информация о создателе турнира */}
+                    <p>
+                        <strong>Создатель:</strong>{' '}
+                        {creator ? (
+                            <Link to={`/user/${creator.id}`} className="creator-link">
+                                {creator.username}
+                            </Link>
+                        ) : (
+                            'Загрузка...'
+                        )}
+                    </p>
                     <p>
                         <strong>Участники ({tournament.participant_count || 0}):</strong>
                     </p>
