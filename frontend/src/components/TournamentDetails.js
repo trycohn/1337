@@ -194,6 +194,31 @@ function TournamentDetails() {
     // Проверяем, соединились ли с вебсокетом
     const [wsConnected, setWsConnected] = useState(false);
     
+    // Проверка, является ли пользователь участником турнира
+    const isUserParticipant = (userId) => {
+        if (!tournament || !tournament.participants) return false;
+        return tournament.participants.some(participant => participant.id === userId);
+    };
+    
+    // Проверка, было ли отправлено приглашение пользователю
+    const isInvitationSent = (userId) => {
+        if (!tournament || !tournament.id) return false;
+        
+        try {
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
+            
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                return invitedUsers.includes(userId);
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке статуса приглашения:', error);
+        }
+        
+        return false;
+    };
+    
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
         // ... implementation ...
@@ -2046,31 +2071,6 @@ function TournamentDetails() {
     
     // Проверка кэша приглашений при загрузке турнира
     
-    
-    // Проверка, является ли пользователь участником турнира
-    const isUserParticipant = (userId) => {
-        if (!tournament || !tournament.participants) return false;
-        return tournament.participants.some(participant => participant.id === userId);
-    };
-    
-    // Проверка, было ли отправлено приглашение пользователю
-    const isInvitationSent = (userId) => {
-        if (!tournament || !tournament.id) return false;
-        
-        try {
-            const cacheKey = `invitedUsers_${tournament.id}`;
-            const cachedInvitedUsers = localStorage.getItem(cacheKey);
-            
-            if (cachedInvitedUsers) {
-                const invitedUsers = JSON.parse(cachedInvitedUsers);
-                return invitedUsers.includes(userId);
-            }
-        } catch (error) {
-            console.error('Ошибка при проверке статуса приглашения:', error);
-        }
-        
-        return false;
-    };
     
     // Обработчик приглашения конкретного пользователя
     const handleInviteUser = async (userId, username) => {
