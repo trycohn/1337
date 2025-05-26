@@ -12,6 +12,20 @@
 3. `frontend/package.json` - версия обновлена до 1.0.0
 4. `frontend/src/components/TournamentDetails.js` - очистка неиспользуемых импортов
 
+## Исправления в версии 1.0.1
+
+### Исправленная проблема
+- ❌ **Ошибка**: "Cannot access 'jt' before initialization" в турнирной сетке
+- ✅ **Решение**: 
+  1. Создана утилитарная функция `safeParseBracketId` в версии 1.0.0 (недостаточно)
+  2. Исправлены функции `isUserParticipant` и `isInvitationSent` в `TournamentDetails.js` в версии 1.0.1
+
+### Внесенные изменения
+1. `frontend/src/utils/safeParseInt.js` - новая утилитарная функция
+2. `frontend/src/components/BracketRenderer.js` - обновленные импорты
+3. `frontend/package.json` - версия обновлена до 1.0.0
+4. `frontend/src/components/TournamentDetails.js` - исправлена проблема TDZ (Temporal Dead Zone) с функциями
+
 ## Инструкции для развертывания на VDS сервере
 
 ### 1. Подключение к серверу
@@ -180,11 +194,11 @@ frontend/
 │   │   └── safeParseInt.js          # ✅ Новый файл
 │   └── components/
 │       ├── BracketRenderer.js       # ✅ Обновлен
-│       └── TournamentDetails.js     # ✅ Очищен
+│       └── TournamentDetails.js     # ✅ Исправлен TDZ
 ├── package.json                     # ✅ Версия 1.0.0
 └── build/
     └── static/js/
-        └── main.42fd8b49.js         # ✅ Новый хеш файла
+        └── main.a4a0e549.js         # ✅ Новый хеш файла (версия 1.0.1)
 ```
 
 ## Проверочный список
@@ -192,7 +206,7 @@ frontend/
 - [ ] Подключение к серверу выполнено
 - [ ] Изменения получены через `git pull`
 - [ ] Frontend собран успешно
-- [ ] Новый main.js файл создан с хешем `42fd8b49`
+- [ ] Новый main.js файл создан с хешем `a4a0e549`
 - [ ] Backend перезапущен
 - [ ] Nginx перезагружен
 - [ ] Сайт доступен
