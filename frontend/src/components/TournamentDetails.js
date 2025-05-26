@@ -2374,7 +2374,7 @@ function TournamentDetails() {
         try {
             // eslint-disable-next-line no-unused-vars
             const response = await api.post(`/api/tournaments/${id}/end`, {});
-            setTournament(prev => ({ ...prev, status: 'завершен' }));
+            setTournament(prev => ({ ...prev, status: 'completed' }));
             setShowEndTournamentModal(false);
             setMessage('Турнир успешно завершен!');
         } catch (error) {
@@ -2393,7 +2393,12 @@ function TournamentDetails() {
             <div className="tournament-layout">
                 <div className="tournament-main">
                     <h2>
-                        {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
+                        {tournament.name} ({
+                            tournament.status === 'active' || tournament.status === 'pending' ? 'Активен' : 
+                            tournament.status === 'in_progress' ? 'Идет' : 
+                            tournament.status === 'completed' || tournament.status === 'завершен' ? 'Завершен' : 
+                            'Неизвестный статус'
+                        })
                     </h2>
                     
                     <div className="tournament-info-section">
@@ -2709,8 +2714,8 @@ function TournamentDetails() {
                     )}
                     
                     <h3>Турнирная сетка</h3>
-                    {/* Кнопки управления сеткой для турниров в статусе pending */}
-                    {matches.length > 0 && tournament?.status === 'pending' && (
+                    {/* Кнопки управления сеткой для турниров в статусе active/pending */}
+                    {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
                         <div className="tournament-controls">
                             {isAdminOrCreator && (
                                 <button 
@@ -3020,6 +3025,7 @@ function TournamentDetails() {
                     {message && (
                         <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
                     )}
+                    {/* Кнопка "Завершить турнир" для турниров в статусе in_progress */}
                     {tournament?.status === 'in_progress' && isAdminOrCreator && (
                         <div className="tournament-controls finish-above-bracket">
                                 <button 
