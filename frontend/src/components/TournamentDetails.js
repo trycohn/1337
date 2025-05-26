@@ -2709,6 +2709,7 @@ function TournamentDetails() {
                     )}
                     
                     <h3>Турнирная сетка</h3>
+                    {/* Кнопки управления сеткой для турниров в статусе pending */}
                     {matches.length > 0 && tournament?.status === 'pending' && (
                         <div className="tournament-controls">
                             {isAdminOrCreator && (
@@ -2729,6 +2730,7 @@ function TournamentDetails() {
                             )}
                         </div>
                     )}
+                    {/* Отображаем сетку если она сгенерирована */}
                     {Array.isArray(matches) && matches.length > 0 ? (
                         <>
                             {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
@@ -2773,6 +2775,7 @@ function TournamentDetails() {
                     ) : (
                         <>
                             <p>Сетка ещё не сгенерирована</p>
+                            {/* Кнопка для начальной генерации сетки */}
                             {canGenerateBracket && (
                                 <div className="generation-options">
                                     <label>
