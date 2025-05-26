@@ -2314,8 +2314,8 @@ function TournamentDetails() {
                         <strong>Участники ({tournament.participant_count || 0}):</strong>
                     </p>
                     
-                    {/* Отображаем оригинальный список участников - показываем всегда */}
-                    {tournament && (
+                    {/* Отображаем оригинальный список участников, но не для микс-турниров с созданными командами */}
+                    {tournament && (tournament.format !== 'mix' || !mixedTeams || mixedTeams.length === 0) && (
                         <OriginalParticipantsList 
                             participants={originalParticipants.length > 0 ? originalParticipants : tournament.participants} 
                             tournament={tournament}
