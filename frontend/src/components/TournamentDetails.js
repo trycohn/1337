@@ -2165,8 +2165,102 @@ function TournamentDetails() {
     };
 
     // Функция для пересоздания сетки турнира
-    const handleRegenerateBracket = () => {
-        toast.info("Функция пересоздания сетки отключена");
+    const handleRegenerateBracket = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Пожалуйста, войдите, чтобы пересоздать сетку');
+            return;
+        }
+
+        if (!isAdminOrCreator) {
+            setMessage('У вас нет прав для пересоздания сетки');
+            toast.warning('У вас нет прав для пересоздания сетки');
+            return;
+        }
+
+        try {
+            setMessage('Пересоздание сетки...');
+            toast.info('Начинаем пересоздание сетки...');
+            
+            // Проверка количества участников
+            if (!tournament.participants || tournament.participants.length < 2) {
+                setMessage('Недостаточно участников для пересоздания сетки. Минимум 2 участника.');
+                toast.error('Недостаточно участников для пересоздания сетки. Минимум 2 участника.');
+                return;
+            }
+            
+            const regenerateBracketResponse = await api.post(
+                `/api/tournaments/${id}/generate-bracket`,
+                { 
+                    thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch,
+                    regenerate: true // Указываем, что нужно пересоздать сетку
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            console.log('Ответ от сервера:', regenerateBracketResponse.data);
+            
+            // Обновления турнира должны прийти через WebSocket,
+            // но дополнительно обновляем данные из ответа
+            if (regenerateBracketResponse.data.tournament) {
+                const tournamentData = regenerateBracketResponse.data.tournament;
+                
+                if (!Array.isArray(tournamentData.matches) || tournamentData.matches.length === 0) {
+                    // Если matches пустой, запрашиваем данные заново
+                    await fetchTournamentData();
+                } else {
+                    // Проверяем данные на корректность
+                    console.log('Проверка данных турнира:', {
+                        participants: tournamentData.participants?.length || 0,
+                        matches: tournamentData.matches.length
+                    });
+                    
+                    // Обновляем состояние с полученными данными
+                    setTournament(tournamentData);
+                    setMatches(tournamentData.matches);
+                    
+                    // Добавляем таймер для гарантированного обновления
+                    setTimeout(async () => {
+                        await fetchTournamentData();
+                    }, 500);
+                }
+            }
+            
+            setMessage('Сетка успешно пересоздана');
+            toast.success('Сетка успешно пересоздана!');
+        } catch (error) {
+            console.error('Ошибка при пересоздании сетки:', error);
+            
+            // Проверяем тип ошибки для информативного сообщения
+            let errorMessage = 'Ошибка при пересоздании сетки';
+            
+            if (error.response) {
+                // Структурированное сообщение об ошибке от сервера
+                if (error.response.status === 400) {
+                    errorMessage = error.response.data.error || 'Неверные параметры для пересоздания сетки';
+                } else if (error.response.status === 401) {
+                    errorMessage = 'Необходима авторизация';
+                } else if (error.response.status === 403) {
+                    errorMessage = 'У вас нет прав на выполнение этого действия';
+                } else if (error.response.status === 404) {
+                    errorMessage = 'API маршрут не найден. Возможно, требуется обновление сервера.';
+                } else if (error.response.status === 500) {
+                    errorMessage = 'Ошибка сервера при пересоздании сетки. Попробуйте позже.';
+                } else {
+                    errorMessage = error.response.data.error || 'Ошибка при пересоздании сетки';
+                }
+            }
+            
+            setMessage(errorMessage);
+            toast.error(errorMessage);
+            
+            // Пытаемся синхронизировать данные с сервера
+            try {
+                await fetchTournamentData();
+            } catch (fetchError) {
+                console.error('Ошибка при синхронизации данных:', fetchError);
+            }
+        }
     };
     
     // Функция для завершения турнира
@@ -2484,7 +2578,7 @@ function TournamentDetails() {
                     )}
                     
                     <h3>Турнирная сетка</h3>
-                    {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
+                    {matches.length > 0 && tournament?.status === 'pending' && (
                         <div className="tournament-controls">
                             {isAdminOrCreator && (
                                 <button 
@@ -2534,7 +2628,7 @@ function TournamentDetails() {
                                     >
                                         Обновить страницу
                                     </button>
-                                    {isAdminOrCreator && (
+                                    {isAdminOrCreator && tournament?.status === 'pending' && (
                                         <button 
                                             onClick={handleRegenerateBracket} 
                                             className="regenerate-button"
