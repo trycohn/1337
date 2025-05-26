@@ -367,31 +367,81 @@ function TournamentDetails() {
         if (!creatorId) return;
         
         try {
-            // Сначала проверяем кеш
-            const cacheKey = `user_${creatorId}`;
-            const cachedUser = localStorage.getItem(cacheKey);
-            if (cachedUser) {
-                try {
-                    const parsedUser = JSON.parse(cachedUser);
-                    if (parsedUser && parsedUser.id === creatorId) {
-                        setCreator(parsedUser);
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Ошибка при разборе кешированных данных пользователя:', error);
-                }
-            }
+            // Делаем прямой запрос к API для получения информации из БД
+            console.log(`Загружаем информацию о создателе турнира (ID: ${creatorId}) из базы данных`);
             
-            // Если нет в кеше, делаем запрос к API
-            const response = await api.get(`/api/users/${creatorId}`);
+            // Используем правильный маршрут API для получения данных пользователя
+            // Примечание: маршрут `/api/users/profile/${creatorId}` может быть более надежным, чем `/api/users/${creatorId}`
+            const response = await api.get(`/api/users/profile/${creatorId}`);
+            
             if (response.data) {
+                console.log(`Информация о создателе турнира успешно загружена из БД:`, response.data);
                 setCreator(response.data);
-                // Кешируем результат на 10 минут
+                
+                // Кешируем результат для возможного использования в будущем
+                const cacheKey = `user_${creatorId}`;
                 localStorage.setItem(cacheKey, JSON.stringify(response.data));
                 localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
             }
         } catch (error) {
-            console.error('Ошибка при загрузке данных создателя турнира:', error);
+            console.error('Ошибка при загрузке данных создателя турнира из БД:', error);
+            
+            // Попытаемся найти информацию о создателе в списке участников
+            if (tournament && tournament.participants && Array.isArray(tournament.participants)) {
+                console.log('Поиск информации о создателе в списке участников турнира');
+                
+                const creatorFromParticipants = tournament.participants.find(
+                    participant => participant.user_id === creatorId || participant.id === creatorId
+                );
+                
+                if (creatorFromParticipants) {
+                    console.log('Найдена информация о создателе в списке участников:', creatorFromParticipants);
+                    
+                    const creatorInfo = {
+                        id: creatorId,
+                        username: creatorFromParticipants.name || creatorFromParticipants.username || `Участник #${creatorId}`,
+                        avatar_url: creatorFromParticipants.avatar_url || null,
+                        fromParticipants: true
+                    };
+                    
+                    setCreator(creatorInfo);
+                    return;
+                }
+            }
+            
+            // Проверяем, есть ли кешированные данные
+            try {
+                console.log('Поиск информации о создателе в локальном кеше');
+                const cacheKey = `user_${creatorId}`;
+                const cachedUser = localStorage.getItem(cacheKey);
+                
+                if (cachedUser) {
+                    const parsedUser = JSON.parse(cachedUser);
+                    if (parsedUser && parsedUser.id === creatorId) {
+                        console.log('Найдена информация о создателе в кеше:', parsedUser);
+                        setCreator(parsedUser);
+                        return;
+                    }
+                }
+            } catch (cacheError) {
+                console.error('Ошибка при проверке кешированных данных:', cacheError);
+            }
+            
+            // Проверяем, можем ли мы получить данные из tournament.created_by_info
+            if (tournament && tournament.created_by_info) {
+                console.log('Использование информации о создателе из tournament.created_by_info');
+                setCreator(tournament.created_by_info);
+                return;
+            }
+            
+            // Если все источники информации недоступны, создаем заглушку
+            console.log('Все источники информации о создателе недоступны, создаем заглушку');
+            setCreator({
+                id: creatorId,
+                username: `Создатель #${creatorId}`,
+                avatar_url: null,
+                isError: true
+            });
         }
     };
     
@@ -2472,12 +2522,31 @@ function TournamentDetails() {
                         </p>
                     )}
                     {/* Информация о создателе турнира */}
-                    <p>
+                    <p className="creator-info">
                         <strong>Создатель:</strong>{' '}
                         {creator ? (
-                            <Link to={`/user/${creator.id}`} className="creator-link">
-                                {creator.username}
-                            </Link>
+                            <span className="creator-display">
+                                <span className="creator-avatar">
+                                    {creator.avatar_url ? (
+                                        <img 
+                                            src={ensureHttps(creator.avatar_url)} 
+                                            alt={creator.username.charAt(0)} 
+                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                        />
+                                    ) : (
+                                        <div className="avatar-placeholder">
+                                            {creator.username.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </span>
+                                {creator.isError ? (
+                                    <span className="creator-name">{creator.username}</span>
+                                ) : (
+                                    <Link to={`/user/${creator.id}`} className="creator-link">
+                                        {creator.username}
+                                    </Link>
+                                )}
+                            </span>
                         ) : (
                             'Загрузка...'
                         )}
