@@ -77,6 +77,11 @@ const GAME_CONFIGS = {
 
 // Компонент для отображения оригинального списка участников
 const OriginalParticipantsList = ({ participants, tournament }) => {
+  // Не показываем список для микс-турниров, если есть сформированные команды
+  if (tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) {
+    return null;
+  }
+
   if (!participants || participants.length === 0) {
     return (
       <div className="original-participants-list-wrapper">
@@ -895,12 +900,17 @@ function TournamentDetails() {
 
     // Обработчик успешной генерации команд в TeamGenerator
     const handleTeamsGenerated = (teams) => {
+        console.log('handleTeamsGenerated вызван с командами:', teams);
+        
         if (teams && Array.isArray(teams)) {
+            // Сохраняем команды в состоянии
             setMixedTeams(teams);
+            console.log('mixedTeams обновлен:', teams);
             
             // Сохраняем текущий список участников до формирования команд
             if (tournament && tournament.participants && tournament.participants.length > 0) {
                 setOriginalParticipants([...tournament.participants]);
+                console.log('originalParticipants сохранен:', tournament.participants);
             }
         }
     };
@@ -1681,6 +1691,12 @@ function TournamentDetails() {
         }
     }, [userIdToRemove, id, toast, fetchTournamentData]);
 
+    // Отслеживаем изменения в mixedTeams
+    useEffect(() => {
+        console.log('mixedTeams изменился:', mixedTeams);
+        // Когда команды созданы, обновляем флаг для скрытия списка
+    }, [mixedTeams]);
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -2314,17 +2330,27 @@ function TournamentDetails() {
                         <strong>Участники ({tournament.participant_count || 0}):</strong>
                     </p>
                     
-                    {/* Отображаем оригинальный список участников, но не для микс-турниров с созданными командами */}
-                    {tournament && (tournament.format !== 'mix' || !mixedTeams || mixedTeams.length === 0) && (
-                        <OriginalParticipantsList 
-                            participants={originalParticipants.length > 0 ? originalParticipants : tournament.participants} 
+                    {tournament.format === 'mix' ? (
+                        /* Для микс-турниров используем TeamGenerator */
+                        <TeamGenerator
                             tournament={tournament}
+                            participants={tournament.participants || []}
+                            onTeamsGenerated={handleTeamsGenerated}
+                            onTeamsUpdated={fetchTournamentData}
+                            onRemoveParticipant={setUserIdToRemove}
+                            isAdminOrCreator={isAdminOrCreator}
+                            toast={toast}
                         />
+                    ) : (
+                        /* Для обычных турниров показываем стандартные блоки участников */
+                        <>
+                            <OriginalParticipantsList 
+                                participants={originalParticipants.length > 0 ? originalParticipants : tournament.participants} 
+                                tournament={tournament}
+                            />
+                            {renderParticipants()}
+                        </>
                     )}
-                    
-                    {/* Если это не микс-турнир, показываем стандартное отображение участников, 
-                        иначе этим займется TeamGenerator */}
-                    {tournament.format !== 'mix' && renderParticipants()}
                     
                     {tournament.status === 'completed' && renderWinners()}
                     {user && tournament.status === 'active' && (
@@ -2457,19 +2483,6 @@ function TournamentDetails() {
                         </div>
                     )}
                     
-                    {/* Заменяем секцию микс-турнира на компонент TeamGenerator */}
-                    {tournament?.format === 'mix' && (
-                        <TeamGenerator
-                            tournament={tournament}
-                            participants={tournament.participants || []}
-                            onTeamsGenerated={handleTeamsGenerated}
-                            onTeamsUpdated={fetchTournamentData}
-                            onRemoveParticipant={setUserIdToRemove}
-                            isAdminOrCreator={isAdminOrCreator}
-                            toast={toast}
-                        />
-                    )}
-
                     <h3>Турнирная сетка</h3>
                     {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
                         <div className="tournament-controls">

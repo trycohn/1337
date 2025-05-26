@@ -59,6 +59,12 @@ const TeamGenerator = ({
         // Если у турнира есть команды, устанавливаем их в состояние
         if (tournament && tournament.teams && tournament.teams.length > 0) {
             setMixedTeams(tournament.teams);
+            
+            // Уведомляем родительский компонент о наличии команд
+            if (onTeamsGenerated) {
+                console.log('TeamGenerator: вызываем onTeamsGenerated с существующими командами', tournament.teams);
+                onTeamsGenerated(tournament.teams);
+            }
         }
 
         // Отладочная информация по командам
@@ -80,6 +86,12 @@ const TeamGenerator = ({
             if (response.data && Array.isArray(response.data)) {
                 console.log('Загруженные команды турнира:', response.data);
                 setMixedTeams(response.data);
+                
+                // Уведомляем родительский компонент о загруженных командах
+                if (onTeamsGenerated && response.data.length > 0) {
+                    console.log('fetchTeams: вызываем onTeamsGenerated с загруженными командами', response.data);
+                    onTeamsGenerated(response.data);
+                }
             }
         } catch (error) {
             console.error('Ошибка при загрузке команд турнира:', error);
