@@ -319,7 +319,7 @@
     flex-wrap: wrap;
     justify-content: center;
     padding: 15px;
-    background-color: #f8f8f8;
+    background-color: #0e0e0e;
     border-radius: 8px;
     border: 1px solid #ddd;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -335,7 +335,7 @@
     transition: all 0.3s ease;
     min-width: 180px;
     text-align: center;
-    color: white;
+    color: #000000;
 }
 
 .start-tournament {
