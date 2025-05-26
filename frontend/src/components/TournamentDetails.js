@@ -15,9 +15,6 @@ import {
   getDefaultCS2Maps 
 } from '../utils/mapHelpers';
 
-// Импорт утилитарной функции для безопасного преобразования ID
-import { safeParseInt } from '../utils/safeParseInt';
-
 // Импорт уведомлений и тостов
 import { useToast } from './Notifications/ToastContext';
 
