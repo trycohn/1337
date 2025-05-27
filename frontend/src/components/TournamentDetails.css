@@ -187,6 +187,10 @@
     max-width: 500px;
 }
 
+.modal-content h4 {
+    color: #000000;
+}
+
 .modal-buttons {
     margin-top: 20px;
     display: flex;
@@ -316,24 +320,36 @@
     display: flex;
     gap: 15px;
     margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 15px;
+    background-color: #0e0e0e;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .tournament-controls button {
-    padding: 0px 5px;
+    padding: 10px 20px;
     border: none;
-    border-radius: 0px;
+    border-radius: 4px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px;
     transition: all 0.3s ease;
+    min-width: 180px;
+    text-align: center;
+    color: #000000;
 }
 
 .start-tournament {
     background-color: #2ecc71;
-    color: white;
 }
 
 .start-tournament:hover {
     background-color: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .end-tournament {
@@ -347,11 +363,43 @@
 
 .regenerate-bracket {
     background-color: #3498db;
-    color: white;
 }
 
 .regenerate-bracket:hover {
     background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.generate-bracket-button {
+    background-color: #3498db;
+    color: white;
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-weight: 600;
+    border-radius: 4px;
+    min-width: 200px;
+}
+
+.generate-bracket-button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.generation-options {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.generation-options label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
 }
 
 @media (max-width: 768px) {
@@ -964,6 +1012,7 @@
     text-overflow: ellipsis;
     max-width: 150px;
     text-align: center;
+    color: #000000;
 }
 
 .map-scores .score-input {
@@ -1066,7 +1115,7 @@
 }
 
 .score-value {
-    background-color: #4CAF50;
+    background-color: #2c2c40;
     color: white;
     padding: 4px 12px;
     border-radius: 15px;
@@ -1076,10 +1125,20 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* Стили для окна просмотра результатов матча */
+.modal-actions {
+    margin-top: 10px;
+}
+
+/* Стили для модального окна с результатами матча */
 .match-details-modal {
-    max-width: 600px;
-    width: 90%;
+    z-index: 1001;
+}
+
+.match-details-modal .modal-content {
+    max-width: 800px;
+    min-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .match-teams {
@@ -1087,68 +1146,249 @@
     justify-content: space-between;
     align-items: center;
     margin: 20px 0;
-    padding: 15px;
-    background-color: #f5f5f5;
+    padding: 20px;
+    background-color: #f8f9fa;
     border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .team-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    border-radius: 5px;
+    text-align: center;
     flex: 1;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
 }
 
 .team-info.winner {
-    background-color: rgba(76, 175, 80, 0.2);
-    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    background-color: #d4edda;
+    border-color: #28a745;
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+}
+
+.team-info h5 {
+    margin: 0 0 10px 0;
+    font-size: 1.2em;
     font-weight: bold;
+    color: #333;
+}
+
+.team-score {
+    font-size: 2em;
+    font-weight: bold;
+    color: #495057;
+    margin: 10px 0;
+}
+
+.team-info.winner .team-score {
+    color: #28a745;
 }
 
 .winner-badge {
-    background-color: #4CAF50;
+    background-color: #28a745;
     color: white;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    margin-top: 5px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
 }
 
 .match-score {
-    font-size: 24px;
+    font-size: 1.5em;
     font-weight: bold;
-    padding: 0 20px;
+    color: #6c757d;
+    margin: 0 20px;
 }
 
+/* Стили для общего счета матча */
+.match-summary {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.match-summary h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    text-align: center;
+}
+
+.final-score {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.score-item {
+    padding: 8px 15px;
+    border-radius: 6px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+}
+
+.score-item.winner-score {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.score-separator {
+    margin: 0 15px;
+    color: #6c757d;
+}
+
+/* Стили для результатов карт */
 .maps-results {
-    margin-top: 20px;
+    margin: 20px 0;
+}
+
+.maps-results h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    text-align: center;
 }
 
 .maps-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin-bottom: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.maps-table th, .maps-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
+.maps-table th,
+.maps-table td {
+    padding: 12px;
     text-align: center;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .maps-table th {
-    background-color: #f2f2f2;
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #495057;
 }
 
 .maps-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #f8f9fa;
+}
+
+.maps-table tr:hover {
+    background-color: #e9ecef;
 }
 
 .map-winner {
+    background-color: #d4edda !important;
+    color: #155724;
     font-weight: bold;
-    color: #4CAF50;
+}
+
+/* Стили для статистики по картам */
+.maps-statistics {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.maps-statistics h5 {
+    margin: 0 0 15px 0;
+    color: #333;
+    text-align: center;
+}
+
+.maps-stats {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    min-width: 120px;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* Стили для случая отсутствия карт */
+.no-maps-info {
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .match-details-modal .modal-content {
+        min-width: 90vw;
+        margin: 10px;
+    }
+    
+    .match-teams {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .match-score {
+        margin: 15px 0;
+        transform: rotate(90deg);
+    }
+    
+    .final-score {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .score-separator {
+        margin: 10px 0;
+    }
+    
+    .maps-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .maps-table {
+        font-size: 0.9em;
+    }
+    
+    .maps-table th,
+    .maps-table td {
+        padding: 8px 4px;
+    }
 }
 
 /* Chat panel layout */
@@ -1620,4 +1860,68 @@ a.participant-name:hover {
   width: 100%;
   align-items: flex-end;
   gap: 10px;
+}
+
+/* Стили для информации о создателе */
+.creator-info {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    justify-content: center;
+}
+
+.creator-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.creator-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    margin-right: 14px;
+}
+
+.creator-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e0e0e0;
+    color: #666;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Стили для ссылки на профиль создателя */
+.creator-link {
+    color: #0077cc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.creator-link:hover {
+    color: #0055aa;
+    text-decoration: underline;
+}
+
+/* Стиль для имени создателя при ошибке загрузки */
+.creator-name {
+    color: #777;
+    font-style: italic;
 }

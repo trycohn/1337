@@ -17,19 +17,39 @@ export const isCounterStrike2 = (game) => {
  * @returns {boolean} - true, если игра поддерживает выбор карт
  */
 export const gameHasMaps = (game) => {
-    if (!game) return false;
+    if (!game) {
+        console.log('gameHasMaps: игра не указана');
+        return false;
+    }
     const gameLower = typeof game === 'string' ? game.toLowerCase() : '';
     
+    console.log('gameHasMaps: проверяем игру:', game, '-> в нижнем регистре:', gameLower);
+    
     // Список игр, которые поддерживают выбор карт
-    return (
-        gameLower.includes('counter') && gameLower.includes('strike') ||
-        gameLower.includes('cs2') ||
-        gameLower.includes('valorant') ||
-        gameLower.includes('overwatch') ||
-        gameLower.includes('dota') ||
-        gameLower.includes('lol') ||
-        gameLower.includes('league of legends')
+    const conditions = {
+        counterStrike: gameLower.includes('counter') && gameLower.includes('strike'),
+        cs2: gameLower.includes('cs2'),
+        valorant: gameLower.includes('valorant'),
+        overwatch: gameLower.includes('overwatch'),
+        dota: gameLower.includes('dota'),
+        lol: gameLower.includes('lol'),
+        leagueOfLegends: gameLower.includes('league of legends')
+    };
+    
+    console.log('gameHasMaps: условия проверки:', conditions);
+    
+    const result = (
+        conditions.counterStrike ||
+        conditions.cs2 ||
+        conditions.valorant ||
+        conditions.overwatch ||
+        conditions.dota ||
+        conditions.lol ||
+        conditions.leagueOfLegends
     );
+    
+    console.log('gameHasMaps: результат для', game, ':', result);
+    return result;
 };
 
 /**

@@ -1030,18 +1030,6 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Победитель должен быть одним из участников матча' });
         }
 
-        // Проверяем, изменились ли данные матча (счет, карты)
-        const scoreChanged = match.score1 !== score1 || match.score2 !== score2;
-        const mapsChanged = maps && Array.isArray(maps) && maps.length > 0;
-        
-        // Разрешаем обновление, если:
-        // 1. Победитель изменился
-        // 2. Изменился счет
-        // 3. Добавлены/изменены данные о картах
-        if (match.winner_team_id === winner_team_id && !scoreChanged && !mapsChanged) {
-            return res.status(400).json({ error: 'Результат матча не изменился' });
-        }
-
         // Подготовка данных о картах (если они предоставлены)
         let mapsData = null;
         
@@ -1447,18 +1435,6 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
         // Проверка, что winner_team_id является одним из участников матча
         if (winner_team_id && ![match.team1_id, match.team2_id].includes(winner_team_id)) {
             return res.status(400).json({ error: 'Победитель должен быть одним из участников матча' });
-        }
-
-        // Проверяем, изменились ли данные матча (счет, карты)
-        const scoreChanged = match.score1 !== score1 || match.score2 !== score2;
-        const mapsChanged = maps && Array.isArray(maps) && maps.length > 0;
-        
-        // Разрешаем обновление, если:
-        // 1. Победитель изменился
-        // 2. Изменился счет
-        // 3. Добавлены/изменены данные о картах
-        if (match.winner_team_id === winner_team_id && !scoreChanged && !mapsChanged) {
-            return res.status(400).json({ error: 'Результат матча не изменился' });
         }
 
         // Обновление результата текущего матча

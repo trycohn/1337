@@ -47,8 +47,18 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     const prelimParticipants = shuffledParticipants.slice(0, prelimParticipantsCount);
     const byeParticipants = shuffledParticipants.slice(prelimParticipantsCount);
     
-    console.log(`Участники предварительного раунда:`, prelimParticipants.map(p => p.id));
-    console.log(`Участники с автопроходом:`, byeParticipants.map(p => p.id));
+    console.log(`Участники предварительного раунда:`, prelimParticipants.map(p => `${p.id}:${p.name}`));
+    console.log(`Участники с автопроходом:`, byeParticipants.map(p => `${p.id}:${p.name}`));
+    
+    // Проверяем правильность распределения для 5 участников
+    if (participantCount === 5) {
+        console.log(`=== ПРОВЕРКА ДЛЯ 5 УЧАСТНИКОВ ===`);
+        console.log(`Предварительный раунд: ${prelimParticipantsCount} участников (${prelimParticipants.map(p => p.name).join(', ')})`);
+        console.log(`Автопроход: ${byeParticipantsCount} участников (${byeParticipants.map(p => p.name).join(', ')})`);
+        console.log(`Матчей в предварительном раунде: ${prelimMatchesCount}`);
+        console.log(`Матчей в первом основном раунде: ${closestPowerOfTwo / 2}`);
+        console.log(`Всего участников в основной сетке после предварительного раунда: ${byeParticipantsCount + prelimMatchesCount} = ${closestPowerOfTwo}`);
+    }
     
     // Создаем структуру для хранения матчей по раундам
     const roundMatches = {};
@@ -95,24 +105,34 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
         let team1 = null;
         let team2 = null;
         
-        // Распределяем участников с автоматическим проходом
-        // Если i < количество участников с автопроходом / 2, то в матч попадают два участника с автопроходом
-        if (i < Math.floor(byeParticipantsCount / 2)) {
-            const index1 = i * 2;
-            const index2 = i * 2 + 1;
+        // Новая логика распределения участников
+        // Сначала размещаем всех участников с автопроходом
+        if (byeParticipantsCount > 0) {
+            // Определяем сколько участников с автопроходом можем разместить парами
+            const pairsFromBye = Math.floor(byeParticipantsCount / 2);
             
-            if (index1 < byeParticipants.length) {
+            if (i < pairsFromBye) {
+                // Матчи между участниками с автопроходом
+                const index1 = i * 2;
+                const index2 = i * 2 + 1;
+                
                 team1 = byeParticipants[index1];
-            }
-            
-            if (index2 < byeParticipants.length) {
                 team2 = byeParticipants[index2];
+                
+                console.log(`Матч ${i} в раунде 0: ${team1?.name || 'null'} vs ${team2?.name || 'null'} (оба с автопроходом)`);
+            } else if (i === pairsFromBye && byeParticipantsCount % 2 === 1) {
+                // Если есть нечетный участник с автопроходом, он играет против победителя предварительного раунда
+                team1 = byeParticipants[byeParticipantsCount - 1]; // последний участник с автопроходом
+                team2 = null; // будет заполнен победителем предварительного раунда
+                
+                console.log(`Матч ${i} в раунде 0: ${team1?.name || 'null'} vs [победитель предварительного раунда] (смешанный)`);
+            } else {
+                // Остальные матчи ожидают победителей предварительного раунда
+                console.log(`Матч ${i} в раунде 0: ожидает победителей из предварительного раунда`);
             }
-            
-            console.log(`Матч ${i} в раунде 0: ${team1?.id || 'null'} vs ${team2?.id || 'null'} (оба с автопроходом)`);
         } else {
-            // Остальные матчи будут заполнены победителями предварительного раунда
-            console.log(`Матч ${i} в раунде 0: ожидает победителя из предварительного раунда`);
+            // Если нет участников с автопроходом, все матчи ожидают победителей предварительного раунда
+            console.log(`Матч ${i} в раунде 0: ожидает победителей из предварительного раунда`);
         }
         
         const match = await pool.query(
@@ -165,13 +185,18 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     
     // 1. Связываем предварительный раунд с первым раундом
     if (prelimMatchesCount > 0) {
-        // Индекс первого матча в основной сетке, который будет заполнен победителями предварительного раунда
-        const startIndex = Math.floor(byeParticipantsCount / 2);
+        // Новая логика связывания
+        // Определяем индекс матча, где есть свободное место для победителя предварительного раунда
+        const pairsFromBye = Math.floor(byeParticipantsCount / 2);
+        let targetMatchIndex = pairsFromBye; // начинаем с первого матча после парных матчей участников с автопроходом
+        
+        // Если есть нечетный участник с автопроходом, он уже занял место в матче pairsFromBye
+        if (byeParticipantsCount % 2 === 1) {
+            targetMatchIndex = pairsFromBye; // матч со смешанными участниками
+        }
         
         for (let i = 0; i < roundMatches[-1].length; i++) {
             const prelimMatch = roundMatches[-1][i];
-            // Распределяем победителей предварительного раунда в оставшиеся матчи первого основного раунда
-            const targetMatchIndex = startIndex + Math.floor(i / 2);
             
             if (targetMatchIndex < roundMatches[0].length) {
                 const targetMatch = roundMatches[0][targetMatchIndex];
@@ -182,6 +207,14 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
                 );
                 
                 console.log(`Связан матч предварительного раунда #${prelimMatch.id} -> матч первого раунда #${targetMatch.id}`);
+                
+                // Если у нас есть нечетный участник с автопроходом, он должен играть против победителя предварительного раунда
+                if (byeParticipantsCount % 2 === 1 && i === 0) {
+                    // Обновляем матч, добавляя победителя предварительного раунда как второго участника
+                    // Но это будет обработано автоматически через next_match_id
+                }
+                
+                targetMatchIndex++;
             }
         }
     }
