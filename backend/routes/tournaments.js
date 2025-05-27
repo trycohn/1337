@@ -1032,7 +1032,18 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
 
         // Подготовка данных о картах (если они предоставлены)
         let mapsData = null;
-        if (Array.isArray(maps) && maps.length > 0 && tournament.game === 'Counter-Strike 2') {
+        
+        // Проверяем, является ли игра Counter-Strike 2 (с учетом разных вариантов написания)
+        const isCS2Game = tournament.game && (
+            tournament.game === 'Counter-Strike 2' ||
+            tournament.game === 'Counter Strike 2' ||
+            tournament.game.toLowerCase().includes('counter') && tournament.game.toLowerCase().includes('strike') ||
+            tournament.game.toLowerCase().includes('cs2')
+        );
+        
+        if (Array.isArray(maps) && maps.length > 0 && isCS2Game) {
+            console.log(`Сохраняем данные о картах для игры: ${tournament.game}`);
+            console.log(`Данные карт:`, maps);
             mapsData = JSON.stringify(maps);
             
             // Пересчитываем общий счет на основе выигранных карт
@@ -1051,6 +1062,8 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
                 score1 = team1Wins;
                 score2 = team2Wins;
                 
+                console.log(`Пересчитанный счет на основе карт: ${team1Wins}:${team2Wins}`);
+                
                 // Определяем победителя на основе количества выигранных карт
                 if (team1Wins > team2Wins) {
                     winner_team_id = match.team1_id;
@@ -1059,19 +1072,29 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
                 }
                 // В случае ничьей (равное количество выигранных карт) winner_team_id остается как был передан
             }
+        } else {
+            console.log(`Данные о картах НЕ сохраняются. Причины:`);
+            console.log(`- Есть массив карт: ${Array.isArray(maps)}`);
+            console.log(`- Количество карт: ${maps ? maps.length : 0}`);
+            console.log(`- Игра: ${tournament.game}`);
+            console.log(`- Является ли CS2: ${isCS2Game}`);
         }
 
         // Обновление результата текущего матча
         if (mapsData) {
+            console.log(`Обновляем матч ${matchId} с данными о картах:`, mapsData);
             await pool.query(
                 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5',
                 [winner_team_id, score1, score2, mapsData, matchId]
             );
+            console.log(`Матч ${matchId} успешно обновлен с данными о картах`);
         } else {
+            console.log(`Обновляем матч ${matchId} БЕЗ данных о картах`);
             await pool.query(
                 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4',
                 [winner_team_id, score1, score2, matchId]
             );
+            console.log(`Матч ${matchId} успешно обновлен без данных о картах`);
         }
 
         console.log(`Обновлен результат матча ${match.match_number}: победитель ${winner_team_id}, счет ${score1}:${score2}`);
