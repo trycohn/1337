@@ -1609,20 +1609,30 @@ function TournamentDetails() {
             const matchData = matches.find(m => m.id === parseInt(matchId));
             if (!matchData) {
                 console.error(`Матч с ID ${matchId} не найден`);
-            return;
-        }
+                return;
+            }
 
             // Если матч не завершен, не показываем детали
             if (!matchData.winner_team_id) {
-            return;
-        }
+                return;
+            }
+
+            // Получаем информацию о командах
+            const team1Info = tournament.participants.find(p => p.id === matchData.team1_id);
+            const team2Info = tournament.participants.find(p => p.id === matchData.team2_id);
 
             const match = {
                 id: matchData.id,
-                team1: tournament.participants.find(p => p.id === matchData.team1_id)?.name || 'Участник 1',
-                team2: tournament.participants.find(p => p.id === matchData.team2_id)?.name || 'Участник 2',
-                score1: matchData.score1,
-                score2: matchData.score2,
+                team1: {
+                    name: team1Info?.name || 'Участник 1',
+                    score: matchData.score1,
+                    winner: matchData.winner_team_id === matchData.team1_id
+                },
+                team2: {
+                    name: team2Info?.name || 'Участник 2', 
+                    score: matchData.score2,
+                    winner: matchData.winner_team_id === matchData.team2_id
+                },
                 winner_id: matchData.winner_team_id,
                 maps: []
             };
@@ -1632,13 +1642,19 @@ function TournamentDetails() {
                 try {
                     const parsedMapsData = JSON.parse(matchData.maps_data);
                     if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
-                        match.maps = parsedMapsData;
+                        // Преобразуем данные карт в правильный формат
+                        match.maps = parsedMapsData.map(mapData => ({
+                            mapName: mapData.map || mapData.mapName || 'Неизвестная карта',
+                            team1Score: mapData.score1 || mapData.team1Score || 0,
+                            team2Score: mapData.score2 || mapData.team2Score || 0
+                        }));
                     }
                 } catch (e) {
                     console.error('Ошибка при разборе данных карт:', e);
                 }
             }
 
+            console.log('Данные матча для отображения:', match);
             setMatchDetails(match);
             setViewingMatchDetails(true);
         } catch (error) {
