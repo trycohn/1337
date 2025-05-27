@@ -2304,3 +2304,320 @@ input, button {
         margin: 5px 0;
     }
 }
+
+/* Стили для вкладки организации */
+.organization-tab {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.organization-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.organization-header h3 {
+    color: #e4e4f0;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.organization-header p {
+    color: #a8a8c0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.organization-requirement-alert {
+    background-color: #4d2a2a;
+    border: 1px solid #bb4d4d;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.organization-requirement-alert h4 {
+    color: #ff6b6b;
+    margin: 0 0 10px 0;
+    font-size: 18px;
+}
+
+.organization-requirement-alert p {
+    color: #e4e4f0;
+    margin: 0 0 15px 0;
+}
+
+.organization-requirement-alert button {
+    background-color: #bb4d4d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.organization-requirement-alert button:hover {
+    background-color: #cf5a5a;
+}
+
+.organization-form {
+    background-color: #34344a;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    color: #e4e4f0;
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.required {
+    color: #ff6b6b;
+    margin-left: 2px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: #2c2c40;
+    border: 1px solid #565684;
+    border-radius: 8px;
+    color: #e4e4f0;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #7d8eff;
+    box-shadow: 0 0 0 3px rgba(125, 142, 255, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #8a8aa8;
+}
+
+.logo-upload-section {
+    border: 2px dashed #565684;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background-color: #2c2c40;
+    transition: border-color 0.3s;
+}
+
+.logo-upload-section:hover {
+    border-color: #7d8eff;
+}
+
+.logo-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.organization-logo-preview {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.logo-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.change-logo-btn,
+.remove-logo-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.change-logo-btn {
+    background-color: #4a6dce;
+    color: white;
+}
+
+.change-logo-btn:hover {
+    background-color: #5a7de0;
+}
+
+.remove-logo-btn {
+    background-color: #bb4d4d;
+    color: white;
+}
+
+.remove-logo-btn:hover {
+    background-color: #cf5a5a;
+}
+
+.logo-upload-placeholder {
+    padding: 40px 20px;
+}
+
+.upload-logo-btn {
+    background-color: #4a6dce;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.upload-logo-btn:hover {
+    background-color: #5a7de0;
+    transform: translateY(-2px);
+}
+
+.upload-hint {
+    color: #8a8aa8;
+    font-size: 14px;
+    margin: 0;
+}
+
+.submit-group {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.submit-organization-btn {
+    background-color: #4dbb63;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s;
+    min-width: 200px;
+}
+
+.submit-organization-btn:hover:not(:disabled) {
+    background-color: #5acf70;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(77, 187, 99, 0.3);
+}
+
+.submit-organization-btn:disabled {
+    background-color: #6a6a80;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.organization-error {
+    background-color: #4d2a2a;
+    border: 1px solid #bb4d4d;
+    border-radius: 6px;
+    padding: 12px 16px;
+    color: #ff6b6b;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.organization-success {
+    background-color: #2a4d2a;
+    border: 1px solid #4dbb63;
+    border-radius: 6px;
+    padding: 12px 16px;
+    color: #6bff6b;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.organization-info {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #2c2c40;
+    border-radius: 8px;
+    border-left: 4px solid #7d8eff;
+}
+
+.organization-info h4 {
+    color: #e4e4f0;
+    margin: 0 0 15px 0;
+    font-size: 16px;
+}
+
+.organization-info ul {
+    color: #a8a8c0;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.organization-info li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .organization-form {
+        padding: 20px;
+    }
+    
+    .organization-header h3 {
+        font-size: 20px;
+    }
+    
+    .organization-header p {
+        font-size: 14px;
+    }
+    
+    .logo-upload-placeholder {
+        padding: 30px 15px;
+    }
+    
+    .upload-logo-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    
+    .submit-organization-btn {
+        padding: 12px 30px;
+        font-size: 14px;
+        min-width: 150px;
+    }
+    
+    .logo-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .change-logo-btn,
+    .remove-logo-btn {
+        width: 120px;
+    }
+}
