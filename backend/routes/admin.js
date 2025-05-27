@@ -159,7 +159,7 @@ router.post('/organization-requests/:id/approve', authenticateToken, requireAdmi
             request.website_url,
             request.vk_url,
             request.telegram_url,
-            contact_email || request.user_email,
+            contact_email || request.email,
             contact_phone,
             request.user_id
         ]);
