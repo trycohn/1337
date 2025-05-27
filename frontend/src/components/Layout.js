@@ -247,6 +247,11 @@ function Layout() {
                                     </Link>
                                     <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                                     <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
+                                    {user.role === 'admin' && (
+                                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
+                                            Админ панель
+                                        </Link>
+                                    )}
                                 </>
                             )}
                         </nav>

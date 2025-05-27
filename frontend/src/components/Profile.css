@@ -2780,3 +2780,131 @@ input, button {
         font-size: 18px;
     }
 }
+
+/* Стили для статуса заявки на организацию */
+.organization-request-status {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.request-status-card {
+    background-color: #34344a;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #40406a;
+    padding-bottom: 15px;
+}
+
+.status-header h4 {
+    color: #e4e4f0;
+    margin: 0;
+    font-size: 20px;
+}
+
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+.status-approved {
+    background-color: rgba(77, 187, 99, 0.2);
+    color: #4dbb63;
+    border: 1px solid #4dbb63;
+}
+
+.status-rejected {
+    background-color: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+}
+
+.request-details {
+    margin-bottom: 20px;
+}
+
+.request-details p {
+    color: #c8c8dd;
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+.request-details strong {
+    color: #e4e4f0;
+}
+
+.admin-comment {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #2c2c40;
+    border-radius: 8px;
+    border-left: 4px solid #7d8eff;
+}
+
+.comment-text {
+    background-color: #34344a;
+    border: 1px solid #565684;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    color: #e4e4f0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.status-info {
+    padding: 15px;
+    border-radius: 8px;
+    font-weight: 500;
+    margin-top: 15px;
+}
+
+.status-info p {
+    margin: 0;
+    color: #e4e4f0;
+}
+
+.status-info.success {
+    background-color: rgba(77, 187, 99, 0.1);
+    border: 1px solid rgba(77, 187, 99, 0.3);
+}
+
+.status-info.error {
+    background-color: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.status-info:not(.success):not(.error) {
+    background-color: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Адаптивность для статуса заявки */
+@media (max-width: 768px) {
+    .status-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .request-status-card {
+        padding: 20px;
+    }
+}

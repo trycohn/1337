@@ -80,6 +80,10 @@ function Profile() {
     // Состояния для участия в организациях
     const [userOrganizations, setUserOrganizations] = useState([]);
     const [loadingOrganizations, setLoadingOrganizations] = useState(false);
+    
+    // Состояния для статуса заявки на организацию
+    const [organizationRequest, setOrganizationRequest] = useState(null);
+    const [loadingRequest, setLoadingRequest] = useState(false);
 
     const fetchUserData = async (token) => {
         try {
@@ -398,6 +402,8 @@ function Profile() {
             fetchMatchHistory();
             // Загружаем организации пользователя
             fetchUserOrganizations();
+            // Проверяем статус заявки на организацию
+            fetchOrganizationRequest();
         }
         
         // Проверяем, есть ли сохраненное время окончания задержки
@@ -1111,6 +1117,9 @@ function Profile() {
             });
             removeOrganizationLogo();
             
+            // Обновляем статус заявки
+            fetchOrganizationRequest();
+            
         } catch (err) {
             setOrganizationError(err.response?.data?.error || 'Не удалось отправить заявку');
         } finally {
@@ -1131,6 +1140,25 @@ function Profile() {
             console.error('Ошибка загрузки организаций пользователя:', err);
         } finally {
             setLoadingOrganizations(false);
+        }
+    };
+
+    // Функция для проверки статуса заявки на организацию
+    const fetchOrganizationRequest = async () => {
+        setLoadingRequest(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/users/organization-request-status', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setOrganizationRequest(response.data);
+        } catch (err) {
+            if (err.response?.status !== 404) {
+                console.error('Ошибка загрузки статуса заявки:', err);
+            }
+            setOrganizationRequest(null);
+        } finally {
+            setLoadingRequest(false);
         }
     };
 
@@ -1498,7 +1526,7 @@ function Profile() {
                     {/* Вкладка организации */}
                     {activeTab === 'organization' && (
                         <div className="organization-tab">
-                            {loadingOrganizations ? (
+                            {loadingOrganizations || loadingRequest ? (
                                 <div className="organization-loading">
                                     <p>Загрузка информации об организациях...</p>
                                 </div>
@@ -1558,6 +1586,58 @@ function Profile() {
                                     
                                     <div className="add-organization-note">
                                         <p>Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.</p>
+                                    </div>
+                                </div>
+                            ) : organizationRequest ? (
+                                <div className="organization-request-status">
+                                    <div className="organization-header">
+                                        <h3>Статус заявки на создание организации</h3>
+                                        <p>Вы уже подали заявку на создание аккаунта организации. Текущий статус:</p>
+                                    </div>
+                                    
+                                    <div className="request-status-card">
+                                        <div className="status-header">
+                                            <h4>{organizationRequest.organization_name}</h4>
+                                            <span className={`status-badge status-${organizationRequest.status}`}>
+                                                {organizationRequest.status === 'pending' && 'На рассмотрении'}
+                                                {organizationRequest.status === 'approved' && 'Одобрена'}
+                                                {organizationRequest.status === 'rejected' && 'Отклонена'}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="request-details">
+                                            <p><strong>Описание:</strong> {organizationRequest.description}</p>
+                                            <p><strong>Дата подачи:</strong> {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</p>
+                                            
+                                            {organizationRequest.reviewed_at && (
+                                                <p><strong>Дата рассмотрения:</strong> {new Date(organizationRequest.reviewed_at).toLocaleDateString('ru-RU')}</p>
+                                            )}
+                                            
+                                            {organizationRequest.admin_comment && (
+                                                <div className="admin-comment">
+                                                    <p><strong>Комментарий администратора:</strong></p>
+                                                    <div className="comment-text">{organizationRequest.admin_comment}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {organizationRequest.status === 'pending' && (
+                                            <div className="status-info">
+                                                <p>📝 Ваша заявка находится на рассмотрении. Администрация свяжется с вами в течение 1-3 рабочих дней.</p>
+                                            </div>
+                                        )}
+                                        
+                                        {organizationRequest.status === 'approved' && (
+                                            <div className="status-info success">
+                                                <p>✅ Поздравляем! Ваша заявка была одобрена. Профиль организации был создан.</p>
+                                            </div>
+                                        )}
+                                        
+                                        {organizationRequest.status === 'rejected' && (
+                                            <div className="status-info error">
+                                                <p>❌ К сожалению, ваша заявка была отклонена. Вы можете подать новую заявку, учтя указанные замечания.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
