@@ -1606,20 +1606,31 @@ function TournamentDetails() {
     // Функция для просмотра деталей завершенного матча
     const viewMatchDetails = (matchId) => {
         try {
+            console.log('=== НАЧАЛО ОТЛАДКИ viewMatchDetails ===');
+            console.log('Поиск матча с ID:', matchId);
+            console.log('Все доступные матчи:', matches);
+            
             const matchData = matches.find(m => m.id === parseInt(matchId));
             if (!matchData) {
                 console.error(`Матч с ID ${matchId} не найден`);
                 return;
             }
 
+            console.log('Найденный матч:', matchData);
+
             // Если матч не завершен, не показываем детали
             if (!matchData.winner_team_id) {
+                console.log('Матч не завершен, не показываем детали');
                 return;
             }
 
             // Получаем информацию о командах
             const team1Info = tournament.participants.find(p => p.id === matchData.team1_id);
             const team2Info = tournament.participants.find(p => p.id === matchData.team2_id);
+
+            console.log('Информация о командах:');
+            console.log('Team1Info:', team1Info);
+            console.log('Team2Info:', team2Info);
 
             const match = {
                 id: matchData.id,
@@ -1643,35 +1654,61 @@ function TournamentDetails() {
             console.log('Поддерживает ли игра карты:', gameHasMaps(tournament.game));
             console.log('Данные карт из БД (maps_data):', matchData.maps_data);
             console.log('Тип данных maps_data:', typeof matchData.maps_data);
+            console.log('Является ли maps_data строкой:', typeof matchData.maps_data === 'string');
+            console.log('Является ли maps_data объектом:', typeof matchData.maps_data === 'object');
+            console.log('Является ли maps_data null:', matchData.maps_data === null);
+            console.log('Является ли maps_data undefined:', matchData.maps_data === undefined);
 
             // Если есть данные о картах и это игра с картами, парсим их
             if (matchData.maps_data && gameHasMaps(tournament.game)) {
                 console.log('Условие выполнено: есть данные о картах и игра поддерживает карты');
                 try {
-                    const parsedMapsData = JSON.parse(matchData.maps_data);
+                    let parsedMapsData;
+                    
+                    // Проверяем, нужно ли парсить JSON
+                    if (typeof matchData.maps_data === 'string') {
+                        console.log('maps_data - строка, парсим JSON');
+                        parsedMapsData = JSON.parse(matchData.maps_data);
+                    } else if (typeof matchData.maps_data === 'object' && matchData.maps_data !== null) {
+                        console.log('maps_data - уже объект, используем как есть');
+                        parsedMapsData = matchData.maps_data;
+                    } else {
+                        console.log('maps_data имеет неожиданный тип:', typeof matchData.maps_data);
+                        parsedMapsData = [];
+                    }
+                    
                     console.log('Распарсенные данные карт:', parsedMapsData);
+                    console.log('Тип распарсенных данных:', typeof parsedMapsData);
+                    console.log('Является ли массивом:', Array.isArray(parsedMapsData));
                     
                     if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
                         // Преобразуем данные карт в правильный формат
-                        match.maps = parsedMapsData.map(mapData => ({
-                            mapName: mapData.map || mapData.mapName || 'Неизвестная карта',
-                            team1Score: mapData.score1 || mapData.team1Score || 0,
-                            team2Score: mapData.score2 || mapData.team2Score || 0
-                        }));
+                        match.maps = parsedMapsData.map((mapData, index) => {
+                            console.log(`Обработка карты ${index}:`, mapData);
+                            return {
+                                mapName: mapData.map || mapData.mapName || 'Неизвестная карта',
+                                team1Score: mapData.score1 || mapData.team1Score || 0,
+                                team2Score: mapData.score2 || mapData.team2Score || 0
+                            };
+                        });
                         console.log('Преобразованные данные карт:', match.maps);
                     } else {
                         console.log('Данные карт пусты или не являются массивом');
+                        match.maps = [];
                     }
                 } catch (e) {
                     console.error('Ошибка при разборе данных карт:', e);
+                    match.maps = [];
                 }
             } else {
                 console.log('Условие НЕ выполнено:');
                 console.log('- Есть данные о картах:', !!matchData.maps_data);
                 console.log('- Игра поддерживает карты:', gameHasMaps(tournament.game));
+                match.maps = [];
             }
 
             console.log('Финальные данные матча для отображения:', match);
+            console.log('Количество карт для отображения:', match.maps.length);
             console.log('=== КОНЕЦ ОТЛАДКИ ===');
             
             setMatchDetails(match);

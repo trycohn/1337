@@ -26,14 +26,26 @@ export const gameHasMaps = (game) => {
     console.log('gameHasMaps: проверяем игру:', game, '-> в нижнем регистре:', gameLower);
     
     // Список игр, которые поддерживают выбор карт
+    const conditions = {
+        counterStrike: gameLower.includes('counter') && gameLower.includes('strike'),
+        cs2: gameLower.includes('cs2'),
+        valorant: gameLower.includes('valorant'),
+        overwatch: gameLower.includes('overwatch'),
+        dota: gameLower.includes('dota'),
+        lol: gameLower.includes('lol'),
+        leagueOfLegends: gameLower.includes('league of legends')
+    };
+    
+    console.log('gameHasMaps: условия проверки:', conditions);
+    
     const result = (
-        (gameLower.includes('counter') && gameLower.includes('strike')) ||
-        gameLower.includes('cs2') ||
-        gameLower.includes('valorant') ||
-        gameLower.includes('overwatch') ||
-        gameLower.includes('dota') ||
-        gameLower.includes('lol') ||
-        gameLower.includes('league of legends')
+        conditions.counterStrike ||
+        conditions.cs2 ||
+        conditions.valorant ||
+        conditions.overwatch ||
+        conditions.dota ||
+        conditions.lol ||
+        conditions.leagueOfLegends
     );
     
     console.log('gameHasMaps: результат для', game, ':', result);
