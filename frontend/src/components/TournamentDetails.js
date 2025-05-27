@@ -1637,10 +1637,20 @@ function TournamentDetails() {
                 maps: []
             };
 
-            // Если есть данные о картах и это CS2, парсим их
+            // Отладочная информация
+            console.log('=== ОТЛАДКА ДАННЫХ О КАРТАХ ===');
+            console.log('Игра турнира:', tournament.game);
+            console.log('Поддерживает ли игра карты:', gameHasMaps(tournament.game));
+            console.log('Данные карт из БД (maps_data):', matchData.maps_data);
+            console.log('Тип данных maps_data:', typeof matchData.maps_data);
+
+            // Если есть данные о картах и это игра с картами, парсим их
             if (matchData.maps_data && gameHasMaps(tournament.game)) {
+                console.log('Условие выполнено: есть данные о картах и игра поддерживает карты');
                 try {
                     const parsedMapsData = JSON.parse(matchData.maps_data);
+                    console.log('Распарсенные данные карт:', parsedMapsData);
+                    
                     if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
                         // Преобразуем данные карт в правильный формат
                         match.maps = parsedMapsData.map(mapData => ({
@@ -1648,13 +1658,22 @@ function TournamentDetails() {
                             team1Score: mapData.score1 || mapData.team1Score || 0,
                             team2Score: mapData.score2 || mapData.team2Score || 0
                         }));
+                        console.log('Преобразованные данные карт:', match.maps);
+                    } else {
+                        console.log('Данные карт пусты или не являются массивом');
                     }
                 } catch (e) {
                     console.error('Ошибка при разборе данных карт:', e);
                 }
+            } else {
+                console.log('Условие НЕ выполнено:');
+                console.log('- Есть данные о картах:', !!matchData.maps_data);
+                console.log('- Игра поддерживает карты:', gameHasMaps(tournament.game));
             }
 
-            console.log('Данные матча для отображения:', match);
+            console.log('Финальные данные матча для отображения:', match);
+            console.log('=== КОНЕЦ ОТЛАДКИ ===');
+            
             setMatchDetails(match);
             setViewingMatchDetails(true);
         } catch (error) {
