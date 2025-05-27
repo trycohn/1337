@@ -3134,12 +3134,43 @@ function TournamentDetails() {
                                                             <td>
                                                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                                                     <img 
-                                                                        src={`/images/maps/${(map.mapName || map.map || 'default').toLowerCase().replace(/\s+/g, '_')}.jpg`} 
-                                                                        alt={map.mapName || map.map || 'Карта'}
+                                                                        src={`/images/maps/${(() => {
+                                                                            // Безопасное получение названия карты
+                                                                            let mapName = 'default';
+                                                                            if (map.mapName && typeof map.mapName === 'string') {
+                                                                                mapName = map.mapName;
+                                                                            } else if (map.map) {
+                                                                                if (typeof map.map === 'string') {
+                                                                                    mapName = map.map;
+                                                                                } else if (typeof map.map === 'object' && map.map.name) {
+                                                                                    mapName = map.map.name;
+                                                                                } else if (typeof map.map === 'object' && map.map.mapName) {
+                                                                                    mapName = map.map.mapName;
+                                                                                }
+                                                                            }
+                                                                            return mapName.toLowerCase().replace(/\s+/g, '_');
+                                                                        })()}.jpg`} 
+                                                                        alt={(() => {
+                                                                            if (map.mapName && typeof map.mapName === 'string') return map.mapName;
+                                                                            if (map.map) {
+                                                                                if (typeof map.map === 'string') return map.map;
+                                                                                if (typeof map.map === 'object' && map.map.name) return map.map.name;
+                                                                                if (typeof map.map === 'object' && map.map.mapName) return map.map.mapName;
+                                                                            }
+                                                                            return 'Карта';
+                                                                        })()}
                                                                         onError={(e) => { e.target.src = '/images/maps/default_map.jpg'; }}
                                                                         style={{ width: '60px', height: '40px', marginRight: '10px', borderRadius: '4px' }} 
                                                                     />
-                                                                    <span>{map.mapName || map.map || 'Неизвестная карта'}</span>
+                                                                    <span>{(() => {
+                                                                        if (map.mapName && typeof map.mapName === 'string') return map.mapName;
+                                                                        if (map.map) {
+                                                                            if (typeof map.map === 'string') return map.map;
+                                                                            if (typeof map.map === 'object' && map.map.name) return map.map.name;
+                                                                            if (typeof map.map === 'object' && map.map.mapName) return map.map.mapName;
+                                                                        }
+                                                                        return 'Неизвестная карта';
+                                                                    })()}</span>
                                                                 </div>
                                                             </td>
                                                             <td className={team1Winner ? 'map-winner' : ''}>{map.team1Score}</td>

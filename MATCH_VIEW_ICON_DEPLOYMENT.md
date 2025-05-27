@@ -6,20 +6,45 @@
 ## Исправленные проблемы
 
 ### 1. Ошибка JavaScript: `mapName.toLowerCase is not a function`
-**Проблема:** В модальном окне результатов матча возникала ошибка при попытке вызвать `toLowerCase()` на поле `mapName`, которое могло быть `undefined` или иметь другое название.
+**Проблема:** В модальном окне результатов матча возникала ошибка при попытке вызвать `toLowerCase()` на поле `mapName`, которое могло быть `undefined` или иметь другое название. Дополнительно обнаружено, что поле `map.map` может содержать объект вместо строки.
 
-**Исправление:** Добавлена безопасная проверка с fallback:
+**Исправление:** Добавлена безопасная проверка с fallback и обработка объектов:
 ```javascript
 // Было:
 src={`/images/maps/${map.mapName.toLowerCase().replace(/\s+/g, '_')}.jpg`}
 alt={map.mapName}
 <span>{map.mapName}</span>
 
-// Стало:
+// Стало (упрощенная версия):
 src={`/images/maps/${(map.mapName || map.map || 'default').toLowerCase().replace(/\s+/g, '_')}.jpg`}
 alt={map.mapName || map.map || 'Карта'}
 <span>{map.mapName || map.map || 'Неизвестная карта'}</span>
+
+// Финальная версия с обработкой объектов:
+src={`/images/maps/${(() => {
+    // Безопасное получение названия карты
+    let mapName = 'default';
+    if (map.mapName && typeof map.mapName === 'string') {
+        mapName = map.mapName;
+    } else if (map.map) {
+        if (typeof map.map === 'string') {
+            mapName = map.map;
+        } else if (typeof map.map === 'object' && map.map.name) {
+            mapName = map.map.name;
+        } else if (typeof map.map === 'object' && map.map.mapName) {
+            mapName = map.map.mapName;
+        }
+    }
+    return mapName.toLowerCase().replace(/\s+/g, '_');
+})()}.jpg`}
 ```
+
+**Обработанные случаи:**
+- `map.mapName` как строка
+- `map.map` как строка  
+- `map.map` как объект с полем `name`
+- `map.map` как объект с полем `mapName`
+- Fallback на 'default' если ничего не найдено
 
 ### 2. Улучшенный дизайн блока просмотра
 **Изменения:**
@@ -332,6 +357,7 @@ sudo systemctl reload nginx
 
 ### v2.0 (Текущая версия)
 - ✅ Исправлена ошибка `mapName.toLowerCase is not a function`
+- ✅ Добавлена обработка случаев, когда `map.map` является объектом
 - ✅ Заменена маленькая лупа на полноценный блок справа от матча
 - ✅ Улучшен дизайн и UX блока просмотра результатов
 - ✅ Добавлена безопасная обработка данных карт
@@ -340,3 +366,39 @@ sudo systemctl reload nginx
 ### v1.0 (Предыдущая версия)
 - ✅ Добавлена маленькая лупа в углу завершенных матчей
 - ✅ Базовая функциональность просмотра результатов 
+
+## Быстрое развертывание исправления на VDS
+
+### Команды для развертывания:
+```bash
+# 1. Подключение к серверу
+ssh username@your-server-ip
+
+# 2. Переход в директорию проекта
+cd /path/to/your/project
+
+# 3. Создание резервной копии (опционально)
+cp frontend/src/components/TournamentDetails.js frontend/src/components/TournamentDetails.js.backup.$(date +%Y%m%d_%H%M%S)
+
+# 4. Обновление кода из GitHub
+git pull origin main
+
+# 5. Пересборка frontend
+cd frontend && npm run build
+
+# 6. Развертывание (для Nginx)
+sudo cp -r build/* /var/www/html/
+sudo systemctl reload nginx
+
+# 7. Проверка работы
+# Откройте турнир с завершенными матчами и проверьте работу блока просмотра результатов
+```
+
+### Проверка исправления:
+1. Откройте Developer Tools (F12) → Console
+2. Перейдите к турниру с завершенными матчами
+3. Кликните на синий блок справа от завершенного матча
+4. Убедитесь, что ошибка `mapName.toLowerCase is not a function` больше не появляется
+5. Модальное окно должно открыться без ошибок и показать результаты матча
+
+--- 
