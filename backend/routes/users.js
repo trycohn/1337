@@ -1480,7 +1480,7 @@ router.post('/create-organization-request', authenticateToken, upload.single('lo
         // Настройки для отправки email
         const mailOptions = {
             from: process.env.SMTP_FROM,
-            to: ['nikita_gorenkov@mail.ru', 'klim@1337community.com'],
+            to: ['nikita_gorenkov@mail.ru', 'try.conn@yandex.ru'],
             subject: `🏢 Новая заявка на создание организации: ${organizationName}`,
             html: emailHtml
         };
