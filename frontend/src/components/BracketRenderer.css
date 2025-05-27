@@ -219,6 +219,8 @@
     font-size: 16px;
     position: relative;
     margin-left: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .match-container.completed:hover .match-view-block {
@@ -226,8 +228,7 @@
 }
 
 .match-view-block:hover {
-    background-color: rgba(74, 144, 226, 1);
-    transform: scale(1.05);
+    background-color: #1f2937;
 }
 
 /* Всплывающая подсказка для блока */
