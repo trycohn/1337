@@ -1406,6 +1406,7 @@
 .tournament-details .tournament-main {
     flex: 3;
     margin-right: 20px;
+    text-align: center;
 }
 
 .tournament-details .tournament-chat-panel {
