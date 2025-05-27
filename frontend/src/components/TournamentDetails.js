@@ -2965,59 +2965,93 @@ function TournamentDetails() {
 
                     {/* Модальное окно для просмотра деталей завершенного матча */}
                     {viewingMatchDetails && matchDetails && (
-                        <div className="modal" onClick={() => setViewingMatchDetails(false)}>
-                            <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
-                                <h3>Результаты матча</h3>
+                        <div className="modal match-details-modal">
+                            <div className="modal-content">
+                                <span className="close" onClick={closeMatchDetails}>&times;</span>
+                                <h4>Результаты матча</h4>
                                 
                                 <div className="match-teams">
-                                    <div className={`team-info ${matchDetails.winner_id === matchDetails.team1_id ? 'winner' : ''}`}>
-                                        <span className="team-name">{matchDetails.team1}</span>
-                                        {matchDetails.winner_id === matchDetails.team1_id && <span className="winner-badge">Победитель</span>}
+                                    <div className={`team-info ${matchDetails.team1.winner ? 'winner' : ''}`}>
+                                        <h5>{matchDetails.team1.name}</h5>
+                                        <div>{matchDetails.team1.score}</div>
+                                        {matchDetails.team1.winner && <div className="winner-badge">Победитель</div>}
                                     </div>
-                                    <div className="match-score">
-                                        <span>{matchDetails.score1} : {matchDetails.score2}</span>
-                                    </div>
-                                    <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
-                                        <span className="team-name">{matchDetails.team2}</span>
-                                        {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
+                                    
+                                    <div className="match-score">vs</div>
+                                    
+                                    <div className={`team-info ${matchDetails.team2.winner ? 'winner' : ''}`}>
+                                        <h5>{matchDetails.team2.name}</h5>
+                                        <div>{matchDetails.team2.score}</div>
+                                        {matchDetails.team2.winner && <div className="winner-badge">Победитель</div>}
                                     </div>
                                 </div>
                                 
+                                {/* Улучшенное отображение результатов карт */}
                                 {matchDetails.maps && matchDetails.maps.length > 0 && (
                                     <div className="maps-results">
                                         <h4>Результаты по картам</h4>
+                                        
                                         <table className="maps-table">
                                             <thead>
                                                 <tr>
                                                     <th>Карта</th>
-                                                    <th>{matchDetails.team1}</th>
-                                                    <th>{matchDetails.team2}</th>
+                                                    <th>{matchDetails.team1.name}</th>
+                                                    <th>{matchDetails.team2.name}</th>
                                                     <th>Результат</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {matchDetails.maps.map((map, index) => (
-                                                    <tr key={index}>
-                                                        <td>{map.map}</td>
-                                                        <td>{map.score1}</td>
-                                                        <td>{map.score2}</td>
-                                                        <td>
-                                                            {parseInt(map.score1) > parseInt(map.score2) 
-                                                                ? <span className="map-winner">{matchDetails.team1}</span>
-                                                                : parseInt(map.score2) > parseInt(map.score1)
-                                                                    ? <span className="map-winner">{matchDetails.team2}</span>
-                                                                    : 'Ничья'
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                {matchDetails.maps.map((map, index) => {
+                                                    const team1Winner = map.team1Score > map.team2Score;
+                                                    const team2Winner = map.team2Score > map.team1Score;
+                                                    const isDraw = map.team1Score === map.team2Score;
+                                                    
+                                                    return (
+                                                        <tr key={index}>
+                                                            <td>
+                                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                    <img 
+                                                                        src={`/images/maps/${map.mapName.toLowerCase().replace(/\s+/g, '_')}.jpg`} 
+                                                                        alt={map.mapName}
+                                                                        onError={(e) => { e.target.src = '/images/maps/default_map.jpg'; }}
+                                                                        style={{ width: '60px', height: '40px', marginRight: '10px', borderRadius: '4px' }} 
+                                                                    />
+                                                                    {map.mapName}
+                                                                </div>
+                                                            </td>
+                                                            <td className={team1Winner ? 'map-winner' : ''}>{map.team1Score}</td>
+                                                            <td className={team2Winner ? 'map-winner' : ''}>{map.team2Score}</td>
+                                                            <td>
+                                                                {team1Winner && (
+                                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                        <span style={{ marginRight: '5px' }}>{matchDetails.team1.name}</span>
+                                                                        <i className="fas fa-trophy" style={{ color: '#FFD700' }}></i>
+                                                                    </div>
+                                                                )}
+                                                                {team2Winner && (
+                                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                                        <span style={{ marginRight: '5px' }}>{matchDetails.team2.name}</span>
+                                                                        <i className="fas fa-trophy" style={{ color: '#FFD700' }}></i>
+                                                                    </div>
+                                                                )}
+                                                                {isDraw && <span>Ничья</span>}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
                                 )}
                                 
-                                <div className="modal-buttons">
-                                    <button onClick={() => setViewingMatchDetails(false)}>Закрыть</button>
+                                <div className="modal-actions">
+                                    <button onClick={closeMatchDetails}>Закрыть</button>
+                                    {isAdmin && canEndTournament && (
+                                        <>
+                                            <button onClick={endTournament} className="end-tournament">Завершить турнир</button>
+                                            <button onClick={clearMatchResults} className="clear-results-button">Сбросить результаты матча</button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -3082,64 +3116,7 @@ function TournamentDetails() {
                 </div>
             )}
             
-            {viewingMatchDetails && matchDetails && (
-                <div className="modal" onClick={() => setViewingMatchDetails(false)}>
-                    <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
-                        <h3>Результаты матча</h3>
-                        
-                        <div className="match-teams">
-                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team1_id ? 'winner' : ''}`}>
-                                <span className="team-name">{matchDetails.team1}</span>
-                                {matchDetails.winner_id === matchDetails.team1_id && <span className="winner-badge">Победитель</span>}
-                            </div>
-                            <div className="match-score">
-                                <span>{matchDetails.score1} : {matchDetails.score2}</span>
-                            </div>
-                            <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
-                                <span className="team-name">{matchDetails.team2}</span>
-                                {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
-                            </div>
-                        </div>
-                        
-                        {matchDetails.maps && matchDetails.maps.length > 0 && (
-                            <div className="maps-results">
-                                <h4>Результаты по картам</h4>
-                                <table className="maps-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Карта</th>
-                                            <th>{matchDetails.team1}</th>
-                                            <th>{matchDetails.team2}</th>
-                                            <th>Результат</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {matchDetails.maps.map((map, index) => (
-                                            <tr key={index}>
-                                                <td>{map.map}</td>
-                                                <td>{map.score1}</td>
-                                                <td>{map.score2}</td>
-                                                <td>
-                                                    {parseInt(map.score1) > parseInt(map.score2) 
-                                                        ? <span className="map-winner">{matchDetails.team1}</span>
-                                                        : parseInt(map.score2) > parseInt(map.score1)
-                                                            ? <span className="map-winner">{matchDetails.team2}</span>
-                                                            : 'Ничья'
-                                                    }
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                        
-                        <div className="modal-buttons">
-                            <button onClick={() => setViewingMatchDetails(false)}>Закрыть</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Удаляем дублирующееся модальное окно */}
         </section>
     );
 }
