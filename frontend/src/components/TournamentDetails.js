@@ -203,6 +203,13 @@ function TournamentDetails() {
     // Проверяем, соединились ли с вебсокетом
     const [wsConnected, setWsConnected] = useState(false);
     
+    // Состояния для редактирования результатов матча
+    const [isEditingMatch, setIsEditingMatch] = useState(false);
+    const [editingMatchData, setEditingMatchData] = useState(null);
+    const [editingMaps, setEditingMaps] = useState([]);
+    const [editingWinner, setEditingWinner] = useState(null);
+    const [editingScores, setEditingScores] = useState({ team1: 0, team2: 0 });
+    
     // Проверка, является ли пользователь участником турнира
     const isUserParticipant = (userId) => {
         if (!tournament || !tournament.participants) return false;
@@ -2514,6 +2521,211 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для возможности редактирования матча
+    const canEditMatchResult = (matchId) => {
+        if (!isAdminOrCreator || tournament.status === 'completed') {
+            return false;
+        }
+
+        const matchData = matches.find(m => m.id === parseInt(matchId));
+        if (!matchData || !matchData.winner_team_id) {
+            return false; // Матч не завершен
+        }
+
+        // Проверяем, что ни один из участников этого матча не сыграл следующий матч
+        const winnerId = matchData.winner_team_id;
+        const loserId = matchData.team1_id === winnerId ? matchData.team2_id : matchData.team1_id;
+
+        // Находим следующие матчи, где участвуют победитель или проигравший
+        const nextMatches = matches.filter(m => 
+            (m.team1_id === winnerId || m.team2_id === winnerId || 
+             m.team1_id === loserId || m.team2_id === loserId) && 
+            m.id !== matchData.id
+        );
+
+        // Если есть следующие матчи с результатами, редактирование запрещено
+        const hasPlayedNextMatches = nextMatches.some(m => m.winner_team_id);
+        
+        return !hasPlayedNextMatches;
+    };
+
+    // Функция для начала редактирования матча
+    const startEditingMatch = (matchId) => {
+        const matchData = matches.find(m => m.id === parseInt(matchId));
+        if (!matchData || !canEditMatchResult(matchId)) {
+            toast.error('Редактирование этого матча недоступно');
+            return;
+        }
+
+        // Получаем информацию о командах
+        const team1Info = tournament.participants.find(p => p.id === matchData.team1_id);
+        const team2Info = tournament.participants.find(p => p.id === matchData.team2_id);
+
+        const editData = {
+            id: matchData.id,
+            team1: {
+                id: matchData.team1_id,
+                name: team1Info?.name || 'Участник 1',
+                score: matchData.score1 || 0
+            },
+            team2: {
+                id: matchData.team2_id,
+                name: team2Info?.name || 'Участник 2',
+                score: matchData.score2 || 0
+            },
+            winner_id: matchData.winner_team_id,
+            originalMapsData: matchData.maps_data
+        };
+
+        setEditingMatchData(editData);
+        setEditingWinner(matchData.winner_team_id);
+        setEditingScores({
+            team1: matchData.score1 || 0,
+            team2: matchData.score2 || 0
+        });
+
+        // Парсим данные карт для редактирования
+        if (matchData.maps_data && gameHasMaps(tournament.game)) {
+            try {
+                let parsedMapsData;
+                if (typeof matchData.maps_data === 'string') {
+                    parsedMapsData = JSON.parse(matchData.maps_data);
+                } else {
+                    parsedMapsData = matchData.maps_data;
+                }
+
+                if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
+                    const editMaps = parsedMapsData.map(mapData => ({
+                        map: (() => {
+                            if (mapData.mapName && typeof mapData.mapName === 'string') {
+                                return mapData.mapName;
+                            } else if (mapData.map) {
+                                if (typeof mapData.map === 'string') {
+                                    return mapData.map;
+                                } else if (typeof mapData.map === 'object' && mapData.map !== null) {
+                                    return mapData.map.name || mapData.map.display_name || mapData.map.mapName || 'Неизвестная карта';
+                                }
+                            }
+                            return 'Неизвестная карта';
+                        })(),
+                        score1: mapData.score1 || mapData.team1Score || 0,
+                        score2: mapData.score2 || mapData.team2Score || 0
+                    }));
+                    setEditingMaps(editMaps);
+                } else {
+                    setEditingMaps([{ map: getDefaultMap(tournament.game), score1: 0, score2: 0 }]);
+                }
+            } catch (e) {
+                console.error('Ошибка при парсинге данных карт для редактирования:', e);
+                setEditingMaps([{ map: getDefaultMap(tournament.game), score1: 0, score2: 0 }]);
+            }
+        } else {
+            setEditingMaps([]);
+        }
+
+        setIsEditingMatch(true);
+        setViewingMatchDetails(false);
+    };
+
+    // Функция для отмены редактирования
+    const cancelEditingMatch = () => {
+        setIsEditingMatch(false);
+        setEditingMatchData(null);
+        setEditingMaps([]);
+        setEditingWinner(null);
+        setEditingScores({ team1: 0, team2: 0 });
+    };
+
+    // Функции для работы с картами в режиме редактирования
+    const addEditingMap = () => {
+        const defaultMap = getDefaultMap(tournament?.game);
+        setEditingMaps([...editingMaps, { map: defaultMap, score1: 0, score2: 0 }]);
+    };
+
+    const removeEditingMap = (index) => {
+        const newMaps = [...editingMaps];
+        newMaps.splice(index, 1);
+        setEditingMaps(newMaps);
+    };
+
+    const updateEditingMapScore = (index, team, score) => {
+        const newMaps = [...editingMaps];
+        newMaps[index][`score${team}`] = score;
+        setEditingMaps(newMaps);
+    };
+
+    const updateEditingMapSelection = (index, mapName) => {
+        const newMaps = [...editingMaps];
+        newMaps[index].map = mapName;
+        setEditingMaps(newMaps);
+    };
+
+    // Функция для сохранения изменений результата матча
+    const saveMatchEdit = async () => {
+        if (!editingMatchData || !editingWinner) {
+            toast.error('Не выбран победитель матча');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                toast.error('Необходима авторизация');
+                return;
+            }
+
+            // Подготавливаем данные для отправки
+            let finalScore1 = editingScores.team1;
+            let finalScore2 = editingScores.team2;
+
+            // Если игра поддерживает карты и есть карты, обновляем счет на основе побед на картах
+            if (tournament && gameHasMaps(tournament.game) && editingMaps.length > 0) {
+                const team1Wins = editingMaps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length;
+                const team2Wins = editingMaps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length;
+                finalScore1 = team1Wins;
+                finalScore2 = team2Wins;
+            }
+
+            const requestData = {
+                matchId: Number(editingMatchData.id),
+                winner_team_id: Number(editingWinner),
+                score1: Number(finalScore1) || 0,
+                score2: Number(finalScore2) || 0
+            };
+
+            // Добавляем данные карт, если игра их поддерживает
+            if (gameHasMaps(tournament.game) && editingMaps.length > 0) {
+                requestData.maps = editingMaps;
+            }
+
+            console.log('Отправляем обновленные данные матча:', requestData);
+
+            const response = await api.post(
+                `/api/tournaments/${id}/update-match`,
+                requestData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data) {
+                // Обновляем данные турнира
+                if (response.data.tournament) {
+                    setTournament(response.data.tournament);
+                    if (Array.isArray(response.data.tournament.matches)) {
+                        setMatches(response.data.tournament.matches);
+                    }
+                } else {
+                    await fetchTournamentData();
+                }
+
+                toast.success('Результаты матча успешно обновлены');
+                cancelEditingMatch();
+            }
+        } catch (error) {
+            console.error('Ошибка при сохранении изменений матча:', error);
+            toast.error(error.response?.data?.error || 'Ошибка при сохранении изменений');
+        }
+    };
+
     return (
         <section className="tournament-details">
             <div className="tournament-layout">
@@ -3091,8 +3303,8 @@ function TournamentDetails() {
 
                     {/* Модальное окно для просмотра деталей завершенного матча */}
                     {viewingMatchDetails && matchDetails && (
-                        <div className="modal match-details-modal">
-                            <div className="modal-content">
+                        <div className="modal match-details-modal" onClick={closeMatchDetails}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                                 <span className="close" onClick={closeMatchDetails}>&times;</span>
                                 <h4>Результаты матча</h4>
                                 
@@ -3152,46 +3364,15 @@ function TournamentDetails() {
                                                     return (
                                                         <tr key={index}>
                                                             <td>
-                                                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                                    <img 
-                                                                        src={`/images/maps/${(() => {
-                                                                            // Безопасное получение названия карты
-                                                                            let mapName = 'default';
-                                                                            if (map.mapName && typeof map.mapName === 'string') {
-                                                                                mapName = map.mapName;
-                                                                            } else if (map.map) {
-                                                                                if (typeof map.map === 'string') {
-                                                                                    mapName = map.map;
-                                                                                } else if (typeof map.map === 'object' && map.map.name) {
-                                                                                    mapName = map.map.name;
-                                                                                } else if (typeof map.map === 'object' && map.map.mapName) {
-                                                                                    mapName = map.map.mapName;
-                                                                                }
-                                                                            }
-                                                                            return mapName.toLowerCase().replace(/\s+/g, '_');
-                                                                        })()}.jpg`} 
-                                                                        alt={(() => {
-                                                                            if (map.mapName && typeof map.mapName === 'string') return map.mapName;
-                                                                            if (map.map) {
-                                                                                if (typeof map.map === 'string') return map.map;
-                                                                                if (typeof map.map === 'object' && map.map.name) return map.map.name;
-                                                                                if (typeof map.map === 'object' && map.map.mapName) return map.map.mapName;
-                                                                            }
-                                                                            return 'Карта';
-                                                                        })()}
-                                                                        onError={(e) => { e.target.src = '/images/maps/default_map.jpg'; }}
-                                                                        style={{ width: '60px', height: '40px', marginRight: '10px', borderRadius: '4px' }} 
-                                                                    />
-                                                                    <span>{(() => {
-                                                                        if (map.mapName && typeof map.mapName === 'string') return map.mapName;
-                                                                        if (map.map) {
-                                                                            if (typeof map.map === 'string') return map.map;
-                                                                            if (typeof map.map === 'object' && map.map.name) return map.map.name;
-                                                                            if (typeof map.map === 'object' && map.map.mapName) return map.map.mapName;
-                                                                        }
-                                                                        return 'Неизвестная карта';
-                                                                    })()}</span>
-                                                                </div>
+                                                                <span>{(() => {
+                                                                    if (map.mapName && typeof map.mapName === 'string') return map.mapName;
+                                                                    if (map.map) {
+                                                                        if (typeof map.map === 'string') return map.map;
+                                                                        if (typeof map.map === 'object' && map.map.name) return map.map.name;
+                                                                        if (typeof map.map === 'object' && map.map.mapName) return map.map.mapName;
+                                                                    }
+                                                                    return 'Неизвестная карта';
+                                                                })()}</span>
                                                             </td>
                                                             <td className={team1Winner ? 'map-winner' : ''}>{map.team1Score}</td>
                                                             <td className={team2Winner ? 'map-winner' : ''}>{map.team2Score}</td>
@@ -3249,11 +3430,14 @@ function TournamentDetails() {
                                 
                                 <div className="modal-actions">
                                     <button onClick={closeMatchDetails}>Закрыть</button>
-                                    {isAdminOrCreator && canEndTournament && (
-                                        <>
-                                            <button onClick={handleEndTournament} className="end-tournament">Завершить турнир</button>
-                                            <button onClick={handleClearMatchResults} className="clear-results-button">Сбросить результаты матча</button>
-                                        </>
+                                    {/* Кнопка редактирования для администраторов */}
+                                    {canEditMatchResult(matchDetails.id) && (
+                                        <button 
+                                            onClick={() => startEditingMatch(matchDetails.id)}
+                                            className="edit-match-btn"
+                                        >
+                                            Редактировать результат
+                                        </button>
                                     )}
                                 </div>
                             </div>
