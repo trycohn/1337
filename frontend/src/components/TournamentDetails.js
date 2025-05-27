@@ -189,8 +189,9 @@ function TournamentDetails() {
     const [newChatMessage, setNewChatMessage] = useState('');
     const chatEndRef = useRef(null);
     const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
-    const [originalParticipants, setOriginalParticipants] = useState([]);
+    const [showClearResultsModal, setShowClearResultsModal] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [originalParticipants, setOriginalParticipants] = useState([]);
     const [sentInvitations, setSentInvitations] = useState([]);
     
     // Состояние для хранения информации о создателе турнира
@@ -2458,7 +2459,39 @@ function TournamentDetails() {
     
     // Функция для сброса результатов матчей
     const handleClearMatchResults = () => {
-        toast.info("Функция сброса результатов отключена");
+        setShowClearResultsModal(true);
+    };
+
+    // Функция для подтверждения сброса результатов матчей
+    const confirmClearMatchResults = async () => {
+        try {
+            const response = await api.post(`/api/tournaments/${id}/clear-match-results`);
+            
+            if (response.data.tournament) {
+                setTournament(response.data.tournament);
+                setMatches(response.data.tournament.matches || []);
+            } else {
+                // Если данные турнира не пришли, обновляем их вручную
+                await fetchTournamentData();
+            }
+            
+            setShowClearResultsModal(false);
+            setMessage('Результаты матчей успешно очищены!');
+            
+            // Очищаем сообщение через 3 секунды
+            setTimeout(() => {
+                setMessage('');
+            }, 3000);
+        } catch (error) {
+            console.error('Ошибка при сбросе результатов матчей:', error);
+            setMessage(`Ошибка при сбросе результатов: ${error.response?.data?.error || error.message}`);
+            setShowClearResultsModal(false);
+            
+            // Очищаем сообщение об ошибке через 5 секунд
+            setTimeout(() => {
+                setMessage('');
+            }, 5000);
+        }
     };
 
     return (
@@ -3229,6 +3262,28 @@ function TournamentDetails() {
                                 onClick={confirmEndTournament}
                             >
                                 Завершить турнир
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Модальное окно подтверждения сброса результатов матчей */}
+            {showClearResultsModal && (
+                <div className="modal" onClick={() => setShowClearResultsModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Подтверждение сброса результатов</h3>
+                        <p>Вы уверены, что хотите сбросить результаты всех матчей?</p>
+                        <p>Это действие очистит все результаты матчей в турнире, но сохранит структуру сетки.</p>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowClearResultsModal(false)}>
+                                Отмена
+                            </button>
+                            <button 
+                                className="confirm-winner"
+                                onClick={confirmClearMatchResults}
+                            >
+                                Сбросить результаты
                             </button>
                         </div>
                     </div>
