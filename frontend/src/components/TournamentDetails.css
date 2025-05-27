@@ -1115,7 +1115,7 @@
 }
 
 .score-value {
-    background-color: ##2c2c40;
+    background-color: #2c2c40;
     color: white;
     padding: 4px 12px;
     border-radius: 15px;
@@ -1129,10 +1129,16 @@
     margin-top: 10px;
 }
 
-/* Стили для окна просмотра результатов матча */
+/* Стили для модального окна с результатами матча */
 .match-details-modal {
-    max-width: 600px;
-    width: 90%;
+    z-index: 1001;
+}
+
+.match-details-modal .modal-content {
+    max-width: 800px;
+    min-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .match-teams {
@@ -1140,68 +1146,249 @@
     justify-content: space-between;
     align-items: center;
     margin: 20px 0;
-    padding: 15px;
-    background-color: #f5f5f5;
+    padding: 20px;
+    background-color: #f8f9fa;
     border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .team-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    border-radius: 5px;
+    text-align: center;
     flex: 1;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
 }
 
 .team-info.winner {
-    background-color: rgba(76, 175, 80, 0.2);
-    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+    background-color: #d4edda;
+    border-color: #28a745;
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+}
+
+.team-info h5 {
+    margin: 0 0 10px 0;
+    font-size: 1.2em;
     font-weight: bold;
+    color: #333;
+}
+
+.team-score {
+    font-size: 2em;
+    font-weight: bold;
+    color: #495057;
+    margin: 10px 0;
+}
+
+.team-info.winner .team-score {
+    color: #28a745;
 }
 
 .winner-badge {
-    background-color: #4CAF50;
+    background-color: #28a745;
     color: white;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    margin-top: 5px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
 }
 
 .match-score {
-    font-size: 24px;
+    font-size: 1.5em;
     font-weight: bold;
-    padding: 0 20px;
+    color: #6c757d;
+    margin: 0 20px;
 }
 
+/* Стили для общего счета матча */
+.match-summary {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.match-summary h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    text-align: center;
+}
+
+.final-score {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.score-item {
+    padding: 8px 15px;
+    border-radius: 6px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+}
+
+.score-item.winner-score {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.score-separator {
+    margin: 0 15px;
+    color: #6c757d;
+}
+
+/* Стили для результатов карт */
 .maps-results {
-    margin-top: 20px;
+    margin: 20px 0;
+}
+
+.maps-results h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    text-align: center;
 }
 
 .maps-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin-bottom: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.maps-table th, .maps-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
+.maps-table th,
+.maps-table td {
+    padding: 12px;
     text-align: center;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .maps-table th {
-    background-color: #f2f2f2;
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #495057;
 }
 
 .maps-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #f8f9fa;
+}
+
+.maps-table tr:hover {
+    background-color: #e9ecef;
 }
 
 .map-winner {
+    background-color: #d4edda !important;
+    color: #155724;
     font-weight: bold;
-    color: #4CAF50;
+}
+
+/* Стили для статистики по картам */
+.maps-statistics {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.maps-statistics h5 {
+    margin: 0 0 15px 0;
+    color: #333;
+    text-align: center;
+}
+
+.maps-stats {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    min-width: 120px;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #495057;
+}
+
+/* Стили для случая отсутствия карт */
+.no-maps-info {
+    text-align: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .match-details-modal .modal-content {
+        min-width: 90vw;
+        margin: 10px;
+    }
+    
+    .match-teams {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .match-score {
+        margin: 15px 0;
+        transform: rotate(90deg);
+    }
+    
+    .final-score {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .score-separator {
+        margin: 10px 0;
+    }
+    
+    .maps-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .maps-table {
+        font-size: 0.9em;
+    }
+    
+    .maps-table th,
+    .maps-table td {
+        padding: 8px 4px;
+    }
 }
 
 /* Chat panel layout */

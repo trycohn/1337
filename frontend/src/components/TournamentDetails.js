@@ -2987,26 +2987,43 @@ function TournamentDetails() {
                                 <span className="close" onClick={closeMatchDetails}>&times;</span>
                                 <h4>Результаты матча</h4>
                                 
+                                {/* Отладочная информация */}
+                                {console.log('Отображение matchDetails:', matchDetails)}
+                                
                                 <div className="match-teams">
                                     <div className={`team-info ${matchDetails.team1.winner ? 'winner' : ''}`}>
                                         <h5>{matchDetails.team1.name}</h5>
-                                        <div>{matchDetails.team1.score}</div>
-                                        {matchDetails.team1.winner && <div className="winner-badge">Победитель</div>}
+                                        <div className="team-score">{matchDetails.team1.score}</div>
+                                        {matchDetails.team1.winner && <div className="winner-badge">🏆 Победитель</div>}
                                     </div>
                                     
                                     <div className="match-score">vs</div>
                                     
                                     <div className={`team-info ${matchDetails.team2.winner ? 'winner' : ''}`}>
                                         <h5>{matchDetails.team2.name}</h5>
-                                        <div>{matchDetails.team2.score}</div>
-                                        {matchDetails.team2.winner && <div className="winner-badge">Победитель</div>}
+                                        <div className="team-score">{matchDetails.team2.score}</div>
+                                        {matchDetails.team2.winner && <div className="winner-badge">🏆 Победитель</div>}
+                                    </div>
+                                </div>
+                                
+                                {/* Общий счет матча */}
+                                <div className="match-summary">
+                                    <h4>Общий счет</h4>
+                                    <div className="final-score">
+                                        <span className={`score-item ${matchDetails.team1.winner ? 'winner-score' : ''}`}>
+                                            {matchDetails.team1.name}: {matchDetails.team1.score || 0}
+                                        </span>
+                                        <span className="score-separator"> - </span>
+                                        <span className={`score-item ${matchDetails.team2.winner ? 'winner-score' : ''}`}>
+                                            {matchDetails.team2.name}: {matchDetails.team2.score || 0}
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 {/* Улучшенное отображение результатов карт */}
-                                {matchDetails.maps && matchDetails.maps.length > 0 && (
+                                {matchDetails.maps && matchDetails.maps.length > 0 ? (
                                     <div className="maps-results">
-                                        <h4>Результаты по картам</h4>
+                                        <h4>Результаты по картам ({matchDetails.maps.length} карт)</h4>
                                         
                                         <table className="maps-table">
                                             <thead>
@@ -3019,9 +3036,9 @@ function TournamentDetails() {
                                             </thead>
                                             <tbody>
                                                 {matchDetails.maps.map((map, index) => {
-                                                    const team1Winner = map.team1Score > map.team2Score;
-                                                    const team2Winner = map.team2Score > map.team1Score;
-                                                    const isDraw = map.team1Score === map.team2Score;
+                                                    const team1Winner = parseInt(map.team1Score) > parseInt(map.team2Score);
+                                                    const team2Winner = parseInt(map.team2Score) > parseInt(map.team1Score);
+                                                    const isDraw = parseInt(map.team1Score) === parseInt(map.team2Score);
                                                     
                                                     return (
                                                         <tr key={index}>
@@ -3033,7 +3050,7 @@ function TournamentDetails() {
                                                                         onError={(e) => { e.target.src = '/images/maps/default_map.jpg'; }}
                                                                         style={{ width: '60px', height: '40px', marginRight: '10px', borderRadius: '4px' }} 
                                                                     />
-                                                                    {map.mapName}
+                                                                    <span>{map.mapName}</span>
                                                                 </div>
                                                             </td>
                                                             <td className={team1Winner ? 'map-winner' : ''}>{map.team1Score}</td>
@@ -3058,6 +3075,35 @@ function TournamentDetails() {
                                                 })}
                                             </tbody>
                                         </table>
+                                        
+                                        {/* Статистика по картам */}
+                                        <div className="maps-statistics">
+                                            <h5>Статистика по картам:</h5>
+                                            <div className="maps-stats">
+                                                <div className="stat-item">
+                                                    <span className="stat-label">{matchDetails.team1.name} побед:</span>
+                                                    <span className="stat-value">
+                                                        {matchDetails.maps.filter(m => parseInt(m.team1Score) > parseInt(m.team2Score)).length}
+                                                    </span>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <span className="stat-label">{matchDetails.team2.name} побед:</span>
+                                                    <span className="stat-value">
+                                                        {matchDetails.maps.filter(m => parseInt(m.team2Score) > parseInt(m.team1Score)).length}
+                                                    </span>
+                                                </div>
+                                                <div className="stat-item">
+                                                    <span className="stat-label">Ничьих:</span>
+                                                    <span className="stat-value">
+                                                        {matchDetails.maps.filter(m => parseInt(m.team1Score) === parseInt(m.team2Score)).length}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="no-maps-info">
+                                        <p>Детальная статистика по картам недоступна для этого матча.</p>
                                     </div>
                                 )}
                                 
