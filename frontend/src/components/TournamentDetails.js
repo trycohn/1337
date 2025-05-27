@@ -1803,6 +1803,7 @@ function TournamentDetails() {
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
     const canGenerateBracket = user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
     const canEditMatches = user && (isCreator || adminRequestStatus === 'accepted');
+    const canEndTournament = user && (isCreator || adminRequestStatus === 'accepted') && tournament.status === 'in_progress';
 
     // Получение победителей турнира
     const getTournamentWinners = () => {
@@ -3046,10 +3047,10 @@ function TournamentDetails() {
                                 
                                 <div className="modal-actions">
                                     <button onClick={closeMatchDetails}>Закрыть</button>
-                                    {isAdmin && canEndTournament && (
+                                    {isAdminOrCreator && canEndTournament && (
                                         <>
-                                            <button onClick={endTournament} className="end-tournament">Завершить турнир</button>
-                                            <button onClick={clearMatchResults} className="clear-results-button">Сбросить результаты матча</button>
+                                            <button onClick={handleEndTournament} className="end-tournament">Завершить турнир</button>
+                                            <button onClick={handleClearMatchResults} className="clear-results-button">Сбросить результаты матча</button>
                                         </>
                                     )}
                                 </div>
