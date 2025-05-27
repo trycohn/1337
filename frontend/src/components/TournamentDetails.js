@@ -3134,12 +3134,12 @@ function TournamentDetails() {
                                                             <td>
                                                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                                                     <img 
-                                                                        src={`/images/maps/${map.mapName.toLowerCase().replace(/\s+/g, '_')}.jpg`} 
-                                                                        alt={map.mapName}
+                                                                        src={`/images/maps/${(map.mapName || map.map || 'default').toLowerCase().replace(/\s+/g, '_')}.jpg`} 
+                                                                        alt={map.mapName || map.map || 'Карта'}
                                                                         onError={(e) => { e.target.src = '/images/maps/default_map.jpg'; }}
                                                                         style={{ width: '60px', height: '40px', marginRight: '10px', borderRadius: '4px' }} 
                                                                     />
-                                                                    <span>{map.mapName}</span>
+                                                                    <span>{map.mapName || map.map || 'Неизвестная карта'}</span>
                                                                 </div>
                                                             </td>
                                                             <td className={team1Winner ? 'map-winner' : ''}>{map.team1Score}</td>
