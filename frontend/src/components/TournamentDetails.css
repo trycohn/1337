@@ -426,6 +426,10 @@
     padding: 15px;
     border-radius: 5px;
     border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
 }
 
 .info-block h3 {
@@ -436,6 +440,7 @@
 
 .info-content {
     position: relative;
+    text-align: center;
 }
 
 .info-content p {
