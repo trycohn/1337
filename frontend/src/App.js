@@ -6,6 +6,7 @@ import TournamentsPage from './pages/TournamentsPage';
 import Layout from './components/Layout'; // Импортируем Layout как корневой компонент
 import Profile from './components/Profile'; // Добавляем импорт Profile
 import UserProfile from './components/UserProfile'; // Импортируем компонент UserProfile
+import OrganizerProfile from './components/OrganizerProfile'; // Импортируем компонент OrganizerProfile
 import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
 import Notifications from './components/Notifications'; // Добавляем импорт компонента Notifications
@@ -58,6 +59,7 @@ function App() {
                                     <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
                                     <Route path="/profile" element={<PrivateRoute component={Profile} />} /> {/* Маршрут для своего профиля */}
                                     <Route path="/user/:userId" element={<PrivateRoute component={UserProfile} />} /> {/* Маршрут для просмотра профиля по ID */}
+                                    <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
                                     <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
                                     <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
                                     <Route path="/messages" element={<PrivateRoute component={Messenger} />} />

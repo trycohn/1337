@@ -195,4 +195,62 @@ BEGIN
             ('Overwatch 2', 'Командный шутер от первого лица', NOW()),
             ('Rainbow Six Siege', 'Тактический шутер от первого лица', NOW());
     END IF;
-END $$; 
+END $$;
+
+-- Создание таблицы организаторов
+CREATE TABLE IF NOT EXISTS organizers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL, -- для URL
+    description TEXT,
+    logo_url VARCHAR(500),
+    website_url VARCHAR(500),
+    vk_url VARCHAR(500),
+    telegram_url VARCHAR(500),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(50),
+    manager_user_id INTEGER REFERENCES users(id),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы участников организаторов (многие ко многим между users и organizers)
+CREATE TABLE IF NOT EXISTS organizer_members (
+    id SERIAL PRIMARY KEY,
+    organizer_id INTEGER REFERENCES organizers(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(50) DEFAULT 'member', -- 'manager', 'admin', 'member'
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(organizer_id, user_id)
+);
+
+-- Создание таблицы для связи турниров с организаторами
+CREATE TABLE IF NOT EXISTS tournament_organizers (
+    id SERIAL PRIMARY KEY,
+    tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
+    organizer_id INTEGER REFERENCES organizers(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tournament_id, organizer_id)
+);
+
+-- Индексы для производительности
+CREATE INDEX IF NOT EXISTS idx_organizers_slug ON organizers(slug);
+CREATE INDEX IF NOT EXISTS idx_organizers_manager ON organizers(manager_user_id);
+CREATE INDEX IF NOT EXISTS idx_organizer_members_organizer ON organizer_members(organizer_id);
+CREATE INDEX IF NOT EXISTS idx_organizer_members_user ON organizer_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_organizers_tournament ON tournament_organizers(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_organizers_organizer ON tournament_organizers(organizer_id);
+
+-- Функция для автоматического обновления updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Триггер для обновления updated_at в таблице organizers
+CREATE TRIGGER update_organizers_updated_at BEFORE UPDATE ON organizers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 
