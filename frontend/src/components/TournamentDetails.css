@@ -1887,7 +1887,7 @@ a.participant-name:hover {
     justify-content: center;
     background-color: #f0f0f0;
     border: 1px solid #ddd;
-    margin-right: 14px;
+    margin-left: 14px;
 }
 
 .creator-avatar img {
