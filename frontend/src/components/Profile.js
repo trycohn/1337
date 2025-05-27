@@ -62,6 +62,21 @@ function Profile() {
     // Добавляем новое состояние для отправленных заявок в друзья
     const [sentFriendRequests, setSentFriendRequests] = useState([]);
 
+    // Состояния для заявки на организацию
+    const [organizationData, setOrganizationData] = useState({
+        organizationName: '',
+        description: '',
+        websiteUrl: '',
+        vkUrl: '',
+        telegramUrl: ''
+    });
+    const [organizationLogo, setOrganizationLogo] = useState(null);
+    const [organizationLogoPreview, setOrganizationLogoPreview] = useState(null);
+    const [isSubmittingOrganization, setIsSubmittingOrganization] = useState(false);
+    const [organizationError, setOrganizationError] = useState('');
+    const [organizationSuccess, setOrganizationSuccess] = useState('');
+    const organizationFileInputRef = useRef(null);
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -987,6 +1002,116 @@ function Profile() {
         }, 500); // 500ms delay before executing search
     };
 
+    // Функции для обработки заявки на организацию
+    const handleOrganizationInputChange = (e) => {
+        const { name, value } = e.target;
+        setOrganizationData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        // Очищаем ошибки при изменении данных
+        if (organizationError) {
+            setOrganizationError('');
+        }
+    };
+
+    const handleOrganizationLogoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Проверяем тип файла
+            if (!file.type.startsWith('image/')) {
+                setOrganizationError('Пожалуйста, выберите файл изображения');
+                return;
+            }
+            
+            // Проверяем размер файла (максимум 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                setOrganizationError('Размер файла не должен превышать 5MB');
+                return;
+            }
+            
+            setOrganizationLogo(file);
+            
+            // Создаем превью
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setOrganizationLogoPreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+            
+            if (organizationError) {
+                setOrganizationError('');
+            }
+        }
+    };
+
+    const triggerOrganizationFileInput = () => {
+        organizationFileInputRef.current?.click();
+    };
+
+    const removeOrganizationLogo = () => {
+        setOrganizationLogo(null);
+        setOrganizationLogoPreview(null);
+        if (organizationFileInputRef.current) {
+            organizationFileInputRef.current.value = '';
+        }
+    };
+
+    const submitOrganizationRequest = async (e) => {
+        e.preventDefault();
+        
+        // Проверяем обязательные поля
+        if (!organizationData.organizationName.trim() || !organizationData.description.trim()) {
+            setOrganizationError('Название организации и описание обязательны');
+            return;
+        }
+        
+        setIsSubmittingOrganization(true);
+        setOrganizationError('');
+        setOrganizationSuccess('');
+        
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            
+            // Добавляем текстовые данные
+            Object.keys(organizationData).forEach(key => {
+                if (organizationData[key]) {
+                    formData.append(key, organizationData[key]);
+                }
+            });
+            
+            // Добавляем логотип, если он есть
+            if (organizationLogo) {
+                formData.append('logo', organizationLogo);
+            }
+            
+            const response = await api.post('/api/users/create-organization-request', formData, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            setOrganizationSuccess('Заявка успешно отправлена! Мы свяжемся с вами в течение 1-3 рабочих дней.');
+            
+            // Очищаем форму
+            setOrganizationData({
+                organizationName: '',
+                description: '',
+                websiteUrl: '',
+                vkUrl: '',
+                telegramUrl: ''
+            });
+            removeOrganizationLogo();
+            
+        } catch (err) {
+            setOrganizationError(err.response?.data?.error || 'Не удалось отправить заявку');
+        } finally {
+            setIsSubmittingOrganization(false);
+        }
+    };
+
     if (!user) return <p>Загрузка...</p>;
 
     return (
@@ -1049,6 +1174,12 @@ function Profile() {
                         onClick={() => switchTab('friends')}
                     >
                         Друзья
+                    </button>
+                    <button 
+                        className={`nav-tab ${activeTab === 'organization' ? 'active' : ''}`} 
+                        onClick={() => switchTab('organization')}
+                    >
+                        Организация
                     </button>
                 </div>
                 
@@ -1338,6 +1469,186 @@ function Profile() {
                                         ))}
                                     </div>
                                 </section>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Вкладка организации */}
+                    {activeTab === 'organization' && (
+                        <div className="organization-tab">
+                            <div className="organization-header">
+                                <h3>Заявка на создание аккаунта организации</h3>
+                                <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации. Это позволит вам организовывать турниры от имени вашей организации.</p>
+                            </div>
+
+                            {/* Проверка email */}
+                            {!user.email && (
+                                <div className="organization-requirement-alert">
+                                    <h4>❌ Требования не выполнены</h4>
+                                    <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
+                                    <button onClick={openAddEmailModal}>Привязать email</button>
+                                </div>
+                            )}
+
+                            {user.email && !user.is_verified && (
+                                <div className="organization-requirement-alert">
+                                    <h4>❌ Требования не выполнены</h4>
+                                    <p>Для подачи заявки необходимо подтвердить email.</p>
+                                    <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                                </div>
+                            )}
+
+                            {/* Форма заявки */}
+                            {user.email && user.is_verified && (
+                                <form onSubmit={submitOrganizationRequest} className="organization-form">
+                                    {organizationError && (
+                                        <div className="organization-error">
+                                            {organizationError}
+                                        </div>
+                                    )}
+
+                                    {organizationSuccess && (
+                                        <div className="organization-success">
+                                            {organizationSuccess}
+                                        </div>
+                                    )}
+
+                                    <div className="form-group">
+                                        <label htmlFor="organizationName">
+                                            Название организации <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="organizationName"
+                                            name="organizationName"
+                                            value={organizationData.organizationName}
+                                            onChange={handleOrganizationInputChange}
+                                            placeholder="Введите название вашей организации"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="description">
+                                            Краткое описание организации <span className="required">*</span>
+                                        </label>
+                                        <textarea
+                                            id="description"
+                                            name="description"
+                                            value={organizationData.description}
+                                            onChange={handleOrganizationInputChange}
+                                            placeholder="Расскажите о вашей организации, её деятельности и целях..."
+                                            rows="4"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="websiteUrl">Сайт организации</label>
+                                        <input
+                                            type="url"
+                                            id="websiteUrl"
+                                            name="websiteUrl"
+                                            value={organizationData.websiteUrl}
+                                            onChange={handleOrganizationInputChange}
+                                            placeholder="https://example.com"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="vkUrl">Ссылка на VK</label>
+                                        <input
+                                            type="url"
+                                            id="vkUrl"
+                                            name="vkUrl"
+                                            value={organizationData.vkUrl}
+                                            onChange={handleOrganizationInputChange}
+                                            placeholder="https://vk.com/your_organization"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="telegramUrl">Ссылка на Telegram</label>
+                                        <input
+                                            type="url"
+                                            id="telegramUrl"
+                                            name="telegramUrl"
+                                            value={organizationData.telegramUrl}
+                                            onChange={handleOrganizationInputChange}
+                                            placeholder="https://t.me/your_organization"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Логотип организации</label>
+                                        <div className="logo-upload-section">
+                                            <input 
+                                                type="file" 
+                                                ref={organizationFileInputRef}
+                                                onChange={handleOrganizationLogoChange}
+                                                accept="image/*"
+                                                style={{ display: 'none' }}
+                                            />
+                                            
+                                            {organizationLogoPreview ? (
+                                                <div className="logo-preview">
+                                                    <img 
+                                                        src={organizationLogoPreview} 
+                                                        alt="Предпросмотр логотипа" 
+                                                        className="organization-logo-preview"
+                                                    />
+                                                    <div className="logo-actions">
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={triggerOrganizationFileInput}
+                                                            className="change-logo-btn"
+                                                        >
+                                                            Изменить
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={removeOrganizationLogo}
+                                                            className="remove-logo-btn"
+                                                        >
+                                                            Удалить
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="logo-upload-placeholder">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={triggerOrganizationFileInput}
+                                                        className="upload-logo-btn"
+                                                    >
+                                                        📁 Выбрать файл логотипа
+                                                    </button>
+                                                    <p className="upload-hint">Рекомендуемый размер: 200x200px, формат: PNG, JPG</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group submit-group">
+                                        <button 
+                                            type="submit" 
+                                            className="submit-organization-btn"
+                                            disabled={isSubmittingOrganization}
+                                        >
+                                            {isSubmittingOrganization ? 'Отправка...' : 'Отправить заявку'}
+                                        </button>
+                                    </div>
+
+                                    <div className="organization-info">
+                                        <h4>Информация о процессе:</h4>
+                                        <ul>
+                                            <li>Заявки рассматриваются в течение 1-3 рабочих дней</li>
+                                            <li>После одобрения с вами свяжется администрация для уточнения деталей</li>
+                                            <li>Все поля, отмеченные звездочкой (*), обязательны для заполнения</li>
+                                            <li>Логотип должен быть в формате изображения (PNG, JPG) размером до 5MB</li>
+                                        </ul>
+                                    </div>
+                                </form>
                             )}
                         </div>
                     )}

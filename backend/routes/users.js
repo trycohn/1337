@@ -1354,4 +1354,172 @@ router.get('/:id/status', authenticateToken, async (req, res) => {
     }
 });
 
+// Эндпоинт для подачи заявки на создание аккаунта организации
+router.post('/create-organization-request', authenticateToken, upload.single('logo'), async (req, res) => {
+    const { organizationName, description, websiteUrl, vkUrl, telegramUrl } = req.body;
+    
+    // Проверка обязательных полей
+    if (!organizationName || !description) {
+        return res.status(400).json({ error: 'Название организации и описание обязательны' });
+    }
+    
+    try {
+        // Проверяем, что у пользователя есть подтвержденный email
+        const userResult = await pool.query('SELECT username, email, is_verified FROM users WHERE id = $1', [req.user.id]);
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        const user = userResult.rows[0];
+        
+        if (!user.email) {
+            return res.status(400).json({ error: 'Для подачи заявки необходимо привязать email' });
+        }
+        
+        if (!user.is_verified) {
+            return res.status(400).json({ error: 'Для подачи заявки необходимо подтвердить email' });
+        }
+        
+        // Обработка загруженного логотипа
+        let logoUrl = null;
+        if (req.file) {
+            const baseUrl = process.env.NODE_ENV === 'production'
+                ? process.env.SERVER_URL || 'https://1337community.com'
+                : `https://${req.get('host')}`;
+            logoUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
+        }
+        
+        // Подготавливаем данные для email
+        const requestData = {
+            userId: req.user.id,
+            username: user.username,
+            email: user.email,
+            organizationName,
+            description,
+            websiteUrl: websiteUrl || 'Не указан',
+            vkUrl: vkUrl || 'Не указан',
+            telegramUrl: telegramUrl || 'Не указан',
+            logoUrl: logoUrl || 'Не прикреплен',
+            requestDate: new Date().toLocaleString('ru-RU', {
+                timeZone: 'Europe/Moscow',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+        
+        // HTML шаблон для email
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">
+                    Новая заявка на создание аккаунта организации
+                </h2>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="color: #666; margin-top: 0;">Информация о заявителе:</h3>
+                    <p><strong>ID пользователя:</strong> ${requestData.userId}</p>
+                    <p><strong>Никнейм:</strong> ${requestData.username}</p>
+                    <p><strong>Email:</strong> ${requestData.email}</p>
+                    <p><strong>Дата подачи заявки:</strong> ${requestData.requestDate}</p>
+                </div>
+                
+                <div style="background-color: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="color: #333; margin-top: 0;">Данные организации:</h3>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #555;">Название организации:</strong>
+                        <p style="margin: 5px 0; padding: 10px; background-color: #f0f8ff; border-left: 4px solid #2196F3;">
+                            ${requestData.organizationName}
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #555;">Описание организации:</strong>
+                        <p style="margin: 5px 0; padding: 10px; background-color: #f0f8ff; border-left: 4px solid #2196F3; white-space: pre-wrap;">
+                            ${requestData.description}
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #555;">Сайт организации:</strong>
+                        <p style="margin: 5px 0;">${requestData.websiteUrl}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #555;">VK:</strong>
+                        <p style="margin: 5px 0;">${requestData.vkUrl}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #555;">Telegram:</strong>
+                        <p style="margin: 5px 0;">${requestData.telegramUrl}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color: #555;">Логотип:</strong>
+                        <p style="margin: 5px 0;">${logoUrl ? `<a href="${logoUrl}" target="_blank">Посмотреть логотип</a>` : 'Не прикреплен'}</p>
+                    </div>
+                </div>
+                
+                <div style="background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0; color: #2e7d32;">
+                        <strong>Действия:</strong> Для одобрения заявки свяжитесь с пользователем и создайте аккаунт организации.
+                    </p>
+                </div>
+                
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+                <p style="color: #666; font-size: 12px; text-align: center;">
+                    Это автоматическое уведомление с сайта 1337 Community
+                </p>
+            </div>
+        `;
+        
+        // Настройки для отправки email
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: ['nikita_gorenkov@mail.ru', 'klim@1337community.com'],
+            subject: `🏢 Новая заявка на создание организации: ${organizationName}`,
+            html: emailHtml
+        };
+        
+        // Отправляем email
+        await transporter.sendMail(mailOptions);
+        
+        // Отправляем подтверждение пользователю
+        const userConfirmationMail = {
+            from: process.env.SMTP_FROM,
+            to: user.email,
+            subject: 'Ваша заявка на создание аккаунта организации принята',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Заявка успешно отправлена!</h2>
+                    <p>Здравствуйте, ${user.username}!</p>
+                    <p>Ваша заявка на создание аккаунта организации "<strong>${organizationName}</strong>" была успешно отправлена администрации.</p>
+                    
+                    <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #4682b4;">
+                        <p style="margin: 0;">Мы рассмотрим вашу заявку в течение 1-3 рабочих дней и свяжемся с вами для уточнения деталей.</p>
+                    </div>
+                    
+                    <p>Спасибо за ваш интерес к нашей платформе!</p>
+                    <p>С уважением,<br>Команда 1337 Community</p>
+                </div>
+            `
+        };
+        
+        await transporter.sendMail(userConfirmationMail);
+        
+        res.json({ 
+            message: 'Заявка на создание аккаунта организации успешно отправлена',
+            organizationName: organizationName
+        });
+        
+    } catch (err) {
+        console.error('Ошибка при отправке заявки на организацию:', err);
+        res.status(500).json({ error: 'Не удалось отправить заявку' });
+    }
+});
+
 module.exports = router;
