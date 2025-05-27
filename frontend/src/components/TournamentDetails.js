@@ -1686,8 +1686,28 @@ function TournamentDetails() {
                         // Преобразуем данные карт в правильный формат
                         match.maps = parsedMapsData.map((mapData, index) => {
                             console.log(`Обработка карты ${index}:`, mapData);
+                            
+                            // Безопасное получение названия карты
+                            let mapName = 'Неизвестная карта';
+                            if (mapData.mapName && typeof mapData.mapName === 'string') {
+                                mapName = mapData.mapName;
+                            } else if (mapData.map) {
+                                if (typeof mapData.map === 'string') {
+                                    mapName = mapData.map;
+                                } else if (typeof mapData.map === 'object' && mapData.map !== null) {
+                                    // Если map - объект, пытаемся извлечь название
+                                    if (mapData.map.name) {
+                                        mapName = mapData.map.name;
+                                    } else if (mapData.map.display_name) {
+                                        mapName = mapData.map.display_name;
+                                    } else if (mapData.map.mapName) {
+                                        mapName = mapData.map.mapName;
+                                    }
+                                }
+                            }
+                            
                             return {
-                                mapName: mapData.map || mapData.mapName || 'Неизвестная карта',
+                                mapName: mapName,
                                 team1Score: mapData.score1 || mapData.team1Score || 0,
                                 team2Score: mapData.score2 || mapData.team2Score || 0
                             };
