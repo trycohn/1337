@@ -7,6 +7,23 @@
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #4a76a8;
+}
+
+/* Стили для админ ссылки */
+.admin-link {
+    color: #ff6b6b !important;
+    font-weight: 600 !important;
+    position: relative;
+}
+
+.admin-link::before {
+    content: '⚙️';
+    margin-right: 5px;
+}
+
+.admin-link:hover {
+    color: #ff8e8e !important;
+    text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
 } 
 
 /* Медиа-запросы для адаптивности мобильного отображения */

@@ -8,6 +8,7 @@ import Profile from './components/Profile'; // Добавляем импорт P
 import UserProfile from './components/UserProfile'; // Импортируем компонент UserProfile
 import OrganizerProfile from './components/OrganizerProfile'; // Импортируем компонент OrganizerProfile
 import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
+import AdminPanel from './components/AdminPanel'; // Импортируем компонент AdminPanel
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
 import Notifications from './components/Notifications'; // Добавляем импорт компонента Notifications
 import { LoaderProvider } from './context/LoaderContext';
@@ -63,6 +64,7 @@ function App() {
                                     <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
                                     <Route path="/notifications" element={<Notifications />} /> {/* Добавляем маршрут для уведомлений */}
                                     <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
+                                    <Route path="/admin" element={<PrivateRoute component={AdminPanel} />} /> {/* Добавляем маршрут для админ панели */}
                                     <Route path="/auth-callback" element={<AuthCallback />} />
                                     <Route path="/auth-error" element={<Navigate to="/login" />} />
                                 </Route>

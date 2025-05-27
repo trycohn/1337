@@ -1381,144 +1381,74 @@ router.post('/create-organization-request', authenticateToken, upload.single('lo
             return res.status(400).json({ error: 'Для подачи заявки необходимо подтвердить email' });
         }
         
+        // Проверяем, есть ли уже активная заявка от этого пользователя
+        const existingRequestResult = await pool.query(
+            'SELECT id FROM organization_requests WHERE user_id = $1 AND status = $2',
+            [req.user.id, 'pending']
+        );
+        
+        if (existingRequestResult.rows.length > 0) {
+            return res.status(400).json({ error: 'У вас уже есть активная заявка на рассмотрении' });
+        }
+        
         // Обработка загруженного логотипа
         let logoUrl = null;
         if (req.file) {
             const baseUrl = process.env.NODE_ENV === 'production'
                 ? process.env.SERVER_URL || 'https://1337community.com'
-                : `https://${req.get('host')}`;
+                : `http://localhost:3000`;
             logoUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
         }
         
-        // Подготавливаем данные для email
-        const requestData = {
-            userId: req.user.id,
-            username: user.username,
-            email: user.email,
+        // Сохраняем заявку в базу данных
+        const requestResult = await pool.query(`
+            INSERT INTO organization_requests (
+                user_id, organization_name, description, website_url, 
+                vk_url, telegram_url, logo_url, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+            RETURNING *
+        `, [
+            req.user.id,
             organizationName,
             description,
-            websiteUrl: websiteUrl || 'Не указан',
-            vkUrl: vkUrl || 'Не указан',
-            telegramUrl: telegramUrl || 'Не указан',
-            logoUrl: logoUrl || 'Не прикреплен',
-            requestDate: new Date().toLocaleString('ru-RU', {
-                timeZone: 'Europe/Moscow',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
-        };
+            websiteUrl || null,
+            vkUrl || null,
+            telegramUrl || null,
+            logoUrl
+        ]);
         
-        // HTML шаблон для email
-        const emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">
-                    Новая заявка на создание аккаунта организации
-                </h2>
-                
-                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <h3 style="color: #666; margin-top: 0;">Информация о заявителе:</h3>
-                    <p><strong>ID пользователя:</strong> ${requestData.userId}</p>
-                    <p><strong>Никнейм:</strong> ${requestData.username}</p>
-                    <p><strong>Email:</strong> ${requestData.email}</p>
-                    <p><strong>Дата подачи заявки:</strong> ${requestData.requestDate}</p>
-                </div>
-                
-                <div style="background-color: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 5px; margin: 20px 0;">
-                    <h3 style="color: #333; margin-top: 0;">Данные организации:</h3>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #555;">Название организации:</strong>
-                        <p style="margin: 5px 0; padding: 10px; background-color: #f0f8ff; border-left: 4px solid #2196F3;">
-                            ${requestData.organizationName}
-                        </p>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #555;">Описание организации:</strong>
-                        <p style="margin: 5px 0; padding: 10px; background-color: #f0f8ff; border-left: 4px solid #2196F3; white-space: pre-wrap;">
-                            ${requestData.description}
-                        </p>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #555;">Сайт организации:</strong>
-                        <p style="margin: 5px 0;">${requestData.websiteUrl}</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #555;">VK:</strong>
-                        <p style="margin: 5px 0;">${requestData.vkUrl}</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #555;">Telegram:</strong>
-                        <p style="margin: 5px 0;">${requestData.telegramUrl}</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: #555;">Логотип:</strong>
-                        <p style="margin: 5px 0;">${logoUrl ? `<a href="${logoUrl}" target="_blank">Посмотреть логотип</a>` : 'Не прикреплен'}</p>
-                    </div>
-                </div>
-                
-                <div style="background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <p style="margin: 0; color: #2e7d32;">
-                        <strong>Действия:</strong> Для одобрения заявки свяжитесь с пользователем и создайте аккаунт организации.
-                    </p>
-                </div>
-                
-                <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-                <p style="color: #666; font-size: 12px; text-align: center;">
-                    Это автоматическое уведомление с сайта 1337 Community
-                </p>
-            </div>
-        `;
-        
-        // Настройки для отправки email
-        const mailOptions = {
-            from: process.env.SMTP_FROM,
-            to: ['nikita_gorenkov@mail.ru', 'try.conn@yandex.ru'],
-            subject: `🏢 Новая заявка на создание организации: ${organizationName}`,
-            html: emailHtml
-        };
-        
-        // Отправляем email
-        await transporter.sendMail(mailOptions);
-        
-        // Отправляем подтверждение пользователю
-        const userConfirmationMail = {
-            from: process.env.SMTP_FROM,
-            to: user.email,
-            subject: 'Ваша заявка на создание аккаунта организации принята',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">Заявка успешно отправлена!</h2>
-                    <p>Здравствуйте, ${user.username}!</p>
-                    <p>Ваша заявка на создание аккаунта организации "<strong>${organizationName}</strong>" была успешно отправлена администрации.</p>
-                    
-                    <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #4682b4;">
-                        <p style="margin: 0;">Мы рассмотрим вашу заявку в течение 1-3 рабочих дней и свяжемся с вами для уточнения деталей.</p>
-                    </div>
-                    
-                    <p>Спасибо за ваш интерес к нашей платформе!</p>
-                    <p>С уважением,<br>Команда 1337 Community</p>
-                </div>
-            `
-        };
-        
-        await transporter.sendMail(userConfirmationMail);
+        const request = requestResult.rows[0];
         
         res.json({ 
-            message: 'Заявка на создание аккаунта организации успешно отправлена',
+            message: 'Заявка на создание аккаунта организации успешно отправлена! Администрация рассмотрит её в течение 1-3 рабочих дней.',
+            requestId: request.id,
             organizationName: organizationName
         });
         
     } catch (err) {
         console.error('Ошибка при отправке заявки на организацию:', err);
         res.status(500).json({ error: 'Не удалось отправить заявку' });
+    }
+});
+
+// Получение статуса заявки на организацию пользователя
+router.get('/organization-request-status', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT * FROM organization_requests 
+            WHERE user_id = $1 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `, [req.user.id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Заявка не найдена' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Ошибка получения статуса заявки:', err);
+        res.status(500).json({ error: 'Не удалось получить статус заявки' });
     }
 });
 

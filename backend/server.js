@@ -187,6 +187,7 @@ const playerStatsRouter = require('./routes/playerStats');
 const friendsRouter = require('./routes/friends');
 const chatsRouter = require('./routes/chats');
 const organizersRouter = require('./routes/organizers');
+const adminRouter = require('./routes/admin');
 
 // Маршруты API
 app.use('/api/auth', authRouter);
@@ -202,6 +203,7 @@ app.use('/api/friends', friendsRouter);
 app.use('/api/chats', chatsRouter);
 app.use('/api/maps', mapsRouter);
 app.use('/api/organizers', organizersRouter);
+app.use('/api/admin', adminRouter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {
