@@ -187,6 +187,10 @@
     max-width: 500px;
 }
 
+.modal-content h4 {
+    color: #000000;
+}
+
 .modal-buttons {
     margin-top: 20px;
     display: flex;
@@ -1008,6 +1012,7 @@
     text-overflow: ellipsis;
     max-width: 150px;
     text-align: center;
+    color: #000000;
 }
 
 .map-scores .score-input {
