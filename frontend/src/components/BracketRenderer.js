@@ -960,8 +960,24 @@ const BracketRenderer = ({
                                     </h3>
                                     {roundMatches.map((match) => {
                                         const isSelected = selectedMatch === safeParseBracketId(match.id);
+                                        const isCompleted = match.state === 'DONE';
                                         return (
-                                            <div key={match.id} className="match-container">
+                                            <div key={match.id} className={`match-container ${isCompleted ? 'completed' : ''}`}>
+                                                {/* Лупа для завершенных матчей */}
+                                                {isCompleted && onMatchClick && (
+                                                    <div 
+                                                        className="match-view-icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onMatchClick(match.id);
+                                                        }}
+                                                    >
+                                                        🔍
+                                                        <div className="match-view-tooltip">
+                                                            Показать результат матча
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <div
                                                     className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                     onClick={(e) => {
@@ -1047,12 +1063,33 @@ const BracketRenderer = ({
                                             <h3>Раунд {round}</h3>
                                             {roundMatches.map((match) => {
                                                 const isSelected = selectedMatch === safeParseBracketId(match.id);
+                                                const isCompleted = match.state === 'DONE';
                                                 return (
-                                                    <div key={match.id} className="match-container">
+                                                    <div key={match.id} className={`match-container ${isCompleted ? 'completed' : ''}`}>
+                                                        {/* Лупа для завершенных матчей */}
+                                                        {isCompleted && onMatchClick && (
+                                                            <div 
+                                                                className="match-view-icon"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    onMatchClick(match.id);
+                                                                }}
+                                                            >
+                                                                🔍
+                                                                <div className="match-view-tooltip">
+                                                                    Показать результат матча
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                         <div
                                                             className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                             onClick={(e) => {
-                                                                if (canEditMatches && match.state !== 'DONE') {
+                                                                // Если есть функция просмотра деталей матча и матч завершен
+                                                                if (onMatchClick && match.state === 'DONE') {
+                                                                    onMatchClick(match.id);
+                                                                }
+                                                                // Иначе обычное поведение для выбора победителя
+                                                                else if (canEditMatches && match.state !== 'DONE') {
                                                                     setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                     // Добавляем вызов handleTeamClick
                                                                     if (handleTeamClick && !isSelected && match.participants[0]?.id) {
@@ -1078,7 +1115,12 @@ const BracketRenderer = ({
                                                         <div
                                                             className={`custom-seed ${isSelected ? 'selected' : ''}`}
                                                             onClick={(e) => {
-                                                                if (canEditMatches && match.state !== 'DONE') {
+                                                                // Если есть функция просмотра деталей матча и матч завершен
+                                                                if (onMatchClick && match.state === 'DONE') {
+                                                                    onMatchClick(match.id);
+                                                                }
+                                                                // Иначе обычное поведение для выбора победителя
+                                                                else if (canEditMatches && match.state !== 'DONE') {
                                                                     setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                     // Добавляем вызов handleTeamClick
                                                                     if (handleTeamClick && !isSelected && match.participants[1]?.id) {
@@ -1122,11 +1164,31 @@ const BracketRenderer = ({
                                 {grandFinalMatch && (
                                     <div className="bracket grand-final">
                                         <h3 className="match-title">Большой финал</h3>
-                                        <div className="match-container">
+                                        <div className={`match-container ${grandFinalMatch.state === 'DONE' ? 'completed' : ''}`}>
+                                            {/* Лупа для завершенного гранд-финала */}
+                                            {grandFinalMatch.state === 'DONE' && onMatchClick && (
+                                                <div 
+                                                    className="match-view-icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onMatchClick(grandFinalMatch.id);
+                                                    }}
+                                                >
+                                                    🔍
+                                                    <div className="match-view-tooltip">
+                                                        Показать результат матча
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div
                                                 className={`custom-seed ${selectedMatch === safeParseBracketId(grandFinalMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
-                                                    if (canEditMatches && grandFinalMatch.state !== 'DONE') {
+                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                    if (onMatchClick && grandFinalMatch.state === 'DONE') {
+                                                        onMatchClick(grandFinalMatch.id);
+                                                    }
+                                                    // Иначе обычное поведение для выбора победителя
+                                                    else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
                                                         // Добавляем вызов handleTeamClick
                                                         if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[0]?.id) {
@@ -1152,7 +1214,12 @@ const BracketRenderer = ({
                                             <div
                                                 className={`custom-seed ${selectedMatch === safeParseBracketId(grandFinalMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
-                                                    if (canEditMatches && grandFinalMatch.state !== 'DONE') {
+                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                    if (onMatchClick && grandFinalMatch.state === 'DONE') {
+                                                        onMatchClick(grandFinalMatch.id);
+                                                    }
+                                                    // Иначе обычное поведение для выбора победителя
+                                                    else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
                                                         // Добавляем вызов handleTeamClick
                                                         if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[1]?.id) {
@@ -1181,11 +1248,31 @@ const BracketRenderer = ({
                                 {placementMatch && (
                                     <div className="bracket placement-match">
                                         <h3 className="match-title">Матч за 3-е место</h3>
-                                        <div className="match-container">
+                                        <div className={`match-container ${placementMatch.state === 'DONE' ? 'completed' : ''}`}>
+                                            {/* Лупа для завершенного матча за 3-е место */}
+                                            {placementMatch.state === 'DONE' && onMatchClick && (
+                                                <div 
+                                                    className="match-view-icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onMatchClick(placementMatch.id);
+                                                    }}
+                                                >
+                                                    🔍
+                                                    <div className="match-view-tooltip">
+                                                        Показать результат матча
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div
                                                 className={`custom-seed ${selectedMatch === safeParseBracketId(placementMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
-                                                    if (canEditMatches && placementMatch.state !== 'DONE') {
+                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                    if (onMatchClick && placementMatch.state === 'DONE') {
+                                                        onMatchClick(placementMatch.id);
+                                                    }
+                                                    // Иначе обычное поведение для выбора победителя
+                                                    else if (canEditMatches && placementMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
                                                         // Добавляем вызов handleTeamClick
                                                         if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[0]?.id) {
@@ -1211,7 +1298,12 @@ const BracketRenderer = ({
                                             <div
                                                 className={`custom-seed ${selectedMatch === safeParseBracketId(placementMatch.id) ? 'selected' : ''}`}
                                                 onClick={(e) => {
-                                                    if (canEditMatches && placementMatch.state !== 'DONE') {
+                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                    if (onMatchClick && placementMatch.state === 'DONE') {
+                                                        onMatchClick(placementMatch.id);
+                                                    }
+                                                    // Иначе обычное поведение для выбора победителя
+                                                    else if (canEditMatches && placementMatch.state !== 'DONE') {
                                                         setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
                                                         // Добавляем вызов handleTeamClick
                                                         if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[1]?.id) {
