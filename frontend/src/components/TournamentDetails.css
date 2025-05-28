@@ -765,9 +765,10 @@
 .full-description {
     margin-top: 15px;
     padding: 15px;
-    background-color: #fff;
+    background-color: #000000;
     border: 1px solid #ddd;
     border-radius: 4px;
+    color: #ffffff;
 }
 
 .full-description h4 {
