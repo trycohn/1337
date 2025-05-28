@@ -222,6 +222,8 @@ header.header {
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow: visible !important; /* Добавляем для видимости выпадающих списков */
+  position: relative; /* Для правильного позиционирования дочерних элементов */
 }
 
 .tournaments-list h2 {
@@ -241,7 +243,7 @@ header.header {
   table-layout: fixed;
   background-color: #000000;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible !important;
   box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
 }
 
@@ -249,7 +251,7 @@ header.header {
 .tournaments-list td {
   padding: 16px 12px;
   text-align: left;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
   border-bottom: 1px solid #333333;
   transition: all 0.2s ease;
@@ -295,6 +297,8 @@ header.header {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid #333333;
+  overflow: visible !important;
+  z-index: 10;
 }
 
 .tournaments-list th:first-child {
@@ -329,6 +333,8 @@ header.header {
 }
 
 .tournaments-list td {
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #ffffff;
   font-size: 14px;
   font-weight: 400;

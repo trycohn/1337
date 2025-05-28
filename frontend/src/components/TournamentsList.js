@@ -178,10 +178,47 @@ function TournamentsList() {
             const dropdownElement = document.querySelector('.tournaments-list th .dropdown');
             console.log('🔧 Dropdown element found:', dropdownElement);
             if (dropdownElement) {
-                console.log('🔧 Dropdown styles:', window.getComputedStyle(dropdownElement));
-                console.log('🔧 Dropdown display:', window.getComputedStyle(dropdownElement).display);
-                console.log('🔧 Dropdown visibility:', window.getComputedStyle(dropdownElement).visibility);
-                console.log('🔧 Dropdown z-index:', window.getComputedStyle(dropdownElement).zIndex);
+                const styles = window.getComputedStyle(dropdownElement);
+                console.log('🔧 Dropdown styles:', styles);
+                console.log('🔧 Dropdown display:', styles.display);
+                console.log('🔧 Dropdown visibility:', styles.visibility);
+                console.log('🔧 Dropdown z-index:', styles.zIndex);
+                
+                // Дополнительная диагностика
+                const rect = dropdownElement.getBoundingClientRect();
+                console.log('🔧 Dropdown position:', {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                    bottom: rect.bottom,
+                    right: rect.right
+                });
+                
+                // Проверяем, не перекрыт ли элемент
+                const elementAtCenter = document.elementFromPoint(
+                    rect.left + rect.width / 2,
+                    rect.top + rect.height / 2
+                );
+                console.log('🔧 Element at dropdown center:', elementAtCenter);
+                
+                // Проверяем родительские элементы на overflow
+                let parent = dropdownElement.parentElement;
+                while (parent) {
+                    const parentStyles = window.getComputedStyle(parent);
+                    if (parentStyles.overflow !== 'visible' || parentStyles.overflowX !== 'visible' || parentStyles.overflowY !== 'visible') {
+                        console.log('🔧 Parent with overflow:', parent, {
+                            overflow: parentStyles.overflow,
+                            overflowX: parentStyles.overflowX,
+                            overflowY: parentStyles.overflowY
+                        });
+                    }
+                    parent = parent.parentElement;
+                }
+                
+                // Проверяем высоту контента
+                console.log('🔧 Dropdown content height:', dropdownElement.scrollHeight);
+                console.log('🔧 Dropdown children count:', dropdownElement.children.length);
             }
         }, 100);
     };
