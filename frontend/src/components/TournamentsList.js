@@ -202,19 +202,12 @@ function TournamentsList() {
     const renderTableView = () => (
         <div>
             {hasActiveFilters() && (
-                <div style={{ marginBottom: '10px', textAlign: 'right' }}>
+                <div style={{ marginBottom: '16px', textAlign: 'right' }}>
                     <button 
                         onClick={clearAllFilters}
-                        style={{
-                            padding: '5px 10px',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                        }}
+                        className="clear-all-filters-btn"
                     >
-                        Сбросить все фильтры
+                        ✕ Сбросить все фильтры
                     </button>
                 </div>
             )}
@@ -266,13 +259,13 @@ function TournamentsList() {
                                         <button
                                             onClick={() => clearFilter('name')}
                                             style={{
-                                                padding: '2px 6px',
-                                                backgroundColor: '#dc3545',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '3px',
+                                                padding: '4px 8px',
+                                                backgroundColor: '#333333',
+                                                color: '#ffffff',
+                                                border: '1px solid #555555',
+                                                borderRadius: '4px',
                                                 cursor: 'pointer',
-                                                fontSize: '12px'
+                                                fontSize: '11px'
                                             }}
                                         >
                                             ✕
@@ -281,7 +274,7 @@ function TournamentsList() {
                                 </div>
                             ) : (
                                 <>
-                                    Название турнира{filters.name && ` (${filters.name})`}{' '}
+                                    Название{filters.name && ` (${filters.name})`}{' '}
                                     <span className="filter-icon" onClick={() => setActiveFilter('name')}>
                                         🔍
                                     </span>
@@ -289,7 +282,7 @@ function TournamentsList() {
                             )}
                         </th>
                         <th>
-                            Кол-во участников{' '}
+                            Участники{' '}
                             <span className="sort-icon" onClick={() => handleSort('participant_count')}>
                                 {sort.field === 'participant_count' && sort.direction === 'asc' ? '▲' : '▼'}
                             </span>
@@ -341,13 +334,13 @@ function TournamentsList() {
                                         <button
                                             onClick={() => clearFilter('start_date')}
                                             style={{
-                                                padding: '2px 6px',
-                                                backgroundColor: '#dc3545',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '3px',
+                                                padding: '4px 8px',
+                                                backgroundColor: '#333333',
+                                                color: '#ffffff',
+                                                border: '1px solid #555555',
+                                                borderRadius: '4px',
                                                 cursor: 'pointer',
-                                                fontSize: '12px'
+                                                fontSize: '11px'
                                             }}
                                         >
                                             ✕
@@ -356,7 +349,7 @@ function TournamentsList() {
                                 </div>
                             ) : (
                                 <>
-                                    Дата старта{filters.start_date && ` (${filters.start_date.toLocaleDateString('ru-RU')})`}{' '}
+                                    Дата{filters.start_date && ` (${filters.start_date.toLocaleDateString('ru-RU')})`}{' '}
                                     <span className="filter-icon" onClick={() => setActiveFilter('start_date')}>
                                         🔍
                                     </span>
@@ -421,10 +414,17 @@ function TournamentsList() {
                             <td data-label="Формат" title={tournament.format}>{tournament.format}</td>
                             <td data-label="Дата">{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
                             <td data-label="Статус">
-                                {tournament.status === 'active' ? 'Активен' : 
-                                 tournament.status === 'in_progress' ? 'Идет' : 
-                                 tournament.status === 'completed' ? 'Завершен' : 
-                                 'Неизвестный статус'}
+                                <span className={`tournament-status-badge ${
+                                    tournament.status === 'active' ? 'tournament-status-active' : 
+                                    tournament.status === 'in_progress' ? 'tournament-status-in-progress' : 
+                                    tournament.status === 'completed' ? 'tournament-status-completed' : 
+                                    'tournament-status-completed'
+                                }`}>
+                                    {tournament.status === 'active' ? 'Активен' : 
+                                     tournament.status === 'in_progress' ? 'Идет' : 
+                                     tournament.status === 'completed' ? 'Завершен' : 
+                                     'Неизвестно'}
+                                </span>
                             </td>
                         </tr>
                     ))}
