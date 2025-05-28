@@ -187,7 +187,7 @@
 /* Команды внутри матча */
 .match-teams {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 4px;
     width: 100%;
 }
