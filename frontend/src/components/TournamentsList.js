@@ -115,19 +115,18 @@ function TournamentsList() {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (
-                (filterRefs.name.current && !filterRefs.name.current.contains(event.target) && !filters.name) ||
-                (filterRefs.game.current && !filterRefs.game.current.contains(event.target)) ||
-                (filterRefs.format.current && !filterRefs.format.current.contains(event.target)) ||
-                (filterRefs.status.current && !filterRefs.status.current.contains(event.target)) ||
-                (filterRefs.start_date.current && !filterRefs.start_date.current.contains(event.target))
-            ) {
-                setActiveFilter(null);
+            // Проверяем, был ли клик вне активного фильтра
+            if (activeFilter) {
+                const currentRef = filterRefs[activeFilter]?.current;
+                if (currentRef && !currentRef.contains(event.target)) {
+                    setActiveFilter(null);
+                }
             }
         };
+        
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [filterRefs.name, filterRefs.game, filterRefs.format, filterRefs.status, filterRefs.start_date, filters.name]);
+    }, [activeFilter]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -162,9 +161,15 @@ function TournamentsList() {
         setActiveFilter(null);
     };
 
+    const toggleFilter = (filterName) => {
+        setActiveFilter(activeFilter === filterName ? null : filterName);
+    };
+
     const uniqueValues = (field) => {
         // Возвращаем оригинальные значения, а не в нижнем регистре
-        return [...new Set(tournaments.map((t) => t[field]).filter(Boolean))].sort();
+        const values = [...new Set(tournaments.map((t) => t[field]).filter(Boolean))].sort();
+        console.log(`Unique values for ${field}:`, values);
+        return values;
     };
 
     const hasActiveFilters = () => {
@@ -238,7 +243,7 @@ function TournamentsList() {
                             ) : (
                                 <>
                                     Игра{filters.game && ` (${filters.game})`}{' '}
-                                    <span className="dropdown-icon" onClick={() => setActiveFilter('game')}>
+                                    <span className="dropdown-icon" onClick={() => toggleFilter('game')}>
                                         ▼
                                     </span>
                                 </>
@@ -275,7 +280,7 @@ function TournamentsList() {
                             ) : (
                                 <>
                                     Название{filters.name && ` (${filters.name})`}{' '}
-                                    <span className="filter-icon" onClick={() => setActiveFilter('name')}>
+                                    <span className="filter-icon" onClick={() => toggleFilter('name')}>
                                         🔍
                                     </span>
                                 </>
@@ -311,7 +316,7 @@ function TournamentsList() {
                             ) : (
                                 <>
                                     Формат{filters.format && ` (${filters.format})`}{' '}
-                                    <span className="dropdown-icon" onClick={() => setActiveFilter('format')}>
+                                    <span className="dropdown-icon" onClick={() => toggleFilter('format')}>
                                         ▼
                                     </span>
                                 </>
@@ -350,7 +355,7 @@ function TournamentsList() {
                             ) : (
                                 <>
                                     Дата{filters.start_date && ` (${filters.start_date.toLocaleDateString('ru-RU')})`}{' '}
-                                    <span className="filter-icon" onClick={() => setActiveFilter('start_date')}>
+                                    <span className="filter-icon" onClick={() => toggleFilter('start_date')}>
                                         🔍
                                     </span>
                                     <span className="sort-icon" onClick={() => handleSort('start_date')}>
@@ -391,7 +396,7 @@ function TournamentsList() {
                                         filters.status === 'completed' ? 'Завершен' : 
                                         filters.status
                                     })`}{' '}
-                                    <span className="dropdown-icon" onClick={() => setActiveFilter('status')}>
+                                    <span className="dropdown-icon" onClick={() => toggleFilter('status')}>
                                         ▼
                                     </span>
                                 </>

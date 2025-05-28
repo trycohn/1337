@@ -382,12 +382,17 @@ header.header {
   color: #888888;
   transition: color 0.2s ease;
   font-size: 12px;
+  user-select: none;
+  display: inline-block;
+  min-width: 12px;
+  text-align: center;
 }
 
 .tournaments-list th .filter-icon:hover,
 .tournaments-list th .dropdown-icon:hover,
 .tournaments-list th .sort-icon:hover {
   color: #ffffff;
+  transform: scale(1.1);
 }
 
 .tournaments-list th .dropdown {
@@ -404,6 +409,8 @@ header.header {
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   margin-top: 4px;
+  min-width: 150px;
+  white-space: nowrap;
 }
 
 .tournaments-list th .dropdown-item {
@@ -412,6 +419,9 @@ header.header {
   border-bottom: 1px solid #2a2a2a;
   transition: background-color 0.2s ease;
   font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tournaments-list th .dropdown-item:last-child {
