@@ -272,19 +272,10 @@
 
 .match-container.completed .custom-seed {
     cursor: default;
-    border-radius: 4px 0 0 4px;
 }
 
 .match-container.completed .custom-seed:hover {
     background-color: #f5f5f5;
-}
-
-.match-container.completed .match-content .custom-seed:first-child {
-    border-top-right-radius: 0;
-}
-
-.match-container.completed .match-content .custom-seed:last-child {
-    border-bottom-right-radius: 0;
 }
 
 .team {
@@ -517,7 +508,6 @@
 
 .match-container:not(.completed) .custom-seed {
     margin: 0;
-    border-radius: 0;
     box-shadow: none;
     border-bottom: none;
 }
