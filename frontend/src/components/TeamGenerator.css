@@ -30,7 +30,7 @@
 .participant-card {
   display: flex;
   align-items: center;
-  background-color: #1f2937;
+  background-color: #000000;
   padding: 10px;
   border-radius: 6px;
   position: relative;
@@ -125,10 +125,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background-color: #1f2937;
+  background-color: #000000;
   padding: 10px;
   border-radius: 6px;
   flex-wrap: wrap;
+  border: 1px solid #ddd;
 }
 
 .mix-form-group label {
