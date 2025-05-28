@@ -145,6 +145,7 @@
     justify-content: space-evenly;
     min-width: 220px;
     height: 100%;
+    gap: 5px;
 }
 
 .round-column h3 {
@@ -196,6 +197,7 @@
     flex-direction: row;
     align-items: stretch;
     margin: 0px;
+    margin-bottom: 10px;
 }
 
 .match-content {

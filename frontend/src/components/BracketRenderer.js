@@ -223,10 +223,10 @@ const BracketRenderer = ({
                     min-width: fit-content;
                     overflow: auto;
                 }
-                                .round-column {
+                    .round-column {
                     display: flex;
                     flex-direction: column;
-                    gap: 15px;
+                    gap: 5px;
                 }
                 .match-card {
                     width: 200px;
