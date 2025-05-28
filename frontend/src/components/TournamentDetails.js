@@ -3165,7 +3165,6 @@ function TournamentDetails() {
                                 {/* Управление турниром в процессе */}
                                 {tournament?.status === 'in_progress' && (
                                     <div className="action-group">
-                                        <span className="action-group-title">Управление матчами</span>
                                         <div className="action-buttons">
                                             <button 
                                                 className="management-btn"
