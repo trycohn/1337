@@ -338,18 +338,15 @@ header.header {
 }
 
 /* Улучшаем внешний вид строк таблицы */
-.tournaments-list tbody tr:nth-child(even) {
-  background-color: #f8f9fa;
-}
 
 .tournaments-list tbody tr:hover {
-  background-color: #e9ecef;
+  background-color: #0e0e0e;
   transition: background-color 0.2s;
 }
 
 /* Индикатор активного фильтра */
 .tournaments-list th.filtered {
-  background-color: #e3f2fd;
+  background-color: #3d3d3d;
 }
 
 .tournaments-list th.filtered .dropdown-icon,
