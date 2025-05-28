@@ -166,6 +166,8 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     cursor: pointer;
+    display: flex;
+    align-items: center;
 }
 
 .custom-seed:hover {
@@ -215,7 +217,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    opacity: 0;
+    opacity: 0.5;
     transition: all 0.3s ease;
     color: white;
     font-size: 16px;
