@@ -220,6 +220,7 @@ header.header {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
+  table-layout: fixed; /* Фиксированная ширина столбцов */
 }
 
 .tournaments-list th,
@@ -227,10 +228,45 @@ header.header {
   padding: 10px;
   border: 1px solid #ddd;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Устанавливаем ширину столбцов */
+.tournaments-list th:nth-child(1),
+.tournaments-list td:nth-child(1) {
+  width: 20%; /* Расширяем столбец "Игра" */
+}
+
+.tournaments-list th:nth-child(2),
+.tournaments-list td:nth-child(2) {
+  width: 25%; /* Название турнира */
+}
+
+.tournaments-list th:nth-child(3),
+.tournaments-list td:nth-child(3) {
+  width: 15%; /* Участники */
+}
+
+.tournaments-list th:nth-child(4),
+.tournaments-list td:nth-child(4) {
+  width: 15%; /* Формат */
+}
+
+.tournaments-list th:nth-child(5),
+.tournaments-list td:nth-child(5) {
+  width: 15%; /* Дата */
+}
+
+.tournaments-list th:nth-child(6),
+.tournaments-list td:nth-child(6) {
+  width: 10%; /* Статус */
 }
 
 .tournaments-list th {
   position: relative;
+  background-color: #f8f9fa;
+  font-weight: 600;
 }
 
 .tournaments-list th input,
@@ -241,6 +277,7 @@ header.header {
   border: 1px solid #ccc;
   border-radius: 4px;
   box-sizing: border-box;
+  background-color: white;
 }
 
 .tournaments-list th .filter-icon,
@@ -248,6 +285,8 @@ header.header {
 .tournaments-list th .sort-icon {
   cursor: pointer;
   margin-left: 5px;
+  color: #666;
+  transition: color 0.2s;
 }
 
 .tournaments-list th .filter-icon:hover,
@@ -260,21 +299,63 @@ header.header {
   position: absolute;
   top: 100%;
   left: 0;
-  background: white;
-  border: 1px solid #ddd;
+  right: 0;
+  background: #2c2c2c; /* Черный фон */
+  color: white; /* Белый текст */
+  border: 1px solid #444;
   border-radius: 4px;
-  z-index: 10;
+  z-index: 1000;
   max-height: 200px;
   overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .tournaments-list th .dropdown-item {
-  padding: 5px 10px;
+  padding: 8px 12px;
   cursor: pointer;
+  border-bottom: 1px solid #444;
+  transition: background-color 0.2s;
+}
+
+.tournaments-list th .dropdown-item:last-child {
+  border-bottom: none;
 }
 
 .tournaments-list th .dropdown-item:hover {
-  background-color: #f0f0f0;
+  background-color: #404040;
+}
+
+/* Добавляем кнопку "Сбросить фильтр" */
+.tournaments-list th .dropdown-item.clear-filter {
+  background-color: #dc3545;
+  color: white;
+  font-weight: bold;
+  border-bottom: 2px solid #666;
+}
+
+.tournaments-list th .dropdown-item.clear-filter:hover {
+  background-color: #c82333;
+}
+
+/* Улучшаем внешний вид строк таблицы */
+.tournaments-list tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.tournaments-list tbody tr:hover {
+  background-color: #e9ecef;
+  transition: background-color 0.2s;
+}
+
+/* Индикатор активного фильтра */
+.tournaments-list th.filtered {
+  background-color: #e3f2fd;
+}
+
+.tournaments-list th.filtered .dropdown-icon,
+.tournaments-list th.filtered .filter-icon {
+  color: #1976d2;
+  font-weight: bold;
 }
 
 /* Стили для деталей турнира */
@@ -683,6 +764,37 @@ header.header {
   .tournaments-list th, .tournaments-list td {
     padding: 8px 4px;
   }
+
+  /* Адаптивные ширины столбцов для планшетов */
+  .tournaments-list th:nth-child(1),
+  .tournaments-list td:nth-child(1) {
+    width: 18%;
+  }
+
+  .tournaments-list th:nth-child(2),
+  .tournaments-list td:nth-child(2) {
+    width: 30%;
+  }
+
+  .tournaments-list th:nth-child(3),
+  .tournaments-list td:nth-child(3) {
+    width: 12%;
+  }
+
+  .tournaments-list th:nth-child(4),
+  .tournaments-list td:nth-child(4) {
+    width: 15%;
+  }
+
+  .tournaments-list th:nth-child(5),
+  .tournaments-list td:nth-child(5) {
+    width: 15%;
+  }
+
+  .tournaments-list th:nth-child(6),
+  .tournaments-list td:nth-child(6) {
+    width: 10%;
+  }
   
   /* Профиль на мобильных устройствах */
   .profile-container {
@@ -767,24 +879,62 @@ header.header {
     margin-left: auto;
   }
 
-  /* Улучшенная адаптация для списка турниров */
+  /* Улучшенная адаптация для списка турниров на мобильных */
   .tournaments-list {
-    padding: 0 10px;
+    padding: 0 5px;
   }
   
   .tournaments-list table {
-    font-size: 12px;
+    font-size: 11px;
     display: block;
     overflow-x: auto;
+    white-space: nowrap;
   }
-  
-  .tournaments-list th {
-    min-width: 80px;
+
+  .tournaments-list thead,
+  .tournaments-list tbody,
+  .tournaments-list th,
+  .tournaments-list td,
+  .tournaments-list tr {
+    display: block;
   }
-  
+
+  .tournaments-list thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .tournaments-list tr {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+
   .tournaments-list td {
+    border: none;
+    position: relative;
+    padding: 5px 0 5px 30%;
     white-space: normal;
-    word-break: break-word;
+    text-align: left;
+  }
+
+  .tournaments-list td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 6px;
+    width: 25%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: bold;
+    color: #666;
+  }
+
+  /* Скрываем выпадающие списки на мобильных */
+  .tournaments-list th .dropdown {
+    display: none;
   }
   
   /* Профиль на маленьких мобильных устройствах */

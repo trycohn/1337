@@ -146,9 +146,30 @@ function TournamentsList() {
         setActiveFilter(null);
     };
 
+    const clearFilter = (field) => {
+        setFilters((prev) => ({ ...prev, [field]: field === 'start_date' ? null : '' }));
+        setActiveFilter(null);
+    };
+
+    const clearAllFilters = () => {
+        setFilters({
+            game: '',
+            name: '',
+            format: '',
+            status: '',
+            start_date: null,
+        });
+        setActiveFilter(null);
+    };
+
     const uniqueValues = (field) => {
         // Возвращаем оригинальные значения, а не в нижнем регистре
         return [...new Set(tournaments.map((t) => t[field]).filter(Boolean))].sort();
+    };
+
+    const hasActiveFilters = () => {
+        return filters.game !== '' || filters.name !== '' || filters.format !== '' || 
+               filters.status !== '' || filters.start_date !== null;
     };
 
     const filteredAndSortedTournaments = tournaments
@@ -179,151 +200,237 @@ function TournamentsList() {
         });
 
     const renderTableView = () => (
-        <table>
-            <thead>
-                <tr>
-                    <th ref={filterRefs.game}>
-                        {activeFilter === 'game' ? (
-                            <div className="dropdown">
-                                {uniqueValues('game').map((value) => (
-                                    <div
-                                        key={value}
-                                        onClick={() => applyFilter('game', value)}
-                                        className="dropdown-item"
-                                    >
-                                        {value}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <>
-                                Игра{' '}
-                                <span className="dropdown-icon" onClick={() => setActiveFilter('game')}>
-                                    ▼
-                                </span>
-                            </>
-                        )}
-                    </th>
-                    <th ref={filterRefs.name}>
-                        {activeFilter === 'name' ? (
-                            <input
-                                name="name"
-                                value={filters.name}
-                                onChange={handleFilterChange}
-                                placeholder="Поиск по названию"
-                                autoFocus
-                            />
-                        ) : (
-                            <>
-                                Название турнира{' '}
-                                <span className="filter-icon" onClick={() => setActiveFilter('name')}>
-                                    🔍
-                                </span>
-                            </>
-                        )}
-                    </th>
-                    <th>
-                        Кол-во участников{' '}
-                        <span className="sort-icon" onClick={() => handleSort('participant_count')}>
-                            {sort.field === 'participant_count' && sort.direction === 'asc' ? '▲' : '▼'}
-                        </span>
-                    </th>
-                    <th ref={filterRefs.format}>
-                        {activeFilter === 'format' ? (
-                            <div className="dropdown">
-                                {uniqueValues('format').map((value) => (
-                                    <div
-                                        key={value}
-                                        onClick={() => applyFilter('format', value)}
-                                        className="dropdown-item"
-                                    >
-                                        {value}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <>
-                                Формат{' '}
-                                <span className="dropdown-icon" onClick={() => setActiveFilter('format')}>
-                                    ▼
-                                </span>
-                            </>
-                        )}
-                    </th>
-                    <th ref={filterRefs.start_date}>
-                        {activeFilter === 'start_date' ? (
-                            <DatePicker
-                                selected={filters.start_date}
-                                onChange={(date) =>
-                                    setFilters((prev) => ({ ...prev, start_date: date }))
-                                }
-                                dateFormat="dd.MM.yyyy"
-                                placeholderText="Выберите дату"
-                                autoFocus
-                            />
-                        ) : (
-                            <>
-                                Дата старта{' '}
-                                <span className="filter-icon" onClick={() => setActiveFilter('start_date')}>
-                                    🔍
-                                </span>
-                                <span className="sort-icon" onClick={() => handleSort('start_date')}>
-                                    {sort.field === 'start_date' && sort.direction === 'asc' ? '▲' : '▼'}
-                                </span>
-                            </>
-                        )}
-                    </th>
-                    <th ref={filterRefs.status}>
-                        {activeFilter === 'status' ? (
-                            <div className="dropdown">
-                                {uniqueValues('status').map((value) => (
-                                    <div
-                                        key={value}
-                                        onClick={() => applyFilter('status', value)}
-                                        className="dropdown-item"
-                                    >
-                                        {value === 'active' ? 'Активен' : 
-                                         value === 'in_progress' ? 'Идет' : 
-                                         value === 'completed' ? 'Завершен' : 
-                                         value}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <>
-                                Статус{' '}
-                                <span className="dropdown-icon" onClick={() => setActiveFilter('status')}>
-                                    ▼
-                                </span>
-                            </>
-                        )}
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {filteredAndSortedTournaments.map((tournament) => (
-                    <tr key={tournament.id}>
-                        <td>{tournament.game}</td>
-                        <td>
-                            <Link to={`/tournaments/${tournament.id}`}>{tournament.name}</Link>
-                        </td>
-                        <td>
-                            {tournament.max_participants
-                                ? `${tournament.participant_count} из ${tournament.max_participants}`
-                                : tournament.participant_count}
-                        </td>
-                        <td>{tournament.format}</td>
-                        <td>{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
-                        <td>
-                            {tournament.status === 'active' ? 'Активен' : 
-                             tournament.status === 'in_progress' ? 'Идет' : 
-                             tournament.status === 'completed' ? 'Завершен' : 
-                             'Неизвестный статус'}
-                        </td>
+        <div>
+            {hasActiveFilters() && (
+                <div style={{ marginBottom: '10px', textAlign: 'right' }}>
+                    <button 
+                        onClick={clearAllFilters}
+                        style={{
+                            padding: '5px 10px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Сбросить все фильтры
+                    </button>
+                </div>
+            )}
+            <table>
+                <thead>
+                    <tr>
+                        <th ref={filterRefs.game} className={filters.game ? 'filtered' : ''}>
+                            {activeFilter === 'game' ? (
+                                <div className="dropdown">
+                                    {filters.game && (
+                                        <div
+                                            onClick={() => clearFilter('game')}
+                                            className="dropdown-item clear-filter"
+                                        >
+                                            ✕ Сбросить фильтр
+                                        </div>
+                                    )}
+                                    {uniqueValues('game').map((value) => (
+                                        <div
+                                            key={value}
+                                            onClick={() => applyFilter('game', value)}
+                                            className="dropdown-item"
+                                        >
+                                            {value}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    Игра{filters.game && ` (${filters.game})`}{' '}
+                                    <span className="dropdown-icon" onClick={() => setActiveFilter('game')}>
+                                        ▼
+                                    </span>
+                                </>
+                            )}
+                        </th>
+                        <th ref={filterRefs.name} className={filters.name ? 'filtered' : ''}>
+                            {activeFilter === 'name' ? (
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                    <input
+                                        name="name"
+                                        value={filters.name}
+                                        onChange={handleFilterChange}
+                                        placeholder="Поиск по названию"
+                                        autoFocus
+                                        style={{ flex: 1 }}
+                                    />
+                                    {filters.name && (
+                                        <button
+                                            onClick={() => clearFilter('name')}
+                                            style={{
+                                                padding: '2px 6px',
+                                                backgroundColor: '#dc3545',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '3px',
+                                                cursor: 'pointer',
+                                                fontSize: '12px'
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    Название турнира{filters.name && ` (${filters.name})`}{' '}
+                                    <span className="filter-icon" onClick={() => setActiveFilter('name')}>
+                                        🔍
+                                    </span>
+                                </>
+                            )}
+                        </th>
+                        <th>
+                            Кол-во участников{' '}
+                            <span className="sort-icon" onClick={() => handleSort('participant_count')}>
+                                {sort.field === 'participant_count' && sort.direction === 'asc' ? '▲' : '▼'}
+                            </span>
+                        </th>
+                        <th ref={filterRefs.format} className={filters.format ? 'filtered' : ''}>
+                            {activeFilter === 'format' ? (
+                                <div className="dropdown">
+                                    {filters.format && (
+                                        <div
+                                            onClick={() => clearFilter('format')}
+                                            className="dropdown-item clear-filter"
+                                        >
+                                            ✕ Сбросить фильтр
+                                        </div>
+                                    )}
+                                    {uniqueValues('format').map((value) => (
+                                        <div
+                                            key={value}
+                                            onClick={() => applyFilter('format', value)}
+                                            className="dropdown-item"
+                                        >
+                                            {value}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    Формат{filters.format && ` (${filters.format})`}{' '}
+                                    <span className="dropdown-icon" onClick={() => setActiveFilter('format')}>
+                                        ▼
+                                    </span>
+                                </>
+                            )}
+                        </th>
+                        <th ref={filterRefs.start_date} className={filters.start_date ? 'filtered' : ''}>
+                            {activeFilter === 'start_date' ? (
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                    <DatePicker
+                                        selected={filters.start_date}
+                                        onChange={(date) =>
+                                            setFilters((prev) => ({ ...prev, start_date: date }))
+                                        }
+                                        dateFormat="dd.MM.yyyy"
+                                        placeholderText="Выберите дату"
+                                        autoFocus
+                                        style={{ flex: 1 }}
+                                    />
+                                    {filters.start_date && (
+                                        <button
+                                            onClick={() => clearFilter('start_date')}
+                                            style={{
+                                                padding: '2px 6px',
+                                                backgroundColor: '#dc3545',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '3px',
+                                                cursor: 'pointer',
+                                                fontSize: '12px'
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    Дата старта{filters.start_date && ` (${filters.start_date.toLocaleDateString('ru-RU')})`}{' '}
+                                    <span className="filter-icon" onClick={() => setActiveFilter('start_date')}>
+                                        🔍
+                                    </span>
+                                    <span className="sort-icon" onClick={() => handleSort('start_date')}>
+                                        {sort.field === 'start_date' && sort.direction === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                </>
+                            )}
+                        </th>
+                        <th ref={filterRefs.status} className={filters.status ? 'filtered' : ''}>
+                            {activeFilter === 'status' ? (
+                                <div className="dropdown">
+                                    {filters.status && (
+                                        <div
+                                            onClick={() => clearFilter('status')}
+                                            className="dropdown-item clear-filter"
+                                        >
+                                            ✕ Сбросить фильтр
+                                        </div>
+                                    )}
+                                    {uniqueValues('status').map((value) => (
+                                        <div
+                                            key={value}
+                                            onClick={() => applyFilter('status', value)}
+                                            className="dropdown-item"
+                                        >
+                                            {value === 'active' ? 'Активен' : 
+                                             value === 'in_progress' ? 'Идет' : 
+                                             value === 'completed' ? 'Завершен' : 
+                                             value}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    Статус{filters.status && ` (${
+                                        filters.status === 'active' ? 'Активен' : 
+                                        filters.status === 'in_progress' ? 'Идет' : 
+                                        filters.status === 'completed' ? 'Завершен' : 
+                                        filters.status
+                                    })`}{' '}
+                                    <span className="dropdown-icon" onClick={() => setActiveFilter('status')}>
+                                        ▼
+                                    </span>
+                                </>
+                            )}
+                        </th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {filteredAndSortedTournaments.map((tournament) => (
+                        <tr key={tournament.id}>
+                            <td data-label="Игра" title={tournament.game}>{tournament.game}</td>
+                            <td data-label="Название" title={tournament.name}>
+                                <Link to={`/tournaments/${tournament.id}`}>{tournament.name}</Link>
+                            </td>
+                            <td data-label="Участники">
+                                {tournament.max_participants
+                                    ? `${tournament.participant_count} из ${tournament.max_participants}`
+                                    : tournament.participant_count}
+                            </td>
+                            <td data-label="Формат" title={tournament.format}>{tournament.format}</td>
+                            <td data-label="Дата">{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
+                            <td data-label="Статус">
+                                {tournament.status === 'active' ? 'Активен' : 
+                                 tournament.status === 'in_progress' ? 'Идет' : 
+                                 tournament.status === 'completed' ? 'Завершен' : 
+                                 'Неизвестный статус'}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     );
 
     const renderCardView = () => (
