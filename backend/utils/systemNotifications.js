@@ -1,0 +1,175 @@
+const pool = require('../db');
+
+// ID системного пользователя 1337community
+const SYSTEM_USER_ID = 1; // Предполагаем, что это первый пользователь в системе
+
+/**
+ * Создает или находит системного пользователя 1337community
+ */
+async function ensureSystemUser() {
+    try {
+        // Проверяем, существует ли системный пользователь
+        const userCheck = await pool.query('SELECT id FROM users WHERE username = $1', ['1337community']);
+        
+        if (userCheck.rows.length === 0) {
+            // Создаем системного пользователя
+            const result = await pool.query(
+                'INSERT INTO users (username, email, password_hash, is_verified, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id',
+                ['1337community', 'system@1337community.com', 'system_user_no_login', true]
+            );
+            return result.rows[0].id;
+        }
+        
+        return userCheck.rows[0].id;
+    } catch (error) {
+        console.error('Ошибка создания системного пользователя:', error);
+        return SYSTEM_USER_ID; // Возвращаем дефолтный ID
+    }
+}
+
+/**
+ * Создает или находит чат между системным пользователем и получателем
+ */
+async function getOrCreateSystemChat(recipientId) {
+    try {
+        const systemUserId = await ensureSystemUser();
+        
+        // Ищем существующий чат
+        const chatCheck = await pool.query(`
+            SELECT c.id 
+            FROM chats c
+            JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = $1
+            JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = $2
+            WHERE c.is_group = false
+        `, [systemUserId, recipientId]);
+        
+        if (chatCheck.rows.length > 0) {
+            return chatCheck.rows[0].id;
+        }
+        
+        // Создаем новый чат
+        const chatResult = await pool.query(
+            'INSERT INTO chats (name, is_group, created_by, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
+            [`Системные уведомления`, false, systemUserId]
+        );
+        
+        const chatId = chatResult.rows[0].id;
+        
+        // Добавляем участников
+        await pool.query(
+            'INSERT INTO chat_participants (chat_id, user_id, joined_at) VALUES ($1, $2, NOW()), ($1, $3, NOW())',
+            [chatId, systemUserId, recipientId]
+        );
+        
+        return chatId;
+    } catch (error) {
+        console.error('Ошибка создания системного чата:', error);
+        throw error;
+    }
+}
+
+/**
+ * Отправляет системное уведомление в чат
+ */
+async function sendSystemNotification(recipientId, message, type = 'system') {
+    try {
+        const systemUserId = await ensureSystemUser();
+        const chatId = await getOrCreateSystemChat(recipientId);
+        
+        // Отправляем сообщение
+        const messageResult = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, content, message_type, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *',
+            [chatId, systemUserId, message, type]
+        );
+        
+        // Помечаем сообщение как непрочитанное для получателя
+        await pool.query(
+            'INSERT INTO message_status (message_id, user_id, is_read, read_at) VALUES ($1, $2, $3, NULL)',
+            [messageResult.rows[0].id, recipientId, false]
+        );
+        
+        console.log(`Системное уведомление отправлено пользователю ${recipientId}: ${message}`);
+        return messageResult.rows[0];
+    } catch (error) {
+        console.error('Ошибка отправки системного уведомления:', error);
+        throw error;
+    }
+}
+
+/**
+ * Отправляет уведомление о приглашении в турнир
+ */
+async function sendTournamentInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId) {
+    const message = `🏆 Вы приглашены в турнир "${tournamentName}" пользователем ${inviterUsername}.\n\nПерейдите в турнир для принятия приглашения: /tournaments/${tournamentId}`;
+    return await sendSystemNotification(recipientId, message, 'tournament_invite');
+}
+
+/**
+ * Отправляет уведомление о принятии приглашения в турнир
+ */
+async function sendTournamentInviteAcceptedNotification(recipientId, username, tournamentName) {
+    const message = `✅ Пользователь ${username} принял приглашение в турнир "${tournamentName}".`;
+    return await sendSystemNotification(recipientId, message, 'tournament_accepted');
+}
+
+/**
+ * Отправляет уведомление об отклонении приглашения в турнир
+ */
+async function sendTournamentInviteRejectedNotification(recipientId, username, tournamentName) {
+    const message = `❌ Пользователь ${username} отклонил приглашение в турнир "${tournamentName}".`;
+    return await sendSystemNotification(recipientId, message, 'tournament_rejected');
+}
+
+/**
+ * Отправляет уведомление о заявке в друзья
+ */
+async function sendFriendRequestNotification(recipientId, senderUsername) {
+    const message = `👥 Пользователь ${senderUsername} отправил вам заявку в друзья.\n\nПерейдите в раздел "Друзья" для принятия заявки.`;
+    return await sendSystemNotification(recipientId, message, 'friend_request');
+}
+
+/**
+ * Отправляет уведомление о принятии заявки в друзья
+ */
+async function sendFriendRequestAcceptedNotification(recipientId, username) {
+    const message = `✅ Пользователь ${username} принял вашу заявку в друзья.`;
+    return await sendSystemNotification(recipientId, message, 'friend_accepted');
+}
+
+/**
+ * Отправляет уведомление о запросе на администрирование турнира
+ */
+async function sendAdminRequestNotification(recipientId, requesterUsername, tournamentName, tournamentId) {
+    const message = `🛡️ Пользователь ${requesterUsername} запросил права администратора для турнира "${tournamentName}".\n\nПерейдите в турнир для рассмотрения запроса: /tournaments/${tournamentId}`;
+    return await sendSystemNotification(recipientId, message, 'admin_request');
+}
+
+/**
+ * Отправляет уведомление о принятии запроса на администрирование
+ */
+async function sendAdminRequestAcceptedNotification(recipientId, tournamentName) {
+    const message = `✅ Ваш запрос на администрирование турнира "${tournamentName}" принят.`;
+    return await sendSystemNotification(recipientId, message, 'admin_accepted');
+}
+
+/**
+ * Отправляет уведомление об отклонении запроса на администрирование
+ */
+async function sendAdminRequestRejectedNotification(recipientId, tournamentName) {
+    const message = `❌ Ваш запрос на администрирование турнира "${tournamentName}" отклонён.`;
+    return await sendSystemNotification(recipientId, message, 'admin_rejected');
+}
+
+module.exports = {
+    sendSystemNotification,
+    sendTournamentInviteNotification,
+    sendTournamentInviteAcceptedNotification,
+    sendTournamentInviteRejectedNotification,
+    sendFriendRequestNotification,
+    sendFriendRequestAcceptedNotification,
+    sendAdminRequestNotification,
+    sendAdminRequestAcceptedNotification,
+    sendAdminRequestRejectedNotification,
+    ensureSystemUser,
+    getOrCreateSystemChat
+}; 

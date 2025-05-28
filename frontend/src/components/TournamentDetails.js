@@ -15,9 +15,6 @@ import {
   getDefaultCS2Maps 
 } from '../utils/mapHelpers';
 
-// Импорт уведомлений и тостов
-import { useToast } from './Notifications/ToastContext';
-
 // eslint-disable-next-line no-unused-vars
 import TournamentChat from './TournamentChat';
 // eslint-disable-next-line no-unused-vars
@@ -134,7 +131,6 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
 
 function TournamentDetails() {
     const { id } = useParams();
-    const toast = useToast(); // Получаем функции для отображения toast-уведомлений
     
     // eslint-disable-next-line no-unused-vars
     const [tournament, setTournament] = useState(null);
@@ -1211,18 +1207,18 @@ function TournamentDetails() {
 
         if (!canGenerateBracket) {
             setMessage('У вас нет прав для генерации сетки или сетка уже сгенерирована');
-            toast.warning('У вас нет прав для генерации сетки или сетка уже сгенерирована');
+            alert('У вас нет прав для генерации сетки или сетка уже сгенерирована');
             return;
         }
 
         try {
             setMessage('Генерация сетки...');
-            toast.info('Начинаем генерацию сетки...');
+            alert('Начинаем генерацию сетки...');
             
             // Проверка количества участников
             if (!tournament.participants || tournament.participants.length < 2) {
                 setMessage('Недостаточно участников для генерации сетки. Минимум 2 участника.');
-                toast.error('Недостаточно участников для генерации сетки. Минимум 2 участника.');
+                alert('Недостаточно участников для генерации сетки. Минимум 2 участника.');
                 return;
             }
             
@@ -1261,7 +1257,7 @@ function TournamentDetails() {
             }
             
             setMessage('Сетка успешно сгенерирована');
-            toast.success('Сетка успешно сгенерирована!');
+            alert('Сетка успешно сгенерирована!');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
             
@@ -1286,7 +1282,7 @@ function TournamentDetails() {
             }
             
             setMessage(errorMessage);
-            toast.error(errorMessage);
+            alert(errorMessage);
             
             // Пытаемся синхронизировать данные с сервера
             try {
@@ -1814,47 +1810,40 @@ function TournamentDetails() {
     // Функция для очистки кэша приглашений для конкретного пользователя
     const clearInvitationCache = (userId) => {
         try {
-            // Получаем текущий список приглашенных пользователей
-            const currentInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
-            console.log(`Очистка кэша для пользователя ${userId}. Текущий кэш:`, currentInvited);
+            if (!tournament || !tournament.id) {
+                alert('Ошибка: данные турнира недоступны');
+                return;
+            }
             
-            // Фильтруем списки, исключая указанный userId
-            const updatedInvited = currentInvited.filter(id => id !== userId);
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
             
-            // Обновляем localStorage и состояние
-            localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(updatedInvited));
-            setInvitedUsers(updatedInvited);
-            
-            console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
-            // Используем наше toast-уведомление
-            toast.success(`Кэш приглашения для пользователя #${userId} очищен`);
-            setMessage(`Кэш приглашения для пользователя #${userId} очищен`);
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                const updatedInvitedUsers = invitedUsers.filter(id => id !== userId);
+                localStorage.setItem(cacheKey, JSON.stringify(updatedInvitedUsers));
+                alert(`Кэш приглашения для пользователя #${userId} очищен`);
+            }
         } catch (error) {
             console.error('Ошибка при очистке кэша приглашения:', error);
-            // Используем наше toast-уведомление
-            toast.error('Ошибка при очистке кэша приглашения');
-            setMessage('Ошибка при очистке кэша приглашения');
+            alert('Ошибка при очистке кэша приглашения');
         }
     };
 
     // Функция для полной очистки кэша приглашений
     const clearAllInvitationsCache = () => {
         try {
-            console.log('Очистка всего кэша приглашений');
+            if (!tournament || !tournament.id) {
+                alert('Ошибка: данные турнира недоступны');
+                return;
+            }
             
-            // Очищаем localStorage и состояние
-            localStorage.removeItem(`tournament_${id}_invited_users`);
-            setInvitedUsers([]);
-            
-            console.log('Кэш приглашений полностью очищен');
-            // Используем наше toast-уведомление
-            toast.success('Весь кэш приглашений очищен');
-            setMessage('Весь кэш приглашений очищен');
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            localStorage.removeItem(cacheKey);
+            alert('Весь кэш приглашений очищен');
         } catch (error) {
-            console.error('Ошибка при очистке всего кэша приглашений:', error);
-            // Используем наше toast-уведомление
-            toast.error('Ошибка при очистке кэша приглашений');
-            setMessage('Ошибка при очистке кэша приглашений');
+            console.error('Ошибка при очистке кэша приглашений:', error);
+            alert('Ошибка при очистке кэша приглашений');
         }
     };
 
@@ -1863,25 +1852,20 @@ function TournamentDetails() {
         if (!userIdToRemove) return;
         
         const removeParticipant = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Необходима авторизация для удаления участника');
+                return;
+            }
+
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    toast.error('Необходима авторизация для удаления участника');
-                    return;
-                }
-                
                 await api.delete(`/api/tournaments/${id}/participants/${userIdToRemove}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                
-                // Обновляем список участников
+                alert('Участник успешно удален');
                 await fetchTournamentData();
-                toast.success('Участник успешно удален');
             } catch (error) {
-                toast.error(error.response?.data?.error || 'Ошибка при удалении участника');
-                console.error('Ошибка при удалении участника:', error);
-            } finally {
-                setUserIdToRemove('');
+                alert(error.response?.data?.error || 'Ошибка при удалении участника');
             }
         };
         
@@ -1890,7 +1874,7 @@ function TournamentDetails() {
         } else {
             setUserIdToRemove('');
         }
-    }, [userIdToRemove, id, toast, fetchTournamentData]);
+    }, [userIdToRemove, id, fetchTournamentData]);
 
     // Отслеживаем изменения в mixedTeams
     useEffect(() => {
@@ -2121,273 +2105,189 @@ function TournamentDetails() {
 
     // Функция сохранения короткого описания турнира
     const handleSaveDescription = async () => {
-        if (!descriptionRef.current.trim()) {
-            toast.error('Описание не может быть пустым');
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        if (!editedDescription.trim()) {
+            alert('Описание не может быть пустым');
             return;
         }
-        
-        setLoading(true);
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    description: descriptionRef.current
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось обновить описание');
+            const response = await api.put(
+                `/api/tournaments/${id}`,
+                { description: editedDescription },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data) {
+                setTournament(prev => ({
+                    ...prev,
+                    description: editedDescription
+                }));
+                setIsEditingDescription(false);
+                alert('Описание успешно обновлено');
             }
-            
-            setTournament(prev => ({
-                ...prev,
-                description: descriptionRef.current
-            }));
-            
-            toast.success('Описание успешно обновлено');
-            setIsEditingDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении описания:', error);
-            toast.error(error.message || 'Не удалось обновить описание');
-        } finally {
-            setLoading(false);
+            alert(error.message || 'Не удалось обновить описание');
         }
     };
-    
-    // Функция сохранения призового фонда
+
     const handleSavePrizePool = async () => {
-        if (!prizePoolRef.current.trim()) {
-            toast.error('Информация о призовом фонде не может быть пустой');
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        if (!editedPrizePool.trim()) {
+            alert('Информация о призовом фонде не может быть пустой');
             return;
         }
-        
-        setLoading(true);
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    prize_pool: prizePoolRef.current
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось обновить призовой фонд');
+            const response = await api.put(
+                `/api/tournaments/${id}`,
+                { prize_pool: editedPrizePool },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data) {
+                setTournament(prev => ({
+                    ...prev,
+                    prize_pool: editedPrizePool
+                }));
+                setIsEditingPrizePool(false);
+                alert('Призовой фонд успешно обновлен');
             }
-            
-            setTournament(prev => ({
-                ...prev,
-                prize_pool: prizePoolRef.current
-            }));
-            
-            toast.success('Призовой фонд успешно обновлен');
-            setIsEditingPrizePool(false);
         } catch (error) {
             console.error('Ошибка при обновлении призового фонда:', error);
-            toast.error(error.message || 'Не удалось обновить призовой фонд');
-        } finally {
-            setLoading(false);
+            alert(error.message || 'Не удалось обновить призовой фонд');
         }
     };
-    
-    // Функция сохранения полного описания турнира
+
     const handleSaveFullDescription = async () => {
-        if (!fullDescriptionRef.current.trim()) {
-            toast.error('Полное описание не может быть пустым');
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        if (!editedFullDescription.trim()) {
+            alert('Полное описание не может быть пустым');
             return;
         }
-        
-        setLoading(true);
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    full_description: fullDescriptionRef.current
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось обновить полное описание');
+            const response = await api.put(
+                `/api/tournaments/${id}`,
+                { full_description: editedFullDescription },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data) {
+                setTournament(prev => ({
+                    ...prev,
+                    full_description: editedFullDescription
+                }));
+                setIsEditingFullDescription(false);
+                alert('Полное описание успешно обновлено');
             }
-            
-            setTournament(prev => ({
-                ...prev,
-                full_description: fullDescriptionRef.current
-            }));
-            
-            toast.success('Полное описание успешно обновлено');
-            setIsEditingFullDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении полного описания:', error);
-            toast.error(error.message || 'Не удалось обновить полное описание');
-        } finally {
-            setLoading(false);
+            alert(error.message || 'Не удалось обновить полное описание');
         }
     };
-    
-    // Функция сохранения правил турнира
+
     const handleSaveRules = async () => {
-        if (!rulesRef.current.trim()) {
-            toast.error('Правила не могут быть пустыми');
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        if (!editedRules.trim()) {
+            alert('Правила не могут быть пустыми');
             return;
         }
-        
-        setLoading(true);
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${id}/update`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    rules: rulesRef.current
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось обновить правила');
+            const response = await api.put(
+                `/api/tournaments/${id}`,
+                { rules: editedRules },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data) {
+                setTournament(prev => ({
+                    ...prev,
+                    rules: editedRules
+                }));
+                setIsEditingRules(false);
+                alert('Правила успешно обновлены');
             }
-            
-            setTournament(prev => ({
-                ...prev,
-                rules: rulesRef.current
-            }));
-            
-            toast.success('Правила успешно обновлены');
-            setIsEditingRules(false);
         } catch (error) {
             console.error('Ошибка при обновлении правил:', error);
-            toast.error(error.message || 'Не удалось обновить правила');
-        } finally {
-            setLoading(false);
+            alert(error.message || 'Не удалось обновить правила');
         }
     };
-    
-    // Проверка кэша приглашений при загрузке турнира
-    
     
     // Обработчик приглашения конкретного пользователя
     const handleInviteUser = async (userId, username) => {
-        if (!tournament || !tournament.id || !userId || !username) return;
-        
-        setLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${tournament.id}/invite`, {
-                username: username
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (response.data) {
-                // Добавляем пользователя в кэш приглашенных
-                const cacheKey = `invitedUsers_${tournament.id}`;
-                let invitedUsers = [];
-                
-                try {
-                    const cachedInvitedUsers = localStorage.getItem(cacheKey);
-                    if (cachedInvitedUsers) {
-                        invitedUsers = JSON.parse(cachedInvitedUsers);
-                    }
-                } catch (error) {
-                    console.error('Ошибка при чтении кэша приглашений:', error);
-                }
-                
-                if (!invitedUsers.includes(userId)) {
-                    invitedUsers.push(userId);
-                    localStorage.setItem(cacheKey, JSON.stringify(invitedUsers));
-                }
-                
-                toast.success('Приглашение успешно отправлено');
+            await api.post(
+                `/api/tournaments/${id}/invite`,
+                { user_id: userId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            // Добавляем пользователя в кэш приглашенных
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+            if (!cachedInvitedUsers.includes(userId)) {
+                cachedInvitedUsers.push(userId);
+                localStorage.setItem(cacheKey, JSON.stringify(cachedInvitedUsers));
             }
+
+            alert('Приглашение успешно отправлено');
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
-            toast.error(error.response?.data?.error || 'Не удалось отправить приглашение');
-        } finally {
-            setLoading(false);
+            alert(error.response?.data?.error || 'Не удалось отправить приглашение');
         }
     };
     
     // Обработчик запуска турнира
     const handleStartTournament = async () => {
-        if (!tournament || !tournament.id) return;
-        
-        setLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/${tournament.id}/start`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Не удалось запустить турнир');
-            }
-            
-            // Обновляем данные турнира
-            fetchTournamentData();
-            toast.success('Турнир успешно запущен');
+            await api.post(
+                `/api/tournaments/${id}/start`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            alert('Турнир успешно запущен');
+            await fetchTournamentData();
         } catch (error) {
             console.error('Ошибка при запуске турнира:', error);
-            toast.error(error.message || 'Не удалось запустить турнир');
-        } finally {
-            setLoading(false);
+            alert(error.message || 'Не удалось запустить турнир');
         }
     };
 
     // Функция для пересоздания сетки турнира
     const handleRegenerateBracket = async () => {
         const token = localStorage.getItem('token');
-        if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы пересоздать сетку');
-            return;
-        }
+        if (!token) return;
 
-        if (!isAdminOrCreator) {
-            setMessage('У вас нет прав для пересоздания сетки');
-            toast.warning('У вас нет прав для пересоздания сетки');
+        if (!canGenerateBracket) {
+            alert('У вас нет прав для пересоздания сетки');
             return;
         }
 
         try {
             setMessage('Пересоздание сетки...');
-            toast.info('Начинаем пересоздание сетки...');
+            alert('Начинаем пересоздание сетки...');
             
             // Проверка количества участников
             if (!tournament.participants || tournament.participants.length < 2) {
                 setMessage('Недостаточно участников для пересоздания сетки. Минимум 2 участника.');
-                toast.error('Недостаточно участников для пересоздания сетки. Минимум 2 участника.');
+                alert('Недостаточно участников для пересоздания сетки. Минимум 2 участника.');
                 return;
             }
             
@@ -2429,7 +2329,7 @@ function TournamentDetails() {
             }
             
             setMessage('Сетка успешно пересоздана');
-            toast.success('Сетка успешно пересоздана!');
+            alert('Сетка успешно пересоздана!');
         } catch (error) {
             console.error('Ошибка при пересоздании сетки:', error);
             
@@ -2454,7 +2354,7 @@ function TournamentDetails() {
             }
             
             setMessage(errorMessage);
-            toast.error(errorMessage);
+            alert(errorMessage);
             
             // Пытаемся синхронизировать данные с сервера
             try {
@@ -2551,80 +2451,34 @@ function TournamentDetails() {
 
     // Функция для начала редактирования матча
     const startEditingMatch = (matchId) => {
-        const matchData = matches.find(m => m.id === parseInt(matchId));
-        if (!matchData || !canEditMatchResult(matchId)) {
-            toast.error('Редактирование этого матча недоступно');
+        if (!canEditMatchResult(matchId)) {
+            alert('Редактирование этого матча недоступно');
             return;
         }
 
-        // Получаем информацию о командах
-        const team1Info = tournament.participants.find(p => p.id === matchData.team1_id);
-        const team2Info = tournament.participants.find(p => p.id === matchData.team2_id);
+        const match = matches.find(m => m.id === matchId);
+        if (!match) return;
 
-        const editData = {
-            id: matchData.id,
-            team1: {
-                id: matchData.team1_id,
-                name: team1Info?.name || 'Участник 1',
-                score: matchData.score1 || 0
-            },
-            team2: {
-                id: matchData.team2_id,
-                name: team2Info?.name || 'Участник 2',
-                score: matchData.score2 || 0
-            },
-            winner_id: matchData.winner_team_id,
-            originalMapsData: matchData.maps_data
-        };
-
-        setEditingMatchData(editData);
-        setEditingWinner(matchData.winner_team_id);
+        setIsEditingMatch(true);
+        setEditingMatchData(match);
+        setEditingWinner(match.winner_team_id);
         setEditingScores({
-            team1: matchData.score1 || 0,
-            team2: matchData.score2 || 0
+            team1: match.score1 || 0,
+            team2: match.score2 || 0
         });
 
-        // Парсим данные карт для редактирования
-        if (matchData.maps_data && gameHasMaps(tournament.game)) {
+        // Загружаем карты, если они есть
+        if (match.maps_data && gameHasMaps(tournament.game)) {
             try {
-                let parsedMapsData;
-                if (typeof matchData.maps_data === 'string') {
-                    parsedMapsData = JSON.parse(matchData.maps_data);
-                } else {
-                    parsedMapsData = matchData.maps_data;
-                }
-
-                if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
-                    const editMaps = parsedMapsData.map(mapData => ({
-                        map: (() => {
-                            if (mapData.mapName && typeof mapData.mapName === 'string') {
-                                return mapData.mapName;
-                            } else if (mapData.map) {
-                                if (typeof mapData.map === 'string') {
-                                    return mapData.map;
-                                } else if (typeof mapData.map === 'object' && mapData.map !== null) {
-                                    return mapData.map.name || mapData.map.display_name || mapData.map.mapName || 'Неизвестная карта';
-                                }
-                            }
-                            return 'Неизвестная карта';
-                        })(),
-                        score1: mapData.score1 || mapData.team1Score || 0,
-                        score2: mapData.score2 || mapData.team2Score || 0
-                    }));
-                    setEditingMaps(editMaps);
-                } else {
-                    setEditingMaps([{ map: getDefaultMap(tournament.game), score1: 0, score2: 0 }]);
-                }
+                const parsedMaps = JSON.parse(match.maps_data);
+                setEditingMaps(Array.isArray(parsedMaps) ? parsedMaps : []);
             } catch (e) {
-                console.error('Ошибка при парсинге данных карт для редактирования:', e);
-                setEditingMaps([{ map: getDefaultMap(tournament.game), score1: 0, score2: 0 }]);
+                console.error('Ошибка при разборе данных карт:', e);
+                setEditingMaps([]);
             }
         } else {
             setEditingMaps([]);
         }
-
-        setIsEditingMatch(true);
-        setViewingMatchDetails(false);
     };
 
     // Функция для отмены редактирования
@@ -2662,43 +2516,28 @@ function TournamentDetails() {
 
     // Функция для сохранения изменений результата матча
     const saveMatchEdit = async () => {
-        if (!editingMatchData || !editingWinner) {
-            toast.error('Не выбран победитель матча');
+        if (!editingWinner) {
+            alert('Не выбран победитель матча');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Необходима авторизация');
             return;
         }
 
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                toast.error('Необходима авторизация');
-                return;
-            }
-
-            // Подготавливаем данные для отправки
-            let finalScore1 = editingScores.team1;
-            let finalScore2 = editingScores.team2;
-
-            // Если игра поддерживает карты и есть карты, обновляем счет на основе побед на картах
-            if (tournament && gameHasMaps(tournament.game) && editingMaps.length > 0) {
-                const team1Wins = editingMaps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length;
-                const team2Wins = editingMaps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length;
-                finalScore1 = team1Wins;
-                finalScore2 = team2Wins;
-            }
-
             const requestData = {
-                matchId: Number(editingMatchData.id),
-                winner_team_id: Number(editingWinner),
-                score1: Number(finalScore1) || 0,
-                score2: Number(finalScore2) || 0
+                matchId: editingMatchData.id,
+                winner_team_id: editingWinner,
+                score1: editingScores.team1,
+                score2: editingScores.team2
             };
 
-            // Добавляем данные карт, если игра их поддерживает
             if (gameHasMaps(tournament.game) && editingMaps.length > 0) {
                 requestData.maps = editingMaps;
             }
-
-            console.log('Отправляем обновленные данные матча:', requestData);
 
             const response = await api.post(
                 `/api/tournaments/${id}/update-match`,
@@ -2706,23 +2545,17 @@ function TournamentDetails() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            if (response.data) {
-                // Обновляем данные турнира
-                if (response.data.tournament) {
-                    setTournament(response.data.tournament);
-                    if (Array.isArray(response.data.tournament.matches)) {
-                        setMatches(response.data.tournament.matches);
-                    }
-                } else {
-                    await fetchTournamentData();
-                }
-
-                toast.success('Результаты матча успешно обновлены');
-                cancelEditingMatch();
+            if (response.data.tournament) {
+                setTournament(response.data.tournament);
+                setMatches(response.data.tournament.matches || []);
             }
+
+            alert('Результаты матча успешно обновлены');
+            cancelEditingMatch();
+            await fetchTournamentData();
         } catch (error) {
-            console.error('Ошибка при сохранении изменений матча:', error);
-            toast.error(error.response?.data?.error || 'Ошибка при сохранении изменений');
+            console.error('Ошибка при сохранении изменений:', error);
+            alert(error.response?.data?.error || 'Ошибка при сохранении изменений');
         }
     };
 
@@ -2907,7 +2740,6 @@ function TournamentDetails() {
                             onTeamsUpdated={fetchTournamentData}
                             onRemoveParticipant={setUserIdToRemove}
                             isAdminOrCreator={isAdminOrCreator}
-                            toast={toast}
                         />
                     ) : (
                         /* Для обычных турниров показываем стандартные блоки участников */

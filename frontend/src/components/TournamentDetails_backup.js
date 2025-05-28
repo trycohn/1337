@@ -1,19 +1,19 @@
 // Импорты React и связанные
-import React, { useState, useRef, useEffect, Suspense, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 import './TournamentDetails.css';
 import TeamGenerator from './TeamGenerator';
 import { ensureHttps } from '../utils/userHelpers';
-
-// Импорт уведомлений и тостов
-import { useToast } from './Notifications/ToastContext';
-
-// eslint-disable-next-line no-unused-vars
-import TournamentChat from './TournamentChat';
-// eslint-disable-next-line no-unused-vars
-import { useUser } from '../context/UserContext';
+// Импортируем вспомогательные функции для работы с картами
+import { 
+  isCounterStrike2, 
+  gameHasMaps, 
+  getGameMaps as getGameMapsHelper, 
+  getDefaultMap as getDefaultMapHelper, 
+  getDefaultCS2Maps 
+} from '../utils/mapHelpers';
 
 // Используем React.lazy для асинхронной загрузки тяжелого компонента
 const LazyBracketRenderer = React.lazy(() => 

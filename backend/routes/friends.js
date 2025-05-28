@@ -3,6 +3,10 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 const { sendNotification } = require('../notifications');
+const { 
+    sendFriendRequestNotification,
+    sendFriendRequestAcceptedNotification
+} = require('../utils/systemNotifications');
 
 // Получение списка друзей пользователя
 router.get('/', authenticateToken, async (req, res) => {
@@ -93,21 +97,8 @@ router.post('/request', authenticateToken, async (req, res) => {
                     ['accepted', friendship.id]
                 );
                 
-                // Создаем уведомление для другого пользователя
-                const notification = {
-                    user_id: friendId,
-                    message: `Пользователь ${req.user.username} принял вашу заявку в друзья`,
-                    type: 'friend_request_accepted',
-                    requester_id: req.user.id
-                };
-                
-                const notificationResult = await pool.query(
-                    'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                    [notification.user_id, notification.message, notification.type, notification.requester_id, false]
-                );
-                
-                // Отправляем уведомление через WebSocket
-                sendNotification(friendId, notificationResult.rows[0]);
+                // Отправляем системное уведомление о принятии заявки
+                await sendFriendRequestAcceptedNotification(friendId, req.user.username);
                 
                 return res.json({ message: 'Заявка в друзья принята' });
             }
@@ -132,21 +123,8 @@ router.post('/request', authenticateToken, async (req, res) => {
             );
         }
         
-        // Создаем уведомление для пользователя
-        const notification = {
-            user_id: friendId,
-            message: `Пользователь ${req.user.username} отправил вам заявку в друзья`,
-            type: 'friend_request',
-            requester_id: req.user.id
-        };
-        
-        const notificationResult = await pool.query(
-            'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [notification.user_id, notification.message, notification.type, notification.requester_id, false]
-        );
-        
-        // Отправляем уведомление через WebSocket
-        sendNotification(friendId, notificationResult.rows[0]);
+        // Отправляем системное уведомление о заявке в друзья
+        await sendFriendRequestNotification(friendId, req.user.username);
         
         res.json({ message: 'Заявка в друзья отправлена' });
     } catch (err) {
@@ -182,21 +160,8 @@ router.post('/accept', authenticateToken, async (req, res) => {
         
         const friendRequest = requestCheck.rows[0];
         
-        // Создаем уведомление для отправителя заявки
-        const notification = {
-            user_id: friendRequest.user_id,
-            message: `Пользователь ${req.user.username} принял вашу заявку в друзья`,
-            type: 'friend_request_accepted',
-            requester_id: req.user.id
-        };
-        
-        const notificationResult = await pool.query(
-            'INSERT INTO notifications (user_id, message, type, requester_id, is_read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [notification.user_id, notification.message, notification.type, notification.requester_id, false]
-        );
-        
-        // Отправляем уведомление через WebSocket
-        sendNotification(friendRequest.user_id, notificationResult.rows[0]);
+        // Отправляем системное уведомление отправителю заявки
+        await sendFriendRequestAcceptedNotification(friendRequest.user_id, req.user.username);
         
         res.json({ message: 'Заявка в друзья принята' });
     } catch (err) {

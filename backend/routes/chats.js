@@ -531,6 +531,28 @@ router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
     }
 });
 
+// Получение общего количества непрочитанных сообщений пользователя
+router.get('/unread-count', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT COUNT(*) as total_unread
+            FROM messages m
+            LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $1
+            JOIN chat_participants cp ON m.chat_id = cp.chat_id
+            WHERE cp.user_id = $1 
+              AND m.sender_id != $1
+              AND (ms.is_read IS NULL OR ms.is_read = FALSE)
+        `, [req.user.id]);
+        
+        const totalUnread = parseInt(result.rows[0].total_unread) || 0;
+        
+        res.json({ unread_count: totalUnread });
+    } catch (err) {
+        console.error('Ошибка получения количества непрочитанных сообщений:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении количества непрочитанных сообщений' });
+    }
+});
+
 // Вспомогательная функция для получения информации о чате
 async function getChatInfo(chatId, userId) {
     const result = await pool.query(`

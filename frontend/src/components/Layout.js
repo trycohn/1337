@@ -8,15 +8,34 @@ import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { ensureHttps } from '../utils/userHelpers';
+import { io } from 'socket.io-client';
 
 function Layout() {
     const [user, setUser] = useState(null);
     const [error, setError] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
     const location = useLocation();
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const socketRef = useRef(null);
+
+    // Функция для получения количества непрочитанных сообщений
+    const fetchUnreadCount = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await api.get('/api/chats/unread-count', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setUnreadCount(response.data.unread_count || 0);
+        } catch (error) {
+            console.error('Ошибка получения количества непрочитанных сообщений:', error);
+        }
+    };
 
     const fetchUser = async (token) => {
         setLoading(true);
@@ -25,6 +44,9 @@ function Layout() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUser(response.data);
+            
+            // После получения пользователя, получаем количество непрочитанных сообщений
+            await fetchUnreadCount();
         } catch (error) {
             console.error('❌ Ошибка получения данных пользователя:', error.response ? error.response.data : error.message);
             localStorage.removeItem('token');
@@ -49,6 +71,57 @@ function Layout() {
             navigate('/profile', { replace: true });
         }
     }, [navigate, user, setLoading]);
+
+    // WebSocket подключение для обновления счетчика непрочитанных сообщений
+    useEffect(() => {
+        if (!user) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // Создаем WebSocket соединение
+        const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', {
+            query: { token },
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+            console.log('Layout: WebSocket соединение установлено');
+        });
+
+        // Обновляем счетчик при получении нового сообщения
+        socket.on('message', (message) => {
+            // Увеличиваем счетчик только если сообщение не от текущего пользователя
+            // и мы не находимся в чатах
+            if (message.sender_id !== user.id && location.pathname !== '/messages') {
+                setUnreadCount(prev => prev + 1);
+            }
+        });
+
+        // Обновляем счетчик при изменении статуса прочтения
+        socket.on('read_status', () => {
+            fetchUnreadCount();
+        });
+
+        socketRef.current = socket;
+
+        return () => {
+            if (socket) {
+                socket.disconnect();
+            }
+        };
+    }, [user, location.pathname]);
+
+    // Обновляем счетчик при переходе на страницу чатов
+    useEffect(() => {
+        if (location.pathname === '/messages' && user) {
+            // Небольшая задержка для обновления счетчика после посещения чатов
+            const timer = setTimeout(() => {
+                fetchUnreadCount();
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [location.pathname, user]);
 
     useEffect(() => {
         setLoading(true);
@@ -124,11 +197,18 @@ function Layout() {
                                     {user.username}
                                 </Link>
                                 <Link to="/messages" className="messages-link">
-                                    <FontAwesomeIcon
-                                        icon={faEnvelope}
-                                        className="messages-icon"
-                                        style={{ color: '#FFFFFF' }}
-                                    />
+                                    <div className="messages-icon-container">
+                                        <FontAwesomeIcon
+                                            icon={faEnvelope}
+                                            className="messages-icon"
+                                            style={{ color: '#FFFFFF' }}
+                                        />
+                                        {unreadCount > 0 && (
+                                            <span className="unread-badge">
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        )}
+                                    </div>
                                 </Link>
                                 <button onClick={handleLogout}>Выйти</button>
                             </div>
