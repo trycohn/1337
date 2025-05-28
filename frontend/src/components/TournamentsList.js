@@ -117,9 +117,13 @@ function TournamentsList() {
         const handleClickOutside = (event) => {
             // Проверяем, был ли клик вне активного фильтра
             if (activeFilter) {
+                console.log('🔧 Click outside check for filter:', activeFilter);
                 const currentRef = filterRefs[activeFilter]?.current;
                 if (currentRef && !currentRef.contains(event.target)) {
+                    console.log('🔧 Closing filter:', activeFilter);
                     setActiveFilter(null);
+                } else {
+                    console.log('🔧 Click was inside filter area');
                 }
             }
         };
@@ -162,7 +166,10 @@ function TournamentsList() {
     };
 
     const toggleFilter = (filterName) => {
-        setActiveFilter(activeFilter === filterName ? null : filterName);
+        console.log('🔧 Toggle filter called:', filterName, 'Current active:', activeFilter);
+        const newActiveFilter = activeFilter === filterName ? null : filterName;
+        console.log('🔧 Setting active filter to:', newActiveFilter);
+        setActiveFilter(newActiveFilter);
     };
 
     const uniqueValues = (field) => {

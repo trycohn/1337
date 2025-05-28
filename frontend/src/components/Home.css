@@ -1183,9 +1183,11 @@ header.header {
     color: #cccccc;
   }
 
-  /* Скрываем выпадающие списки на мобильных */
-  .tournaments-list th .dropdown {
-    display: none;
+  /* Скрываем выпадающие списки только на очень маленьких экранах (менее 480px) */
+  @media (max-width: 480px) {
+    .tournaments-list th .dropdown {
+      display: none;
+    }
   }
 
   /* Мобильные карточки */
@@ -1819,4 +1821,23 @@ header.header {
 
 .mobile-filter-input::placeholder {
   color: #888888;
+}
+
+/* Улучшенные стили для выпадающих списков на планшетах */
+@media (max-width: 768px) and (min-width: 481px) {
+  .tournaments-list th .dropdown {
+    min-width: 120px;
+    font-size: 12px;
+  }
+  
+  .tournaments-list th .dropdown-item {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .tournaments-list th .filter-icon,
+  .tournaments-list th .dropdown-icon,
+  .tournaments-list th .sort-icon {
+    font-size: 11px;
+  }
 }
