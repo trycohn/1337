@@ -4,15 +4,7 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator } = require('../middleware/auth');
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
-const { generateBracket } = require('../utils/bracketGenerator');
-const { 
-    sendTournamentInviteNotification,
-    sendTournamentInviteAcceptedNotification,
-    sendTournamentInviteRejectedNotification,
-    sendAdminRequestNotification,
-    sendAdminRequestAcceptedNotification,
-    sendAdminRequestRejectedNotification
-} = require('../utils/systemNotifications');
+const { generateBracket } = require('../bracketGenerator');
 
 // Получение списка всех турниров с количеством участников
 router.get('/', async (req, res) => {
@@ -577,13 +569,21 @@ router.post('/:id/invite', authenticateToken, async (req, res) => {
             [id, user.id, creatorId, 'pending']
         );
 
-        // Отправляем системное уведомление в чат
-        await sendTournamentInviteNotification(
-            user.id,
-            tournament.name,
-            req.user.username,
-            id
+        const notificationMessage = `Вы приглашены в турнир "${tournament.name}" создателем ${req.user.username}`;
+        const notificationResult = await pool.query(
+            'INSERT INTO notifications (user_id, message, type, tournament_id, invitation_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [user.id, notificationMessage, 'tournament_invite', id, invitationResult.rows[0].id]
         );
+
+        sendNotification(user.id, {
+            id: notificationResult.rows[0].id,
+            user_id: user.id,
+            message: notificationMessage,
+            type: 'tournament_invite',
+            tournament_id: id,
+            invitation_id: invitationResult.rows[0].id,
+            created_at: new Date().toISOString(),
+        });
 
         res.status(200).json({ message: 'Приглашение отправлено' });
     } catch (err) {
@@ -664,13 +664,6 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
                 created_at: new Date().toISOString(),
             });
 
-            // Отправляем системное уведомление создателю о принятии приглашения
-            await sendTournamentInviteAcceptedNotification(
-                tournament.created_by,
-                req.user.username,
-                tournament.name
-            );
-
             res.status(200).json({ message: 'Вы успешно присоединились к турниру' });
         } else if (action === 'reject') {
             // Обновляем статус приглашения
@@ -679,12 +672,20 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
                 ['rejected', invitation_id]
             );
 
-            // Отправляем системное уведомление создателю об отклонении приглашения
-            await sendTournamentInviteRejectedNotification(
-                tournament.created_by,
-                req.user.username,
-                tournament.name
+            // Отправляем уведомление создателю
+            const creatorNotificationMessage = `Пользователь ${req.user.username} отклонил приглашение в турнир "${tournament.name}"`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id, invitation_id) VALUES ($1, $2, $3, $4, $5)',
+                [tournament.created_by, creatorNotificationMessage, 'invitation_rejected', id, invitation_id]
             );
+            sendNotification(tournament.created_by, {
+                user_id: tournament.created_by,
+                message: creatorNotificationMessage,
+                type: 'invitation_rejected',
+                tournament_id: id,
+                invitation_id: invitation_id,
+                created_at: new Date().toISOString(),
+            });
 
             res.status(200).json({ message: 'Приглашение отклонено' });
         } else {
@@ -733,13 +734,22 @@ router.post('/:id/request-admin', authenticateToken, verifyEmailRequired, async 
             [id, userId]
         );
 
-        // Отправляем системное уведомление создателю о запросе на администрирование
-        await sendAdminRequestNotification(
-            tournament.created_by,
-            req.user.username,
-            tournament.name,
-            id
+        const notificationMessage = `Пользователь ${req.user.username} запросил права администратора для турнира "${tournament.name}"`;
+        const notificationResult = await pool.query(
+            'INSERT INTO notifications (user_id, message, type, tournament_id, requester_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [tournament.created_by, notificationMessage, 'admin_request', id, userId]
         );
+        const notification = notificationResult.rows[0];
+
+        sendNotification(tournament.created_by, {
+            id: notification.id,
+            user_id: tournament.created_by,
+            message: notificationMessage,
+            type: 'admin_request',
+            tournament_id: id,
+            requester_id: userId,
+            created_at: new Date().toISOString(),
+        });
 
         res.status(200).json({ message: 'Запрос на администрирование отправлен' });
     } catch (err) {
@@ -794,8 +804,21 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyEmailRequired
                 ['accepted', id, requesterId]
             );
 
-            // Отправляем системное уведомление о принятии запроса
-            await sendAdminRequestAcceptedNotification(requesterId, tournament.name);
+            const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" принят создателем ${req.user.username}`;
+            const notificationResult = await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4) RETURNING *',
+                [requesterId, notificationMessage, 'admin_request_accepted', id]
+            );
+            
+            const notification = notificationResult.rows[0];
+            sendNotification(requesterId, {
+                id: notification.id,
+                user_id: requesterId,
+                message: notificationMessage,
+                type: 'admin_request_accepted',
+                tournament_id: id,
+                created_at: new Date().toISOString(),
+            });
         } else {
             // Если отклоняем запрос
             await pool.query(
