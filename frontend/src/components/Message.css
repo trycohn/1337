@@ -1,8 +1,8 @@
-/* Добавляю новый контейнер для сообщения и времени */
+/* Минималистичный черно-белый дизайн сообщений */
 .message-container {
     display: flex;
     align-items: flex-end;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     width: 100%;
 }
 
@@ -16,45 +16,67 @@
     width: fit-content;
     position: relative;
     max-width: 70%;
-    padding: 6px 10px;
-    border-radius: 12px;
-    background-color: #34344a;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+    border-radius: 16px;
+    background-color: #222222;
+    border: 1px solid #333333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     word-break: break-word;
-    color: #e0e0e5;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.message:hover {
+    background-color: #2a2a2a;
+    border-color: #444444;
 }
 
 .message.own {
-    background-color: #3a4db8;
+    background-color: #333333;
+    border-color: #555555;
+}
+
+.message.own:hover {
+    background-color: #3a3a3a;
+    border-color: #666666;
 }
 
 .message-text {
     font-size: 14px;
-    line-height: 1.4;
+    line-height: 1.5;
+    color: #ffffff;
 }
 
 .message-meta {
-    margin-left: 8px;
+    margin-left: 12px;
     display: flex;
     align-items: center;
-    font-size: 0.75rem;
-    color: #8a8aa8;
+    font-size: 11px;
+    color: #888888;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.message-container.own-container .message-meta {
+    margin-left: 0;
+    margin-right: 12px;
 }
 
 .message-time {
-    margin-right: 4px;
+    margin-right: 6px;
 }
 
 .message-status {
-    font-size: 0.9rem;
+    font-size: 12px;
 }
 
 .message-status.read {
-    color: #7d8eff;
+    color: #66ff66;
 }
 
 .message-status.sent {
-    color: #a0a0b8;
+    color: #888888;
 }
 
 /* Стили для контекстного меню сообщений */
@@ -62,9 +84,10 @@
     position: absolute;
     z-index: 100;
     min-width: 150px;
-    background-color: #26263c;
+    background-color: #111111;
+    border: 1px solid #333333;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.2s ease;
     overflow: hidden;
 }
@@ -87,51 +110,49 @@
 }
 
 .message-context-menu li {
-    padding: 10px 15px;
+    padding: 12px 16px;
     font-size: 14px;
     cursor: pointer;
-    color: #e0e0e5;
-    transition: background-color 0.2s;
-}
-
-.message-context-menu li:hover {
-    background-color: #3a3a55;
-}
-
-.message-context-menu li:first-child {
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
+    color: #ffffff;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #222222;
 }
 
 .message-context-menu li:last-child {
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-bottom: none;
 }
 
-/* Добавляю стили для сообщений с изображениями */
+.message-context-menu li:hover {
+    background-color: #1a1a1a;
+}
+
+/* Стили для сообщений с изображениями */
 .message-container .message .message-image {
     overflow: hidden;
     border-radius: 12px;
 }
 
-/* Убираю фон для сообщений с изображениями - использую класс */
+/* Убираем фон для сообщений с изображениями */
 .message.image-message {
     background-color: transparent;
+    border: none;
     box-shadow: none;
     padding: 0;
 }
 
-/* Убираю стандартный фон для уведомлений */
+/* Убираем стандартный фон для уведомлений */
 .message.announcement-wrapper {
     background-color: transparent;
+    border: none;
     box-shadow: none;
     padding: 0;
 }
 
-/* Старый стиль для message-image можно упростить */
 .message-image {
     max-width: 100%;
     border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #333333;
 }
 
 .message-image img {
@@ -140,22 +161,34 @@
     object-fit: contain;
     cursor: pointer;
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.message-image img:hover {
+    transform: scale(1.02);
 }
 
 /* Стили для документов */
 .message-document, .message-file {
     display: flex;
     align-items: center;
-    background-color: rgba(60, 60, 84, 0.5);
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
     border-radius: 12px;
-    padding: 8px;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+}
+
+.message-document:hover, .message-file:hover {
+    background-color: #222222;
+    border-color: #444444;
 }
 
 .document-icon, .file-icon {
     font-size: 24px;
-    margin-right: 10px;
-    color: #a0a0b8;
+    margin-right: 12px;
+    color: #888888;
 }
 
 .document-info, .file-info {
@@ -169,33 +202,47 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #e4e4f0;
+    color: #ffffff;
+    font-size: 14px;
 }
 
 .document-download, .file-download {
-    font-size: 0.8rem;
-    color: #7d8eff;
+    font-size: 12px;
+    color: #888888;
     text-decoration: none;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
 }
 
 .document-download:hover, .file-download:hover {
+    color: #ffffff;
     text-decoration: underline;
-    color: #a0affb;
 }
 
 /* Стили для объявлений */
 .message-announcement {
     display: flex;
-    background-color: rgba(255, 193, 7, 0.15);
+    background-color: #1a1a1a;
+    border: 1px solid #444444;
+    border-left: 4px solid #ffcc66;
     border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 5px;
+    padding: 16px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.message-announcement:hover {
+    background-color: #222222;
+    border-color: #555555;
+    border-left-color: #ffcc66;
 }
 
 .announcement-icon {
-    font-size: 18px;
-    margin-right: 12px;
-    color: #ffc107;
+    font-size: 20px;
+    margin-right: 16px;
+    color: #ffcc66;
     flex-shrink: 0;
 }
 
@@ -207,77 +254,90 @@
 
 .announcement-text {
     font-weight: 500;
-    color: #ffd78c;
-    margin-bottom: 8px;
-    line-height: 1.4;
+    color: #ffffff;
+    margin-bottom: 12px;
+    line-height: 1.5;
+    font-size: 14px;
 }
 
 /* Стили для кнопок в уведомлениях */
 .announcement-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 6px;
+    gap: 12px;
+    margin-top: 8px;
 }
 
 .action-button {
-    padding: 0px 5px;
-    border-radius: 0px;
-    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .action-button.accept {
-    background-color: #4caf50;
-    color: white;
+    background-color: #2a4d2a;
+    border-color: #4d7d4d;
+    color: #66ff66;
 }
 
 .action-button.accept:hover:not(:disabled) {
-    background-color: #43a047;
+    background-color: #3d6d3d;
+    border-color: #66ff66;
+    transform: translateY(-1px);
 }
 
 .action-button.reject {
-    background-color: #f44336;
-    color: white;
+    background-color: #4d2a2a;
+    border-color: #7d4d4d;
+    color: #ff6666;
 }
 
 .action-button.reject:hover:not(:disabled) {
-    background-color: #e53935;
+    background-color: #6d3d3d;
+    border-color: #ff6666;
+    transform: translateY(-1px);
 }
 
 .action-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
 }
 
 .announcement-response {
-    margin-top: 6px;
+    margin-top: 8px;
     font-size: 13px;
 }
 
 .response-status {
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
     font-weight: 500;
     display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .response-status.accepted {
-    background-color: rgba(76, 175, 80, 0.15);
-    color: #4caf50;
-    border: 1px solid rgba(76, 175, 80, 0.3);
+    background-color: rgba(102, 255, 102, 0.1);
+    color: #66ff66;
+    border: 1px solid rgba(102, 255, 102, 0.3);
 }
 
 .response-status.rejected {
-    background-color: rgba(244, 67, 54, 0.15);
-    color: #f44336;
-    border: 1px solid rgba(244, 67, 54, 0.3);
+    background-color: rgba(255, 102, 102, 0.1);
+    color: #ff6666;
+    border: 1px solid rgba(255, 102, 102, 0.3);
 }
 
 .response-processed {
-    color: #78909c;
+    color: #888888;
     font-style: italic;
 }
 
@@ -285,7 +345,7 @@
 @media (max-width: 768px) {
     .message {
         max-width: 85%;
-        padding: 5px 8px;
+        padding: 10px 14px;
     }
     
     .message-text {
@@ -293,8 +353,13 @@
     }
     
     .message-meta {
-        font-size: 0.7rem;
-        margin-left: 6px;
+        font-size: 10px;
+        margin-left: 10px;
+    }
+    
+    .message-container.own-container .message-meta {
+        margin-left: 0;
+        margin-right: 10px;
     }
     
     .message-image img {
@@ -302,29 +367,29 @@
     }
     
     .message-document, .message-file {
-        padding: 6px;
+        padding: 10px 12px;
     }
     
     .document-icon, .file-icon {
         font-size: 20px;
-        margin-right: 8px;
+        margin-right: 10px;
     }
     
     .document-name, .file-name {
-        font-size: 0.9rem;
+        font-size: 13px;
     }
     
     .document-download, .file-download {
-        font-size: 0.75rem;
+        font-size: 11px;
     }
     
     .message-announcement {
-        padding: 8px;
+        padding: 12px;
     }
     
     .announcement-icon {
-        font-size: 16px;
-        margin-right: 10px;
+        font-size: 18px;
+        margin-right: 12px;
     }
     
     .announcement-text {
@@ -332,13 +397,13 @@
     }
     
     .action-button {
-        padding: 4px 10px;
+        padding: 6px 12px;
         font-size: 12px;
     }
     
     .announcement-actions {
-        gap: 8px;
-        margin-top: 5px;
+        gap: 10px;
+        margin-top: 6px;
     }
     
     .message-context-menu {
@@ -346,7 +411,7 @@
     }
     
     .message-context-menu li {
-        padding: 8px 12px;
+        padding: 10px 12px;
         font-size: 13px;
     }
 }
@@ -354,7 +419,7 @@
 @media (max-width: 600px) {
     .message {
         max-width: 90%;
-        padding: 4px 7px;
+        padding: 8px 12px;
     }
     
     .message-text {
@@ -362,7 +427,7 @@
     }
     
     .message-meta {
-        font-size: 0.65rem;
+        font-size: 9px;
     }
     
     .message-image img {

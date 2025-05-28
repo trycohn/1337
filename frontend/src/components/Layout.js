@@ -2,22 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComment, faEnvelope } from '@fortawesome/free-regular-svg-icons';
+import { faEnvelope } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
 import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
-import { io } from 'socket.io-client';
-import { decodeTokenPayload, ensureHttps } from '../utils/userHelpers';
+import { ensureHttps } from '../utils/userHelpers';
 
 function Layout() {
     const [user, setUser] = useState(null);
     const [error, setError] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [notifications, setNotifications] = useState([]);
-    const [showNotifications, setShowNotifications] = useState(false);
-    const notificationRef = useRef(null);
-    const wsRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
     const { loading, setLoading } = useLoader();
@@ -30,32 +25,6 @@ function Layout() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUser(response.data);
-            
-            // Создаем соединение Socket.IO для уведомлений
-            const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
-            socket.on('connect', () => {
-                console.log('Socket.IO соединение установлено');
-            });
-            socket.on('notification', (notification) => {
-                console.log('Получено новое уведомление:', notification);
-                if (['admin_request_accepted', 'admin_request_rejected'].includes(notification.type)) {
-                    api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`)
-                       .then(res => setNotifications(res.data))
-                       .catch(err => console.error('Ошибка получения уведомлений:', err));
-                } else {
-                    setNotifications((prev) => [notification, ...prev]);
-                }
-            });
-            socket.on('disconnect', (reason) => {
-                console.log('Socket.IO соединение закрыто:', reason);
-            });
-            // Сохраняем ссылку на Socket.IO клиент
-            wsRef.current = socket;
-            
-            // Получаем существующие уведомления (без обработанных запросов)
-            const notificationsResponse = await api.get(`/api/notifications?userId=${response.data.id}&includeProcessed=false`);
-            setNotifications(notificationsResponse.data);
-            
         } catch (error) {
             console.error('❌ Ошибка получения данных пользователя:', error.response ? error.response.data : error.message);
             localStorage.removeItem('token');
@@ -64,15 +33,6 @@ function Layout() {
             setLoading(false);
         }
     };
-    
-    // Закрываем Socket.IO соединение при размонтировании компонента
-    useEffect(() => {
-        return () => {
-            if (wsRef.current) {
-                wsRef.current.disconnect();
-            }
-        };
-    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -98,27 +58,6 @@ function Layout() {
         return () => clearTimeout(timer);
     }, [location.pathname, setLoading]);
 
-    useEffect(() => {
-        if (showNotifications && notifications.length === 0) {
-            const timer = setTimeout(() => {
-                setShowNotifications(false);
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [showNotifications, notifications]);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (showNotifications && notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setShowNotifications(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showNotifications]);
-
     const handleLogout = () => {
         localStorage.removeItem('token');
         setUser(null);
@@ -128,91 +67,6 @@ function Layout() {
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
-
-    const toggleNotifications = async () => {
-        const token = localStorage.getItem('token');
-        if (!showNotifications && token && user) {
-            try {
-                // Получаем текущие уведомления
-                const response = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=true`);
-                const notifications = response.data;
-                
-                // Фильтруем уведомления, которые не требуют действий
-                const notificationsToMarkAsRead = notifications.filter(n => 
-                    n.type !== 'tournament_invite' && 
-                    n.type !== 'admin_request' && 
-                    n.type !== 'friend_request'
-                );
-                
-                // Помечаем как прочитанные только уведомления, не требующие действий
-                if (notificationsToMarkAsRead.length > 0) {
-                    await api.post(
-                        `/api/notifications/mark-read?userId=${user.id}`,
-                        { notificationIds: notificationsToMarkAsRead.map(n => n.id) },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    
-                    // Обновляем локальное состояние
-                    setNotifications(prev => 
-                        prev.map(n => 
-                            notificationsToMarkAsRead.some(ntr => ntr.id === n.id) 
-                                ? { ...n, is_read: true }
-                                : n
-                        )
-                    );
-                }
-            } catch (error) {
-                console.error('❌ Ошибка отметки уведомлений:', error.response ? error.response.data : error.message);
-            }
-        }
-        setShowNotifications(!showNotifications);
-    };
-
-    const handleRespondAdminRequest = async (notification, action) => {
-        const token = localStorage.getItem('token');
-        try {
-            const response = await api.post(
-                `/api/tournaments/${notification.tournament_id}/respond-admin-request`,
-                { requesterId: notification.requester_id, action },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            await api.post(
-                `/api/notifications/mark-read?userId=${user.id}&notificationId=${notification.id}`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            // Получаем обновленный список уведомлений с сервера для обоих типов
-            const notificationsForDropdown = await api.get(`/api/notifications?userId=${user.id}&includeProcessed=false`);
-            setNotifications(notificationsForDropdown.data);
-            
-            // Дополнительно вызываем событие, имитирующее Socket.IO для обновления всех компонентов
-            if (wsRef.current && wsRef.current.connected) {
-                const notificationMessage = {
-                    type: 'notification',
-                    data: {
-                        type: action === 'accept' ? 'admin_request_accepted' : 'admin_request_rejected',
-                        tournament_id: notification.tournament_id
-                    }
-                };
-                // Имитируем получение сообщения от сервера
-                wsRef.current.emit('notification', notificationMessage);
-            }
-            
-            alert(response.data.message);
-        } catch (error) {
-            alert(error.response?.data?.error || 'Ошибка при обработке запроса');
-        }
-    };
-
-    const unreadCount = notifications.filter((n) => !n.is_read).length;
-    const getNotificationLimit = () => {
-        const width = window.innerWidth;
-        if (width <= 600) return 3;
-        if (width <= 900) return 6;
-        return 10;
-    };
-    const visibleNotifications = notifications.slice(0, getNotificationLimit());
 
     // Отслеживаем изменение размера окна
     useEffect(() => {
@@ -269,94 +123,13 @@ function Layout() {
                                 <Link to="/profile" className="username-link">
                                     {user.username}
                                 </Link>
-                                <div className="notifications">
-                                    <div className="bell-container" onClick={toggleNotifications}>
-                                        <FontAwesomeIcon
-                                            icon={faComment}
-                                            className="bell-icon"
-                                            style={{ color: '#FFFFFF' }}
-                                        />
-                                        {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
-                                    </div>
-                                    <Link to="/messages" className="messages-link">
-                                        <FontAwesomeIcon
-                                            icon={faEnvelope}
-                                            className="messages-icon"
-                                            style={{ color: '#FFFFFF' }}
-                                        />
-                                    </Link>
-                                    {showNotifications && (
-                                        <div className="notification-dropdown-wrapper" ref={notificationRef}>
-                                            <div className="notification-dropdown">
-                                                {visibleNotifications.length > 0 ? (
-                                                    visibleNotifications.map((notification) => (
-                                                        <div
-                                                            key={notification.id}
-                                                            className={`notification-item ${notification.is_read ? '' : 'unread'}`}
-                                                        >
-                                                            {notification.message ? (
-                                                                <>
-                                                                    {notification.type === 'admin_request' && notification.tournament_id && notification.requester_id ? (
-                                                                        <>
-                                                                            {notification.message.split(' для турнира ')[0]} для турнира{' '}
-                                                                            <Link to={`/tournaments/${notification.tournament_id}`}>
-                                                                                "{notification.message.split(' для турнира ')[1]?.split('"')[1] || 'турнир'}"
-                                                                            </Link>{' '}
-                                                                            - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                            <div className="admin-request-actions">
-                                                                                <button onClick={() => handleRespondAdminRequest(notification, 'accept')}>
-                                                                                    Принять
-                                                                                </button>
-                                                                                <button onClick={() => handleRespondAdminRequest(notification, 'reject')}>
-                                                                                    Отклонить
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    ) : notification.type === 'admin_request_accepted' && notification.tournament_id ? (
-                                                                        <>
-                                                                            {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                            <div className="admin-request-status">
-                                                                                <span className="status-accepted">Запрос принят</span>
-                                                                            </div>
-                                                                        </>
-                                                                    ) : notification.type === 'admin_request_rejected' && notification.tournament_id ? (
-                                                                        <>
-                                                                            {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                            <div className="admin-request-status">
-                                                                                <span className="status-rejected">Запрос отклонен</span>
-                                                                            </div>
-                                                                        </>
-                                                                    ) : notification.tournament_id ? (
-                                                                        <>
-                                                                            {notification.message.split(' турнира ')[0]} турнира{' '}
-                                                                            <Link to={`/tournaments/${notification.tournament_id}`}>
-                                                                                "{notification.message.split(' турнира ')[1]?.split('"')[1] || 'турнир'}"
-                                                                            </Link>{' '}
-                                                                            - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            {notification.message} - {new Date(notification.created_at).toLocaleString('ru-RU')}
-                                                                        </>
-                                                                    )}
-                                                                </>
-                                                            ) : (
-                                                                <>Неизвестное уведомление - {new Date(notification.created_at).toLocaleString('ru-RU')}</>
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="no-notifications">Уведомлений пока нет</div>
-                                                )}
-                                            </div>
-                                            <div className="notification-footer">
-                                                <Link to="/notifications" className="show-all" onClick={() => setShowNotifications(false)}>
-                                                    Показать все
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                <Link to="/messages" className="messages-link">
+                                    <FontAwesomeIcon
+                                        icon={faEnvelope}
+                                        className="messages-icon"
+                                        style={{ color: '#FFFFFF' }}
+                                    />
+                                </Link>
                                 <button onClick={handleLogout}>Выйти</button>
                             </div>
                         ) : (
