@@ -93,7 +93,6 @@
 .friend-request-status {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid #333333;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,7 +109,7 @@
 }
 
 .status-accepted {
-  color: #66ff66;
+  color: #ffffff;
   font-weight: 500;
   text-transform: uppercase;
   font-size: 12px;
