@@ -221,8 +221,7 @@
     font-size: 16px;
     position: relative;
     margin-left: 5px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+
 }
 
 .match-container.completed:hover .match-view-block {
