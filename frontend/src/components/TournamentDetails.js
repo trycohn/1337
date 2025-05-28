@@ -3168,7 +3168,7 @@ function TournamentDetails() {
                                         <span className="action-group-title">Управление матчами</span>
                                         <div className="action-buttons">
                                             <button 
-                                                className="management-btn warning"
+                                                className="management-btn"
                                                 onClick={handleClearMatchResults}
                                                 title="Очистить все результаты матчей"
                                             >
@@ -3176,7 +3176,7 @@ function TournamentDetails() {
                                                 Очистить результаты
                                             </button>
                                             <button 
-                                                className="management-btn success"
+                                                className="management-btn"
                                                 onClick={handleEndTournament}
                                                 title="Завершить турнир"
                                             >
