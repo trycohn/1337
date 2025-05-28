@@ -167,14 +167,46 @@ function TournamentsList() {
 
     const toggleFilter = (filterName) => {
         console.log('🔧 Toggle filter called:', filterName, 'Current active:', activeFilter);
+        console.log('🔧 Window width:', window.innerWidth);
+        console.log('🔧 Tournaments data:', tournaments.length, 'tournaments');
         const newActiveFilter = activeFilter === filterName ? null : filterName;
         console.log('🔧 Setting active filter to:', newActiveFilter);
         setActiveFilter(newActiveFilter);
+        
+        // Принудительная проверка через небольшую задержку
+        setTimeout(() => {
+            const dropdownElement = document.querySelector('.tournaments-list th .dropdown');
+            console.log('🔧 Dropdown element found:', dropdownElement);
+            if (dropdownElement) {
+                console.log('🔧 Dropdown styles:', window.getComputedStyle(dropdownElement));
+                console.log('🔧 Dropdown display:', window.getComputedStyle(dropdownElement).display);
+                console.log('🔧 Dropdown visibility:', window.getComputedStyle(dropdownElement).visibility);
+                console.log('🔧 Dropdown z-index:', window.getComputedStyle(dropdownElement).zIndex);
+            }
+        }, 100);
     };
 
     const uniqueValues = (field) => {
         // Возвращаем оригинальные значения, а не в нижнем регистре
-        const values = [...new Set(tournaments.map((t) => t[field]).filter(Boolean))].sort();
+        let values = [...new Set(tournaments.map((t) => t[field]).filter(Boolean))].sort();
+        
+        // Если нет данных, добавляем тестовые значения для проверки
+        if (values.length === 0) {
+            switch(field) {
+                case 'game':
+                    values = ['CS:GO', 'Dota 2', 'Valorant'];
+                    break;
+                case 'format':
+                    values = ['Single Elimination', 'Double Elimination', 'Round Robin'];
+                    break;
+                case 'status':
+                    values = ['active', 'in_progress', 'completed'];
+                    break;
+                default:
+                    values = [];
+            }
+        }
+        
         console.log(`Unique values for ${field}:`, values);
         return values;
     };
@@ -228,11 +260,36 @@ function TournamentsList() {
                     <tr>
                         <th ref={filterRefs.game} className={filters.game ? 'filtered' : ''}>
                             {activeFilter === 'game' ? (
-                                <div className="dropdown">
+                                <div className="dropdown" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: '0',
+                                    right: '0',
+                                    background: '#1a1a1a',
+                                    color: '#ffffff',
+                                    border: '1px solid #333333',
+                                    borderRadius: '6px',
+                                    zIndex: 9999,
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                    marginTop: '4px',
+                                    minWidth: '150px',
+                                    whiteSpace: 'nowrap',
+                                    display: 'block',
+                                    visibility: 'visible'
+                                }}>
                                     {filters.game && (
                                         <div
                                             onClick={() => clearFilter('game')}
                                             className="dropdown-item clear-filter"
+                                            style={{
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#333333',
+                                                color: '#ffffff',
+                                                borderBottom: '2px solid #444444'
+                                            }}
                                         >
                                             ✕ Сбросить фильтр
                                         </div>
@@ -242,6 +299,15 @@ function TournamentsList() {
                                             key={value}
                                             onClick={() => applyFilter('game', value)}
                                             className="dropdown-item"
+                                            style={{
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                borderBottom: '1px solid #2a2a2a',
+                                                backgroundColor: 'transparent',
+                                                color: '#ffffff'
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                                         >
                                             {value}
                                         </div>
@@ -301,11 +367,36 @@ function TournamentsList() {
                         </th>
                         <th ref={filterRefs.format} className={filters.format ? 'filtered' : ''}>
                             {activeFilter === 'format' ? (
-                                <div className="dropdown">
+                                <div className="dropdown" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: '0',
+                                    right: '0',
+                                    background: '#1a1a1a',
+                                    color: '#ffffff',
+                                    border: '1px solid #333333',
+                                    borderRadius: '6px',
+                                    zIndex: 9999,
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                    marginTop: '4px',
+                                    minWidth: '150px',
+                                    whiteSpace: 'nowrap',
+                                    display: 'block',
+                                    visibility: 'visible'
+                                }}>
                                     {filters.format && (
                                         <div
                                             onClick={() => clearFilter('format')}
                                             className="dropdown-item clear-filter"
+                                            style={{
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#333333',
+                                                color: '#ffffff',
+                                                borderBottom: '2px solid #444444'
+                                            }}
                                         >
                                             ✕ Сбросить фильтр
                                         </div>
@@ -315,6 +406,15 @@ function TournamentsList() {
                                             key={value}
                                             onClick={() => applyFilter('format', value)}
                                             className="dropdown-item"
+                                            style={{
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                borderBottom: '1px solid #2a2a2a',
+                                                backgroundColor: 'transparent',
+                                                color: '#ffffff'
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                                         >
                                             {value}
                                         </div>
@@ -373,11 +473,36 @@ function TournamentsList() {
                         </th>
                         <th ref={filterRefs.status} className={filters.status ? 'filtered' : ''}>
                             {activeFilter === 'status' ? (
-                                <div className="dropdown">
+                                <div className="dropdown" style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: '0',
+                                    right: '0',
+                                    background: '#1a1a1a',
+                                    color: '#ffffff',
+                                    border: '1px solid #333333',
+                                    borderRadius: '6px',
+                                    zIndex: 9999,
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                    marginTop: '4px',
+                                    minWidth: '150px',
+                                    whiteSpace: 'nowrap',
+                                    display: 'block',
+                                    visibility: 'visible'
+                                }}>
                                     {filters.status && (
                                         <div
                                             onClick={() => clearFilter('status')}
                                             className="dropdown-item clear-filter"
+                                            style={{
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                backgroundColor: '#333333',
+                                                color: '#ffffff',
+                                                borderBottom: '2px solid #444444'
+                                            }}
                                         >
                                             ✕ Сбросить фильтр
                                         </div>
@@ -387,6 +512,15 @@ function TournamentsList() {
                                             key={value}
                                             onClick={() => applyFilter('status', value)}
                                             className="dropdown-item"
+                                            style={{
+                                                padding: '12px 16px',
+                                                cursor: 'pointer',
+                                                borderBottom: '1px solid #2a2a2a',
+                                                backgroundColor: 'transparent',
+                                                color: '#ffffff'
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                                         >
                                             {value === 'active' ? 'Активен' : 
                                              value === 'in_progress' ? 'Идет' : 
