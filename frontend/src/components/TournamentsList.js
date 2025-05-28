@@ -282,7 +282,10 @@ function TournamentsList() {
                                         onClick={() => applyFilter('status', value)}
                                         className="dropdown-item"
                                     >
-                                        {value === 'active' ? 'Активен' : 'Завершён'}
+                                        {value === 'active' ? 'Активен' : 
+                                         value === 'in_progress' ? 'Идет' : 
+                                         value === 'completed' ? 'Завершен' : 
+                                         value}
                                     </div>
                                 ))}
                             </div>
@@ -311,7 +314,12 @@ function TournamentsList() {
                         </td>
                         <td>{tournament.format}</td>
                         <td>{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
-                        <td>{tournament.status === 'active' ? 'Активен' : 'Завершён'}</td>
+                        <td>
+                            {tournament.status === 'active' ? 'Активен' : 
+                             tournament.status === 'in_progress' ? 'Идет' : 
+                             tournament.status === 'completed' ? 'Завершен' : 
+                             'Неизвестный статус'}
+                        </td>
                     </tr>
                 ))}
             </tbody>
@@ -350,8 +358,15 @@ function TournamentsList() {
                         </div>
                         <div className="tournament-info">
                             <span className="tournament-label">Статус:</span>
-                            <span className={`tournament-status ${tournament.status === 'active' ? 'active' : 'completed'}`}>
-                                {tournament.status === 'active' ? 'Активен' : 'Завершён'}
+                            <span className={`tournament-status ${
+                                tournament.status === 'active' ? 'active' : 
+                                tournament.status === 'in_progress' ? 'in-progress' : 
+                                'completed'
+                            }`}>
+                                {tournament.status === 'active' ? 'Активен' : 
+                                 tournament.status === 'in_progress' ? 'Идет' : 
+                                 tournament.status === 'completed' ? 'Завершен' : 
+                                 'Неизвестный статус'}
                             </span>
                         </div>
                     </div>

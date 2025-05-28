@@ -1353,6 +1353,11 @@ header.header {
   color: #2e7d32;
 }
 
+.tournament-status.in-progress {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
 .tournament-status.completed {
   background-color: #ffecb3;
   color: #ff6f00;
