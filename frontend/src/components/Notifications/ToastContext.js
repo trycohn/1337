@@ -15,18 +15,20 @@ const Toast = ({ id, type, message, onClose }) => {
     }, 300); // Задержка для анимации
   }, [id, onClose]);
 
-  // Автоматическое закрытие через 3 секунды
+  // Автоматическое закрытие через 4 секунды
   useEffect(() => {
     const timer = setTimeout(() => {
       handleClose();
-    }, 3000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [handleClose]);
 
   return (
     <div className={`toast ${isClosing ? 'closing' : ''} toast-${type}`}>
-      <span>{message}</span>
+      <div className="toast-content">
+        {message}
+      </div>
       <button className="toast-close" onClick={handleClose}>×</button>
     </div>
   );
