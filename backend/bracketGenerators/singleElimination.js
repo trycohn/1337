@@ -113,12 +113,12 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
             
             if (i < pairsFromBye) {
                 // Матчи между участниками с автопроходом
-                const index1 = i * 2;
-                const index2 = i * 2 + 1;
-                
+            const index1 = i * 2;
+            const index2 = i * 2 + 1;
+            
                 team1 = byeParticipants[index1];
                 team2 = byeParticipants[index2];
-                
+            
                 console.log(`Матч ${i} в раунде 0: ${team1?.name || 'null'} vs ${team2?.name || 'null'} (оба с автопроходом)`);
             } else if (i === pairsFromBye && byeParticipantsCount % 2 === 1) {
                 // Если есть нечетный участник с автопроходом, он играет против победителя предварительного раунда

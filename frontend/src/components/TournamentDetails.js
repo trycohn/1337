@@ -3052,27 +3052,6 @@ function TournamentDetails() {
                     )}
                     
                     <h3>Турнирная сетка</h3>
-                    {/* Кнопки управления сеткой для турниров в статусе active/pending */}
-                    {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
-                        <div className="tournament-controls">
-                            {isAdminOrCreator && (
-                                <button 
-                                    className="start-tournament"
-                                    onClick={handleStartTournament}
-                                >
-                                    Начать турнир
-                                </button>
-                            )}
-                            {isAdminOrCreator && (
-                                <button 
-                                    className="regenerate-bracket"
-                                    onClick={handleRegenerateBracket}
-                                >
-                                    Пересоздать сетку
-                                </button>
-                            )}
-                        </div>
-                    )}
                     {/* Отображаем сетку если она сгенерирована */}
                     {Array.isArray(matches) && matches.length > 0 ? (
                         <>
@@ -3135,6 +3114,97 @@ function TournamentDetails() {
                                 </div>
                             )}
                         </>
+                    )}
+
+                    {/* Единый блок управления турниром */}
+                    {isAdminOrCreator && (
+                        <div className="tournament-management-panel">
+                            <h4 className="management-title">Управление турниром</h4>
+                            <div className="management-actions">
+                                {/* Генерация и пересоздание сетки */}
+                                {matches.length === 0 && canGenerateBracket && (
+                                    <div className="action-group">
+                                        <span className="action-group-title">Сетка турнира</span>
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="management-btn primary"
+                                                onClick={handleGenerateBracket}
+                                                title="Создать турнирную сетку"
+                                            >
+                                                <span className="btn-icon">🏗️</span>
+                                                Сгенерировать сетку
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
+                                    <div className="action-group">
+                                        <span className="action-group-title">Управление сеткой</span>
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="management-btn primary"
+                                                onClick={handleStartTournament}
+                                                title="Запустить турнир"
+                                            >
+                                                <span className="btn-icon">▶️</span>
+                                                Начать турнир
+                                            </button>
+                                            <button 
+                                                className="management-btn secondary"
+                                                onClick={handleRegenerateBracket}
+                                                title="Пересоздать турнирную сетку"
+                                            >
+                                                <span className="btn-icon">🔄</span>
+                                                Пересоздать сетку
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Управление турниром в процессе */}
+                                {tournament?.status === 'in_progress' && (
+                                    <div className="action-group">
+                                        <span className="action-group-title">Управление матчами</span>
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="management-btn warning"
+                                                onClick={handleClearMatchResults}
+                                                title="Очистить все результаты матчей"
+                                            >
+                                                <span className="btn-icon">🗑️</span>
+                                                Очистить результаты
+                                            </button>
+                                            <button 
+                                                className="management-btn success"
+                                                onClick={handleEndTournament}
+                                                title="Завершить турнир"
+                                            >
+                                                <span className="btn-icon">🏁</span>
+                                                Завершить турнир
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Завершенный турнир */}
+                                {tournament?.status === 'completed' && (
+                                    <div className="action-group">
+                                        <span className="action-group-title">Турнир завершен</span>
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="management-btn disabled"
+                                                disabled
+                                                title="Турнир уже завершен"
+                                            >
+                                                <span className="btn-icon">✅</span>
+                                                Турнир завершен
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     )}
                     {showConfirmModal && selectedMatch && (
                         <div className="modal" onClick={handleCloseModal}>
@@ -3445,38 +3515,6 @@ function TournamentDetails() {
                     )}
                     {message && (
                         <p className={message.includes('успешно') ? 'success' : 'error'}>{message}</p>
-                    )}
-                    {/* Кнопка "Завершить турнир" для турниров в статусе in_progress */}
-                    {tournament?.status === 'in_progress' && isAdminOrCreator && (
-                        <div className="tournament-controls finish-above-bracket">
-                                <button 
-                                className="end-tournament"
-                                onClick={handleEndTournament}
-                            >
-                                Завершить турнир
-                            </button>
-                        </div>
-                    )}
-                    {isAdminOrCreator && matches.length > 0 && (
-                        <div className="tournament-admin-controls">
-                            {tournament?.status === 'in_progress' && (
-                            <button 
-                                    className="clear-results-button"
-                                    onClick={handleClearMatchResults}
-                                    title="Очистить все результаты матчей"
-                            >
-                                    Очистить результаты матчей
-                            </button>
-                            )}
-                        </div>
-                    )}
-                    {tournament?.status === "completed" && isAdminOrCreator && (
-                        <button 
-                            className="end-tournament-button"
-                            onClick={handleEndTournament}
-                        >
-                            Завершить турнир
-                        </button>
                     )}
                 </div>
             </div>
