@@ -205,12 +205,13 @@
     position: sticky;
     top: var(--spacing-lg);
     height: fit-content;
+    border-left: 1px solid #1a1a1a;
 }
 
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: 2px;
 }
 
 .nav-tab {
@@ -221,7 +222,7 @@
     background: transparent;
     border: 1px solid transparent;
     border-radius: 0;
-    color: var(--text-secondary);
+    color: #ffffff;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 300;
@@ -230,6 +231,8 @@
     transition: var(--transition);
     text-align: left;
     width: 100%;
+    position: relative;
+    border-left: 3px solid transparent;
 }
 
 .nav-tab-content {
@@ -241,18 +244,42 @@
 .nav-tab-icon {
     font-size: 1rem;
     min-width: 16px;
+    opacity: 0.7;
+    transition: var(--transition);
 }
 
 .nav-tab:hover {
-    background-color: #333333;
-    border-color: var(--border-hover);
+    background-color: #0a0a0a;
+    border-color: #333333;
+    color: #ffffff;
+    border-left-color: #666666;
+}
+
+.nav-tab:hover .nav-tab-icon {
+    opacity: 1;
 }
 
 .nav-tab.active {
-    background-color: #ffffff1a;
-    border-color: var(--text-primary);
-    color: #ffffff;
-    font-weight: 300;
+    background-color: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+    font-weight: 400;
+    border-left-color: #000000;
+}
+
+.nav-tab.active .nav-tab-icon {
+    opacity: 1;
+    color: #000000;
+}
+
+.nav-tab.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: #000000;
 }
 
 /* Content Area */
@@ -508,17 +535,34 @@
     
     .profile-sidebar {
         position: static;
+        padding: var(--spacing-md);
+        border-bottom: 1px solid #333333;
+        margin-bottom: var(--spacing-lg);
     }
     
     .sidebar-nav {
         flex-direction: row;
         overflow-x: auto;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
+        padding-bottom: var(--spacing-xs);
     }
     
     .nav-tab {
         white-space: nowrap;
         min-width: auto;
+        flex-shrink: 0;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.8rem;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .nav-tab.active {
+        border-bottom-color: #ffffff;
+    }
+    
+    .nav-tab-icon {
+        font-size: 0.9rem;
     }
 }
 
