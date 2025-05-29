@@ -789,7 +789,7 @@ header.header {
 
 .auth-form-container {
   padding: 30px;
-  min-height: 440px; /* Фиксированная минимальная высота для форм */
+  min-height: 400px; /* Фиксированная минимальная высота для форм */
   position: relative;
 }
 
@@ -853,8 +853,9 @@ header.header {
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   box-sizing: border-box; /* Важно! */
+  min-height: 40px;
 }
 
 .auth-button:hover {
@@ -882,6 +883,7 @@ header.header {
   align-items: center;
   justify-content: center;
   box-sizing: border-box; /* Важно! */
+  min-height: 40px;
 }
 
 .steam-button:hover {
@@ -901,6 +903,8 @@ header.header {
   align-items: center;
   justify-content: center;
   box-sizing: border-box; /* Важно! */
+  min-height: 40px;
+  margin-bottom: 5px;
 }
 
 .faceit-button:hover {
