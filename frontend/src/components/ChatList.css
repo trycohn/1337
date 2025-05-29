@@ -15,6 +15,7 @@
     padding: 20px;
     border-bottom: 1px solid #333333;
     background-color: #1a1a1a;
+    flex-direction: column;
 }
 
 .chat-list-header h2 {
