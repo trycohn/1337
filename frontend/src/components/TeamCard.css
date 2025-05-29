@@ -58,10 +58,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #111827;
+    background-color: #1f2937;
     padding: 8px 12px;
     border-radius: 6px;
     transition: background-color 0.15s ease;
+    opacity: 0.5;
 }
 
 .player-row:hover {

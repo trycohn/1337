@@ -2727,9 +2727,6 @@ function TournamentDetails() {
                             'Загрузка...'
                         )}
                     </p>
-                    <p>
-                        <strong>Участники ({tournament.participant_count || 0}):</strong>
-                    </p>
                     
                     {tournament.format === 'mix' ? (
                         /* Для микс-турниров используем TeamGenerator */

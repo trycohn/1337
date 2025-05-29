@@ -23,7 +23,6 @@
 }
 
 .tournament-details h3 {
-    margin-top: 30px;
     margin-bottom: 15px;
     color: #ffffff;
     font-weight: 300;
@@ -2090,10 +2089,7 @@ a.participant-name:hover {
 }
 
 .creator-info {
-    margin: 15px 0;
-    padding: 10px;
-    background-color: #111111;
-    border: 1px solid #333333;
+    margin-top: 15px;
     border-radius: 0;
     color: #ffffff;
 }
@@ -2101,7 +2097,9 @@ a.participant-name:hover {
 .creator-display {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 10px;
 }
 
 .creator-avatar {

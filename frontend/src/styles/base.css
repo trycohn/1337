@@ -20,7 +20,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: var(--text-color);
   background-color: var(--background-color);
-  line-height: 1.5;
   font-size: var(--font-size-normal);
 }
 
