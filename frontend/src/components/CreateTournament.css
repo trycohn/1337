@@ -121,6 +121,7 @@
     transition: var(--ct-transition);
     position: relative;
     overflow: hidden;
+    animation: fadeIn 0.5s ease-out;
 }
 
 .create-tournament .form-section:hover {
@@ -161,6 +162,28 @@
     grid-template-columns: 1fr 1fr;
     gap: var(--ct-spacing-lg);
     align-items: start;
+}
+
+.create-tournament .form-grid.single-column {
+    grid-template-columns: 1fr;
+}
+
+/* Горизонтальная компоновка основной и дополнительной информации */
+.create-tournament .form-main-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: var(--ct-spacing-xl);
+    margin-bottom: var(--ct-spacing-xl);
+}
+
+.create-tournament .main-section {
+    min-width: 0; /* Предотвращает переполнение */
+    animation-delay: 0.1s;
+}
+
+.create-tournament .additional-section {
+    min-width: 0; /* Предотвращает переполнение */
+    animation-delay: 0.2s;
 }
 
 /* Группы полей формы */
@@ -301,19 +324,7 @@
     }
 }
 
-.create-tournament .form-section {
-    animation: fadeIn 0.5s ease-out;
-}
-
-.create-tournament .form-section:nth-child(2) {
-    animation-delay: 0.1s;
-}
-
 .create-tournament .form-section:nth-child(3) {
-    animation-delay: 0.2s;
-}
-
-.create-tournament .form-section:nth-child(4) {
     animation-delay: 0.3s;
 }
 
@@ -354,6 +365,11 @@
 
 /* Адаптивность */
 @media (max-width: 1024px) {
+    .create-tournament .form-main-layout {
+        grid-template-columns: 1fr 350px;
+        gap: var(--ct-spacing-lg);
+    }
+    
     .create-tournament .form-grid {
         grid-template-columns: 1fr;
         gap: var(--ct-spacing-md);
@@ -373,6 +389,11 @@
         font-size: 2rem;
         margin-bottom: var(--ct-spacing-xl);
         letter-spacing: 1px;
+    }
+    
+    .create-tournament .form-main-layout {
+        grid-template-columns: 1fr;
+        gap: var(--ct-spacing-lg);
     }
     
     .create-tournament .form-section {
