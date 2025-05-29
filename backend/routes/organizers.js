@@ -93,43 +93,10 @@ router.get('/:slug', async (req, res) => {
         // Получаем турниры организатора с информацией о победителях
         const tournamentsResult = await pool.query(`
             SELECT t.id, t.name, t.status, t.start_date, t.end_date, 
-                   COALESCE(t.team_limit, 0) as max_teams, COALESCE(t.current_teams, 0) as current_teams, 
-                   t.prize_pool, t.discipline,
-                   -- Получаем информацию о победителе
-                   CASE 
-                       WHEN t.tournament_type = 'individual' THEN 
-                           (SELECT json_build_object(
-                               'type', 'user',
-                               'id', u.id,
-                               'username', u.username,
-                               'avatar_url', u.avatar_url
-                           )
-                           FROM user_tournament_stats uts
-                           JOIN users u ON uts.user_id = u.id
-                           WHERE uts.tournament_id = t.id AND uts.result = 'Победитель'
-                           LIMIT 1)
-                       ELSE 
-                           (SELECT json_build_object(
-                               'type', 'team',
-                               'id', team.id,
-                               'name', team.name,
-                               'logo_url', team.logo_url,
-                               'members', (
-                                   SELECT json_agg(json_build_object(
-                                       'id', u.id,
-                                       'username', u.username,
-                                       'avatar_url', u.avatar_url
-                                   ))
-                                   FROM team_members tm
-                                   JOIN users u ON tm.user_id = u.id
-                                   WHERE tm.team_id = team.id
-                               )
-                           )
-                           FROM teams team
-                           JOIN tournament_teams tt ON team.id = tt.team_id
-                           WHERE tt.tournament_id = t.id AND tt.result = 'Победитель'
-                           LIMIT 1)
-                   END as winner
+                   COALESCE(t.max_participants, 0) as max_teams, 
+                   (SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id) as current_teams,
+                   t.prize_pool, t.game as discipline,
+                   NULL as winner
             FROM tournaments t
             JOIN tournament_organizers to2 ON t.id = to2.tournament_id
             WHERE to2.organizer_id = $1
