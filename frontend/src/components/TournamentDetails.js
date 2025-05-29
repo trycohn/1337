@@ -3014,23 +3014,6 @@ function TournamentDetails() {
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Завершенный турнир */}
-                                {tournament?.status === 'completed' && (
-                                    <div className="action-group">
-                                        <span className="action-group-title">Турнир завершен</span>
-                                        <div className="action-buttons">
-                                            <button 
-                                                className="management-btn disabled"
-                                                disabled
-                                                title="Турнир уже завершен"
-                                            >
-                                                <span className="btn-icon">✅</span>
-                                                Турнир завершен
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}
