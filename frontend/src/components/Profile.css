@@ -221,7 +221,7 @@
     background: transparent;
     border: 1px solid transparent;
     border-radius: 0;
-    color: var(--text-secondary);
+    color: #ffffff;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 300;
@@ -244,14 +244,14 @@
 }
 
 .nav-tab:hover {
-    background-color: #333333;
+    background-color: #1b1b1b;
     border-color: var(--border-hover);
 }
 
 .nav-tab.active {
-    background-color: #ffffff1a;
+    opacity: 0.5;
     border-color: var(--text-primary);
-    color: #ffffff;
+    color: #4b4b4b;
     font-weight: 300;
 }
 
