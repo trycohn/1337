@@ -2151,8 +2151,6 @@ a.participant-name:hover {
 .tournament-management-panel {
     margin: 20px 0;
     padding: 20px;
-    background-color: #111111;
-    border: 1px solid #333333;
     border-radius: 0;
     color: #ffffff;
 }
