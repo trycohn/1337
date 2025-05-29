@@ -1184,12 +1184,12 @@ function Profile() {
                             onClick={openAvatarModal}
                         />
                         <button className="avatar-change-btn" onClick={openAvatarModal}>
-                            Изменить аватар
+                            Поменять
                         </button>
                     </div>
                     
                     <div className="profile-user-info">
-                        <h1 className="profile-user-name">{user.username}</h1>
+                        <p className="profile-user-name">{user.username}</p>
                         <div className="profile-user-status">
                             <span className="status-indicator"></span>
                             <span>Онлайн</span>
@@ -1318,7 +1318,7 @@ function Profile() {
                                         <h3 className="card-title">Данные пользователя</h3>
                                     </div>
                                     <div className="card-content">
-                                        <div className="form-group">
+                                        <div className="form-group nickname-section">
                                             <label className="form-label">Имя пользователя</label>
                                             <input
                                                 type="text"
@@ -1332,7 +1332,7 @@ function Profile() {
                                                     Изменить никнейм
                                                 </button>
                                                 {user.steam_id && (
-                                                    <button className="btn btn-secondary btn-sm" onClick={fetchAndSetSteamNickname}>
+                                                    <button className="btn btn-secondary btn-sm btn-steam" onClick={fetchAndSetSteamNickname}>
                                                         Установить никнейм Steam
                                                     </button>
                                                 )}
