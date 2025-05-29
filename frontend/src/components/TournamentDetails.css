@@ -504,11 +504,8 @@
 }
 
 .info-block {
-    background-color: #111111;
     color: #ffffff;
     padding: 15px;
-    border-radius: 0;
-    border: 1px solid #333333;
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
@@ -1797,9 +1794,6 @@
 .mix-players-list {
     margin: 20px 0;
     padding: 15px;
-    border-radius: 0;
-    border: 1px solid #333333;
-    background-color: #111111;
     color: #ffffff;
 }
 
