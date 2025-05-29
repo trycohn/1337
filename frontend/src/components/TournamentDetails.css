@@ -2251,3 +2251,63 @@ a.participant-name:hover {
         font-size: 0.9em;
     }
 }
+
+/* Стили для информационного блока завершенных турниров */
+.tournament-completed-info {
+    padding: 20px;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+    margin-top: 10px;
+}
+
+.completed-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.completed-status .btn-icon {
+    font-size: 2em;
+    color: #4caf50;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
+.status-text {
+    flex: 1;
+    line-height: 1.6;
+}
+
+.status-text p {
+    margin: 0 0 10px 0;
+    color: #ffffff;
+}
+
+.status-text p:last-child {
+    margin-bottom: 0;
+}
+
+.status-text strong {
+    color: #4caf50;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+    .completed-status {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .completed-status .btn-icon {
+        margin-top: 0;
+        align-self: center;
+    }
+    
+    .tournament-completed-info {
+        padding: 15px;
+    }
+}

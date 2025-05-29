@@ -3014,6 +3014,23 @@ function TournamentDetails() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Информация о завершенном турнире */}
+                                {tournament?.status === 'completed' && (
+                                    <div className="action-group">
+                                        <span className="action-group-title">Турнир завершен</span>
+                                        <div className="tournament-completed-info">
+                                            <div className="completed-status">
+                                                <span className="btn-icon">✅</span>
+                                                <div className="status-text">
+                                                    <p><strong>Турнир успешно завершен</strong></p>
+                                                    <p>Все результаты зафиксированы и изменение данных турнира больше невозможно.</p>
+                                                    <p>Вы можете просматривать результаты матчей, турнирную сетку и список призеров.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
