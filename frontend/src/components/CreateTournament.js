@@ -5,20 +5,7 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
-
-// Добавляем немного встроенных стилей
-const styles = {
-  formButtons: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '15px'
-  },
-  cancelButton: {
-    backgroundColor: '#f5f5f5',
-    color: '#333',
-    border: '1px solid #ccc'
-  }
-};
+import './CreateTournament.css';
 
 function CreateTournament() {
   const navigate = useNavigate();
@@ -191,7 +178,7 @@ function CreateTournament() {
           )}
         </select>
         {formData.format === 'mix' && (
-          <>
+          <div className="mix-format-section">
             <div className="form-group">
               <label>Количество игроков в команде</label>
               <input
@@ -216,7 +203,7 @@ function CreateTournament() {
                 <option value="double_elimination">Double Elimination</option>
               </select>
             </div>
-          </>
+          </div>
         )}
         <DatePicker
           selected={formData.start_date}
@@ -246,12 +233,11 @@ function CreateTournament() {
           value={formData.rules}
           onChange={handleInputChange}
         />
-        <div style={styles.formButtons}>
+        <div className="form-buttons">
           <button type="submit">Создать турнир</button>
           <button 
             type="button" 
-            onClick={() => navigate(-1)} 
-            style={styles.cancelButton}
+            onClick={() => navigate(-1)}
           >
             Отмена
           </button>
