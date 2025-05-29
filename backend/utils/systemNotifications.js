@@ -9,18 +9,38 @@ const SYSTEM_USER_ID = 1; // Предполагаем, что это первы�
 async function ensureSystemUser() {
     try {
         // Проверяем, существует ли системный пользователь
-        const userCheck = await pool.query('SELECT id FROM users WHERE username = $1', ['1337community']);
+        const userCheck = await pool.query('SELECT id, avatar_url FROM users WHERE username = $1', ['1337community']);
         
         if (userCheck.rows.length === 0) {
-            // Создаем системного пользователя
+            // Определяем URL аватара для системного пользователя
+            const avatarUrl = process.env.NODE_ENV === 'production'
+                ? 'https://1337community.com/uploads/avatars/1337-logo-chat.png'
+                : 'http://localhost:3000/uploads/avatars/1337-logo-chat.png';
+            
+            // Создаем системного пользователя с аватаром
             const result = await pool.query(
-                'INSERT INTO users (username, email, password_hash, is_verified, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id',
-                ['1337community', 'system@1337community.com', 'system_user_no_login', true]
+                'INSERT INTO users (username, email, password_hash, is_verified, avatar_url, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id',
+                ['1337community', 'system@1337community.com', 'system_user_no_login', true, avatarUrl]
             );
+            console.log(`✅ Создан системный пользователь 1337community с аватаром: ${avatarUrl}`);
             return result.rows[0].id;
+        } else {
+            // Проверяем, установлен ли аватар у существующего пользователя
+            const existingUser = userCheck.rows[0];
+            if (!existingUser.avatar_url || !existingUser.avatar_url.includes('1337-logo-chat.png')) {
+                // Обновляем аватар существующего системного пользователя
+                const avatarUrl = process.env.NODE_ENV === 'production'
+                    ? 'https://1337community.com/uploads/avatars/1337-logo-chat.png'
+                    : 'http://localhost:3000/uploads/avatars/1337-logo-chat.png';
+                
+                await pool.query(
+                    'UPDATE users SET avatar_url = $1 WHERE username = $2',
+                    [avatarUrl, '1337community']
+                );
+                console.log(`✅ Обновлен аватар системного пользователя 1337community: ${avatarUrl}`);
+            }
+            return existingUser.id;
         }
-        
-        return userCheck.rows[0].id;
     } catch (error) {
         console.error('Ошибка создания системного пользователя:', error);
         return SYSTEM_USER_ID; // Возвращаем дефолтный ID
