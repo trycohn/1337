@@ -150,6 +150,9 @@ router.get('/', authenticateToken, async (req, res) => {
                 END AS name,
                 CASE 
                     WHEN cwp.interlocutor IS NOT NULL THEN cwp.interlocutor ->> 'avatar_url'
+                    WHEN cwp.type = 'system' AND cwp.name = '1337community' THEN (
+                        SELECT avatar_url FROM users WHERE username = '1337community' LIMIT 1
+                    )
                     ELSE NULL
                 END AS avatar_url
             FROM chat_with_participants cwp
@@ -594,6 +597,9 @@ async function getChatInfo(chatId, userId) {
                     JOIN users u ON cp2.user_id = u.id
                     WHERE cp2.chat_id = c.id AND cp2.user_id != $2
                     LIMIT 1
+                )
+                WHEN c.type = 'system' AND c.name = '1337community' THEN (
+                    SELECT avatar_url FROM users WHERE username = '1337community' LIMIT 1
                 )
                 ELSE NULL
             END AS avatar_url,
