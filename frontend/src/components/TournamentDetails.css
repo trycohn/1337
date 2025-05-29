@@ -2176,7 +2176,6 @@ a.participant-name:hover {
     color: #ffffff;
     margin-bottom: 10px;
     text-align: center;
-    border-bottom: 1px solid #333333;
     padding-bottom: 5px;
 }
 
@@ -2255,8 +2254,6 @@ a.participant-name:hover {
 /* Стили для информационного блока завершенных турниров */
 .tournament-completed-info {
     padding: 20px;
-    background-color: #111111;
-    border: 1px solid #333333;
     border-radius: 0;
     margin-top: 10px;
 }
