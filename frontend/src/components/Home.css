@@ -694,7 +694,6 @@ header.header {
 
 /* Стили для ссылки на чаты */
 .messages-link {
-  margin-left: 15px;
   display: flex;
   align-items: center;
   position: relative;
