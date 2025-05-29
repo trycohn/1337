@@ -2232,7 +2232,7 @@ function TournamentDetails() {
         try {
             await api.post(
                 `/api/tournaments/${id}/invite`,
-                { user_id: userId },
+                { username: username },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 

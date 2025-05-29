@@ -223,4 +223,228 @@ frontend/
 
 ---
 *Дата создания: $(date)*
-*Версия: 1.0.0* 
+*Версия: 1.0.0*
+
+# Руководство по развертыванию исправления приглашений
+
+## Проблема
+При попытке пригласить участника в турнир через поиск появляется ошибка:
+```
+POST https://1337community.com/api/tournaments/59/invite 400 (Bad Request)
+API Error (400): {error: 'Укажите никнейм или email'}
+```
+
+## Причина
+Клиентский код отправлял параметр `user_id`, а серверный API ожидал `username` или `email`.
+
+## Исправление
+Изменена функция `handleInviteUser` в файле `frontend/src/components/TournamentDetails.js`:
+
+**Было:**
+```javascript
+{ user_id: userId }
+```
+
+**Стало:**
+```javascript
+{ username: username }
+```
+
+## Развертывание на VDS сервере
+
+### Вариант 1: Автоматическое развертывание
+
+1. **Подключитесь к серверу по SSH:**
+   ```bash
+   ssh root@your-server-ip
+   ```
+
+2. **Перейдите в директорию проекта:**
+   ```bash
+   cd /var/www/1337community
+   ```
+
+3. **Запустите скрипт развертывания:**
+   ```bash
+   chmod +x server-deploy.sh
+   ./server-deploy.sh
+   ```
+
+### Вариант 2: Ручное развертывание
+
+1. **Подключитесь к серверу:**
+   ```bash
+   ssh root@your-server-ip
+   ```
+
+2. **Перейдите в директорию проекта:**
+   ```bash
+   cd /var/www/1337community
+   ```
+
+3. **Получите последние изменения:**
+   ```bash
+   git fetch origin
+   git pull origin main
+   ```
+
+4. **Проверьте изменения:**
+   ```bash
+   git log --oneline -3
+   git diff HEAD~1 frontend/src/components/TournamentDetails.js
+   ```
+
+5. **Обновите зависимости Frontend:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+6. **Соберите Frontend:**
+   ```bash
+   npm run build
+   ```
+
+7. **Установите права доступа:**
+   ```bash
+   sudo chown -R www-data:www-data build
+   sudo chmod -R 755 build
+   ```
+
+8. **Перезапустите Backend сервис:**
+   ```bash
+   sudo systemctl restart 1337-backend
+   ```
+
+9. **Проверьте статус сервиса:**
+   ```bash
+   sudo systemctl status 1337-backend
+   ```
+
+10. **Перезагрузите Nginx:**
+    ```bash
+    sudo nginx -t
+    sudo systemctl reload nginx
+    ```
+
+## Проверка исправления
+
+1. **Откройте сайт:** https://1337community.com
+
+2. **Перейдите к любому турниру**
+
+3. **Найдите пользователя через поиск** (если вы создатель/админ турнира)
+
+4. **Нажмите кнопку "пригласить"**
+
+5. **Убедитесь, что ошибка исчезла** и появилось сообщение "Приглашение успешно отправлено"
+
+## Мониторинг
+
+### Логи Backend:
+```bash
+sudo journalctl -u 1337-backend -f
+```
+
+### Логи Nginx:
+```bash
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
+```
+
+### Статус сервисов:
+```bash
+sudo systemctl status 1337-backend
+sudo systemctl status nginx
+```
+
+## Откат изменений (если нужно)
+
+1. **Найдите резервную копию:**
+   ```bash
+   ls -la /var/backups/1337community/
+   ```
+
+2. **Восстановите из резервной копии:**
+   ```bash
+   sudo cp -r /var/backups/1337community/YYYYMMDD_HHMMSS/1337community/* /var/www/1337community/
+   ```
+
+3. **Перезапустите сервисы:**
+   ```bash
+   sudo systemctl restart 1337-backend
+   sudo systemctl reload nginx
+   ```
+
+## Возможные проблемы и решения
+
+### 1. Ошибка прав доступа
+```bash
+sudo chown -R www-data:www-data /var/www/1337community/frontend/build
+sudo chmod -R 755 /var/www/1337community/frontend/build
+```
+
+### 2. Сервис не запускается
+```bash
+sudo journalctl -u 1337-backend --no-pager -l -n 50
+```
+
+### 3. Nginx ошибки
+```bash
+sudo nginx -t
+sudo tail -f /var/log/nginx/error.log
+```
+
+### 4. Проблемы с Node.js
+```bash
+cd /var/www/1337community/backend
+npm install --production
+```
+
+### 5. Проблемы с сборкой Frontend
+```bash
+cd /var/www/1337community/frontend
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+## Проверка API
+
+Проверить работу API можно командой:
+```bash
+curl -X POST https://1337community.com/api/tournaments/TOURNAMENT_ID/invite \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"username": "test_user"}'
+```
+
+## Контакты для поддержки
+
+При возникновении проблем:
+1. Проверьте логи сервисов
+2. Убедитесь, что все сервисы запущены
+3. Проверьте права доступа к файлам
+4. При необходимости выполните откат изменений
+
+## Дополнительные команды
+
+### Проверка дискового пространства:
+```bash
+df -h
+```
+
+### Проверка использования памяти:
+```bash
+free -h
+```
+
+### Проверка процессов Node.js:
+```bash
+ps aux | grep node
+```
+
+### Проверка портов:
+```bash
+netstat -tlnp | grep :3001
+``` 
