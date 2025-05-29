@@ -93,7 +93,8 @@ router.get('/:slug', async (req, res) => {
         // Получаем турниры организатора с информацией о победителях
         const tournamentsResult = await pool.query(`
             SELECT t.id, t.name, t.status, t.start_date, t.end_date, 
-                   t.max_teams, t.current_teams, t.prize_pool, t.discipline,
+                   COALESCE(t.team_limit, 0) as max_teams, COALESCE(t.current_teams, 0) as current_teams, 
+                   t.prize_pool, t.discipline,
                    -- Получаем информацию о победителе
                    CASE 
                        WHEN t.tournament_type = 'individual' THEN 
