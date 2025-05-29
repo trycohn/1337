@@ -282,6 +282,16 @@ server.listen(PORT, async () => {
     try {
         await pool.query('SELECT NOW()');
         console.log('✅ Успешное подключение к базе данных');
+        
+        // Инициализируем системного пользователя при запуске сервера
+        try {
+            const { ensureSystemUser } = require('./utils/systemNotifications');
+            await ensureSystemUser();
+            console.log('✅ Системный пользователь 1337community инициализирован');
+        } catch (systemUserError) {
+            console.error('⚠️ Предупреждение: Не удалось инициализировать системного пользователя:', systemUserError.message);
+        }
+        
     } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
     }
