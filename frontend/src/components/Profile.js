@@ -1263,40 +1263,40 @@ function Profile() {
             <div className="profile-main-content">
                 {/* Sidebar Navigation */}
                 <div className="profile-sidebar">
-                    <nav className="sidebar-nav">
+                    <nav className="sidebar-nav-profile">
                         <button 
-                            className={`nav-tab ${activeTab === 'main' ? 'active' : ''}`} 
+                            className={`nav-tab-profile ${activeTab === 'main' ? 'active' : ''}`} 
                             onClick={() => switchTab('main')}
                         >
-                            <div className="nav-tab-content">
-                                <span className="nav-tab-icon">👤</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">👤</span>
                                 <span>Основная</span>
                             </div>
                         </button>
                         <button 
-                            className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`} 
+                            className={`nav-tab-profile ${activeTab === 'stats' ? 'active' : ''}`} 
                             onClick={() => switchTab('stats')}
                         >
-                            <div className="nav-tab-content">
-                                <span className="nav-tab-icon">📊</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">📊</span>
                                 <span>Статистика</span>
                             </div>
                         </button>
                         <button 
-                            className={`nav-tab ${activeTab === 'friends' ? 'active' : ''}`} 
+                            className={`nav-tab-profile ${activeTab === 'friends' ? 'active' : ''}`} 
                             onClick={() => switchTab('friends')}
                         >
-                            <div className="nav-tab-content">
-                                <span className="nav-tab-icon">👥</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">👥</span>
                                 <span>Друзья</span>
                             </div>
                         </button>
                         <button 
-                            className={`nav-tab ${activeTab === 'organization' ? 'active' : ''}`} 
+                            className={`nav-tab-profile ${activeTab === 'organization' ? 'active' : ''}`} 
                             onClick={() => switchTab('organization')}
                         >
-                            <div className="nav-tab-content">
-                                <span className="nav-tab-icon">🏢</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">🏢</span>
                                 <span>Организация</span>
                             </div>
                         </button>
