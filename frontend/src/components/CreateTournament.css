@@ -56,16 +56,12 @@
 
 /* Основная форма */
 .create-tournament form {
-    background-color: var(--ct-bg-secondary);
-    border: 1px solid var(--ct-border-color);
+    background-color: transparent;
+    border: none;
     border-radius: 0;
-    padding: var(--ct-spacing-2xl);
+    padding: 0;
     margin-bottom: var(--ct-spacing-xl);
     transition: var(--ct-transition);
-}
-
-.create-tournament form:hover {
-    border-color: var(--ct-border-hover);
 }
 
 /* Общие стили для полей ввода */
@@ -74,7 +70,7 @@
 .create-tournament textarea {
     width: 100%;
     padding: var(--ct-spacing-md) var(--ct-spacing-lg);
-    margin-bottom: var(--ct-spacing-lg);
+    margin-bottom: 0;
     border: 1px solid var(--ct-border-color);
     border-radius: 0;
     background-color: var(--ct-bg-tertiary);
@@ -115,10 +111,67 @@
     border-color: var(--ct-border-hover);
 }
 
+/* Секции формы */
+.create-tournament .form-section {
+    background-color: var(--ct-bg-secondary);
+    border: 1px solid var(--ct-border-color);
+    border-radius: 0;
+    padding: var(--ct-spacing-xl);
+    margin-bottom: var(--ct-spacing-xl);
+    transition: var(--ct-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.create-tournament .form-section:hover {
+    border-color: var(--ct-border-hover);
+}
+
+.create-tournament .form-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--ct-text-primary), transparent);
+    transition: left 0.6s ease;
+}
+
+.create-tournament .form-section:hover::before {
+    left: 100%;
+}
+
+/* Заголовки секций */
+.create-tournament .section-title {
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--ct-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 var(--ct-spacing-lg) 0;
+    padding-bottom: var(--ct-spacing-sm);
+    border-bottom: 1px solid var(--ct-border-color);
+    text-align: center;
+}
+
+/* Сетка формы */
+.create-tournament .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ct-spacing-lg);
+    align-items: start;
+}
+
 /* Группы полей формы */
 .create-tournament .form-group {
-    margin-bottom: var(--ct-spacing-xl);
+    display: flex;
+    flex-direction: column;
     position: relative;
+}
+
+.create-tournament .form-group.full-width {
+    grid-column: 1 / -1;
 }
 
 .create-tournament .form-group label {
@@ -128,7 +181,7 @@
     font-weight: 300;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .create-tournament .form-group input[type="number"] {
@@ -142,10 +195,16 @@
     margin: 0;
 }
 
+/* Textarea стили */
+.create-tournament textarea {
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
 /* DatePicker стили */
 .create-tournament .react-datepicker-wrapper {
     width: 100%;
-    margin-bottom: var(--ct-spacing-lg);
 }
 
 .create-tournament .react-datepicker__input-container {
@@ -163,6 +222,7 @@
     font-weight: 300;
     transition: var(--ct-transition);
     cursor: pointer;
+    margin: 0;
 }
 
 .create-tournament .react-datepicker__input-container input:focus {
@@ -177,8 +237,15 @@
     gap: var(--ct-spacing-md);
     justify-content: center;
     margin-top: var(--ct-spacing-xl);
-    padding-top: var(--ct-spacing-xl);
-    border-top: 1px solid var(--ct-border-color);
+    padding: var(--ct-spacing-xl);
+    background-color: var(--ct-bg-secondary);
+    border: 1px solid var(--ct-border-color);
+    border-radius: 0;
+    transition: var(--ct-transition);
+}
+
+.create-tournament .form-buttons:hover {
+    border-color: var(--ct-border-hover);
 }
 
 .create-tournament button {
@@ -222,30 +289,6 @@
     border-color: var(--ct-border-hover);
 }
 
-/* Специальные стили для Mix формата */
-.create-tournament .mix-format-section {
-    background-color: var(--ct-bg-tertiary);
-    border: 1px solid var(--ct-border-color);
-    border-radius: 0;
-    padding: var(--ct-spacing-lg);
-    margin: var(--ct-spacing-lg) 0;
-    position: relative;
-}
-
-.create-tournament .mix-format-section::before {
-    content: 'MIX TOURNAMENT SETTINGS';
-    position: absolute;
-    top: -10px;
-    left: var(--ct-spacing-lg);
-    background-color: var(--ct-bg-secondary);
-    color: var(--ct-text-muted);
-    padding: 0 var(--ct-spacing-sm);
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
 /* Анимации и эффекты */
 @keyframes fadeIn {
     from {
@@ -258,8 +301,20 @@
     }
 }
 
-.create-tournament form {
+.create-tournament .form-section {
     animation: fadeIn 0.5s ease-out;
+}
+
+.create-tournament .form-section:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.create-tournament .form-section:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.create-tournament .form-section:nth-child(4) {
+    animation-delay: 0.3s;
 }
 
 /* Стили для валидации */
@@ -298,6 +353,17 @@
 }
 
 /* Адаптивность */
+@media (max-width: 1024px) {
+    .create-tournament .form-grid {
+        grid-template-columns: 1fr;
+        gap: var(--ct-spacing-md);
+    }
+    
+    .create-tournament .form-group.full-width {
+        grid-column: 1;
+    }
+}
+
 @media (max-width: 768px) {
     .create-tournament {
         padding: var(--ct-spacing-lg);
@@ -306,15 +372,21 @@
     .create-tournament h2 {
         font-size: 2rem;
         margin-bottom: var(--ct-spacing-xl);
+        letter-spacing: 1px;
     }
     
-    .create-tournament form {
-        padding: var(--ct-spacing-xl);
+    .create-tournament .form-section {
+        padding: var(--ct-spacing-lg);
+    }
+    
+    .create-tournament .section-title {
+        font-size: 1rem;
     }
     
     .create-tournament .form-buttons {
         flex-direction: column;
         align-items: center;
+        padding: var(--ct-spacing-lg);
     }
     
     .create-tournament button {
@@ -330,11 +402,20 @@
     
     .create-tournament h2 {
         font-size: 1.5rem;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
     
-    .create-tournament form {
-        padding: var(--ct-spacing-lg);
+    .create-tournament .form-section {
+        padding: var(--ct-spacing-md);
+    }
+    
+    .create-tournament .section-title {
+        font-size: 0.9rem;
+        margin-bottom: var(--ct-spacing-md);
+    }
+    
+    .create-tournament .form-grid {
+        gap: var(--ct-spacing-sm);
     }
     
     .create-tournament input,
@@ -342,6 +423,10 @@
     .create-tournament textarea {
         padding: var(--ct-spacing-sm) var(--ct-spacing-md);
         font-size: 0.9rem;
+    }
+    
+    .create-tournament .form-group label {
+        font-size: 0.8rem;
     }
 }
 

@@ -128,111 +128,161 @@ function CreateTournament() {
     <section className="create-tournament">
       <h2>Создать турнир</h2>
       <form onSubmit={handleCreateTournament}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Название турнира"
-          value={formData.name}
-          onChange={handleInputChange}
-          required
-        />
-        <select
-          name="format"
-          value={formData.format}
-          onChange={handleFormatChange}
-          required
-        >
-          <option value="">Выберите формат</option>
-          <option value="single">Single Elimination</option>
-          <option value="double">Double Elimination</option>
-          <option value="mix">Mix</option>
-        </select>
-        {formData.format !== 'mix' && (
-          <select
-            name="participant_type"
-            value={formData.participant_type}
-            onChange={handleParticipantTypeChange}
-            required
-          >
-            <option value="team">Командный</option>
-            <option value="solo">Одиночный</option>
-          </select>
-        )}
-        <select
-          name="game"
-          value={formData.game}
-          onChange={handleInputChange}
-          required
-        >
-          {formData.format === 'mix' ? (
-            <option value="cs2">Counter Strike 2</option>
-          ) : (
-            <>
-              <option value="">Выберите игру</option>
-              {games.map((game) => (
-                <option key={game.id} value={game.name.toLowerCase()}>
-                  {game.name}
-                </option>
-              ))}
-            </>
-          )}
-        </select>
-        {formData.format === 'mix' && (
-          <div className="mix-format-section">
-            <div className="form-group">
-              <label>Количество игроков в команде</label>
+        
+        {/* Основная информация */}
+        <div className="form-section">
+          <h3 className="section-title">Основная информация</h3>
+          <div className="form-grid">
+            <div className="form-group full-width">
+              <label>Название турнира</label>
               <input
-                type="number"
-                name="team_size"
-                value={formData.team_size}
+                type="text"
+                name="name"
+                placeholder="Введите название турнира"
+                value={formData.name}
                 onChange={handleInputChange}
-                min="2"
-                max="10"
                 required
               />
             </div>
+            
             <div className="form-group">
-              <label>Формат турнирной сетки</label>
+              <label>Формат турнира</label>
               <select
-                name="bracket_type"
-                value={formData.bracket_type}
+                name="format"
+                value={formData.format}
+                onChange={handleFormatChange}
+                required
+              >
+                <option value="">Выберите формат</option>
+                <option value="single">Single Elimination</option>
+                <option value="double">Double Elimination</option>
+                <option value="mix">Mix</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Игра</label>
+              <select
+                name="game"
+                value={formData.game}
                 onChange={handleInputChange}
                 required
               >
-                <option value="single_elimination">Single Elimination</option>
-                <option value="double_elimination">Double Elimination</option>
+                {formData.format === 'mix' ? (
+                  <option value="cs2">Counter Strike 2</option>
+                ) : (
+                  <>
+                    <option value="">Выберите игру</option>
+                    {games.map((game) => (
+                      <option key={game.id} value={game.name.toLowerCase()}>
+                        {game.name}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
+            </div>
+
+            {formData.format !== 'mix' && (
+              <div className="form-group">
+                <label>Тип участников</label>
+                <select
+                  name="participant_type"
+                  value={formData.participant_type}
+                  onChange={handleParticipantTypeChange}
+                  required
+                >
+                  <option value="team">Командный</option>
+                  <option value="solo">Одиночный</option>
+                </select>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>Дата и время начала</label>
+              <DatePicker
+                selected={formData.start_date}
+                onChange={(date) => setFormData((prev) => ({ ...prev, start_date: date }))}
+                showTimeSelect
+                dateFormat="Pp"
+                placeholderText="Выберите дату и время"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Настройки Mix турнира */}
+        {formData.format === 'mix' && (
+          <div className="form-section">
+            <h3 className="section-title">Настройки Mix турнира</h3>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Игроков в команде</label>
+                <input
+                  type="number"
+                  name="team_size"
+                  value={formData.team_size}
+                  onChange={handleInputChange}
+                  min="2"
+                  max="10"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Тип турнирной сетки</label>
+                <select
+                  name="bracket_type"
+                  value={formData.bracket_type}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="single_elimination">Single Elimination</option>
+                  <option value="double_elimination">Double Elimination</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
-        <DatePicker
-          selected={formData.start_date}
-          onChange={(date) => setFormData((prev) => ({ ...prev, start_date: date }))}
-          showTimeSelect
-          dateFormat="Pp"
-          placeholderText="Выберите дату и время"
-        />
-        <input
-          type="text"
-          name="description"
-          placeholder="Описание (опционально)"
-          value={formData.description}
-          onChange={handleInputChange}
-        />
-        <input
-          type="text"
-          name="prize_pool"
-          placeholder="Призовой фонд (опционально)"
-          value={formData.prize_pool}
-          onChange={handleInputChange}
-        />
-        <input
-          type="text"
-          name="rules"
-          placeholder="Правила (опционально)"
-          value={formData.rules}
-          onChange={handleInputChange}
-        />
+
+        {/* Дополнительная информация */}
+        <div className="form-section">
+          <h3 className="section-title">Дополнительная информация</h3>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Призовой фонд</label>
+              <input
+                type="text"
+                name="prize_pool"
+                placeholder="Например: 10,000₽"
+                value={formData.prize_pool}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="form-group full-width">
+              <label>Описание турнира</label>
+              <textarea
+                name="description"
+                placeholder="Краткое описание турнира..."
+                value={formData.description}
+                onChange={handleInputChange}
+                rows="3"
+              />
+            </div>
+            
+            <div className="form-group full-width">
+              <label>Правила</label>
+              <textarea
+                name="rules"
+                placeholder="Основные правила и условия участия..."
+                value={formData.rules}
+                onChange={handleInputChange}
+                rows="4"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="form-buttons">
           <button type="submit">Создать турнир</button>
           <button 
