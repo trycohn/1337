@@ -1,213 +1,323 @@
 #!/bin/bash
 
-# Скрипт развертывания обновленного дизайна турниров
-# Автор: AI Assistant
-
-set -e
+# =============================================================================
+# СКРИПТ РАЗВЕРТЫВАНИЯ ОБНОВЛЕННОГО ДИЗАЙНА 1337 COMMUNITY
+# Включает: турниры + профили в минималистичном черно-белом стиле
+# =============================================================================
 
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# Функции для логирования
-log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+# Функция для цветного вывода
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-success() {
+print_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-warning() {
+print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-error() {
+print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_header() {
+    echo -e "${PURPLE}================================${NC}"
+    echo -e "${WHITE}$1${NC}"
+    echo -e "${PURPLE}================================${NC}"
+}
+
 # Проверка прав root
-if [[ $EUID -ne 0 ]]; then
-   error "Этот скрипт должен быть запущен с правами root (sudo)"
-   exit 1
-fi
+check_root() {
+    if [[ $EUID -eq 0 ]]; then
+        print_warning "Скрипт запущен от имени root. Рекомендуется запускать от имени обычного пользователя с sudo."
+        read -p "Продолжить? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+}
 
-log "Начинаем развертывание обновленного дизайна турниров..."
+# Проверка зависимостей
+check_dependencies() {
+    print_status "Проверка зависимостей..."
+    
+    local deps=("git" "node" "npm" "systemctl")
+    local missing_deps=()
+    
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            missing_deps+=("$dep")
+        fi
+    done
+    
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        print_error "Отсутствуют зависимости: ${missing_deps[*]}"
+        print_status "Установите недостающие зависимости и повторите попытку"
+        exit 1
+    fi
+    
+    print_success "Все зависимости установлены"
+}
 
-# 1. Проверка существования директории проекта
-PROJECT_DIR="/var/www/1337community.com"
-if [ ! -d "$PROJECT_DIR" ]; then
-    error "Директория проекта $PROJECT_DIR не найдена"
-    exit 1
-fi
+# Создание резервной копии
+create_backup() {
+    print_status "Создание резервной копии..."
+    
+    local backup_dir="/tmp/1337-backup-$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$backup_dir"
+    
+    # Резервное копирование важных файлов
+    if [ -f "frontend/src/components/TournamentDetails.css" ]; then
+        cp "frontend/src/components/TournamentDetails.css" "$backup_dir/"
+    fi
+    
+    if [ -f "frontend/src/components/Profile.css" ]; then
+        cp "frontend/src/components/Profile.css" "$backup_dir/"
+    fi
+    
+    if [ -f "frontend/src/components/Profile.js" ]; then
+        cp "frontend/src/components/Profile.js" "$backup_dir/"
+    fi
+    
+    if [ -f "frontend/src/components/ChatList.css" ]; then
+        cp "frontend/src/components/ChatList.css" "$backup_dir/"
+    fi
+    
+    if [ -f "frontend/src/components/Messenger.css" ]; then
+        cp "frontend/src/components/Messenger.css" "$backup_dir/"
+    fi
+    
+    print_success "Резервная копия создана: $backup_dir"
+    echo "$backup_dir" > /tmp/1337-last-backup.txt
+}
 
-cd "$PROJECT_DIR"
+# Обновление кода из Git
+update_code() {
+    print_status "Обновление кода из Git репозитория..."
+    
+    # Сохраняем текущую ветку
+    local current_branch=$(git branch --show-current 2>/dev/null || echo "main")
+    
+    # Проверяем статус репозитория
+    if ! git status &>/dev/null; then
+        print_error "Текущая директория не является Git репозиторием"
+        return 1
+    fi
+    
+    # Сохраняем локальные изменения
+    if ! git diff --quiet; then
+        print_warning "Обнаружены локальные изменения. Сохраняем их..."
+        git stash push -m "Auto-stash before deployment $(date)"
+    fi
+    
+    # Обновляем код
+    git fetch origin
+    git pull origin "$current_branch"
+    
+    if [ $? -eq 0 ]; then
+        print_success "Код успешно обновлен"
+    else
+        print_error "Ошибка при обновлении кода"
+        return 1
+    fi
+}
 
-# 2. Создание резервной копии
-BACKUP_DIR="/backup/1337community-design-$(date +%Y%m%d_%H%M%S)"
-log "Создаем резервную копию в $BACKUP_DIR..."
+# Установка зависимостей
+install_dependencies() {
+    print_status "Установка зависимостей frontend..."
+    
+    cd frontend || {
+        print_error "Директория frontend не найдена"
+        return 1
+    }
+    
+    # Очистка кеша npm
+    npm cache clean --force
+    
+    # Установка зависимостей
+    npm install
+    
+    if [ $? -eq 0 ]; then
+        print_success "Зависимости frontend установлены"
+    else
+        print_error "Ошибка при установке зависимостей frontend"
+        return 1
+    fi
+    
+    cd ..
+}
 
-mkdir -p "$BACKUP_DIR"
-cp -r frontend/src/components/TournamentDetails.css "$BACKUP_DIR/" 2>/dev/null || true
-cp -r frontend/src/components/Home.css "$BACKUP_DIR/" 2>/dev/null || true
-cp -r frontend/src/components/ChatList.css "$BACKUP_DIR/" 2>/dev/null || true
-cp -r frontend/src/components/Messenger.css "$BACKUP_DIR/" 2>/dev/null || true
+# Сборка frontend
+build_frontend() {
+    print_status "Сборка frontend приложения..."
+    
+    cd frontend || {
+        print_error "Директория frontend не найдена"
+        return 1
+    }
+    
+    # Сборка проекта
+    npm run build
+    
+    if [ $? -eq 0 ]; then
+        print_success "Frontend успешно собран"
+    else
+        print_error "Ошибка при сборке frontend"
+        return 1
+    fi
+    
+    cd ..
+}
 
-success "Резервная копия создана"
+# Перезапуск сервисов
+restart_services() {
+    print_status "Перезапуск сервисов..."
+    
+    # Перезапуск backend сервиса
+    if systemctl is-active --quiet 1337-backend; then
+        print_status "Перезапуск 1337-backend..."
+        sudo systemctl restart 1337-backend
+        
+        # Ждем запуска сервиса
+        sleep 5
+        
+        if systemctl is-active --quiet 1337-backend; then
+            print_success "Сервис 1337-backend перезапущен"
+        else
+            print_error "Ошибка при перезапуске 1337-backend"
+            sudo systemctl status 1337-backend
+        fi
+    else
+        print_warning "Сервис 1337-backend не запущен"
+    fi
+    
+    # Перезагрузка Nginx
+    if systemctl is-active --quiet nginx; then
+        print_status "Перезагрузка Nginx..."
+        sudo systemctl reload nginx
+        
+        if [ $? -eq 0 ]; then
+            print_success "Nginx перезагружен"
+        else
+            print_error "Ошибка при перезагрузке Nginx"
+            sudo systemctl status nginx
+        fi
+    else
+        print_warning "Nginx не запущен"
+    fi
+}
 
-# 3. Остановка сервиса
-log "Останавливаем сервис 1337-backend..."
-systemctl stop 1337-backend || warning "Сервис 1337-backend не запущен"
+# Проверка работоспособности
+health_check() {
+    print_status "Проверка работоспособности..."
+    
+    # Проверка backend
+    if systemctl is-active --quiet 1337-backend; then
+        print_success "✓ Backend сервис работает"
+    else
+        print_error "✗ Backend сервис не работает"
+    fi
+    
+    # Проверка Nginx
+    if systemctl is-active --quiet nginx; then
+        print_success "✓ Nginx работает"
+    else
+        print_error "✗ Nginx не работает"
+    fi
+    
+    # Проверка доступности сайта
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost | grep -q "200\|301\|302"; then
+        print_success "✓ Сайт доступен"
+    else
+        print_warning "⚠ Сайт может быть недоступен"
+    fi
+}
 
-# 4. Обновление кода из Git
-log "Обновляем код из Git репозитория..."
-git fetch origin
-git pull origin main
+# Вывод информации о изменениях
+show_changes_info() {
+    print_header "ИНФОРМАЦИЯ ОБ ОБНОВЛЕНИИ"
+    
+    echo -e "${CYAN}Обновленные компоненты:${NC}"
+    echo "• Дизайн страницы турниров (минималистичный черно-белый стиль)"
+    echo "• Дизайн страницы профиля (современный интерфейс)"
+    echo "• Дизайн чата и списка чатов"
+    echo "• Единая дизайн-система"
+    echo ""
+    
+    echo -e "${CYAN}Основные изменения:${NC}"
+    echo "• Черный фон (#000000) и белый текст (#ffffff)"
+    echo "• Минималистичные элементы без скругленных углов"
+    echo "• Улучшенная типографика с uppercase заголовками"
+    echo "• Современная навигация в профиле"
+    echo "• Обновленные карточки друзей и организаций"
+    echo "• Новые стили модальных окон"
+    echo ""
+    
+    echo -e "${CYAN}Файлы изменений:${NC}"
+    echo "• frontend/src/components/TournamentDetails.css"
+    echo "• frontend/src/components/Profile.css (полностью переписан)"
+    echo "• frontend/src/components/Profile.js (обновлена структура)"
+    echo "• frontend/src/components/ChatList.css"
+    echo "• frontend/src/components/Messenger.css"
+    echo ""
+    
+    if [ -f "/tmp/1337-last-backup.txt" ]; then
+        local backup_dir=$(cat /tmp/1337-last-backup.txt)
+        echo -e "${YELLOW}Резервная копия сохранена в: $backup_dir${NC}"
+    fi
+}
 
-if [ $? -ne 0 ]; then
-    error "Ошибка при обновлении кода из Git"
-    exit 1
-fi
+# Основная функция
+main() {
+    print_header "РАЗВЕРТЫВАНИЕ ОБНОВЛЕННОГО ДИЗАЙНА 1337 COMMUNITY"
+    
+    # Проверки
+    check_root
+    check_dependencies
+    
+    # Создание резервной копии
+    create_backup
+    
+    # Обновление
+    if update_code; then
+        if install_dependencies; then
+            if build_frontend; then
+                restart_services
+                health_check
+                show_changes_info
+                
+                print_header "РАЗВЕРТЫВАНИЕ ЗАВЕРШЕНО УСПЕШНО"
+                print_success "Обновленный дизайн применен!"
+                print_status "Проверьте сайт в браузере для подтверждения изменений"
+            else
+                print_error "Ошибка при сборке frontend"
+                exit 1
+            fi
+        else
+            print_error "Ошибка при установке зависимостей"
+            exit 1
+        fi
+    else
+        print_error "Ошибка при обновлении кода"
+        exit 1
+    fi
+}
 
-success "Код обновлен из Git"
+# Обработка сигналов
+trap 'print_error "Развертывание прервано пользователем"; exit 1' INT TERM
 
-# 5. Установка зависимостей frontend
-log "Устанавливаем зависимости frontend..."
-cd frontend
-npm install
-
-if [ $? -ne 0 ]; then
-    error "Ошибка при установке зависимостей frontend"
-    exit 1
-fi
-
-success "Зависимости frontend установлены"
-
-# 6. Сборка frontend
-log "Собираем frontend..."
-npm run build
-
-if [ $? -ne 0 ]; then
-    error "Ошибка при сборке frontend"
-    exit 1
-fi
-
-success "Frontend собран"
-
-# 7. Копирование собранного frontend
-log "Копируем собранный frontend..."
-cd ..
-rm -rf /var/www/1337community.com/frontend/build.old 2>/dev/null || true
-mv /var/www/1337community.com/frontend/build /var/www/1337community.com/frontend/build.old 2>/dev/null || true
-cp -r frontend/build /var/www/1337community.com/frontend/
-
-success "Frontend скопирован"
-
-# 8. Установка зависимостей backend
-log "Устанавливаем зависимости backend..."
-cd backend
-npm install --production
-
-if [ $? -ne 0 ]; then
-    warning "Ошибка при установке зависимостей backend (возможно, они уже установлены)"
-fi
-
-cd ..
-
-# 9. Установка прав доступа
-log "Устанавливаем права доступа..."
-chown -R www-data:www-data /var/www/1337community.com
-chmod -R 755 /var/www/1337community.com
-
-success "Права доступа установлены"
-
-# 10. Запуск сервиса
-log "Запускаем сервис 1337-backend..."
-systemctl start 1337-backend
-
-# Ждем запуска
-sleep 5
-
-# Проверяем статус
-if systemctl is-active --quiet 1337-backend; then
-    success "Сервис 1337-backend запущен успешно"
-else
-    error "Не удалось запустить сервис 1337-backend"
-    journalctl -u 1337-backend --no-pager -n 20
-    exit 1
-fi
-
-# 11. Перезагрузка Nginx
-log "Перезагружаем Nginx..."
-systemctl reload nginx
-
-if [ $? -eq 0 ]; then
-    success "Nginx перезагружен"
-else
-    error "Ошибка при перезагрузке Nginx"
-    exit 1
-fi
-
-# 12. Проверка работоспособности
-log "Проверяем работоспособность..."
-
-# Проверяем API
-sleep 2
-if curl -s -f http://localhost:3000/api/tournaments >/dev/null 2>&1; then
-    success "API отвечает на запросы"
-else
-    warning "API не отвечает на запросы (возможно, база данных не настроена)"
-fi
-
-# Проверяем веб-сайт
-if curl -s -f https://1337community.com >/dev/null 2>&1; then
-    success "Веб-сайт доступен"
-else
-    warning "Веб-сайт недоступен"
-fi
-
-# 13. Очистка старых файлов
-log "Очищаем старые файлы..."
-find /var/www/1337community.com -name "*.old" -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
-find /backup -name "1337community-design-*" -type d -mtime +30 -exec rm -rf {} + 2>/dev/null || true
-
-success "Старые файлы очищены"
-
-# 14. Финальная проверка
-log "Финальная проверка системы..."
-
-echo ""
-echo "=== СТАТУС СЕРВИСОВ ==="
-systemctl status 1337-backend --no-pager -l | head -10
-echo ""
-systemctl status nginx --no-pager -l | head -10
-
-echo ""
-echo "=== ПРОВЕРКА ПОРТОВ ==="
-lsof -i :3000 | head -5 || echo "Порт 3000 не занят"
-lsof -i :80 | head -5 || echo "Порт 80 не занят"
-lsof -i :443 | head -5 || echo "Порт 443 не занят"
-
-echo ""
-echo "=== ПОСЛЕДНИЕ ЛОГИ ==="
-journalctl -u 1337-backend --no-pager -n 5
-
-echo ""
-success "Развертывание обновленного дизайна турниров завершено!"
-echo ""
-echo "🎨 Обновления дизайна:"
-echo "  ✅ Минималистичный черно-белый стиль"
-echo "  ✅ Обновленные страницы турниров"
-echo "  ✅ Единая цветовая схема"
-echo "  ✅ Улучшенная типографика"
-echo ""
-echo "📋 Полезные команды:"
-echo "  sudo systemctl status 1337-backend     # Статус сервиса"
-echo "  sudo journalctl -u 1337-backend -f     # Логи в реальном времени"
-echo "  sudo systemctl restart 1337-backend    # Перезапуск сервиса"
-echo ""
-echo "🌐 Проверьте работу сайта: https://1337community.com"
-echo "📁 Резервная копия: $BACKUP_DIR" 
+# Запуск основной функции
+main "$@" 
