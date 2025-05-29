@@ -61,11 +61,20 @@ export const redirectIfCurrentUser = (userId, navigateFn) => {
 };
 
 /**
- * Обеспечивает использование HTTPS вместо HTTP в URL
+ * Обеспечивает использование правильного URL в зависимости от окружения
  * @param {string} url URL, который нужно исправить
- * @returns {string|null} URL с HTTPS вместо HTTP или исходный URL, если он не содержит протокол
+ * @returns {string|null} Исправленный URL или исходный URL
  */
 export const ensureHttps = (url) => {
   if (!url) return url;
-  return url.replace(/^http:\/\//i, 'https://');
+  
+  // Заменяем http на https
+  let correctedUrl = url.replace(/^http:\/\//i, 'https://');
+  
+  // В production заменяем localhost:3000 на правильный домен
+  if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost') {
+    correctedUrl = correctedUrl.replace(/^https?:\/\/localhost:3000/i, 'https://1337community.com');
+  }
+  
+  return correctedUrl;
 }; 
