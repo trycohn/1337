@@ -364,6 +364,7 @@
     background-color: var(--accent-error);
     color: var(--text-primary);
     border-color: var(--accent-error);
+    height: 30px;
 }
 
 .btn-danger:hover {
