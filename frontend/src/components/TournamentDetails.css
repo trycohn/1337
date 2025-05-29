@@ -1617,9 +1617,6 @@
 .winners-section {
     margin: 30px 0;
     padding: 20px;
-    background-color: #111111;
-    border-radius: 0;
-    border: 1px solid #333333;
     color: #ffffff;
 }
 
@@ -1643,7 +1640,6 @@
 
 .winner-card {
     text-align: center;
-    background-color: #1a1a1a;
     border-radius: 0;
     padding: 15px;
     min-width: 200px;
@@ -2163,7 +2159,6 @@ a.participant-name:hover {
     margin-bottom: 20px;
     text-align: center;
     color: #ffffff;
-    border-bottom: 1px solid #333333;
     padding-bottom: 10px;
 }
 
@@ -2178,9 +2173,6 @@ a.participant-name:hover {
     flex-direction: column;
     gap: 10px;
     padding: 15px;
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
-    border-radius: 0;
 }
 
 .action-group-title {
