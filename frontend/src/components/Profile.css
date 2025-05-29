@@ -817,7 +817,6 @@
 /* Steam/Faceit Sections */
 .steam-section,
 .faceit-section {
-    background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 0;
     padding: var(--spacing-lg);
