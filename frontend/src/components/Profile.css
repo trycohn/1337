@@ -244,15 +244,14 @@
 }
 
 .nav-tab:hover {
-    background-color: var(--bg-tertiary);
+    background-color: #333333;
     border-color: var(--border-hover);
-    color: var(--text-primary);
 }
 
 .nav-tab.active {
-    background-color: var(--text-primary);
+    background-color: #ffffff1a;
     border-color: var(--text-primary);
-    color: var(--bg-primary);
+    color: #ffffff;
     font-weight: 300;
 }
 
