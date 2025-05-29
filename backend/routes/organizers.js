@@ -95,7 +95,7 @@ router.get('/:slug', async (req, res) => {
             SELECT t.id, t.name, t.status, t.start_date, t.end_date, 
                    COALESCE(t.max_participants, 0) as max_teams, 
                    (SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id) as current_teams,
-                   t.prize_pool, t.game as discipline,
+                   COALESCE(t.prize_pool, 'Не указан') as prize_pool, t.game as discipline,
                    NULL as winner
             FROM tournaments t
             JOIN tournament_organizers to2 ON t.id = to2.tournament_id
@@ -110,7 +110,7 @@ router.get('/:slug', async (req, res) => {
                 COUNT(DISTINCT CASE WHEN t.status = 'completed' THEN to2.tournament_id END) as completed_tournaments,
                 COUNT(DISTINCT CASE WHEN t.status = 'active' THEN to2.tournament_id END) as active_tournaments,
                 COUNT(DISTINCT om.user_id) as total_members,
-                COALESCE(SUM(CASE WHEN t.status = 'completed' THEN COALESCE(t.prize_pool, 0) END), 0) as total_prize_pool
+                0 as total_prize_pool
             FROM organizers o
             LEFT JOIN tournament_organizers to2 ON o.id = to2.organizer_id
             LEFT JOIN tournaments t ON to2.tournament_id = t.id
