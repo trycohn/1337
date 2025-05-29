@@ -115,7 +115,6 @@
     font-weight: 300;
     margin: 0 0 var(--spacing-sm) 0;
     color: var(--text-primary);
-    text-transform: uppercase;
     letter-spacing: 1px;
     line-height: 1.2;
 }
