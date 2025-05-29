@@ -171,9 +171,10 @@
 /* Горизонтальная компоновка основной и дополнительной информации */
 .create-tournament .form-main-layout {
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 2fr 1fr;
     gap: var(--ct-spacing-xl);
     margin-bottom: var(--ct-spacing-xl);
+    min-height: 0;
 }
 
 .create-tournament .main-section {
@@ -183,6 +184,7 @@
 
 .create-tournament .additional-section {
     min-width: 0; /* Предотвращает переполнение */
+    max-width: 450px; /* Ограничиваем максимальную ширину */
     animation-delay: 0.2s;
 }
 
@@ -364,9 +366,16 @@
 }
 
 /* Адаптивность */
+@media (max-width: 1200px) {
+    .create-tournament .form-main-layout {
+        grid-template-columns: 3fr 2fr;
+        gap: var(--ct-spacing-lg);
+    }
+}
+
 @media (max-width: 1024px) {
     .create-tournament .form-main-layout {
-        grid-template-columns: 1fr 350px;
+        grid-template-columns: 1fr;
         gap: var(--ct-spacing-lg);
     }
     
