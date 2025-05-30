@@ -2691,6 +2691,7 @@ a.participant-name:hover {
     padding: 12px 16px;
     gap: 16px;
     font-size: 14px;
+    flex-direction: column;
 }
 
 .result-compact-round {
@@ -2743,7 +2744,6 @@ a.participant-name:hover {
 }
 
 .team-name-btn.winner {
-    color: #ffffff;
     font-weight: 400;
 }
 
