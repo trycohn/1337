@@ -134,11 +134,42 @@ router.get('/:id', async (req, res) => {
             [id]
         );
 
+        // Для командных турниров загружаем команды с участниками
+        let teams = [];
+        if (tournament.participant_type === 'team') {
+            // Получаем все команды турнира
+            const teamsRes = await pool.query(
+                `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
+                 FROM tournament_teams tt
+                 WHERE tt.tournament_id = $1`,
+                [id]
+            );
+
+            // Для каждой команды получаем участников
+            teams = await Promise.all(teamsRes.rows.map(async (team) => {
+                const membersRes = await pool.query(
+                    `SELECT tm.team_id, tm.user_id, tm.participant_id, 
+                            tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
+                     FROM tournament_team_members tm
+                     LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
+                     LEFT JOIN users u ON tm.user_id = u.id
+                     WHERE tm.team_id = $1`,
+                    [team.id]
+                );
+
+                return {
+                    ...team,
+                    members: membersRes.rows
+                };
+            }));
+        }
+
         const responseData = {
             ...tournament,
             participants: participantsResult.rows,
             participant_count: participantsResult.rows.length,
             matches: matchesResult.rows,
+            teams: teams // Добавляем команды в ответ
         };
         console.log('🔍 Tournament details fetched:', responseData);
         res.json(responseData);
@@ -207,11 +238,42 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
             [id]
         );
         
+        // Для командных турниров загружаем команды с участниками
+        let teams = [];
+        if (updatedTournament.participant_type === 'team') {
+            // Получаем все команды турнира
+            const teamsRes = await pool.query(
+                `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
+                 FROM tournament_teams tt
+                 WHERE tt.tournament_id = $1`,
+                [id]
+            );
+
+            // Для каждой команды получаем участников
+            teams = await Promise.all(teamsRes.rows.map(async (team) => {
+                const membersRes = await pool.query(
+                    `SELECT tm.team_id, tm.user_id, tm.participant_id, 
+                            tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
+                     FROM tournament_team_members tm
+                     LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
+                     LEFT JOIN users u ON tm.user_id = u.id
+                     WHERE tm.team_id = $1`,
+                    [team.id]
+                );
+
+                return {
+                    ...team,
+                    members: membersRes.rows
+                };
+            }));
+        }
+        
         const responseData = {
             ...updatedTournament,
             participants: participantsResult.rows,
             participant_count: participantsResult.rows.length,
             matches: matchesResult2.rows,
+            teams: teams // Добавляем команды в ответ
         };
         
         // Отправляем обновление через WebSocket
