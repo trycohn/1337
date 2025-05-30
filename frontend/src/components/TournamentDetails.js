@@ -2054,6 +2054,7 @@ function TournamentDetails() {
     // Компонент для рендеринга призёров турнира
     const renderWinners = () => {
         const tournamentWinners = getTournamentWinners();
+        
         if (!tournamentWinners || tournamentWinners.length === 0) {
             return null;
         }
