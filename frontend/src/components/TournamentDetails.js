@@ -1910,6 +1910,32 @@ function TournamentDetails() {
         // Когда команды созданы, обновляем флаг для скрытия списка
     }, [mixedTeams]);
 
+    // Функция для загрузки журнала событий турнира
+    const fetchTournamentLogs = useCallback(async () => {
+        if (!tournament || !tournament.id) return;
+        
+        setLogsLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('Нет токена для загрузки журнала событий');
+                return;
+            }
+            
+            const response = await api.get(`/api/tournaments/${tournament.id}/logs`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data) {
+                setTournamentLogs(response.data);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки журнала событий:', error);
+        } finally {
+            setLogsLoading(false);
+        }
+    }, [tournament]);
+
     if (!tournament) return <p>Загрузка...</p>;
 
     const canRequestAdmin = user && !isCreator && !adminRequestStatus;
@@ -2586,32 +2612,6 @@ function TournamentDetails() {
             alert(error.response?.data?.error || 'Ошибка при сохранении изменений');
         }
     };
-
-    // Функция для загрузки журнала событий турнира
-    const fetchTournamentLogs = useCallback(async () => {
-        if (!tournament || !tournament.id) return;
-        
-        setLogsLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('Нет токена для загрузки журнала событий');
-                return;
-            }
-            
-            const response = await api.get(`/api/tournaments/${tournament.id}/logs`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (response.data) {
-                setTournamentLogs(response.data);
-            }
-        } catch (error) {
-            console.error('Ошибка загрузки журнала событий:', error);
-        } finally {
-            setLogsLoading(false);
-        }
-    }, [tournament]);
 
     return (
         <section className="tournament-details">
