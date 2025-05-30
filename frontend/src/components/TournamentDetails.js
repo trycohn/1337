@@ -2122,27 +2122,27 @@ function TournamentDetails() {
         }
 
         return (
-            <div className="participants-list">
+            <div className="participants-list-tournamentdetails">
                 <h4>Участники ({tournament.participants.length})</h4>
                 <ul>
                     {tournament.participants.map((participant) => (
-                        <li key={participant?.id || `participant-${Math.random()}`} className="participant-item">
+                        <li key={participant?.id || `participant-${Math.random()}`} className="participant-item-tournamentdetails">
                             {/* Проверяем, является ли участник текущим авторизованным пользователем */}
                             <Link 
                                 to={user && participant.user_id === user.id ? '/profile' : `/user/${participant.user_id}`} 
-                                className="participant-link"
+                                className="participant-link-tournamentdetails"
                             >
-                                <div className="participant-avatar">
+                                <div className="participant-avatar-tournamentdetails">
                                     <img 
                                         src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
                                         alt={`${participant.name || participant.username || 'Участник'} аватар`} 
-                                        className="participant-avatar-img"
+                                        className="participant-avatar-img-tournamentdetails"
                                         onError={(e) => {e.target.src = '/default-avatar.png'}}
                                     />
                                 </div>
-                                <div className="participant-info">
-                                    <span className="participant-name">{participant.name || participant.username}</span>
-                                    {participant.is_admin && <span className="admin-badge">Админ</span>}
+                                <div className="participant-info-tournamentdetails">
+                                    <span className="participant-name-tournamentdetails">{participant.name || participant.username}</span>
+                                    {participant.is_admin && <span className="admin-badge-tournamentdetails">Админ</span>}
                                 </div>
                             </Link>
                         </li>
@@ -2609,8 +2609,8 @@ function TournamentDetails() {
     };
 
     return (
-        <section className="tournament-details">
-            <div className="tournament-header">
+        <section className="tournament-details-tournamentdetails">
+            <div className="tournament-header-tournamentdetails">
                 <h2>
                     {tournament.name} ({
                         tournament.status === 'active' || tournament.status === 'pending' ? 'Активен' : 
@@ -2621,27 +2621,27 @@ function TournamentDetails() {
                 </h2>
                 
                 {/* Навигация по вкладкам */}
-                <div className="tabs-navigation">
+                <div className="tabs-navigation-tournamentdetails">
                     {visibleTabs.map(tab => (
                         <button
                             key={tab.id}
-                            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                            className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
                             onClick={() => setActiveTab(tab.id)}
                         >
-                            <span className="tab-label">{tab.label}</span>
+                            <span className="tab-label-tournamentdetails">{tab.label}</span>
                         </button>
                     ))}
                 </div>
             </div>
             
-            <div className="tournament-content">
+            <div className="tournament-content-tournamentdetails">
                 {/* Вкладка: Информация */}
                 {activeTab === 'info' && (
-                    <div className="tab-content tab-info">
-                        <div className="tournament-info-grid">
-                            <div className="info-main">
+                    <div className="tab-content-tournamentdetails tab-info-tournamentdetails">
+                        <div className="tournament-info-grid-tournamentdetails">
+                            <div className="info-main-tournamentdetails">
                                 <div className="tournament-info-section">
-                                    <div className="info-block">
+                                    <div className="info-block-tournamentdetails">
                                         <h3>Описание</h3>
                                         {isEditingDescription ? (
                                             <div className="edit-field">
@@ -2664,7 +2664,7 @@ function TournamentDetails() {
                                         )}
                                     </div>
 
-                                    <div className="info-block">
+                                    <div className="info-block-tournamentdetails">
                                         <h3>Призовой фонд</h3>
                                         {isEditingPrizePool ? (
                                             <div className="edit-field">
@@ -2688,7 +2688,7 @@ function TournamentDetails() {
                                     </div>
 
                                     {(isAdminOrCreator || showFullDescription) && (
-                                        <div className="info-block">
+                                        <div className="info-block-tournamentdetails">
                                             <h3>Регламент</h3>
                                             <div className="info-content">
                                                 {isAdminOrCreator && (
@@ -2750,22 +2750,22 @@ function TournamentDetails() {
                                     )}
                                 </div>
                                 
-                                <div className="tournament-meta-info">
-                                    <div className="meta-item">
+                                <div className="tournament-meta-info-tournamentdetails">
+                                    <div className="meta-item-tournamentdetails">
                                         <strong>Формат:</strong> {tournament.format}
                                     </div>
-                                    <div className="meta-item">
+                                    <div className="meta-item-tournamentdetails">
                                         <strong>Дисциплина:</strong> {tournament.game || 'Не указана'}
                                     </div>
-                                    <div className="meta-item">
+                                    <div className="meta-item-tournamentdetails">
                                         <strong>Дата старта:</strong> {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
                                     </div>
                                     {tournament.end_date && (
-                                        <div className="meta-item">
+                                        <div className="meta-item-tournamentdetails">
                                             <strong>Дата окончания:</strong> {new Date(tournament.end_date).toLocaleDateString('ru-RU')}
                                         </div>
                                     )}
-                                    <div className="meta-item creator-info">
+                                    <div className="meta-item-tournamentdetails creator-info-tournamentdetails">
                                         <strong>Создатель:</strong>{' '}
                                         {creator ? (
                                             <span className="creator-display">
