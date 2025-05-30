@@ -2479,7 +2479,7 @@ a.participant-name:hover {
 
 .tab-info-tournamentdetails .tournament-info-grid-tournamentdetails {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 3fr;
     gap: 30px;
 }
 
