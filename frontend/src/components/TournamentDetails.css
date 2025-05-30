@@ -2324,6 +2324,8 @@ a.participant-name:hover {
     border-bottom: 1px solid #333333;
     padding-bottom: 20px;
     text-align: center;
+    justify-content: space-between;
+    flex-direction: column;
 }
 
 .tournament-header h2 {
@@ -2450,17 +2452,15 @@ a.participant-name:hover {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 15px;
     padding: 20px;
-    background-color: #111111;
     border: 1px solid #333333;
+    font-size: 16px;
 }
 
 .meta-item {
     padding: 10px;
     border-bottom: 1px solid #222222;
-}
-
-.meta-item:last-child {
-    border-bottom: none;
+    display: flex;
+    align-items: baseline;
 }
 
 .meta-item strong {
@@ -2471,6 +2471,12 @@ a.participant-name:hover {
     letter-spacing: 0.5px;
     display: block;
     margin-bottom: 5px;
+}
+
+.creator-info   {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
 }
 
 /* Вкладка Сетка */
