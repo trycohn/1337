@@ -1771,6 +1771,24 @@
     color: #ffffff;
 }
 
+/* Стили для одиночных участников */
+.solo-participant {
+    text-align: center;
+    margin-top: 10px;
+    padding: 8px;
+    border: 1px solid #333333;
+    background-color: #1a1a1a;
+    color: #888888;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.solo-participant p {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 /* Адаптивная верстка для мобильных устройств */
 @media (max-width: 768px) {
     .winners-podium {

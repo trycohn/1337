@@ -1962,18 +1962,26 @@ function TournamentDetails() {
             return [];
         }
 
-        // Находим имя победителя (1 место)
-        const firstPlaceId = finalMatch.winner_team_id;
-        const firstPlaceParticipant = tournament.participants.find(p => p.id === firstPlaceId);
-        if (firstPlaceParticipant) {
-            // Находим членов команды для 1 места (если это командный турнир)
+        // Функция для получения членов команды
+        const getTeamMembers = (teamId) => {
             let teamMembers = [];
-            if (tournament.participant_type === 'team') {
-                // Проверим, включены ли уже участники в команду
+            
+            // Для микс-турниров ищем в сформированных командах
+            if (tournament.format === 'mix' && tournament.teams && Array.isArray(tournament.teams)) {
+                const mixTeam = tournament.teams.find(team => team.id === teamId);
+                if (mixTeam && mixTeam.members && Array.isArray(mixTeam.members)) {
+                    teamMembers = mixTeam.members.map(member => ({
+                        id: member.id || member.user_id,
+                        name: member.name || member.username,
+                        avatar_url: member.avatar_url
+                    }));
+                }
+            }
+            // Для обычных командных турниров ищем участников с team_id
+            else if (tournament.participant_type === 'team') {
                 if (Array.isArray(tournament.participants) && tournament.participants.some(p => p.team_id)) {
-                    // Ищем участников с соответствующим team_id
                     teamMembers = tournament.participants
-                        .filter(p => p.team_id === firstPlaceId)
+                        .filter(p => p.team_id === teamId)
                         .map(m => ({
                             id: m.id,
                             name: m.name || m.username,
@@ -1981,13 +1989,22 @@ function TournamentDetails() {
                         }));
                 }
             }
+            
+            return teamMembers.length > 0 ? teamMembers : null;
+        };
+
+        // Находим имя победителя (1 место)
+        const firstPlaceId = finalMatch.winner_team_id;
+        const firstPlaceParticipant = tournament.participants.find(p => p.id === firstPlaceId);
+        if (firstPlaceParticipant) {
+            const teamMembers = getTeamMembers(firstPlaceId);
 
             result.push({
                 place: 1,
                 name: firstPlaceParticipant.name || firstPlaceParticipant.username,
                 id: firstPlaceId,
                 avatar_url: firstPlaceParticipant.avatar_url,
-                members: teamMembers.length > 0 ? teamMembers : null
+                members: teamMembers
             });
         }
 
@@ -1995,28 +2012,14 @@ function TournamentDetails() {
         const secondPlaceId = finalMatch.team1_id === firstPlaceId ? finalMatch.team2_id : finalMatch.team1_id;
         const secondPlaceParticipant = tournament.participants.find(p => p.id === secondPlaceId);
         if (secondPlaceParticipant) {
-            // Находим членов команды для 2 места (если это командный турнир)
-            let teamMembers = [];
-            if (tournament.participant_type === 'team') {
-                // Проверим, включены ли уже участники в команду
-                if (Array.isArray(tournament.participants) && tournament.participants.some(p => p.team_id)) {
-                    // Ищем участников с соответствующим team_id
-                    teamMembers = tournament.participants
-                        .filter(p => p.team_id === secondPlaceId)
-                        .map(m => ({
-                            id: m.id,
-                            name: m.name || m.username,
-                            avatar_url: m.avatar_url
-                        }));
-                }
-            }
+            const teamMembers = getTeamMembers(secondPlaceId);
 
             result.push({
                 place: 2,
                 name: secondPlaceParticipant.name || secondPlaceParticipant.username,
                 id: secondPlaceId,
                 avatar_url: secondPlaceParticipant.avatar_url,
-                members: teamMembers.length > 0 ? teamMembers : null
+                members: teamMembers
             });
         }
 
@@ -2026,36 +2029,23 @@ function TournamentDetails() {
             const thirdPlaceId = thirdPlaceMatch.winner_team_id;
             const thirdPlaceParticipant = tournament.participants.find(p => p.id === thirdPlaceId);
             if (thirdPlaceParticipant) {
-                // Находим членов команды для 3 места (если это командный турнир)
-                let teamMembers = [];
-                if (tournament.participant_type === 'team') {
-                    // Проверим, включены ли уже участники в команду
-                    if (Array.isArray(tournament.participants) && tournament.participants.some(p => p.team_id)) {
-                        // Ищем участников с соответствующим team_id
-                        teamMembers = tournament.participants
-                            .filter(p => p.team_id === thirdPlaceId)
-                            .map(m => ({
-                                id: m.id,
-                                name: m.name || m.username,
-                                avatar_url: m.avatar_url
-                            }));
-                    }
-                }
+                const teamMembers = getTeamMembers(thirdPlaceId);
 
                 result.push({
                     place: 3,
                     name: thirdPlaceParticipant.name || thirdPlaceParticipant.username,
                     id: thirdPlaceId,
                     avatar_url: thirdPlaceParticipant.avatar_url,
-                    members: teamMembers.length > 0 ? teamMembers : null
+                    members: teamMembers
                 });
             }
         }
 
         // Логирование для диагностики
         console.log('Найдены победители:', result);
-        if (tournament.participant_type === 'team') {
-            console.log('Это командный турнир, структура участников:', tournament.participants);
+        if (tournament.participant_type === 'team' || tournament.format === 'mix') {
+            console.log('Это командный/микс турнир, структура участников:', tournament.participants);
+            console.log('Структура команд:', tournament.teams);
         }
 
         return result;
@@ -2090,6 +2080,7 @@ function TournamentDetails() {
                             <div className="winner-name">
                                 <strong>{winner.name}</strong>
                             </div>
+                            {/* Показываем состав команды для всех типов турниров */}
                             {winner.members && winner.members.length > 0 && (
                                 <div className="team-members">
                                     <h4>Состав команды:</h4>
@@ -2106,6 +2097,12 @@ function TournamentDetails() {
                                             </li>
                                         ))}
                                     </ul>
+                                </div>
+                            )}
+                            {/* Если участников нет в команде, но это одиночный турнир, показываем заглушку */}
+                            {(!winner.members || winner.members.length === 0) && tournament.participant_type === 'solo' && (
+                                <div className="solo-participant">
+                                    <p>Одиночный участник</p>
                                 </div>
                             )}
                         </div>
