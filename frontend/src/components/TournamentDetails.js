@@ -642,6 +642,32 @@ function TournamentDetails() {
         }
     }, [memoizedGameData, fetchMapsForGame]);
     
+    // Функция для загрузки журнала событий турнира
+    const fetchTournamentLogs = useCallback(async () => {
+        if (!tournament || !tournament.id) return;
+        
+        setLogsLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('Нет токена для загрузки журнала событий');
+                return;
+            }
+            
+            const response = await api.get(`/api/tournaments/${tournament.id}/logs`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data) {
+                setTournamentLogs(response.data);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки журнала событий:', error);
+        } finally {
+            setLogsLoading(false);
+        }
+    }, [tournament]);
+    
     // Загружаем журнал событий при переключении на вкладку
     useEffect(() => {
         if (activeTab === 'logs' && tournament) {
@@ -1904,32 +1930,6 @@ function TournamentDetails() {
         console.log('mixedTeams изменился:', mixedTeams);
         // Когда команды созданы, обновляем флаг для скрытия списка
     }, [mixedTeams]);
-
-    // Функция для загрузки журнала событий турнира
-    const fetchTournamentLogs = useCallback(async () => {
-        if (!tournament || !tournament.id) return;
-        
-        setLogsLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('Нет токена для загрузки журнала событий');
-                return;
-            }
-            
-            const response = await api.get(`/api/tournaments/${tournament.id}/logs`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (response.data) {
-                setTournamentLogs(response.data);
-            }
-        } catch (error) {
-            console.error('Ошибка загрузки журнала событий:', error);
-        } finally {
-            setLogsLoading(false);
-        }
-    }, [tournament]);
 
     if (!tournament) return <p>Загрузка...</p>;
 
