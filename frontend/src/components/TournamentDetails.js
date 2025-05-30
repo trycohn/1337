@@ -15,11 +15,6 @@ import {
   getDefaultCS2Maps 
 } from '../utils/mapHelpers';
 
-// eslint-disable-next-line no-unused-vars
-import TournamentChat from './TournamentChat';
-// eslint-disable-next-line no-unused-vars
-import { useUser } from '../context/UserContext';
-
 // Импортируем BracketRenderer напрямую вместо использования React.lazy
 import BracketRenderer from './BracketRenderer';
 
