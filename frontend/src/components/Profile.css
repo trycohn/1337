@@ -211,59 +211,158 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    position: relative;
+    padding: 8px;
+    overflow: hidden;
+}
+
+/* Эффект мерцания для контейнера навигации */
+.sidebar-nav-profile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .nav-tab-profile {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    color: #ffffff;
+    justify-content: flex-start;
+    padding: 16px 24px;
+    background-color: transparent;
+    color: #666666;
+    border: 1px solid transparent;
     cursor: pointer;
-    font-size: 0.9rem;
     font-weight: 300;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: var(--transition);
-    text-align: left;
-    width: 100%;
+    letter-spacing: 1px;
+    font-size: 13px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    border-radius: 0;
+    width: 100%;
+    text-align: left;
+    overflow: hidden;
+}
+
+/* Эффект подсветки слева */
+.nav-tab-profile::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 0;
+    width: 2px;
+    background: linear-gradient(180deg, transparent, #ffffff, transparent);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-50%);
+}
+
+/* Эффект фона при наведении */
+.nav-tab-profile::after {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+    transition: top 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
 }
 
 .nav-tab-content-profile {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
 }
 
 .nav-tab-icon-profile {
     font-size: 1rem;
     min-width: 16px;
     opacity: 0.6;
-    transition: var(--transition);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-tab-profile:hover {
-    background-color: transparent;
     color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: #555555;
+    transform: translateX(3px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.nav-tab-profile:hover::before {
+    height: 60%;
+}
+
+.nav-tab-profile:hover::after {
+    top: 100%;
 }
 
 .nav-tab-profile:hover .nav-tab-icon-profile {
     opacity: 1;
+    transform: scale(1.1);
 }
 
 .nav-tab-profile.active {
-    background-color: #ffffff;
-    color: #000000;
-    font-weight: 400;
+    color: #ffffff;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    border-color: #ffffff;
+    transform: translateX(5px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+    z-index: 2;
+}
+
+.nav-tab-profile.active::before {
+    height: 100%;
+    width: 3px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.nav-tab-profile.active::after {
+    display: none;
 }
 
 .nav-tab-profile.active .nav-tab-icon-profile {
     opacity: 1;
-    color: #000000;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.nav-tab-profile.active .nav-tab-content-profile {
+    font-weight: 400;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+/* Эффект пульсации для активной вкладки */
+@keyframes pulse {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        opacity: 1;
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        opacity: 0.8;
+    }
 }
 
 /* Content Area */
@@ -526,25 +625,62 @@
     .sidebar-nav-profile {
         flex-direction: row;
         overflow-x: auto;
-        gap: var(--spacing-xs);
-        padding-bottom: var(--spacing-xs);
+        gap: 1px;
+        padding: 6px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .sidebar-nav-profile::-webkit-scrollbar {
+        display: none;
     }
     
     .nav-tab-profile {
-        white-space: nowrap;
-        min-width: auto;
         flex-shrink: 0;
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: 0.8rem;
-        border-bottom: 2px solid transparent;
+        padding: 14px 20px;
+        min-width: 100px;
+        font-size: 12px;
+        white-space: nowrap;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    /* Изменяем направление эффектов для горизонтального режима */
+    .nav-tab-profile::before {
+        left: 50%;
+        top: auto;
+        bottom: 0;
+        width: 0;
+        height: 2px;
+        transform: translateX(-50%);
+        background: linear-gradient(90deg, transparent, #ffffff, transparent);
+    }
+    
+    .nav-tab-profile::after {
+        top: 0;
+        left: -100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+        transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .nav-tab-profile:hover {
+        transform: translateY(-1px);
+    }
+    
+    .nav-tab-profile:hover::before {
+        width: 60%;
+    }
+    
+    .nav-tab-profile:hover::after {
+        left: 100%;
     }
     
     .nav-tab-profile.active {
-        border-bottom-color: #ffffff;
+        transform: translateY(-2px);
     }
     
-    .nav-tab-icon-profile {
-        font-size: 0.9rem;
+    .nav-tab-profile.active::before {
+        width: 100%;
     }
 }
 
@@ -583,6 +719,35 @@
         padding: var(--spacing-sm);
         font-size: 0.8rem;
     }
+    
+    .sidebar-nav-profile {
+        -webkit-overflow-scrolling: touch;
+        padding: 4px;
+        gap: 1px;
+        justify-content: flex-start;
+    }
+    
+    .nav-tab-profile {
+        padding: 12px 16px;
+        min-width: 90px;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    
+    .nav-tab-profile:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .nav-tab-profile.active {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Убираем сложные эффекты на мобильных */
+    .nav-tab-profile::after {
+        display: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -613,7 +778,15 @@
     }
     
     .sidebar-nav-profile {
-        gap: var(--spacing-xs);
+        margin: 0 -20px;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .nav-tab-profile {
+        padding: 10px 12px;
+        min-width: 80px;
+        font-size: 10px;
     }
 }
 
