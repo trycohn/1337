@@ -33,6 +33,8 @@
 - ✅ **Активные вкладки с белым фоном и черным текстом**
 - ✅ **Hover эффекты с плавными переходами**
 - ✅ **Адаптивная навигация для мобильных устройств**
+- ✅ **Индивидуализация стилей с суффиксом "-profile"**
+- ✅ **Изоляция CSS классов для предотвращения конфликтов**
 
 ### 4. **Обновление дизайна чатов**
 - ✅ Переписан `ChatList.css` в черно-белом стиле
@@ -105,10 +107,13 @@ frontend/src/components/
 
 ### Документация и скрипты
 ```
-├── DESIGN_SYSTEM_GUIDELINES.md    # Руководство по дизайну
-├── deploy-tournament-design.sh    # Скрипт развертывания Linux/macOS
-├── deploy-tournament-design.bat   # Скрипт развертывания Windows
-└── TOURNAMENT_DESIGN_SUMMARY.md   # Этот файл
+├── DESIGN_SYSTEM_GUIDELINES.md       # Руководство по дизайну
+├── deploy-tournament-design.sh       # Скрипт развертывания Linux/macOS
+├── deploy-tournament-design.bat      # Скрипт развертывания Windows
+├── TOURNAMENT_DESIGN_SUMMARY.md      # Этот файл
+├── PROFILE_NAVIGATION_UPDATE.md      # Обновление навигации профиля
+├── NAVIGATION_FIXES_SUMMARY.md       # Исправления стилистики
+└── PROFILE_SIDEBAR_INDIVIDUALIZATION.md  # Индивидуализация стилей
 ```
 
 ---

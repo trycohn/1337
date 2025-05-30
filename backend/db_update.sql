@@ -253,4 +253,36 @@ $$ language 'plpgsql';
 
 -- Триггер для обновления updated_at в таблице organizers
 CREATE TRIGGER update_organizers_updated_at BEFORE UPDATE ON organizers
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Добавление столбца role в таблицу users
+ALTER TABLE users
+ADD COLUMN role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin'));
+
+-- Создание таблицы для журнала событий турнира
+CREATE TABLE IF NOT EXISTS tournament_logs (
+    id SERIAL PRIMARY KEY,
+    tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индексы для быстрого поиска
+CREATE INDEX idx_tournament_logs_tournament_id ON tournament_logs(tournament_id);
+CREATE INDEX idx_tournament_logs_created_at ON tournament_logs(created_at DESC);
+
+-- Типы событий:
+-- 'tournament_created' - создание турнира
+-- 'participant_joined' - участник присоединился
+-- 'participant_left' - участник покинул турнир
+-- 'tournament_started' - турнир начался
+-- 'tournament_completed' - турнир завершен
+-- 'bracket_generated' - сетка сгенерирована
+-- 'bracket_regenerated' - сетка пересоздана
+-- 'match_completed' - матч завершен
+-- 'round_completed' - раунд завершен
+-- 'admin_assigned' - назначен администратор
+-- 'admin_removed' - удален администратор
+-- 'settings_changed' - изменены настройки турнира 
