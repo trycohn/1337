@@ -2339,52 +2339,118 @@ a.participant-name:hover {
     width: 100%;
 }
 
-/* Навигация по вкладкам в стиле браузерных вкладок */
+/* Навигация по вкладкам в более стильном дизайне */
 .tabs-navigation-tournamentdetails {
     display: flex;
-    gap: 0;
+    gap: 2px;
     justify-content: center;
-    border-bottom: 1px solid #333333;
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+    padding: 8px;
     position: relative;
     margin-bottom: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tabs-navigation-tournamentdetails::-webkit-scrollbar {
+    display: none;
 }
 
 .tab-button-tournamentdetails {
     display: flex;
     align-items: center;
-    padding: 12px 24px;
+    justify-content: center;
+    padding: 16px 28px;
     background-color: transparent;
-    color: #888888;
-    border: none;
-    border-bottom: 3px solid transparent;
+    color: #666666;
+    border: 1px solid transparent;
     cursor: pointer;
     font-weight: 300;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    font-size: 13px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    border-radius: 8px 8px 0 0;
-    margin-right: 4px;
+    border-radius: 0;
+    min-width: 120px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+/* Эффект подсветки снизу */
+.tab-button-tournamentdetails::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ffffff, transparent);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-50%);
+}
+
+/* Эффект фона при наведении */
+.tab-button-tournamentdetails::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
 }
 
 .tab-button-tournamentdetails:hover {
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.05);
-    border-bottom-color: #555555;
+    border-color: #555555;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.tab-button-tournamentdetails:hover::before {
+    width: 60%;
+}
+
+.tab-button-tournamentdetails:hover::after {
+    left: 100%;
 }
 
 .tab-button-tournamentdetails.active {
     color: #ffffff;
     background-color: #000000;
-    border-bottom-color: #ffffff;
-    border-top: 1px solid #333333;
-    border-left: 1px solid #333333;
-    border-right: 1px solid #333333;
-    margin-bottom: -1px;
+    border-color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+    z-index: 2;
+}
+
+.tab-button-tournamentdetails.active::before {
+    width: 100%;
+    height: 3px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.tab-button-tournamentdetails.active::after {
+    display: none;
 }
 
 .tab-label-tournamentdetails {
-    font-size: 14px;
+    font-size: 13px;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.tab-button-tournamentdetails.active .tab-label-tournamentdetails {
+    font-weight: 400;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
 /* Контент вкладок */
@@ -2394,7 +2460,8 @@ a.participant-name:hover {
 }
 
 .tab-content-tournamentdetails {
-    animation: fadeIn 0.3s ease-in;
+    animation: slideInFade 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: top;
 }
 
 .tab-info-tournamentdetails .tournament-info-grid-tournamentdetails {
@@ -2452,4 +2519,135 @@ a.participant-name:hover {
     display: flex;
     align-items: flex-start;
     flex-direction: column;
+}
+
+/* Адаптивность для вкладок */
+@media (max-width: 1024px) {
+    .tab-info-tournamentdetails .tournament-info-grid-tournamentdetails {
+        grid-template-columns: 1fr;
+    }
+    
+    .tabs-navigation-tournamentdetails {
+        padding: 6px;
+        gap: 1px;
+    }
+    
+    .tab-button-tournamentdetails {
+        padding: 14px 20px;
+        min-width: 100px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .tabs-navigation-tournamentdetails {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 4px;
+        gap: 1px;
+        justify-content: flex-start;
+    }
+    
+    .tab-button-tournamentdetails {
+        flex-shrink: 0;
+        padding: 12px 16px;
+        min-width: 90px;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    
+    .tab-button-tournamentdetails:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .tab-button-tournamentdetails.active {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+    }
+    
+    .tab-label-tournamentdetails {
+        white-space: nowrap;
+    }
+    
+    /* Убираем сложные эффекты на мобильных */
+    .tab-button-tournamentdetails::after {
+        display: none;
+    }
+    
+    .tab-content-tournamentdetails {
+        animation: simpleFadeIn 0.3s ease;
+    }
+    
+    @keyframes simpleFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+}
+
+@media (max-width: 480px) {
+    .tab-button-tournamentdetails {
+        padding: 10px 12px;
+        min-width: 80px;
+        font-size: 10px;
+    }
+    
+    .tabs-navigation-tournamentdetails {
+        margin: 0 -20px;
+        border-left: none;
+        border-right: none;
+    }
+}
+
+/* Улучшенная анимация переключения между вкладками */
+.tournament-content-tournamentdetails {
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-content-tournamentdetails {
+    width: 100%;
+    position: relative;
+}
+
+/* Дополнительные эффекты для активной вкладки */
+.tab-button-tournamentdetails.active {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    border-image: linear-gradient(45deg, #ffffff, #cccccc) 1;
+}
+
+/* Эффект загрузки для вкладок */
+.tabs-navigation-tournamentdetails::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Эффект пульсации для активной вкладки */
+.tab-button-tournamentdetails.active::before {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        opacity: 1;
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        opacity: 0.8;
+    }
 }
