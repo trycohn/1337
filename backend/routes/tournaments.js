@@ -6,6 +6,19 @@ const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
 
+// Вспомогательная функция для записи событий в журнал турнира
+async function logTournamentEvent(tournamentId, userId, eventType, eventData = {}) {
+    try {
+        await pool.query(
+            `INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data)
+             VALUES ($1, $2, $3, $4)`,
+            [tournamentId, userId, eventType, JSON.stringify(eventData)]
+        );
+    } catch (error) {
+        console.error('Ошибка при записи в журнал турнира:', error);
+    }
+}
+
 // Получение списка всех турниров с количеством участников
 router.get('/', async (req, res) => {
     try {
@@ -55,6 +68,14 @@ router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
         );
         const tournament = result.rows[0];
         console.log('🔍 Tournament created:', result.rows[0]);
+        
+        // Логируем создание турнира
+        await logTournamentEvent(tournament.id, req.user.id, 'tournament_created', {
+            name: tournament.name,
+            game: tournament.game,
+            format: tournament.format
+        });
+        
         // Создаем групповой чат для турнира с названием турнира
         try {
             const chatRes = await pool.query(
@@ -195,6 +216,12 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
         
         // Отправляем обновление через WebSocket
         broadcastTournamentUpdate(id, responseData);
+        
+        // Логируем старт турнира
+        await logTournamentEvent(id, req.user.id, 'tournament_started', {
+            participantCount: participantsResult.rows.length
+        });
+        
         // Отправляем объявление в чат турнира о начале
         await sendTournamentChatAnnouncement(
             updatedTournament.name,
@@ -305,6 +332,13 @@ router.post('/:id/participate', authenticateToken, async (req, res) => {
             type: 'participant_added',
             tournament_id: id,
             created_at: new Date().toISOString(),
+        });
+
+        // Логируем регистрацию участника
+        await logTournamentEvent(id, req.user.id, 'participant_joined', {
+            username: req.user.username,
+            participationType: tournament.participant_type,
+            teamName: newTeamName || null
         });
 
         // Добавляем пользователя в чат турнира и отправляем объявление
@@ -2611,5 +2645,40 @@ async function sendTournamentChatAnnouncement(name, announcement, tournamentId) 
     const io = app.get('io');
     io.to(`chat_${chatId}`).emit('message', msgRes.rows[0]);
 }
+
+// Получение журнала событий турнира
+router.get('/:id/logs', authenticateToken, async (req, res) => {
+    try {
+        const tournamentId = req.params.id;
+        
+        // Проверяем существование турнира
+        const tournament = await pool.query(
+            'SELECT * FROM tournaments WHERE id = $1',
+            [tournamentId]
+        );
+        
+        if (tournament.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        // Получаем журнал событий с информацией о пользователях
+        const logs = await pool.query(`
+            SELECT 
+                tl.*,
+                u.username,
+                u.avatar_url
+            FROM tournament_logs tl
+            LEFT JOIN users u ON tl.user_id = u.id
+            WHERE tl.tournament_id = $1
+            ORDER BY tl.created_at DESC
+            LIMIT 100
+        `, [tournamentId]);
+        
+        res.json(logs.rows);
+    } catch (error) {
+        console.error('Ошибка при получении журнала событий:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
 
 module.exports = router;
