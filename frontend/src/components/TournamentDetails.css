@@ -2671,6 +2671,7 @@ a.participant-name:hover {
     flex-direction: column;
     gap: 8px;
     max-width: 800px;
+    margin: auto;
 }
 
 .result-compact-item {
