@@ -577,7 +577,12 @@ router.post('/verify-email', authenticateToken, async (req, res) => {
                     </div>
                     <p>Код действителен в течение 30 минут.</p>
                     <p>Если вы не запрашивали подтверждение почты, пожалуйста, проигнорируйте это сообщение.</p>
-                    <p>С уважением,<br>Команда 1337 Community</p>
+                    <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                                <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
+                                <p style="margin: 0; color: #999999; font-size: 11px;">
+                                    ${new Date().toLocaleString('ru-RU')}
+                                </p>
+                            </div>
                 </div>
             `
         };
@@ -640,7 +645,13 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
                     <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #4682b4;">
                         <p style="margin: 0;">Добро пожаловать в полноценное сообщество 1337 Community!</p>
                     </div>
-                    <p>С уважением,<br>Команда 1337 Community</p>
+                    <!-- Footer -->
+                            <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                                <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
+                                <p style="margin: 0; color: #999999; font-size: 11px;">
+                                    ${new Date().toLocaleString('ru-RU')}
+                                </p>
+                            </div>
                 </div>
             `
         };
@@ -1516,7 +1527,7 @@ router.post('/create-organization-request', authenticateToken, upload.single('lo
                                 <!-- Action Button -->
                                 <div style="text-align: center; margin: 30px 0; padding: 20px 0; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0;">
                                     <p style="margin: 0 0 15px 0; color: #333333; font-size: 14px;">Заявка ожидает рассмотрения</p>
-                                    <a href="${baseUrl}/admin" 
+                                    <a href="https://1337community.com/admin" 
                                        style="display: inline-block; background-color: #000000; color: #ffffff; padding: 12px 30px; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">
                                         Админ панель
                                     </a>
