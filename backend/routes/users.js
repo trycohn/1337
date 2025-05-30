@@ -1419,6 +1419,131 @@ router.post('/create-organization-request', authenticateToken, upload.single('lo
         
         const request = requestResult.rows[0];
         
+        // Отправляем уведомления администраторам
+        try {
+            // Создаем дату в читаемом формате
+            const requestDate = new Date(request.created_at).toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Определяем базовый URL для админ панели
+            const baseUrl = process.env.NODE_ENV === 'production'
+                ? process.env.CLIENT_URL || 'https://1337community.com'
+                : 'http://localhost:3001';
+
+            // HTML шаблон письма для администраторов
+            const adminMailOptions = {
+                from: process.env.SMTP_FROM,
+                to: 'nikita_gorenkov@mail.ru, Try.conn@yandex.ru',
+                subject: 'Новая заявка на создание организации - 1337Community',
+                html: `
+                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 0;">
+                        <div style="background-color: #ffffff; border: 1px solid #e0e0e0;">
+                            <!-- Header -->
+                            <div style="background-color: #000000; color: #ffffff; padding: 20px; text-align: center;">
+                                <h1 style="margin: 0; font-size: 24px; font-weight: 300;">1337 COMMUNITY</h1>
+                                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">Новая заявка на организацию</p>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div style="padding: 30px;">
+                                <h2 style="color: #000000; margin: 0 0 25px 0; font-size: 20px; font-weight: 400; border-bottom: 1px solid #e0e0e0; padding-bottom: 10px;">
+                                    Информация о заявке
+                                </h2>
+                                
+                                <!-- Applicant Info -->
+                                <div style="margin-bottom: 25px;">
+                                    <h3 style="color: #333333; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Заявитель</h3>
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">Никнейм:</td>
+                                            <td style="padding: 8px 0; color: #000000; font-size: 14px; font-weight: 500;">${user.username}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">Email:</td>
+                                            <td style="padding: 8px 0; color: #000000; font-size: 14px;">${user.email}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">Дата подачи:</td>
+                                            <td style="padding: 8px 0; color: #000000; font-size: 14px;">${requestDate}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- Organization Info -->
+                                <div style="margin-bottom: 25px;">
+                                    <h3 style="color: #333333; margin: 0 0 15px 0; font-size: 16px; font-weight: 500;">Организация</h3>
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px; vertical-align: top;">Название:</td>
+                                            <td style="padding: 8px 0; color: #000000; font-size: 14px; font-weight: 500;">${organizationName}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px; vertical-align: top;">Описание:</td>
+                                            <td style="padding: 8px 0; color: #000000; font-size: 14px; line-height: 1.4;">
+                                                <div style="background-color: #f8f8f8; padding: 12px; border-left: 3px solid #000000; font-style: italic;">
+                                                    ${description}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        ${websiteUrl ? `
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">Веб-сайт:</td>
+                                            <td style="padding: 8px 0; font-size: 14px;"><a href="${websiteUrl}" target="_blank" style="color: #000000; text-decoration: underline;">${websiteUrl}</a></td>
+                                        </tr>` : ''}
+                                        ${vkUrl ? `
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">VK:</td>
+                                            <td style="padding: 8px 0; font-size: 14px;"><a href="${vkUrl}" target="_blank" style="color: #000000; text-decoration: underline;">${vkUrl}</a></td>
+                                        </tr>` : ''}
+                                        ${telegramUrl ? `
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">Telegram:</td>
+                                            <td style="padding: 8px 0; font-size: 14px;"><a href="${telegramUrl}" target="_blank" style="color: #000000; text-decoration: underline;">${telegramUrl}</a></td>
+                                        </tr>` : ''}
+                                        ${logoUrl ? `
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #666666; width: 120px; font-size: 14px;">Логотип:</td>
+                                            <td style="padding: 8px 0; font-size: 14px;"><a href="${logoUrl}" target="_blank" style="color: #000000; text-decoration: underline;">Посмотреть логотип</a></td>
+                                        </tr>` : ''}
+                                    </table>
+                                </div>
+                                
+                                <!-- Action Button -->
+                                <div style="text-align: center; margin: 30px 0; padding: 20px 0; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0;">
+                                    <p style="margin: 0 0 15px 0; color: #333333; font-size: 14px;">Заявка ожидает рассмотрения</p>
+                                    <a href="${baseUrl}/admin" 
+                                       style="display: inline-block; background-color: #000000; color: #ffffff; padding: 12px 30px; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">
+                                        Админ панель
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Footer -->
+                            <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                                <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
+                                <p style="margin: 0; color: #999999; font-size: 11px;">
+                                    ID заявки: #${request.id} | ${new Date().toLocaleString('ru-RU')}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            };
+
+            // Отправляем письмо администраторам
+            await transporter.sendMail(adminMailOptions);
+            console.log('✅ Уведомление администраторам о новой заявке на организацию отправлено');
+            
+        } catch (emailErr) {
+            console.error('❌ Ошибка отправки уведомления администраторам:', emailErr);
+            // Не прерываем выполнение, если email не отправился
+        }
+        
         res.json({ 
             message: 'Заявка на создание аккаунта организации успешно отправлена! Администрация рассмотрит её в течение 1-3 рабочих дней.',
             requestId: request.id,
