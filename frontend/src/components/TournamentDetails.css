@@ -833,9 +833,6 @@
     letter-spacing: 0.5px !important;
     transition: all 0.2s ease !important;
     outline: none !important;
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
 }
 
 .search-result-action-button:hover,
@@ -2665,5 +2662,391 @@ a.participant-name:hover {
     50% { 
         box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
         opacity: 0.8;
+    }
+}
+
+/* Компактный список результатов */
+.results-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 800px;
+}
+
+.result-compact-item {
+    border: 1px solid #333333;
+    background-color: #000000;
+    transition: all 0.2s ease;
+}
+
+.result-compact-item:hover {
+    border-color: #555555;
+    background-color: #0a0a0a;
+}
+
+.result-compact-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 16px;
+    font-size: 14px;
+}
+
+.result-compact-round {
+    min-width: 120px;
+    color: #888888;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.third-place-indicator {
+    background-color: #cd7f32;
+    color: #000000;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 2px;
+}
+
+.result-compact-match {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 300;
+}
+
+.team-name-btn {
+    background: none;
+    border: none;
+    color: #cccccc;
+    font-size: 14px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 120px;
+    text-align: left;
+}
+
+.team-name-btn:hover {
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
+
+.team-name-btn.winner {
+    color: #ffffff;
+    font-weight: 400;
+}
+
+.match-score {
+    font-size: 16px;
+    font-weight: 400;
+    color: #ffffff;
+    min-width: 40px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+.details-btn {
+    background: none;
+    border: 1px solid #333333;
+    color: #888888;
+    font-size: 12px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: lowercase;
+    letter-spacing: 0.5px;
+    font-style: italic;
+}
+
+.details-btn:hover {
+    border-color: #555555;
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
+
+.edit-compact-btn {
+    background: none;
+    border: 1px solid #333333;
+    color: #888888;
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-compact-btn:hover {
+    border-color: #555555;
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
+
+/* Модальное окно состава команды */
+.team-composition-modal .modal-content {
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.team-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #333333;
+}
+
+.team-modal-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #888888;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: #ffffff;
+}
+
+.team-composition-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.team-stats {
+    display: flex;
+    gap: 32px;
+    padding: 16px;
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+}
+
+.team-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 300;
+    color: #ffffff;
+}
+
+.team-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.team-member-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background-color: #0a0a0a;
+    border: 1px solid #222222;
+    transition: all 0.2s ease;
+}
+
+.team-member-item:hover {
+    border-color: #333333;
+    background-color: #111111;
+}
+
+.member-avatar {
+    flex-shrink: 0;
+}
+
+.member-avatar img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #333333;
+}
+
+.member-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.member-name {
+    font-size: 14px;
+    font-weight: 300;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.member-elo {
+    font-size: 12px;
+    color: #888888;
+    font-family: 'Courier New', monospace;
+}
+
+.member-actions {
+    flex-shrink: 0;
+}
+
+.view-profile-btn {
+    background: none;
+    border: 1px solid #333333;
+    color: #888888;
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.view-profile-btn:hover {
+    border-color: #555555;
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
+
+.no-members {
+    text-align: center;
+    padding: 32px;
+    color: #888888;
+}
+
+.no-members p {
+    margin: 0;
+    font-style: italic;
+}
+
+/* Адаптивность для компактных результатов */
+@media (max-width: 768px) {
+    .result-compact-content {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .result-compact-round {
+        min-width: auto;
+        justify-content: center;
+    }
+    
+    .result-compact-match {
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .team-name-btn {
+        min-width: 100px;
+        font-size: 12px;
+        text-align: center;
+    }
+    
+    .match-score {
+        font-size: 14px;
+    }
+    
+    .details-btn,
+    .edit-compact-btn {
+        align-self: center;
+    }
+    
+    .team-stats {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    .team-member-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .member-info {
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .result-compact-content {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .team-name-btn {
+        min-width: 80px;
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+    
+    .match-score {
+        font-size: 12px;
+    }
+    
+    .details-btn {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+    
+    .team-modal-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .member-avatar img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .member-name {
+        font-size: 12px;
+    }
+    
+    .member-elo {
+        font-size: 10px;
     }
 }
