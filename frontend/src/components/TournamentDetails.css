@@ -1,7 +1,6 @@
 .tournament-details-tournamentdetails {
     padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    margin: auto;
     background-color: #000000;
     color: #ffffff;
     min-height: 100vh;
@@ -2344,8 +2343,6 @@ a.participant-name:hover {
     display: flex;
     gap: 2px;
     justify-content: center;
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
     padding: 8px;
     position: relative;
     margin-bottom: 0;
