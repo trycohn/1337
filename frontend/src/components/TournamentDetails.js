@@ -208,6 +208,10 @@ function TournamentDetails() {
     const [tournamentLogs, setTournamentLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
     
+    // Состояние для модального окна состава команды
+    const [showTeamModal, setShowTeamModal] = useState(false);
+    const [selectedTeamData, setSelectedTeamData] = useState(null);
+    
     // Определение вкладок
     const tabs = [
         { id: 'info', label: 'Информация' },
@@ -2606,6 +2610,66 @@ function TournamentDetails() {
         }
     };
 
+    // Функция для отображения состава команды
+    const showTeamComposition = (teamId, teamName) => {
+        if (!teamId || !tournament) return;
+
+        let teamMembers = [];
+        
+        // Для микс-турниров ищем в сформированных командах
+        if (tournament.format === 'mix' && tournament.teams && Array.isArray(tournament.teams)) {
+            const mixTeam = tournament.teams.find(team => team.id === teamId);
+            if (mixTeam && mixTeam.members && Array.isArray(mixTeam.members)) {
+                teamMembers = mixTeam.members.map(member => ({
+                    id: member.id || member.user_id,
+                    name: member.name || member.username,
+                    avatar_url: member.avatar_url,
+                    faceit_elo: member.faceit_elo
+                }));
+            }
+        }
+        // Для обычных командных турниров ищем участников с team_id
+        else if (tournament.participant_type === 'team') {
+            if (Array.isArray(tournament.participants) && tournament.participants.some(p => p.team_id)) {
+                teamMembers = tournament.participants
+                    .filter(p => p.team_id === teamId)
+                    .map(m => ({
+                        id: m.id,
+                        name: m.name || m.username,
+                        avatar_url: m.avatar_url,
+                        faceit_elo: m.faceit_elo
+                    }));
+            }
+        }
+        // Для одиночных турниров находим одного участника
+        else if (tournament.participant_type === 'solo') {
+            const soloParticipant = tournament.participants.find(p => p.id === teamId);
+            if (soloParticipant) {
+                teamMembers = [{
+                    id: soloParticipant.id,
+                    name: soloParticipant.name || soloParticipant.username,
+                    avatar_url: soloParticipant.avatar_url,
+                    faceit_elo: soloParticipant.faceit_elo
+                }];
+            }
+        }
+
+        setSelectedTeamData({
+            id: teamId,
+            name: teamName || 'Команда',
+            members: teamMembers,
+            type: tournament.participant_type,
+            format: tournament.format
+        });
+        setShowTeamModal(true);
+    };
+
+    // Функция для закрытия модального окна состава команды
+    const closeTeamModal = () => {
+        setShowTeamModal(false);
+        setSelectedTeamData(null);
+    };
+
     return (
         <section className="tournament-details-tournamentdetails">
             <div className="tournament-header-tournamentdetails">
@@ -3063,7 +3127,7 @@ function TournamentDetails() {
                     <div className="tab-content tab-results">
                         <h3>Результаты матчей</h3>
                         {matches && matches.length > 0 ? (
-                            <div className="results-list">
+                            <div className="results-compact-list">
                                 {matches
                                     .filter(match => match.winner_team_id) // Показываем только завершенные матчи
                                     .sort((a, b) => b.id - a.id) // Сортируем по ID в обратном порядке
@@ -3074,35 +3138,50 @@ function TournamentDetails() {
                                         const isTeam2Winner = match.winner_team_id === match.team2_id;
                                         
                                         return (
-                                            <div key={match.id} className="result-item">
-                                                <div className="result-header">
-                                                    <span className="result-round">{getRoundName(match.round, Math.max(...matches.map(m => m.round)))}</span>
-                                                    {match.is_third_place_match && <span className="third-place-badge">Матч за 3 место</span>}
-                                                </div>
-                                                <div className="result-teams">
-                                                    <div className={`result-team ${isTeam1Winner ? 'winner' : ''}`}>
-                                                        <span className="team-name">{team1?.name || 'TBD'}</span>
-                                                        <span className="team-score">{match.score1 || 0}</span>
+                                            <div key={match.id} className="result-compact-item">
+                                                <div className="result-compact-content">
+                                                    <span className="result-compact-round">
+                                                        {getRoundName(match.round, Math.max(...matches.map(m => m.round)))}
+                                                        {match.is_third_place_match && <span className="third-place-indicator">3-е место</span>}
+                                                    </span>
+                                                    
+                                                    <div className="result-compact-match">
+                                                        <button 
+                                                            className={`team-name-btn ${isTeam1Winner ? 'winner' : ''}`}
+                                                            onClick={() => showTeamComposition(match.team1_id, team1?.name)}
+                                                            title="Показать состав команды"
+                                                        >
+                                                            {team1?.name || 'TBD'}
+                                                        </button>
+                                                        
+                                                        <span className="match-score">
+                                                            {match.score1 || 0}:{match.score2 || 0}
+                                                        </span>
+                                                        
+                                                        <button 
+                                                            className={`team-name-btn ${isTeam2Winner ? 'winner' : ''}`}
+                                                            onClick={() => showTeamComposition(match.team2_id, team2?.name)}
+                                                            title="Показать состав команды"
+                                                        >
+                                                            {team2?.name || 'TBD'}
+                                                        </button>
                                                     </div>
-                                                    <div className="result-vs">vs</div>
-                                                    <div className={`result-team ${isTeam2Winner ? 'winner' : ''}`}>
-                                                        <span className="team-name">{team2?.name || 'TBD'}</span>
-                                                        <span className="team-score">{match.score2 || 0}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="result-actions">
+                                                    
                                                     <button 
-                                                        className="view-details-btn"
+                                                        className="details-btn"
                                                         onClick={() => viewMatchDetails(match.id)}
+                                                        title="Подробная информация о матче"
                                                     >
-                                                        Подробнее
+                                                        подробнее
                                                     </button>
+                                                    
                                                     {canEditMatchResult(match.id) && (
                                                         <button 
-                                                            className="edit-result-btn"
+                                                            className="edit-compact-btn"
                                                             onClick={() => startEditingMatch(match.id)}
+                                                            title="Редактировать результат"
                                                         >
-                                                            Редактировать
+                                                            ✏️
                                                         </button>
                                                     )}
                                                 </div>
@@ -3799,6 +3878,84 @@ function TournamentDetails() {
                             >
                                 Сбросить результаты
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Модальное окно состава команды */}
+            {showTeamModal && selectedTeamData && (
+                <div className="modal team-composition-modal" onClick={closeTeamModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="team-modal-header">
+                            <h3>{selectedTeamData.name}</h3>
+                            <button className="close-btn" onClick={closeTeamModal}>&times;</button>
+                        </div>
+                        
+                        <div className="team-composition-content">
+                            {selectedTeamData.members && selectedTeamData.members.length > 0 ? (
+                                <>
+                                    <div className="team-stats">
+                                        <div className="team-stat-item">
+                                            <span className="stat-label">Игроков:</span>
+                                            <span className="stat-value">{selectedTeamData.members.length}</span>
+                                        </div>
+                                        {selectedTeamData.members.some(m => m.faceit_elo) && (
+                                            <div className="team-stat-item">
+                                                <span className="stat-label">Средний ELO:</span>
+                                                <span className="stat-value">
+                                                    {Math.round(
+                                                        selectedTeamData.members
+                                                            .filter(m => m.faceit_elo)
+                                                            .reduce((sum, m) => sum + (m.faceit_elo || 1000), 0) / 
+                                                        selectedTeamData.members.filter(m => m.faceit_elo).length
+                                                    )}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="team-members-list">
+                                        {selectedTeamData.members.map((member, index) => (
+                                            <div key={member.id || index} className="team-member-item">
+                                                <div className="member-avatar">
+                                                    <img 
+                                                        src={ensureHttps(member.avatar_url) || '/default-avatar.png'} 
+                                                        alt={`${member.name} аватар`}
+                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                    />
+                                                </div>
+                                                <div className="member-info">
+                                                    <div className="member-name">
+                                                        {member.name || 'Участник'}
+                                                    </div>
+                                                    {member.faceit_elo && (
+                                                        <div className="member-elo">
+                                                            FACEIT: {member.faceit_elo}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {member.id && user && member.id !== user.id && (
+                                                    <div className="member-actions">
+                                                        <Link 
+                                                            to={`/user/${member.id}`} 
+                                                            className="view-profile-btn"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            Профиль
+                                                        </Link>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="no-members">
+                                    <p>Информация о составе недоступна</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

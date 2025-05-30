@@ -396,15 +396,12 @@
 
 /* Cards */
 .content-card {
-    border: 1px solid var(--border-color);
-    border-radius: 0;
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-lg);
     transition: var(--transition);
 }
 
 .content-card:hover {
-    border-color: var(--border-hover);
     transform: translateY(-1px);
 }
 
@@ -1016,8 +1013,6 @@
 /* Steam/Faceit Sections */
 .steam-section,
 .faceit-section {
-    border: 1px solid var(--border-color);
-    border-radius: 0;
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
 }
