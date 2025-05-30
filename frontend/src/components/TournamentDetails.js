@@ -210,13 +210,13 @@ function TournamentDetails() {
     
     // Определение вкладок
     const tabs = [
-        { id: 'info', label: 'Информация', icon: '📋' },
-        { id: 'participants', label: 'Участники', icon: '👥' },
-        { id: 'bracket', label: 'Сетка', icon: '🏆' },
-        { id: 'results', label: 'Результаты', icon: '📊' },
-        { id: 'logs', label: 'Журнал', icon: '📝' },
-        { id: 'streams', label: 'Стримы', icon: '📹' },
-        { id: 'admin', label: 'Управление', icon: '⚙️', adminOnly: true }
+        { id: 'info', label: 'Информация' },
+        { id: 'participants', label: 'Участники' },
+        { id: 'bracket', label: 'Сетка' },
+        { id: 'results', label: 'Результаты' },
+        { id: 'logs', label: 'Журнал' },
+        { id: 'streams', label: 'Стримы' },
+        { id: 'admin', label: 'Управление', adminOnly: true }
     ];
     
     // Фильтруем вкладки в зависимости от прав пользователя
@@ -2628,7 +2628,6 @@ function TournamentDetails() {
                             className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                             onClick={() => setActiveTab(tab.id)}
                         >
-                            <span className="tab-icon">{tab.icon}</span>
                             <span className="tab-label">{tab.label}</span>
                         </button>
                     ))}

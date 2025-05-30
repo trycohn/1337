@@ -54,10 +54,16 @@
 
 .participants-list {
     margin: 20px 0;
-    background-color: #111111;
+    background-color: transparent;
     padding: 15px;
-    border-radius: 0;
     border: 1px solid #333333;
+    transition: all 0.3s ease;
+}
+
+.participants-list:hover {
+    border-color: #555555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
 }
 
 .participants-list ul {
@@ -71,15 +77,14 @@
 .participant-item {
     padding: 10px;
     border: 1px solid #333333;
-    border-radius: 0;
-    background-color: #1a1a1a;
+    background-color: transparent;
     transition: all 0.2s ease;
     color: #ffffff;
 }
 
 .participant-item:hover {
     transform: translateY(-2px);
-    background-color: #2a2a2a;
+    background-color: rgba(255, 255, 255, 0.05);
     border-color: #555555;
 }
 
@@ -932,12 +937,18 @@
 /* Сетка для микс-команд */
 .mixed-teams {
     margin-top: 30px;
-    background-color: #111111;
+    background-color: transparent;
     padding: 20px;
-    border-radius: 0;
     border: 1px solid #333333;
     position: relative;
     color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.mixed-teams:hover {
+    border-color: #555555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
 }
 
 .mixed-teams::before {
@@ -971,9 +982,8 @@
 }
 
 .team-card {
-    background-color: #1a1a1a;
+    background-color: transparent;
     border: 1px solid #333333;
-    border-radius: 0;
     padding: 10px;
     transition: all 0.2s ease;
     color: #ffffff;
@@ -981,7 +991,7 @@
 
 .team-card:hover {
     transform: translateY(-2px);
-    background-color: #2a2a2a;
+    background-color: rgba(255, 255, 255, 0.05);
     border-color: #555555;
 }
 
@@ -2313,67 +2323,62 @@ a.participant-name:hover {
     margin-bottom: 30px;
     border-bottom: 1px solid #333333;
     padding-bottom: 20px;
+    text-align: center;
 }
 
 .tournament-header h2 {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     color: #ffffff;
     font-weight: 300;
     text-transform: uppercase;
     letter-spacing: 1px;
-    font-size: 24px;
+    font-size: 32px;
+    text-align: center;
+    width: 100%;
 }
 
-/* Навигация по вкладкам */
+/* Навигация по вкладкам в стиле браузерных вкладок */
 .tabs-navigation {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
+    gap: 0;
+    justify-content: center;
+    border-bottom: 1px solid #333333;
+    position: relative;
+    margin-bottom: 0;
 }
 
 .tab-button {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
+    padding: 12px 24px;
     background-color: transparent;
-    color: #666666;
-    border: 1px solid #333333;
-    border-radius: 0;
+    color: #888888;
+    border: none;
+    border-bottom: 3px solid transparent;
     cursor: pointer;
     font-weight: 300;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
+    border-radius: 8px 8px 0 0;
+    margin-right: 4px;
 }
 
 .tab-button:hover {
     color: #ffffff;
-    border-color: #555555;
-    transform: translateY(-2px);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom-color: #555555;
 }
 
 .tab-button.active {
     color: #ffffff;
-    background-color: #111111;
-    border-color: #ffffff;
-}
-
-.tab-button.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #ffffff;
-}
-
-.tab-icon {
-    font-size: 18px;
+    background-color: #000000;
+    border-bottom-color: #ffffff;
+    border-top: 1px solid #333333;
+    border-left: 1px solid #333333;
+    border-right: 1px solid #333333;
+    margin-bottom: -1px;
 }
 
 .tab-label {
@@ -2383,6 +2388,7 @@ a.participant-name:hover {
 /* Контент вкладок */
 .tournament-content {
     min-height: 500px;
+    padding-top: 30px;
 }
 
 .tab-content {
@@ -2413,10 +2419,30 @@ a.participant-name:hover {
     gap: 20px;
 }
 
-.info-bracket {
-    background-color: #111111;
+.info-block {
     padding: 20px;
     border: 1px solid #333333;
+    transition: all 0.3s ease;
+    background-color: transparent;
+}
+
+.info-block:hover {
+    border-color: #555555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+.info-bracket {
+    padding: 20px;
+    border: 1px solid #333333;
+    transition: all 0.3s ease;
+    background-color: transparent;
+}
+
+.info-bracket:hover {
+    border-color: #555555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
 }
 
 .tournament-meta-info {
@@ -2485,96 +2511,128 @@ a.participant-name:hover {
 }
 
 .result-item {
-    background-color: #111111;
+    background-color: transparent;
     border: 1px solid #333333;
-    padding: 20px;
-    transition: all 0.2s ease;
+    padding: 24px;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
 }
 
 .result-item:hover {
     border-color: #555555;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.08);
 }
 
 .result-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333333;
 }
 
 .result-round {
     color: #888888;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-weight: 300;
 }
 
 .third-place-badge {
-    background-color: #cd7f32;
-    color: #000000;
-    padding: 4px 10px;
-    font-size: 12px;
+    background-color: transparent;
+    color: #cd7f32;
+    border: 1px solid #cd7f32;
+    padding: 4px 12px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-weight: 300;
 }
 
 .result-teams {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .result-team {
     display: flex;
     align-items: center;
-    gap: 15px;
+    justify-content: space-between;
+    gap: 20px;
     flex: 1;
-    padding: 10px;
-    background-color: #1a1a1a;
+    padding: 16px 20px;
+    background-color: transparent;
     border: 1px solid #333333;
+    transition: all 0.2s ease;
 }
 
 .result-team.winner {
-    border-color: #4caf50;
-    background-color: #1a2a1a;
+    border-color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
 .team-name {
     flex: 1;
     font-weight: 300;
+    font-size: 16px;
 }
 
 .team-score {
-    font-size: 24px;
-    font-weight: 300;
+    font-size: 28px;
+    font-weight: 200;
     color: #ffffff;
+    min-width: 40px;
+    text-align: right;
 }
 
 .result-vs {
-    padding: 0 20px;
+    padding: 0 24px;
     color: #666666;
-    font-weight: 300;
+    font-weight: 200;
+    font-size: 14px;
+    letter-spacing: 1px;
 }
 
 .result-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    justify-content: flex-end;
 }
 
 .view-details-btn,
 .edit-result-btn {
-    padding: 6px 16px;
-    font-size: 14px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid #333333;
+    background-color: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.view-details-btn:hover,
+.edit-result-btn:hover {
+    border-color: #555555;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
 }
 
 .no-results {
     text-align: center;
-    padding: 50px;
+    padding: 60px;
     color: #666666;
-    background-color: #111111;
+    background-color: transparent;
     border: 1px solid #333333;
+    font-weight: 300;
+    font-size: 16px;
 }
 
 /* Вкладка Журнал */
