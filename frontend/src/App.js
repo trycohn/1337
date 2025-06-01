@@ -9,6 +9,7 @@ import UserProfile from './components/UserProfile'; // Импортируем к
 import OrganizerProfile from './components/OrganizerProfile'; // Импортируем компонент OrganizerProfile
 import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
 import AdminPanel from './components/AdminPanel'; // Импортируем компонент AdminPanel
+import DotaStats from './components/DotaStats'; // Импортируем компонент DotaStats
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
 import { LoaderProvider } from './context/LoaderContext';
 import { AuthProvider } from './context/AuthContext'; // Импортируем AuthProvider
@@ -59,6 +60,7 @@ function App() {
                                 <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
                                 <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
                                 <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
+                                <Route path="/dota-stats" element={<DotaStats />} /> {/* Добавляем маршрут для статистики Dota 2 */}
                                 <Route path="/admin" element={<PrivateRoute component={AdminPanel} />} /> {/* Добавляем маршрут для админ панели */}
                                 <Route path="/auth-callback" element={<AuthCallback />} />
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
