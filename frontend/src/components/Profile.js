@@ -161,6 +161,8 @@ function Profile() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             setDotaProfile(response.data);
+            
+            // Автоматически обновляем статистику если профиль существует
             if (response.data.steam_id) {
                 fetchDotaStats(response.data.steam_id);
             }
@@ -179,8 +181,18 @@ function Profile() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             setDotaStats(response.data);
+            
+            // Автоматически сохраняем обновленную статистику
+            await api.post('/api/dota-stats/profile/save', {
+                user_id: user.id,
+                steam_id: steamId,
+                dota_stats: response.data
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
         } catch (err) {
-            setError('Ошибка загрузки статистики Dota 2');
+            console.error('Ошибка загрузки статистики Dota 2:', err);
             setDotaStats(null);
         } finally {
             setIsLoadingDotaStats(false);
@@ -226,12 +238,6 @@ function Profile() {
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка отвязки профиля Dota 2');
-        }
-    };
-
-    const updateDotaStats = async () => {
-        if (dotaProfile?.steam_id) {
-            fetchDotaStats(dotaProfile.steam_id);
         }
     };
 
@@ -1602,15 +1608,7 @@ function Profile() {
                                 <div className="content-card dota-stats">
                                     <div className="card-header">
                                         <h3 className="card-title">Статистика Dota 2</h3>
-                                        {dotaProfile && dotaProfile.steam_id ? (
-                                            <button 
-                                                className="btn btn-sm" 
-                                                onClick={updateDotaStats}
-                                                disabled={isLoadingDotaStats}
-                                            >
-                                                {isLoadingDotaStats ? 'Загрузка...' : 'Обновить'}
-                                            </button>
-                                        ) : user?.steam_id ? (
+                                        {!dotaProfile && user?.steam_id && (
                                             <button 
                                                 className="btn btn-sm" 
                                                 onClick={linkDotaSteam}
@@ -1618,7 +1616,7 @@ function Profile() {
                                             >
                                                 {isLoadingDotaStats ? 'Загрузка...' : 'Загрузить статистику'}
                                             </button>
-                                        ) : null}
+                                        )}
                                     </div>
                                     <div className="card-content">
                                         {isLoadingDotaStats ? (
@@ -1710,7 +1708,10 @@ function Profile() {
                                             <div className="no-dota-stats">
                                                 <p>Не удалось загрузить статистику Dota 2</p>
                                                 <p>Steam ID: {dotaProfile.steam_id}</p>
-                                                <button className="btn btn-sm" onClick={updateDotaStats}>
+                                                <button 
+                                                    className="btn btn-sm" 
+                                                    onClick={() => fetchDotaStats(dotaProfile.steam_id)}
+                                                >
                                                     Попробовать снова
                                                 </button>
                                             </div>
