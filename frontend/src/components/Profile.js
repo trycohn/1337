@@ -90,10 +90,6 @@ function Profile() {
     const [dotaStats, setDotaStats] = useState(null);
     const [isLoadingDotaStats, setIsLoadingDotaStats] = useState(false);
     
-    // Состояния для Dota 2
-    const [dotaSteamId, setDotaSteamId] = useState('');
-    const [showDotaModal, setShowDotaModal] = useState(false);
-
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -192,33 +188,31 @@ function Profile() {
     };
 
     const linkDotaSteam = async () => {
-        if (!dotaSteamId.trim()) {
-            setError('Введите Steam ID');
+        if (!user?.steam_id) {
+            setError('Сначала привяжите Steam аккаунт в разделе "Основная информация"');
             return;
         }
 
         try {
-            // Сначала получаем статистику игрока чтобы проверить корректность Steam ID
-            const response = await api.get(`/api/dota-stats/player/${dotaSteamId}`, {
+            // Получаем статистику игрока используя привязанный Steam ID
+            const response = await api.get(`/api/dota-stats/player/${user.steam_id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             
             // Если статистика получена успешно, сохраняем профиль
             await api.post('/api/dota-stats/profile/save', {
                 user_id: user.id,
-                steam_id: dotaSteamId,
+                steam_id: user.steam_id,
                 dota_stats: response.data
             }, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
 
             setDotaStats(response.data);
-            setDotaProfile({ user_id: user.id, steam_id: dotaSteamId, dota_stats: response.data });
-            setShowDotaModal(false);
-            setDotaSteamId('');
+            setDotaProfile({ user_id: user.id, steam_id: user.steam_id, dota_stats: response.data });
             setError('');
         } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка привязки профиля Dota 2');
+            setError(err.response?.data?.error || 'Ошибка загрузки статистики Dota 2');
         }
     };
 
@@ -1616,14 +1610,15 @@ function Profile() {
                                             >
                                                 {isLoadingDotaStats ? 'Загрузка...' : 'Обновить'}
                                             </button>
-                                        ) : (
+                                        ) : user?.steam_id ? (
                                             <button 
                                                 className="btn btn-sm" 
-                                                onClick={() => setShowDotaModal(true)}
+                                                onClick={linkDotaSteam}
+                                                disabled={isLoadingDotaStats}
                                             >
-                                                Привязать Steam ID
+                                                {isLoadingDotaStats ? 'Загрузка...' : 'Загрузить статистику'}
                                             </button>
-                                        )}
+                                        ) : null}
                                     </div>
                                     <div className="card-content">
                                         {isLoadingDotaStats ? (
@@ -1719,10 +1714,15 @@ function Profile() {
                                                     Попробовать снова
                                                 </button>
                                             </div>
+                                        ) : !user?.steam_id ? (
+                                            <div className="no-dota-profile">
+                                                <p>Для отображения статистики Dota 2 необходимо привязать Steam аккаунт</p>
+                                                <p>Перейдите в раздел "Основная информация" и привяжите Steam</p>
+                                            </div>
                                         ) : (
                                             <div className="no-dota-profile">
-                                                <p>Профиль Dota 2 не привязан</p>
-                                                <p>Привяжите Steam ID для отображения статистики Dota 2</p>
+                                                <p>Статистика Dota 2 не загружена</p>
+                                                <p>Нажмите "Загрузить статистику" для получения данных</p>
                                             </div>
                                         )}
                                     </div>
@@ -2396,36 +2396,6 @@ function Profile() {
                         <button onClick={closeMatchHistoryModal} className="close-modal-btn">
                             Закрыть
                         </button>
-                    </div>
-                </div>
-            )}
-            
-            {showDotaModal && (
-                <div className="modal-overlay" onClick={() => setShowDotaModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <h3>Привязка Steam ID для Dota 2</h3>
-                        <p>Введите ваш Steam ID для отображения статистики Dota 2:</p>
-                        
-                        <input 
-                            type="text"
-                            value={dotaSteamId}
-                            onChange={(e) => setDotaSteamId(e.target.value)}
-                            placeholder="76561198xxxxxxxxx"
-                            className="steam-id-input"
-                            autoFocus
-                        />
-                        
-                        <div className="steam-id-help">
-                            <p><small>Где найти Steam ID:</small></p>
-                            <p><small>1. Откройте ваш профиль в Steam</small></p>
-                            <p><small>2. В адресной строке найдите число после /profiles/</small></p>
-                            <p><small>3. Или используйте сайт steamid.io</small></p>
-                        </div>
-                        
-                        <div className="modal-buttons">
-                            <button onClick={linkDotaSteam}>Привязать</button>
-                            <button onClick={() => setShowDotaModal(false)}>Отмена</button>
-                        </div>
                     </div>
                 </div>
             )}

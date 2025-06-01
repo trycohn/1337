@@ -2223,39 +2223,6 @@
     color: var(--text-secondary);
 }
 
-/* Steam ID Modal */
-.steam-id-input {
-    width: 100%;
-    margin: var(--spacing-md) 0;
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 1rem;
-    transition: var(--transition);
-}
-
-.steam-id-input:focus {
-    outline: none;
-    border-color: var(--border-hover);
-    background: var(--bg-secondary);
-}
-
-.steam-id-help {
-    margin: var(--spacing-md) 0;
-    padding: var(--spacing-md);
-    background: var(--bg-tertiary);
-    border-left: 4px solid var(--border-color);
-}
-
-.steam-id-help p {
-    margin: 4px 0;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
-
 /* Responsive Dota 2 Styles */
 @media (max-width: 768px) {
     .dota-profile-info {
@@ -2293,9 +2260,5 @@
     
     .dota-profile-details h4 {
         font-size: 1.1rem;
-    }
-    
-    .steam-id-help {
-        padding: var(--spacing-sm);
     }
 } 
