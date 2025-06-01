@@ -38,6 +38,9 @@ const app = express();
 // Установка глобальной переменной для доступа из других модулей
 global.app = app;
 
+// Настройка trust proxy для работы за прокси-сервером (Nginx)
+app.set('trust proxy', true);
+
 // Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
 
