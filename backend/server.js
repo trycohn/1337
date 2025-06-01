@@ -108,7 +108,7 @@ const strictLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
     max: 500, // максимум 500 запросов на IP
     validate: {
-        trustProxy: false, // Отключаем валидацию trust proxy для работы за прокси
+        trustProxy: true, // Разрешаем работу с доверенными прокси
         default: true, // Включаем остальные валидации
     },
     // Пропускаем публичные маршруты и исключенные из rate limiting
@@ -121,7 +121,7 @@ const publicRoutesLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
     max: 1000, // максимум 1000 запросов на IP для публичных маршрутов
     validate: {
-        trustProxy: false, // Отключаем валидацию trust proxy для работы за прокси
+        trustProxy: true, // Разрешаем работу с доверенными прокси
         default: true, // Включаем остальные валидации
     },
     // Пропускаем маршруты, исключенные из rate limiting
