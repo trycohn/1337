@@ -39,7 +39,8 @@ const app = express();
 global.app = app;
 
 // Настройка trust proxy для работы за прокси-сервером (Nginx)
-app.set('trust proxy', true);
+// Доверяем только первому прокси (Nginx на том же сервере)
+app.set('trust proxy', 1);
 
 // Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
@@ -106,6 +107,7 @@ function isExcludedFromRateLimiting(path) {
 const strictLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
     max: 500, // максимум 500 запросов на IP
+    validate: false, // Отключаем валидацию для работы за прокси
     // Пропускаем публичные маршруты и исключенные из rate limiting
     skip: (req) => isPublicRoute(req.path) || isExcludedFromRateLimiting(req.path)
 });
@@ -115,6 +117,7 @@ app.use(strictLimiter);
 const publicRoutesLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
     max: 1000, // максимум 1000 запросов на IP для публичных маршрутов
+    validate: false, // Отключаем валидацию для работы за прокси
     // Пропускаем маршруты, исключенные из rate limiting
     skip: (req) => isExcludedFromRateLimiting(req.path)
 });
