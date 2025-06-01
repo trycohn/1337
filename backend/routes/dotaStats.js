@@ -353,4 +353,29 @@ router.get('/profile/:user_id', async (req, res) => {
     }
 });
 
+// Удаление профиля Dota 2 пользователя
+router.delete('/profile/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+    
+    try {
+        const result = await pool.query(
+            'DELETE FROM dota_profiles WHERE user_id = $1 RETURNING id',
+            [user_id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Профиль Dota 2 не найден' });
+        }
+        
+        res.json({ success: true, message: 'Профиль Dota 2 удален' });
+        
+    } catch (error) {
+        console.error('❌ Ошибка удаления профиля Dota 2:', error);
+        res.status(500).json({ 
+            error: 'Не удалось удалить профиль Dota 2',
+            details: error.message 
+        });
+    }
+});
+
 module.exports = router; 

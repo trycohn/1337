@@ -85,6 +85,15 @@ function Profile() {
     const [organizationRequest, setOrganizationRequest] = useState(null);
     const [loadingRequest, setLoadingRequest] = useState(false);
 
+    // Состояния для статистики
+    const [dotaProfile, setDotaProfile] = useState(null);
+    const [dotaStats, setDotaStats] = useState(null);
+    const [isLoadingDotaStats, setIsLoadingDotaStats] = useState(false);
+    
+    // Состояния для Dota 2
+    const [dotaSteamId, setDotaSteamId] = useState('');
+    const [showDotaModal, setShowDotaModal] = useState(false);
+
     const fetchUserData = async (token) => {
         try {
             const response = await api.get('/api/users/me', {
@@ -144,6 +153,91 @@ function Profile() {
             setStats(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки статистики');
+        }
+    };
+
+    // Функции для работы с Dota 2
+    const fetchDotaProfile = async () => {
+        if (!user?.id) return;
+        
+        try {
+            const response = await api.get(`/api/dota-stats/profile/${user.id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setDotaProfile(response.data);
+            if (response.data.steam_id) {
+                fetchDotaStats(response.data.steam_id);
+            }
+        } catch (err) {
+            // Профиль может не существовать - это нормально
+            setDotaProfile(null);
+        }
+    };
+
+    const fetchDotaStats = async (steamId) => {
+        if (!steamId) return;
+        
+        setIsLoadingDotaStats(true);
+        try {
+            const response = await api.get(`/api/dota-stats/player/${steamId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setDotaStats(response.data);
+        } catch (err) {
+            setError('Ошибка загрузки статистики Dota 2');
+            setDotaStats(null);
+        } finally {
+            setIsLoadingDotaStats(false);
+        }
+    };
+
+    const linkDotaSteam = async () => {
+        if (!dotaSteamId.trim()) {
+            setError('Введите Steam ID');
+            return;
+        }
+
+        try {
+            // Сначала получаем статистику игрока чтобы проверить корректность Steam ID
+            const response = await api.get(`/api/dota-stats/player/${dotaSteamId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            // Если статистика получена успешно, сохраняем профиль
+            await api.post('/api/dota-stats/profile/save', {
+                user_id: user.id,
+                steam_id: dotaSteamId,
+                dota_stats: response.data
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+
+            setDotaStats(response.data);
+            setDotaProfile({ user_id: user.id, steam_id: dotaSteamId, dota_stats: response.data });
+            setShowDotaModal(false);
+            setDotaSteamId('');
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка привязки профиля Dota 2');
+        }
+    };
+
+    const unlinkDotaSteam = async () => {
+        try {
+            await api.delete(`/api/dota-stats/profile/${user.id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setDotaProfile(null);
+            setDotaStats(null);
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка отвязки профиля Dota 2');
+        }
+    };
+
+    const updateDotaStats = async () => {
+        if (dotaProfile?.steam_id) {
+            fetchDotaStats(dotaProfile.steam_id);
         }
     };
 
@@ -404,6 +498,8 @@ function Profile() {
             fetchUserOrganizations();
             // Проверяем статус заявки на организацию
             fetchOrganizationRequest();
+            // Загружаем профиль Dota 2
+            fetchDotaProfile();
         }
         
         // Проверяем, есть ли сохраненное время окончания задержки
@@ -436,6 +532,13 @@ function Profile() {
             fetchFaceitInfo();
         }
     }, [user?.faceit_id]);
+
+    // Загружаем профиль Dota 2 при изменении user.id
+    useEffect(() => {
+        if (user && user.id) {
+            fetchDotaProfile();
+        }
+    }, [user?.id]);
 
     const fetchSteamNickname = async () => {
         const token = localStorage.getItem('token');
@@ -1500,6 +1603,130 @@ function Profile() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Dota 2 Stats */}
+                                <div className="content-card dota-stats">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Статистика Dota 2</h3>
+                                        {dotaProfile && dotaProfile.steam_id ? (
+                                            <button 
+                                                className="btn btn-sm" 
+                                                onClick={updateDotaStats}
+                                                disabled={isLoadingDotaStats}
+                                            >
+                                                {isLoadingDotaStats ? 'Загрузка...' : 'Обновить'}
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                className="btn btn-sm" 
+                                                onClick={() => setShowDotaModal(true)}
+                                            >
+                                                Привязать Steam ID
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="card-content">
+                                        {isLoadingDotaStats ? (
+                                            <div className="loading-spinner">Загрузка статистики Dota 2...</div>
+                                        ) : dotaStats ? (
+                                            <div className="dota-player-stats">
+                                                {/* Профиль игрока */}
+                                                <div className="dota-profile-info">
+                                                    <img 
+                                                        src={dotaStats.profile?.avatarfull || '/default-avatar.png'} 
+                                                        alt="Steam Avatar" 
+                                                        className="dota-avatar" 
+                                                    />
+                                                    <div className="dota-profile-details">
+                                                        <h4>{dotaStats.profile?.personaname || 'Неизвестно'}</h4>
+                                                        <p><strong>Account ID:</strong> {dotaStats.profile?.account_id}</p>
+                                                        {dotaStats.profile?.rank_tier && (
+                                                            <p><strong>Медаль:</strong> {dotaStats.profile.rank_tier}</p>
+                                                        )}
+                                                        {dotaStats.profile?.mmr_estimate && (
+                                                            <p><strong>MMR (примерно):</strong> {dotaStats.profile.mmr_estimate}</p>
+                                                        )}
+                                                        {dotaStats.profile?.leaderboard_rank && (
+                                                            <p><strong>Место в рейтинге:</strong> #{dotaStats.profile.leaderboard_rank}</p>
+                                                        )}
+                                                    </div>
+                                                    <button 
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={unlinkDotaSteam}
+                                                        style={{ marginLeft: 'auto' }}
+                                                    >
+                                                        Отвязать
+                                                    </button>
+                                                </div>
+
+                                                {/* Общая статистика */}
+                                                <div className="dota-general-stats">
+                                                    <h5>Общая статистика</h5>
+                                                    <div className="stats-grid">
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">Побед:</span>
+                                                            <span className="stat-value">{dotaStats.stats?.win || 0}</span>
+                                                        </div>
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">Поражений:</span>
+                                                            <span className="stat-value">{dotaStats.stats?.lose || 0}</span>
+                                                        </div>
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">Винрейт:</span>
+                                                            <span className="stat-value">{dotaStats.stats?.winrate || 0}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Последние матчи */}
+                                                {dotaStats.recent_matches && dotaStats.recent_matches.length > 0 && (
+                                                    <div className="dota-recent-matches">
+                                                        <h5>Последние матчи</h5>
+                                                        <div className="matches-list">
+                                                            {dotaStats.recent_matches.slice(0, 5).map((match, index) => (
+                                                                <div key={index} className={`match-item ${match.win ? 'win' : 'loss'}`}>
+                                                                    <div className="match-hero">Hero ID: {match.hero_id}</div>
+                                                                    <div className="match-kda">{match.kills}/{match.deaths}/{match.assists}</div>
+                                                                    <div className="match-duration">{Math.floor(match.duration / 60)}:{(match.duration % 60).toString().padStart(2, '0')}</div>
+                                                                    <div className="match-result">{match.win ? 'Победа' : 'Поражение'}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Топ героев */}
+                                                {dotaStats.top_heroes && dotaStats.top_heroes.length > 0 && (
+                                                    <div className="dota-top-heroes">
+                                                        <h5>Топ героев</h5>
+                                                        <div className="heroes-list">
+                                                            {dotaStats.top_heroes.slice(0, 5).map((hero, index) => (
+                                                                <div key={index} className="hero-item">
+                                                                    <div className="hero-name">Hero ID: {hero.hero_id}</div>
+                                                                    <div className="hero-games">Игр: {hero.games}</div>
+                                                                    <div className="hero-winrate">Винрейт: {hero.winrate}%</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : dotaProfile && dotaProfile.steam_id ? (
+                                            <div className="no-dota-stats">
+                                                <p>Не удалось загрузить статистику Dota 2</p>
+                                                <p>Steam ID: {dotaProfile.steam_id}</p>
+                                                <button className="btn btn-sm" onClick={updateDotaStats}>
+                                                    Попробовать снова
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="no-dota-profile">
+                                                <p>Профиль Dota 2 не привязан</p>
+                                                <p>Привяжите Steam ID для отображения статистики Dota 2</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </>
                         )}
                         
@@ -2169,6 +2396,36 @@ function Profile() {
                         <button onClick={closeMatchHistoryModal} className="close-modal-btn">
                             Закрыть
                         </button>
+                    </div>
+                </div>
+            )}
+            
+            {showDotaModal && (
+                <div className="modal-overlay" onClick={() => setShowDotaModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Привязка Steam ID для Dota 2</h3>
+                        <p>Введите ваш Steam ID для отображения статистики Dota 2:</p>
+                        
+                        <input 
+                            type="text"
+                            value={dotaSteamId}
+                            onChange={(e) => setDotaSteamId(e.target.value)}
+                            placeholder="76561198xxxxxxxxx"
+                            className="steam-id-input"
+                            autoFocus
+                        />
+                        
+                        <div className="steam-id-help">
+                            <p><small>Где найти Steam ID:</small></p>
+                            <p><small>1. Откройте ваш профиль в Steam</small></p>
+                            <p><small>2. В адресной строке найдите число после /profiles/</small></p>
+                            <p><small>3. Или используйте сайт steamid.io</small></p>
+                        </div>
+                        
+                        <div className="modal-buttons">
+                            <button onClick={linkDotaSteam}>Привязать</button>
+                            <button onClick={() => setShowDotaModal(false)}>Отмена</button>
+                        </div>
                     </div>
                 </div>
             )}
