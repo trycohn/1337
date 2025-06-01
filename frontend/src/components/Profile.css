@@ -2045,7 +2045,11 @@
     }
 }
 
-/* Dota 2 Stats Styles */
+/* =========================
+   DOTA 2 STATS STYLES - ИСПРАВЛЕНО
+   ========================= */
+
+/* Основные стили для Dota 2 статистики */
 .dota-stats {
     margin-bottom: var(--spacing-lg);
 }
@@ -2139,6 +2143,7 @@
     font-size: 1.1rem;
 }
 
+/* Последние матчи */
 .matches-list {
     display: flex;
     flex-direction: column;
@@ -2183,47 +2188,64 @@
     font-weight: 500;
 }
 
+/* Топ героев - ИСПРАВЛЕННЫЕ СТИЛИ */
 .heroes-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-md);
 }
 
 .hero-item {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    padding: var(--spacing-md);
+    padding: var(--spacing-lg);
     border: 1px solid var(--border-color);
     border-radius: 0;
     background: var(--bg-tertiary);
+    transition: var(--transition);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-item:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
 .hero-name {
     color: var(--text-primary);
     font-weight: 500;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.hero-stats-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--spacing-sm);
 }
 
 .hero-games,
 .hero-winrate {
     color: var(--text-secondary);
     font-size: 0.9rem;
-}
-
-.no-dota-stats,
-.no-dota-profile {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    flex: 1;
     text-align: center;
-    padding: var(--spacing-xl);
-    color: var(--text-muted);
+    font-weight: 300;
 }
 
-.no-dota-stats p,
-.no-dota-profile p {
-    margin: var(--spacing-sm) 0;
-    color: var(--text-secondary);
-}
-
-/* Hero Icons */
+/* Иконки героев */
 .hero-icon {
     width: 40px;
     height: 30px;
@@ -2244,12 +2266,27 @@
 }
 
 .hero-name .hero-icon {
-    width: 50px;
-    height: 38px;
+    width: 60px;
+    height: 45px;
     margin-bottom: var(--spacing-xs);
+    border-radius: 8px;
 }
 
-/* Responsive Dota 2 Styles */
+/* Сообщения о отсутствии данных */
+.no-dota-stats,
+.no-dota-profile {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-muted);
+}
+
+.no-dota-stats p,
+.no-dota-profile p {
+    margin: var(--spacing-sm) 0;
+    color: var(--text-secondary);
+}
+
+/* Responsive стили для Dota 2 */
 @media (max-width: 768px) {
     .dota-profile-info {
         flex-direction: column;
@@ -2272,9 +2309,12 @@
     }
     
     .hero-item {
+        padding: var(--spacing-md);
+    }
+    
+    .hero-stats-container {
         flex-direction: column;
         gap: var(--spacing-xs);
-        text-align: center;
     }
     
     .match-hero .hero-icon {
@@ -2283,8 +2323,8 @@
     }
     
     .hero-name .hero-icon {
-        width: 40px;
-        height: 30px;
+        width: 50px;
+        height: 38px;
     }
 }
 
@@ -2298,13 +2338,21 @@
         font-size: 1.1rem;
     }
     
+    .hero-item {
+        padding: var(--spacing-sm);
+    }
+    
+    .hero-stats-container {
+        gap: var(--spacing-xs);
+    }
+    
     .match-hero .hero-icon {
         width: 25px;
         height: 19px;
     }
     
     .hero-name .hero-icon {
-        width: 35px;
-        height: 26px;
+        width: 45px;
+        height: 34px;
     }
 } 

@@ -1852,8 +1852,10 @@ function Profile() {
                                                                             }}
                                                                         />
                                                                     </div>
-                                                                    <div className="hero-games">Игр: {hero.games}</div>
-                                                                    <div className="hero-winrate">Винрейт: {hero.winrate}%</div>
+                                                                    <div className="hero-stats-container">
+                                                                        <div className="hero-games">Игр: {hero.games}</div>
+                                                                        <div className="hero-winrate">Винрейт: {hero.winrate}%</div>
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
