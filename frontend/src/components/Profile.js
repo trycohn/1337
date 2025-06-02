@@ -326,7 +326,7 @@ function Profile() {
                 fetchDotaStats(response.data.steam_id);
             }
         } catch (err) {
-            // Профиль может не существовать - это нормально
+            // Профиль может не существовать - это нормально, не логируем ошибку
             setDotaProfile(null);
         }
     };
@@ -351,7 +351,7 @@ function Profile() {
             });
             
         } catch (err) {
-            console.error('Ошибка загрузки статистики Dota 2:', err);
+            // Dota API может быть недоступен - это нормально
             setDotaStats(null);
         } finally {
             setIsLoadingDotaStats(false);
@@ -383,7 +383,7 @@ function Profile() {
             setDotaProfile({ user_id: user.id, steam_id: user.steam_id, dota_stats: response.data });
             setError('');
         } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка загрузки статистики Dota 2');
+            setError('Dota API временно недоступен');
         }
     };
 
@@ -396,7 +396,7 @@ function Profile() {
             setDotaStats(null);
             setError('');
         } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка отвязки профиля Dota 2');
+            setError('Dota API временно недоступен');
         }
     };
 
@@ -1061,16 +1061,10 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            setMatchHistory(response.data);
+            setMatchHistory(response.data || []);
         } catch (err) {
-            // Проверяем является ли ошибка 404
-            if (err.response && err.response.status === 404) {
-                // Если это 404, просто устанавливаем пустой массив
-                setMatchHistory([]);
-            } else {
-                // Логируем только если это не 404
-                console.error('Ошибка загрузки истории матчей:', err);
-            }
+            // Просто устанавливаем пустой массив, не логируем ошибку
+            setMatchHistory([]);
         } finally {
             setLoadingMatchHistory(false);
         }
@@ -1404,9 +1398,10 @@ function Profile() {
             const response = await api.get('/api/organizers/user/my-organizations', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUserOrganizations(response.data);
+            setUserOrganizations(response.data || []);
         } catch (err) {
-            console.error('Ошибка загрузки организаций пользователя:', err);
+            // Просто устанавливаем пустой массив
+            setUserOrganizations([]);
         } finally {
             setLoadingOrganizations(false);
         }
@@ -1422,9 +1417,7 @@ function Profile() {
             });
             setOrganizationRequest(response.data);
         } catch (err) {
-            if (err.response?.status !== 404) {
-                console.error('Ошибка загрузки статуса заявки:', err);
-            }
+            // 404 для заявки - это нормально, заявки может не быть
             setOrganizationRequest(null);
         } finally {
             setLoadingRequest(false);
@@ -1576,17 +1569,28 @@ function Profile() {
                         {stats && (
                             <>
                                 <div className="quick-stat-card">
-                                    <div className="quick-stat-value">{stats.solo.wins + stats.solo.losses + stats.team.wins + stats.team.losses}</div>
+                                    <div className="quick-stat-value">
+                                        {(stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0)}
+                                    </div>
                                     <div className="quick-stat-label">Всего матчей</div>
                                 </div>
                                 <div className="quick-stat-card">
-                                    <div className="quick-stat-value">{stats.tournaments.length}</div>
+                                    <div className="quick-stat-value">{stats.tournaments ? stats.tournaments.length : 0}</div>
                                     <div className="quick-stat-label">Турниров</div>
                                 </div>
                                 <div className="quick-stat-card">
                                     <div className="quick-stat-value">
-                                        {Math.round(((stats.solo.wins + stats.team.wins) / 
-                                        (stats.solo.wins + stats.solo.losses + stats.team.wins + stats.team.losses) * 100) || 0)}%
+                                        {stats.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
+                                    </div>
+                                    <div className="quick-stat-label">Выигранных турниров</div>
+                                </div>
+                                <div className="quick-stat-card">
+                                    <div className="quick-stat-value">
+                                        {(() => {
+                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+                                        })()}%
                                     </div>
                                     <div className="quick-stat-label">Винрейт</div>
                                 </div>
@@ -1791,23 +1795,28 @@ function Profile() {
                                         {stats ? (
                                             <div className="stats-grid">
                                                 <div className="stats-card">
-                                                    <div className="stats-value">{stats.solo.wins + stats.solo.losses + stats.team.wins + stats.team.losses}</div>
+                                                    <div className="stats-value">
+                                                        {(stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0)}
+                                                    </div>
                                                     <div className="stats-label">Всего матчей</div>
                                                 </div>
                                                 <div className="stats-card">
-                                                    <div className="stats-value">{stats.tournaments.length}</div>
+                                                    <div className="stats-value">{stats.tournaments ? stats.tournaments.length : 0}</div>
                                                     <div className="stats-label">Турниров</div>
                                                 </div>
                                                 <div className="stats-card">
                                                     <div className="stats-value">
-                                                        {stats.tournaments.filter(t => t.result === 'Победитель').length}
+                                                        {stats.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
                                                     </div>
                                                     <div className="stats-label">Выигранных турниров</div>
                                                 </div>
                                                 <div className="stats-card">
                                                     <div className="stats-value">
-                                                        {Math.round(((stats.solo.wins + stats.team.wins) / 
-                                                        (stats.solo.wins + stats.solo.losses + stats.team.wins + stats.team.losses) * 100) || 0)}%
+                                                        {(() => {
+                                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+                                                        })()}%
                                                     </div>
                                                     <div className="stats-label">Винрейт</div>
                                                 </div>

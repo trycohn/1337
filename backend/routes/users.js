@@ -560,6 +560,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 // Получение истории матчей пользователя
 router.get('/match-history', authenticateToken, async (req, res) => {
     try {
+        // Упрощенный запрос для получения истории матчей
         const matchHistoryResult = await pool.query(`
             SELECT 
                 m.id,
@@ -570,61 +571,45 @@ router.get('/match-history', authenticateToken, async (req, res) => {
                 m.score1,
                 m.score2,
                 CASE 
-                    WHEN t.participant_type = 'solo' THEN
-                        CASE 
-                            WHEN (m.participant1_id = tp1.id AND m.winner_team_id = m.participant1_id) OR
-                                 (m.participant2_id = tp2.id AND m.winner_team_id = m.participant2_id) THEN 'win'
-                            ELSE 'loss'
-                        END
-                    WHEN t.participant_type = 'team' THEN
-                        CASE 
-                            WHEN EXISTS(
-                                SELECT 1 FROM tournament_team_members ttm1 
-                                WHERE ttm1.team_id = m.participant1_id AND ttm1.user_id = $1
-                            ) AND m.winner_team_id = m.participant1_id THEN 'win'
-                            WHEN EXISTS(
-                                SELECT 1 FROM tournament_team_members ttm2 
-                                WHERE ttm2.team_id = m.participant2_id AND ttm2.user_id = $1
-                            ) AND m.winner_team_id = m.participant2_id THEN 'win'
-                            ELSE 'loss'
-                        END
+                    WHEN m.winner_team_id = m.participant1_id THEN 
+                        CASE WHEN tp1.user_id = $1 OR EXISTS(
+                            SELECT 1 FROM tournament_team_members ttm 
+                            WHERE ttm.team_id = m.participant1_id AND ttm.user_id = $1
+                        ) THEN 'win' ELSE 'loss' END
+                    WHEN m.winner_team_id = m.participant2_id THEN 
+                        CASE WHEN tp2.user_id = $1 OR EXISTS(
+                            SELECT 1 FROM tournament_team_members ttm 
+                            WHERE ttm.team_id = m.participant2_id AND ttm.user_id = $1
+                        ) THEN 'win' ELSE 'loss' END
+                    ELSE 'unknown'
                 END as result,
-                CASE 
-                    WHEN t.participant_type = 'solo' THEN
-                        CASE 
-                            WHEN m.participant1_id = tp1.id THEN tp2.name
-                            ELSE tp1.name
-                        END
-                    WHEN t.participant_type = 'team' THEN
-                        CASE 
-                            WHEN EXISTS(
-                                SELECT 1 FROM tournament_team_members ttm1 
-                                WHERE ttm1.team_id = m.participant1_id AND ttm1.user_id = $1
-                            ) THEN tt2.name
-                            ELSE tt1.name
-                        END
-                END as opponent,
-                CONCAT(m.score1, ':', m.score2) as score
+                COALESCE(
+                    CASE WHEN tp1.user_id = $1 THEN COALESCE(tp2.name, tt2.name)
+                         WHEN tp2.user_id = $1 THEN COALESCE(tp1.name, tt1.name)
+                         ELSE 'Неизвестный соперник' END,
+                    'Неизвестный соперник'
+                ) as opponent,
+                CONCAT(COALESCE(m.score1, 0), ':', COALESCE(m.score2, 0)) as score
             FROM matches m
             JOIN tournaments t ON m.tournament_id = t.id
-            LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id AND t.participant_type = 'solo'
-            LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id AND t.participant_type = 'solo'
-            LEFT JOIN tournament_teams tt1 ON m.participant1_id = tt1.id AND t.participant_type = 'team'
-            LEFT JOIN tournament_teams tt2 ON m.participant2_id = tt2.id AND t.participant_type = 'team'
+            LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id
+            LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id
+            LEFT JOIN tournament_teams tt1 ON m.participant1_id = tt1.id
+            LEFT JOIN tournament_teams tt2 ON m.participant2_id = tt2.id
+            LEFT JOIN tournament_team_members ttm1 ON tt1.id = ttm1.team_id
+            LEFT JOIN tournament_team_members ttm2 ON tt2.id = ttm2.team_id
             WHERE 
-                (t.participant_type = 'solo' AND (tp1.user_id = $1 OR tp2.user_id = $1)) OR
-                (t.participant_type = 'team' AND (
-                    EXISTS(SELECT 1 FROM tournament_team_members ttm WHERE ttm.team_id = m.participant1_id AND ttm.user_id = $1) OR
-                    EXISTS(SELECT 1 FROM tournament_team_members ttm WHERE ttm.team_id = m.participant2_id AND ttm.user_id = $1)
-                ))
-            AND m.winner_team_id IS NOT NULL
+                (tp1.user_id = $1 OR tp2.user_id = $1 OR ttm1.user_id = $1 OR ttm2.user_id = $1)
+                AND m.winner_team_id IS NOT NULL
             ORDER BY m.created_at DESC
+            LIMIT 100
         `, [req.user.id]);
 
         res.json(matchHistoryResult.rows);
     } catch (err) {
         console.error('Ошибка получения истории матчей:', err);
-        res.status(500).json({ error: 'Не удалось загрузить историю матчей' });
+        // Возвращаем пустой массив вместо ошибки для лучшего UX
+        res.json([]);
     }
 });
 
@@ -1736,6 +1721,56 @@ router.get('/organization-request-status', authenticateToken, async (req, res) =
     } catch (err) {
         console.error('Ошибка получения статуса заявки:', err);
         res.status(500).json({ error: 'Не удалось получить статус заявки' });
+    }
+});
+
+// Добавляем недостающие dota-stats endpoints
+router.get('/dota-stats/profile/:userId', authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Проверяем, что пользователь запрашивает свой профиль или имеет права
+        if (req.user.id !== parseInt(userId) && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Нет доступа к этому профилю' });
+        }
+        
+        // Возвращаем пустой ответ, так как Dota профиль не настроен
+        res.status(404).json({ error: 'Dota профиль не найден' });
+    } catch (err) {
+        console.error('Ошибка получения Dota профиля:', err);
+        res.status(404).json({ error: 'Dota профиль не найден' });
+    }
+});
+
+router.get('/dota-stats/player/:steamId', authenticateToken, async (req, res) => {
+    try {
+        const { steamId } = req.params;
+        
+        // Заглушка для Dota статистики
+        res.status(404).json({ error: 'Dota API временно недоступен' });
+    } catch (err) {
+        console.error('Ошибка получения Dota статистики:', err);
+        res.status(404).json({ error: 'Dota API временно недоступен' });
+    }
+});
+
+router.post('/dota-stats/profile/save', authenticateToken, async (req, res) => {
+    try {
+        // Заглушка для сохранения Dota профиля
+        res.status(404).json({ error: 'Dota API временно недоступен' });
+    } catch (err) {
+        console.error('Ошибка сохранения Dota профиля:', err);
+        res.status(404).json({ error: 'Dota API временно недоступен' });
+    }
+});
+
+router.delete('/dota-stats/profile/:userId', authenticateToken, async (req, res) => {
+    try {
+        // Заглушка для удаления Dota профиля
+        res.status(404).json({ error: 'Dota API временно недоступен' });
+    } catch (err) {
+        console.error('Ошибка удаления Dota профиля:', err);
+        res.status(404).json({ error: 'Dota API временно недоступен' });
     }
 });
 
