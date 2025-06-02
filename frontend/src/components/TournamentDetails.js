@@ -2056,28 +2056,60 @@ function TournamentDetails() {
 
     // Получение победителей турнира
     const getTournamentWinners = () => {
-        if (!matches || matches.length === 0 || tournament.status !== 'completed') {
+        console.log('🏆 Начинаем определение победителей турнира');
+        console.log('🏆 Статус турнира:', tournament?.status);
+        console.log('🏆 Количество матчей:', matches?.length || 0);
+        console.log('🏆 Участники турнира:', tournament?.participants?.length || 0);
+        
+        if (!matches || matches.length === 0) {
+            console.log('❌ Нет матчей для определения победителей');
             return [];
         }
-
+        
+        // Расширяем условия завершенного турнира
+        const tournamentCompleted = (
+            tournament.status === 'completed' || 
+            tournament.status === 'завершен' || 
+            tournament.status === 'finished' ||
+            tournament.status === 'Завершен' ||
+            tournament.status === 'COMPLETED'
+        );
+        
+        if (!tournamentCompleted) {
+            console.log('❌ Турнир не завершен для определения победителей. Статус:', tournament.status);
+            return [];
+        }
+        
+        console.log('✅ Турнир завершен, определяем победителей...');
+        
+        // Находим финальный матч (последний по round)
+        const maxRound = Math.max(...matches.map(m => m.round));
+        console.log('🏆 Максимальный раунд в турнире:', maxRound);
+        
+        const finalMatch = matches.find(match => 
+            match.round === maxRound && 
+            !match.is_third_place_match && 
+            match.winner_team_id
+        );
+        
+        if (!finalMatch) {
+            console.log('❌ Финальный матч не найден или не завершен');
+            return [];
+        }
+        
+        console.log('🏆 Найден финальный матч:', finalMatch);
+        
         const result = [];
         
-        // Определяем финальный матч
-        let finalMatch = matches.find(match => {
-            if (tournament.format === 'single_elimination' || tournament.format === 'mix') {
-                const maxRound = Math.max(...matches.map(m => m.round));
-                return match.round === maxRound && !match.is_third_place_match;
-            } else if (tournament.format === 'double_elimination') {
-                return match.next_match_id === null && !match.is_third_place_match;
-            }
-            return false;
-        });
-
-        // Если финал не найден или нет победителя, возвращаем пустой массив
-        if (!finalMatch || !finalMatch.winner_team_id) {
-            return [];
-        }
-
+        console.log('🏆 Все матчи турнира:', matches.map(m => ({
+            id: m.id,
+            round: m.round,
+            winner_team_id: m.winner_team_id,
+            is_third_place_match: m.is_third_place_match,
+            team1_id: m.team1_id,
+            team2_id: m.team2_id
+        })));
+        
         // Функция для получения членов команды
         const getTeamMembers = (teamId) => {
             let teamMembers = [];
@@ -2111,7 +2143,9 @@ function TournamentDetails() {
 
         // Находим имя победителя (1 место)
         const firstPlaceId = finalMatch.winner_team_id;
-        const firstPlaceParticipant = tournament.participants.find(p => p.id === firstPlaceId);
+        const firstPlaceParticipant = tournament.participants?.find(p => p.id === firstPlaceId);
+        console.log('🥇 Победитель (1 место):', firstPlaceParticipant);
+        
         if (firstPlaceParticipant) {
             const teamMembers = getTeamMembers(firstPlaceId);
 
@@ -2126,7 +2160,9 @@ function TournamentDetails() {
 
         // Находим второе место (проигравший в финале)
         const secondPlaceId = finalMatch.team1_id === firstPlaceId ? finalMatch.team2_id : finalMatch.team1_id;
-        const secondPlaceParticipant = tournament.participants.find(p => p.id === secondPlaceId);
+        const secondPlaceParticipant = tournament.participants?.find(p => p.id === secondPlaceId);
+        console.log('🥈 Второе место:', secondPlaceParticipant);
+        
         if (secondPlaceParticipant) {
             const teamMembers = getTeamMembers(secondPlaceId);
 
@@ -2140,10 +2176,12 @@ function TournamentDetails() {
         }
 
         // Находим матч за третье место, если он есть
-        const thirdPlaceMatch = matches.find(m => m.is_third_place_match === true);
+        const thirdPlaceMatch = matches.find(m => m.is_third_place_match === true && m.winner_team_id);
+        console.log('🥉 Матч за третье место:', thirdPlaceMatch);
+        
         if (thirdPlaceMatch && thirdPlaceMatch.winner_team_id) {
             const thirdPlaceId = thirdPlaceMatch.winner_team_id;
-            const thirdPlaceParticipant = tournament.participants.find(p => p.id === thirdPlaceId);
+            const thirdPlaceParticipant = tournament.participants?.find(p => p.id === thirdPlaceId);
             if (thirdPlaceParticipant) {
                 const teamMembers = getTeamMembers(thirdPlaceId);
 
@@ -2157,73 +2195,105 @@ function TournamentDetails() {
             }
         }
 
-        // Логирование для диагностики
-        console.log('Найдены победители:', result);
-        if (tournament.participant_type === 'team' || tournament.format === 'mix') {
-            console.log('Это командный/микс турнир, структура участников:', tournament.participants);
-            console.log('Структура команд:', tournament.teams);
-        }
-
+        console.log('🏆 Итоговые победители:', result);
         return result;
     };
 
     // Компонент для рендеринга призёров турнира
     const renderWinners = () => {
+        console.log('🏆 Начинаем отрисовку подиума победителей');
+        console.log('🏆 Статус турнира для отрисовки:', tournament?.status);
+        
         const tournamentWinners = getTournamentWinners();
+        console.log('🏆 Получены победители для отрисовки:', tournamentWinners);
+        
+        // Расширяем условия завершенного турнира для отображения
+        const tournamentCompleted = (
+            tournament.status === 'completed' || 
+            tournament.status === 'завершен' || 
+            tournament.status === 'finished' ||
+            tournament.status === 'Завершен' ||
+            tournament.status === 'COMPLETED'
+        );
         
         if (!tournamentWinners || tournamentWinners.length === 0) {
+            console.log('❌ Нет победителей для отрисовки подиума');
+            
+            // Если турнир завершен, но нет победителей, показываем сообщение
+            if (tournamentCompleted) {
+                return (
+                    <div className="winners-podium-container">
+                        <div className="no-winners-message">
+                            <h3>Турнир завершен</h3>
+                            <p>Победители не определены или данные не загружены.</p>
+                            <button 
+                                onClick={() => fetchTournamentDataForcefully(true)}
+                                className="reload-winners-btn"
+                            >
+                                Обновить данные
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
             return null;
         }
+
+        console.log('✅ Отрисовываем подиум с', tournamentWinners.length, 'победителями');
 
         return (
             <div className="winners-section">
                 <h3>Призёры турнира</h3>
                 <div className="winners-podium">
-                    {tournamentWinners.map(winner => (
-                        <div key={winner.id} className={`winner-card place-${winner.place}`}>
-                            <div className="medal-icon">
-                                {winner.place === 1 && <span className="gold-medal">🥇</span>}
-                                {winner.place === 2 && <span className="silver-medal">🥈</span>}
-                                {winner.place === 3 && <span className="bronze-medal">🥉</span>}
-                            </div>
-                            <div className="winner-avatar">
-                                <img 
-                                    src={ensureHttps(winner.avatar_url) || '/default-avatar.png'} 
-                                    alt={`${winner.name} аватар`} 
-                                    className="winner-avatar-img"
-                                    onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                />
-                            </div>
-                            <div className="winner-name">
-                                <strong>{winner.name}</strong>
-                            </div>
-                            {/* Показываем состав команды для всех типов турниров */}
-                            {winner.members && winner.members.length > 0 && (
-                                <div className="team-members">
-                                    <h4>Состав команды:</h4>
-                                    <ul>
-                                        {winner.members.map((member, idx) => (
-                                            <li key={idx} className="team-member">
-                                                <img 
-                                                    src={ensureHttps(member.avatar_url) || '/default-avatar.png'} 
-                                                    alt={`${member.name} аватар`} 
-                                                    className="member-avatar-img"
-                                                    onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                />
-                                                <span className="member-name">{member.name}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                    {tournamentWinners.map(winner => {
+                        console.log('🏆 Отрисовываем победителя:', winner);
+                        
+                        return (
+                            <div key={winner.id} className={`winner-card place-${winner.place}`}>
+                                <div className="medal-icon">
+                                    {winner.place === 1 && <span className="gold-medal">🥇</span>}
+                                    {winner.place === 2 && <span className="silver-medal">🥈</span>}
+                                    {winner.place === 3 && <span className="bronze-medal">🥉</span>}
                                 </div>
-                            )}
-                            {/* Если участников нет в команде, но это одиночный турнир, показываем заглушку */}
-                            {(!winner.members || winner.members.length === 0) && tournament.participant_type === 'solo' && (
-                                <div className="solo-participant">
-                                    <p>Одиночный участник</p>
+                                <div className="winner-avatar">
+                                    <img 
+                                        src={ensureHttps(winner.avatar_url) || '/default-avatar.png'} 
+                                        alt={`${winner.name} аватар`} 
+                                        className="winner-avatar-img"
+                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                    />
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                                <div className="winner-name">
+                                    <strong>{winner.name}</strong>
+                                </div>
+                                {/* Показываем состав команды для всех типов турниров */}
+                                {winner.members && winner.members.length > 0 && (
+                                    <div className="team-members">
+                                        <h4>Состав команды:</h4>
+                                        <ul>
+                                            {winner.members.map((member, idx) => (
+                                                <li key={idx} className="team-member">
+                                                    <img 
+                                                        src={ensureHttps(member.avatar_url) || '/default-avatar.png'} 
+                                                        alt={`${member.name} аватар`} 
+                                                        className="member-avatar-img"
+                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                    />
+                                                    <span className="member-name">{member.name}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {/* Если участников нет в команде, но это одиночный турнир, показываем заглушку */}
+                                {(!winner.members || winner.members.length === 0) && tournament.participant_type === 'solo' && (
+                                    <div className="solo-participant">
+                                        <p>Одиночный участник</p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -3204,11 +3274,12 @@ function TournamentDetails() {
                                     </>
                                 )}
                                 
-                                {tournament.status === 'completed' && renderWinners()}
+                                {(tournament.status === 'completed' || tournament.status === 'завершен' || tournament.status === 'finished' || tournament.status === 'Завершен' || tournament.status === 'COMPLETED') && renderWinners()}
                             </div>
                         </div>
                     </div>
                 )}
+                
                 
                 {/* Вкладка: Участники */}
                 {activeTab === 'participants' && (
@@ -3409,6 +3480,10 @@ function TournamentDetails() {
                 {activeTab === 'results' && (
                     <div className="tab-content tab-results">
                         <h3>Результаты матчей</h3>
+                        
+                        {/* Показываем подиум победителей, если турнир завершен */}
+                        {(tournament.status === 'completed' || tournament.status === 'завершен' || tournament.status === 'finished') && renderWinners()}
+                        
                         {matches && matches.length > 0 ? (
                             <div className="results-compact-list">
                                 {matches
@@ -3480,6 +3555,7 @@ function TournamentDetails() {
                         )}
                     </div>
                 )}
+                
                 
                 {/* Вкладка: Журнал */}
                 {activeTab === 'logs' && (
