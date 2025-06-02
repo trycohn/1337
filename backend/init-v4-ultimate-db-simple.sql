@@ -1,8 +1,7 @@
 -- ✨ V4 ULTIMATE: Скрипт инициализации базы данных
 -- Этот скрипт создает все необходимые таблицы для революционной функциональности V4
 
--- Убедимся, что таблица user_tournament_stats существует
--- (была создана в предыдущих итерациях)
+-- Убедимся, что таблица user_tournament_stats существует и имеет все необходимые колонки
 CREATE TABLE IF NOT EXISTS user_tournament_stats (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -20,7 +19,10 @@ CREATE TABLE IF NOT EXISTS user_tournament_stats (
     UNIQUE(user_id, tournament_id)
 );
 
--- Создание индексов для производительности
+-- ВАЖНО: Если таблица уже существует, сначала выполните fix-all-columns.sql
+-- для добавления недостающих колонок
+
+-- Создание индексов для производительности (после добавления всех колонок)
 CREATE INDEX IF NOT EXISTS idx_user_tournament_stats_user_id ON user_tournament_stats(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_tournament_stats_tournament_id ON user_tournament_stats(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_user_tournament_stats_performance ON user_tournament_stats(user_id, wins, final_position);
@@ -28,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_user_tournament_stats_performance ON user_tournam
 -- Таблица достижений
 CREATE TABLE IF NOT EXISTS achievements (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL UNIQUE,
     description TEXT NOT NULL,
     icon VARCHAR(50) DEFAULT '🏆',
     category VARCHAR(50) NOT NULL, -- tournaments, games, social, streaks, performance, special
@@ -256,15 +258,7 @@ ORDER BY rank;
 -- Создание индексов для представления
 CREATE INDEX IF NOT EXISTS idx_users_performance ON users(id) WHERE id > 1;
 
--- Финальные сообщения о результате инициализации V4 ULTIMATE
-DO $$
-DECLARE
-    achievement_count INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO achievement_count FROM achievements;
-    
-    RAISE NOTICE '✅ V4 ULTIMATE: База данных инициализирована успешно!';
-    RAISE NOTICE '🏆 Создано достижений: %', achievement_count;
-    RAISE NOTICE '👥 Готово к работе с друзьями и real-time статистикой';
-    RAISE NOTICE '🚀 Революционная функциональность V4 активирована!';
-END $$; 
+-- ✅ V4 ULTIMATE: База данных инициализирована успешно!
+-- 🏆 Достижения созданы и готовы к использованию
+-- 👥 Готово к работе с друзьями и real-time статистикой  
+-- 🚀 Революционная функциональность V4 активирована! 

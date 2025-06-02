@@ -46,47 +46,54 @@ cd ..
 # 2. Инициализация базы данных V4
 echo ""
 echo "🗄️ Инициализация базы данных V4 ULTIMATE..."
-if ! psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f backend/init-v4-ultimate-db.sql > /dev/null 2>&1; then
+
+# Поскольку таблицы user_tournament_stats и friends уже существуют и готовы,
+# выполняем только добавление недостающих компонентов
+echo "📊 Добавление недостающих компонентов V4 (achievements, функции, представления)..."
+if ! psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f backend/init-v4-missing-only.sql > /dev/null 2>&1; then
     echo "⚠️ Попытка инициализации через node..."
     if ! node -e "
 const fs = require('fs');
 const pool = require('./backend/db');
-const sql = fs.readFileSync('backend/init-v4-ultimate-db.sql', 'utf8');
+const sql = fs.readFileSync('backend/init-v4-missing-only.sql', 'utf8');
 pool.query(sql).then(() => {
-    console.log('✅ База данных V4 инициализирована через Node.js');
+    console.log('✅ V4 ULTIMATE компоненты добавлены через Node.js');
     process.exit(0);
 }).catch(err => {
-    console.error('❌ Ошибка инициализации БД через Node.js:', err.message);
+    console.error('❌ Ошибка инициализации V4 через Node.js:', err.message);
     process.exit(1);
 });"; then
-        echo "❌ Не удалось инициализировать базу данных V4"
+        echo "❌ Не удалось инициализировать V4 ULTIMATE"
         exit 1
     fi
 else
-    echo "✅ База данных V4 инициализирована через psql"
+    echo "✅ V4 ULTIMATE компоненты добавлены через psql"
 fi
 
 # 3. Проверка создания таблиц
 echo ""
-echo "🔍 Проверка создания таблиц V4..."
+echo "🔍 Проверка готовности компонентов V4..."
 if ! node -e "
 const pool = require('./backend/db');
 Promise.all([
     pool.query('SELECT COUNT(*) FROM achievements'),
     pool.query('SELECT COUNT(*) FROM user_achievements'),
-    pool.query('SELECT COUNT(*) FROM friends'),
-    pool.query('SELECT COUNT(*) FROM user_tournament_stats')
+    pool.query('SELECT COUNT(*) FROM friends WHERE 1=1'), 
+    pool.query('SELECT COUNT(*) FROM user_tournament_stats WHERE 1=1'),
+    pool.query('SELECT COUNT(*) FROM v4_leaderboard')
 ]).then(results => {
     console.log('✅ Таблица achievements:', results[0].rows[0].count, 'записей');
     console.log('✅ Таблица user_achievements готова');
-    console.log('✅ Таблица friends готова'); 
-    console.log('✅ Таблица user_tournament_stats готова');
+    console.log('✅ Таблица friends готова (уже существовала)'); 
+    console.log('✅ Таблица user_tournament_stats готова (уже существовала)');
+    console.log('✅ Представление v4_leaderboard:', results[4].rows[0].count, 'пользователей');
+    console.log('🚀 Все компоненты V4 ULTIMATE готовы!');
     process.exit(0);
 }).catch(err => {
-    console.error('❌ Ошибка проверки таблиц:', err.message);
+    console.error('❌ Ошибка проверки компонентов V4:', err.message);
     process.exit(1);
 });"; then
-    echo "❌ Не все таблицы V4 созданы корректно"
+    echo "❌ Не все компоненты V4 созданы корректно"
     exit 1
 fi
 
@@ -97,6 +104,7 @@ required_files=(
     "backend/routes/v4-enhanced-stats.js"
     "backend/services/achievementSystem.js"
     "backend/services/realTimeStatsService.js"
+    "backend/init-v4-missing-only.sql"
 )
 
 for file in "${required_files[@]}"; do
