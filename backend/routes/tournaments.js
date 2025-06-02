@@ -2743,4 +2743,251 @@ router.get('/:id/logs', authenticateToken, async (req, res) => {
     }
 });
 
+// Завершение турнира
+router.post('/:id/complete', authenticateToken, verifyEmailRequired, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Получение данных турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверяем права доступа
+        if (tournament.creator_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Нет прав для завершения турнира' });
+        }
+
+        // Обновляем статус турнира на "завершен"
+        await pool.query('UPDATE tournaments SET status = $1 WHERE id = $2', ['completed', id]);
+
+        // Автоматически пересчитываем статистику для всех участников
+        await recalculateAllParticipantsStats(id, tournament.participant_type);
+
+        // Получаем обновленные данные турнира
+        const updatedTournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        const tournamentData = updatedTournamentResult.rows[0];
+        
+        // Получаем матчи
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [id]
+        );
+        tournamentData.matches = matchesResult.rows;
+        
+        // Получаем участников
+        let participantsQuery;
+        if (tournament.participant_type === 'solo') {
+            participantsQuery = `
+                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
+                FROM tournament_participants tp 
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT tt.*, u.avatar_url, u.username
+                FROM tournament_teams tt
+                LEFT JOIN users u ON tt.creator_id = u.id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
+        const participantsResult = await pool.query(participantsQuery, [id]);
+        tournamentData.participants = participantsResult.rows;
+        tournamentData.participant_count = participantsResult.rowCount;
+
+        // Уведомляем всех клиентов, просматривающих этот турнир
+        broadcastTournamentUpdate(id, tournamentData);
+
+        res.status(200).json({ 
+            message: 'Турнир завершен, статистика обновлена для всех участников',
+            tournament: tournamentData
+        });
+    } catch (err) {
+        console.error('❌ Ошибка завершения турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Функция для пересчета статистики всех участников турнира
+async function recalculateAllParticipantsStats(tournamentId, participantType) {
+    try {
+        console.log(`🔄 Пересчитываем статистику для всех участников турнира ${tournamentId}`);
+        
+        // Получаем всех участников турнира
+        let participantsQuery;
+        if (participantType === 'solo') {
+            participantsQuery = `
+                SELECT DISTINCT tp.user_id 
+                FROM tournament_participants tp 
+                WHERE tp.tournament_id = $1
+            `;
+        } else {
+            participantsQuery = `
+                SELECT DISTINCT ttm.user_id 
+                FROM tournament_teams tt
+                JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                WHERE tt.tournament_id = $1
+            `;
+        }
+        
+        const participantsResult = await pool.query(participantsQuery, [tournamentId]);
+        const userIds = participantsResult.rows.map(row => row.user_id);
+        
+        console.log(`Найдено ${userIds.length} участников для пересчета статистики`);
+        
+        // Для каждого участника пересчитываем результат
+        for (const userId of userIds) {
+            const result = await calculateTournamentResult(tournamentId, userId, participantType);
+            
+            if (result) {
+                // Удаляем старую запись если есть
+                await pool.query(
+                    'DELETE FROM user_tournament_stats WHERE user_id = $1 AND tournament_id = $2',
+                    [userId, tournamentId]
+                );
+                
+                // Вставляем новую запись
+                await pool.query(`
+                    INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [
+                    userId,
+                    tournamentId, 
+                    result.place,
+                    result.wins || 0,
+                    result.losses || 0,
+                    participantType === 'team'
+                ]);
+                
+                console.log(`✅ Обновлена статистика для пользователя ${userId}: ${result.place}`);
+            }
+        }
+    } catch (err) {
+        console.error('Ошибка пересчета статистики участников:', err);
+    }
+}
+
+// Функция для определения результата игрока в турнире
+async function calculateTournamentResult(tournamentId, userId, participantType) {
+    try {
+        // Получаем все матчи турнира
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round DESC',
+            [tournamentId]
+        );
+        
+        const matches = matchesResult.rows;
+        if (matches.length === 0) return null;
+
+        // Получаем ID участника (team или participant)
+        let participantId;
+        if (participantType === 'solo') {
+            const participantResult = await pool.query(
+                'SELECT id FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2',
+                [tournamentId, userId]
+            );
+            if (participantResult.rows.length === 0) return null;
+            participantId = participantResult.rows[0].id;
+        } else {
+            const teamResult = await pool.query(`
+                SELECT tt.id 
+                FROM tournament_teams tt
+                JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                WHERE tt.tournament_id = $1 AND ttm.user_id = $2
+            `, [tournamentId, userId]);
+            if (teamResult.rows.length === 0) return null;
+            participantId = teamResult.rows[0].id;
+        }
+
+        // Находим финальный матч
+        const finalMatch = matches.find(match => {
+            const maxRound = Math.max(...matches.map(m => m.round || 0));
+            return (match.round === maxRound && !match.is_third_place_match && match.winner_team_id !== null);
+        });
+
+        // Проверяем, выиграл ли игрок турнир (1 место)
+        if (finalMatch && finalMatch.winner_team_id === participantId) {
+            const wins = matches.filter(m => m.winner_team_id === participantId).length;
+            const losses = matches.filter(m => 
+                (m.team1_id === participantId || m.team2_id === participantId) && 
+                m.winner_team_id !== participantId && m.winner_team_id !== null
+            ).length;
+            
+            return { place: 'Победитель', wins, losses };
+        }
+
+        // Проверяем матч за 3 место
+        const thirdPlaceMatch = matches.find(m => m.is_third_place_match === true);
+        if (thirdPlaceMatch) {
+            if (thirdPlaceMatch.winner_team_id === participantId) {
+                const wins = matches.filter(m => m.winner_team_id === participantId).length;
+                const losses = matches.filter(m => 
+                    (m.team1_id === participantId || m.team2_id === participantId) && 
+                    m.winner_team_id !== participantId && m.winner_team_id !== null
+                ).length;
+                
+                return { place: '3 место', wins, losses };
+            } else if (thirdPlaceMatch.team1_id === participantId || thirdPlaceMatch.team2_id === participantId) {
+                const wins = matches.filter(m => m.winner_team_id === participantId).length;
+                const losses = matches.filter(m => 
+                    (m.team1_id === participantId || m.team2_id === participantId) && 
+                    m.winner_team_id !== participantId && m.winner_team_id !== null
+                ).length;
+                
+                return { place: '4 место', wins, losses };
+            }
+        }
+
+        // Проверяем, дошел ли до финала (2 место)
+        if (finalMatch && (finalMatch.team1_id === participantId || finalMatch.team2_id === participantId)) {
+            const wins = matches.filter(m => m.winner_team_id === participantId).length;
+            const losses = matches.filter(m => 
+                (m.team1_id === participantId || m.team2_id === participantId) && 
+                m.winner_team_id !== participantId && m.winner_team_id !== null
+            ).length;
+            
+            return { place: '2 место', wins, losses };
+        }
+
+        // Определяем на какой стадии выбыл
+        const playerMatches = matches.filter(m => 
+            m.team1_id === participantId || m.team2_id === participantId
+        ).sort((a, b) => (b.round || 0) - (a.round || 0));
+
+        if (playerMatches.length > 0) {
+            const lastMatch = playerMatches[0];
+            const wins = matches.filter(m => m.winner_team_id === participantId).length;
+            const losses = matches.filter(m => 
+                (m.team1_id === participantId || m.team2_id === participantId) && 
+                m.winner_team_id !== participantId && m.winner_team_id !== null
+            ).length;
+
+            // Определяем стадию выбывания
+            const maxRound = Math.max(...matches.map(m => m.round || 0));
+            const roundsFromEnd = maxRound - (lastMatch.round || 0);
+            
+            let stage;
+            if (roundsFromEnd === 0) stage = 'Финалист';
+            else if (roundsFromEnd === 1) stage = 'Полуфинал';
+            else if (roundsFromEnd === 2) stage = '1/4 финала';
+            else if (roundsFromEnd === 3) stage = '1/8 финала';
+            else stage = `${roundsFromEnd + 1} раунд`;
+
+            return { place: stage, wins, losses };
+        }
+
+        return { place: 'Участник', wins: 0, losses: 0 };
+        
+    } catch (err) {
+        console.error('Ошибка определения результата турнира:', err);
+        return null;
+    }
+}
+
 module.exports = router;

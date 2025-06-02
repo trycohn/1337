@@ -519,10 +519,10 @@ router.get('/stats', authenticateToken, async (req, res) => {
         const soloStats = stats.filter(s => !s.is_team);
         const teamStats = stats.filter(s => s.is_team);
 
-        const soloWins = soloStats.reduce((sum, s) => sum + s.wins, 0);
-        const soloLosses = soloStats.reduce((sum, s) => sum + s.losses, 0);
-        const teamWins = teamStats.reduce((sum, s) => sum + s.wins, 0);
-        const teamLosses = teamStats.reduce((sum, s) => sum + s.losses, 0);
+        const soloWins = soloStats.reduce((sum, s) => sum + (s.wins || 0), 0);
+        const soloLosses = soloStats.reduce((sum, s) => sum + (s.losses || 0), 0);
+        const teamWins = teamStats.reduce((sum, s) => sum + (s.wins || 0), 0);
+        const teamLosses = teamStats.reduce((sum, s) => sum + (s.losses || 0), 0);
 
         const soloWinRate = soloWins + soloLosses > 0 ? (soloWins / (soloWins + soloLosses)) * 100 : 0;
         const teamWinRate = teamWins + teamLosses > 0 ? (teamWins / (teamWins + teamLosses)) * 100 : 0;
@@ -537,11 +537,11 @@ router.get('/stats', authenticateToken, async (req, res) => {
                 };
             }
             if (stat.is_team) {
-                gameStats[stat.game].team.wins += stat.wins;
-                gameStats[stat.game].team.losses += stat.losses;
+                gameStats[stat.game].team.wins += (stat.wins || 0);
+                gameStats[stat.game].team.losses += (stat.losses || 0);
             } else {
-                gameStats[stat.game].solo.wins += stat.wins;
-                gameStats[stat.game].solo.losses += stat.losses;
+                gameStats[stat.game].solo.wins += (stat.wins || 0);
+                gameStats[stat.game].solo.losses += (stat.losses || 0);
             }
         });
 
@@ -556,6 +556,186 @@ router.get('/stats', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Не удалось загрузить статистику' });
     }
 });
+
+// Функция для автоматического расчета и обновления результатов турниров
+router.post('/recalculate-tournament-stats', authenticateToken, async (req, res) => {
+    try {
+        console.log('🔄 Начинаем пересчет статистики турниров для пользователя:', req.user.id);
+        
+        // Получаем все завершенные турниры где участвовал пользователь
+        const userTournamentsResult = await pool.query(`
+            SELECT DISTINCT t.id, t.name, t.game, t.participant_type, t.format
+            FROM tournaments t
+            WHERE t.status = 'completed' 
+            AND (
+                (t.participant_type = 'solo' AND EXISTS(
+                    SELECT 1 FROM tournament_participants tp 
+                    WHERE tp.tournament_id = t.id AND tp.user_id = $1
+                )) OR
+                (t.participant_type = 'team' AND EXISTS(
+                    SELECT 1 FROM tournament_teams tt 
+                    JOIN tournament_team_members ttm ON tt.id = ttm.team_id 
+                    WHERE tt.tournament_id = t.id AND ttm.user_id = $1
+                ))
+            )
+        `, [req.user.id]);
+
+        let updatedTournaments = 0;
+
+        for (const tournament of userTournamentsResult.rows) {
+            const result = await calculateTournamentResult(tournament.id, req.user.id, tournament.participant_type);
+            
+            if (result) {
+                // Удаляем старую запись если есть
+                await pool.query(
+                    'DELETE FROM user_tournament_stats WHERE user_id = $1 AND tournament_id = $2',
+                    [req.user.id, tournament.id]
+                );
+                
+                // Вставляем новую запись
+                await pool.query(`
+                    INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [
+                    req.user.id,
+                    tournament.id, 
+                    result.place,
+                    result.wins || 0,
+                    result.losses || 0,
+                    tournament.participant_type === 'team'
+                ]);
+                
+                updatedTournaments++;
+                console.log(`✅ Обновлена статистика для турнира ${tournament.name}: ${result.place}`);
+            }
+        }
+
+        res.json({ 
+            message: `Статистика пересчитана для ${updatedTournaments} турниров`,
+            updatedTournaments 
+        });
+    } catch (err) {
+        console.error('Ошибка пересчета статистики турниров:', err);
+        res.status(500).json({ error: 'Не удалось пересчитать статистику' });
+    }
+});
+
+// Функция для определения результата игрока в турнире
+async function calculateTournamentResult(tournamentId, userId, participantType) {
+    try {
+        // Получаем все матчи турнира
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round DESC',
+            [tournamentId]
+        );
+        
+        const matches = matchesResult.rows;
+        if (matches.length === 0) return null;
+
+        // Получаем ID участника (team или participant)
+        let participantId;
+        if (participantType === 'solo') {
+            const participantResult = await pool.query(
+                'SELECT id FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2',
+                [tournamentId, userId]
+            );
+            if (participantResult.rows.length === 0) return null;
+            participantId = participantResult.rows[0].id;
+        } else {
+            const teamResult = await pool.query(`
+                SELECT tt.id 
+                FROM tournament_teams tt
+                JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                WHERE tt.tournament_id = $1 AND ttm.user_id = $2
+            `, [tournamentId, userId]);
+            if (teamResult.rows.length === 0) return null;
+            participantId = teamResult.rows[0].id;
+        }
+
+        // Находим финальный матч
+        const finalMatch = matches.find(match => {
+            const maxRound = Math.max(...matches.map(m => m.round || 0));
+            return (match.round === maxRound && !match.is_third_place_match && match.winner_team_id !== null);
+        });
+
+        // Проверяем, выиграл ли игрок турнир (1 место)
+        if (finalMatch && finalMatch.winner_team_id === participantId) {
+            const wins = matches.filter(m => m.winner_team_id === participantId).length;
+            const losses = matches.filter(m => 
+                (m.team1_id === participantId || m.team2_id === participantId) && 
+                m.winner_team_id !== participantId && m.winner_team_id !== null
+            ).length;
+            
+            return { place: 'Победитель', wins, losses };
+        }
+
+        // Проверяем матч за 3 место
+        const thirdPlaceMatch = matches.find(m => m.is_third_place_match === true);
+        if (thirdPlaceMatch) {
+            if (thirdPlaceMatch.winner_team_id === participantId) {
+                const wins = matches.filter(m => m.winner_team_id === participantId).length;
+                const losses = matches.filter(m => 
+                    (m.team1_id === participantId || m.team2_id === participantId) && 
+                    m.winner_team_id !== participantId && m.winner_team_id !== null
+                ).length;
+                
+                return { place: '3 место', wins, losses };
+            } else if (thirdPlaceMatch.team1_id === participantId || thirdPlaceMatch.team2_id === participantId) {
+                const wins = matches.filter(m => m.winner_team_id === participantId).length;
+                const losses = matches.filter(m => 
+                    (m.team1_id === participantId || m.team2_id === participantId) && 
+                    m.winner_team_id !== participantId && m.winner_team_id !== null
+                ).length;
+                
+                return { place: '4 место', wins, losses };
+            }
+        }
+
+        // Проверяем, дошел ли до финала (2 место)
+        if (finalMatch && (finalMatch.team1_id === participantId || finalMatch.team2_id === participantId)) {
+            const wins = matches.filter(m => m.winner_team_id === participantId).length;
+            const losses = matches.filter(m => 
+                (m.team1_id === participantId || m.team2_id === participantId) && 
+                m.winner_team_id !== participantId && m.winner_team_id !== null
+            ).length;
+            
+            return { place: '2 место', wins, losses };
+        }
+
+        // Определяем на какой стадии выбыл
+        const playerMatches = matches.filter(m => 
+            m.team1_id === participantId || m.team2_id === participantId
+        ).sort((a, b) => (b.round || 0) - (a.round || 0));
+
+        if (playerMatches.length > 0) {
+            const lastMatch = playerMatches[0];
+            const wins = matches.filter(m => m.winner_team_id === participantId).length;
+            const losses = matches.filter(m => 
+                (m.team1_id === participantId || m.team2_id === participantId) && 
+                m.winner_team_id !== participantId && m.winner_team_id !== null
+            ).length;
+
+            // Определяем стадию выбывания
+            const maxRound = Math.max(...matches.map(m => m.round || 0));
+            const roundsFromEnd = maxRound - (lastMatch.round || 0);
+            
+            let stage;
+            if (roundsFromEnd === 0) stage = 'Финалист';
+            else if (roundsFromEnd === 1) stage = 'Полуфинал';
+            else if (roundsFromEnd === 2) stage = '1/4 финала';
+            else if (roundsFromEnd === 3) stage = '1/8 финала';
+            else stage = `${roundsFromEnd + 1} раунд`;
+
+            return { place: stage, wins, losses };
+        }
+
+        return { place: 'Участник', wins: 0, losses: 0 };
+        
+    } catch (err) {
+        console.error('Ошибка определения результата турнира:', err);
+        return null;
+    }
+}
 
 // Получение истории матчей пользователя
 router.get('/match-history', authenticateToken, async (req, res) => {
@@ -1267,10 +1447,10 @@ router.get('/profile/:userId', async (req, res) => {
         const soloStats = stats.filter(s => !s.is_team);
         const teamStats = stats.filter(s => s.is_team);
 
-        const soloWins = soloStats.reduce((sum, s) => sum + s.wins, 0);
-        const soloLosses = soloStats.reduce((sum, s) => sum + s.losses, 0);
-        const teamWins = teamStats.reduce((sum, s) => sum + s.wins, 0);
-        const teamLosses = teamStats.reduce((sum, s) => sum + s.losses, 0);
+        const soloWins = soloStats.reduce((sum, s) => sum + (s.wins || 0), 0);
+        const soloLosses = soloStats.reduce((sum, s) => sum + (s.losses || 0), 0);
+        const teamWins = teamStats.reduce((sum, s) => sum + (s.wins || 0), 0);
+        const teamLosses = teamStats.reduce((sum, s) => sum + (s.losses || 0), 0);
 
         const soloWinRate = soloWins + soloLosses > 0 ? (soloWins / (soloWins + soloLosses)) * 100 : 0;
         const teamWinRate = teamWins + teamLosses > 0 ? (teamWins / (teamWins + teamLosses)) * 100 : 0;
@@ -1721,56 +1901,6 @@ router.get('/organization-request-status', authenticateToken, async (req, res) =
     } catch (err) {
         console.error('Ошибка получения статуса заявки:', err);
         res.status(500).json({ error: 'Не удалось получить статус заявки' });
-    }
-});
-
-// Добавляем недостающие dota-stats endpoints
-router.get('/dota-stats/profile/:userId', authenticateToken, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        
-        // Проверяем, что пользователь запрашивает свой профиль или имеет права
-        if (req.user.id !== parseInt(userId) && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Нет доступа к этому профилю' });
-        }
-        
-        // Возвращаем пустой ответ, так как Dota профиль не настроен
-        res.status(404).json({ error: 'Dota профиль не найден' });
-    } catch (err) {
-        console.error('Ошибка получения Dota профиля:', err);
-        res.status(404).json({ error: 'Dota профиль не найден' });
-    }
-});
-
-router.get('/dota-stats/player/:steamId', authenticateToken, async (req, res) => {
-    try {
-        const { steamId } = req.params;
-        
-        // Заглушка для Dota статистики
-        res.status(404).json({ error: 'Dota API временно недоступен' });
-    } catch (err) {
-        console.error('Ошибка получения Dota статистики:', err);
-        res.status(404).json({ error: 'Dota API временно недоступен' });
-    }
-});
-
-router.post('/dota-stats/profile/save', authenticateToken, async (req, res) => {
-    try {
-        // Заглушка для сохранения Dota профиля
-        res.status(404).json({ error: 'Dota API временно недоступен' });
-    } catch (err) {
-        console.error('Ошибка сохранения Dota профиля:', err);
-        res.status(404).json({ error: 'Dota API временно недоступен' });
-    }
-});
-
-router.delete('/dota-stats/profile/:userId', authenticateToken, async (req, res) => {
-    try {
-        // Заглушка для удаления Dota профиля
-        res.status(404).json({ error: 'Dota API временно недоступен' });
-    } catch (err) {
-        console.error('Ошибка удаления Dota профиля:', err);
-        res.status(404).json({ error: 'Dota API временно недоступен' });
     }
 });
 

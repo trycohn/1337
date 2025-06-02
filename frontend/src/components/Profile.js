@@ -1516,6 +1516,24 @@ function Profile() {
             return 0;
         });
 
+    // Функция для пересчета статистики турниров
+    const recalculateTournamentStats = async () => {
+        try {
+            setError('');
+            const response = await api.post('/api/users/recalculate-tournament-stats', {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            // Обновляем статистику после пересчета
+            await fetchStats(localStorage.getItem('token'));
+            await fetchUserTournaments();
+            
+            alert(`✅ ${response.data.message}`);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Ошибка пересчета статистики');
+        }
+    };
+
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
 
     return (
@@ -1784,6 +1802,13 @@ function Profile() {
                             <>
                                 <div className="content-header">
                                     <h2 className="content-title">Статистика</h2>
+                                    <button 
+                                        className="btn btn-sm" 
+                                        onClick={recalculateTournamentStats}
+                                        title="Пересчитать статистику турниров"
+                                    >
+                                        🔄 Пересчитать
+                                    </button>
                                 </div>
                                 
                                 {/* Site Stats */}
@@ -2808,7 +2833,12 @@ function Profile() {
                                                             <td data-label="Дата">{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
                                                             <td data-label="Результат">
                                                                 {tournament.tournament_result ? (
-                                                                    <span className={`tournament-result ${tournament.tournament_result.toLowerCase()}`}>
+                                                                    <span className={`tournament-result ${
+                                                                        tournament.tournament_result.toLowerCase().includes('победитель') ? 'победитель' :
+                                                                        tournament.tournament_result.toLowerCase().includes('место') ? 'призер' :
+                                                                        tournament.tournament_result.toLowerCase().includes('финал') ? 'призер' :
+                                                                        'участник'
+                                                                    }`}>
                                                                         {tournament.tournament_result}
                                                                     </span>
                                                                 ) : (
@@ -2816,7 +2846,7 @@ function Profile() {
                                                                         {tournament.status === 'completed' ? 'Не указан' : 'В процессе'}
                                                                     </span>
                                                                 )}
-                                                                {tournament.wins && tournament.losses && (
+                                                                {tournament.wins !== undefined && tournament.losses !== undefined && (
                                                                     <div className="tournament-stats">
                                                                         <small>({tournament.wins}П/{tournament.losses}П)</small>
                                                                     </div>
@@ -2869,7 +2899,12 @@ function Profile() {
                                                                 <span className="tournament-label">Результат:</span>
                                                                 <span className="tournament-value">
                                                                     {tournament.tournament_result ? (
-                                                                        <span className={`tournament-result ${tournament.tournament_result.toLowerCase()}`}>
+                                                                        <span className={`tournament-result ${
+                                                                            tournament.tournament_result.toLowerCase().includes('победитель') ? 'победитель' :
+                                                                            tournament.tournament_result.toLowerCase().includes('место') ? 'призер' :
+                                                                            tournament.tournament_result.toLowerCase().includes('финал') ? 'призер' :
+                                                                            'участник'
+                                                                        }`}>
                                                                             {tournament.tournament_result}
                                                                         </span>
                                                                     ) : (
@@ -2877,7 +2912,7 @@ function Profile() {
                                                                             {tournament.status === 'completed' ? 'Не указан' : 'В процессе'}
                                                                         </span>
                                                                     )}
-                                                                    {tournament.wins && tournament.losses && (
+                                                                    {tournament.wins !== undefined && tournament.losses !== undefined && (
                                                                         <div className="tournament-stats">
                                                                             <small> ({tournament.wins}П/{tournament.losses}П)</small>
                                                                         </div>
