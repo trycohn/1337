@@ -4,8 +4,23 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
-const realTimeStatsService = require('../services/realTimeStatsService');
-const achievementSystem = require('../services/achievementSystem');
+
+// Опциональные импорты с graceful fallback
+let realTimeStatsService = null;
+let achievementSystem = null;
+
+try {
+    realTimeStatsService = require('../services/realTimeStatsService');
+} catch (error) {
+    console.warn('⚠️ realTimeStatsService недоступен, некоторые функции будут ограничены');
+}
+
+try {
+    achievementSystem = require('../services/achievementSystem');
+} catch (error) {
+    console.warn('⚠️ achievementSystem недоступен, система достижений отключена');
+}
+
 const pool = require('../db');
 
 // Получение расширенной статистики пользователя с real-time поддержкой
@@ -18,14 +33,41 @@ router.get('/stats/enhanced/:userId', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'Нет прав доступа к статистике этого пользователя' });
         }
 
-        // Получаем статистику через real-time сервис
-        const stats = await realTimeStatsService.getCurrentStats(userId);
+        let stats = null;
         
-        // Получаем достижения пользователя
-        const achievements = await achievementSystem.getUserAchievements(userId);
+        // Получаем статистику через real-time сервис если доступен
+        if (realTimeStatsService) {
+            try {
+                stats = await realTimeStatsService.getCurrentStats(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка real-time сервиса, используем fallback:', error.message);
+            }
+        }
         
-        // Получаем рейтинг пользователя
-        const ranking = await achievementSystem.getUserRanking(userId);
+        // Fallback на базовую статистику если real-time недоступен
+        if (!stats) {
+            stats = await getBasicStats(userId);
+        }
+        
+        // Получаем достижения пользователя если система доступна
+        let achievements = { achievements: [], totalPoints: 0, level: 1 };
+        if (achievementSystem) {
+            try {
+                achievements = await achievementSystem.getUserAchievements(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка системы достижений:', error.message);
+            }
+        }
+        
+        // Получаем рейтинг пользователя если система доступна
+        let ranking = { position: null, totalUsers: 0 };
+        if (achievementSystem) {
+            try {
+                ranking = await achievementSystem.getUserRanking(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка получения рейтинга:', error.message);
+            }
+        }
 
         // Расширенные метрики для варианта 4
         const enhancedMetrics = await getEnhancedMetrics(userId);
@@ -36,7 +78,8 @@ router.get('/stats/enhanced/:userId', authenticateToken, async (req, res) => {
             ranking,
             enhancedMetrics,
             version: '4.0',
-            realTime: true
+            realTime: realTimeStatsService !== null,
+            fallbackMode: realTimeStatsService === null
         });
     } catch (error) {
         console.error('❌ Ошибка получения расширенной статистики:', error);
@@ -53,7 +96,20 @@ router.get('/analysis/performance/:userId', authenticateToken, async (req, res) 
             return res.status(403).json({ error: 'Нет прав доступа' });
         }
 
-        const analysis = await realTimeStatsService.generateTournamentAnalysis(userId);
+        let analysis = null;
+        
+        if (realTimeStatsService) {
+            try {
+                analysis = await realTimeStatsService.generateTournamentAnalysis(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка real-time анализа, используем базовый:', error.message);
+            }
+        }
+        
+        // Fallback на базовый анализ
+        if (!analysis) {
+            analysis = await generateBasicAnalysis(userId);
+        }
         
         // Дополнительный глубокий анализ
         const deepAnalysis = await generateDeepPerformanceAnalysis(userId);
@@ -61,7 +117,8 @@ router.get('/analysis/performance/:userId', authenticateToken, async (req, res) 
         res.json({
             ...analysis,
             deepAnalysis,
-            generatedAt: new Date().toISOString()
+            generatedAt: new Date().toISOString(),
+            analysisType: realTimeStatsService ? 'enhanced' : 'basic'
         });
     } catch (error) {
         console.error('❌ Ошибка генерации анализа производительности:', error);
@@ -198,24 +255,39 @@ router.post('/stats/recalculate/:userId', authenticateToken, async (req, res) =>
         // Пересчитываем статистику
         const recalcResult = await recalculateUserStats(userId);
         
-        // Инвалидируем кэш
-        await realTimeStatsService.invalidateStatsCache(userId);
+        // Инвалидируем кэш если real-time сервис доступен
+        if (realTimeStatsService) {
+            try {
+                await realTimeStatsService.invalidateStatsCache(userId);
+                // Отправляем real-time обновление
+                await realTimeStatsService.broadcastStatsUpdate(userId, 'stats_recalculated');
+            } catch (error) {
+                console.warn('⚠️ Ошибка real-time обновления:', error.message);
+            }
+        }
         
-        // Отправляем real-time обновление
-        await realTimeStatsService.broadcastStatsUpdate(userId, 'stats_recalculated');
-        
-        // Проверяем новые достижения
-        const newAchievements = await achievementSystem.triggerAchievementCheck(
-            userId, 
-            'stats_recalculated',
-            recalcResult
-        );
+        // Проверяем новые достижения если система доступна
+        let newAchievements = [];
+        if (achievementSystem) {
+            try {
+                newAchievements = await achievementSystem.triggerAchievementCheck(
+                    userId, 
+                    'stats_recalculated',
+                    recalcResult
+                );
+            } catch (error) {
+                console.warn('⚠️ Ошибка проверки достижений:', error.message);
+            }
+        }
 
         res.json({
             ...recalcResult,
             newAchievements,
-            realTimeUpdate: true,
-            message: 'Статистика пересчитана и обновлена в реальном времени'
+            realTimeUpdate: realTimeStatsService !== null,
+            achievementsChecked: achievementSystem !== null,
+            message: realTimeStatsService 
+                ? 'Статистика пересчитана и обновлена в реальном времени'
+                : 'Статистика пересчитана (real-time обновления недоступны)'
         });
     } catch (error) {
         console.error('❌ Ошибка пересчета статистики:', error);
@@ -230,11 +302,25 @@ router.get('/system/connections', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'Только для администраторов' });
         }
 
-        const connectionStats = realTimeStatsService.getConnectionStats();
+        let connectionStats = {
+            totalConnections: 0,
+            connectedUsers: [],
+            realTimeEnabled: false
+        };
+        
+        if (realTimeStatsService) {
+            try {
+                connectionStats = realTimeStatsService.getConnectionStats();
+                connectionStats.realTimeEnabled = true;
+            } catch (error) {
+                console.warn('⚠️ Ошибка получения статистики подключений:', error.message);
+            }
+        }
         
         res.json({
             ...connectionStats,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            serviceStatus: realTimeStatsService ? 'available' : 'unavailable'
         });
     } catch (error) {
         console.error('❌ Ошибка получения статистики подключений:', error);
@@ -243,6 +329,74 @@ router.get('/system/connections', authenticateToken, async (req, res) => {
 });
 
 // Вспомогательные функции
+
+async function getBasicStats(userId) {
+    try {
+        // Базовая статистика без real-time сервиса
+        const statsResult = await pool.query(`
+            SELECT t.name, t.game, uts.result, uts.wins, uts.losses, uts.is_team, uts.updated_at
+            FROM user_tournament_stats uts 
+            JOIN tournaments t ON uts.tournament_id = t.id 
+            WHERE uts.user_id = $1
+            ORDER BY uts.updated_at DESC
+        `, [userId]);
+
+        const tournaments = statsResult.rows;
+        const soloStats = tournaments.filter(s => !s.is_team);
+        const teamStats = tournaments.filter(s => s.is_team);
+
+        const soloWins = soloStats.reduce((sum, s) => sum + (s.wins || 0), 0);
+        const soloLosses = soloStats.reduce((sum, s) => sum + (s.losses || 0), 0);
+        const teamWins = teamStats.reduce((sum, s) => sum + (s.wins || 0), 0);
+        const teamLosses = teamStats.reduce((sum, s) => sum + (s.losses || 0), 0);
+
+        // Статистика по играм
+        const gameStats = {};
+        tournaments.forEach(stat => {
+            if (!gameStats[stat.game]) {
+                gameStats[stat.game] = {
+                    solo: { wins: 0, losses: 0 },
+                    team: { wins: 0, losses: 0 }
+                };
+            }
+            if (stat.is_team) {
+                gameStats[stat.game].team.wins += (stat.wins || 0);
+                gameStats[stat.game].team.losses += (stat.losses || 0);
+            } else {
+                gameStats[stat.game].solo.wins += (stat.wins || 0);
+                gameStats[stat.game].solo.losses += (stat.losses || 0);
+            }
+        });
+
+        return {
+            tournaments,
+            solo: { 
+                wins: soloWins, 
+                losses: soloLosses, 
+                winRate: soloWins + soloLosses > 0 ? ((soloWins / (soloWins + soloLosses)) * 100).toFixed(2) : 0 
+            },
+            team: { 
+                wins: teamWins, 
+                losses: teamLosses, 
+                winRate: teamWins + teamLosses > 0 ? ((teamWins / (teamWins + teamLosses)) * 100).toFixed(2) : 0 
+            },
+            byGame: gameStats,
+            lastUpdated: new Date().toISOString(),
+            source: 'basic_fallback'
+        };
+    } catch (error) {
+        console.error('❌ Ошибка получения базовой статистики:', error);
+        return {
+            tournaments: [],
+            solo: { wins: 0, losses: 0, winRate: 0 },
+            team: { wins: 0, losses: 0, winRate: 0 },
+            byGame: {},
+            lastUpdated: new Date().toISOString(),
+            source: 'basic_fallback',
+            error: 'Не удалось загрузить статистику'
+        };
+    }
+}
 
 async function getEnhancedMetrics(userId) {
     try {
@@ -484,6 +638,98 @@ async function recalculateUserStats(userId) {
     } catch (error) {
         console.error('❌ Ошибка пересчета через API:', error);
         return { error: 'Не удалось пересчитать статистику' };
+    }
+}
+
+async function generateBasicAnalysis(userId) {
+    try {
+        const stats = await getBasicStats(userId);
+        
+        if (!stats || !stats.tournaments.length) {
+            return { message: 'Недостаточно данных для анализа' };
+        }
+
+        // Базовый анализ без AI
+        const totalWins = stats.solo.wins + stats.team.wins;
+        const totalLosses = stats.solo.losses + stats.team.losses;
+        const overallWinRate = totalWins + totalLosses > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0;
+        
+        const winningTournaments = stats.tournaments.filter(t => t.result?.includes('Победитель')).length;
+        const topThreeFinishes = stats.tournaments.filter(t => 
+            t.result?.includes('Победитель') || 
+            t.result?.includes('2 место') || 
+            t.result?.includes('3 место')
+        ).length;
+
+        return {
+            performanceRating: Math.min(Math.round(overallWinRate + winningTournaments * 10 + topThreeFinishes * 5), 100),
+            strengths: generateBasicStrengths(stats, overallWinRate),
+            improvements: generateBasicImprovements(stats, overallWinRate),
+            gameRecommendations: generateBasicGameRecommendations(stats),
+            prediction: generateBasicPrediction(stats),
+            analysisType: 'basic'
+        };
+    } catch (error) {
+        console.error('❌ Ошибка базового анализа:', error);
+        return { error: 'Не удалось сгенерировать базовый анализ' };
+    }
+}
+
+function generateBasicStrengths(stats, winRate) {
+    const strengths = [];
+    
+    if (winRate > 60) strengths.push('Высокий общий винрейт');
+    if (parseFloat(stats.solo.winRate) > 60) strengths.push('Сильная соло игра');
+    if (parseFloat(stats.team.winRate) > 60) strengths.push('Хорошая командная игра');
+    if (stats.tournaments.filter(t => t.result?.includes('Победитель')).length > 0) {
+        strengths.push('Опыт побед в турнирах');
+    }
+    
+    return strengths.length > 0 ? strengths : ['Стабильная игра'];
+}
+
+function generateBasicImprovements(stats, winRate) {
+    const improvements = [];
+    
+    if (winRate < 40) improvements.push('Работа над общей игрой');
+    if (parseFloat(stats.solo.winRate) < 40) improvements.push('Улучшение индивидуальных навыков');
+    if (parseFloat(stats.team.winRate) < 40) improvements.push('Развитие командной игры');
+    if (stats.tournaments.length < 5) improvements.push('Больше участия в турнирах');
+    
+    return improvements.length > 0 ? improvements : ['Продолжать в том же духе!'];
+}
+
+function generateBasicGameRecommendations(stats) {
+    const gamePerformance = [];
+    
+    Object.entries(stats.byGame).forEach(([game, gameStats]) => {
+        const totalWins = gameStats.solo.wins + gameStats.team.wins;
+        const totalLosses = gameStats.solo.losses + gameStats.team.losses;
+        const winRate = totalWins + totalLosses > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0;
+        
+        gamePerformance.push({ game, winRate, total: totalWins + totalLosses });
+    });
+    
+    gamePerformance.sort((a, b) => b.winRate - a.winRate);
+    
+    return gamePerformance.slice(0, 2).map(gp => ({
+        game: gp.game,
+        reason: `Винрейт ${gp.winRate.toFixed(1)}%`
+    }));
+}
+
+function generateBasicPrediction(stats) {
+    const recentTournaments = stats.tournaments.slice(0, 3);
+    const recentWins = recentTournaments.filter(t => 
+        t.result?.includes('Победитель') || t.result?.includes('место')
+    ).length;
+    
+    if (recentWins >= 2) {
+        return { prediction: 'Хорошие шансы на успех', confidence: 70 };
+    } else if (recentWins >= 1) {
+        return { prediction: 'Стабильные результаты', confidence: 55 };
+    } else {
+        return { prediction: 'Фокус на улучшении', confidence: 45 };
     }
 }
 

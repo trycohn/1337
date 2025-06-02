@@ -3,7 +3,14 @@
 
 const WebSocket = require('ws');
 const pool = require('../db');
-const Redis = require('redis');
+
+// Опциональный импорт Redis с graceful fallback
+let Redis = null;
+try {
+    Redis = require('redis');
+} catch (error) {
+    console.warn('⚠️ Redis модуль не найден, работаем без кэширования');
+}
 
 class RealTimeStatsService {
     constructor() {
@@ -21,15 +28,24 @@ class RealTimeStatsService {
                 path: '/ws/stats'
             });
 
-            // Инициализация Redis для кэширования
-            this.redis = Redis.createClient({
-                host: process.env.REDIS_HOST || 'localhost',
-                port: process.env.REDIS_PORT || 6379,
-                password: process.env.REDIS_PASSWORD || undefined
-            });
+            // Инициализация Redis для кэширования (опционально)
+            if (Redis) {
+                try {
+                    this.redis = Redis.createClient({
+                        host: process.env.REDIS_HOST || 'localhost',
+                        port: process.env.REDIS_PORT || 6379,
+                        password: process.env.REDIS_PASSWORD || undefined
+                    });
 
-            await this.redis.connect();
-            console.log('✅ Redis подключен для Real-time статистики');
+                    await this.redis.connect();
+                    console.log('✅ Redis подключен для Real-time статистики');
+                } catch (redisError) {
+                    console.warn('⚠️ Не удалось подключиться к Redis, работаем без кэширования:', redisError.message);
+                    this.redis = null;
+                }
+            } else {
+                console.log('ℹ️ Redis недоступен, работаем без кэширования');
+            }
 
             this.setupWebSocketHandlers();
             this.isInitialized = true;
@@ -37,9 +53,8 @@ class RealTimeStatsService {
             console.log('🚀 Real-time Statistics Service инициализирован');
         } catch (error) {
             console.error('❌ Ошибка инициализации Real-time Stats Service:', error);
-            // Graceful fallback - работаем без Redis
-            this.setupWebSocketHandlers();
-            this.isInitialized = true;
+            // Graceful fallback - работаем без WebSocket
+            this.isInitialized = false;
         }
     }
 
