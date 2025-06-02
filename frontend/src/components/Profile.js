@@ -111,6 +111,9 @@ function Profile() {
         start_date: useRef(null),
     };
 
+    // Добавляем состояние для индикатора пересчета
+    const [isRecalculating, setIsRecalculating] = useState(false);
+
     // Функция для получения URL картинки героя Dota 2
     const getHeroImageUrl = (heroId) => {
         if (!heroId) return '/default-hero.png';
@@ -302,14 +305,16 @@ function Profile() {
 
     const fetchStats = async (token) => {
         try {
-            // Автоматически пересчитываем статистику при каждой загрузке
+            // 🔄 АВТОМАТИЧЕСКИЙ ПЕРЕСЧЕТ статистики при каждой загрузке профиля
+            setIsRecalculating(true);
             try {
                 await api.post('/api/users/recalculate-tournament-stats', {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                console.log('✅ Статистика автоматически пересчитана');
             } catch (recalcErr) {
-                console.log('Автоматический пересчет статистики пропущен:', recalcErr.response?.data?.error);
-                // Продолжаем выполнение даже если пересчет не удался
+                console.log('⚠️ Автоматический пересчет статистики пропущен:', recalcErr.response?.data?.error);
+                // Продолжаем выполнение даже если пересчет не удался - graceful degradation
             }
             
             const response = await api.get('/api/users/stats', {
@@ -318,6 +323,8 @@ function Profile() {
             setStats(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки статистики');
+        } finally {
+            setIsRecalculating(false);
         }
     };
 
@@ -1800,6 +1807,11 @@ function Profile() {
                                 <div className="content-card">
                                     <div className="card-header">
                                         <h3 className="card-title">Статистика сайта</h3>
+                                        {isRecalculating && (
+                                            <div className="recalculating-notice">
+                                                🔄 Обновление статистики...
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="card-content">
                                         {stats ? (

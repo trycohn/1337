@@ -18,22 +18,37 @@ api.interceptors.request.use(request => {
     return request;
 });
 
-// Добавляем перехватчик ответов для подавления 404 ошибок при запросе истории матчей
+// Добавляем перехватчик ответов для подавления нормальных 404 ошибок
 api.interceptors.response.use(
     response => response,
     error => {
-        // Проверяем, связана ли ошибка с запросом истории матчей и является ли она 404
-        if (error.config && 
-            error.config.url && 
-            error.config.url.includes('match-history') && 
-            error.response && 
-            error.response.status === 404) {
-            // Для запроса истории матчей с 404 не выводим ошибку в консоль, но возвращаем rejected Promise
-            // чтобы код в блоке catch мог обработать эту ошибку
+        const url = error.config?.url;
+        const status = error.response?.status;
+        
+        // Список endpoints где 404 является нормальным поведением
+        const expectedNotFoundEndpoints = [
+            'match-history',                    // Старый endpoint
+            'organization-request-status',      // Нет заявки на организацию
+            'dota-stats/profile/'              // Нет профиля Dota 2
+        ];
+        
+        // Проверяем, является ли эта ошибка ожидаемой 404
+        const isExpected404 = status === 404 && 
+            expectedNotFoundEndpoints.some(endpoint => url?.includes(endpoint));
+        
+        if (isExpected404) {
+            // Для ожидаемых 404 ошибок не выводим в консоль, но возвращаем rejected Promise
+            // чтобы код в блоке catch мог обработать эту ситуацию
             return Promise.reject(error);
         }
         
-        // Для всех остальных ошибок продолжаем обычную обработку
+        // Для всех остальных ошибок выводим информацию и продолжаем обычную обработку
+        console.error('❌ API Error:', {
+            url: url,
+            status: status,
+            message: error.response?.data?.message || error.message
+        });
+        
         return Promise.reject(error);
     }
 );
