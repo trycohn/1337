@@ -328,6 +328,53 @@ router.get('/system/connections', authenticateToken, async (req, res) => {
     }
 });
 
+// Endpoint для AI анализа (alias для фронтенда)
+router.post('/ai-analysis/:userId', authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (req.user.id != userId && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Нет прав доступа' });
+        }
+
+        let analysis = null;
+        
+        if (realTimeStatsService) {
+            try {
+                analysis = await realTimeStatsService.generateTournamentAnalysis(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка real-time анализа, используем базовый:', error.message);
+            }
+        }
+        
+        // Fallback на базовый анализ
+        if (!analysis) {
+            analysis = await generateBasicAnalysis(userId);
+        }
+        
+        // Дополнительный AI-анализ
+        const aiAnalysis = await generateAdvancedAIAnalysis(userId);
+        
+        res.json({
+            success: true,
+            data: {
+                ...analysis,
+                aiAnalysis,
+                generatedAt: new Date().toISOString(),
+                analysisType: realTimeStatsService ? 'enhanced_ai' : 'basic_ai',
+                version: '4.0'
+            }
+        });
+    } catch (error) {
+        console.error('❌ Ошибка генерации AI анализа:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Не удалось сгенерировать AI анализ',
+            message: error.message 
+        });
+    }
+});
+
 // Вспомогательные функции
 
 async function getBasicStats(userId) {
@@ -731,6 +778,361 @@ function generateBasicPrediction(stats) {
     } else {
         return { prediction: 'Фокус на улучшении', confidence: 45 };
     }
+}
+
+async function generateAdvancedAIAnalysis(userId) {
+    try {
+        const stats = await getBasicStats(userId);
+        
+        if (!stats || !stats.tournaments.length) {
+            return {
+                message: 'Недостаточно данных для AI анализа',
+                confidence: 0,
+                recommendations: ['Примите участие в большем количестве турниров для получения персонализированного анализа']
+            };
+        }
+
+        // Продвинутый AI анализ с машинным обучением (симуляция)
+        const aiInsights = {
+            skillProgression: analyzeSkillProgression(stats),
+            playStyle: analyzePlayStyle(stats),
+            mentalGame: analyzeMentalGame(stats),
+            adaptability: analyzeAdaptability(stats),
+            clutchPerformance: analyzeClutchPerformance(stats),
+            teamworkRating: analyzeTeamwork(stats),
+            strategicThinking: analyzeStrategicThinking(stats),
+            consistencyIndex: analyzeConsistency(stats),
+            potentialCeiling: analyzePotential(stats),
+            improvementAreas: generateAIRecommendations(stats)
+        };
+
+        // Общий AI рейтинг игрока
+        const overallAIRating = calculateOverallAIRating(aiInsights);
+
+        // Персонализированные рекомендации от AI
+        const personalizedAdvice = generatePersonalizedAdvice(stats, aiInsights);
+
+        // Прогноз на следующие турниры
+        const futurePredictions = generateFuturePredictions(stats, aiInsights);
+
+        return {
+            overallRating: overallAIRating,
+            confidence: calculateAnalysisConfidence(stats),
+            insights: aiInsights,
+            personalizedAdvice,
+            futurePredictions,
+            analysisMetadata: {
+                dataPoints: stats.tournaments.length,
+                algorithmVersion: '4.2.1',
+                lastUpdated: new Date().toISOString()
+            }
+        };
+    } catch (error) {
+        console.error('❌ Ошибка продвинутого AI анализа:', error);
+        return {
+            error: 'Не удалось выполнить продвинутый AI анализ',
+            fallbackMessage: 'Используется базовый анализ'
+        };
+    }
+}
+
+function analyzeSkillProgression(stats) {
+    const tournaments = stats.tournaments.slice(0, 10); // Последние 10 турниров
+    if (tournaments.length < 3) return { trend: 'insufficient_data', score: 50 };
+
+    const early = tournaments.slice(-3);
+    const recent = tournaments.slice(0, 3);
+    
+    const earlyWinRate = calculateWinRateFromTournaments(early);
+    const recentWinRate = calculateWinRateFromTournaments(recent);
+    
+    const progression = recentWinRate - earlyWinRate;
+    
+    return {
+        trend: progression > 10 ? 'improving' : progression < -10 ? 'declining' : 'stable',
+        score: Math.min(Math.max(50 + progression, 0), 100),
+        progressionRate: progression.toFixed(1)
+    };
+}
+
+function analyzePlayStyle(stats) {
+    const soloWinRate = parseFloat(stats.solo.winRate);
+    const teamWinRate = parseFloat(stats.team.winRate);
+    
+    let style = 'balanced';
+    if (soloWinRate > teamWinRate + 15) style = 'independent';
+    else if (teamWinRate > soloWinRate + 15) style = 'collaborative';
+    
+    return {
+        style,
+        soloEfficiency: soloWinRate,
+        teamEfficiency: teamWinRate,
+        versatility: 100 - Math.abs(soloWinRate - teamWinRate)
+    };
+}
+
+function analyzeMentalGame(stats) {
+    // Анализ ментальной устойчивости на основе результатов
+    const tournaments = stats.tournaments;
+    const winStreaks = findStreaks(tournaments, 'win');
+    const lossStreaks = findStreaks(tournaments, 'loss');
+    
+    const mentalStrength = Math.max(0, 100 - (lossStreaks.maxLength * 10) + (winStreaks.maxLength * 5));
+    
+    return {
+        mentalStrength: Math.min(mentalStrength, 100),
+        longestWinStreak: winStreaks.maxLength,
+        longestLossStreak: lossStreaks.maxLength,
+        resilience: lossStreaks.maxLength < 3 ? 'high' : lossStreaks.maxLength < 5 ? 'medium' : 'needs_work'
+    };
+}
+
+function analyzeAdaptability(stats) {
+    const gameTypes = Object.keys(stats.byGame);
+    const adaptabilityScore = Math.min(gameTypes.length * 25, 100);
+    
+    return {
+        score: adaptabilityScore,
+        gamesPlayed: gameTypes.length,
+        adaptabilityLevel: adaptabilityScore > 75 ? 'excellent' : adaptabilityScore > 50 ? 'good' : 'developing'
+    };
+}
+
+function analyzeClutchPerformance(stats) {
+    // Симуляция анализа клатч-перформанса
+    const winningTournaments = stats.tournaments.filter(t => t.result?.includes('Победитель')).length;
+    const totalTournaments = stats.tournaments.length;
+    
+    const clutchRating = totalTournaments > 0 ? (winningTournaments / totalTournaments) * 100 : 0;
+    
+    return {
+        clutchRating: clutchRating.toFixed(1),
+        championshipRate: ((winningTournaments / Math.max(totalTournaments, 1)) * 100).toFixed(1),
+        performance: clutchRating > 20 ? 'elite' : clutchRating > 10 ? 'good' : 'developing'
+    };
+}
+
+function analyzeTeamwork(stats) {
+    const teamStats = stats.team;
+    const teamWinRate = parseFloat(teamStats.winRate);
+    
+    return {
+        rating: teamWinRate,
+        level: teamWinRate > 70 ? 'excellent' : teamWinRate > 50 ? 'good' : 'needs_improvement',
+        teamMatches: teamStats.wins + teamStats.losses
+    };
+}
+
+function analyzeStrategicThinking(stats) {
+    // Анализ стратегического мышления через разнообразие игр
+    const gamePerformance = Object.values(stats.byGame);
+    const avgPerformance = gamePerformance.reduce((sum, game) => {
+        const totalWins = game.solo.wins + game.team.wins;
+        const totalGames = totalWins + game.solo.losses + game.team.losses;
+        return sum + (totalGames > 0 ? (totalWins / totalGames) * 100 : 0);
+    }, 0) / Math.max(gamePerformance.length, 1);
+    
+    return {
+        strategicRating: avgPerformance.toFixed(1),
+        gameVersatility: gamePerformance.length,
+        thinking: avgPerformance > 60 ? 'advanced' : avgPerformance > 40 ? 'developing' : 'basic'
+    };
+}
+
+function analyzeConsistency(stats) {
+    const recentTournaments = stats.tournaments.slice(0, 5);
+    if (recentTournaments.length < 3) return { score: 50, level: 'insufficient_data' };
+    
+    const winRates = recentTournaments.map(t => {
+        const total = t.wins + t.losses;
+        return total > 0 ? (t.wins / total) * 100 : 0;
+    });
+    
+    const avgWinRate = winRates.reduce((a, b) => a + b, 0) / winRates.length;
+    const variance = winRates.reduce((sum, rate) => sum + Math.pow(rate - avgWinRate, 2), 0) / winRates.length;
+    const consistency = Math.max(0, 100 - Math.sqrt(variance));
+    
+    return {
+        score: consistency.toFixed(1),
+        level: consistency > 80 ? 'very_consistent' : consistency > 60 ? 'consistent' : 'inconsistent',
+        variance: variance.toFixed(1)
+    };
+}
+
+function analyzePotential(stats) {
+    const currentPerformance = (parseFloat(stats.solo.winRate) + parseFloat(stats.team.winRate)) / 2;
+    const gamesPlayed = Object.keys(stats.byGame).length;
+    const experience = stats.tournaments.length;
+    
+    // Расчет потенциала на основе текущих показателей и опыта
+    const potentialScore = Math.min(currentPerformance + (gamesPlayed * 5) + (experience * 2), 100);
+    
+    return {
+        currentLevel: currentPerformance.toFixed(1),
+        potentialCeiling: potentialScore.toFixed(1),
+        growthPotential: (potentialScore - currentPerformance).toFixed(1),
+        assessment: potentialScore > 80 ? 'pro_level' : potentialScore > 65 ? 'advanced' : 'developing'
+    };
+}
+
+function generateAIRecommendations(stats) {
+    const recommendations = [];
+    
+    if (parseFloat(stats.solo.winRate) < 50) {
+        recommendations.push({
+            area: 'individual_skills',
+            priority: 'high',
+            suggestion: 'Сосредоточьтесь на улучшении индивидуальных навыков в соло турнирах'
+        });
+    }
+    
+    if (parseFloat(stats.team.winRate) < 50) {
+        recommendations.push({
+            area: 'teamwork',
+            priority: 'high',
+            suggestion: 'Работайте над коммуникацией и координацией в команде'
+        });
+    }
+    
+    if (Object.keys(stats.byGame).length < 2) {
+        recommendations.push({
+            area: 'versatility',
+            priority: 'medium',
+            suggestion: 'Попробуйте участвовать в турнирах по разным играм для развития адаптивности'
+        });
+    }
+    
+    if (stats.tournaments.length < 10) {
+        recommendations.push({
+            area: 'experience',
+            priority: 'medium',
+            suggestion: 'Участвуйте в большем количестве турниров для набора опыта'
+        });
+    }
+    
+    return recommendations;
+}
+
+function calculateOverallAIRating(insights) {
+    const weights = {
+        skillProgression: 0.2,
+        playStyle: 0.15,
+        mentalGame: 0.2,
+        adaptability: 0.1,
+        clutchPerformance: 0.15,
+        teamworkRating: 0.1,
+        consistencyIndex: 0.1
+    };
+    
+    let totalScore = 0;
+    totalScore += insights.skillProgression.score * weights.skillProgression;
+    totalScore += Math.max(insights.playStyle.soloEfficiency, insights.playStyle.teamEfficiency) * weights.playStyle;
+    totalScore += insights.mentalGame.mentalStrength * weights.mentalGame;
+    totalScore += insights.adaptability.score * weights.adaptability;
+    totalScore += parseFloat(insights.clutchPerformance.clutchRating) * weights.clutchPerformance;
+    totalScore += insights.teamworkRating.rating * weights.teamworkRating;
+    totalScore += parseFloat(insights.consistencyIndex.score) * weights.consistencyIndex;
+    
+    return Math.round(totalScore);
+}
+
+function calculateAnalysisConfidence(stats) {
+    const dataPoints = stats.tournaments.length;
+    if (dataPoints < 3) return 30;
+    if (dataPoints < 5) return 50;
+    if (dataPoints < 10) return 70;
+    if (dataPoints < 20) return 85;
+    return 95;
+}
+
+function generatePersonalizedAdvice(stats, insights) {
+    const advice = [];
+    
+    if (insights.skillProgression.trend === 'declining') {
+        advice.push('🎯 Рекомендуем взять небольшой перерыв и проанализировать последние игры');
+    }
+    
+    if (insights.playStyle.style === 'independent') {
+        advice.push('🤝 Попробуйте больше командных турниров для развития коллективных навыков');
+    }
+    
+    if (insights.mentalGame.resilience === 'needs_work') {
+        advice.push('🧠 Работайте над ментальной устойчивостью - делайте перерывы после поражений');
+    }
+    
+    if (insights.consistencyIndex.score < 60) {
+        advice.push('⚖️ Фокусируйтесь на стабильности игры, а не на рискованных стратегиях');
+    }
+    
+    return advice;
+}
+
+function generateFuturePredictions(stats, insights) {
+    return {
+        nextTournamentWinChance: calculateWinProbability(insights),
+        expectedPerformance: generatePerformanceExpectation(insights),
+        skillDevelopmentPath: generateSkillPath(insights),
+        timeToImprovement: estimateImprovementTime(insights)
+    };
+}
+
+function calculateWinProbability(insights) {
+    const baseChance = insights.skillProgression.score * 0.3 + 
+                     insights.clutchPerformance.clutchRating * 0.4 + 
+                     insights.consistencyIndex.score * 0.3;
+    
+    return Math.round(Math.min(baseChance, 85)); // Максимум 85% чтобы быть реалистичным
+}
+
+function generatePerformanceExpectation(insights) {
+    if (insights.skillProgression.trend === 'improving') return 'above_average';
+    if (insights.skillProgression.trend === 'declining') return 'below_average';
+    return 'average';
+}
+
+function generateSkillPath(insights) {
+    const priorities = [];
+    
+    if (insights.teamworkRating.rating < 50) priorities.push('teamwork');
+    if (insights.adaptability.score < 50) priorities.push('game_versatility');
+    if (insights.mentalGame.mentalStrength < 60) priorities.push('mental_strength');
+    if (insights.consistencyIndex.score < 70) priorities.push('consistency');
+    
+    return priorities.slice(0, 3); // Топ 3 приоритета
+}
+
+function estimateImprovementTime(insights) {
+    const currentLevel = calculateOverallAIRating(insights);
+    
+    if (currentLevel < 40) return '2-3 месяца';
+    if (currentLevel < 60) return '1-2 месяца';
+    if (currentLevel < 80) return '3-4 недели';
+    return '1-2 недели';
+}
+
+function findStreaks(tournaments, type) {
+    let maxLength = 0;
+    let currentLength = 0;
+    
+    tournaments.forEach(tournament => {
+        const isWin = tournament.result?.includes('Победитель') || tournament.result?.includes('место');
+        const matches = (type === 'win' && isWin) || (type === 'loss' && !isWin);
+        
+        if (matches) {
+            currentLength++;
+            maxLength = Math.max(maxLength, currentLength);
+        } else {
+            currentLength = 0;
+        }
+    });
+    
+    return { maxLength, currentLength };
+}
+
+function calculateWinRateFromTournaments(tournaments) {
+    const totalWins = tournaments.reduce((sum, t) => sum + (t.wins || 0), 0);
+    const totalLosses = tournaments.reduce((sum, t) => sum + (t.losses || 0), 0);
+    return totalWins + totalLosses > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0;
 }
 
 module.exports = router; 
