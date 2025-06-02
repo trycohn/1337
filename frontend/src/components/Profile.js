@@ -1982,6 +1982,26 @@ function Profile() {
                                     <h2 className="content-title">Статистика</h2>
                                 </div>
                                 
+                                {/* ✨ V4 ULTIMATE: Революционный дашборд статистики */}
+                                <div className="content-card v4-ultimate-section">
+                                    <div className="card-header">
+                                        <h3 className="card-title">🚀 V4 ULTIMATE СТАТИСТИКА</h3>
+                                        <div className="v4-ultimate-badge">
+                                            <span>NEW</span>
+                                        </div>
+                                    </div>
+                                    <div className="card-content">
+                                        <V4StatsDashboard
+                                            v4Data={v4Data}
+                                            stats={stats}
+                                            requestEnhancedRecalculation={requestEnhancedRecalculation}
+                                            isRecalculating={isRecalculating}
+                                            recalculationStatus={recalculationStatus}
+                                            recalculationError={recalculationError}
+                                        />
+                                    </div>
+                                </div>
+                                
                                 {/* Site Stats */}
                                 <div className="content-card">
                                     <div className="card-header">
