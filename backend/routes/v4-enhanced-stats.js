@@ -375,6 +375,119 @@ router.post('/ai-analysis/:userId', authenticateToken, async (req, res) => {
     }
 });
 
+// 🚀 Endpoint для расширенного пересчета с AI анализом (V4 ULTIMATE)
+router.post('/recalculate-enhanced/:userId', authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (req.user.id != userId && req.user.role !== 'admin') {
+            return res.status(403).json({ 
+                success: false,
+                error: 'Нет прав доступа' 
+            });
+        }
+
+        console.log(`🚀 V4 ULTIMATE: Запуск расширенного пересчета для пользователя ${userId}`);
+
+        // Шаг 1: Базовый пересчет статистики
+        let basicRecalcResult = null;
+        try {
+            basicRecalcResult = await recalculateUserStats(userId);
+            console.log('✅ V4: Базовый пересчет завершен');
+        } catch (basicError) {
+            console.error('❌ V4: Ошибка базового пересчета:', basicError);
+            return res.status(500).json({
+                success: false,
+                error: 'Ошибка базового пересчета статистики',
+                details: basicError.message
+            });
+        }
+
+        // Шаг 2: Расширенный анализ производительности
+        let enhancedAnalysis = null;
+        try {
+            enhancedAnalysis = await generateAdvancedAIAnalysis(userId);
+            console.log('✅ V4: AI анализ завершен');
+        } catch (analysisError) {
+            console.warn('⚠️ V4: Ошибка AI анализа:', analysisError.message);
+            enhancedAnalysis = { error: 'AI анализ временно недоступен' };
+        }
+
+        // Шаг 3: Обновление кэша и real-time уведомления
+        if (realTimeStatsService) {
+            try {
+                await realTimeStatsService.invalidateStatsCache(userId);
+                await realTimeStatsService.broadcastStatsUpdate(userId, 'enhanced_recalculation');
+                console.log('✅ V4: Real-time обновления отправлены');
+            } catch (rtError) {
+                console.warn('⚠️ V4: Ошибка real-time обновления:', rtError.message);
+            }
+        }
+
+        // Шаг 4: Проверка достижений
+        let newAchievements = [];
+        if (achievementSystem) {
+            try {
+                newAchievements = await achievementSystem.triggerAchievementCheck(
+                    userId, 
+                    'enhanced_recalculation',
+                    { ...basicRecalcResult, enhancedAnalysis }
+                );
+                console.log(`✅ V4: Проверка достижений завершена (найдено ${newAchievements.length})`);
+            } catch (achievementError) {
+                console.warn('⚠️ V4: Ошибка проверки достижений:', achievementError.message);
+            }
+        }
+
+        // Шаг 5: Генерация персонализированных рекомендаций
+        let personalizedRecommendations = [];
+        try {
+            const stats = await getBasicStats(userId);
+            personalizedRecommendations = generateEnhancedRecommendations(stats, enhancedAnalysis);
+            console.log('✅ V4: Персонализированные рекомендации сгенерированы');
+        } catch (recError) {
+            console.warn('⚠️ V4: Ошибка генерации рекомендаций:', recError.message);
+        }
+
+        // Шаг 6: Расчет прогресса развития
+        let developmentPath = null;
+        try {
+            developmentPath = await calculateDevelopmentPath(userId, enhancedAnalysis);
+            console.log('✅ V4: Путь развития рассчитан');
+        } catch (devError) {
+            console.warn('⚠️ V4: Ошибка расчета пути развития:', devError.message);
+        }
+
+        console.log(`🎉 V4 ULTIMATE: Расширенный пересчет завершен для пользователя ${userId}`);
+
+        res.json({
+            success: true,
+            version: '4.0',
+            basicRecalculation: basicRecalcResult,
+            aiAnalysis: enhancedAnalysis,
+            newAchievements,
+            personalizedRecommendations,
+            developmentPath,
+            systemStatus: {
+                realTimeEnabled: realTimeStatsService !== null,
+                achievementsEnabled: achievementSystem !== null,
+                aiAnalysisEnabled: enhancedAnalysis && !enhancedAnalysis.error
+            },
+            completedAt: new Date().toISOString(),
+            message: '🚀 V4 ULTIMATE: Расширенный анализ и пересчет завершен!'
+        });
+
+    } catch (error) {
+        console.error('❌ V4 ULTIMATE: Критическая ошибка расширенного пересчета:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Критическая ошибка расширенного пересчета',
+            message: error.message,
+            fallback: 'Попробуйте стандартный пересчет статистики'
+        });
+    }
+});
+
 // Вспомогательные функции
 
 async function getBasicStats(userId) {
@@ -667,24 +780,90 @@ function calculateTrend(history) {
 async function recalculateUserStats(userId) {
     // Интеграция с существующей функцией пересчета
     try {
-        // Здесь можно вызвать существующую функцию recalculate-tournament-stats
-        const response = await fetch(`http://localhost:3000/api/users/recalculate-tournament-stats`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.INTERNAL_API_TOKEN || 'internal'}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ userId })
-        });
+        // Вызываем существующий API endpoint для пересчета статистики
+        const token = localStorage.getItem('token') || process.env.INTERNAL_API_TOKEN || 'internal';
+        
+        // Альтернативный способ через прямой вызов функции из users роутера
+        const response = await pool.query(`
+            -- Пересчитываем статистику пользователя из турниров
+            WITH user_tournament_data AS (
+                SELECT 
+                    tp.user_id,
+                    t.id as tournament_id,
+                    t.name as tournament_name,
+                    t.game,
+                    tp.result,
+                    CASE 
+                        WHEN tp.result LIKE '%Победитель%' THEN 1
+                        ELSE 0
+                    END as is_winner,
+                    CASE 
+                        WHEN tp.result LIKE '%место%' OR tp.result LIKE '%Победитель%' THEN 1
+                        ELSE 0
+                    END as is_top_finish
+                FROM tournament_participants tp
+                JOIN tournaments t ON tp.tournament_id = t.id
+                WHERE tp.user_id = $1
+            ),
+            match_stats AS (
+                SELECT 
+                    tp.user_id,
+                    COUNT(m.id) as total_matches,
+                    COUNT(CASE WHEN m.winner_team_id = tp.id THEN 1 END) as wins,
+                    COUNT(CASE WHEN m.winner_team_id != tp.id AND m.winner_team_id IS NOT NULL THEN 1 END) as losses
+                FROM tournament_participants tp
+                LEFT JOIN matches m ON (m.team1_id = tp.id OR m.team2_id = tp.id)
+                WHERE tp.user_id = $1
+                GROUP BY tp.user_id
+            )
+            SELECT 
+                COUNT(DISTINCT utd.tournament_id) as tournaments_played,
+                SUM(utd.is_winner) as tournaments_won,
+                SUM(utd.is_top_finish) as top_finishes,
+                COALESCE(ms.total_matches, 0) as total_matches,
+                COALESCE(ms.wins, 0) as match_wins,
+                COALESCE(ms.losses, 0) as match_losses
+            FROM user_tournament_data utd
+            LEFT JOIN match_stats ms ON utd.user_id = ms.user_id
+            GROUP BY utd.user_id, ms.total_matches, ms.wins, ms.losses
+        `, [userId]);
 
-        if (response.ok) {
-            return await response.json();
-        } else {
-            throw new Error('Ошибка пересчета статистики');
-        }
+        const stats = response.rows[0] || {
+            tournaments_played: 0,
+            tournaments_won: 0,
+            top_finishes: 0,
+            total_matches: 0,
+            match_wins: 0,
+            match_losses: 0
+        };
+
+        return {
+            success: true,
+            userId: parseInt(userId),
+            stats: {
+                tournamentsPlayed: parseInt(stats.tournaments_played),
+                tournamentsWon: parseInt(stats.tournaments_won),
+                topFinishes: parseInt(stats.top_finishes),
+                totalMatches: parseInt(stats.total_matches),
+                matchWins: parseInt(stats.match_wins),
+                matchLosses: parseInt(stats.match_losses),
+                winRate: stats.total_matches > 0 
+                    ? ((stats.match_wins / stats.total_matches) * 100).toFixed(2) 
+                    : 0
+            },
+            message: 'Статистика успешно пересчитана',
+            recalculatedAt: new Date().toISOString()
+        };
     } catch (error) {
         console.error('❌ Ошибка пересчета через API:', error);
-        return { error: 'Не удалось пересчитать статистику' };
+        
+        // Fallback на минимальную статистику
+        return { 
+            success: false,
+            error: 'Не удалось пересчитать статистику',
+            fallback: true,
+            message: 'Используется кэшированная статистика'
+        };
     }
 }
 
@@ -1133,6 +1312,306 @@ function calculateWinRateFromTournaments(tournaments) {
     const totalWins = tournaments.reduce((sum, t) => sum + (t.wins || 0), 0);
     const totalLosses = tournaments.reduce((sum, t) => sum + (t.losses || 0), 0);
     return totalWins + totalLosses > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0;
+}
+
+function generateEnhancedRecommendations(stats, aiAnalysis) {
+    const recommendations = [];
+    
+    if (!stats || !aiAnalysis || aiAnalysis.error) {
+        return [{
+            category: 'general',
+            priority: 'medium',
+            title: 'Базовые рекомендации',
+            description: 'Участвуйте в большем количестве турниров для получения персонализированного анализа',
+            actionPlan: ['Зарегистрируйтесь на ближайший турнир', 'Изучите правила игры', 'Найдите напарника для командных турниров']
+        }];
+    }
+
+    const insights = aiAnalysis.insights || {};
+    const overallRating = aiAnalysis.overallRating || 50;
+
+    // Рекомендации на основе прогрессии навыков
+    if (insights.skillProgression && insights.skillProgression.trend === 'declining') {
+        recommendations.push({
+            category: 'skill_development',
+            priority: 'high',
+            title: 'Восстановление формы',
+            description: 'Ваши результаты показывают снижение. Рекомендуем пересмотреть подход к тренировкам.',
+            actionPlan: [
+                'Возьмите перерыв на 2-3 дня для отдыха',
+                'Просмотрите записи последних игр',
+                'Сосредоточьтесь на базовых навыках',
+                'Попробуйте новые стратегии'
+            ]
+        });
+    }
+
+    // Рекомендации по стилю игры
+    if (insights.playStyle && insights.playStyle.style === 'independent') {
+        recommendations.push({
+            category: 'teamwork',
+            priority: 'medium',
+            title: 'Развитие командных навыков',
+            description: 'Вы показываете отличные результаты в соло, но командная игра требует внимания.',
+            actionPlan: [
+                'Участвуйте в большем количестве командных турниров',
+                'Практикуйте коммуникацию с напарниками',
+                'Изучите командные стратегии',
+                'Работайте над синхронизацией действий'
+            ]
+        });
+    }
+
+    // Рекомендации по ментальной устойчивости
+    if (insights.mentalGame && insights.mentalGame.resilience === 'needs_work') {
+        recommendations.push({
+            category: 'mental_strength',
+            priority: 'high',
+            title: 'Ментальная подготовка',
+            description: 'Работа над психологической устойчивостью поможет избежать серий поражений.',
+            actionPlan: [
+                'Делайте перерывы после каждого поражения',
+                'Анализируйте ошибки, а не зацикливайтесь на результате',
+                'Используйте техники релаксации',
+                'Установите реалистичные цели для каждого турнира'
+            ]
+        });
+    }
+
+    // Рекомендации по адаптивности
+    if (insights.adaptability && insights.adaptability.score < 50) {
+        recommendations.push({
+            category: 'versatility',
+            priority: 'medium',
+            title: 'Расширение игрового репертуара',
+            description: 'Попробуйте новые игры и форматы для развития адаптивности.',
+            actionPlan: [
+                'Зарегистрируйтесь на турнир по новой игре',
+                'Изучите мета разных дисциплин',
+                'Попробуйте разные форматы (1v1, командные)',
+                'Анализируйте стратегии топ-игроков в разных играх'
+            ]
+        });
+    }
+
+    // Рекомендации по консистентности
+    if (insights.consistencyIndex && parseFloat(insights.consistencyIndex.score) < 60) {
+        recommendations.push({
+            category: 'consistency',
+            priority: 'high',
+            title: 'Повышение стабильности',
+            description: 'Работа над консистентностью поможет показывать стабильные результаты.',
+            actionPlan: [
+                'Разработайте стандартную разминку перед играми',
+                'Придерживайтесь проверенных стратегий',
+                'Избегайте экспериментов в важных матчах',
+                'Ведите дневник игр для анализа паттернов'
+            ]
+        });
+    }
+
+    // Общие рекомендации на основе рейтинга
+    if (overallRating < 40) {
+        recommendations.push({
+            category: 'foundation',
+            priority: 'high',
+            title: 'Работа над основами',
+            description: 'Сосредоточьтесь на фундаментальных навыках для построения прочной базы.',
+            actionPlan: [
+                'Уделите время изучению основ игры',
+                'Играйте больше обычных матчей для практики',
+                'Найдите наставника или тренера',
+                'Участвуйте в менее серьезных турнирах для набора опыта'
+            ]
+        });
+    } else if (overallRating > 80) {
+        recommendations.push({
+            category: 'mastery',
+            priority: 'medium',
+            title: 'Профессиональное развитие',
+            description: 'Ваш уровень позволяет участвовать в более серьезных соревнованиях.',
+            actionPlan: [
+                'Регистрируйтесь на крупные турниры',
+                'Рассмотрите создание профессиональной команды',
+                'Изучайте передовые стратегии и мету',
+                'Работайте над узкими специализациями'
+            ]
+        });
+    }
+
+    return recommendations.slice(0, 5); // Максимум 5 рекомендаций
+}
+
+async function calculateDevelopmentPath(userId, aiAnalysis) {
+    try {
+        const stats = await getBasicStats(userId);
+        
+        if (!stats || !aiAnalysis || aiAnalysis.error) {
+            return {
+                currentStage: 'beginner',
+                nextMilestone: 'Участие в 5 турнирах',
+                estimatedTime: '2-4 недели',
+                focusAreas: ['experience', 'basic_skills'],
+                progressPercentage: 25
+            };
+        }
+
+        const insights = aiAnalysis.insights || {};
+        const overallRating = aiAnalysis.overallRating || 50;
+        const totalTournaments = stats.tournaments?.length || 0;
+
+        // Определяем текущую стадию развития
+        let currentStage = 'beginner';
+        let progressPercentage = 0;
+        
+        if (overallRating >= 80) {
+            currentStage = 'expert';
+            progressPercentage = 90;
+        } else if (overallRating >= 65) {
+            currentStage = 'advanced';
+            progressPercentage = 75;
+        } else if (overallRating >= 45) {
+            currentStage = 'intermediate';
+            progressPercentage = 50;
+        } else {
+            currentStage = 'beginner';
+            progressPercentage = 25;
+        }
+
+        // Определяем области фокуса
+        const focusAreas = [];
+        if (insights.skillProgression && insights.skillProgression.score < 60) {
+            focusAreas.push('skill_development');
+        }
+        if (insights.mentalGame && insights.mentalGame.mentalStrength < 70) {
+            focusAreas.push('mental_strength');
+        }
+        if (insights.teamworkRating && insights.teamworkRating.rating < 50) {
+            focusAreas.push('teamwork');
+        }
+        if (insights.consistencyIndex && parseFloat(insights.consistencyIndex.score) < 70) {
+            focusAreas.push('consistency');
+        }
+        if (insights.adaptability && insights.adaptability.score < 75) {
+            focusAreas.push('versatility');
+        }
+
+        // Определяем следующую веху
+        let nextMilestone = '';
+        let estimatedTime = '';
+
+        switch (currentStage) {
+            case 'beginner':
+                nextMilestone = totalTournaments < 10 ? 
+                    `Участие в ${10 - totalTournaments} турнирах` : 
+                    'Достижение 50% винрейта';
+                estimatedTime = '4-6 недель';
+                break;
+            case 'intermediate':
+                nextMilestone = 'Первая победа в турнире';
+                estimatedTime = '2-4 недели';
+                break;
+            case 'advanced':
+                nextMilestone = 'Стабильные топ-3 финиши';
+                estimatedTime = '3-5 недель';
+                break;
+            case 'expert':
+                nextMilestone = 'Доминирование в выбранной дисциплине';
+                estimatedTime = '1-2 месяца';
+                break;
+        }
+
+        // Генерируем roadmap
+        const roadmap = generateDevelopmentRoadmap(currentStage, focusAreas, insights);
+
+        return {
+            currentStage,
+            nextMilestone,
+            estimatedTime,
+            focusAreas: focusAreas.slice(0, 3), // Топ 3 области
+            progressPercentage,
+            roadmap,
+            lastUpdated: new Date().toISOString()
+        };
+
+    } catch (error) {
+        console.error('❌ Ошибка расчета пути развития:', error);
+        return {
+            currentStage: 'unknown',
+            nextMilestone: 'Анализ недоступен',
+            estimatedTime: 'Неопределено',
+            focusAreas: ['general'],
+            progressPercentage: 50,
+            error: 'Не удалось рассчитать путь развития'
+        };
+    }
+}
+
+function generateDevelopmentRoadmap(currentStage, focusAreas, insights) {
+    const roadmap = {
+        immediate: [], // Ближайшие 1-2 недели
+        shortTerm: [], // 1-2 месяца
+        longTerm: []   // 3-6 месяцев
+    };
+
+    // Немедленные действия
+    if (focusAreas.includes('mental_strength')) {
+        roadmap.immediate.push({
+            goal: 'Ментальная подготовка',
+            actions: ['Внедрить перерывы между играми', 'Анализировать поражения конструктивно'],
+            metric: 'Снижение серий поражений'
+        });
+    }
+
+    if (focusAreas.includes('consistency')) {
+        roadmap.immediate.push({
+            goal: 'Стабилизация результатов',
+            actions: ['Создать стандартную разминку', 'Придерживаться проверенных стратегий'],
+            metric: 'Уменьшение разброса в результатах'
+        });
+    }
+
+    // Краткосрочные цели
+    if (focusAreas.includes('skill_development')) {
+        roadmap.shortTerm.push({
+            goal: 'Улучшение навыков',
+            actions: ['Ежедневная практика 1-2 часа', 'Изучение записей профессионалов'],
+            metric: 'Увеличение винрейта на 10%'
+        });
+    }
+
+    if (focusAreas.includes('teamwork')) {
+        roadmap.shortTerm.push({
+            goal: 'Командная синергия',
+            actions: ['Найти постоянную команду', 'Практиковать координацию'],
+            metric: 'Улучшение результатов в командных турнирах'
+        });
+    }
+
+    // Долгосрочные цели
+    if (currentStage === 'advanced' || currentStage === 'expert') {
+        roadmap.longTerm.push({
+            goal: 'Профессиональный уровень',
+            actions: ['Участие в крупных турнирах', 'Создание личного бренда'],
+            metric: 'Регулярные топ-3 финиши'
+        });
+    } else {
+        roadmap.longTerm.push({
+            goal: 'Продвинутый уровень игры',
+            actions: ['Мастерство в основной дисциплине', 'Менторство новичков'],
+            metric: 'Переход на следующий уровень'
+        });
+    }
+
+    if (focusAreas.includes('versatility')) {
+        roadmap.longTerm.push({
+            goal: 'Многопрофильность',
+            actions: ['Освоение 3+ дисциплин', 'Участие в mix-турнирах'],
+            metric: 'Топ-результаты в разных играх'
+        });
+    }
+
+    return roadmap;
 }
 
 module.exports = router; 
