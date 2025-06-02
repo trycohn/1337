@@ -113,6 +113,8 @@ function Profile() {
 
     // Добавляем состояние для индикатора пересчета
     const [isRecalculating, setIsRecalculating] = useState(false);
+    const [recalculationStatus, setRecalculationStatus] = useState('');
+    const [recalculationError, setRecalculationError] = useState('');
 
     // Функция для получения URL картинки героя Dota 2
     const getHeroImageUrl = (heroId) => {
@@ -307,24 +309,65 @@ function Profile() {
         try {
             // 🔄 АВТОМАТИЧЕСКИЙ ПЕРЕСЧЕТ статистики при каждой загрузке профиля
             setIsRecalculating(true);
+            setRecalculationStatus('Проверяем статистику турниров...');
+            setRecalculationError('');
+            
             try {
-                await api.post('/api/users/recalculate-tournament-stats', {}, {
+                const recalcResponse = await api.post('/api/users/recalculate-tournament-stats', {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                console.log('✅ Статистика автоматически пересчитана');
+                
+                if (recalcResponse.data.success) {
+                    const details = recalcResponse.data.details;
+                    setRecalculationStatus(
+                        `Обновлено: ${details.updated} из ${details.total} турниров`
+                    );
+                    console.log('✅ Статистика автоматически пересчитана:', recalcResponse.data);
+                } else {
+                    setRecalculationError('Не удалось обновить статистику');
+                }
             } catch (recalcErr) {
-                console.log('⚠️ Автоматический пересчет статистики пропущен:', recalcErr.response?.data?.error);
+                console.log('⚠️ Автоматический пересчет статистики пропущен:', recalcErr.response?.data);
+                
+                // Проверяем, нужно ли создать таблицу
+                if (recalcErr.response?.data?.needsTableCreation) {
+                    setRecalculationError('Система статистики требует настройки. Обратитесь к администратору.');
+                } else {
+                    setRecalculationError('Пересчет статистики временно недоступен');
+                }
+                
                 // Продолжаем выполнение даже если пересчет не удался - graceful degradation
             }
+            
+            // Небольшая задержка для лучшего UX
+            setTimeout(() => {
+                setRecalculationStatus('Загружаем обновленную статистику...');
+            }, 500);
             
             const response = await api.get('/api/users/stats', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStats(response.data);
+            
+            // Показываем успешное завершение
+            if (!recalculationError) {
+                setRecalculationStatus('Статистика актуальна');
+                setTimeout(() => {
+                    setRecalculationStatus('');
+                }, 2000);
+            }
+            
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки статистики');
+            setRecalculationError('Не удалось загрузить статистику');
         } finally {
             setIsRecalculating(false);
+            // Очищаем ошибки через некоторое время
+            if (recalculationError) {
+                setTimeout(() => {
+                    setRecalculationError('');
+                }, 5000);
+            }
         }
     };
 
@@ -1807,9 +1850,23 @@ function Profile() {
                                 <div className="content-card">
                                     <div className="card-header">
                                         <h3 className="card-title">Статистика сайта</h3>
-                                        {isRecalculating && (
-                                            <div className="recalculating-notice">
-                                                🔄 Обновление статистики...
+                                        {(isRecalculating || recalculationStatus || recalculationError) && (
+                                            <div className="recalculation-status-container">
+                                                {isRecalculating && (
+                                                    <div className="recalculating-notice">
+                                                        🔄 {recalculationStatus || 'Обновление статистики...'}
+                                                    </div>
+                                                )}
+                                                {!isRecalculating && recalculationStatus && (
+                                                    <div className="recalculation-success">
+                                                        ✅ {recalculationStatus}
+                                                    </div>
+                                                )}
+                                                {recalculationError && (
+                                                    <div className="recalculation-error">
+                                                        ⚠️ {recalculationError}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

@@ -2835,7 +2835,14 @@
     }
 }
 
-/* Индикатор пересчета статистики */
+/* Улучшенные индикаторы статуса пересчета статистики */
+.recalculation-status-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    min-width: 200px;
+}
+
 .recalculating-notice {
     display: flex;
     align-items: center;
@@ -2852,13 +2859,77 @@
     animation: pulse-notice 2s infinite;
 }
 
-@keyframes pulse-notice {
-    0%, 100% { 
-        opacity: 1;
-        transform: scale(1);
+.recalculation-success {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--accent-success);
+    border: 1px solid var(--accent-success);
+    border-radius: 0;
+    font-size: 0.8rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: fade-in-success 0.5s ease;
+}
+
+.recalculation-error {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: rgba(255, 107, 107, 0.1);
+    color: var(--accent-error);
+    border: 1px solid var(--accent-error);
+    border-radius: 0;
+    font-size: 0.8rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: shake 0.5s ease;
+}
+
+@keyframes fade-in-success {
+    from { 
+        opacity: 0;
+        transform: translateY(-10px);
     }
-    50% { 
-        opacity: 0.8;
-        transform: scale(1.02);
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .recalculation-status-container {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .recalculating-notice,
+    .recalculation-success,
+    .recalculation-error {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .recalculating-notice,
+    .recalculation-success,
+    .recalculation-error {
+        font-size: 0.6rem;
+        padding: 4px 8px;
+        letter-spacing: 0.3px;
     }
 } 

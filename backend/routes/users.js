@@ -562,6 +562,23 @@ router.post('/recalculate-tournament-stats', authenticateToken, async (req, res)
     try {
         console.log('🔄 Начинаем пересчет статистики турниров для пользователя:', req.user.id);
         
+        // Проверяем существование таблицы user_tournament_stats
+        const tableCheckResult = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'user_tournament_stats'
+            );
+        `);
+        
+        if (!tableCheckResult.rows[0].exists) {
+            console.error('❌ Таблица user_tournament_stats не существует!');
+            return res.status(500).json({ 
+                error: 'Таблица статистики не создана. Обратитесь к администратору.',
+                needsTableCreation: true
+            });
+        }
+
         // Получаем все завершенные турниры где участвовал пользователь
         const userTournamentsResult = await pool.query(`
             SELECT DISTINCT t.id, t.name, t.game, t.participant_type, t.format
@@ -581,42 +598,85 @@ router.post('/recalculate-tournament-stats', authenticateToken, async (req, res)
         `, [req.user.id]);
 
         let updatedTournaments = 0;
+        let skippedTournaments = 0;
+        let errors = [];
 
         for (const tournament of userTournamentsResult.rows) {
-            const result = await calculateTournamentResult(tournament.id, req.user.id, tournament.participant_type);
-            
-            if (result) {
-                // Удаляем старую запись если есть
-                await pool.query(
-                    'DELETE FROM user_tournament_stats WHERE user_id = $1 AND tournament_id = $2',
-                    [req.user.id, tournament.id]
-                );
+            try {
+                const result = await calculateTournamentResult(tournament.id, req.user.id, tournament.participant_type);
                 
-                // Вставляем новую запись
-                await pool.query(`
-                    INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                `, [
-                    req.user.id,
-                    tournament.id, 
-                    result.place,
-                    result.wins || 0,
-                    result.losses || 0,
-                    tournament.participant_type === 'team'
-                ]);
-                
-                updatedTournaments++;
-                console.log(`✅ Обновлена статистика для турнира ${tournament.name}: ${result.place}`);
+                if (result) {
+                    // Используем UPSERT (INSERT ... ON CONFLICT) для безопасного обновления
+                    await pool.query(`
+                        INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        ON CONFLICT (user_id, tournament_id) 
+                        DO UPDATE SET 
+                            result = EXCLUDED.result,
+                            wins = EXCLUDED.wins,
+                            losses = EXCLUDED.losses,
+                            is_team = EXCLUDED.is_team,
+                            updated_at = CURRENT_TIMESTAMP
+                    `, [
+                        req.user.id,
+                        tournament.id, 
+                        result.place,
+                        result.wins || 0,
+                        result.losses || 0,
+                        tournament.participant_type === 'team'
+                    ]);
+                    
+                    updatedTournaments++;
+                    console.log(`✅ Обновлена статистика для турнира ${tournament.name}: ${result.place}`);
+                } else {
+                    skippedTournaments++;
+                    console.log(`⚠️ Пропущен турнир ${tournament.name}: не удалось определить результат`);
+                }
+            } catch (tournamentError) {
+                errors.push({
+                    tournament: tournament.name,
+                    error: tournamentError.message
+                });
+                console.error(`❌ Ошибка обработки турнира ${tournament.name}:`, tournamentError.message);
             }
         }
 
+        const totalTournaments = userTournamentsResult.rows.length;
+        
+        // Возвращаем подробный отчет
         res.json({ 
-            message: `Статистика пересчитана для ${updatedTournaments} турниров`,
-            updatedTournaments 
+            success: true,
+            message: `Статистика обработана для ${totalTournaments} турниров`,
+            details: {
+                total: totalTournaments,
+                updated: updatedTournaments,
+                skipped: skippedTournaments,
+                errors: errors.length
+            },
+            errors: errors.length > 0 ? errors : undefined
         });
     } catch (err) {
-        console.error('Ошибка пересчета статистики турниров:', err);
-        res.status(500).json({ error: 'Не удалось пересчитать статистику' });
+        console.error('❌ Критическая ошибка пересчета статистики турниров:', err);
+        
+        // Детальная информация об ошибке для разработчиков
+        let errorMessage = 'Не удалось пересчитать статистику';
+        let needsTableCreation = false;
+        
+        if (err.message.includes('user_tournament_stats') && err.message.includes('does not exist')) {
+            errorMessage = 'Таблица статистики не создана';
+            needsTableCreation = true;
+        } else if (err.code === '23505') { // Duplicate key
+            errorMessage = 'Конфликт данных при обновлении статистики';
+        } else if (err.code === '23503') { // Foreign key violation
+            errorMessage = 'Ссылочная целостность нарушена';
+        }
+        
+        res.status(500).json({ 
+            error: errorMessage,
+            needsTableCreation,
+            sqlErrorCode: err.code,
+            development: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 
