@@ -2,6 +2,42 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../axios';
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
+// V4 ULTIMATE: Добавляем импорты для графиков и WebSocket
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    RadialLinearScale,
+    ArcElement,
+    Filler
+} from 'chart.js';
+import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
+
+// ✨ V4 ULTIMATE: Импорты революционных компонентов
+import { useV4ProfileHooks } from './V4ProfileHooks';
+import V4StatsDashboard from './V4StatsDashboard';
+import './V4Stats.css';
+
+// Регистрируем компоненты Chart.js
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    RadialLinearScale,
+    ArcElement,
+    Filler
+);
 
 function Profile() {
     const [user, setUser] = useState(null);
@@ -115,6 +151,80 @@ function Profile() {
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [recalculationStatus, setRecalculationStatus] = useState('');
     const [recalculationError, setRecalculationError] = useState('');
+
+    // ✨ V4 ULTIMATE: Новые состояния для революционной функциональности
+    const [v4EnhancedStats, setV4EnhancedStats] = useState(null);
+    const [achievements, setAchievements] = useState([]);
+    const [userAchievements, setUserAchievements] = useState([]);
+    const [aiAnalysis, setAiAnalysis] = useState(null);
+    const [performanceData, setPerformanceData] = useState([]);
+    const [leaderboards, setLeaderboards] = useState([]);
+    const [currentStreak, setCurrentStreak] = useState(null);
+    const [isLoadingV4Stats, setIsLoadingV4Stats] = useState(false);
+    const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
+    const [isLoadingAI, setIsLoadingAI] = useState(false);
+    const [websocket, setWebsocket] = useState(null);
+    const [realTimeUpdates, setRealTimeUpdates] = useState([]);
+    const [showAchievementNotification, setShowAchievementNotification] = useState(null);
+    const [globalRank, setGlobalRank] = useState(null);
+    const [weeklyProgress, setWeeklyProgress] = useState(null);
+    const [personalBests, setPersonalBests] = useState({});
+    const [v4ActiveView, setV4ActiveView] = useState('overview'); // overview, charts, achievements, ai
+
+    // ✨ V4 ULTIMATE: Инициализация революционного хука
+    const v4Data = useV4ProfileHooks(user, activeTab);
+
+    // 🔄 Функция расширенного пересчета с AI анализом
+    const requestEnhancedRecalculation = async () => {
+        if (!user?.id) return;
+        
+        setIsRecalculating(true);
+        setRecalculationStatus('Запускаем глубокий анализ статистики...');
+        setRecalculationError('');
+        
+        try {
+            const token = localStorage.getItem('token');
+            
+            // Базовый пересчет статистики
+            const basicResponse = await api.post('/api/users/recalculate-tournament-stats', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (basicResponse.data.success) {
+                setRecalculationStatus('✅ Базовая статистика обновлена. Запускаем AI анализ...');
+                
+                // V4 расширенный пересчет с AI
+                const enhancedResponse = await api.post(`/api/v4/recalculate-enhanced/${user.id}`, {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (enhancedResponse.data.success) {
+                    setRecalculationStatus('✅ Анализ завершен успешно!');
+                    
+                    // Обновляем все данные
+                    await Promise.all([
+                        fetchStats(token),
+                        v4Data.fetchV4EnhancedStats(),
+                        v4Data.fetchAchievements(),
+                        v4Data.fetchAIAnalysis && v4Data.fetchAIAnalysis(),
+                        v4Data.fetchLeaderboards()
+                    ]);
+                } else {
+                    setRecalculationStatus('✅ Базовая статистика обновлена. AI анализ будет доступен позже.');
+                }
+            }
+            
+        } catch (err) {
+            console.error('Ошибка расширенного пересчета:', err);
+            setRecalculationError('❌ Ошибка при глубоком анализе. Попробуйте стандартный пересчет.');
+        } finally {
+            setIsRecalculating(false);
+            setTimeout(() => {
+                setRecalculationStatus('');
+                setRecalculationError('');
+            }, 5000);
+        }
+    };
 
     // Функция для получения URL картинки героя Dota 2
     const getHeroImageUrl = (heroId) => {
@@ -2188,6 +2298,16 @@ function Profile() {
                                         )}
                                     </div>
                                 </div>
+
+                                {/* ✨ V4 ULTIMATE: Революционный дашборд статистики */}
+                                <V4StatsDashboard
+                                    v4Data={v4Data}
+                                    stats={stats}
+                                    requestEnhancedRecalculation={requestEnhancedRecalculation}
+                                    isRecalculating={isRecalculating}
+                                    recalculationStatus={recalculationStatus}
+                                    recalculationError={recalculationError}
+                                />
                             </>
                         )}
                         

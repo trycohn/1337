@@ -203,6 +203,8 @@ const friendsRouter = require('./routes/friends');
 const chatsRouter = require('./routes/chats');
 const organizersRouter = require('./routes/organizers');
 const adminRouter = require('./routes/admin');
+// ✨ V4 ULTIMATE: Импорт революционных API
+const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
 
 // Маршруты API
 app.use('/api/auth', authRouter);
@@ -221,6 +223,8 @@ app.use('/api/chats', chatsRouter);
 app.use('/api/maps', mapsRouter);
 app.use('/api/organizers', organizersRouter);
 app.use('/api/admin', adminRouter);
+// ✨ V4 ULTIMATE: Революционные API endpoints
+app.use('/api/v4', v4EnhancedStatsRouter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {
