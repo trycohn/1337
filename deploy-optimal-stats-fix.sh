@@ -33,8 +33,27 @@ git pull origin main
 # 2. Создаем/обновляем таблицу user_tournament_stats
 echo "🗄️ Создаем недостающую таблицу user_tournament_stats..."
 if command -v psql &> /dev/null; then
-    psql -U postgres -d 1337community -f backend/create_user_tournament_stats_table.sql
-    echo "✅ Таблица user_tournament_stats создана/обновлена"
+    echo "📊 Выполняем SQL скрипт..."
+    SQL_OUTPUT=$(psql -U postgres -d 1337community -f backend/create_user_tournament_stats_table.sql 2>&1)
+    SQL_EXIT_CODE=$?
+    
+    # Показываем вывод SQL
+    echo "$SQL_OUTPUT"
+    
+    # Проверяем успешность выполнения
+    if [ $SQL_EXIT_CODE -eq 0 ]; then
+        if echo "$SQL_OUTPUT" | grep -q "🎉 УСТАНОВКА ЗАВЕРШЕНА УСПЕШНО"; then
+            echo "✅ Таблица user_tournament_stats создана/обновлена ПОЛНОСТЬЮ"
+        elif echo "$SQL_OUTPUT" | grep -q "already exists"; then
+            echo "ℹ️ Таблица user_tournament_stats уже существовала, проверена и обновлена"
+        else
+            echo "⚠️ Таблица создана, но возможны предупреждения (см. вывод выше)"
+        fi
+    else
+        echo "❌ Ошибка создания таблицы user_tournament_stats"
+        echo "Вывод SQL: $SQL_OUTPUT"
+        exit 1
+    fi
 else
     echo "⚠️ PostgreSQL не найден, создайте таблицу вручную:"
     echo "   psql -U postgres -d 1337community -f backend/create_user_tournament_stats_table.sql"
