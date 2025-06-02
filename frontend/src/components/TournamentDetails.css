@@ -3078,9 +3078,6 @@ a.participant-name:hover {
     align-items: center;
     height: 300px;
     color: #888888;
-    background-color: #111111;
-    border: 1px solid #333333;
-    border-radius: 0;
     padding: 40px;
     text-align: center;
 }
