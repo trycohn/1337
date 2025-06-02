@@ -3051,3 +3051,357 @@ a.participant-name:hover {
         font-size: 10px;
     }
 }
+
+/* =================================================
+   СТИЛИ ДЛЯ ЖУРНАЛА СОБЫТИЙ ТУРНИРА
+   ================================================= */
+
+/* Основной контейнер журнала событий */
+.logs-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 16px;
+    color: #888888;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+    padding: 20px;
+    text-align: center;
+}
+
+.logs-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    color: #888888;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+    padding: 40px;
+    text-align: center;
+}
+
+.logs-empty p {
+    margin: 10px 0;
+    color: #888888;
+}
+
+.logs-hint {
+    font-size: 14px;
+    font-style: italic;
+    color: #666666;
+}
+
+/* Список событий */
+.logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 20px;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+}
+
+/* Элемент события */
+.log-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 0;
+    transition: all 0.2s ease;
+    color: #ffffff;
+}
+
+.log-item:hover {
+    background-color: #2a2a2a;
+    border-color: #555555;
+    transform: translateY(-1px);
+}
+
+/* Иконка события */
+.log-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #333333;
+    border-radius: 50%;
+    font-size: 18px;
+    color: #ffffff;
+    border: 2px solid #555555;
+}
+
+/* Контент события */
+.log-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Текст события */
+.log-text {
+    font-size: 15px;
+    font-weight: 300;
+    color: #ffffff;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Мета-информация события */
+.log-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 13px;
+    color: #888888;
+}
+
+/* Пользователь, инициировавший событие */
+.log-user {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.log-user a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 300;
+    padding: 2px 6px;
+    border-radius: 0;
+    background-color: #333333;
+    transition: all 0.2s ease;
+}
+
+.log-user a:hover {
+    background-color: #555555;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Время события */
+.log-time {
+    color: #666666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* Различные типы событий */
+.log-item[data-event-type="tournament_created"] .log-icon {
+    background-color: #4caf50;
+    color: #000000;
+}
+
+.log-item[data-event-type="participant_joined"] .log-icon {
+    background-color: #2196f3;
+    color: #ffffff;
+}
+
+.log-item[data-event-type="participant_left"] .log-icon {
+    background-color: #ff9800;
+    color: #000000;
+}
+
+.log-item[data-event-type="tournament_started"] .log-icon {
+    background-color: #9c27b0;
+    color: #ffffff;
+}
+
+.log-item[data-event-type="tournament_completed"] .log-icon {
+    background-color: #607d8b;
+    color: #ffffff;
+}
+
+.log-item[data-event-type="bracket_generated"] .log-icon,
+.log-item[data-event-type="bracket_regenerated"] .log-icon {
+    background-color: #795548;
+    color: #ffffff;
+}
+
+.log-item[data-event-type="match_completed"] .log-icon {
+    background-color: #f44336;
+    color: #ffffff;
+}
+
+.log-item[data-event-type="admin_assigned"] .log-icon,
+.log-item[data-event-type="admin_removed"] .log-icon {
+    background-color: #ff5722;
+    color: #ffffff;
+}
+
+.log-item[data-event-type="settings_changed"] .log-icon {
+    background-color: #673ab7;
+    color: #ffffff;
+}
+
+/* Скроллбар для списка событий */
+.logs-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.logs-list::-webkit-scrollbar-track {
+    background: #222222;
+    border-radius: 0;
+}
+
+.logs-list::-webkit-scrollbar-thumb {
+    background: #555555;
+    border-radius: 0;
+    transition: all 0.2s ease;
+}
+
+.logs-list::-webkit-scrollbar-thumb:hover {
+    background: #777777;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .logs-list {
+        padding: 15px;
+        max-height: 400px;
+    }
+    
+    .log-item {
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+    }
+    
+    .log-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+        align-self: flex-start;
+    }
+    
+    .log-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .log-text {
+        font-size: 14px;
+    }
+    
+    .log-time {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logs-empty {
+        height: 200px;
+        padding: 20px;
+    }
+    
+    .logs-loading {
+        height: 150px;
+        padding: 15px;
+    }
+    
+    .log-item {
+        padding: 10px;
+    }
+    
+    .log-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+    
+    .log-text {
+        font-size: 13px;
+    }
+}
+
+/* Анимация появления новых событий */
+@keyframes slideInFade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.log-item {
+    animation: slideInFade 0.3s ease-out;
+}
+
+/* Стили для выделения важных событий */
+.log-item.important {
+    border-color: #ffffff;
+    background-color: #2a2a2a;
+}
+
+.log-item.important .log-icon {
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Стили для системных событий */
+.log-item.system-event .log-text {
+    font-style: italic;
+    color: #cccccc;
+}
+
+.log-item.system-event .log-icon {
+    background-color: #444444;
+    color: #cccccc;
+}
+
+/* Фильтр по типам событий (для будущего расширения) */
+.logs-filter {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+}
+
+.filter-btn {
+    padding: 6px 12px;
+    background-color: #333333;
+    color: #ffffff;
+    border: 1px solid #555555;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background-color: #555555;
+    border-color: #777777;
+}
+
+.filter-btn.active {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+}
+
+/* =================================================
+   КОНЕЦ СТИЛЕЙ ДЛЯ ЖУРНАЛА СОБЫТИЙ
+   ================================================= */
