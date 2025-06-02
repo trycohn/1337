@@ -167,7 +167,6 @@ function Layout() {
                         <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
                             <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
                             <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
-                            <Link to="/dota-stats" onClick={() => setIsMenuOpen(false)}>📊 Dota 2 Stats</Link>
                             {user && (
                                 <>
                                     <Link to="/create" onClick={() => setIsMenuOpen(false)}>
