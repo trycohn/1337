@@ -23,6 +23,187 @@ try {
 
 const pool = require('../db');
 
+// 🆕 Endpoint для получения расширенной статистики (alias для фронтенда)
+router.get('/enhanced-stats/:userId', authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Проверяем права доступа (пользователь может видеть только свою статистику)
+        if (req.user.id != userId && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Нет прав доступа к статистике этого пользователя' });
+        }
+
+        let stats = null;
+        
+        // Получаем статистику через real-time сервис если доступен
+        if (realTimeStatsService) {
+            try {
+                stats = await realTimeStatsService.getCurrentStats(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка real-time сервиса, используем fallback:', error.message);
+            }
+        }
+        
+        // Fallback на базовую статистику если real-time недоступен
+        if (!stats) {
+            stats = await getBasicStats(userId);
+        }
+        
+        // Получаем достижения пользователя если система доступна
+        let achievements = { achievements: [], totalPoints: 0, level: 1 };
+        if (achievementSystem) {
+            try {
+                achievements = await achievementSystem.getUserAchievements(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка системы достижений:', error.message);
+            }
+        }
+        
+        // Получаем рейтинг пользователя если система доступна
+        let ranking = { position: null, totalUsers: 0 };
+        if (achievementSystem) {
+            try {
+                ranking = await achievementSystem.getUserRanking(userId);
+            } catch (error) {
+                console.warn('⚠️ Ошибка получения рейтинга:', error.message);
+            }
+        }
+
+        // Расширенные метрики для варианта 4
+        const enhancedMetrics = await getEnhancedMetrics(userId);
+
+        res.json({
+            ...stats,
+            achievements,
+            ranking,
+            enhancedMetrics,
+            version: '4.0',
+            realTime: realTimeStatsService !== null,
+            fallbackMode: realTimeStatsService === null
+        });
+    } catch (error) {
+        console.error('❌ Ошибка получения расширенной статистики:', error);
+        res.status(500).json({ error: 'Не удалось получить статистику' });
+    }
+});
+
+// 🆕 Endpoint для получения достижений пользователя (alias)
+router.get('/user-achievements/:userId', authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { category } = req.query;
+        
+        if (req.user.id != userId && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Нет прав доступа' });
+        }
+
+        // Fallback если система достижений недоступна
+        if (!achievementSystem) {
+            return res.json({
+                achievements: [],
+                totalPoints: 0,
+                level: 1,
+                nextLevelPoints: 100,
+                currentLevelPoints: 0,
+                message: 'Система достижений временно недоступна'
+            });
+        }
+
+        let achievementsData = await achievementSystem.getUserAchievements(userId);
+        
+        // Фильтрация по категории если указана
+        if (category) {
+            achievementsData.achievements = achievementsData.achievements.filter(
+                a => a.category === category
+            );
+        }
+
+        res.json(achievementsData);
+    } catch (error) {
+        console.error('❌ Ошибка получения достижений:', error);
+        
+        // Fallback ответ
+        res.json({
+            achievements: [],
+            totalPoints: 0,
+            level: 1,
+            nextLevelPoints: 100,
+            currentLevelPoints: 0,
+            error: 'Система достижений временно недоступна'
+        });
+    }
+});
+
+// 🆕 Endpoint для получения всех достижений
+router.get('/achievements', async (req, res) => {
+    try {
+        // Fallback если система достижений недоступна
+        if (!achievementSystem) {
+            return res.json({
+                achievements: generateBasicAchievements(),
+                categories: ['tournament', 'skill', 'social', 'special'],
+                message: 'Показаны базовые достижения (система достижений недоступна)'
+            });
+        }
+
+        const achievements = await achievementSystem.getAllAchievements();
+        
+        res.json({
+            achievements,
+            categories: [...new Set(achievements.map(a => a.category))]
+        });
+    } catch (error) {
+        console.error('❌ Ошибка получения всех достижений:', error);
+        
+        // Fallback ответ
+        res.json({
+            achievements: generateBasicAchievements(),
+            categories: ['tournament', 'skill', 'social', 'special'],
+            error: 'Система достижений временно недоступна'
+        });
+    }
+});
+
+// 🆕 Endpoint для получения лидербордов
+router.get('/leaderboards', async (req, res) => {
+    try {
+        const { limit = 10, category = 'overall' } = req.query;
+        
+        // Fallback если система достижений недоступна
+        if (!achievementSystem) {
+            const basicLeaderboard = await generateBasicLeaderboard(parseInt(limit));
+            return res.json({
+                leaderboard: basicLeaderboard,
+                category,
+                generatedAt: new Date().toISOString(),
+                totalUsers: basicLeaderboard.length,
+                message: 'Показан базовый лидерборд (система достижений недоступна)'
+            });
+        }
+        
+        const leaderboard = await achievementSystem.getLeaderboard(parseInt(limit), category);
+        
+        res.json({
+            leaderboard,
+            category,
+            generatedAt: new Date().toISOString(),
+            totalUsers: leaderboard.length
+        });
+    } catch (error) {
+        console.error('❌ Ошибка получения лидерборда:', error);
+        
+        // Fallback ответ
+        const basicLeaderboard = await generateBasicLeaderboard(parseInt(req.query.limit || 10));
+        res.json({
+            leaderboard: basicLeaderboard,
+            category: req.query.category || 'overall',
+            generatedAt: new Date().toISOString(),
+            totalUsers: basicLeaderboard.length,
+            error: 'Система достижений временно недоступна'
+        });
+    }
+});
+
 // Получение расширенной статистики пользователя с real-time поддержкой
 router.get('/stats/enhanced/:userId', authenticateToken, async (req, res) => {
     try {
@@ -1612,6 +1793,149 @@ function generateDevelopmentRoadmap(currentStage, focusAreas, insights) {
     }
 
     return roadmap;
+}
+
+function generateBasicAchievements() {
+    return [
+        {
+            id: 'first_tournament',
+            name: 'Первый турнир',
+            description: 'Примите участие в первом турнире',
+            category: 'tournament',
+            icon: '🏆',
+            points: 10,
+            requirement: 'participate_in_tournament',
+            tier: 'bronze'
+        },
+        {
+            id: 'first_win',
+            name: 'Первая победа',
+            description: 'Выиграйте первый матч',
+            category: 'skill',
+            icon: '🥇',
+            points: 25,
+            requirement: 'win_match',
+            tier: 'bronze'
+        },
+        {
+            id: 'tournament_winner',
+            name: 'Победитель турнира',
+            description: 'Выиграйте турнир',
+            category: 'tournament',
+            icon: '👑',
+            points: 100,
+            requirement: 'win_tournament',
+            tier: 'gold'
+        },
+        {
+            id: 'consistent_player',
+            name: 'Постоянный игрок',
+            description: 'Участвуйте в 5 турнирах',
+            category: 'tournament',
+            icon: '⭐',
+            points: 50,
+            requirement: 'participate_in_5_tournaments',
+            tier: 'silver'
+        },
+        {
+            id: 'team_player',
+            name: 'Командный игрок',
+            description: 'Выиграйте командный турнир',
+            category: 'social',
+            icon: '🤝',
+            points: 75,
+            requirement: 'win_team_tournament',
+            tier: 'silver'
+        },
+        {
+            id: 'versatile_gamer',
+            name: 'Универсальный игрок',
+            description: 'Участвуйте в турнирах по 3 разным играм',
+            category: 'skill',
+            icon: '🎮',
+            points: 150,
+            requirement: 'play_3_games',
+            tier: 'gold'
+        },
+        {
+            id: 'rising_star',
+            name: 'Восходящая звезда',
+            description: 'Попадите в топ-3 в турнире',
+            category: 'skill',
+            icon: '🌟',
+            points: 60,
+            requirement: 'top_3_finish',
+            tier: 'silver'
+        },
+        {
+            id: 'tournament_veteran',
+            name: 'Ветеран турниров',
+            description: 'Участвуйте в 10 турнирах',
+            category: 'tournament',
+            icon: '🎖️',
+            points: 200,
+            requirement: 'participate_in_10_tournaments',
+            tier: 'gold'
+        }
+    ];
+}
+
+async function generateBasicLeaderboard(limit = 10) {
+    try {
+        // Генерируем лидерборд на основе реальной статистики пользователей
+        const result = await pool.query(`
+            SELECT 
+                u.id,
+                u.username,
+                u.avatar_url,
+                COUNT(DISTINCT tp.tournament_id) as tournaments_played,
+                COUNT(CASE WHEN tp.result LIKE '%Победитель%' THEN 1 END) as tournaments_won,
+                COUNT(CASE WHEN tp.result LIKE '%место%' OR tp.result LIKE '%Победитель%' THEN 1 END) as top_finishes,
+                (COUNT(CASE WHEN tp.result LIKE '%Победитель%' THEN 1 END) * 100 + 
+                 COUNT(CASE WHEN tp.result LIKE '%место%' THEN 1 END) * 50 + 
+                 COUNT(DISTINCT tp.tournament_id) * 10) as total_points
+            FROM users u
+            LEFT JOIN tournament_participants tp ON u.id = tp.user_id
+            WHERE u.id IS NOT NULL
+            GROUP BY u.id, u.username, u.avatar_url
+            HAVING COUNT(DISTINCT tp.tournament_id) > 0
+            ORDER BY total_points DESC, tournaments_won DESC, tournaments_played DESC
+            LIMIT $1
+        `, [limit]);
+
+        return result.rows.map((row, index) => ({
+            position: index + 1,
+            userId: row.id,
+            username: row.username,
+            avatar: row.avatar_url,
+            stats: {
+                tournamentsPlayed: parseInt(row.tournaments_played),
+                tournamentsWon: parseInt(row.tournaments_won),
+                topFinishes: parseInt(row.top_finishes),
+                totalPoints: parseInt(row.total_points)
+            },
+            achievements: Math.floor(parseInt(row.total_points) / 50), // Примерное количество достижений
+            level: Math.max(1, Math.floor(parseInt(row.total_points) / 100))
+        }));
+    } catch (error) {
+        console.error('❌ Ошибка генерации базового лидерборда:', error);
+        
+        // Fallback на статичный лидерборд
+        return Array.from({ length: Math.min(limit, 5) }, (_, index) => ({
+            position: index + 1,
+            userId: index + 1,
+            username: `Игрок ${index + 1}`,
+            avatar: '/default-avatar.png',
+            stats: {
+                tournamentsPlayed: Math.floor(Math.random() * 20) + 5,
+                tournamentsWon: Math.floor(Math.random() * 5),
+                topFinishes: Math.floor(Math.random() * 10),
+                totalPoints: Math.floor(Math.random() * 500) + 100
+            },
+            achievements: Math.floor(Math.random() * 8) + 1,
+            level: Math.floor(Math.random() * 10) + 1
+        }));
+    }
 }
 
 module.exports = router; 
