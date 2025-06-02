@@ -508,7 +508,7 @@ router.post('/verify', authenticateToken, async (req, res) => {
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
         const statsResult = await pool.query(
-            'SELECT t.name, uts.result, uts.wins, uts.losses, uts.is_team ' +
+            'SELECT t.name, t.game, uts.result, uts.wins, uts.losses, uts.is_team ' +
             'FROM user_tournament_stats uts ' +
             'JOIN tournaments t ON uts.tournament_id = t.id ' +
             'WHERE uts.user_id = $1',
@@ -527,14 +527,165 @@ router.get('/stats', authenticateToken, async (req, res) => {
         const soloWinRate = soloWins + soloLosses > 0 ? (soloWins / (soloWins + soloLosses)) * 100 : 0;
         const teamWinRate = teamWins + teamLosses > 0 ? (teamWins / (teamWins + teamLosses)) * 100 : 0;
 
+        // Статистика по играм
+        const gameStats = {};
+        stats.forEach(stat => {
+            if (!gameStats[stat.game]) {
+                gameStats[stat.game] = {
+                    solo: { wins: 0, losses: 0 },
+                    team: { wins: 0, losses: 0 }
+                };
+            }
+            if (stat.is_team) {
+                gameStats[stat.game].team.wins += stat.wins;
+                gameStats[stat.game].team.losses += stat.losses;
+            } else {
+                gameStats[stat.game].solo.wins += stat.wins;
+                gameStats[stat.game].solo.losses += stat.losses;
+            }
+        });
+
         res.json({
             tournaments: stats,
             solo: { wins: soloWins, losses: soloLosses, winRate: soloWinRate.toFixed(2) },
-            team: { wins: teamWins, losses: teamLosses, winRate: teamWinRate.toFixed(2) }
+            team: { wins: teamWins, losses: teamLosses, winRate: teamWinRate.toFixed(2) },
+            byGame: gameStats
         });
     } catch (err) {
         console.error('Ошибка получения статистики:', err);
         res.status(500).json({ error: 'Не удалось загрузить статистику' });
+    }
+});
+
+// Получение истории матчей пользователя
+router.get('/match-history', authenticateToken, async (req, res) => {
+    try {
+        const matchHistoryResult = await pool.query(`
+            SELECT 
+                m.id,
+                m.created_at as date,
+                t.name as tournament_name,
+                t.id as tournament_id,
+                t.game as discipline,
+                m.score1,
+                m.score2,
+                CASE 
+                    WHEN t.participant_type = 'solo' THEN
+                        CASE 
+                            WHEN (m.participant1_id = tp1.id AND m.winner_team_id = m.participant1_id) OR
+                                 (m.participant2_id = tp2.id AND m.winner_team_id = m.participant2_id) THEN 'win'
+                            ELSE 'loss'
+                        END
+                    WHEN t.participant_type = 'team' THEN
+                        CASE 
+                            WHEN EXISTS(
+                                SELECT 1 FROM tournament_team_members ttm1 
+                                WHERE ttm1.team_id = m.participant1_id AND ttm1.user_id = $1
+                            ) AND m.winner_team_id = m.participant1_id THEN 'win'
+                            WHEN EXISTS(
+                                SELECT 1 FROM tournament_team_members ttm2 
+                                WHERE ttm2.team_id = m.participant2_id AND ttm2.user_id = $1
+                            ) AND m.winner_team_id = m.participant2_id THEN 'win'
+                            ELSE 'loss'
+                        END
+                END as result,
+                CASE 
+                    WHEN t.participant_type = 'solo' THEN
+                        CASE 
+                            WHEN m.participant1_id = tp1.id THEN tp2.name
+                            ELSE tp1.name
+                        END
+                    WHEN t.participant_type = 'team' THEN
+                        CASE 
+                            WHEN EXISTS(
+                                SELECT 1 FROM tournament_team_members ttm1 
+                                WHERE ttm1.team_id = m.participant1_id AND ttm1.user_id = $1
+                            ) THEN tt2.name
+                            ELSE tt1.name
+                        END
+                END as opponent,
+                CONCAT(m.score1, ':', m.score2) as score
+            FROM matches m
+            JOIN tournaments t ON m.tournament_id = t.id
+            LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id AND t.participant_type = 'solo'
+            LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id AND t.participant_type = 'solo'
+            LEFT JOIN tournament_teams tt1 ON m.participant1_id = tt1.id AND t.participant_type = 'team'
+            LEFT JOIN tournament_teams tt2 ON m.participant2_id = tt2.id AND t.participant_type = 'team'
+            WHERE 
+                (t.participant_type = 'solo' AND (tp1.user_id = $1 OR tp2.user_id = $1)) OR
+                (t.participant_type = 'team' AND (
+                    EXISTS(SELECT 1 FROM tournament_team_members ttm WHERE ttm.team_id = m.participant1_id AND ttm.user_id = $1) OR
+                    EXISTS(SELECT 1 FROM tournament_team_members ttm WHERE ttm.team_id = m.participant2_id AND ttm.user_id = $1)
+                ))
+            AND m.winner_team_id IS NOT NULL
+            ORDER BY m.created_at DESC
+        `, [req.user.id]);
+
+        res.json(matchHistoryResult.rows);
+    } catch (err) {
+        console.error('Ошибка получения истории матчей:', err);
+        res.status(500).json({ error: 'Не удалось загрузить историю матчей' });
+    }
+});
+
+// Получение турниров пользователя
+router.get('/tournaments', authenticateToken, async (req, res) => {
+    try {
+        const userTournamentsResult = await pool.query(`
+            SELECT DISTINCT
+                t.id,
+                t.name,
+                t.game,
+                t.format,
+                t.status,
+                t.start_date,
+                t.end_date,
+                t.max_participants,
+                t.participant_type,
+                CASE 
+                    WHEN t.participant_type = 'solo' THEN (
+                        SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id
+                    )
+                    WHEN t.participant_type = 'team' THEN (
+                        SELECT COUNT(*) FROM tournament_teams tt WHERE tt.tournament_id = t.id
+                    )
+                    ELSE 0
+                END AS participant_count,
+                CASE 
+                    WHEN t.participant_type = 'solo' THEN
+                        CASE 
+                            WHEN EXISTS(SELECT 1 FROM tournament_participants tp WHERE tp.tournament_id = t.id AND tp.user_id = $1) THEN 'participant'
+                            ELSE NULL
+                        END
+                    WHEN t.participant_type = 'team' THEN
+                        CASE 
+                            WHEN EXISTS(SELECT 1 FROM tournament_teams tt 
+                                       JOIN tournament_team_members ttm ON tt.id = ttm.team_id 
+                                       WHERE tt.tournament_id = t.id AND ttm.user_id = $1) THEN 'participant'
+                            ELSE NULL
+                        END
+                END as participation_status,
+                uts.result as tournament_result,
+                uts.wins,
+                uts.losses
+            FROM tournaments t
+            LEFT JOIN user_tournament_stats uts ON t.id = uts.tournament_id AND uts.user_id = $1
+            WHERE 
+                (t.participant_type = 'solo' AND EXISTS(
+                    SELECT 1 FROM tournament_participants tp WHERE tp.tournament_id = t.id AND tp.user_id = $1
+                )) OR
+                (t.participant_type = 'team' AND EXISTS(
+                    SELECT 1 FROM tournament_teams tt 
+                    JOIN tournament_team_members ttm ON tt.id = ttm.team_id 
+                    WHERE tt.tournament_id = t.id AND ttm.user_id = $1
+                ))
+            ORDER BY t.start_date DESC
+        `, [req.user.id]);
+
+        res.json(userTournamentsResult.rows);
+    } catch (err) {
+        console.error('Ошибка получения турниров пользователя:', err);
+        res.status(500).json({ error: 'Не удалось загрузить турниры пользователя' });
     }
 });
 
@@ -1120,7 +1271,7 @@ router.get('/profile/:userId', async (req, res) => {
         
         // Получаем статистику пользователя
         const statsResult = await pool.query(
-            'SELECT t.name, uts.result, uts.wins, uts.losses, uts.is_team ' +
+            'SELECT t.name, t.game, uts.result, uts.wins, uts.losses, uts.is_team ' +
             'FROM user_tournament_stats uts ' +
             'JOIN tournaments t ON uts.tournament_id = t.id ' +
             'WHERE uts.user_id = $1',

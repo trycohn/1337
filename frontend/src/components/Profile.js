@@ -90,6 +90,27 @@ function Profile() {
     const [dotaStats, setDotaStats] = useState(null);
     const [isLoadingDotaStats, setIsLoadingDotaStats] = useState(false);
     
+    // Состояния для турниров игрока
+    const [userTournaments, setUserTournaments] = useState([]);
+    const [loadingTournaments, setLoadingTournaments] = useState(false);
+    const [tournamentFilters, setTournamentFilters] = useState({
+        game: '',
+        name: '',
+        format: '',
+        status: '',
+        start_date: null,
+    });
+    const [tournamentSort, setTournamentSort] = useState({ field: '', direction: 'asc' });
+    const [activeTournamentFilter, setActiveTournamentFilter] = useState(null);
+    const [tournamentViewMode, setTournamentViewMode] = useState('table');
+    const tournamentFilterRefs = {
+        name: useRef(null),
+        game: useRef(null),
+        format: useRef(null),
+        status: useRef(null),
+        start_date: useRef(null),
+    };
+
     // Функция для получения URL картинки героя Dota 2
     const getHeroImageUrl = (heroId) => {
         if (!heroId) return '/default-hero.png';
@@ -638,6 +659,8 @@ function Profile() {
             fetchOrganizationRequest();
             // Загружаем профиль Dota 2
             fetchDotaProfile();
+            // Загружаем турниры пользователя
+            fetchUserTournaments();
         }
         
         // Проверяем, есть ли сохраненное время окончания задержки
@@ -1408,6 +1431,98 @@ function Profile() {
         }
     };
 
+    // Функции для работы с турнирами игрока
+    const fetchUserTournaments = async () => {
+        setLoadingTournaments(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get('/api/users/tournaments', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUserTournaments(response.data);
+        } catch (err) {
+            console.error('Ошибка загрузки турниров пользователя:', err);
+            setUserTournaments([]);
+        } finally {
+            setLoadingTournaments(false);
+        }
+    };
+
+    const handleTournamentFilterChange = (e) => {
+        const { name, value } = e.target;
+        setTournamentFilters((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleTournamentSort = (field) => {
+        setTournamentSort((prev) => ({
+            field,
+            direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
+        }));
+    };
+
+    const applyTournamentFilter = (field, value) => {
+        setTournamentFilters((prev) => ({ ...prev, [field]: value }));
+        setActiveTournamentFilter(null);
+    };
+
+    const clearTournamentFilter = (field) => {
+        setTournamentFilters((prev) => ({ ...prev, [field]: field === 'start_date' ? null : '' }));
+        setActiveTournamentFilter(null);
+    };
+
+    const clearAllTournamentFilters = () => {
+        setTournamentFilters({
+            game: '',
+            name: '',
+            format: '',
+            status: '',
+            start_date: null,
+        });
+        setActiveTournamentFilter(null);
+    };
+
+    const toggleTournamentFilter = (filterName) => {
+        const newActiveFilter = activeTournamentFilter === filterName ? null : filterName;
+        setActiveTournamentFilter(newActiveFilter);
+    };
+
+    const uniqueTournamentValues = (field) => {
+        let values = [...new Set(userTournaments.map((t) => t[field]).filter(Boolean))].sort();
+        return values;
+    };
+
+    const hasActiveTournamentFilters = () => {
+        return tournamentFilters.game !== '' || tournamentFilters.name !== '' || tournamentFilters.format !== '' || 
+               tournamentFilters.status !== '' || tournamentFilters.start_date !== null;
+    };
+
+    const filteredAndSortedUserTournaments = userTournaments
+        .filter((tournament) => {
+            return (
+                (tournamentFilters.game === '' || tournament.game === tournamentFilters.game) &&
+                (tournamentFilters.name === '' || tournament.name?.toLowerCase().includes(tournamentFilters.name.toLowerCase())) &&
+                (tournamentFilters.format === '' || tournament.format === tournamentFilters.format) &&
+                (tournamentFilters.status === '' || tournament.status === tournamentFilters.status) &&
+                (tournamentFilters.start_date === null ||
+                    new Date(tournament.start_date).toLocaleDateString('ru-RU') ===
+                    tournamentFilters.start_date.toLocaleDateString('ru-RU'))
+            );
+        })
+        .sort((a, b) => {
+            if (!tournamentSort.field) return 0;
+            if (tournamentSort.field === 'participant_count') {
+                return tournamentSort.direction === 'asc'
+                    ? a.participant_count - b.participant_count
+                    : b.participant_count - a.participant_count;
+            }
+            if (tournamentSort.field === 'start_date') {
+                return tournamentSort.direction === 'asc'
+                    ? new Date(a.start_date) - new Date(b.start_date)
+                    : new Date(b.start_date) - new Date(a.start_date);
+            }
+            return 0;
+        });
+
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
 
     return (
@@ -1539,6 +1654,15 @@ function Profile() {
                             <div className="nav-tab-content-profile">
                                 <span className="nav-tab-icon-profile">🏢</span>
                                 <span>Организация</span>
+                            </div>
+                        </button>
+                        <button 
+                            className={`nav-tab-profile ${activeTab === 'tournaments' ? 'active' : ''}`} 
+                            onClick={() => switchTab('tournaments')}
+                        >
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">🏆</span>
+                                <span>Турниры</span>
                             </div>
                         </button>
                     </nav>
@@ -1695,6 +1819,70 @@ function Profile() {
                                         {renderLastFiveMatches()}
                                     </div>
                                 </div>
+                                
+                                {/* Game Stats Section */}
+                                {stats && stats.byGame && Object.keys(stats.byGame).length > 0 && (
+                                    <div className="content-card game-stats-section">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Статистика по играм</h3>
+                                        </div>
+                                        <div className="card-content">
+                                            <div className="game-stats-grid">
+                                                {Object.entries(stats.byGame).map(([game, gameStats]) => {
+                                                    const totalSolo = gameStats.solo.wins + gameStats.solo.losses;
+                                                    const totalTeam = gameStats.team.wins + gameStats.team.losses;
+                                                    const soloWinRate = totalSolo > 0 ? ((gameStats.solo.wins / totalSolo) * 100).toFixed(1) : 0;
+                                                    const teamWinRate = totalTeam > 0 ? ((gameStats.team.wins / totalTeam) * 100).toFixed(1) : 0;
+                                                    
+                                                    return (
+                                                        <div key={game} className="game-stat-card">
+                                                            <div className="game-stat-header">
+                                                                <h4 className="game-stat-title">{game}</h4>
+                                                                <span className="game-stat-icon">🎮</span>
+                                                            </div>
+                                                            <div className="game-stat-body">
+                                                                <div className="stat-type-section">
+                                                                    <div className="stat-type-label">Solo</div>
+                                                                    <div className="stat-type-values">
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Побед</span>
+                                                                            <span className="stat-value-number">{gameStats.solo.wins}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Поражений</span>
+                                                                            <span className="stat-value-number">{gameStats.solo.losses}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Винрейт</span>
+                                                                            <span className="stat-value-number">{soloWinRate}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="stat-type-section">
+                                                                    <div className="stat-type-label">Team</div>
+                                                                    <div className="stat-type-values">
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Побед</span>
+                                                                            <span className="stat-value-number">{gameStats.team.wins}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Поражений</span>
+                                                                            <span className="stat-value-number">{gameStats.team.losses}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Винрейт</span>
+                                                                            <span className="stat-value-number">{teamWinRate}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 
                                 {/* CS2 Stats */}
                                 {user.steam_url && (
@@ -2337,6 +2525,373 @@ function Profile() {
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        
+                        {/* Tournaments Tab */}
+                        {activeTab === 'tournaments' && (
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">Турниры</h2>
+                                </div>
+                                
+                                {loadingTournaments ? (
+                                    <div className="loading-spinner">
+                                        <p>Загрузка турниров...</p>
+                                    </div>
+                                ) : (
+                                    <div className="tournaments-section">
+                                        {hasActiveTournamentFilters() && (
+                                            <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+                                                <button 
+                                                    onClick={clearAllTournamentFilters}
+                                                    className="clear-all-filters-btn"
+                                                >
+                                                    ✕ Сбросить все фильтры
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        <div className="tournaments-view-controls">
+                                            <button 
+                                                className={`view-mode-btn ${tournamentViewMode === 'table' ? 'active' : ''}`} 
+                                                onClick={() => setTournamentViewMode('table')}
+                                            >
+                                                Таблица
+                                            </button>
+                                            <button 
+                                                className={`view-mode-btn ${tournamentViewMode === 'card' ? 'active' : ''}`} 
+                                                onClick={() => setTournamentViewMode('card')}
+                                            >
+                                                Карточки
+                                            </button>
+                                        </div>
+
+                                        <div className="tournaments-filter-bar">
+                                            <input
+                                                type="text"
+                                                placeholder="Поиск по названию"
+                                                value={tournamentFilters.name}
+                                                onChange={(e) => setTournamentFilters({...tournamentFilters, name: e.target.value})}
+                                                className="mobile-filter-input"
+                                            />
+                                        </div>
+                                        
+                                        {tournamentViewMode === 'table' ? (
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th ref={tournamentFilterRefs.game} className={tournamentFilters.game ? 'filtered' : ''}>
+                                                            {activeTournamentFilter === 'game' ? (
+                                                                <div className="dropdown" style={{
+                                                                    position: 'absolute',
+                                                                    top: '100%',
+                                                                    left: '0',
+                                                                    right: '0',
+                                                                    background: '#1a1a1a',
+                                                                    color: '#ffffff',
+                                                                    border: '1px solid #333333',
+                                                                    borderRadius: '6px',
+                                                                    zIndex: 9999,
+                                                                    maxHeight: '200px',
+                                                                    overflowY: 'auto',
+                                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                                                    marginTop: '4px',
+                                                                    minWidth: '150px',
+                                                                    whiteSpace: 'nowrap',
+                                                                    display: 'block',
+                                                                    visibility: 'visible'
+                                                                }}>
+                                                                    {tournamentFilters.game && (
+                                                                        <div
+                                                                            onClick={() => clearTournamentFilter('game')}
+                                                                            className="dropdown-item clear-filter"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                backgroundColor: '#333333',
+                                                                                color: '#ffffff',
+                                                                                borderBottom: '2px solid #444444'
+                                                                            }}
+                                                                        >
+                                                                            ✕ Сбросить фильтр
+                                                                        </div>
+                                                                    )}
+                                                                    {uniqueTournamentValues('game').map((value) => (
+                                                                        <div
+                                                                            key={value}
+                                                                            onClick={() => applyTournamentFilter('game', value)}
+                                                                            className="dropdown-item"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                borderBottom: '1px solid #2a2a2a',
+                                                                                backgroundColor: 'transparent',
+                                                                                color: '#ffffff'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            {value}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    Игра{tournamentFilters.game && ` (${tournamentFilters.game})`}{' '}
+                                                                    <span className="dropdown-icon" onClick={() => toggleTournamentFilter('game')}>
+                                                                        ▼
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </th>
+                                                        <th ref={tournamentFilterRefs.name} className={tournamentFilters.name ? 'filtered' : ''}>
+                                                            {activeTournamentFilter === 'name' ? (
+                                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                                    <input
+                                                                        name="name"
+                                                                        value={tournamentFilters.name}
+                                                                        onChange={handleTournamentFilterChange}
+                                                                        placeholder="Поиск по названию"
+                                                                        autoFocus
+                                                                        style={{ flex: 1 }}
+                                                                    />
+                                                                    {tournamentFilters.name && (
+                                                                        <button
+                                                                            onClick={() => clearTournamentFilter('name')}
+                                                                            style={{
+                                                                                padding: '4px 8px',
+                                                                                backgroundColor: '#333333',
+                                                                                color: '#ffffff',
+                                                                                border: '1px solid #555555',
+                                                                                borderRadius: '4px',
+                                                                                cursor: 'pointer',
+                                                                                fontSize: '11px'
+                                                                            }}
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    Название{tournamentFilters.name && ` (${tournamentFilters.name})`}{' '}
+                                                                    <span className="filter-icon" onClick={() => toggleTournamentFilter('name')}>
+                                                                        🔍
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </th>
+                                                        <th>
+                                                            Участники{' '}
+                                                            <span className="sort-icon" onClick={() => handleTournamentSort('participant_count')}>
+                                                                {tournamentSort.field === 'participant_count' && tournamentSort.direction === 'asc' ? '▲' : '▼'}
+                                                            </span>
+                                                        </th>
+                                                        <th ref={tournamentFilterRefs.status} className={tournamentFilters.status ? 'filtered' : ''}>
+                                                            {activeTournamentFilter === 'status' ? (
+                                                                <div className="dropdown" style={{
+                                                                    position: 'absolute',
+                                                                    top: '100%',
+                                                                    left: '0',
+                                                                    right: '0',
+                                                                    background: '#1a1a1a',
+                                                                    color: '#ffffff',
+                                                                    border: '1px solid #333333',
+                                                                    borderRadius: '6px',
+                                                                    zIndex: 9999,
+                                                                    maxHeight: '200px',
+                                                                    overflowY: 'auto',
+                                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                                                    marginTop: '4px',
+                                                                    minWidth: '150px',
+                                                                    whiteSpace: 'nowrap',
+                                                                    display: 'block',
+                                                                    visibility: 'visible'
+                                                                }}>
+                                                                    {tournamentFilters.status && (
+                                                                        <div
+                                                                            onClick={() => clearTournamentFilter('status')}
+                                                                            className="dropdown-item clear-filter"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                backgroundColor: '#333333',
+                                                                                color: '#ffffff',
+                                                                                borderBottom: '2px solid #444444'
+                                                                            }}
+                                                                        >
+                                                                            ✕ Сбросить фильтр
+                                                                        </div>
+                                                                    )}
+                                                                    {uniqueTournamentValues('status').map((value) => (
+                                                                        <div
+                                                                            key={value}
+                                                                            onClick={() => applyTournamentFilter('status', value)}
+                                                                            className="dropdown-item"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                borderBottom: '1px solid #2a2a2a',
+                                                                                backgroundColor: 'transparent',
+                                                                                color: '#ffffff'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            {value === 'active' ? 'Активен' : 
+                                                                             value === 'in_progress' ? 'Идет' : 
+                                                                             value === 'completed' ? 'Завершен' : 
+                                                                             value}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    Статус{tournamentFilters.status && ` (${
+                                                                        tournamentFilters.status === 'active' ? 'Активен' : 
+                                                                        tournamentFilters.status === 'in_progress' ? 'Идет' : 
+                                                                        tournamentFilters.status === 'completed' ? 'Завершен' : 
+                                                                        tournamentFilters.status
+                                                                    })`}{' '}
+                                                                    <span className="dropdown-icon" onClick={() => toggleTournamentFilter('status')}>
+                                                                        ▼
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </th>
+                                                        <th>
+                                                            Дата{' '}
+                                                            <span className="sort-icon" onClick={() => handleTournamentSort('start_date')}>
+                                                                {tournamentSort.field === 'start_date' && tournamentSort.direction === 'asc' ? '▲' : '▼'}
+                                                            </span>
+                                                        </th>
+                                                        <th>Результат</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredAndSortedUserTournaments.map((tournament) => (
+                                                        <tr key={tournament.id}>
+                                                            <td data-label="Игра" title={tournament.game}>{tournament.game}</td>
+                                                            <td data-label="Название" title={tournament.name}>
+                                                                <a href={`/tournaments/${tournament.id}`}>{tournament.name}</a>
+                                                            </td>
+                                                            <td data-label="Участники">
+                                                                {tournament.max_participants
+                                                                    ? `${tournament.participant_count} из ${tournament.max_participants}`
+                                                                    : tournament.participant_count}
+                                                            </td>
+                                                            <td data-label="Статус">
+                                                                <span className={`tournament-status-badge ${
+                                                                    tournament.status === 'active' ? 'tournament-status-active' : 
+                                                                    tournament.status === 'in_progress' ? 'tournament-status-in-progress' : 
+                                                                    tournament.status === 'completed' ? 'tournament-status-completed' : 
+                                                                    'tournament-status-completed'
+                                                                }`}>
+                                                                    {tournament.status === 'active' ? 'Активен' : 
+                                                                     tournament.status === 'in_progress' ? 'Идет' : 
+                                                                     tournament.status === 'completed' ? 'Завершен' : 
+                                                                     'Неизвестно'}
+                                                                </span>
+                                                            </td>
+                                                            <td data-label="Дата">{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
+                                                            <td data-label="Результат">
+                                                                {tournament.tournament_result ? (
+                                                                    <span className={`tournament-result ${tournament.tournament_result.toLowerCase()}`}>
+                                                                        {tournament.tournament_result}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="tournament-result pending">
+                                                                        {tournament.status === 'completed' ? 'Не указан' : 'В процессе'}
+                                                                    </span>
+                                                                )}
+                                                                {tournament.wins && tournament.losses && (
+                                                                    <div className="tournament-stats">
+                                                                        <small>({tournament.wins}П/{tournament.losses}П)</small>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        ) : (
+                                            <div className="tournaments-cards">
+                                                {filteredAndSortedUserTournaments.map((tournament) => (
+                                                    <div key={tournament.id} className="tournament-card">
+                                                        <h3 className="tournament-name">
+                                                            <a href={`/tournaments/${tournament.id}`}>{tournament.name}</a>
+                                                        </h3>
+                                                        <div className="tournament-details">
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Игра:</span>
+                                                                <span className="tournament-value">{tournament.game}</span>
+                                                            </div>
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Участники:</span>
+                                                                <span className="tournament-value">
+                                                                    {tournament.max_participants
+                                                                        ? `${tournament.participant_count} из ${tournament.max_participants}`
+                                                                        : tournament.participant_count}
+                                                                </span>
+                                                            </div>
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Дата:</span>
+                                                                <span className="tournament-value">
+                                                                    {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
+                                                                </span>
+                                                            </div>
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Статус:</span>
+                                                                <span className={`tournament-status ${
+                                                                    tournament.status === 'active' ? 'active' : 
+                                                                    tournament.status === 'in_progress' ? 'in-progress' : 
+                                                                    'completed'
+                                                                }`}>
+                                                                    {tournament.status === 'active' ? 'Активен' : 
+                                                                     tournament.status === 'in_progress' ? 'Идет' : 
+                                                                     tournament.status === 'completed' ? 'Завершен' : 
+                                                                     'Неизвестный статус'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Результат:</span>
+                                                                <span className="tournament-value">
+                                                                    {tournament.tournament_result ? (
+                                                                        <span className={`tournament-result ${tournament.tournament_result.toLowerCase()}`}>
+                                                                            {tournament.tournament_result}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="tournament-result pending">
+                                                                            {tournament.status === 'completed' ? 'Не указан' : 'В процессе'}
+                                                                        </span>
+                                                                    )}
+                                                                    {tournament.wins && tournament.losses && (
+                                                                        <div className="tournament-stats">
+                                                                            <small> ({tournament.wins}П/{tournament.losses}П)</small>
+                                                                        </div>
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        {filteredAndSortedUserTournaments.length === 0 && (
+                                            <div className="empty-state">
+                                                <div className="empty-state-title">Турниры не найдены</div>
+                                                <div className="empty-state-description">
+                                                    {userTournaments.length === 0 
+                                                        ? 'Вы еще не участвовали в турнирах'
+                                                        : 'Попробуйте изменить фильтры поиска'
+                                                    }
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </>
