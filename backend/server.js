@@ -28,7 +28,6 @@ const nodemailer = require('nodemailer');
 const rateLimiter = require('express-rate-limit');
 const { authenticateToken } = require('./middleware/auth');
 const { updateActivity } = require('./middleware/activity');
-const tournamentsRouter = require('./routes/tournaments');
 const { broadcastTournamentUpdate } = require('./notifications');
 const multer = require('multer');
 const fs = require('fs');
