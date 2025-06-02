@@ -384,7 +384,76 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, fetchCreatorInfo]);
+    
+    // Функция для загрузки данных турнира с принудительной очисткой кеша
+    const fetchTournamentDataForcefully = useCallback(async (clearCache = false) => {
+        setLoading(true);
+        setError(null);
+        
+        // Принудительно очищаем кеш при необходимости
+        if (clearCache) {
+            const cacheKey = `tournament_cache_${id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+            console.log(`Кеш турнира ${id} принудительно очищен`);
+        }
+        
+        try {
+            console.log(`Принудительная загрузка данных турнира ${id} с сервера...`);
+            
+            const response = await api.get(`/api/tournaments/${id}?_t=${Date.now()}`); // Добавляем timestamp для избежания кеширования браузера
+            
+            // Кешируем новые результаты
+            const cacheKey = `tournament_cache_${id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+            localStorage.setItem(cacheKey, JSON.stringify(response.data));
+            localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+            
+            setTournament(response.data);
+            setMatches(response.data.matches || []);
+            
+            // Сохраняем исходный список участников при загрузке турнира
+            if (response.data.participants && response.data.participants.length > 0) {
+                setOriginalParticipants(response.data.participants);
+            }
+            
+            // Загружаем информацию о создателе турнира
+            if (response.data.created_by) {
+                fetchCreatorInfo(response.data.created_by);
+            }
+            
+            console.log(`Данные турнира ${id} успешно обновлены:`, {
+                status: response.data.status,
+                participantsCount: response.data.participants?.length || 0,
+                matchesCount: response.data.matches?.length || 0
+            });
+            
+        } catch (error) {
+            console.error('Ошибка при принудительной загрузке турнира:', error);
+            setError('Ошибка загрузки данных турнира');
+            
+            // В крайнем случае пробуем использовать старый кеш
+            try {
+                const cacheKey = `tournament_cache_${id}`;
+                const oldCache = localStorage.getItem(cacheKey);
+                if (oldCache) {
+                    const parsedOldCache = JSON.parse(oldCache);
+                    if (parsedOldCache && parsedOldCache.id) {
+                        console.log(`Используем старый кеш турнира ${id} из-за ошибки API`);
+                        setTournament(parsedOldCache);
+                        setMatches(parsedOldCache.matches || []);
+                        setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
+                    }
+                }
+            } catch (cacheError) {
+                console.error('Ошибка при попытке использовать старый кеш:', cacheError);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [id, fetchCreatorInfo]);
     
     // Функция для загрузки информации о создателе турнира
     const fetchCreatorInfo = async (creatorId) => {
@@ -714,36 +783,78 @@ function TournamentDetails() {
             console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
             socket.emit('watch_tournament', id);
             socket.emit('join_tournament_chat', id);
+            setWsConnected(true);
         });
         
         socket.on('disconnect', (reason) => {
             console.log('Socket.IO соединение закрыто:', reason);
+            setWsConnected(false);
         });
         
         socket.on('error', (error) => {
             console.error('Ошибка Socket.IO соединения:', error);
+            setWsConnected(false);
         });
         
         socket.on('connect_error', (error) => {
             console.error('Ошибка подключения Socket.IO:', error);
+            setWsConnected(false);
         });
         
         socket.on('tournament_update', (tournamentData) => {
             if (tournamentData.tournamentId === parseInt(id) || tournamentData.id === parseInt(id)) {
-                console.log('Получено обновление турнира через WebSocket');
-                fetchTournamentData();
-            }
-        });
-        
-        socket.on('tournament_message', (message) => {
-            if (message.tournamentId === parseInt(id)) {
-                setChatMessages(prev => [...prev, message]);
-                if (chatEndRef.current) {
-                    chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                console.log('Получено обновление турнира через WebSocket:', tournamentData);
+                
+                // Обрабатываем различные форматы данных
+                const data = tournamentData.data || tournamentData;
+                
+                // Если это обновление статуса, принудительно обновляем данные
+                if (data.status && data.status !== tournament.status) {
+                    console.log(`Статус турнира изменился с ${tournament.status} на ${data.status}`);
+                    
+                    // Принудительно перезагружаем данные с очисткой кеша
+                    setTimeout(async () => {
+                        try {
+                            await fetchTournamentDataForcefully(true);
+                            console.log('Данные турнира обновлены после изменения статуса через WebSocket');
+                        } catch (error) {
+                            console.error('Ошибка обновления данных после WebSocket события:', error);
+                        }
+                    }, 500);
+                } else {
+                    // Обычное обновление данных турнира
+                    setTournament(prev => {
+                        const updatedTournament = { ...prev, ...data };
+                        console.log('Обновленные данные турнира через WebSocket:', updatedTournament);
+                        return updatedTournament;
+                    });
+                }
+                
+                // Обновляем список матчей
+                const matchesData = data.matches || tournamentData.matches || [];
+                if (Array.isArray(matchesData)) {
+                    console.log(`Получено ${matchesData.length} матчей через WebSocket`);
+                    setMatches(matchesData);
+                }
+                
+                // Устанавливаем сообщение для пользователя
+                if (tournamentData.message) {
+                    setMessage(tournamentData.message);
+                    setTimeout(() => setMessage(''), 3000);
                 }
             }
         });
-        
+
+        socket.on('disconnect', (reason) => {
+            console.log('Socket.IO соединение закрыто в компоненте TournamentDetails:', reason);
+            setWsConnected(false);
+        });
+
+        // Обработка новых сообщений чата турнира
+        socket.on('tournament_message', (message) => {
+            setChatMessages(prev => [...prev, message]);
+        });
+
         wsRef.current = socket;
         
         // Очистка при размонтировании
@@ -752,8 +863,9 @@ function TournamentDetails() {
             if (socket) {
                 socket.disconnect();
             }
+            setWsConnected(false);
         };
-    }, [id, user, tournament, fetchTournamentData, API_URL]);
+    }, [id, user, tournament, fetchTournamentDataForcefully, API_URL]);
     
     // Проверка участия пользователя и прав администратора
     useEffect(() => {
@@ -2302,23 +2414,83 @@ function TournamentDetails() {
         }
     };
     
-    // Обработчик запуска турнира
+    // Обработчик запуска турнира с оптимистичным обновлением
     const handleStartTournament = async () => {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+            setMessage('Необходима авторизация для запуска турнира');
+            return;
+        }
 
+        // Проверяем текущий статус
+        if (tournament.status !== 'active' && tournament.status !== 'pending') {
+            setMessage('Турнир уже запущен или завершен');
+            return;
+        }
+
+        // Сохраняем оригинальные данные для возможного отката
+        const originalTournament = { ...tournament };
+        
         try {
-            await api.post(
+            // Оптимистично обновляем UI - сразу меняем статус
+            setTournament(prev => ({ 
+                ...prev, 
+                status: 'in_progress'
+            }));
+            setMessage('Запуск турнира...');
+            
+            // Отправляем запрос на сервер
+            const response = await api.post(
                 `/api/tournaments/${id}/start`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            alert('Турнир успешно запущен');
-            await fetchTournamentData();
+            
+            console.log('Турнир успешно запущен, ответ сервера:', response.data);
+            
+            // Если сервер вернул обновленные данные турнира, используем их
+            if (response.data && response.data.tournament) {
+                setTournament(response.data.tournament);
+                setMatches(response.data.tournament.matches || []);
+            }
+            
+            setMessage('Турнир успешно запущен');
+            
+            // Принудительно обновляем данные с сервера через небольшую задержку
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentDataForcefully(true); // Очищаем кеш
+                    console.log('Данные турнира синхронизированы после запуска');
+                } catch (syncError) {
+                    console.error('Ошибка синхронизации после запуска:', syncError);
+                }
+            }, 1000);
+            
         } catch (error) {
             console.error('Ошибка при запуске турнира:', error);
-            alert(error.message || 'Не удалось запустить турнир');
+            
+            // Откатываем оптимистичные изменения
+            setTournament(originalTournament);
+            
+            // Показываем детальную ошибку
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Не удалось запустить турнир';
+            setMessage(`Ошибка запуска турнира: ${errorMessage}`);
+            
+            // Принудительно обновляем данные на случай, если состояние рассинхронизировалось
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentDataForcefully(true);
+                    console.log('Данные турнира синхронизированы после ошибки');
+                } catch (syncError) {
+                    console.error('Ошибка синхронизации после ошибки:', syncError);
+                }
+            }, 2000);
         }
+        
+        // Очищаем сообщение через 5 секунд
+        setTimeout(() => {
+            setMessage('');
+        }, 5000);
     };
 
     // Функция для пересоздания сетки турнира
@@ -2416,23 +2588,84 @@ function TournamentDetails() {
         }
     };
     
-    // Функция для завершения турнира
+    // Функция для завершения турнира с оптимистичным обновлением
     const handleEndTournament = () => {
         setShowEndTournamentModal(true);
     };
 
     // Функция для фактического завершения турнира после подтверждения
     const confirmEndTournament = async () => {
-        try {
-            // eslint-disable-next-line no-unused-vars
-            const response = await api.post(`/api/tournaments/${id}/end`, {});
-            setTournament(prev => ({ ...prev, status: 'completed' }));
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Необходима авторизация для завершения турнира');
             setShowEndTournamentModal(false);
+            return;
+        }
+
+        // Сохраняем оригинальные данные для возможного отката
+        const originalTournament = { ...tournament };
+        
+        try {
+            // Оптимистично обновляем UI
+            setTournament(prev => ({ 
+                ...prev, 
+                status: 'completed'
+            }));
+            setMessage('Завершение турнира...');
+            setShowEndTournamentModal(false);
+            
+            // Отправляем запрос на сервер
+            const response = await api.post(
+                `/api/tournaments/${id}/end`, 
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            console.log('Турнир успешно завершен, ответ сервера:', response.data);
+            
+            // Если сервер вернул обновленные данные турнира, используем их
+            if (response.data && response.data.tournament) {
+                setTournament(response.data.tournament);
+                setMatches(response.data.tournament.matches || []);
+            }
+            
             setMessage('Турнир успешно завершен!');
+            
+            // Принудительно обновляем данные с сервера через небольшую задержку
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentDataForcefully(true); // Очищаем кеш
+                    console.log('Данные турнира синхронизированы после завершения');
+                } catch (syncError) {
+                    console.error('Ошибка синхронизации после завершения:', syncError);
+                }
+            }, 1000);
+            
         } catch (error) {
             console.error('Ошибка при завершении турнира:', error);
-            setMessage('Ошибка при завершении турнира!');
+            
+            // Откатываем оптимистичные изменения
+            setTournament(originalTournament);
+            setShowEndTournamentModal(false);
+            
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Не удалось завершить турнир';
+            setMessage(`Ошибка завершения турнира: ${errorMessage}`);
+            
+            // Принудительно обновляем данные на случай рассинхронизации
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentDataForcefully(true);
+                    console.log('Данные турнира синхронизированы после ошибки завершения');
+                } catch (syncError) {
+                    console.error('Ошибка синхронизации после ошибки завершения:', syncError);
+                }
+            }, 2000);
         }
+        
+        // Очищаем сообщение через 5 секунд
+        setTimeout(() => {
+            setMessage('');
+        }, 5000);
     };
     
     // Функция для сброса результатов матчей
@@ -2442,34 +2675,84 @@ function TournamentDetails() {
 
     // Функция для подтверждения сброса результатов матчей
     const confirmClearMatchResults = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setMessage('Необходима авторизация для очистки результатов');
+            setShowClearResultsModal(false);
+            return;
+        }
+
+        // Сохраняем оригинальные данные для возможного отката
+        const originalTournament = { ...tournament };
+        const originalMatches = [...matches];
+        
         try {
-            const response = await api.post(`/api/tournaments/${id}/clear-match-results`);
+            setMessage('Очистка результатов матчей...');
+            setShowClearResultsModal(false);
             
-            if (response.data.tournament) {
+            // Оптимистично обновляем UI - очищаем результаты матчей
+            const clearedMatches = matches.map(match => ({
+                ...match,
+                winner_team_id: null,
+                score1: 0,
+                score2: 0
+            }));
+            setMatches(clearedMatches);
+            
+            // Отправляем запрос на сервер
+            const response = await api.post(
+                `/api/tournaments/${id}/clear-match-results`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            console.log('Результаты матчей успешно очищены, ответ сервера:', response.data);
+            
+            // Если сервер вернул обновленные данные турнира, используем их
+            if (response.data && response.data.tournament) {
                 setTournament(response.data.tournament);
                 setMatches(response.data.tournament.matches || []);
-            } else {
-                // Если данные турнира не пришли, обновляем их вручную
-                await fetchTournamentData();
             }
             
-            setShowClearResultsModal(false);
             setMessage('Результаты матчей успешно очищены!');
             
-            // Очищаем сообщение через 3 секунды
-            setTimeout(() => {
-                setMessage('');
-            }, 3000);
+            // Принудительно обновляем данные с сервера через небольшую задержку
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentDataForcefully(true); // Очищаем кеш
+                    console.log('Данные турнира синхронизированы после очистки результатов');
+                } catch (syncError) {
+                    console.error('Ошибка синхронизации после очистки результатов:', syncError);
+                }
+            }, 1000);
+            
         } catch (error) {
             console.error('Ошибка при сбросе результатов матчей:', error);
-            setMessage(`Ошибка при сбросе результатов: ${error.response?.data?.error || error.message}`);
+            
+            // Откатываем оптимистичные изменения
+            setTournament(originalTournament);
+            setMatches(originalMatches);
             setShowClearResultsModal(false);
             
-            // Очищаем сообщение об ошибке через 5 секунд
-            setTimeout(() => {
-                setMessage('');
-            }, 5000);
+            // Показываем детальную ошибку
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Не удалось очистить результаты матчей';
+            setMessage(`Ошибка очистки результатов: ${errorMessage}`);
+            
+            // Принудительно обновляем данные на случай рассинхронизации
+            setTimeout(async () => {
+                try {
+                    await fetchTournamentDataForcefully(true);
+                    console.log('Данные турнира синхронизированы после ошибки очистки результатов');
+                } catch (syncError) {
+                    console.error('Ошибка синхронизации после ошибки очистки результатов:', syncError);
+                }
+            }, 2000);
         }
+        
+        // Очищаем сообщение через 5 секунд
+        setTimeout(() => {
+            setMessage('');
+        }, 5000);
     };
 
     // Функция для возможности редактирования матча
