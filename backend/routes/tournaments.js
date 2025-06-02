@@ -2191,6 +2191,16 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         // Получаем обновленные данные турнира
         const updatedTournament = updateResult.rows[0];
         
+        // 🔄 АВТОМАТИЧЕСКИ ПЕРЕСЧИТЫВАЕМ СТАТИСТИКУ для всех участников
+        console.log(`🎯 Турнир завершен, пересчитываем статистику для всех участников...`);
+        try {
+            await recalculateAllParticipantsStats(id, tournament.participant_type);
+            console.log(`✅ Статистика успешно пересчитана для турнира ${tournament.name}`);
+        } catch (statsError) {
+            console.error(`⚠️ Ошибка пересчета статистики для турнира ${tournament.name}:`, statsError.message);
+            // Не прерываем завершение турнира из-за ошибки статистики
+        }
+        
         // Получаем данные участников
         let participantsQuery;
         if (updatedTournament.participant_type === 'solo') {
@@ -2235,7 +2245,7 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         
         // Возвращаем успешный ответ
         res.status(200).json({
-            message: 'Турнир успешно завершен',
+            message: 'Турнир успешно завершен, статистика обновлена для всех участников',
             tournament: responseData
         });
     } catch (err) {
@@ -2819,6 +2829,20 @@ async function recalculateAllParticipantsStats(tournamentId, participantType) {
     try {
         console.log(`🔄 Пересчитываем статистику для всех участников турнира ${tournamentId}`);
         
+        // Проверяем существование таблицы user_tournament_stats
+        const tableCheckResult = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'user_tournament_stats'
+            );
+        `);
+        
+        if (!tableCheckResult.rows[0].exists) {
+            console.error('❌ Таблица user_tournament_stats не существует! Создайте таблицу перед пересчетом.');
+            throw new Error('Таблица user_tournament_stats не создана');
+        }
+        
         // Получаем всех участников турнира
         let participantsQuery;
         if (participantType === 'solo') {
@@ -2841,35 +2865,56 @@ async function recalculateAllParticipantsStats(tournamentId, participantType) {
         
         console.log(`Найдено ${userIds.length} участников для пересчета статистики`);
         
+        let updatedCount = 0;
+        let errorCount = 0;
+        
         // Для каждого участника пересчитываем результат
         for (const userId of userIds) {
-            const result = await calculateTournamentResult(tournamentId, userId, participantType);
-            
-            if (result) {
-                // Удаляем старую запись если есть
-                await pool.query(
-                    'DELETE FROM user_tournament_stats WHERE user_id = $1 AND tournament_id = $2',
-                    [userId, tournamentId]
-                );
+            try {
+                const result = await calculateTournamentResult(tournamentId, userId, participantType);
                 
-                // Вставляем новую запись
-                await pool.query(`
-                    INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                `, [
-                    userId,
-                    tournamentId, 
-                    result.place,
-                    result.wins || 0,
-                    result.losses || 0,
-                    participantType === 'team'
-                ]);
-                
-                console.log(`✅ Обновлена статистика для пользователя ${userId}: ${result.place}`);
+                if (result) {
+                    // ✅ БЕЗОПАСНЫЙ UPSERT вместо DELETE+INSERT
+                    await pool.query(`
+                        INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        ON CONFLICT (user_id, tournament_id) 
+                        DO UPDATE SET 
+                            result = EXCLUDED.result,
+                            wins = EXCLUDED.wins,
+                            losses = EXCLUDED.losses,
+                            is_team = EXCLUDED.is_team,
+                            updated_at = CURRENT_TIMESTAMP
+                    `, [
+                        userId,
+                        tournamentId, 
+                        result.place,
+                        result.wins || 0,
+                        result.losses || 0,
+                        participantType === 'team'
+                    ]);
+                    
+                    updatedCount++;
+                    console.log(`✅ Обновлена статистика для пользователя ${userId}: ${result.place} (${result.wins}П/${result.losses}П)`);
+                } else {
+                    console.log(`⚠️ Не удалось определить результат для пользователя ${userId}`);
+                }
+            } catch (userError) {
+                errorCount++;
+                console.error(`❌ Ошибка обработки пользователя ${userId}:`, userError.message);
             }
         }
+        
+        console.log(`🎯 Завершен пересчет статистики: обновлено ${updatedCount}, ошибок ${errorCount} из ${userIds.length} участников`);
+        
+        return {
+            total: userIds.length,
+            updated: updatedCount,
+            errors: errorCount
+        };
     } catch (err) {
-        console.error('Ошибка пересчета статистики участников:', err);
+        console.error('❌ Критическая ошибка пересчета статистики участников:', err);
+        throw err;
     }
 }
 

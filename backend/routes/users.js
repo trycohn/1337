@@ -526,7 +526,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
         const soloWinRate = soloWins + soloLosses > 0 ? (soloWins / (soloWins + soloLosses)) * 100 : 0;
         const teamWinRate = teamWins + teamLosses > 0 ? (teamWins / (teamWins + teamLosses)) * 100 : 0;
-
+        
         // Статистика по играм
         const gameStats = {};
         stats.forEach(stat => {
@@ -581,7 +581,7 @@ router.post('/recalculate-tournament-stats', authenticateToken, async (req, res)
 
         // Получаем все завершенные турниры где участвовал пользователь
         const userTournamentsResult = await pool.query(`
-            SELECT DISTINCT t.id, t.name, t.game, t.participant_type, t.format
+            SELECT DISTINCT t.id, t.name, t.game, t.participant_type, t.format, t.status
             FROM tournaments t
             WHERE t.status = 'completed' 
             AND (
@@ -603,10 +603,12 @@ router.post('/recalculate-tournament-stats', authenticateToken, async (req, res)
 
         for (const tournament of userTournamentsResult.rows) {
             try {
+                console.log(`🎯 Обрабатываем турнир: ${tournament.name} (ID: ${tournament.id})`);
+                
                 const result = await calculateTournamentResult(tournament.id, req.user.id, tournament.participant_type);
                 
                 if (result) {
-                    // Используем UPSERT (INSERT ... ON CONFLICT) для безопасного обновления
+                    // ✅ БЕЗОПАСНЫЙ UPSERT вместо DELETE+INSERT
                     await pool.query(`
                         INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
                         VALUES ($1, $2, $3, $4, $5, $6)
@@ -627,7 +629,7 @@ router.post('/recalculate-tournament-stats', authenticateToken, async (req, res)
                     ]);
                     
                     updatedTournaments++;
-                    console.log(`✅ Обновлена статистика для турнира ${tournament.name}: ${result.place}`);
+                    console.log(`✅ Обновлена статистика для турнира ${tournament.name}: ${result.place} (${result.wins}П/${result.losses}П)`);
                 } else {
                     skippedTournaments++;
                     console.log(`⚠️ Пропущен турнир ${tournament.name}: не удалось определить результат`);
@@ -653,7 +655,11 @@ router.post('/recalculate-tournament-stats', authenticateToken, async (req, res)
                 skipped: skippedTournaments,
                 errors: errors.length
             },
-            errors: errors.length > 0 ? errors : undefined
+            errors: errors.length > 0 ? errors : undefined,
+            // Добавляем информацию для фронтенда
+            statusMessage: errors.length === 0 
+                ? `Обновлено: ${updatedTournaments} из ${totalTournaments} турниров`
+                : `Обновлено: ${updatedTournaments} из ${totalTournaments}, ошибок: ${errors.length}`
         });
     } catch (err) {
         console.error('❌ Критическая ошибка пересчета статистики турниров:', err);
@@ -856,61 +862,76 @@ router.get('/match-history', authenticateToken, async (req, res) => {
 // Получение турниров пользователя
 router.get('/tournaments', authenticateToken, async (req, res) => {
     try {
-        const userTournamentsResult = await pool.query(`
-            SELECT DISTINCT
-                t.id,
-                t.name,
-                t.game,
-                t.format,
-                t.status,
-                t.start_date,
-                t.end_date,
-                t.max_participants,
-                t.participant_type,
-                CASE 
-                    WHEN t.participant_type = 'solo' THEN (
-                        SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id
-                    )
-                    WHEN t.participant_type = 'team' THEN (
-                        SELECT COUNT(*) FROM tournament_teams tt WHERE tt.tournament_id = t.id
-                    )
-                    ELSE 0
-                END AS participant_count,
-                CASE 
-                    WHEN t.participant_type = 'solo' THEN
-                        CASE 
-                            WHEN EXISTS(SELECT 1 FROM tournament_participants tp WHERE tp.tournament_id = t.id AND tp.user_id = $1) THEN 'participant'
-                            ELSE NULL
-                        END
-                    WHEN t.participant_type = 'team' THEN
-                        CASE 
-                            WHEN EXISTS(SELECT 1 FROM tournament_teams tt 
-                                       JOIN tournament_team_members ttm ON tt.id = ttm.team_id 
-                                       WHERE tt.tournament_id = t.id AND ttm.user_id = $1) THEN 'participant'
-                            ELSE NULL
-                        END
-                END as participation_status,
+        console.log('📋 Загружаем турниры для пользователя:', req.user.id);
+        
+        // Получаем турниры где участвовал пользователь с результатами из user_tournament_stats
+        const tournamentsQuery = `
+            SELECT DISTINCT 
+                t.*,
                 uts.result as tournament_result,
                 uts.wins,
-                uts.losses
+                uts.losses,
+                uts.is_team,
+                uts.updated_at as stats_updated_at,
+                CASE 
+                    WHEN t.participant_type = 'solo' THEN 'solo'
+                    WHEN t.participant_type = 'team' THEN 'team'
+                    ELSE 'unknown'
+                END as participation_type
             FROM tournaments t
-            LEFT JOIN user_tournament_stats uts ON t.id = uts.tournament_id AND uts.user_id = $1
-            WHERE 
-                (t.participant_type = 'solo' AND EXISTS(
-                    SELECT 1 FROM tournament_participants tp WHERE tp.tournament_id = t.id AND tp.user_id = $1
-                )) OR
-                (t.participant_type = 'team' AND EXISTS(
-                    SELECT 1 FROM tournament_teams tt 
-                    JOIN tournament_team_members ttm ON tt.id = ttm.team_id 
-                    WHERE tt.tournament_id = t.id AND ttm.user_id = $1
-                ))
+            LEFT JOIN (
+                -- Для соло турниров
+                SELECT DISTINCT tp.tournament_id, tp.user_id
+                FROM tournament_participants tp
+                WHERE tp.user_id = $1
+                UNION
+                -- Для командных турниров 
+                SELECT DISTINCT tt.tournament_id, ttm.user_id
+                FROM tournament_teams tt
+                JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                WHERE ttm.user_id = $1
+            ) user_participation ON t.id = user_participation.tournament_id
+            LEFT JOIN user_tournament_stats uts ON (
+                uts.tournament_id = t.id AND 
+                uts.user_id = $1
+            )
+            WHERE user_participation.tournament_id IS NOT NULL
             ORDER BY t.start_date DESC
-        `, [req.user.id]);
-
-        res.json(userTournamentsResult.rows);
+        `;
+        
+        const result = await pool.query(tournamentsQuery, [req.user.id]);
+        
+        console.log(`✅ Найдено ${result.rows.length} турниров для пользователя ${req.user.id}`);
+        
+        // Логируем для диагностики
+        result.rows.forEach(tournament => {
+            console.log(`🎯 Турнир "${tournament.name}" (${tournament.status}): результат = "${tournament.tournament_result || 'Не указан'}", обновлен: ${tournament.stats_updated_at || 'никогда'}`);
+        });
+        
+        // Обрабатываем результаты для лучшего отображения
+        const processedTournaments = result.rows.map(tournament => ({
+            ...tournament,
+            // Обеспечиваем правильное отображение результата
+            tournament_result: tournament.tournament_result || (
+                tournament.status === 'completed' ? 'Не указан' : 'В процессе'
+            ),
+            // Добавляем дополнительную информацию
+            has_stats: !!tournament.tournament_result,
+            stats_last_updated: tournament.stats_updated_at,
+            win_rate: tournament.wins !== null && tournament.losses !== null 
+                ? tournament.wins + tournament.losses > 0 
+                    ? Math.round((tournament.wins / (tournament.wins + tournament.losses)) * 100)
+                    : 0
+                : null
+        }));
+        
+        res.json(processedTournaments);
     } catch (err) {
-        console.error('Ошибка получения турниров пользователя:', err);
-        res.status(500).json({ error: 'Не удалось загрузить турниры пользователя' });
+        console.error('❌ Ошибка получения турниров пользователя:', err);
+        res.status(500).json({ 
+            error: 'Ошибка загрузки турниров',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 

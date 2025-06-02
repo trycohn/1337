@@ -319,29 +319,55 @@ function Profile() {
                 
                 if (recalcResponse.data.success) {
                     const details = recalcResponse.data.details;
-                    setRecalculationStatus(
-                        `Обновлено: ${details.updated} из ${details.total} турниров`
-                    );
-                    console.log('✅ Статистика автоматически пересчитана:', recalcResponse.data);
+                    
+                    // Показываем детальный статус
+                    if (details.total === 0) {
+                        setRecalculationStatus('Турниры не найдены');
+                    } else if (details.errors === 0) {
+                        setRecalculationStatus(
+                            `✅ ${recalcResponse.data.statusMessage || `Обновлено: ${details.updated} из ${details.total} турниров`}`
+                        );
+                    } else {
+                        setRecalculationStatus(
+                            `⚠️ ${recalcResponse.data.statusMessage || `Обновлено: ${details.updated} из ${details.total}, ошибок: ${details.errors}`}`
+                        );
+                    }
+                    
+                    console.log('✅ Статистика автоматически пересчитана:', {
+                        total: details.total,
+                        updated: details.updated,
+                        skipped: details.skipped,
+                        errors: details.errors
+                    });
                 } else {
                     setRecalculationError('Не удалось обновить статистику');
                 }
             } catch (recalcErr) {
                 console.log('⚠️ Автоматический пересчет статистики пропущен:', recalcErr.response?.data);
                 
-                // Проверяем, нужно ли создать таблицу
-                if (recalcErr.response?.data?.needsTableCreation) {
-                    setRecalculationError('Система статистики требует настройки. Обратитесь к администратору.');
+                const errorData = recalcErr.response?.data;
+                
+                // Детальная обработка ошибок
+                if (errorData?.needsTableCreation) {
+                    setRecalculationError('⚠️ Система статистики требует настройки. Обратитесь к администратору.');
+                } else if (errorData?.sqlErrorCode === '23505') {
+                    setRecalculationError('⚠️ Конфликт данных при обновлении. Попробуйте позже.');
+                } else if (errorData?.sqlErrorCode === '23503') {
+                    setRecalculationError('⚠️ Проблема целостности данных. Обратитесь к администратору.');
+                } else if (recalcErr.response?.status === 500) {
+                    setRecalculationError('⚠️ Сервер временно недоступен. Попробуйте позже.');
                 } else {
-                    setRecalculationError('Пересчет статистики временно недоступен');
+                    setRecalculationError('⚠️ Пересчет статистики временно недоступен');
                 }
                 
-                // Продолжаем выполнение даже если пересчет не удался - graceful degradation
+                // Graceful degradation - продолжаем выполнение даже если пересчет не удался
             }
             
-            // Небольшая задержка для лучшего UX
+            // Небольшая задержка для лучшего UX - пользователь видит процесс
             setTimeout(() => {
-                setRecalculationStatus('Загружаем обновленную статистику...');
+                if (!recalculationError) {
+                    setRecalculationStatus('Загружаем обновленную статистику...');
+                }
             }, 500);
             
             const response = await api.get('/api/users/stats', {
@@ -349,24 +375,24 @@ function Profile() {
             });
             setStats(response.data);
             
-            // Показываем успешное завершение
+            // Показываем финальный статус успеха
             if (!recalculationError) {
-                setRecalculationStatus('Статистика актуальна');
+                setRecalculationStatus('✅ Статистика актуальна');
                 setTimeout(() => {
                     setRecalculationStatus('');
-                }, 2000);
+                }, 3000); // Показываем успех 3 секунды
             }
             
         } catch (err) {
             setError(err.response?.data?.message || 'Ошибка загрузки статистики');
-            setRecalculationError('Не удалось загрузить статистику');
+            setRecalculationError('❌ Не удалось загрузить статистику');
         } finally {
             setIsRecalculating(false);
-            // Очищаем ошибки через некоторое время
+            // Очищаем ошибки через некоторое время для лучшего UX
             if (recalculationError) {
                 setTimeout(() => {
                     setRecalculationError('');
-                }, 5000);
+                }, 8000); // Показываем ошибку 8 секунд
             }
         }
     };
