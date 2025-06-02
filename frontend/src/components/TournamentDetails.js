@@ -456,7 +456,7 @@ function TournamentDetails() {
     }, [id, fetchCreatorInfo]);
     
     // Функция для загрузки информации о создателе турнира
-    const fetchCreatorInfo = async (creatorId) => {
+    const fetchCreatorInfo = useCallback(async (creatorId) => {
         if (!creatorId) return;
         
         try {
@@ -536,7 +536,7 @@ function TournamentDetails() {
                 isError: true
             });
         }
-    };
+    }, [tournament]);
     
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
