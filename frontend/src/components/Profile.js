@@ -302,6 +302,16 @@ function Profile() {
 
     const fetchStats = async (token) => {
         try {
+            // Автоматически пересчитываем статистику при каждой загрузке
+            try {
+                await api.post('/api/users/recalculate-tournament-stats', {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } catch (recalcErr) {
+                console.log('Автоматический пересчет статистики пропущен:', recalcErr.response?.data?.error);
+                // Продолжаем выполнение даже если пересчет не удался
+            }
+            
             const response = await api.get('/api/users/stats', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -1516,24 +1526,6 @@ function Profile() {
             return 0;
         });
 
-    // Функция для пересчета статистики турниров
-    const recalculateTournamentStats = async () => {
-        try {
-            setError('');
-            const response = await api.post('/api/users/recalculate-tournament-stats', {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            
-            // Обновляем статистику после пересчета
-            await fetchStats(localStorage.getItem('token'));
-            await fetchUserTournaments();
-            
-            alert(`✅ ${response.data.message}`);
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка пересчета статистики');
-        }
-    };
-
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
 
     return (
@@ -1802,13 +1794,6 @@ function Profile() {
                             <>
                                 <div className="content-header">
                                     <h2 className="content-title">Статистика</h2>
-                                    <button 
-                                        className="btn btn-sm" 
-                                        onClick={recalculateTournamentStats}
-                                        title="Пересчитать статистику турниров"
-                                    >
-                                        🔄 Пересчитать
-                                    </button>
                                 </div>
                                 
                                 {/* Site Stats */}
