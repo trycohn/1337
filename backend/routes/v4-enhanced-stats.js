@@ -172,35 +172,18 @@ router.get('/leaderboards', async (req, res) => {
         // Fallback если система достижений недоступна
         if (!achievementSystem) {
             const basicLeaderboard = await generateBasicLeaderboard(parseInt(limit));
-            return res.json({
-                leaderboard: basicLeaderboard,
-                category,
-                generatedAt: new Date().toISOString(),
-                totalUsers: basicLeaderboard.length,
-                message: 'Показан базовый лидерборд (система достижений недоступна)'
-            });
+            return res.json(basicLeaderboard); // Возвращаем массив напрямую как ожидает frontend
         }
         
         const leaderboard = await achievementSystem.getLeaderboard(parseInt(limit), category);
         
-        res.json({
-            leaderboard,
-            category,
-            generatedAt: new Date().toISOString(),
-            totalUsers: leaderboard.length
-        });
+        res.json(leaderboard); // Возвращаем массив напрямую как ожидает frontend
     } catch (error) {
         console.error('❌ Ошибка получения лидерборда:', error);
         
-        // Fallback ответ
+        // Fallback ответ - возвращаем массив
         const basicLeaderboard = await generateBasicLeaderboard(parseInt(req.query.limit || 10));
-        res.json({
-            leaderboard: basicLeaderboard,
-            category: req.query.category || 'overall',
-            generatedAt: new Date().toISOString(),
-            totalUsers: basicLeaderboard.length,
-            error: 'Система достижений временно недоступна'
-        });
+        res.json(basicLeaderboard);
     }
 });
 
