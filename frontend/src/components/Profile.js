@@ -1715,468 +1715,416 @@ function Profile() {
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
 
     return (
-        <div className="profile-page">
-            {/* Современный минималистичный дизайн */}
-            <div className="profile-layout">
-                {/* Левая панель с навигацией и основной информацией */}
-                <aside className="profile-aside">
-                    {/* Секция пользователя */}
-                    <div className="user-section">
-                        <div className="user-avatar-wrapper">
-                            <img 
-                                src={ensureHttps(avatar) || '/default-avatar.png'} 
-                                alt="User avatar" 
-                                className="user-avatar"
-                                onClick={openAvatarModal}
-                            />
-                            <button className="avatar-edit-btn" onClick={openAvatarModal}>
-                                <span className="icon">✎</span>
-                            </button>
-                            {user?.online_status === 'online' && (
-                                <div className="online-indicator"></div>
-                            )}
+        <div className="profile-container">
+            {error && <div className="error">{error}</div>}
+            
+            {/* Header Section */}
+            <div className="profile-header">
+                <div className="profile-header-content">
+                    <div className="profile-avatar-section">
+                        <img 
+                            src={ensureHttps(avatar) || '/default-avatar.png'} 
+                            alt="Аватар пользователя" 
+                            className="profile-avatar"
+                            onClick={openAvatarModal}
+                        />
+                        <button className="avatar-change-btn" onClick={openAvatarModal}>
+                            Поменять
+                        </button>
+                    </div>
+                    
+                    <div className="profile-user-info">
+                        <p className="profile-user-name">{user.username}</p>
+                        <div className="profile-user-status">
+                            <span className="status-indicator"></span>
+                            <span>Онлайн</span>
                         </div>
-                        
-                        <h1 className="user-name">{user?.username}</h1>
-                        <p className="user-id">ID: {user?.id}</p>
-                        
-                        {/* Краткая статистика */}
-                        <div className="user-quick-stats">
-                            <div className="quick-stat">
-                                <span className="stat-value">
-                                    {stats ? (stats.solo.wins || 0) + (stats.team.wins || 0) : 0}
-                                </span>
-                                <span className="stat-label">Побед</span>
+                        <div className="profile-user-meta">
+                            <div className="meta-item">
+                                <span>ID: {user.id}</span>
                             </div>
-                            <div className="quick-stat">
-                                <span className="stat-value">
-                                    {stats?.tournaments ? stats.tournaments.length : 0}
-                                </span>
-                                <span className="stat-label">Турниров</span>
-                            </div>
-                            <div className="quick-stat">
-                                <span className="stat-value">
-                                    {(() => {
-                                        if (!stats) return '0%';
-                                        const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
-                                        const totalMatches = totalWins + (stats.solo.losses || 0) + (stats.team.losses || 0);
-                                        return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) + '%' : '0%';
-                                    })()}
-                                </span>
-                                <span className="stat-label">Винрейт</span>
-                            </div>
+                            {user.email && (
+                                <div className="meta-item">
+                                    <span>Email: {user.is_verified ? '✓ Подтвержден' : '⚠ Не подтвержден'}</span>
+                                </div>
+                            )}
+                            {user.steam_url && (
+                                <div className="meta-item">
+                                    <span>Steam: Привязан</span>
+                                </div>
+                            )}
+                            {user.faceit_id && (
+                                <div className="meta-item">
+                                    <span>FACEIT: Привязан</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     
-                    {/* Навигация */}
-                    <nav className="profile-nav">
+                    <div className="profile-quick-stats">
+                        {stats && (
+                            <>
+                                <div className="quick-stat-card">
+                                    <div className="quick-stat-value">
+                                        {(stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0)}
+                                    </div>
+                                    <div className="quick-stat-label">Всего матчей</div>
+                                </div>
+                                <div className="quick-stat-card">
+                                    <div className="quick-stat-value">{stats.tournaments ? stats.tournaments.length : 0}</div>
+                                    <div className="quick-stat-label">Турниров</div>
+                                </div>
+                                <div className="quick-stat-card">
+                                    <div className="quick-stat-value">
+                                        {stats.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
+                                    </div>
+                                    <div className="quick-stat-label">Выигранных турниров</div>
+                                </div>
+                                <div className="quick-stat-card">
+                                    <div className="quick-stat-value">
+                                        {(() => {
+                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+                                        })()}%
+                                    </div>
+                                    <div className="quick-stat-label">Винрейт</div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+            
+            {/* Alert Messages */}
+            {!user.email && (
+                <div className="verification-alert">
+                    <p>
+                        <strong>Внимание!</strong> У вас не указан email. Вы не можете создавать и администрировать турниры.
+                    </p>
+                    <button onClick={openAddEmailModal}>Привязать email</button>
+                </div>
+            )}
+            
+            {user.email && !user.is_verified && (
+                <div className="verification-alert">
+                    <p>
+                        <strong>Внимание!</strong> Ваш email не подтвержден. Вы не можете создавать и администрировать турниры.
+                    </p>
+                    <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                </div>
+            )}
+            
+            {/* Main Content */}
+            <div className="profile-main-content">
+                {/* Sidebar Navigation */}
+                <div className="profile-sidebar">
+                    <nav className="sidebar-nav-profile">
                         <button 
-                            className={`nav-item ${activeTab === 'main' ? 'active' : ''}`}
+                            className={`nav-tab-profile ${activeTab === 'main' ? 'active' : ''}`} 
                             onClick={() => switchTab('main')}
                         >
-                            <span className="nav-icon">⚙</span>
-                            <span className="nav-text">Настройки</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">👤</span>
+                                <span>Основная</span>
+                            </div>
                         </button>
                         <button 
-                            className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
+                            className={`nav-tab-profile ${activeTab === 'stats' ? 'active' : ''}`} 
                             onClick={() => switchTab('stats')}
                         >
-                            <span className="nav-icon">📊</span>
-                            <span className="nav-text">Статистика</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">📊</span>
+                                <span>Статистика</span>
+                            </div>
                         </button>
                         <button 
-                            className={`nav-item ${activeTab === 'friends' ? 'active' : ''}`}
+                            className={`nav-tab-profile ${activeTab === 'friends' ? 'active' : ''}`} 
                             onClick={() => switchTab('friends')}
                         >
-                            <span className="nav-icon">👥</span>
-                            <span className="nav-text">Друзья</span>
-                            {friendRequests.length > 0 && (
-                                <span className="nav-badge">{friendRequests.length}</span>
-                            )}
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">👥</span>
+                                <span>Друзья</span>
+                            </div>
                         </button>
                         <button 
-                            className={`nav-item ${activeTab === 'organization' ? 'active' : ''}`}
+                            className={`nav-tab-profile ${activeTab === 'organization' ? 'active' : ''}`} 
                             onClick={() => switchTab('organization')}
                         >
-                            <span className="nav-icon">🏢</span>
-                            <span className="nav-text">Организация</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">🏢</span>
+                                <span>Организация</span>
+                            </div>
                         </button>
                         <button 
-                            className={`nav-item ${activeTab === 'tournaments' ? 'active' : ''}`}
+                            className={`nav-tab-profile ${activeTab === 'tournaments' ? 'active' : ''}`} 
                             onClick={() => switchTab('tournaments')}
                         >
-                            <span className="nav-icon">🏆</span>
-                            <span className="nav-text">Турниры</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">🏆</span>
+                                <span>Турниры</span>
+                            </div>
                         </button>
                         <button 
-                            className={`nav-item ${activeTab === 'v4analytics' ? 'active' : ''}`}
+                            className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
                             onClick={() => switchTab('v4analytics')}
                         >
-                            <span className="nav-icon">🔥</span>
-                            <span className="nav-text">Аналитика V4</span>
-                            <span className="nav-badge new">NEW</span>
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">🔥</span>
+                                <span>Аналитика V4 ULTIMATE</span>
+                            </div>
                         </button>
                     </nav>
-                    
-                    {/* Статус аккаунта */}
-                    <div className="account-status">
-                        <h3 className="status-title">Статус аккаунта</h3>
-                        <div className="status-items">
-                            <div className={`status-item ${user?.email ? 'connected' : ''}`}>
-                                <span className="status-icon">✉</span>
-                                <span className="status-text">
-                                    {user?.email ? 'Email привязан' : 'Email не привязан'}
-                                </span>
-                            </div>
-                            <div className={`status-item ${user?.steam_id ? 'connected' : ''}`}>
-                                <span className="status-icon">🎮</span>
-                                <span className="status-text">
-                                    {user?.steam_id ? 'Steam привязан' : 'Steam не привязан'}
-                                </span>
-                            </div>
-                            <div className={`status-item ${user?.faceit_id ? 'connected' : ''}`}>
-                                <span className="status-icon">🎯</span>
-                                <span className="status-text">
-                                    {user?.faceit_id ? 'FACEIT привязан' : 'FACEIT не привязан'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+                </div>
                 
-                {/* Основной контент */}
-                <main className="profile-main">
-                    {/* Уведомления */}
-                    {error && (
-                        <div className="notification error">
-                            <span className="notification-icon">⚠</span>
-                            <span className="notification-text">{error}</span>
-                            <button className="notification-close" onClick={() => setError('')}>×</button>
-                        </div>
-                    )}
-                    
-                    {!user?.email && (
-                        <div className="notification warning">
-                            <span className="notification-icon">⚠</span>
-                            <div className="notification-content">
-                                <strong>Внимание!</strong> 
-                                <p>У вас не указан email. Вы не можете создавать и администрировать турниры.</p>
-                            </div>
-                            <button className="notification-action" onClick={openAddEmailModal}>
-                                Привязать email
-                            </button>
-                        </div>
-                    )}
-                    
-                    {user?.email && !user?.is_verified && (
-                        <div className="notification warning">
-                            <span className="notification-icon">⚠</span>
-                            <div className="notification-content">
-                                <strong>Внимание!</strong>
-                                <p>Ваш email не подтвержден. Вы не можете создавать и администрировать турниры.</p>
-                            </div>
-                            <button className="notification-action" onClick={openEmailVerificationModal}>
-                                Подтвердить email
-                            </button>
-                        </div>
-                    )}
-                    
-                    {/* Контент вкладок */}
-                    <div className="tab-content">
-                        {/* Вкладка Настройки */}
+                {/* Content Area */}
+                <div className="profile-content-area">
+                    <div className="content-section">
+                        {/* Main Tab */}
                         {activeTab === 'main' && (
-                            <div className="settings-tab">
-                                <header className="tab-header">
-                                    <h2 className="tab-title">Настройки профиля</h2>
-                                </header>
-                                
-                                <div className="settings-sections">
-                                    {/* Основная информация */}
-                                    <section className="settings-section">
-                                        <h3 className="section-title">Основная информация</h3>
-                                        <div className="settings-card">
-                                            <div className="setting-item">
-                                                <label className="setting-label">Имя пользователя</label>
-                                                <div className="setting-control">
-                                                    <input
-                                                        type="text"
-                                                        className="setting-input"
-                                                        value={newUsername}
-                                                        onChange={(e) => setNewUsername(e.target.value)}
-                                                        placeholder="Введите новый никнейм"
-                                                    />
-                                                    <div className="setting-actions">
-                                                        <button className="btn btn-primary" onClick={updateUsername}>
-                                                            Изменить
-                                                        </button>
-                                                        {user?.steam_id && (
-                                                            <button className="btn btn-secondary" onClick={fetchAndSetSteamNickname}>
-                                                                Использовать Steam
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="setting-item">
-                                                <label className="setting-label">Email</label>
-                                                <div className="setting-control">
-                                                    <div className="setting-value">
-                                                        {user?.email || 'Не указан'}
-                                                        {user?.email && (
-                                                            <span className={`verification-badge ${user.is_verified ? 'verified' : 'unverified'}`}>
-                                                                {user.is_verified ? '✓ Подтвержден' : '⚠ Не подтвержден'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="setting-actions">
-                                                        {!user?.email ? (
-                                                            <button className="btn btn-primary" onClick={openAddEmailModal}>
-                                                                Привязать email
-                                                            </button>
-                                                        ) : !user.is_verified && (
-                                                            <button className="btn btn-primary" onClick={openEmailVerificationModal}>
-                                                                Подтвердить email
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </section>
-                                    
-                                    {/* Интеграции */}
-                                    <section className="settings-section">
-                                        <h3 className="section-title">Интеграции</h3>
-                                        
-                                        <div className="integration-card">
-                                            <div className="integration-header">
-                                                <div className="integration-info">
-                                                    <img src="/steam-icon.svg" alt="Steam" className="integration-icon" />
-                                                    <div>
-                                                        <h4 className="integration-name">Steam</h4>
-                                                        <p className="integration-status">
-                                                            {user?.steam_url ? (
-                                                                <>
-                                                                    Привязан: 
-                                                                    <a href={user.steam_url} target="_blank" rel="noopener noreferrer" className="integration-link">
-                                                                        {steamNickname || 'Загрузка...'}
-                                                                    </a>
-                                                                </>
-                                                            ) : (
-                                                                'Не привязан'
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="integration-actions">
-                                                    {!user?.steam_url ? (
-                                                        <button className="btn btn-primary" onClick={linkSteam}>
-                                                            Привязать
-                                                        </button>
-                                                    ) : (
-                                                        <button className="btn btn-danger" onClick={unlinkSteam}>
-                                                            Отвязать
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="integration-card">
-                                            <div className="integration-header">
-                                                <div className="integration-info">
-                                                    <img src="/faceit-icon.svg" alt="FACEIT" className="integration-icon" />
-                                                    <div>
-                                                        <h4 className="integration-name">FACEIT</h4>
-                                                        <p className="integration-status">
-                                                            {user?.faceit_id ? (
-                                                                <>
-                                                                    Привязан: 
-                                                                    {isLoadingFaceitInfo ? (
-                                                                        'Загрузка...'
-                                                                    ) : faceitInfo ? (
-                                                                        <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer" className="integration-link">
-                                                                            {faceitInfo.faceitNickname}
-                                                                        </a>
-                                                                    ) : (
-                                                                        user.faceit_id
-                                                                    )}
-                                                                </>
-                                                            ) : (
-                                                                'Не привязан'
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="integration-actions">
-                                                    {!user?.faceit_id ? (
-                                                        <button className="btn btn-primary" onClick={linkFaceit}>
-                                                            Привязать
-                                                        </button>
-                                                    ) : (
-                                                        <button className="btn btn-danger" onClick={unlinkFaceit}>
-                                                            Отвязать
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </section>
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">Основная информация</h2>
                                 </div>
-                            </div>
-                        )}
-                        
-                        {/* Вкладка Статистика */}
-                        {activeTab === 'stats' && (
-                            <div className="stats-tab">
-                                <header className="tab-header">
-                                    <h2 className="tab-title">Статистика</h2>
-                                    {(isRecalculating || recalculationStatus || recalculationError) && (
-                                        <div className="recalculation-status">
-                                            {isRecalculating && (
-                                                <div className="status-message loading">
-                                                    <span className="status-icon">⟳</span>
-                                                    {recalculationStatus || 'Обновление статистики...'}
-                                                </div>
-                                            )}
-                                            {!isRecalculating && recalculationStatus && (
-                                                <div className="status-message success">
-                                                    {recalculationStatus}
-                                                </div>
-                                            )}
-                                            {recalculationError && (
-                                                <div className="status-message error">
-                                                    {recalculationError}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </header>
                                 
-                                {/* Общая статистика */}
-                                <section className="stats-overview">
-                                    <div className="stats-grid">
-                                        <div className="stat-card">
-                                            <div className="stat-icon">🎮</div>
-                                            <div className="stat-content">
-                                                <div className="stat-number">
-                                                    {stats ? (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0) : 0}
-                                                </div>
-                                                <div className="stat-description">Всего матчей</div>
+                                <div className="content-card">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Данные пользователя</h3>
+                                    </div>
+                                    <div className="card-content">
+                                        <div className="form-group nickname-section">
+                                            <label className="form-label">Имя пользователя</label>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                value={newUsername}
+                                                onChange={(e) => setNewUsername(e.target.value)}
+                                                placeholder="Новый никнейм"
+                                            />
+                                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-sm)' }}>
+                                                <button className="btn btn-sm" onClick={updateUsername}>
+                                                    Изменить никнейм
+                                                </button>
+                                                {user.steam_id && (
+                                                    <button className="btn btn-secondary btn-sm btn-steam" onClick={fetchAndSetSteamNickname}>
+                                                        Установить никнейм Steam
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                         
-                                        <div className="stat-card">
-                                            <div className="stat-icon">🏆</div>
-                                            <div className="stat-content">
-                                                <div className="stat-number">
-                                                    {stats?.tournaments ? stats.tournaments.length : 0}
-                                                </div>
-                                                <div className="stat-description">Турниров сыграно</div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="stat-card">
-                                            <div className="stat-icon">🥇</div>
-                                            <div className="stat-content">
-                                                <div className="stat-number">
-                                                    {stats?.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
-                                                </div>
-                                                <div className="stat-description">Турниров выиграно</div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="stat-card">
-                                            <div className="stat-icon">📈</div>
-                                            <div className="stat-content">
-                                                <div className="stat-number">
-                                                    {(() => {
-                                                        if (!stats) return '0%';
-                                                        const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
-                                                        const totalMatches = totalWins + (stats.solo.losses || 0) + (stats.team.losses || 0);
-                                                        return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) + '%' : '0%';
-                                                    })()}
-                                                </div>
-                                                <div className="stat-description">Общий винрейт</div>
+                                        <div className="form-group">
+                                            <label className="form-label">Email</label>
+                                            <div className="card-content">
+                                                <p>{user.email || 'Не указан'}</p>
+                                                {!user.email ? (
+                                                    <button className="btn btn-sm" onClick={openAddEmailModal}>
+                                                        Привязать email
+                                                    </button>
+                                                ) : (
+                                                    <p>Статус верификации: {user.is_verified ? 'Подтвержден' : 'Не подтвержден'}</p>
+                                                )}
+                                                {user.email && !user.is_verified && (
+                                                    <button className="btn btn-sm" onClick={openEmailVerificationModal}>
+                                                        Подтвердить email
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
-                                </section>
-                                
-                                {/* Последние матчи */}
-                                <section className="recent-matches-section">
-                                    <h3 className="section-title">Последние матчи</h3>
-                                    {renderLastFiveMatches()}
-                                </section>
-                                
-                                {/* Статистика по играм */}
-                                {stats?.byGame && Object.keys(stats.byGame).length > 0 && (
-                                    <section className="game-stats-section">
-                                        <h3 className="section-title">Статистика по играм</h3>
-                                        <div className="game-stats-grid">
-                                            {Object.entries(stats.byGame).map(([game, gameStats]) => {
-                                                const totalSolo = gameStats.solo.wins + gameStats.solo.losses;
-                                                const totalTeam = gameStats.team.wins + gameStats.team.losses;
-                                                const soloWinRate = totalSolo > 0 ? ((gameStats.solo.wins / totalSolo) * 100).toFixed(1) : 0;
-                                                const teamWinRate = totalTeam > 0 ? ((gameStats.team.wins / totalTeam) * 100).toFixed(1) : 0;
-                                                
-                                                return (
-                                                    <div key={game} className="game-stat-card">
-                                                        <div className="game-stat-header">
-                                                            <h4 className="game-name">{game}</h4>
-                                                        </div>
-                                                        <div className="game-stat-content">
-                                                            <div className="game-mode">
-                                                                <h5>Solo</h5>
-                                                                <div className="mode-stats">
-                                                                    <div className="mode-stat">
-                                                                        <span className="mode-stat-value">{gameStats.solo.wins}</span>
-                                                                        <span className="mode-stat-label">Побед</span>
-                                                                    </div>
-                                                                    <div className="mode-stat">
-                                                                        <span className="mode-stat-value">{gameStats.solo.losses}</span>
-                                                                        <span className="mode-stat-label">Поражений</span>
-                                                                    </div>
-                                                                    <div className="mode-stat">
-                                                                        <span className="mode-stat-value">{soloWinRate}%</span>
-                                                                        <span className="mode-stat-label">Винрейт</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="game-mode">
-                                                                <h5>Team</h5>
-                                                                <div className="mode-stats">
-                                                                    <div className="mode-stat">
-                                                                        <span className="mode-stat-value">{gameStats.team.wins}</span>
-                                                                        <span className="mode-stat-label">Побед</span>
-                                                                    </div>
-                                                                    <div className="mode-stat">
-                                                                        <span className="mode-stat-value">{gameStats.team.losses}</span>
-                                                                        <span className="mode-stat-label">Поражений</span>
-                                                                    </div>
-                                                                    <div className="mode-stat">
-                                                                        <span className="mode-stat-value">{teamWinRate}%</span>
-                                                                        <span className="mode-stat-label">Винрейт</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                </div>
+
+                                <div className="content-card steam-section">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Steam</h3>
+                                    </div>
+                                    <div className="card-content">
+                                        <p>
+                                            {user.steam_url 
+                                                ? <span>Привязан: <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname || 'Загрузка...'}</a></span>
+                                                : 'Не привязан'}
+                                        </p>
+                                        <div className="steam-buttons">
+                                            {!user.steam_url ? (
+                                                <button className="btn" onClick={linkSteam}>Привязать Steam</button>
+                                            ) : (
+                                                <button className="btn btn-danger" onClick={unlinkSteam}>Отвязать Steam</button>
+                                            )}
                                         </div>
-                                    </section>
+                                    </div>
+                                </div>
+
+                                <div className="content-card faceit-section">
+                                    <div className="card-header">
+                                        <h3 className="card-title">FACEIT</h3>
+                                    </div>
+                                    <div className="card-content">
+                                        <p>
+                                            {user.faceit_id 
+                                                ? <span>
+                                                    Привязан: {isLoadingFaceitInfo 
+                                                        ? 'Загрузка...' 
+                                                        : (faceitInfo 
+                                                            ? <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a> 
+                                                            : user.faceit_id)
+                                                    }
+                                                </span>
+                                                : 'Не привязан'
+                                            }
+                                        </p>
+                                        <div>
+                                            {!user.faceit_id ? (
+                                                <button className="btn" onClick={linkFaceit}>Привязать FACEIT</button>
+                                            ) : (
+                                                <button className="btn btn-danger" onClick={unlinkFaceit}>Отвязать FACEIT</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        
+                        {/* Stats Tab */}
+                        {activeTab === 'stats' && (
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">Статистика</h2>
+                                </div>
+                                
+                                {/* Site Stats */}
+                                <div className="content-card">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Статистика сайта</h3>
+                                        {(isRecalculating || recalculationStatus || recalculationError) && (
+                                            <div className="recalculation-status-container">
+                                                {isRecalculating && (
+                                                    <div className="recalculating-notice">
+                                                        🔄 {recalculationStatus || 'Обновление статистики...'}
+                                                    </div>
+                                                )}
+                                                {!isRecalculating && recalculationStatus && (
+                                                    <div className="recalculation-success">
+                                                        ✅ {recalculationStatus}
+                                                    </div>
+                                                )}
+                                                {recalculationError && (
+                                                    <div className="recalculation-error">
+                                                        ⚠️ {recalculationError}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="card-content">
+                                        {stats ? (
+                                            <div className="stats-grid">
+                                                <div className="stats-card">
+                                                    <div className="stats-value">
+                                                        {(stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0)}
+                                                    </div>
+                                                    <div className="stats-label">Всего матчей</div>
+                                                </div>
+                                                <div className="stats-card">
+                                                    <div className="stats-value">{stats.tournaments ? stats.tournaments.length : 0}</div>
+                                                    <div className="stats-label">Турниров</div>
+                                                </div>
+                                                <div className="stats-card">
+                                                    <div className="stats-value">
+                                                        {stats.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
+                                                    </div>
+                                                    <div className="stats-label">Выигранных турниров</div>
+                                                </div>
+                                                <div className="stats-card">
+                                                    <div className="stats-value">
+                                                        {(() => {
+                                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+                                                        })()}%
+                                                    </div>
+                                                    <div className="stats-label">Винрейт</div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="loading-spinner">Статистика загружается...</div>
+                                        )}
+                                        
+                                        {renderLastFiveMatches()}
+                                    </div>
+                                </div>
+                                
+                                {/* Game Stats Section */}
+                                {stats && stats.byGame && Object.keys(stats.byGame).length > 0 && (
+                                    <div className="content-card game-stats-section">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Статистика по играм</h3>
+                                        </div>
+                                        <div className="card-content">
+                                            <div className="game-stats-grid">
+                                                {Object.entries(stats.byGame).map(([game, gameStats]) => {
+                                                    const totalSolo = gameStats.solo.wins + gameStats.solo.losses;
+                                                    const totalTeam = gameStats.team.wins + gameStats.team.losses;
+                                                    const soloWinRate = totalSolo > 0 ? ((gameStats.solo.wins / totalSolo) * 100).toFixed(1) : 0;
+                                                    const teamWinRate = totalTeam > 0 ? ((gameStats.team.wins / totalTeam) * 100).toFixed(1) : 0;
+                                                    
+                                                    return (
+                                                        <div key={game} className="game-stat-card">
+                                                            <div className="game-stat-header">
+                                                                <h4 className="game-stat-title">{game}</h4>
+                                                                <span className="game-stat-icon">🎮</span>
+                                                            </div>
+                                                            <div className="game-stat-body">
+                                                                <div className="stat-type-section">
+                                                                    <div className="stat-type-label">Solo</div>
+                                                                    <div className="stat-type-values">
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Побед</span>
+                                                                            <span className="stat-value-number">{gameStats.solo.wins}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Поражений</span>
+                                                                            <span className="stat-value-number">{gameStats.solo.losses}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Винрейт</span>
+                                                                            <span className="stat-value-number">{soloWinRate}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="stat-type-section">
+                                                                    <div className="stat-type-label">Team</div>
+                                                                    <div className="stat-type-values">
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Побед</span>
+                                                                            <span className="stat-value-number">{gameStats.team.wins}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Поражений</span>
+                                                                            <span className="stat-value-number">{gameStats.team.losses}</span>
+                                                                        </div>
+                                                                        <div className="stat-value-item">
+                                                                            <span className="stat-value-label">Винрейт</span>
+                                                                            <span className="stat-value-number">{teamWinRate}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                                 
                                 {/* CS2 Stats */}
-                                {user?.steam_url && (
-                                    <section className="cs2-stats-section">
-                                        <div className="section-header">
-                                            <h3 className="section-title">Статистика CS2</h3>
+                                {user.steam_url && (
+                                    <div className="content-card cs2-stats">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Статистика CS2</h3>
                                             {premierRank > 0 && (
                                                 <button 
-                                                    className="btn btn-secondary btn-sm" 
+                                                    className="btn btn-sm" 
                                                     onClick={() => fetchCs2Stats()}
                                                     disabled={isLoadingCs2Stats}
                                                 >
@@ -2184,60 +2132,44 @@ function Profile() {
                                                 </button>
                                             )}
                                         </div>
-                                        <div className="cs2-stats-content">
-                                            {renderRankGroups()}
+                                        <div className="card-content">
+                                            <div className="rank-container">
+                                                {renderRankGroups()}
+                                            </div>
                                         </div>
-                                    </section>
+                                    </div>
                                 )}
                                 
                                 {/* FACEIT Stats */}
                                 {faceitInfo && faceitInfo.elo > 0 && (
-                                    <section className="faceit-stats-section">
-                                        <h3 className="section-title">
-                                            Статистика FACEIT{faceitInfo.statsFrom === 'csgo' ? ' (CS:GO)' : ''}
-                                        </h3>
-                                        <div className="faceit-stats-content">
-                                            <div className="faceit-main-stats">
-                                                <div className="faceit-stat">
-                                                    <span className="faceit-stat-value">{faceitInfo.elo}</span>
-                                                    <span className="faceit-stat-label">ELO</span>
-                                                </div>
-                                                <div className="faceit-stat">
-                                                    <span className="faceit-stat-value">{faceitInfo.level}</span>
-                                                    <span className="faceit-stat-label">Уровень</span>
-                                                </div>
+                                    <div className="content-card faceit-stats">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Статистика FACEIT{faceitInfo.statsFrom === 'csgo' ? ' (CS:GO)' : ''}</h3>
+                                        </div>
+                                        <div className="card-content">
+                                            <div className="faceit-elo">
+                                                <p><strong>ELO:</strong> {faceitInfo.elo}</p>
+                                                <p><strong>Уровень:</strong> {faceitInfo.level}</p>
                                             </div>
                                             {faceitInfo.stats && (
                                                 <div className="faceit-detailed-stats">
-                                                    <div className="faceit-detail-stat">
-                                                        <span className="detail-label">Матчи:</span>
-                                                        <span className="detail-value">{faceitInfo.stats.Matches || 0}</span>
-                                                    </div>
-                                                    <div className="faceit-detail-stat">
-                                                        <span className="detail-label">Винрейт:</span>
-                                                        <span className="detail-value">{faceitInfo.stats['Win Rate %'] || '0'}%</span>
-                                                    </div>
-                                                    <div className="faceit-detail-stat">
-                                                        <span className="detail-label">K/D:</span>
-                                                        <span className="detail-value">{faceitInfo.stats['Average K/D Ratio'] || '0'}</span>
-                                                    </div>
-                                                    <div className="faceit-detail-stat">
-                                                        <span className="detail-label">HS %:</span>
-                                                        <span className="detail-value">{faceitInfo.stats['Average Headshots %'] || '0'}%</span>
-                                                    </div>
+                                                    <p><strong>Матчи:</strong> {faceitInfo.stats.Matches || 0}</p>
+                                                    <p><strong>Винрейт:</strong> {faceitInfo.stats['Win Rate %'] || '0'}%</p>
+                                                    <p><strong>K/D:</strong> {faceitInfo.stats['Average K/D Ratio'] || '0'}</p>
+                                                    <p><strong>HS %:</strong> {faceitInfo.stats['Average Headshots %'] || '0'}%</p>
                                                 </div>
                                             )}
                                         </div>
-                                    </section>
+                                    </div>
                                 )}
-                                
+
                                 {/* Dota 2 Stats */}
-                                <section className="dota-stats-section">
-                                    <div className="section-header">
-                                        <h3 className="section-title">Статистика Dota 2</h3>
+                                <div className="content-card dota-stats">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Статистика Dota 2</h3>
                                         {!dotaProfile && user?.steam_id && (
                                             <button 
-                                                className="btn btn-secondary btn-sm" 
+                                                className="btn btn-sm" 
                                                 onClick={linkDotaSteam}
                                                 disabled={isLoadingDotaStats}
                                             >
@@ -2245,34 +2177,35 @@ function Profile() {
                                             </button>
                                         )}
                                     </div>
-                                    <div className="dota-stats-content">
+                                    <div className="card-content">
                                         {isLoadingDotaStats ? (
-                                            <div className="loading-state">
-                                                <div className="loading-spinner"></div>
-                                                <p>Загрузка статистики Dota 2...</p>
-                                            </div>
+                                            <div className="loading-spinner">Загрузка статистики Dota 2...</div>
                                         ) : dotaStats ? (
-                                            <div className="dota-stats-container">
+                                            <div className="dota-player-stats">
                                                 {/* Профиль игрока */}
-                                                <div className="dota-profile-card">
+                                                <div className="dota-profile-info">
                                                     <img 
                                                         src={dotaStats.profile?.avatarfull || '/default-avatar.png'} 
                                                         alt="Steam Avatar" 
-                                                        className="dota-player-avatar" 
+                                                        className="dota-avatar" 
                                                     />
-                                                    <div className="dota-player-info">
+                                                    <div className="dota-profile-details">
                                                         <h4>{dotaStats.profile?.personaname || 'Неизвестно'}</h4>
-                                                        <p className="dota-account-id">Account ID: {dotaStats.profile?.account_id}</p>
+                                                        <p><strong>Account ID:</strong> {dotaStats.profile?.account_id}</p>
                                                         {dotaStats.profile?.rank_tier && (
-                                                            <p className="dota-rank">Медаль: {dotaStats.profile.rank_tier}</p>
+                                                            <p><strong>Медаль:</strong> {dotaStats.profile.rank_tier}</p>
                                                         )}
                                                         {dotaStats.profile?.mmr_estimate && (
-                                                            <p className="dota-mmr">MMR: ~{dotaStats.profile.mmr_estimate}</p>
+                                                            <p><strong>MMR (примерно):</strong> {dotaStats.profile.mmr_estimate}</p>
+                                                        )}
+                                                        {dotaStats.profile?.leaderboard_rank && (
+                                                            <p><strong>Место в рейтинге:</strong> #{dotaStats.profile.leaderboard_rank}</p>
                                                         )}
                                                     </div>
                                                     <button 
                                                         className="btn btn-danger btn-sm"
                                                         onClick={unlinkDotaSteam}
+                                                        style={{ marginLeft: 'auto' }}
                                                     >
                                                         Отвязать
                                                     </button>
@@ -2280,17 +2213,20 @@ function Profile() {
 
                                                 {/* Общая статистика */}
                                                 <div className="dota-general-stats">
-                                                    <div className="dota-stat">
-                                                        <span className="dota-stat-value">{dotaStats.stats?.win || 0}</span>
-                                                        <span className="dota-stat-label">Побед</span>
-                                                    </div>
-                                                    <div className="dota-stat">
-                                                        <span className="dota-stat-value">{dotaStats.stats?.lose || 0}</span>
-                                                        <span className="dota-stat-label">Поражений</span>
-                                                    </div>
-                                                    <div className="dota-stat">
-                                                        <span className="dota-stat-value">{dotaStats.stats?.winrate || 0}%</span>
-                                                        <span className="dota-stat-label">Винрейт</span>
+                                                    <h5>Общая статистика</h5>
+                                                    <div className="stats-grid">
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">Побед:</span>
+                                                            <span className="stat-value">{dotaStats.stats?.win || 0}</span>
+                                                        </div>
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">Поражений:</span>
+                                                            <span className="stat-value">{dotaStats.stats?.lose || 0}</span>
+                                                        </div>
+                                                        <div className="stat-item">
+                                                            <span className="stat-label">Винрейт:</span>
+                                                            <span className="stat-value">{dotaStats.stats?.winrate || 0}%</span>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -2298,24 +2234,22 @@ function Profile() {
                                                 {dotaStats.recent_matches && dotaStats.recent_matches.length > 0 && (
                                                     <div className="dota-recent-matches">
                                                         <h5>Последние матчи</h5>
-                                                        <div className="dota-matches-list">
+                                                        <div className="matches-list">
                                                             {dotaStats.recent_matches.slice(0, 5).map((match, index) => (
-                                                                <div key={index} className={`dota-match ${match.win ? 'win' : 'loss'}`}>
-                                                                    <img 
-                                                                        src={getHeroImageUrl(match.hero_id)} 
-                                                                        alt={`Hero ${match.hero_id}`}
-                                                                        className="dota-hero-icon"
-                                                                        onError={(e) => {
-                                                                            e.target.src = '/default-hero.png';
-                                                                        }}
-                                                                    />
-                                                                    <div className="dota-match-kda">{match.kills}/{match.deaths}/{match.assists}</div>
-                                                                    <div className="dota-match-duration">
-                                                                        {Math.floor(match.duration / 60)}:{(match.duration % 60).toString().padStart(2, '0')}
+                                                                <div key={index} className={`match-item ${match.win ? 'win' : 'loss'}`}>
+                                                                    <div className="match-hero">
+                                                                        <img 
+                                                                            src={getHeroImageUrl(match.hero_id)} 
+                                                                            alt={`Hero ${match.hero_id}`}
+                                                                            className="hero-icon"
+                                                                            onError={(e) => {
+                                                                                e.target.src = '/default-hero.png';
+                                                                            }}
+                                                                        />
                                                                     </div>
-                                                                    <div className="dota-match-result">
-                                                                        {match.win ? 'Победа' : 'Поражение'}
-                                                                    </div>
+                                                                    <div className="match-kda">{match.kills}/{match.deaths}/{match.assists}</div>
+                                                                    <div className="match-duration">{Math.floor(match.duration / 60)}:{(match.duration % 60).toString().padStart(2, '0')}</div>
+                                                                    <div className="match-result">{match.win ? 'Победа' : 'Поражение'}</div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -2326,26 +2260,22 @@ function Profile() {
                                                 {dotaStats.top_heroes && dotaStats.top_heroes.length > 0 && (
                                                     <div className="dota-top-heroes">
                                                         <h5>Топ героев</h5>
-                                                        <div className="dota-heroes-grid">
+                                                        <div className="heroes-list">
                                                             {dotaStats.top_heroes.slice(0, 5).map((hero, index) => (
-                                                                <div key={index} className="dota-hero-card">
-                                                                    <img 
-                                                                        src={getHeroImageUrl(hero.hero_id)} 
-                                                                        alt={`Hero ${hero.hero_id}`}
-                                                                        className="dota-hero-image"
-                                                                        onError={(e) => {
-                                                                            e.target.src = '/default-hero.png';
-                                                                        }}
-                                                                    />
-                                                                    <div className="dota-hero-stats">
-                                                                        <div className="hero-stat">
-                                                                            <span className="hero-stat-value">{hero.games}</span>
-                                                                            <span className="hero-stat-label">Игр</span>
-                                                                        </div>
-                                                                        <div className="hero-stat">
-                                                                            <span className="hero-stat-value">{hero.winrate}%</span>
-                                                                            <span className="hero-stat-label">Винрейт</span>
-                                                                        </div>
+                                                                <div key={index} className="hero-item">
+                                                                    <div className="hero-name">
+                                                                        <img 
+                                                                            src={getHeroImageUrl(hero.hero_id)} 
+                                                                            alt={`Hero ${hero.hero_id}`}
+                                                                            className="hero-icon"
+                                                                            onError={(e) => {
+                                                                                e.target.src = '/default-hero.png';
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="hero-stats-container">
+                                                                        <div className="hero-games">Игр: {hero.games}</div>
+                                                                        <div className="hero-winrate">Винрейт: {hero.winrate}%</div>
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -2353,21 +2283,32 @@ function Profile() {
                                                     </div>
                                                 )}
                                             </div>
+                                        ) : dotaProfile && dotaProfile.steam_id ? (
+                                            <div className="no-dota-stats">
+                                                <p>Не удалось загрузить статистику Dota 2</p>
+                                                <p>Steam ID: {dotaProfile.steam_id}</p>
+                                                <button 
+                                                    className="btn btn-sm" 
+                                                    onClick={() => fetchDotaStats(dotaProfile.steam_id)}
+                                                >
+                                                    Попробовать снова
+                                                </button>
+                                            </div>
                                         ) : !user?.steam_id ? (
-                                            <div className="empty-state">
+                                            <div className="no-dota-profile">
                                                 <p>Для отображения статистики Dota 2 необходимо привязать Steam аккаунт</p>
-                                                <p className="empty-state-hint">Перейдите в раздел "Настройки" и привяжите Steam</p>
+                                                <p>Перейдите в раздел "Основная информация" и привяжите Steam</p>
                                             </div>
                                         ) : (
-                                            <div className="empty-state">
+                                            <div className="no-dota-profile">
                                                 <p>Статистика Dota 2 не загружена</p>
-                                                <p className="empty-state-hint">Нажмите "Загрузить статистику" для получения данных</p>
+                                                <p>Нажмите "Загрузить статистику" для получения данных</p>
                                             </div>
                                         )}
                                     </div>
-                                </section>
-                                
-                                {/* V4 Dashboard */}
+                                </div>
+
+                                {/* ✨ V4 ULTIMATE: Революционный дашборд статистики */}
                                 <V4StatsDashboard
                                     v4Data={v4Data}
                                     stats={stats}
@@ -2376,712 +2317,834 @@ function Profile() {
                                     recalculationStatus={recalculationStatus}
                                     recalculationError={recalculationError}
                                 />
-                            </div>
+                            </>
                         )}
                         
-                        {/* V4 Analytics Tab */}
+                        {/* ✨ V4 ULTIMATE ANALYTICS TAB */}
                         {activeTab === 'v4analytics' && (
-                            <div className="v4-analytics-tab">
-                                <header className="tab-header">
-                                    <h2 className="tab-title">
-                                        🔥 Аналитика V4 ULTIMATE
-                                        <span className="v4-badge">ULTIMATE</span>
-                                    </h2>
-                                </header>
-                                
-                                <div className="v4-content">
-                                    <V4StatsDashboard
-                                        v4Data={v4Data}
-                                        stats={stats}
-                                        requestEnhancedRecalculation={requestEnhancedRecalculation}
-                                        isRecalculating={isRecalculating}
-                                        recalculationStatus={recalculationStatus}
-                                        recalculationError={recalculationError}
-                                    />
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">🔥 Аналитика V4 ULTIMATE</h2>
+                                    <div className="v4-ultimate-badge">
+                                        <span>NEW</span>
+                                    </div>
                                 </div>
-                            </div>
+                                
+                                {/* V4 ULTIMATE: Революционный дашборд статистики */}
+                                <div className="content-card v4-ultimate-section">
+                                    <div className="card-header">
+                                        <h3 className="card-title">🚀 V4 ULTIMATE ДАШБОРД</h3>
+                                        <div className="v4-ultimate-badge">
+                                            <span>ULTIMATE</span>
+                                        </div>
+                                    </div>
+                                    <div className="card-content">
+                                        <V4StatsDashboard
+                                            v4Data={v4Data}
+                                            stats={stats}
+                                            requestEnhancedRecalculation={requestEnhancedRecalculation}
+                                            isRecalculating={isRecalculating}
+                                            recalculationStatus={recalculationStatus}
+                                            recalculationError={recalculationError}
+                                        />
+                                    </div>
+                                </div>
+                            </>
                         )}
                         
                         {/* Friends Tab */}
                         {activeTab === 'friends' && (
-                            <div className="friends-tab">
-                                <header className="tab-header">
-                                    <h2 className="tab-title">Друзья</h2>
-                                </header>
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">Друзья</h2>
+                                </div>
                                 
-                                {/* Поиск друзей */}
-                                <section className="friends-search-section">
-                                    <div className="search-container">
-                                        <div className="search-input-wrapper">
-                                            <span className="search-icon">🔍</span>
-                                            <input
-                                                type="text"
-                                                className="search-input"
-                                                placeholder="Поиск пользователя по нику..."
-                                                value={searchQuery}
-                                                onChange={handleSearchChange}
-                                            />
-                                        </div>
-                                        
-                                        {/* Результаты поиска */}
-                                        {searchResults.length > 0 && (
-                                            <div className="search-results">
-                                                {searchResults.map(user => (
-                                                    <div key={user.id} className="search-result-item">
-                                                        <img
-                                                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
-                                                            alt={user.username}
-                                                            className="search-result-avatar"
-                                                        />
-                                                        <div className="search-result-info">
-                                                            <a href={`/user/${user.id}`} className="search-result-name">
+                                {/* Friend Search */}
+                                <div className="content-card friends-section">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Поиск друзей</h3>
+                                    </div>
+                                    <div className="card-content">
+                                        <div className="friends-search">
+                                            <div style={{ position: 'relative' }}>
+                                                <span className="search-icon">🔍</span>
+                                                <input
+                                                    type="text"
+                                                    className="form-input"
+                                                    placeholder="Поиск пользователя по нику..."
+                                                    value={searchQuery}
+                                                    onChange={handleSearchChange}
+                                                />
+                                            </div>
+                                            {searchResults.length > 0 && (
+                                                <div className="search-results">
+                                                    {searchResults.map(user => (
+                                                        <div key={user.id} className="search-item">
+                                                            <img
+                                                                src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
+                                                                alt={user.username}
+                                                                className="search-avatar"
+                                                            />
+                                                            <a href={`/user/${user.id}`} className="search-username">
                                                                 {user.username}
                                                             </a>
+                                                            <div>
+                                                                {user.requestSent ? (
+                                                                    <button className="btn btn-sm" disabled>
+                                                                        Отправлено
+                                                                    </button>
+                                                                ) : (
+                                                                    <button 
+                                                                        onClick={() => sendFriendRequest(user.id)} 
+                                                                        className="btn btn-sm"
+                                                                    >
+                                                                        Добавить
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="search-result-action">
-                                                            {user.requestSent ? (
-                                                                <button className="btn btn-secondary btn-sm" disabled>
-                                                                    Заявка отправлена
-                                                                </button>
-                                                            ) : (
-                                                                <button 
-                                                                    onClick={() => sendFriendRequest(user.id)} 
-                                                                    className="btn btn-primary btn-sm"
-                                                                >
-                                                                    Добавить
-                                                                </button>
-                                                            )}
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
+                                                <p className="empty-state-description">Пользователи не найдены</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Friends List */}
+                                <div className="content-card">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Мои друзья ({friends.length})</h3>
+                                    </div>
+                                    <div className="card-content">
+                                        {loadingFriends ? (
+                                            <div className="loading-spinner">Загрузка списка друзей...</div>
+                                        ) : friends.length > 0 ? (
+                                            <div className="friends-list">
+                                                {friends.map(friend => renderFriendItem(friend))}
+                                            </div>
+                                        ) : (
+                                            <div className="empty-state">
+                                                <div className="empty-state-title">У вас пока нет друзей</div>
+                                                <div className="empty-state-description">Используйте поиск выше, чтобы найти и добавить друзей</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Friend Requests */}
+                                {friendRequests.length > 0 && (
+                                    <div className="content-card">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Заявки в друзья ({friendRequests.length})</h3>
+                                        </div>
+                                        <div className="card-content">
+                                            <div className="friend-requests">
+                                                {friendRequests.map(request => (
+                                                    <div key={request.id} className="friend-request-card">
+                                                        <div className="request-user-info">
+                                                            <img
+                                                                src={ensureHttps(request.user.avatar_url) || '/default-avatar.png'}
+                                                                alt={request.user.username}
+                                                                className="request-avatar"
+                                                            />
+                                                            <a href={`/user/${request.user.id}`} className="request-username">
+                                                                {request.user.username}
+                                                            </a>
+                                                        </div>
+                                                        <div className="request-actions">
+                                                            <button 
+                                                                className="accept-request-btn" 
+                                                                onClick={() => acceptFriendRequest(request.id)}
+                                                            >
+                                                                Принять
+                                                            </button>
+                                                            <button 
+                                                                className="reject-request-btn" 
+                                                                onClick={() => rejectFriendRequest(request.id)}
+                                                            >
+                                                                Отклонить
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
-                                        )}
-                                        
-                                        {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
-                                            <div className="search-empty">
-                                                <p>Пользователи не найдены</p>
-                                            </div>
-                                        )}
+                                        </div>
                                     </div>
-                                </section>
-                                
-                                {/* Заявки в друзья */}
-                                {friendRequests.length > 0 && (
-                                    <section className="friend-requests-section">
-                                        <h3 className="section-title">Входящие заявки ({friendRequests.length})</h3>
-                                        <div className="friend-requests-list">
-                                            {friendRequests.map(request => (
-                                                <div key={request.id} className="friend-request-item">
-                                                    <img
-                                                        src={ensureHttps(request.user.avatar_url) || '/default-avatar.png'}
-                                                        alt={request.user.username}
-                                                        className="friend-request-avatar"
-                                                    />
-                                                    <div className="friend-request-info">
-                                                        <a href={`/user/${request.user.id}`} className="friend-request-name">
-                                                            {request.user.username}
-                                                        </a>
-                                                    </div>
-                                                    <div className="friend-request-actions">
-                                                        <button 
-                                                            className="btn btn-success btn-sm" 
-                                                            onClick={() => acceptFriendRequest(request.id)}
-                                                        >
-                                                            Принять
-                                                        </button>
-                                                        <button 
-                                                            className="btn btn-danger btn-sm" 
-                                                            onClick={() => rejectFriendRequest(request.id)}
-                                                        >
-                                                            Отклонить
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </section>
                                 )}
                                 
-                                {/* Исходящие заявки */}
+                                {/* Sent Friend Requests */}
                                 {sentFriendRequests.length > 0 && (
-                                    <section className="sent-requests-section">
-                                        <h3 className="section-title">Исходящие заявки ({sentFriendRequests.length})</h3>
-                                        <div className="sent-requests-list">
-                                            {sentFriendRequests.map(request => (
-                                                <div key={request.id} className="sent-request-item">
-                                                    <img
-                                                        src={ensureHttps(request.user.avatar_url) || '/default-avatar.png'}
-                                                        alt={request.user.username}
-                                                        className="sent-request-avatar"
-                                                    />
-                                                    <div className="sent-request-info">
-                                                        <a href={`/user/${request.user.id}`} className="sent-request-name">
-                                                            {request.user.username}
-                                                        </a>
-                                                    </div>
-                                                    <div className="sent-request-actions">
-                                                        <button
-                                                            className="btn btn-danger btn-sm"
-                                                            onClick={() => cancelSentFriendRequest(request.id)}
-                                                        >
-                                                            Отменить
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                    <div className="content-card">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Исходящие заявки ({sentFriendRequests.length})</h3>
                                         </div>
-                                    </section>
+                                        <div className="card-content">
+                                            <div className="friend-requests">
+                                                {sentFriendRequests.map(request => (
+                                                    <div key={request.id} className="friend-request-card">
+                                                        <div className="request-user-info">
+                                                            <img
+                                                                src={ensureHttps(request.user.avatar_url) || '/default-avatar.png'}
+                                                                alt={request.user.username}
+                                                                className="request-avatar"
+                                                            />
+                                                            <a href={`/user/${request.user.id}`} className="request-username">
+                                                                {request.user.username}
+                                                            </a>
+                                                        </div>
+                                                        <div className="request-actions">
+                                                            <button
+                                                                className="reject-request-btn"
+                                                                onClick={() => cancelSentFriendRequest(request.id)}
+                                                            >
+                                                                Отменить
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
-                                
-                                {/* Список друзей */}
-                                <section className="friends-list-section">
-                                    <h3 className="section-title">Мои друзья ({friends.length})</h3>
-                                    {loadingFriends ? (
-                                        <div className="loading-state">
-                                            <div className="loading-spinner"></div>
-                                            <p>Загрузка списка друзей...</p>
-                                        </div>
-                                    ) : friends.length > 0 ? (
-                                        <div className="friends-grid">
-                                            {friends.map(friend => (
-                                                <div key={friend.id} className="friend-card">
-                                                    <div className="friend-avatar-wrapper">
-                                                        <img 
-                                                            src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'} 
-                                                            alt={friend.friend.username} 
-                                                            className="friend-avatar"
-                                                        />
-                                                        <div className={`friend-status-indicator ${friend.friend.online_status || 'offline'}`}></div>
-                                                    </div>
-                                                    <div className="friend-info">
-                                                        <a 
-                                                            href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} 
-                                                            className="friend-name"
-                                                        >
-                                                            {friend.friend.username}
-                                                        </a>
-                                                        <p className="friend-status">
-                                                            {friend.friend.online_status === 'online' ? 'Онлайн' : 
-                                                             friend.friend.last_online ? 
-                                                             `Был в сети: ${new Date(friend.friend.last_online).toLocaleDateString('ru-RU')}` : 
-                                                             'Не в сети'}
-                                                        </p>
-                                                    </div>
-                                                    <button 
-                                                        className="friend-remove-btn" 
-                                                        onClick={() => removeFriend(friend.friend.id)}
-                                                        title="Удалить из друзей"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="empty-state">
-                                            <div className="empty-icon">👥</div>
-                                            <p>У вас пока нет друзей</p>
-                                            <p className="empty-state-hint">Используйте поиск выше, чтобы найти и добавить друзей</p>
-                                        </div>
-                                    )}
-                                </section>
-                            </div>
+                            </>
                         )}
                         
                         {/* Organization Tab */}
                         {activeTab === 'organization' && (
-                            <div className="organization-tab">
-                                <header className="tab-header">
-                                    <h2 className="tab-title">Организации</h2>
-                                </header>
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">Организации</h2>
+                                </div>
                                 
                                 {loadingOrganizations || loadingRequest ? (
-                                    <div className="loading-state">
-                                        <div className="loading-spinner"></div>
+                                    <div className="loading-spinner">
                                         <p>Загрузка информации об организациях...</p>
                                     </div>
                                 ) : userOrganizations && userOrganizations.length > 0 ? (
-                                    <section className="my-organizations-section">
-                                        <h3 className="section-title">Мои организации</h3>
-                                        <div className="organizations-grid">
-                                            {userOrganizations.map(org => (
-                                                <div key={org.id} className="organization-card">
-                                                    <div className="org-header">
-                                                        <img 
-                                                            src={ensureHttps(org.logo_url) || '/default-org-logo.png'}
-                                                            alt={org.name}
-                                                            className="org-logo"
-                                                        />
-                                                        <div className="org-info">
-                                                            <h4 className="org-name">
-                                                                <a href={`/organizer/${org.slug}`} target="_blank" rel="noopener noreferrer">
-                                                                    {org.name}
-                                                                </a>
-                                                            </h4>
-                                                            <p className="org-role">
-                                                                {org.role === 'manager' ? 'Менеджер' : 
-                                                                 org.role === 'admin' ? 'Администратор' : 'Участник'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="org-stats">
-                                                        <div className="org-stat">
-                                                            <span className="org-stat-value">{org.tournaments_count}</span>
-                                                            <span className="org-stat-label">Турниров</span>
-                                                        </div>
-                                                        <div className="org-stat">
-                                                            <span className="org-stat-value">
-                                                                {new Date(org.joined_at).toLocaleDateString('ru-RU')}
-                                                            </span>
-                                                            <span className="org-stat-label">Состою с</span>
-                                                        </div>
-                                                    </div>
-                                                    {org.description && (
-                                                        <p className="org-description">{org.description}</p>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </section>
-                                ) : organizationRequest ? (
-                                    <section className="organization-request-section">
-                                        <div className="request-status-card">
-                                            <div className="request-header">
-                                                <h3>{organizationRequest.organization_name}</h3>
-                                                <span className={`status-badge ${organizationRequest.status}`}>
-                                                    {organizationRequest.status === 'pending' && 'На рассмотрении'}
-                                                    {organizationRequest.status === 'approved' && 'Одобрена'}
-                                                    {organizationRequest.status === 'rejected' && 'Отклонена'}
-                                                </span>
+                                    <div className="user-organizations">
+                                        <div className="content-card">
+                                            <div className="card-header">
+                                                <h3 className="card-title">Мои организации</h3>
                                             </div>
-                                            <div className="request-details">
-                                                <p><strong>Описание:</strong> {organizationRequest.description}</p>
-                                                <p><strong>Дата подачи:</strong> {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</p>
-                                                {organizationRequest.reviewed_at && (
-                                                    <p><strong>Дата рассмотрения:</strong> {new Date(organizationRequest.reviewed_at).toLocaleDateString('ru-RU')}</p>
-                                                )}
-                                                {organizationRequest.admin_comment && (
-                                                    <div className="admin-comment">
-                                                        <p><strong>Комментарий администратора:</strong></p>
-                                                        <p className="comment-text">{organizationRequest.admin_comment}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </section>
-                                ) : (
-                                    <section className="create-organization-section">
-                                        <div className="section-intro">
-                                            <h3 className="section-title">Создать организацию</h3>
-                                            <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации.</p>
-                                        </div>
-                                        
-                                        {/* Проверка требований */}
-                                        {!user?.email && (
-                                            <div className="requirement-alert error">
-                                                <span className="alert-icon">⚠</span>
-                                                <div className="alert-content">
-                                                    <h4>Требования не выполнены</h4>
-                                                    <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
-                                                </div>
-                                                <button className="btn btn-primary" onClick={openAddEmailModal}>
-                                                    Привязать email
-                                                </button>
-                                            </div>
-                                        )}
-                                        
-                                        {user?.email && !user?.is_verified && (
-                                            <div className="requirement-alert error">
-                                                <span className="alert-icon">⚠</span>
-                                                <div className="alert-content">
-                                                    <h4>Требования не выполнены</h4>
-                                                    <p>Для подачи заявки необходимо подтвердить email.</p>
-                                                </div>
-                                                <button className="btn btn-primary" onClick={openEmailVerificationModal}>
-                                                    Подтвердить email
-                                                </button>
-                                            </div>
-                                        )}
-                                        
-                                        {/* Форма создания организации */}
-                                        {user?.email && user?.is_verified && (
-                                            <form onSubmit={submitOrganizationRequest} className="organization-form">
-                                                {organizationError && (
-                                                    <div className="form-error">
-                                                        <span className="error-icon">⚠</span>
-                                                        {organizationError}
-                                                    </div>
-                                                )}
-                                                
-                                                {organizationSuccess && (
-                                                    <div className="form-success">
-                                                        <span className="success-icon">✓</span>
-                                                        {organizationSuccess}
-                                                    </div>
-                                                )}
-                                                
-                                                <div className="form-group">
-                                                    <label className="form-label">
-                                                        Название организации <span className="required">*</span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-input"
-                                                        name="organizationName"
-                                                        value={organizationData.organizationName}
-                                                        onChange={handleOrganizationInputChange}
-                                                        placeholder="Введите название вашей организации"
-                                                        required
-                                                    />
-                                                </div>
-                                                
-                                                <div className="form-group">
-                                                    <label className="form-label">
-                                                        Описание <span className="required">*</span>
-                                                    </label>
-                                                    <textarea
-                                                        className="form-textarea"
-                                                        name="description"
-                                                        value={organizationData.description}
-                                                        onChange={handleOrganizationInputChange}
-                                                        placeholder="Расскажите о вашей организации..."
-                                                        rows="4"
-                                                        required
-                                                    />
-                                                </div>
-                                                
-                                                <div className="form-group">
-                                                    <label className="form-label">Логотип организации</label>
-                                                    <div className="logo-upload-area">
-                                                        <input 
-                                                            type="file" 
-                                                            ref={organizationFileInputRef}
-                                                            onChange={handleOrganizationLogoChange}
-                                                            accept="image/*"
-                                                            style={{ display: 'none' }}
-                                                        />
-                                                        
-                                                        {organizationLogoPreview ? (
-                                                            <div className="logo-preview">
-                                                                <img 
-                                                                    src={organizationLogoPreview} 
-                                                                    alt="Логотип" 
-                                                                    className="logo-preview-image"
-                                                                />
-                                                                <div className="logo-actions">
-                                                                    <button 
-                                                                        type="button" 
-                                                                        onClick={triggerOrganizationFileInput}
-                                                                        className="btn btn-secondary btn-sm"
-                                                                    >
-                                                                        Изменить
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button" 
-                                                                        onClick={removeOrganizationLogo}
-                                                                        className="btn btn-danger btn-sm"
-                                                                    >
-                                                                        Удалить
-                                                                    </button>
+                                            <div className="card-content">
+                                                <div className="organizations-list">
+                                                    {userOrganizations.map(org => (
+                                                        <div key={org.id} className="organization-card">
+                                                            <div className="org-card-header">
+                                                                <div className="org-logo-container">
+                                                                    <img 
+                                                                        src={ensureHttps(org.logo_url) || '/default-org-logo.png'}
+                                                                        alt={org.name}
+                                                                        className="org-card-logo"
+                                                                    />
+                                                                </div>
+                                                                <div className="org-card-info">
+                                                                    <h4>
+                                                                        <a 
+                                                                            href={`/organizer/${org.slug}`} 
+                                                                            className="org-name-link"
+                                                                            target="_blank" 
+                                                                            rel="noopener noreferrer"
+                                                                        >
+                                                                            {org.name}
+                                                                        </a>
+                                                                    </h4>
+                                                                    <div className="org-role">
+                                                                        {org.role === 'manager' ? 'Менеджер' : 
+                                                                         org.role === 'admin' ? 'Администратор' : 'Участник'}
+                                                                    </div>
+                                                                    <div className="org-joined">
+                                                                        Состою с {new Date(org.joined_at).toLocaleDateString('ru-RU')}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        ) : (
-                                                            <div className="logo-upload-placeholder" onClick={triggerOrganizationFileInput}>
-                                                                <span className="upload-icon">📁</span>
-                                                                <p>Нажмите для загрузки логотипа</p>
-                                                                <p className="upload-hint">Рекомендуемый размер: 200x200px</p>
+                                                            
+                                                            <div className="org-stats">
+                                                                <div className="org-stat-item">
+                                                                    <span className="org-stat-value">{org.tournaments_count}</span>
+                                                                    <span className="org-stat-label">Турниров</span>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {org.description && (
+                                                                <div className="org-description">
+                                                                    <p>{org.description}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                
+                                                <div className="add-organization-note">
+                                                    <p>Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : organizationRequest ? (
+                                    <div className="organization-request-status">
+                                        <div className="content-card">
+                                            <div className="card-header">
+                                                <h3 className="card-title">Статус заявки на создание организации</h3>
+                                            </div>
+                                            <div className="card-content">
+                                                <div className="request-status-card">
+                                                    <div className="status-header">
+                                                        <h4>{organizationRequest.organization_name}</h4>
+                                                        <span className={`status-badge status-${organizationRequest.status}`}>
+                                                            {organizationRequest.status === 'pending' && 'На рассмотрении'}
+                                                            {organizationRequest.status === 'approved' && 'Одобрена'}
+                                                            {organizationRequest.status === 'rejected' && 'Отклонена'}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="request-details">
+                                                        <p><strong>Описание:</strong> {organizationRequest.description}</p>
+                                                        <p><strong>Дата подачи:</strong> {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</p>
+                                                        
+                                                        {organizationRequest.reviewed_at && (
+                                                            <p><strong>Дата рассмотрения:</strong> {new Date(organizationRequest.reviewed_at).toLocaleDateString('ru-RU')}</p>
+                                                        )}
+                                                        
+                                                        {organizationRequest.admin_comment && (
+                                                            <div className="admin-comment">
+                                                                <p><strong>Комментарий администратора:</strong></p>
+                                                                <div className="comment-text">{organizationRequest.admin_comment}</div>
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
-                                                
-                                                <div className="form-row">
-                                                    <div className="form-group">
-                                                        <label className="form-label">Сайт организации</label>
-                                                        <input
-                                                            type="url"
-                                                            className="form-input"
-                                                            name="websiteUrl"
-                                                            value={organizationData.websiteUrl}
-                                                            onChange={handleOrganizationInputChange}
-                                                            placeholder="https://example.com"
-                                                        />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="organization-tab">
+                                        <div className="content-card">
+                                            <div className="card-header">
+                                                <h3 className="card-title">Заявка на создание аккаунта организации</h3>
+                                            </div>
+                                            <div className="card-content">
+                                                <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации. Это позволит вам организовывать турниры от имени вашей организации.</p>
+
+                                                {/* Email Requirements */}
+                                                {!user.email && (
+                                                    <div className="organization-requirement-alert">
+                                                        <h4>❌ Требования не выполнены</h4>
+                                                        <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
+                                                        <button onClick={openAddEmailModal}>Привязать email</button>
                                                     </div>
-                                                    
-                                                    <div className="form-group">
-                                                        <label className="form-label">VK</label>
-                                                        <input
-                                                            type="url"
-                                                            className="form-input"
-                                                            name="vkUrl"
-                                                            value={organizationData.vkUrl}
-                                                            onChange={handleOrganizationInputChange}
-                                                            placeholder="https://vk.com/..."
-                                                        />
+                                                )}
+
+                                                {user.email && !user.is_verified && (
+                                                    <div className="organization-requirement-alert">
+                                                        <h4>❌ Требования не выполнены</h4>
+                                                        <p>Для подачи заявки необходимо подтвердить email.</p>
+                                                        <button onClick={openEmailVerificationModal}>Подтвердить email</button>
                                                     </div>
-                                                    
-                                                    <div className="form-group">
-                                                        <label className="form-label">Telegram</label>
-                                                        <input
-                                                            type="url"
-                                                            className="form-input"
-                                                            name="telegramUrl"
-                                                            value={organizationData.telegramUrl}
-                                                            onChange={handleOrganizationInputChange}
-                                                            placeholder="https://t.me/..."
-                                                        />
-                                                    </div>
-                                                </div>
-                                                
-                                                <button 
-                                                    type="submit" 
-                                                    className="btn btn-primary btn-lg btn-block"
-                                                    disabled={isSubmittingOrganization}
-                                                >
-                                                    {isSubmittingOrganization ? 'Отправка...' : 'Отправить заявку'}
-                                                </button>
-                                                
-                                                <div className="form-info">
-                                                    <h4>Информация о процессе:</h4>
-                                                    <ul>
-                                                        <li>Заявки рассматриваются в течение 1-3 рабочих дней</li>
-                                                        <li>После одобрения с вами свяжется администрация</li>
-                                                        <li>Все поля со звездочкой (*) обязательны для заполнения</li>
-                                                        <li>Логотип должен быть в формате PNG или JPG, до 5MB</li>
-                                                    </ul>
-                                                </div>
-                                            </form>
-                                        )}
-                                    </section>
+                                                )}
+
+                                                {/* Form */}
+                                                {user.email && user.is_verified && (
+                                                    <form onSubmit={submitOrganizationRequest} className="organization-form">
+                                                        {organizationError && (
+                                                            <div className="organization-error">
+                                                                {organizationError}
+                                                            </div>
+                                                        )}
+
+                                                        {organizationSuccess && (
+                                                            <div className="organization-success">
+                                                                {organizationSuccess}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="form-group">
+                                                            <label htmlFor="organizationName">
+                                                                Название организации <span className="required">*</span>
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                id="organizationName"
+                                                                name="organizationName"
+                                                                value={organizationData.organizationName}
+                                                                onChange={handleOrganizationInputChange}
+                                                                placeholder="Введите название вашей организации"
+                                                                required
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label htmlFor="description">
+                                                                Краткое описание организации <span className="required">*</span>
+                                                            </label>
+                                                            <textarea
+                                                                id="description"
+                                                                name="description"
+                                                                value={organizationData.description}
+                                                                onChange={handleOrganizationInputChange}
+                                                                placeholder="Расскажите о вашей организации, её деятельности и целях..."
+                                                                rows="4"
+                                                                required
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label htmlFor="websiteUrl">Сайт организации</label>
+                                                            <input
+                                                                type="url"
+                                                                id="websiteUrl"
+                                                                name="websiteUrl"
+                                                                value={organizationData.websiteUrl}
+                                                                onChange={handleOrganizationInputChange}
+                                                                placeholder="https://example.com"
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label htmlFor="vkUrl">Ссылка на VK</label>
+                                                            <input
+                                                                type="url"
+                                                                id="vkUrl"
+                                                                name="vkUrl"
+                                                                value={organizationData.vkUrl}
+                                                                onChange={handleOrganizationInputChange}
+                                                                placeholder="https://vk.com/your_organization"
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label htmlFor="telegramUrl">Ссылка на Telegram</label>
+                                                            <input
+                                                                type="url"
+                                                                id="telegramUrl"
+                                                                name="telegramUrl"
+                                                                value={organizationData.telegramUrl}
+                                                                onChange={handleOrganizationInputChange}
+                                                                placeholder="https://t.me/your_organization"
+                                                            />
+                                                        </div>
+
+                                                        <div className="form-group">
+                                                            <label>Логотип организации</label>
+                                                            <div className="logo-upload-section">
+                                                                <input 
+                                                                    type="file" 
+                                                                    ref={organizationFileInputRef}
+                                                                    onChange={handleOrganizationLogoChange}
+                                                                    accept="image/*"
+                                                                    style={{ display: 'none' }}
+                                                                />
+                                                                
+                                                                {organizationLogoPreview ? (
+                                                                    <div className="logo-preview">
+                                                                        <img 
+                                                                            src={organizationLogoPreview} 
+                                                                            alt="Предпросмотр логотипа" 
+                                                                            className="organization-logo-preview"
+                                                                        />
+                                                                        <div className="logo-actions">
+                                                                            <button 
+                                                                                type="button" 
+                                                                                onClick={triggerOrganizationFileInput}
+                                                                                className="change-logo-btn"
+                                                                            >
+                                                                                Изменить
+                                                                            </button>
+                                                                            <button 
+                                                                                type="button" 
+                                                                                onClick={removeOrganizationLogo}
+                                                                                className="remove-logo-btn"
+                                                                            >
+                                                                                Удалить
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="logo-upload-placeholder">
+                                                                        <button 
+                                                                            type="button" 
+                                                                            onClick={triggerOrganizationFileInput}
+                                                                            className="upload-logo-btn"
+                                                                        >
+                                                                            📁 Выбрать файл логотипа
+                                                                        </button>
+                                                                        <p className="upload-hint">Рекомендуемый размер: 200x200px, формат: PNG, JPG</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="form-group submit-group">
+                                                            <button 
+                                                                type="submit" 
+                                                                className="submit-organization-btn"
+                                                                disabled={isSubmittingOrganization}
+                                                            >
+                                                                {isSubmittingOrganization ? 'Отправка...' : 'Отправить заявку'}
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="organization-info">
+                                                            <h4>Информация о процессе:</h4>
+                                                            <ul>
+                                                                <li>Заявки рассматриваются в течение 1-3 рабочих дней</li>
+                                                                <li>После одобрения с вами свяжется администрация для уточнения деталей</li>
+                                                                <li>Все поля, отмеченные звездочкой (*), обязательны для заполнения</li>
+                                                                <li>Логотип должен быть в формате изображения (PNG, JPG) размером до 5MB</li>
+                                                            </ul>
+                                                        </div>
+                                                    </form>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
-                            </div>
+                            </>
                         )}
                         
                         {/* Tournaments Tab */}
                         {activeTab === 'tournaments' && (
-                            <div className="tournaments-tab">
-                                <header className="tab-header">
-                                    <h2 className="tab-title">Турниры</h2>
-                                    <div className="tab-controls">
-                                        <div className="view-switcher">
+                            <>
+                                <div className="content-header">
+                                    <h2 className="content-title">Турниры</h2>
+                                </div>
+                                
+                                {loadingTournaments ? (
+                                    <div className="loading-spinner">
+                                        <p>Загрузка турниров...</p>
+                                    </div>
+                                ) : (
+                                    <div className="tournaments-section">
+                                        {hasActiveTournamentFilters() && (
+                                            <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+                                                <button 
+                                                    onClick={clearAllTournamentFilters}
+                                                    className="clear-all-filters-btn"
+                                                >
+                                                    ✕ Сбросить все фильтры
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        <div className="tournaments-view-controls">
                                             <button 
-                                                className={`view-btn ${tournamentViewMode === 'table' ? 'active' : ''}`} 
+                                                className={`view-mode-btn ${tournamentViewMode === 'table' ? 'active' : ''}`} 
                                                 onClick={() => setTournamentViewMode('table')}
                                             >
                                                 Таблица
                                             </button>
                                             <button 
-                                                className={`view-btn ${tournamentViewMode === 'card' ? 'active' : ''}`} 
+                                                className={`view-mode-btn ${tournamentViewMode === 'card' ? 'active' : ''}`} 
                                                 onClick={() => setTournamentViewMode('card')}
                                             >
                                                 Карточки
                                             </button>
                                         </div>
-                                    </div>
-                                </header>
-                                
-                                {/* Фильтры */}
-                                <div className="tournaments-filters">
-                                    <input
-                                        type="text"
-                                        placeholder="Поиск по названию..."
-                                        value={tournamentFilters.name}
-                                        onChange={(e) => setTournamentFilters({...tournamentFilters, name: e.target.value})}
-                                        className="filter-input"
-                                    />
-                                    
-                                    {hasActiveTournamentFilters() && (
-                                        <button 
-                                            onClick={clearAllTournamentFilters}
-                                            className="clear-filters-btn"
-                                        >
-                                            Сбросить фильтры
-                                        </button>
-                                    )}
-                                </div>
-                                
-                                {loadingTournaments ? (
-                                    <div className="loading-state">
-                                        <div className="loading-spinner"></div>
-                                        <p>Загрузка турниров...</p>
-                                    </div>
-                                ) : filteredAndSortedUserTournaments.length > 0 ? (
-                                    <>
+
+                                        <div className="tournaments-filter-bar">
+                                            <input
+                                                type="text"
+                                                placeholder="Поиск по названию"
+                                                value={tournamentFilters.name}
+                                                onChange={(e) => setTournamentFilters({...tournamentFilters, name: e.target.value})}
+                                                className="mobile-filter-input"
+                                            />
+                                        </div>
+                                        
                                         {tournamentViewMode === 'table' ? (
-                                            <div className="tournaments-table-wrapper">
-                                                <table className="tournaments-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th 
-                                                                className={tournamentFilters.game ? 'filtered' : ''}
-                                                                onClick={() => toggleTournamentFilter('game')}
-                                                            >
-                                                                Игра {tournamentFilters.game && <span className="filter-active">✓</span>}
-                                                            </th>
-                                                            <th>Название</th>
-                                                            <th onClick={() => handleTournamentSort('participant_count')}>
-                                                                Участники
-                                                                <span className="sort-icon">
-                                                                    {tournamentSort.field === 'participant_count' && 
-                                                                     (tournamentSort.direction === 'asc' ? '↑' : '↓')}
-                                                                </span>
-                                                            </th>
-                                                            <th 
-                                                                className={tournamentFilters.status ? 'filtered' : ''}
-                                                                onClick={() => toggleTournamentFilter('status')}
-                                                            >
-                                                                Статус {tournamentFilters.status && <span className="filter-active">✓</span>}
-                                                            </th>
-                                                            <th onClick={() => handleTournamentSort('start_date')}>
-                                                                Дата
-                                                                <span className="sort-icon">
-                                                                    {tournamentSort.field === 'start_date' && 
-                                                                     (tournamentSort.direction === 'asc' ? '↑' : '↓')}
-                                                                </span>
-                                                            </th>
-                                                            <th>Результат</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {filteredAndSortedUserTournaments.map((tournament) => (
-                                                            <tr key={tournament.id}>
-                                                                <td>{tournament.game}</td>
-                                                                <td>
-                                                                    <a href={`/tournaments/${tournament.id}`} className="tournament-link">
-                                                                        {tournament.name}
-                                                                    </a>
-                                                                </td>
-                                                                <td>
-                                                                    {tournament.max_participants
-                                                                        ? `${tournament.participant_count} из ${tournament.max_participants}`
-                                                                        : tournament.participant_count}
-                                                                </td>
-                                                                <td>
-                                                                    <span className={`tournament-status ${tournament.status}`}>
-                                                                        {tournament.status === 'active' ? 'Активен' : 
-                                                                         tournament.status === 'in_progress' ? 'Идет' : 
-                                                                         tournament.status === 'completed' ? 'Завершен' : 
-                                                                         'Неизвестно'}
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th ref={tournamentFilterRefs.game} className={tournamentFilters.game ? 'filtered' : ''}>
+                                                            {activeTournamentFilter === 'game' ? (
+                                                                <div className="dropdown" style={{
+                                                                    position: 'absolute',
+                                                                    top: '100%',
+                                                                    left: '0',
+                                                                    right: '0',
+                                                                    background: '#1a1a1a',
+                                                                    color: '#ffffff',
+                                                                    border: '1px solid #333333',
+                                                                    borderRadius: '6px',
+                                                                    zIndex: 9999,
+                                                                    maxHeight: '200px',
+                                                                    overflowY: 'auto',
+                                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                                                    marginTop: '4px',
+                                                                    minWidth: '150px',
+                                                                    whiteSpace: 'nowrap',
+                                                                    display: 'block',
+                                                                    visibility: 'visible'
+                                                                }}>
+                                                                    {tournamentFilters.game && (
+                                                                        <div
+                                                                            onClick={() => clearTournamentFilter('game')}
+                                                                            className="dropdown-item clear-filter"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                backgroundColor: '#333333',
+                                                                                color: '#ffffff',
+                                                                                borderBottom: '2px solid #444444'
+                                                                            }}
+                                                                        >
+                                                                            ✕ Сбросить фильтр
+                                                                        </div>
+                                                                    )}
+                                                                    {uniqueTournamentValues('game').map((value) => (
+                                                                        <div
+                                                                            key={value}
+                                                                            onClick={() => applyTournamentFilter('game', value)}
+                                                                            className="dropdown-item"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                borderBottom: '1px solid #2a2a2a',
+                                                                                backgroundColor: 'transparent',
+                                                                                color: '#ffffff'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            {value}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    Игра{tournamentFilters.game && ` (${tournamentFilters.game})`}{' '}
+                                                                    <span className="dropdown-icon" onClick={() => toggleTournamentFilter('game')}>
+                                                                        ▼
                                                                     </span>
-                                                                </td>
-                                                                <td>{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
-                                                                <td>
-                                                                    {tournament.tournament_result ? (
-                                                                        <span className={`tournament-result ${
-                                                                            tournament.tournament_result.toLowerCase().includes('победитель') ? 'winner' :
-                                                                            tournament.tournament_result.toLowerCase().includes('место') ? 'top' :
-                                                                            'participant'
-                                                                        }`}>
-                                                                            {tournament.tournament_result}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="tournament-result pending">
-                                                                            {tournament.status === 'completed' ? 'Не указан' : 'В процессе'}
-                                                                        </span>
+                                                                </>
+                                                            )}
+                                                        </th>
+                                                        <th ref={tournamentFilterRefs.name} className={tournamentFilters.name ? 'filtered' : ''}>
+                                                            {activeTournamentFilter === 'name' ? (
+                                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                                    <input
+                                                                        name="name"
+                                                                        value={tournamentFilters.name}
+                                                                        onChange={handleTournamentFilterChange}
+                                                                        placeholder="Поиск по названию"
+                                                                        autoFocus
+                                                                        style={{ flex: 1 }}
+                                                                    />
+                                                                    {tournamentFilters.name && (
+                                                                        <button
+                                                                            onClick={() => clearTournamentFilter('name')}
+                                                                            style={{
+                                                                                padding: '4px 8px',
+                                                                                backgroundColor: '#333333',
+                                                                                color: '#ffffff',
+                                                                                border: '1px solid #555555',
+                                                                                borderRadius: '4px',
+                                                                                cursor: 'pointer',
+                                                                                fontSize: '11px'
+                                                                            }}
+                                                                        >
+                                                                            ✕
+                                                                        </button>
                                                                     )}
-                                                                    {tournament.wins !== undefined && tournament.losses !== undefined && (
-                                                                        <span className="tournament-score">
-                                                                            ({tournament.wins}W/{tournament.losses}L)
-                                                                        </span>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    Название{tournamentFilters.name && ` (${tournamentFilters.name})`}{' '}
+                                                                    <span className="filter-icon" onClick={() => toggleTournamentFilter('name')}>
+                                                                        🔍
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </th>
+                                                        <th>
+                                                            Участники{' '}
+                                                            <span className="sort-icon" onClick={() => handleTournamentSort('participant_count')}>
+                                                                {tournamentSort.field === 'participant_count' && tournamentSort.direction === 'asc' ? '▲' : '▼'}
+                                                            </span>
+                                                        </th>
+                                                        <th ref={tournamentFilterRefs.status} className={tournamentFilters.status ? 'filtered' : ''}>
+                                                            {activeTournamentFilter === 'status' ? (
+                                                                <div className="dropdown" style={{
+                                                                    position: 'absolute',
+                                                                    top: '100%',
+                                                                    left: '0',
+                                                                    right: '0',
+                                                                    background: '#1a1a1a',
+                                                                    color: '#ffffff',
+                                                                    border: '1px solid #333333',
+                                                                    borderRadius: '6px',
+                                                                    zIndex: 9999,
+                                                                    maxHeight: '200px',
+                                                                    overflowY: 'auto',
+                                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                                                                    marginTop: '4px',
+                                                                    minWidth: '150px',
+                                                                    whiteSpace: 'nowrap',
+                                                                    display: 'block',
+                                                                    visibility: 'visible'
+                                                                }}>
+                                                                    {tournamentFilters.status && (
+                                                                        <div
+                                                                            onClick={() => clearTournamentFilter('status')}
+                                                                            className="dropdown-item clear-filter"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                backgroundColor: '#333333',
+                                                                                color: '#ffffff',
+                                                                                borderBottom: '2px solid #444444'
+                                                                            }}
+                                                                        >
+                                                                            ✕ Сбросить фильтр
+                                                                        </div>
                                                                     )}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                                
-                                                {/* Выпадающие фильтры */}
-                                                {activeTournamentFilter === 'game' && (
-                                                    <div className="filter-dropdown" ref={tournamentFilterRefs.game}>
-                                                        {tournamentFilters.game && (
-                                                            <div
-                                                                onClick={() => clearTournamentFilter('game')}
-                                                                className="filter-option clear"
-                                                            >
-                                                                ✕ Сбросить фильтр
-                                                            </div>
-                                                        )}
-                                                        {uniqueTournamentValues('game').map((value) => (
-                                                            <div
-                                                                key={value}
-                                                                onClick={() => applyTournamentFilter('game', value)}
-                                                                className="filter-option"
-                                                            >
-                                                                {value}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                
-                                                {activeTournamentFilter === 'status' && (
-                                                    <div className="filter-dropdown" ref={tournamentFilterRefs.status}>
-                                                        {tournamentFilters.status && (
-                                                            <div
-                                                                onClick={() => clearTournamentFilter('status')}
-                                                                className="filter-option clear"
-                                                            >
-                                                                ✕ Сбросить фильтр
-                                                            </div>
-                                                        )}
-                                                        {uniqueTournamentValues('status').map((value) => (
-                                                            <div
-                                                                key={value}
-                                                                onClick={() => applyTournamentFilter('status', value)}
-                                                                className="filter-option"
-                                                            >
-                                                                {value === 'active' ? 'Активен' : 
-                                                                 value === 'in_progress' ? 'Идет' : 
-                                                                 value === 'completed' ? 'Завершен' : 
-                                                                 value}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
+                                                                    {uniqueTournamentValues('status').map((value) => (
+                                                                        <div
+                                                                            key={value}
+                                                                            onClick={() => applyTournamentFilter('status', value)}
+                                                                            className="dropdown-item"
+                                                                            style={{
+                                                                                padding: '12px 16px',
+                                                                                cursor: 'pointer',
+                                                                                borderBottom: '1px solid #2a2a2a',
+                                                                                backgroundColor: 'transparent',
+                                                                                color: '#ffffff'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.target.style.backgroundColor = '#2a2a2a'}
+                                                                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                                                        >
+                                                                            {value === 'active' ? 'Активен' : 
+                                                                             value === 'in_progress' ? 'Идет' : 
+                                                                             value === 'completed' ? 'Завершен' : 
+                                                                             value}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    Статус{tournamentFilters.status && ` (${
+                                                                        tournamentFilters.status === 'active' ? 'Активен' : 
+                                                                        tournamentFilters.status === 'in_progress' ? 'Идет' : 
+                                                                        tournamentFilters.status === 'completed' ? 'Завершен' : 
+                                                                        tournamentFilters.status
+                                                                    })`}{' '}
+                                                                    <span className="dropdown-icon" onClick={() => toggleTournamentFilter('status')}>
+                                                                        ▼
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </th>
+                                                        <th>
+                                                            Дата{' '}
+                                                            <span className="sort-icon" onClick={() => handleTournamentSort('start_date')}>
+                                                                {tournamentSort.field === 'start_date' && tournamentSort.direction === 'asc' ? '▲' : '▼'}
+                                                            </span>
+                                                        </th>
+                                                        <th>Результат</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredAndSortedUserTournaments.map((tournament) => (
+                                                        <tr key={tournament.id}>
+                                                            <td data-label="Игра" title={tournament.game}>{tournament.game}</td>
+                                                            <td data-label="Название" title={tournament.name}>
+                                                                <a href={`/tournaments/${tournament.id}`}>{tournament.name}</a>
+                                                            </td>
+                                                            <td data-label="Участники">
+                                                                {tournament.max_participants
+                                                                    ? `${tournament.participant_count} из ${tournament.max_participants}`
+                                                                    : tournament.participant_count}
+                                                            </td>
+                                                            <td data-label="Статус">
+                                                                <span className={`tournament-status-badge ${
+                                                                    tournament.status === 'active' ? 'tournament-status-active' : 
+                                                                    tournament.status === 'in_progress' ? 'tournament-status-in-progress' : 
+                                                                    tournament.status === 'completed' ? 'tournament-status-completed' : 
+                                                                    'tournament-status-completed'
+                                                                }`}>
+                                                                    {tournament.status === 'active' ? 'Активен' : 
+                                                                     tournament.status === 'in_progress' ? 'Идет' : 
+                                                                     tournament.status === 'completed' ? 'Завершен' : 
+                                                                     'Неизвестно'}
+                                                                </span>
+                                                            </td>
+                                                            <td data-label="Дата">{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
+                                                            <td data-label="Результат">
+                                                                {tournament.tournament_result ? (
+                                                                    <span className={`tournament-result ${
+                                                                        tournament.tournament_result.toLowerCase().includes('победитель') ? 'победитель' :
+                                                                        tournament.tournament_result.toLowerCase().includes('место') ? 'призер' :
+                                                                        tournament.tournament_result.toLowerCase().includes('финал') ? 'призер' :
+                                                                        'участник'
+                                                                    }`}>
+                                                                        {tournament.tournament_result}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="tournament-result pending">
+                                                                        {tournament.status === 'completed' ? 'Не указан' : 'В процессе'}
+                                                                    </span>
+                                                                )}
+                                                                {tournament.wins !== undefined && tournament.losses !== undefined && (
+                                                                    <div className="tournament-stats">
+                                                                        <small>({tournament.wins}П/{tournament.losses}П)</small>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         ) : (
                                             <div className="tournaments-cards">
                                                 {filteredAndSortedUserTournaments.map((tournament) => (
                                                     <div key={tournament.id} className="tournament-card">
-                                                        <div className="tournament-card-header">
-                                                            <h3 className="tournament-name">
-                                                                <a href={`/tournaments/${tournament.id}`}>
-                                                                    {tournament.name}
-                                                                </a>
-                                                            </h3>
-                                                            <span className={`tournament-status ${tournament.status}`}>
-                                                                {tournament.status === 'active' ? 'Активен' : 
-                                                                 tournament.status === 'in_progress' ? 'Идет' : 
-                                                                 tournament.status === 'completed' ? 'Завершен' : 
-                                                                 'Неизвестно'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="tournament-card-body">
-                                                            <div className="tournament-detail">
-                                                                <span className="detail-label">Игра:</span>
-                                                                <span className="detail-value">{tournament.game}</span>
+                                                        <h3 className="tournament-name">
+                                                            <a href={`/tournaments/${tournament.id}`}>{tournament.name}</a>
+                                                        </h3>
+                                                        <div className="tournament-details">
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Игра:</span>
+                                                                <span className="tournament-value">{tournament.game}</span>
                                                             </div>
-                                                            <div className="tournament-detail">
-                                                                <span className="detail-label">Участники:</span>
-                                                                <span className="detail-value">
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Участники:</span>
+                                                                <span className="tournament-value">
                                                                     {tournament.max_participants
                                                                         ? `${tournament.participant_count} из ${tournament.max_participants}`
                                                                         : tournament.participant_count}
                                                                 </span>
                                                             </div>
-                                                            <div className="tournament-detail">
-                                                                <span className="detail-label">Дата:</span>
-                                                                <span className="detail-value">
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Дата:</span>
+                                                                <span className="tournament-value">
                                                                     {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
                                                                 </span>
                                                             </div>
-                                                            <div className="tournament-detail">
-                                                                <span className="detail-label">Результат:</span>
-                                                                <span className="detail-value">
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Статус:</span>
+                                                                <span className={`tournament-status ${
+                                                                    tournament.status === 'active' ? 'active' : 
+                                                                    tournament.status === 'in_progress' ? 'in-progress' : 
+                                                                    'completed'
+                                                                }`}>
+                                                                    {tournament.status === 'active' ? 'Активен' : 
+                                                                     tournament.status === 'in_progress' ? 'Идет' : 
+                                                                     tournament.status === 'completed' ? 'Завершен' : 
+                                                                     'Неизвестный статус'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="tournament-info">
+                                                                <span className="tournament-label">Результат:</span>
+                                                                <span className="tournament-value">
                                                                     {tournament.tournament_result ? (
                                                                         <span className={`tournament-result ${
-                                                                            tournament.tournament_result.toLowerCase().includes('победитель') ? 'winner' :
-                                                                            tournament.tournament_result.toLowerCase().includes('место') ? 'top' :
-                                                                            'participant'
+                                                                            tournament.tournament_result.toLowerCase().includes('победитель') ? 'победитель' :
+                                                                            tournament.tournament_result.toLowerCase().includes('место') ? 'призер' :
+                                                                            tournament.tournament_result.toLowerCase().includes('финал') ? 'призер' :
+                                                                            'участник'
                                                                         }`}>
                                                                             {tournament.tournament_result}
                                                                         </span>
@@ -3091,9 +3154,9 @@ function Profile() {
                                                                         </span>
                                                                     )}
                                                                     {tournament.wins !== undefined && tournament.losses !== undefined && (
-                                                                        <span className="tournament-score">
-                                                                            ({tournament.wins}W/{tournament.losses}L)
-                                                                        </span>
+                                                                        <div className="tournament-stats">
+                                                                            <small> ({tournament.wins}П/{tournament.losses}П)</small>
+                                                                        </div>
                                                                     )}
                                                                 </span>
                                                             </div>
@@ -3102,24 +3165,27 @@ function Profile() {
                                                 ))}
                                             </div>
                                         )}
-                                    </>
-                                ) : (
-                                    <div className="empty-state">
-                                        <div className="empty-icon">🏆</div>
-                                        <p>
-                                            {userTournaments.length === 0 
-                                                ? 'Вы еще не участвовали в турнирах'
-                                                : 'Турниры не найдены. Попробуйте изменить фильтры.'}
-                                        </p>
+                                        
+                                        {filteredAndSortedUserTournaments.length === 0 && (
+                                            <div className="empty-state">
+                                                <div className="empty-state-title">Турниры не найдены</div>
+                                                <div className="empty-state-description">
+                                                    {userTournaments.length === 0 
+                                                        ? 'Вы еще не участвовали в турнирах'
+                                                        : 'Попробуйте изменить фильтры поиска'
+                                                    }
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                            </div>
+                            </>
                         )}
                     </div>
-                </main>
+                </div>
             </div>
             
-            {/* Все модальные окна остаются без изменений */}
+            {/* Modals */}
             {showEmailVerificationModal && (
                 <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeEmailVerificationModal}>
                     <div className="modal-content email-verification-modal" onClick={(e) => e.stopPropagation()}>
