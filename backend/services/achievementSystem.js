@@ -433,7 +433,7 @@ class AchievementSystem {
         try {
             const result = await pool.query(`
                 SELECT 
-                    a.key, a.name, a.description, a.icon, a.category, a.rarity, a.points,
+                    a.id, a.name, a.description, a.icon, a.category, a.rarity, a.points,
                     ua.progress, ua.max_progress, ua.unlocked_at
                 FROM achievements a
                 LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = $1
@@ -443,7 +443,7 @@ class AchievementSystem {
             `, [userId]);
 
             const achievements = result.rows.map(row => ({
-                key: row.key,
+                key: row.id,
                 name: row.name,
                 description: row.description,
                 icon: row.icon,

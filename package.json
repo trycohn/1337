@@ -5,10 +5,13 @@
   "main": "index.js",
   "proxy": "http://localhost:3000",
   "scripts": {
-    "start": "NODE_OPTIONS='--no-deprecation' react-scripts start",
-    "build": "react-app-rewired build",
-    "test": "react-app-rewired test",
-    "eject": "react-scripts eject"
+    "start": "cd frontend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "start:backend": "npm run dev",
+    "build": "cd frontend && npm run build",
+    "test": "cd frontend && npm test",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation nodemon server.js",
+    "eject": "cd frontend && npm run eject"
   },
   "repository": {
     "type": "git",
@@ -40,6 +43,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "nodemon": "^3.1.9",
     "react-app-rewired": "^2.2.1"
   }

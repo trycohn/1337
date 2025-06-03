@@ -459,7 +459,7 @@ function TournamentDetails() {
         }
     }, [id, fetchCreatorInfo]);
     
-    // Функция для загрузки информации о создателе турнира
+    // Функция для загрузки информации о создателе турнира (КРИТИЧНО: определяем ПЕРЕД использованием)
     const fetchCreatorInfo = useCallback(async (creatorId) => {
         if (!creatorId) return;
         
