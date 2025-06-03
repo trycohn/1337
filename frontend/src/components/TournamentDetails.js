@@ -145,7 +145,9 @@ function TournamentDetails() {
     const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
     const [selectedUser, setSelectedUser] = useState(null);
     const wsRef = useRef(null);
+    // eslint-disable-next-line no-unused-vars
     const [loading, setLoading] = useState(true);
+    // eslint-disable-next-line no-unused-vars
     const [error, setError] = useState(null);
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
@@ -233,7 +235,7 @@ function TournamentDetails() {
     };
     
     // Проверка, было ли отправлено приглашение пользователю
-    const isInvitationSent = (userId) => {
+    const isInvitationSent = useCallback((userId) => {
         if (!tournament || !tournament.id) return false;
         
         try {
@@ -249,12 +251,16 @@ function TournamentDetails() {
         }
         
         return false;
-    };
+    }, [tournament?.id]);
     
-    // eslint-disable-next-line no-unused-vars
+    // Проверка участия пользователя - упрощенная версия без сложных зависимостей
     const checkParticipation = useCallback(() => {
-        // ... implementation ...
-    }, [tournament, user]);
+        if (!tournament?.participants || !user?.id) return false;
+        
+        return tournament.participants.some(participant => 
+            participant.user_id === user.id || participant.id === user.id
+        );
+    }, [tournament?.participants, user?.id]);
     
     const addMap = () => {
         const defaultMap = getDefaultMap(tournament?.game, availableMaps);
@@ -438,18 +444,14 @@ function TournamentDetails() {
         if (!creatorId) return;
         
         try {
-            // Делаем прямой запрос к API для получения информации из БД
             console.log(`Загружаем информацию о создателе турнира (ID: ${creatorId}) из базы данных`);
             
-            // Используем правильный маршрут API для получения данных пользователя
-            // Примечание: маршрут `/api/users/profile/${creatorId}` может быть более надежным, чем `/api/users/${creatorId}`
             const response = await api.get(`/api/users/profile/${creatorId}`);
             
             if (response.data) {
                 console.log(`Информация о создателе турнира успешно загружена из БД:`, response.data);
                 setCreator(response.data);
                 
-                // Кешируем результат для возможного использования в будущем
                 const cacheKey = `user_${creatorId}`;
                 localStorage.setItem(cacheKey, JSON.stringify(response.data));
                 localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
@@ -457,56 +459,6 @@ function TournamentDetails() {
         } catch (error) {
             console.error('Ошибка при загрузке данных создателя турнира из БД:', error);
             
-            // Попытаемся найти информацию о создателе в списке участников
-            if (tournament && tournament.participants && Array.isArray(tournament.participants)) {
-                console.log('Поиск информации о создателе в списке участников турнира');
-                
-                const creatorFromParticipants = tournament.participants.find(
-                    participant => participant.user_id === creatorId || participant.id === creatorId
-                );
-                
-                if (creatorFromParticipants) {
-                    console.log('Найдена информация о создателе в списке участников:', creatorFromParticipants);
-                    
-                    const creatorInfo = {
-                        id: creatorId,
-                        username: creatorFromParticipants.name || creatorFromParticipants.username || `Участник #${creatorId}`,
-                        avatar_url: creatorFromParticipants.avatar_url || null,
-                        fromParticipants: true
-                    };
-                    
-                    setCreator(creatorInfo);
-                    return;
-                }
-            }
-            
-            // Проверяем, есть ли кешированные данные
-            try {
-                console.log('Поиск информации о создателе в локальном кеше');
-                const cacheKey = `user_${creatorId}`;
-                const cachedUser = localStorage.getItem(cacheKey);
-                
-                if (cachedUser) {
-                    const parsedUser = JSON.parse(cachedUser);
-                    if (parsedUser && parsedUser.id === creatorId) {
-                        console.log('Найдена информация о создателе в кеше:', parsedUser);
-                        setCreator(parsedUser);
-                        return;
-                    }
-                }
-            } catch (cacheError) {
-                console.error('Ошибка при проверке кешированных данных:', cacheError);
-            }
-            
-            // Проверяем, можем ли мы получить данные из tournament.created_by_info
-            if (tournament && tournament.created_by_info) {
-                console.log('Использование информации о создателе из tournament.created_by_info');
-                setCreator(tournament.created_by_info);
-                return;
-            }
-            
-            // Если все источники информации недоступны, создаем заглушку
-            console.log('Все источники информации о создателе недоступны, создаем заглушку');
             setCreator({
                 id: creatorId,
                 username: `Создатель #${creatorId}`,
@@ -514,7 +466,7 @@ function TournamentDetails() {
                 isError: true
             });
         }
-    }, [tournament]);
+    }, []); // Без зависимостей для избежания циклических ссылок
     
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
@@ -526,8 +478,7 @@ function TournamentDetails() {
                 return;
             }
             
-            // Устанавливаем флаг, что мы начали загружать карты для этой игры,
-            // чтобы предотвратить множественные запросы
+            // Устанавливаем флаг, что мы начали загружать карты для этой игры
             setAvailableMaps(prev => ({
                 ...prev,
                 [gameName]: prev[gameName] || [],
@@ -560,12 +511,10 @@ function TournamentDetails() {
                         }
                     } catch (parseError) {
                         console.error('Ошибка при разборе кешированных карт:', parseError);
-                        // Если произошла ошибка при разборе, очищаем кеш
                         localStorage.removeItem(cacheKey);
                         localStorage.removeItem(cacheTimestampKey);
                     }
                 } else {
-                    // Кеш устарел, очищаем его
                     localStorage.removeItem(cacheKey);
                     localStorage.removeItem(cacheTimestampKey);
                 }
@@ -631,7 +580,7 @@ function TournamentDetails() {
                 [`${gameName}_loading`]: false
             }));
         }
-    }, [isCounterStrike2, availableMaps]);
+    }, [availableMaps]); // Зависим только от availableMaps
     
     // Функция для получения карт для конкретной игры с использованием хелпера
     const getGameMaps = useCallback((game) => {
@@ -643,16 +592,15 @@ function TournamentDetails() {
         return getDefaultMapHelper(game, availableMaps);
     }, [availableMaps]);
 
-    // Используем useMemo, чтобы уменьшить количество перерисовок
+    // Используем useMemo для мемоизации игровых данных
     const memoizedGameData = useMemo(() => {
-        // Этот объект будет пересоздаваться только когда изменятся availableMaps или tournament
         return {
             tournamentGame: tournament?.game,
             gameSupportsMap: tournament?.game ? gameHasMaps(tournament.game) : false,
             availableMapsForGame: tournament?.game ? (availableMaps[tournament.game] || []) : [],
             isMapLoading: tournament?.game ? !!availableMaps[`${tournament.game}_loading`] : false
         };
-    }, [tournament?.game, availableMaps, gameHasMaps]);
+    }, [tournament?.game, availableMaps]);
     
     // Загружаем данные пользователя
     useEffect(() => {
@@ -717,7 +665,7 @@ function TournamentDetails() {
         } finally {
             setLogsLoading(false);
         }
-    }, [tournament]);
+    }, [tournament?.id]); // Зависим только от ID турнира
     
     // Загружаем журнал событий при переключении на вкладку
     useEffect(() => {
@@ -1824,24 +1772,20 @@ function TournamentDetails() {
 
     // Функция для проверки и валидации кэша приглашений
     const validateInvitationCache = useCallback(() => {
-        if (!tournament) return; // Добавляем проверку, чтобы избежать ошибок
+        if (!tournament?.id) return;
         
         try {
-            // Проверяем кэш приглашенных пользователей
-            const cachedInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
+            const cachedInvited = JSON.parse(localStorage.getItem(`tournament_${tournament.id}_invited_users`) || '[]');
             
-            // Если кэш не пуст, проверяем, есть ли какие-то изменения в составе участников
-            if (cachedInvited.length > 0 && tournament && tournament.participants) {
-                // Фильтруем кэш, исключая пользователей, которые уже стали участниками
+            if (cachedInvited.length > 0 && tournament?.participants) {
                 const filteredCache = cachedInvited.filter(userId => {
                     return !tournament.participants.some(participant => 
                         participant.user_id === userId || participant.creator_id === userId
                     );
                 });
                 
-                // Если были изменения, обновляем кэш
                 if (filteredCache.length !== cachedInvited.length) {
-                    localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(filteredCache));
+                    localStorage.setItem(`tournament_${tournament.id}_invited_users`, JSON.stringify(filteredCache));
                     setInvitedUsers(filteredCache);
                 } else {
                     setInvitedUsers(cachedInvited);
@@ -1851,11 +1795,10 @@ function TournamentDetails() {
             }
         } catch (error) {
             console.error('Ошибка при валидации кэша приглашений:', error);
-            // При ошибке очищаем кэш для безопасности
-            localStorage.removeItem(`tournament_${id}_invited_users`);
+            localStorage.removeItem(`tournament_${tournament.id}_invited_users`);
             setInvitedUsers([]);
         }
-    }, [id, tournament]);
+    }, [tournament?.id, tournament?.participants]);
 
     // Проверяем актуальность кэша при загрузке турнира
     useEffect(() => {
