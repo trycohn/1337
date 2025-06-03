@@ -96,6 +96,8 @@ const publicRoutes = [
   /^\/api\/maps($|\/)/,  // Маршруты /api/maps и /api/maps/:id
   /^\/api\/games($|\/)/,  // Маршруты /api/games и /api/games/:id
   /^\/api\/tournaments($|\/\d+$)/,  // Маршруты /api/tournaments и /api/tournaments/:id
+  /^\/api\/tournaments\/\d+\/teams$/,  // Команды турнира
+  /^\/api\/tournaments\/\d+\/original-participants$/,  // Оригинальные участники турнира
   /^\/api\/users\/login$/,  // Авторизация пользователей
   /^\/api\/users\/register$/,  // Регистрация пользователей
   /^\/api\/users\/steam$/,  // Steam OAuth

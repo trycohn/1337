@@ -33,12 +33,30 @@ const TeamGenerator = ({
     const [loadingParticipants, setLoadingParticipants] = useState(false);
     const [loadingTeams, setLoadingTeams] = useState(false);
 
+    // ⏱️ Debounce механизм для предотвращения частых запросов
+    const [lastRequestTime, setLastRequestTime] = useState({});
+    const REQUEST_DEBOUNCE_MS = 3000; // 3 секунды между запросами одного типа
+    
+    const shouldMakeRequest = (requestType) => {
+        const now = Date.now();
+        const lastTime = lastRequestTime[requestType] || 0;
+        
+        if (now - lastTime < REQUEST_DEBOUNCE_MS) {
+            console.log(`⏱️ TeamGenerator Debounce: пропускаем ${requestType}, последний запрос ${now - lastTime}ms назад`);
+            return false;
+        }
+        
+        setLastRequestTime(prev => ({ ...prev, [requestType]: now }));
+        return true;
+    };
+
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
-        if (!tournament || !tournament.id) return;
+        if (!tournament || !tournament.id || !shouldMakeRequest('teams')) return;
         
         setLoadingTeams(true);
         try {
+            console.log('🔍 Sending request to: /api/tournaments/' + tournament.id + '/teams');
             const response = await api.get(`/api/tournaments/${tournament.id}/teams`);
             if (response.data && Array.isArray(response.data)) {
                 console.log('Загруженные команды турнира:', response.data);
@@ -58,14 +76,15 @@ const TeamGenerator = ({
         } finally {
             setLoadingTeams(false);
         }
-    }, [tournament, onTeamsGenerated, toast]);
+    }, [tournament?.id]); // ИСПРАВЛЕНО: убраны onTeamsGenerated и toast из зависимостей
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
-        if (!tournament || !tournament.id) return;
+        if (!tournament || !tournament.id || !shouldMakeRequest('original-participants')) return;
         
         setLoadingParticipants(true);
         try {
+            console.log('🔍 Sending request to: /api/tournaments/' + tournament.id + '/original-participants');
             const response = await api.get(`/api/tournaments/${tournament.id}/original-participants`);
             if (response.data && Array.isArray(response.data)) {
                 setOriginalParticipants(response.data);
@@ -78,7 +97,7 @@ const TeamGenerator = ({
         } finally {
             setLoadingParticipants(false);
         }
-    }, [tournament, toast]);
+    }, [tournament?.id]); // ИСПРАВЛЕНО: убран toast из зависимостей
 
     // При инициализации устанавливаем размер команды из турнира и загружаем команды
     useEffect(() => {
@@ -117,10 +136,9 @@ const TeamGenerator = ({
         console.log('TeamGenerator useEffect:', {
             tournamentTeams: tournament?.teams,
             hasTeams: tournament?.teams && tournament.teams.length > 0,
-            mixedTeamsState: mixedTeams,
             participantType: tournament?.participant_type
         });
-    }, [tournament, participants, fetchOriginalParticipants, fetchTeams, onTeamsGenerated, mixedTeams]);
+    }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length]); // ИСПРАВЛЕНО: убраны функции и mixedTeams из зависимостей
 
     // Функция для обновления размера команды на сервере
     const updateTeamSize = async (newSize) => {
@@ -186,6 +204,8 @@ const TeamGenerator = ({
                 }
                 
                 // После формирования команд загружаем оригинальных участников для отображения
+                // Принудительно обходим debounce для пользовательских действий
+                setLastRequestTime(prev => ({ ...prev, 'original-participants': 0 }));
                 fetchOriginalParticipants();
                 
                 if (toast) {
