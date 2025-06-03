@@ -226,6 +226,67 @@ function Profile() {
         }
     };
 
+    // Получение названия ранга
+    const getRankName = (rankTier) => {
+        if (!rankTier) return 'Неизвестно';
+        
+        // Определение основного ранга (первая цифра)
+        const mainRank = Math.floor(rankTier / 10);
+        // Определение звезды (вторая цифра)
+        const stars = rankTier % 10;
+        
+        const ranks = {
+            1: 'Вестник',
+            2: 'Страж',
+            3: 'Рыцарь',
+            4: 'Герой',
+            5: 'Легенда',
+            6: 'Властелин',
+            7: 'Божество',
+            8: 'Титан'
+        };
+        
+        const rankName = ranks[mainRank] || 'Неизвестно';
+        
+        // Для Immortal ранга (80) не отображаем звезды
+        if (mainRank === 8) {
+            return rankName;
+        }
+        
+        return `${rankName} ${stars}`;
+    };
+
+    // Функция для получения URL картинки ранга Dota 2
+    const getRankImageUrl = (rankTier) => {
+        if (!rankTier) return '/default-rank.png';
+        
+        // Определение основного ранга (первая цифра)
+        const mainRank = Math.floor(rankTier / 10);
+        // Определение звезды (вторая цифра)
+        const stars = rankTier % 10;
+        
+        // Массив названий рангов
+        const rankNames = {
+            1: 'herald',
+            2: 'guardian',
+            3: 'crusader',
+            4: 'archon',
+            5: 'legend',
+            6: 'ancient',
+            7: 'divine',
+            8: 'immortal'
+        };
+        
+        const rankName = rankNames[mainRank] || 'unranked';
+        
+        // Для Immortal ранга (80) не отображаем звезды
+        if (mainRank === 8) {
+            return `https://www.opendota.com/assets/images/dota2/rank_icons/${rankName}.png`;
+        }
+        
+        return `https://www.opendota.com/assets/images/dota2/rank_icons/${rankName}_${stars}.png`;
+    };
+
     // Функция для получения URL картинки героя Dota 2
     const getHeroImageUrl = (heroId) => {
         if (!heroId) return '/default-hero.png';
@@ -2193,7 +2254,18 @@ function Profile() {
                                                         <h4>{dotaStats.profile?.personaname || 'Неизвестно'}</h4>
                                                         <p><strong>Account ID:</strong> {dotaStats.profile?.account_id}</p>
                                                         {dotaStats.profile?.rank_tier && (
-                                                            <p><strong>Медаль:</strong> {dotaStats.profile.rank_tier}</p>
+                                                            <p className="rank-info">
+                                                                <strong>Ранг:</strong> 
+                                                                <img 
+                                                                    src={getRankImageUrl(dotaStats.profile.rank_tier)} 
+                                                                    alt={`Rank ${dotaStats.profile.rank_tier}`}
+                                                                    className="rank-icon"
+                                                                    onError={(e) => {
+                                                                        e.target.src = '/default-rank.png';
+                                                                    }}
+                                                                />
+                                                                <span>{getRankName(dotaStats.profile.rank_tier)}</span>
+                                                            </p>
                                                         )}
                                                         {dotaStats.profile?.mmr_estimate && (
                                                             <p><strong>MMR (примерно):</strong> {dotaStats.profile.mmr_estimate}</p>

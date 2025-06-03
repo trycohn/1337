@@ -454,6 +454,24 @@
     font-size: 0.9rem;
 }
 
+/* Иконки рангов */
+.rank-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rank-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.rank-icon:hover {
+    transform: scale(1.1);
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .dota-stats {
@@ -523,5 +541,10 @@
     .hero-stats {
         flex-direction: column;
         gap: 5px;
+    }
+    
+    .rank-icon {
+        width: 32px;
+        height: 32px;
     }
 } 

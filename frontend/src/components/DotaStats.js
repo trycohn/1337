@@ -149,6 +149,37 @@ const DotaStats = () => {
         return ranks[rankTier] || 'Unknown';
     };
 
+    // Добавляем функцию для получения URL картинки ранга после функции getRankName
+    const getRankImageUrl = (rankTier) => {
+        if (!rankTier) return '/default-rank.png';
+        
+        // Определение основного ранга (первая цифра)
+        const mainRank = Math.floor(rankTier / 10);
+        // Определение звезды (вторая цифра)
+        const stars = rankTier % 10;
+        
+        // Массив названий рангов
+        const rankNames = {
+            1: 'herald',
+            2: 'guardian',
+            3: 'crusader',
+            4: 'archon',
+            5: 'legend',
+            6: 'ancient',
+            7: 'divine',
+            8: 'immortal'
+        };
+        
+        const rankName = rankNames[mainRank] || 'unranked';
+        
+        // Для Immortal ранга (80) не отображаем звезды
+        if (mainRank === 8) {
+            return `https://www.opendota.com/assets/images/dota2/rank_icons/${rankName}.png`;
+        }
+        
+        return `https://www.opendota.com/assets/images/dota2/rank_icons/${rankName}_${stars}.png`;
+    };
+
     return (
         <div className="dota-stats">
             <div className="dota-stats-header">
@@ -275,7 +306,18 @@ const DotaStats = () => {
                                 <div className="profile-info">
                                     <h4>{playerStats.profile.personaname}</h4>
                                     <p>Account ID: {playerStats.profile.account_id}</p>
-                                    <p>Ранг: {playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'}</p>
+                                    <p className="rank-info">
+                                        <span>Ранг:</span>
+                                        <img 
+                                            src={getRankImageUrl(playerStats.profile.rank_tier)} 
+                                            alt={`Rank ${playerStats.profile.rank_tier}`}
+                                            className="rank-icon"
+                                            onError={(e) => {
+                                                e.target.src = '/default-rank.png';
+                                            }}
+                                        />
+                                        <span>{playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'}</span>
+                                    </p>
                                     <p>MMR (оценка): {playerStats.profile.mmr_estimate || 'Неизвестно'}</p>
                                     {playerStats.profile.leaderboard_rank && (
                                         <p>Место в рейтинге: #{playerStats.profile.leaderboard_rank}</p>
