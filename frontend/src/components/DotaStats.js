@@ -353,6 +353,10 @@ const DotaStats = () => {
                                 <h4>Общая статистика</h4>
                                 <div className="stats-grid">
                                     <div className="stat-item">
+                                        <span className="stat-label">Всего матчей:</span>
+                                        <span className="stat-value">{playerStats.stats.total_matches || 0}</span>
+                                    </div>
+                                    <div className="stat-item">
                                         <span className="stat-label">Побед:</span>
                                         <span className="stat-value">{playerStats.stats.win}</span>
                                     </div>
@@ -364,6 +368,30 @@ const DotaStats = () => {
                                         <span className="stat-label">Винрейт:</span>
                                         <span className="stat-value">{playerStats.stats.winrate}%</span>
                                     </div>
+                                    {playerStats.profile.behavior_score && (
+                                        <div className="stat-item">
+                                            <span className="stat-label">Поведенческий рейтинг:</span>
+                                            <span className="stat-value">{playerStats.profile.behavior_score}</span>
+                                        </div>
+                                    )}
+                                    {playerStats.stats.mvp_count > 0 && (
+                                        <div className="stat-item">
+                                            <span className="stat-label">MVP наград:</span>
+                                            <span className="stat-value">{playerStats.stats.mvp_count}</span>
+                                        </div>
+                                    )}
+                                    {playerStats.stats.top_core_count > 0 && (
+                                        <div className="stat-item">
+                                            <span className="stat-label">Лучший керри:</span>
+                                            <span className="stat-value">{playerStats.stats.top_core_count}</span>
+                                        </div>
+                                    )}
+                                    {playerStats.stats.top_support_count > 0 && (
+                                        <div className="stat-item">
+                                            <span className="stat-label">Лучший саппорт:</span>
+                                            <span className="stat-value">{playerStats.stats.top_support_count}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -374,6 +402,11 @@ const DotaStats = () => {
                                         <div key={index} className={`match-item ${match.win ? 'win' : 'loss'}`}>
                                             <div className="match-hero">Hero ID: {match.hero_id}</div>
                                             <div className="match-kda">{match.kills}/{match.deaths}/{match.assists}</div>
+                                            <div className="match-gpm-xpm">
+                                                {match.gold_per_min && match.xp_per_min && (
+                                                    <>GPM: {match.gold_per_min}, XPM: {match.xp_per_min}</>
+                                                )}
+                                            </div>
                                             <div className="match-duration">{formatDuration(match.duration)}</div>
                                             <div className="match-result">{match.win ? 'Победа' : 'Поражение'}</div>
                                             <div className="match-time">{formatTime(match.start_time)}</div>
@@ -390,6 +423,16 @@ const DotaStats = () => {
                                             <div className="hero-name">Hero ID: {hero.hero_id}</div>
                                             <div className="hero-games">Игр: {hero.games}</div>
                                             <div className="hero-winrate">Винрейт: {hero.winrate}%</div>
+                                            {hero.avg_kills && (
+                                                <div className="hero-avg-stats">
+                                                    Сред. K/D/A: {hero.avg_kills}/{hero.avg_deaths}/{hero.avg_assists}
+                                                </div>
+                                            )}
+                                            {hero.avg_gpm && hero.avg_xpm && (
+                                                <div className="hero-avg-economy">
+                                                    GPM: {hero.avg_gpm}, XPM: {hero.avg_xpm}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -438,15 +481,50 @@ const DotaStats = () => {
                                 <h4>Игроки</h4>
                                 <div className="players-grid">
                                     {matchDetails.players.map((player, index) => (
-                                        <div key={index} className={`player-row ${player.player_slot < 128 ? 'radiant' : 'dire'}`}>
-                                            <div className="player-name">{player.personaname || 'Anonymous'}</div>
+                                        <div key={index} className={`player-row ${player.is_radiant ? 'radiant' : 'dire'}`}>
+                                            <div className="player-info">
+                                                {player.avatar && (
+                                                    <img src={player.avatar} alt="Avatar" className="player-mini-avatar" />
+                                                )}
+                                                <div className="player-name">{player.personaname || 'Anonymous'}</div>
+                                            </div>
                                             <div className="player-hero">Hero ID: {player.hero_id}</div>
+                                            <div className="player-position">
+                                                {player.position && `Pos ${player.position}`}
+                                            </div>
                                             <div className="player-kda">{player.kills}/{player.deaths}/{player.assists}</div>
                                             <div className="player-cs">{player.last_hits}/{player.denies}</div>
-                                            <div className="player-net-worth">{player.net_worth} золота</div>
+                                            <div className="player-gpm-xpm">
+                                                GPM: {player.gold_per_min} | XPM: {player.xp_per_min}
+                                            </div>
+                                            <div className="player-net-worth">{player.net_worth ? `${player.net_worth} золота` : 'N/A'}</div>
+                                            <div className="player-damage">
+                                                Урон: {player.hero_damage || 0}
+                                            </div>
+                                            {player.stats && (
+                                                <div className="player-extended-stats">
+                                                    {player.stats.wards_placed > 0 && (
+                                                        <span>Варды: {player.stats.wards_placed}</span>
+                                                    )}
+                                                    {player.stats.creeps_stacked > 0 && (
+                                                        <span>Стаки: {player.stats.creeps_stacked}</span>
+                                                    )}
+                                                    {player.stats.rune_pickup_count > 0 && (
+                                                        <span>Руны: {player.stats.rune_pickup_count}</span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
+                                
+                                {matchDetails.win_rates && (
+                                    <div className="match-predictions">
+                                        <h5>Прогноз победы на начало матча:</h5>
+                                        <p>Radiant: {(matchDetails.win_rates.radiantWinRate * 100).toFixed(1)}%</p>
+                                        <p>Dire: {(matchDetails.win_rates.direWinRate * 100).toFixed(1)}%</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -456,17 +534,29 @@ const DotaStats = () => {
             {/* Статистика героев */}
             {activeTab === 'heroes' && (
                 <div className="heroes-section">
-                    <h3>Статистика героев в профессиональных матчах</h3>
+                    <h3>Статистика героев в профессиональных матчах (STRATZ)</h3>
                     <div className="heroes-table">
-                        {heroStats.slice(0, 20).map((hero, index) => (
+                        {heroStats.slice(0, 30).map((hero, index) => (
                             <div key={index} className="hero-stat-item">
-                                <div className="hero-name">{hero.name}</div>
+                                <div className="hero-name">{hero.name || hero.short_name}</div>
+                                <div className="hero-meta-info">
+                                    <span className="primary-attr">Осн. атрибут: {hero.primary_attr}</span>
+                                    <span className="attack-type">{hero.attack_type}</span>
+                                </div>
                                 <div className="hero-stats">
+                                    <span>Всего матчей: {hero.total_matches}</span>
                                     <span>Пики: {hero.pro_pick}</span>
                                     <span>Победы: {hero.pro_win}</span>
                                     <span>Баны: {hero.pro_ban}</span>
                                     <span>Винрейт: {hero.win_rate}%</span>
+                                    <span>Пик-рейт: {hero.pick_rate}%</span>
+                                    <span>Бан-рейт: {hero.ban_rate}%</span>
                                 </div>
+                                {hero.roles && hero.roles.length > 0 && (
+                                    <div className="hero-roles">
+                                        Роли: {hero.roles.join(', ')}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -476,19 +566,30 @@ const DotaStats = () => {
             {/* Профессиональные матчи */}
             {activeTab === 'pro' && (
                 <div className="pro-matches-section">
-                    <h3>Последние профессиональные матчи</h3>
+                    <h3>Последние профессиональные матчи (STRATZ)</h3>
                     <div className="pro-matches-list">
-                        {proMatches.slice(0, 20).map((match, index) => (
+                        {proMatches.slice(0, 25).map((match, index) => (
                             <div key={index} className="pro-match-item">
                                 <div className="match-teams">
-                                    <span className={match.radiant_win ? 'winner' : ''}>{match.radiant_name}</span>
+                                    <span className={match.radiant_win ? 'winner' : ''}>{match.radiant_name || 'Radiant'}</span>
                                     <span className="vs">VS</span>
-                                    <span className={!match.radiant_win ? 'winner' : ''}>{match.dire_name}</span>
+                                    <span className={!match.radiant_win ? 'winner' : ''}>{match.dire_name || 'Dire'}</span>
                                 </div>
                                 <div className="match-score">
                                     {match.radiant_score} - {match.dire_score}
                                 </div>
-                                <div className="match-league">{match.league_name}</div>
+                                <div className="match-meta">
+                                    <div className="match-league">
+                                        {match.league_name}
+                                        {match.league_tier && (
+                                            <span className="league-tier"> (Tier {match.league_tier})</span>
+                                        )}
+                                    </div>
+                                    {match.series_type && (
+                                        <div className="series-type">Серия: {match.series_type}</div>
+                                    )}
+                                    <div className="match-duration">Длительность: {formatDuration(match.duration)}</div>
+                                </div>
                                 <div className="match-time">{formatTime(match.start_time)}</div>
                             </div>
                         ))}
