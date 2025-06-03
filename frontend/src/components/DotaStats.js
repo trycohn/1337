@@ -316,7 +316,32 @@ const DotaStats = () => {
                                                 e.target.src = '/default-rank.png';
                                             }}
                                         />
-                                        <span>{playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'} {playerStats.profile.solo_competitive_rank ? `(${playerStats.profile.solo_competitive_rank})` : playerStats.profile.mmr_estimate ? `(${playerStats.profile.mmr_estimate})` : ''}</span>
+                                        <span>
+                                            {playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'}
+                                            {(() => {
+                                                // Определяем MMR из различных источников
+                                                let mmrValue = null;
+                                                
+                                                if (playerStats.profile.solo_competitive_rank && playerStats.profile.solo_competitive_rank > 0) {
+                                                    mmrValue = playerStats.profile.solo_competitive_rank;
+                                                } else if (playerStats.profile.competitive_rank && playerStats.profile.competitive_rank > 0) {
+                                                    mmrValue = playerStats.profile.competitive_rank;
+                                                } else if (playerStats.profile.mmr_estimate) {
+                                                    if (typeof playerStats.profile.mmr_estimate === 'object' && playerStats.profile.mmr_estimate.estimate) {
+                                                        mmrValue = playerStats.profile.mmr_estimate.estimate;
+                                                    } else if (typeof playerStats.profile.mmr_estimate === 'number' && playerStats.profile.mmr_estimate > 0) {
+                                                        mmrValue = playerStats.profile.mmr_estimate;
+                                                    }
+                                                }
+                                                
+                                                // Отображаем MMR в скобках рядом с названием ранга
+                                                if (mmrValue && typeof mmrValue === 'number' && mmrValue > 0) {
+                                                    return ` (${mmrValue} MMR)`;
+                                                }
+                                                
+                                                return '';
+                                            })()}
+                                        </span>
                                     </p>
                                     {playerStats.profile.leaderboard_rank && (
                                         <p>Место в рейтинге: #{playerStats.profile.leaderboard_rank}</p>

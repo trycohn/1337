@@ -2250,38 +2250,44 @@ function Profile() {
                                                                         }}
                                                                     />
                                                                 )}
-                                                                <span>{getRankName(dotaStats.profile.rank_tier)}</span>
+                                                                <span>
+                                                                    {getRankName(dotaStats.profile.rank_tier)}
+                                                                    {(() => {
+                                                                        // Определяем MMR из различных источников
+                                                                        let mmrValue = null;
+                                                                        
+                                                                        if (dotaStats.profile?.solo_competitive_rank) {
+                                                                            mmrValue = dotaStats.profile.solo_competitive_rank;
+                                                                        } else if (dotaStats.profile?.mmr_estimate) {
+                                                                            // Если mmr_estimate это объект с estimate
+                                                                            if (typeof dotaStats.profile.mmr_estimate === 'object' && dotaStats.profile.mmr_estimate.estimate) {
+                                                                                mmrValue = dotaStats.profile.mmr_estimate.estimate;
+                                                                            } 
+                                                                            // Если mmr_estimate это просто число
+                                                                            else if (typeof dotaStats.profile.mmr_estimate === 'number') {
+                                                                                mmrValue = dotaStats.profile.mmr_estimate;
+                                                                            }
+                                                                        } else if (dotaStats.mmr_estimate) {
+                                                                            // Проверяем MMR в корне объекта
+                                                                            if (typeof dotaStats.mmr_estimate === 'object' && dotaStats.mmr_estimate.estimate) {
+                                                                                mmrValue = dotaStats.mmr_estimate.estimate;
+                                                                            } else if (typeof dotaStats.mmr_estimate === 'number') {
+                                                                                mmrValue = dotaStats.mmr_estimate;
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        // Отображаем MMR в скобках рядом с названием ранга
+                                                                        if (mmrValue && typeof mmrValue === 'number' && mmrValue > 0) {
+                                                                            return ` (${mmrValue} MMR)`;
+                                                                        }
+                                                                        
+                                                                        return '';
+                                                                    })()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                         {(() => {
-                                                            // Определяем MMR из различных источников
-                                                            let mmrValue = null;
-                                                            
-                                                            if (dotaStats.profile?.solo_competitive_rank) {
-                                                                mmrValue = dotaStats.profile.solo_competitive_rank;
-                                                            } else if (dotaStats.profile?.mmr_estimate) {
-                                                                // Если mmr_estimate это объект с estimate
-                                                                if (typeof dotaStats.profile.mmr_estimate === 'object' && dotaStats.profile.mmr_estimate.estimate) {
-                                                                    mmrValue = dotaStats.profile.mmr_estimate.estimate;
-                                                                } 
-                                                                // Если mmr_estimate это просто число
-                                                                else if (typeof dotaStats.profile.mmr_estimate === 'number') {
-                                                                    mmrValue = dotaStats.profile.mmr_estimate;
-                                                                }
-                                                            } else if (dotaStats.mmr_estimate) {
-                                                                // Проверяем MMR в корне объекта
-                                                                if (typeof dotaStats.mmr_estimate === 'object' && dotaStats.mmr_estimate.estimate) {
-                                                                    mmrValue = dotaStats.mmr_estimate.estimate;
-                                                                } else if (typeof dotaStats.mmr_estimate === 'number') {
-                                                                    mmrValue = dotaStats.mmr_estimate;
-                                                                }
-                                                            }
-                                                            
-                                                            // Отображаем MMR только если есть числовое значение
-                                                            if (mmrValue && typeof mmrValue === 'number' && mmrValue > 0) {
-                                                                return <p><strong>MMR:</strong> {mmrValue}</p>;
-                                                            }
-                                                            
+                                                            // Удаляем дублирующий блок MMR, так как теперь он отображается рядом с рангом
                                                             return null;
                                                         })()}
                                                         {dotaStats.profile?.leaderboard_rank && (
