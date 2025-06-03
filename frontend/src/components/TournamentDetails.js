@@ -327,6 +327,31 @@ function TournamentDetails() {
     const [mapLoadingFlags, setMapLoadingFlags] = useState({});
     const MAP_REQUEST_DEBOUNCE = 3000; // 3 секунды между запросами карт
     
+    // Проверка, является ли пользователь участником турнира
+    const isUserParticipant = (userId) => {
+        if (!tournament || !tournament.participants) return false;
+        return tournament.participants.some(participant => participant.id === userId);
+    };
+    
+    // Проверка, было ли отправлено приглашение пользователю
+    const isInvitationSent = (userId) => {
+        if (!tournament || !tournament.id) return false;
+        
+        try {
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
+            
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                return invitedUsers.includes(userId);
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке статуса приглашения:', error);
+        }
+        
+        return false;
+    };
+    
     // Функция для проверки debounce карт
     const shouldLoadMaps = useCallback((gameName) => {
         const now = Date.now();
@@ -473,17 +498,15 @@ function TournamentDetails() {
         }
     }, [isCounterStrike2, availableMaps]);
     
-// Функция для получения карт для конкретной игры с использованием хелпера
-const getGameMaps = useCallback((game) => {
-    return getGameMapsHelper(game, availableMaps);
-}, [availableMaps]);
-
+    // Функция для получения карт для конкретной игры с использованием хелпера
+    const getGameMaps = useCallback((game) => {
+        return getGameMapsHelper(game, availableMaps);
+    }, [availableMaps]);
     
-// Функция для получения одной карты по умолчанию для данной игры
-const getDefaultMap = useCallback((game) => {
-    return getDefaultMapHelper(game, availableMaps);
-}, [availableMaps]);
-
+    // Функция для получения одной карты по умолчанию для данной игры
+    const getDefaultMap = useCallback((game) => {
+        return getDefaultMapHelper(game, availableMaps);
+    }, [availableMaps]);
 
     // Используем useMemo, чтобы уменьшить количество перерисовок
     const memoizedGameData = useMemo(() => {
@@ -494,7 +517,7 @@ const getDefaultMap = useCallback((game) => {
             availableMapsForGame: tournament?.game ? (availableMaps[tournament.game] || []) : [],
             isMapLoading: tournament?.game ? !!availableMaps[`${tournament.game}_loading`] : false
         };
-    }, [tournament?.game, availableMaps, gameHasMaps]);
+    }, [tournament?.game, availableMaps]);
     
     // Загружаем данные пользователя
     useEffect(() => {
@@ -2075,31 +2098,6 @@ const getDefaultMap = useCallback((game) => {
     
     // Проверка кэша приглашений при загрузке турнира
     
-    
-    // Проверка, является ли пользователь участником турнира
-    const isUserParticipant = (userId) => {
-        if (!tournament || !tournament.participants) return false;
-        return tournament.participants.some(participant => participant.id === userId);
-    };
-    
-    // Проверка, было ли отправлено приглашение пользователю
-    const isInvitationSent = (userId) => {
-        if (!tournament || !tournament.id) return false;
-        
-        try {
-            const cacheKey = `invitedUsers_${tournament.id}`;
-            const cachedInvitedUsers = localStorage.getItem(cacheKey);
-            
-            if (cachedInvitedUsers) {
-                const invitedUsers = JSON.parse(cachedInvitedUsers);
-                return invitedUsers.includes(userId);
-            }
-        } catch (error) {
-            console.error('Ошибка при проверке статуса приглашения:', error);
-        }
-        
-        return false;
-    };
     
     // Обработчик приглашения конкретного пользователя
     const handleInviteUser = async (userId, username) => {
