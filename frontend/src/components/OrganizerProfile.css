@@ -118,14 +118,14 @@
 }
 
 .nav-tab:hover {
-    color: #e0e0e5;
-    background-color: rgba(74, 109, 206, 0.1);
+    color: #ffffff;
+    background-color: #1f1f1f;
 }
 
 .nav-tab.active {
-    color: #4a6dce;
-    border-bottom-color: #4a6dce;
-    background-color: rgba(74, 109, 206, 0.1);
+    color: #ffffff;
+    border-bottom-color: #727272;
+    background-color: #1a1a1a;
 }
 
 /* Контент вкладок */

@@ -284,59 +284,43 @@ function TournamentDetails() {
         setLoading(true);
         setError(null);
         
-        // Проверяем кеш в localStorage
+        // Проверяем кеш
         const cacheKey = `tournament_cache_${id}`;
         const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-        const cachedTournament = localStorage.getItem(cacheKey);
-        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
-        const cacheValidityPeriod = 2 * 60 * 1000; // 2 минуты в миллисекундах
-        
-        // Если есть валидный кеш (не старше 2 минут), используем его
-        if (cachedTournament && cacheTimestamp) {
-            const now = new Date().getTime();
-            const timestamp = parseInt(cacheTimestamp, 10);
-            
-            if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
-                try {
-                    const parsedTournament = JSON.parse(cachedTournament);
-                    if (parsedTournament && parsedTournament.id) {
-                        console.log(`Используем кешированные данные турнира ${id}`);
-                        setTournament(parsedTournament);
-                        setMatches(parsedTournament.matches || []);
-                        
-                        // Сохраняем исходный список участников при загрузке турнира
-                        if (parsedTournament.participants && parsedTournament.participants.length > 0) {
-                            setOriginalParticipants(parsedTournament.participants);
-                        }
-                        
-                        // Загружаем информацию о создателе турнира
-                        if (parsedTournament.created_by) {
-                            fetchCreatorInfo(parsedTournament.created_by);
-                        }
-                        
-                        setLoading(false);
-                        return;
-                    }
-                } catch (parseError) {
-                    console.error('Ошибка при разборе кешированных данных турнира:', parseError);
-                    // Если произошла ошибка при разборе, очищаем кеш
-                    localStorage.removeItem(cacheKey);
-                    localStorage.removeItem(cacheTimestampKey);
-                }
-            } else {
-                // Кеш устарел, очищаем его
-                localStorage.removeItem(cacheKey);
-                localStorage.removeItem(cacheTimestampKey);
-            }
-        }
-        
-        // Если нет валидного кеша, делаем запрос к API
-        console.log(`Загружаем данные турнира ${id} с сервера...`);
+        const cacheValidityPeriod = 5 * 60 * 1000; // 5 минут
         
         try {
+            const cachedData = localStorage.getItem(cacheKey);
+            const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+            
+            if (cachedData && cacheTimestamp) {
+                const now = new Date().getTime();
+                const timestamp = parseInt(cacheTimestamp, 10);
+                
+                if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
+                    const parsedData = JSON.parse(cachedData);
+                    setTournament(parsedData);
+                    setMatches(parsedData.matches || []);
+                    
+                    // Сохраняем исходный список участников при загрузке турнира
+                    if (parsedData.participants && parsedData.participants.length > 0) {
+                        setOriginalParticipants(parsedData.participants);
+                    }
+                    
+                    if (parsedData.created_by) {
+                        fetchCreatorInfo(parsedData.created_by);
+                    }
+                    console.log(`Использую кешированные данные турнира ${id}`);
+                    setLoading(false);
+                    return;
+                }
+            }
+            
+            // Если кеш устарел или отсутствует, делаем запрос к API
+            console.log(`Загружаю данные турнира ${id} с сервера...`);
             const response = await api.get(`/api/tournaments/${id}`);
             
-            // Кешируем результаты в localStorage
+            // Кешируем результат
             localStorage.setItem(cacheKey, JSON.stringify(response.data));
             localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
             
@@ -352,30 +336,24 @@ function TournamentDetails() {
             if (response.data.created_by) {
                 fetchCreatorInfo(response.data.created_by);
             }
+            
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
             setError('Ошибка загрузки данных турнира');
             
-            // Пробуем использовать данные из кеша, даже если они устаревшие
+            // Попытаемся использовать устаревший кеш в случае ошибки
             try {
-                const oldCache = localStorage.getItem(cacheKey);
-                if (oldCache) {
-                    const parsedOldCache = JSON.parse(oldCache);
-                    if (parsedOldCache && parsedOldCache.id) {
-                        console.log(`Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
-                        setTournament(parsedOldCache);
-                        setMatches(parsedOldCache.matches || []);
-                        
-                        if (parsedOldCache.participants && parsedOldCache.participants.length > 0) {
-                            setOriginalParticipants(parsedOldCache.participants);
-                        }
-                        
-                        // Загружаем информацию о создателе турнира из кеша
-                        if (parsedOldCache.created_by) {
-                            fetchCreatorInfo(parsedOldCache.created_by);
-                        }
-                        
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    const parsedData = JSON.parse(cachedData);
+                    if (parsedData && parsedData.id) {
+                        setTournament(parsedData);
+                        setMatches(parsedData.matches || []);
                         setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
+                        
+                        if (parsedData.created_by) {
+                            fetchCreatorInfo(parsedData.created_by);
+                        }
                     }
                 }
             } catch (cacheError) {
@@ -895,94 +873,31 @@ function TournamentDetails() {
         }
     }, [user, tournament, id]);
     
-        // Настройка Socket.IO для получения обновлений турнира
-    const setupWebSocket = useCallback(() => {
-        const token = localStorage.getItem('token');
-        const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
-
-        socket.on('connect', () => {
-            console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
-            socket.emit('watch_tournament', id);
-            // Присоединяемся к чату турнира
-            socket.emit('join_tournament_chat', id);
-        });
-
-        socket.on('tournament_update', (tournamentData) => {
-            if (tournamentData.tournamentId === id || tournamentData.id === parseInt(id)) {
-                console.log('Получено обновление турнира через WebSocket:', tournamentData);
-                
-                // Обрабатываем различные форматы данных
-                const data = tournamentData.data || tournamentData;
-                
-                // Обновляем данные турнира
-                setTournament(prev => {
-                    // Если получены только определенные поля, сохраняем остальные
-                    const updatedTournament = { ...prev, ...data };
-                    console.log('Обновленные данные турнира:', updatedTournament);
-                    return updatedTournament;
-                });
-                
-                // Обновляем список матчей, учитывая разные форматы
-                const matchesData = data.matches || tournamentData.matches || [];
-                if (Array.isArray(matchesData)) {
-                    console.log(`Получено ${matchesData.length} матчей через WebSocket`);
-                    
-                    // Проверяем наличие team_id для каждого матча
-                    matchesData.forEach(match => {
-                        if (!match.team1_id && !match.team2_id) {
-                            console.warn(`Матч ${match.id} не имеет участников (TBD)`);
-                        }
-                    });
-                    
-                    setMatches(matchesData);
-                    
-                    // Форсируем обновление компонента после получения новых данных
-                    setTimeout(() => {
-                        setMessage(prev => {
-                            // Если есть предыдущее сообщение, сохраняем его
-                            // иначе устанавливаем временное сообщение, которое скоро исчезнет
-                            return prev || 'Данные турнира обновлены';
-                        });
-                        
-                        // Очищаем сообщение через 2 секунды, если это наше временное сообщение
-                        setTimeout(() => {
-                            setMessage(currentMessage => 
-                                currentMessage === 'Данные турнира обновлены' ? '' : currentMessage
-                            );
-                        }, 2000);
-                    }, 100);
-                }
-                
-                // Устанавливаем сообщение для пользователя
-                if (tournamentData.message) {
-                    setMessage(tournamentData.message);
-                    // Очищаем сообщение через 3 секунды
-                    setTimeout(() => setMessage(''), 3000);
-                }
-            }
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log('Socket.IO соединение закрыто в компоненте TournamentDetails:', reason);
-        });
-
-        // Обработка новых сообщений чата турнира
-        socket.on('tournament_message', (message) => {
-            setChatMessages(prev => [...prev, message]);
-        });
-
-        wsRef.current = socket;
-    }, [id]);
-
-    useEffect(() => {
-        setupWebSocket();
-        return () => {
-          if (wsRef.current) {
-            wsRef.current.close();
-          }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    // Проверяем включен ли звук
+    const isSoundEnabled = () => {
+        return localStorage.getItem('soundEnabled') !== 'false';
+    };
+    
+    const playMatchUpdateSound = () => {
+        if (isSoundEnabled()) {
+            // Создаем простой звуковой сигнал
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+    };
 
     // Загрузка истории сообщений чата турнира
     useEffect(() => {

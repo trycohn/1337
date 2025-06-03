@@ -71,6 +71,7 @@ src={`/images/maps/${(() => {
     display: flex;
     flex-direction: row;
     align-items: stretch;
+    
 }
 
 .match-content {

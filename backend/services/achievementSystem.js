@@ -42,12 +42,12 @@ class AchievementSystem {
             CREATE TABLE IF NOT EXISTS user_achievements (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                achievement_key VARCHAR(100),
+                achievement_id INTEGER REFERENCES achievements(id) ON DELETE CASCADE,
                 progress INTEGER DEFAULT 0,
                 max_progress INTEGER DEFAULT 1,
                 unlocked_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, achievement_key)
+                UNIQUE(user_id, achievement_id)
             )
         `);
 
@@ -246,8 +246,8 @@ class AchievementSystem {
         try {
             // Проверяем, не разблокировано ли уже это достижение
             const existingResult = await pool.query(
-                'SELECT unlocked_at FROM user_achievements WHERE user_id = $1 AND achievement_key = $2',
-                [userId, achievement.key]
+                'SELECT unlocked_at FROM user_achievements WHERE user_id = $1 AND achievement_id = $2',
+                [userId, achievement.id]
             );
             
             if (existingResult.rows.length > 0 && existingResult.rows[0].unlocked_at) {
@@ -308,9 +308,9 @@ class AchievementSystem {
 
             // Обновляем прогресс в базе данных
             await pool.query(`
-                INSERT INTO user_achievements (user_id, achievement_key, progress, max_progress, unlocked_at)
+                INSERT INTO user_achievements (user_id, achievement_id, progress, max_progress, unlocked_at)
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (user_id, achievement_key) DO UPDATE SET
+                ON CONFLICT (user_id, achievement_id) DO UPDATE SET
                     progress = EXCLUDED.progress,
                     max_progress = EXCLUDED.max_progress,
                     unlocked_at = CASE 
@@ -318,7 +318,7 @@ class AchievementSystem {
                         THEN EXCLUDED.unlocked_at 
                         ELSE user_achievements.unlocked_at 
                     END
-            `, [userId, achievement.key, progress, maxProgress, isCompleted ? new Date() : null]);
+            `, [userId, achievement.id, progress, maxProgress, isCompleted ? new Date() : null]);
 
             return isCompleted && !existingResult.rows[0]?.unlocked_at;
             
@@ -436,7 +436,7 @@ class AchievementSystem {
                     a.key, a.name, a.description, a.icon, a.category, a.rarity, a.points,
                     ua.progress, ua.max_progress, ua.unlocked_at
                 FROM achievements a
-                LEFT JOIN user_achievements ua ON a.key = ua.achievement_key AND ua.user_id = $1
+                LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = $1
                 ORDER BY 
                     CASE WHEN ua.unlocked_at IS NOT NULL THEN 0 ELSE 1 END,
                     a.rarity DESC, a.points DESC
@@ -490,7 +490,7 @@ class AchievementSystem {
                         COALESCE(SUM(a.points), 0) as total_points
                     FROM users u
                     LEFT JOIN user_achievements ua ON u.id = ua.user_id AND ua.unlocked_at IS NOT NULL
-                    LEFT JOIN achievements a ON ua.achievement_key = a.key
+                    LEFT JOIN achievements a ON ua.achievement_id = a.id
                     GROUP BY ua.user_id, u.username
                 ),
                 ranked_users AS (
@@ -531,7 +531,7 @@ class AchievementSystem {
                         COUNT(CASE WHEN ua.unlocked_at IS NOT NULL THEN 1 END) as unlocked_count
                     FROM users u
                     LEFT JOIN user_achievements ua ON u.id = ua.user_id
-                    LEFT JOIN achievements a ON ua.achievement_key = a.key AND ua.unlocked_at IS NOT NULL
+                    LEFT JOIN achievements a ON ua.achievement_id = a.id AND ua.unlocked_at IS NOT NULL
                     GROUP BY ua.user_id, u.username, u.avatar_url
                 )
                 SELECT 
