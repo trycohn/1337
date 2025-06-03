@@ -130,7 +130,7 @@ function TournamentsList() {
         
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [activeFilter]);
+    }, [activeFilter, filterRefs]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
