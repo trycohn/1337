@@ -47,6 +47,14 @@ router.get('/player/:steamid', async (req, res) => {
         // Получаем рейтинги
         const rankings = await makeOpenDotaRequest(`/players/${accountId}/rankings`);
         
+        // Получаем историю рейтинга для точного MMR
+        const ratings = await makeOpenDotaRequest(`/players/${accountId}/ratings`);
+        let soloCompetitiveRank = null;
+        if (ratings && ratings.length > 0) {
+            // Берем последнее значение solo_competitive_rank
+            soloCompetitiveRank = ratings[ratings.length - 1].solo_competitive_rank;
+        }
+        
         const result = {
             profile: {
                 account_id: playerData.profile?.account_id,
@@ -58,7 +66,8 @@ router.get('/player/:steamid', async (req, res) => {
                 profileurl: playerData.profile?.profileurl,
                 last_login: playerData.profile?.last_login,
                 plus: playerData.plus,
-                mmr_estimate: playerData.mmr_estimate,
+                mmr_estimate: playerData.mmr_estimate?.estimate || playerData.mmr_estimate,
+                solo_competitive_rank: soloCompetitiveRank,
                 rank_tier: playerData.rank_tier,
                 leaderboard_rank: playerData.leaderboard_rank
             },

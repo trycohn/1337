@@ -318,7 +318,7 @@ const DotaStats = () => {
                                         />
                                         <span>{playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'}</span>
                                     </p>
-                                    <p>MMR (оценка): {playerStats.profile.mmr_estimate || 'Неизвестно'}</p>
+                                    <p>MMR: {playerStats.profile.solo_competitive_rank || playerStats.profile.mmr_estimate || 'Неизвестно'}</p>
                                     {playerStats.profile.leaderboard_rank && (
                                         <p>Место в рейтинге: #{playerStats.profile.leaderboard_rank}</p>
                                     )}
