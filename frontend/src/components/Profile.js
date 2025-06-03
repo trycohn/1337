@@ -373,10 +373,10 @@ function Profile() {
         
         if (rank === 8) {
             // Immortal ранг
-            return `https://cdn.dota2.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}0.png`;
+            return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}0.png`;
         } else if (rank >= 1 && rank <= 7) {
             // Остальные ранги с звездами
-            return `https://cdn.dota2.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}${stars}.png`;
+            return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}${stars}.png`;
         }
         
         return null;
@@ -390,14 +390,14 @@ function Profile() {
         const stars = rankTier % 10;
         
         const rankNames = {
-            1: 'Herald',
-            2: 'Guardian', 
-            3: 'Crusader',
-            4: 'Archon',
-            5: 'Legend',
-            6: 'Ancient',
-            7: 'Divine',
-            8: 'Immortal'
+            1: 'Рекрут',
+            2: 'Страж', 
+            3: 'Рыцарь',
+            4: 'Герой',
+            5: 'Легенда',
+            6: 'Властелин',
+            7: 'Божество',
+            8: 'Имморталь'
         };
         
         const rankName = rankNames[rank] || 'Неизвестный ранг';
@@ -2238,7 +2238,7 @@ function Profile() {
                                                         <h4>{dotaStats.profile?.personaname || 'Неизвестно'}</h4>
                                                         {dotaStats.profile?.rank_tier && (
                                                             <div className="dota-rank-info">
-                                                                <strong>Медаль: </strong>
+                                                                <strong>Ранг: </strong>
                                                                 {getRankImageUrl(dotaStats.profile.rank_tier) && (
                                                                     <img 
                                                                         src={getRankImageUrl(dotaStats.profile.rank_tier)}
@@ -2253,8 +2253,8 @@ function Profile() {
                                                                 <span>{getRankName(dotaStats.profile.rank_tier)}</span>
                                                             </div>
                                                         )}
-                                                        {(dotaStats.profile?.solo_competitive_rank || dotaStats.profile?.mmr_estimate) && (
-                                                            <p><strong>MMR:</strong> {dotaStats.profile?.solo_competitive_rank || dotaStats.profile?.mmr_estimate}</p>
+                                                        {(dotaStats.profile?.solo_competitive_rank || dotaStats.profile?.mmr_estimate?.estimate) && (
+                                                            <p><strong>MMR:</strong> {dotaStats.profile?.solo_competitive_rank || dotaStats.profile?.mmr_estimate?.estimate || dotaStats.profile?.mmr_estimate}</p>
                                                         )}
                                                         {dotaStats.profile?.leaderboard_rank && (
                                                             <p><strong>Место в рейтинге:</strong> #{dotaStats.profile.leaderboard_rank}</p>
@@ -2280,32 +2280,6 @@ function Profile() {
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Последние матчи */}
-                                                {dotaStats.recent_matches && dotaStats.recent_matches.length > 0 && (
-                                                    <div className="dota-recent-matches">
-                                                        <h5>Последние матчи</h5>
-                                                        <div className="matches-list">
-                                                            {dotaStats.recent_matches.slice(0, 5).map((match, index) => (
-                                                                <div key={index} className={`match-item ${match.win ? 'win' : 'loss'}`}>
-                                                                    <div className="match-hero">
-                                                                        <img 
-                                                                            src={getHeroImageUrl(match.hero_id)} 
-                                                                            alt={`Hero ${match.hero_id}`}
-                                                                            className="hero-icon"
-                                                                            onError={(e) => {
-                                                                                e.target.src = '/default-hero.png';
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="match-kda">{match.kills}/{match.deaths}/{match.assists}</div>
-                                                                    <div className="match-duration">{Math.floor(match.duration / 60)}:{(match.duration % 60).toString().padStart(2, '0')}</div>
-                                                                    <div className="match-result">{match.win ? 'Победа' : 'Поражение'}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                         ) : dotaProfile && dotaProfile.steam_id ? (
                                             <div className="no-dota-stats">
