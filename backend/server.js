@@ -59,19 +59,31 @@ app.use((req, res, next) => {
 
 // Middleware для обработки CORS вручную
 app.use((req, res, next) => {
-  const allowedOrigins = process.env.NODE_ENV === 'production'
-      ? ['https://1337community.com', 'https://www.1337community.com']
-      : ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
-  const origin = req.headers.origin || 'https://1337community.com';
+  // Определяем разрешенные origins на основе NODE_ENV и домена запроса
+  const productionOrigins = ['https://1337community.com', 'https://www.1337community.com'];
+  const developmentOrigins = ['http://localhost:3001', 'http://127.0.0.1:5500', 'http://localhost:3000'];
+  
+  // Всегда включаем production origins для безопасности
+  const allowedOrigins = [...productionOrigins, ...developmentOrigins];
+  
+  const origin = req.headers.origin;
   console.log(`🔍 Обработка запроса: ${req.method} ${req.path} от ${origin}`);
   console.log(`🔍 NODE_ENV на сервере: ${process.env.NODE_ENV}`);
-  console.log(`🔍 Разрешённые origins: ${allowedOrigins}`);
-  // Временно разрешаем любой origin для теста
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  console.log(`✅ Origin ${origin} разрешён (временная настройка)`);
+  console.log(`🔍 Разрешённые origins: ${allowedOrigins.join(',')}`);
+  
+  // Проверяем, разрешен ли origin
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    console.log(`✅ Origin ${origin} разрешён`);
+  } else {
+    console.log(`❌ Origin ${origin} НЕ разрешён`);
+    res.setHeader('Access-Control-Allow-Origin', 'https://1337community.com'); // fallback на основной домен
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
   if (req.method === 'OPTIONS') {
       console.log(`🔍 Обработка preflight-запроса (OPTIONS) для ${req.path}`);
       return res.status(200).end();
@@ -90,6 +102,10 @@ const publicRoutes = [
   /^\/api\/users\/faceit-login$/,  // FACEIT OAuth
   /^\/api\/users\/steam\/callback$/,  // Steam callback
   /^\/api\/users\/faceit-callback$/,  // FACEIT callback
+  /^\/api\/v4\/achievements($|\/)/,  // V4 API: Достижения
+  /^\/api\/v4\/enhanced-stats($|\/)/,  // V4 API: Расширенная статистика
+  /^\/api\/v4\/leaderboards($|\/)/,  // V4 API: Лидерборды
+  /^\/api\/v4\/user-achievements($|\/)/,  // V4 API: Достижения пользователя
   /^\/testdb$/  // Тестовый маршрут
 ];
 

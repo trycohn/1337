@@ -22,9 +22,34 @@ export const useV4ProfileHooks = (user, activeTab) => {
     const [personalBests, setPersonalBests] = useState({});
     const [v4ActiveView, setV4ActiveView] = useState('overview');
 
+    // ⏱️ Debounce механизм для предотвращения частых запросов
+    const [lastRequestTime, setLastRequestTime] = useState({});
+    const REQUEST_DEBOUNCE_MS = 2000; // 2 секунды между запросами одного типа
+    
+    const shouldMakeRequest = (requestType) => {
+        const now = Date.now();
+        const lastTime = lastRequestTime[requestType] || 0;
+        
+        if (now - lastTime < REQUEST_DEBOUNCE_MS) {
+            console.log(`⏱️ Debounce: пропускаем ${requestType}, последний запрос ${now - lastTime}ms назад`);
+            return false;
+        }
+        
+        setLastRequestTime(prev => ({ ...prev, [requestType]: now }));
+        return true;
+    };
+
     // 🔥 Инициализация WebSocket соединения для real-time обновлений
     const initializeWebSocket = () => {
-        if (!user?.id) return;
+        if (!user?.id) return () => {};
+        
+        console.log('🔌 Инициализация WebSocket для пользователя:', user.id);
+        
+        // Отключаем предыдущее соединение если есть
+        if (websocket && websocket.readyState !== WebSocket.CLOSED) {
+            console.log('🔌 Закрываем предыдущее WebSocket соединение');
+            websocket.close();
+        }
         
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
         const wsUrl = baseUrl.replace('http', 'ws') + '/ws/stats';
@@ -40,32 +65,62 @@ export const useV4ProfileHooks = (user, activeTab) => {
         };
         
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            handleRealTimeUpdate(data);
+            try {
+                const data = JSON.parse(event.data);
+                handleRealTimeUpdate(data);
+            } catch (error) {
+                console.error('❌ Ошибка обработки WebSocket сообщения:', error);
+            }
         };
         
-        ws.onclose = () => {
-            console.log('🔌 WebSocket соединение закрыто');
-            // Переподключение через 5 секунд
-            setTimeout(initializeWebSocket, 5000);
+        ws.onerror = (error) => {
+            console.error('❌ Ошибка WebSocket:', error);
+        };
+        
+        ws.onclose = (event) => {
+            console.log('🔌 WebSocket соединение закрыто:', event.code, event.reason);
+            
+            // Переподключение только если не было явного закрытия и пользователь все еще на вкладке stats
+            if (event.code !== 1000 && activeTab === 'stats' && user?.id) {
+                console.log('🔄 Переподключение WebSocket через 5 секунд...');
+                setTimeout(() => {
+                    if (activeTab === 'stats' && user?.id) {
+                        initializeWebSocket();
+                    }
+                }, 5000);
+            }
         };
         
         setWebsocket(ws);
         
-        return () => ws.close();
+        // Возвращаем функцию очистки
+        return () => {
+            console.log('🧹 Очистка WebSocket соединения');
+            if (ws.readyState !== WebSocket.CLOSED) {
+                ws.close(1000, 'Component unmounting');
+            }
+        };
     };
     
-    // 📡 Обработка real-time обновлений
+    // 📡 Обработка real-time обновлений (с debounce)
     const handleRealTimeUpdate = (data) => {
+        console.log('📡 Real-time обновление:', data.type);
+        
         switch (data.type) {
             case 'stats_updated':
                 setRealTimeUpdates(prev => [data, ...prev.slice(0, 4)]);
-                fetchV4EnhancedStats();
+                // Debounced обновление статистики
+                if (shouldMakeRequest('real-time-stats')) {
+                    fetchV4EnhancedStats();
+                }
                 break;
             case 'achievement_unlocked':
                 setShowAchievementNotification(data.achievement);
                 setTimeout(() => setShowAchievementNotification(null), 5000);
-                fetchAchievements();
+                // Debounced обновление достижений
+                if (shouldMakeRequest('real-time-achievements')) {
+                    fetchAchievements();
+                }
                 break;
             case 'ranking_updated':
                 setGlobalRank(data.rank);
@@ -74,17 +129,18 @@ export const useV4ProfileHooks = (user, activeTab) => {
                 setRealTimeUpdates(prev => [data, ...prev.slice(0, 4)]);
                 break;
             default:
-                console.log('Unknown real-time update type:', data.type);
+                console.log('❓ Неизвестный тип real-time обновления:', data.type);
                 break;
         }
     };
     
     // 📊 Загрузка расширенной статистики V4
     const fetchV4EnhancedStats = async () => {
-        if (!user?.id) return;
+        if (!user?.id || !shouldMakeRequest('enhanced-stats')) return;
         
         setIsLoadingV4Stats(true);
         try {
+            console.log('📊 Загружаем V4 Enhanced Stats для пользователя:', user.id);
             const token = localStorage.getItem('token');
             const response = await api.get(`/api/v4/enhanced-stats/${user.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -97,7 +153,7 @@ export const useV4ProfileHooks = (user, activeTab) => {
             setWeeklyProgress(response.data.weeklyProgress);
             
         } catch (err) {
-            console.error('Ошибка загрузки V4 статистики:', err);
+            console.error('❌ Ошибка загрузки V4 статистики:', err);
         } finally {
             setIsLoadingV4Stats(false);
         }
@@ -105,10 +161,11 @@ export const useV4ProfileHooks = (user, activeTab) => {
     
     // 🏆 Загрузка достижений
     const fetchAchievements = async () => {
-        if (!user?.id) return;
+        if (!user?.id || !shouldMakeRequest('achievements')) return;
         
         setIsLoadingAchievements(true);
         try {
+            console.log('🏆 Загружаем достижения для пользователя:', user.id);
             const token = localStorage.getItem('token');
             const [achievementsRes, userAchievementsRes] = await Promise.all([
                 api.get('/api/v4/achievements', {
@@ -123,7 +180,7 @@ export const useV4ProfileHooks = (user, activeTab) => {
             setUserAchievements(userAchievementsRes.data);
             
         } catch (err) {
-            console.error('Ошибка загрузки достижений:', err);
+            console.error('❌ Ошибка загрузки достижений:', err);
         } finally {
             setIsLoadingAchievements(false);
         }
@@ -151,7 +208,10 @@ export const useV4ProfileHooks = (user, activeTab) => {
     
     // 📈 Загрузка глобальных лидербордов
     const fetchLeaderboards = async () => {
+        if (!shouldMakeRequest('leaderboards')) return;
+        
         try {
+            console.log('📈 Загружаем лидерборды');
             const token = localStorage.getItem('token');
             const response = await api.get('/api/v4/leaderboards', {
                 headers: { Authorization: `Bearer ${token}` }
@@ -160,19 +220,23 @@ export const useV4ProfileHooks = (user, activeTab) => {
             setLeaderboards(response.data);
             
             // Найти позицию текущего пользователя
-            const userRank = response.data.find(item => item.user_id === user.id);
-            if (userRank) {
-                setGlobalRank(userRank.rank);
+            if (user?.id) {
+                const userRank = response.data.find(item => item.user_id === user.id);
+                if (userRank) {
+                    setGlobalRank(userRank.rank);
+                }
             }
             
         } catch (err) {
-            console.error('Ошибка загрузки лидербордов:', err);
+            console.error('❌ Ошибка загрузки лидербордов:', err);
         }
     };
 
     // Инициализация V4 при загрузке пользователя
     useEffect(() => {
         if (user?.id && activeTab === 'stats') {
+            console.log('🔄 Инициализация V4 данных для пользователя:', user.id);
+            
             // Инициализируем WebSocket
             const cleanup = initializeWebSocket();
             
@@ -183,7 +247,7 @@ export const useV4ProfileHooks = (user, activeTab) => {
             
             return cleanup;
         }
-    }, [user?.id, activeTab, initializeWebSocket, fetchV4EnhancedStats, fetchAchievements, fetchLeaderboards]);
+    }, [user?.id, activeTab]);
 
     return {
         // Состояния
