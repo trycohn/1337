@@ -253,8 +253,12 @@ function TournamentDetails() {
     
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
-        // ... implementation ...
-    }, [tournament, user]);
+        if (!tournament?.participants || !user?.id) return false;
+        
+        return tournament.participants.some(participant => 
+            participant.user_id === user.id || participant.id === user.id
+        );
+    }, [tournament?.participants, user?.id]);
     
     const addMap = () => {
         const defaultMap = getDefaultMap(tournament?.game, availableMaps);
@@ -456,22 +460,17 @@ function TournamentDetails() {
     }, [id, fetchCreatorInfo]);
     
     // Функция для загрузки информации о создателе турнира
-    const fetchCreatorInfo = async (creatorId) => {
+    const fetchCreatorInfo = useCallback(async (creatorId) => {
         if (!creatorId) return;
         
         try {
-            // Делаем прямой запрос к API для получения информации из БД
             console.log(`Загружаем информацию о создателе турнира (ID: ${creatorId}) из базы данных`);
-            
-            // Используем правильный маршрут API для получения данных пользователя
-            // Примечание: маршрут `/api/users/profile/${creatorId}` может быть более надежным, чем `/api/users/${creatorId}`
             const response = await api.get(`/api/users/profile/${creatorId}`);
             
             if (response.data) {
                 console.log(`Информация о создателе турнира успешно загружена из БД:`, response.data);
                 setCreator(response.data);
                 
-                // Кешируем результат для возможного использования в будущем
                 const cacheKey = `user_${creatorId}`;
                 localStorage.setItem(cacheKey, JSON.stringify(response.data));
                 localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
@@ -479,56 +478,23 @@ function TournamentDetails() {
         } catch (error) {
             console.error('Ошибка при загрузке данных создателя турнира из БД:', error);
             
-            // Попытаемся найти информацию о создателе в списке участников
             if (tournament && tournament.participants && Array.isArray(tournament.participants)) {
-                console.log('Поиск информации о создателе в списке участников турнира');
-                
                 const creatorFromParticipants = tournament.participants.find(
                     participant => participant.user_id === creatorId || participant.id === creatorId
                 );
                 
                 if (creatorFromParticipants) {
-                    console.log('Найдена информация о создателе в списке участников:', creatorFromParticipants);
-                    
                     const creatorInfo = {
                         id: creatorId,
                         username: creatorFromParticipants.name || creatorFromParticipants.username || `Участник #${creatorId}`,
                         avatar_url: creatorFromParticipants.avatar_url || null,
                         fromParticipants: true
                     };
-                    
                     setCreator(creatorInfo);
                     return;
                 }
             }
             
-            // Проверяем, есть ли кешированные данные
-            try {
-                console.log('Поиск информации о создателе в локальном кеше');
-                const cacheKey = `user_${creatorId}`;
-                const cachedUser = localStorage.getItem(cacheKey);
-                
-                if (cachedUser) {
-                    const parsedUser = JSON.parse(cachedUser);
-                    if (parsedUser && parsedUser.id === creatorId) {
-                        console.log('Найдена информация о создателе в кеше:', parsedUser);
-                        setCreator(parsedUser);
-                        return;
-                    }
-                }
-            } catch (cacheError) {
-                console.error('Ошибка при проверке кешированных данных:', cacheError);
-            }
-            
-            // Проверяем, можем ли мы получить данные из tournament.created_by_info
-            if (tournament && tournament.created_by_info) {
-                console.log('Использование информации о создателе из tournament.created_by_info');
-                setCreator(tournament.created_by_info);
-                return;
-            }
-            
-            // Если все источники информации недоступны, создаем заглушку
-            console.log('Все источники информации о создателе недоступны, создаем заглушку');
             setCreator({
                 id: creatorId,
                 username: `Создатель #${creatorId}`,
@@ -536,7 +502,7 @@ function TournamentDetails() {
                 isError: true
             });
         }
-    };
+    }, [tournament]);
     
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
