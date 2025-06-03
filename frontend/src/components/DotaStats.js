@@ -316,9 +316,8 @@ const DotaStats = () => {
                                                 e.target.src = '/default-rank.png';
                                             }}
                                         />
-                                        <span>{playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'}</span>
+                                        <span>{playerStats.profile.rank_tier ? getRankName(playerStats.profile.rank_tier) : 'Неизвестно'} {playerStats.profile.solo_competitive_rank ? `(${playerStats.profile.solo_competitive_rank})` : playerStats.profile.mmr_estimate ? `(${playerStats.profile.mmr_estimate})` : ''}</span>
                                     </p>
-                                    <p>MMR: {playerStats.profile.solo_competitive_rank || playerStats.profile.mmr_estimate || 'Неизвестно'}</p>
                                     {playerStats.profile.leaderboard_rank && (
                                         <p>Место в рейтинге: #{playerStats.profile.leaderboard_rank}</p>
                                     )}
