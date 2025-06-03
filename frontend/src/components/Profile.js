@@ -2255,30 +2255,63 @@ function Profile() {
                                                                     {(() => {
                                                                         // Определяем MMR из различных источников
                                                                         let mmrValue = null;
+                                                                        let mmrSource = null;
                                                                         
-                                                                        if (dotaStats.profile?.solo_competitive_rank) {
+                                                                        // Отладочная информация
+                                                                        console.log('🎯 Дота статистика для отображения MMR:', {
+                                                                            solo_competitive_rank: dotaStats.profile?.solo_competitive_rank,
+                                                                            competitive_rank: dotaStats.profile?.competitive_rank,
+                                                                            mmr_estimate: dotaStats.profile?.mmr_estimate,
+                                                                            mmr_source: dotaStats.profile?.mmr_source,
+                                                                            leaderboard_rank: dotaStats.profile?.leaderboard_rank,
+                                                                            profile: dotaStats.profile
+                                                                        });
+                                                                        
+                                                                        // Приоритет 1: solo_competitive_rank
+                                                                        if (dotaStats.profile?.solo_competitive_rank && dotaStats.profile.solo_competitive_rank > 0) {
                                                                             mmrValue = dotaStats.profile.solo_competitive_rank;
-                                                                        } else if (dotaStats.profile?.mmr_estimate) {
-                                                                            // Если mmr_estimate это объект с estimate
+                                                                            mmrSource = 'solo_competitive_rank';
+                                                                        } 
+                                                                        // Приоритет 2: competitive_rank
+                                                                        else if (dotaStats.profile?.competitive_rank && dotaStats.profile.competitive_rank > 0) {
+                                                                            mmrValue = dotaStats.profile.competitive_rank;
+                                                                            mmrSource = 'competitive_rank';
+                                                                        }
+                                                                        // Приоритет 3: mmr_estimate (может быть объектом или числом)
+                                                                        else if (dotaStats.profile?.mmr_estimate) {
                                                                             if (typeof dotaStats.profile.mmr_estimate === 'object' && dotaStats.profile.mmr_estimate.estimate) {
                                                                                 mmrValue = dotaStats.profile.mmr_estimate.estimate;
-                                                                            } 
-                                                                            // Если mmr_estimate это просто число
-                                                                            else if (typeof dotaStats.profile.mmr_estimate === 'number') {
+                                                                                mmrSource = 'mmr_estimate.estimate';
+                                                                            } else if (typeof dotaStats.profile.mmr_estimate === 'number' && dotaStats.profile.mmr_estimate > 0) {
                                                                                 mmrValue = dotaStats.profile.mmr_estimate;
+                                                                                mmrSource = 'mmr_estimate';
                                                                             }
-                                                                        } else if (dotaStats.mmr_estimate) {
-                                                                            // Проверяем MMR в корне объекта
+                                                                        } 
+                                                                        // Приоритет 4: leaderboard_rank для очень высоких MMR
+                                                                        else if (dotaStats.profile?.leaderboard_rank && dotaStats.profile.leaderboard_rank > 0) {
+                                                                            // Для leaderboard rank, примерный MMR можно оценить как 5500+ для топ игроков
+                                                                            mmrValue = 5500 + Math.round((1000 - dotaStats.profile.leaderboard_rank) * 10);
+                                                                            mmrSource = 'leaderboard_rank_estimate';
+                                                                        }
+                                                                        // Приоритет 5: проверяем корневой уровень mmr_estimate
+                                                                        else if (dotaStats.mmr_estimate) {
                                                                             if (typeof dotaStats.mmr_estimate === 'object' && dotaStats.mmr_estimate.estimate) {
                                                                                 mmrValue = dotaStats.mmr_estimate.estimate;
-                                                                            } else if (typeof dotaStats.mmr_estimate === 'number') {
+                                                                                mmrSource = 'root.mmr_estimate.estimate';
+                                                                            } else if (typeof dotaStats.mmr_estimate === 'number' && dotaStats.mmr_estimate > 0) {
                                                                                 mmrValue = dotaStats.mmr_estimate;
+                                                                                mmrSource = 'root.mmr_estimate';
                                                                             }
                                                                         }
                                                                         
+                                                                        console.log('🎯 Результат определения MMR:', { mmrValue, mmrSource });
+                                                                        
                                                                         // Отображаем MMR в скобках рядом с названием ранга
                                                                         if (mmrValue && typeof mmrValue === 'number' && mmrValue > 0) {
-                                                                            return ` (${mmrValue} MMR)`;
+                                                                            const mmrText = mmrSource === 'leaderboard_rank_estimate' ? 
+                                                                                ` (~${Math.round(mmrValue)} MMR)` : 
+                                                                                ` (${Math.round(mmrValue)} MMR)`;
+                                                                            return mmrText;
                                                                         }
                                                                         
                                                                         return '';

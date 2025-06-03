@@ -184,7 +184,7 @@ const DotaStats = () => {
         <div className="dota-stats">
             <div className="dota-stats-header">
                 <h2>📊 Статистика Dota 2</h2>
-                <p>Данные предоставлены OpenDota API</p>
+                <p>Данные предоставлены STRATZ API</p>
             </div>
 
             <div className="dota-stats-tabs">
@@ -321,22 +321,52 @@ const DotaStats = () => {
                                             {(() => {
                                                 // Определяем MMR из различных источников
                                                 let mmrValue = null;
+                                                let mmrSource = null;
                                                 
+                                                // Отладочная информация
+                                                console.log('🎯 DotaStats MMR данные:', {
+                                                    solo_competitive_rank: playerStats.profile?.solo_competitive_rank,
+                                                    competitive_rank: playerStats.profile?.competitive_rank,
+                                                    mmr_estimate: playerStats.profile?.mmr_estimate,
+                                                    mmr_source: playerStats.profile?.mmr_source,
+                                                    leaderboard_rank: playerStats.profile?.leaderboard_rank,
+                                                    profile: playerStats.profile
+                                                });
+                                                
+                                                // Приоритет 1: solo_competitive_rank
                                                 if (playerStats.profile.solo_competitive_rank && playerStats.profile.solo_competitive_rank > 0) {
                                                     mmrValue = playerStats.profile.solo_competitive_rank;
-                                                } else if (playerStats.profile.competitive_rank && playerStats.profile.competitive_rank > 0) {
+                                                    mmrSource = 'solo_competitive_rank';
+                                                } 
+                                                // Приоритет 2: competitive_rank
+                                                else if (playerStats.profile.competitive_rank && playerStats.profile.competitive_rank > 0) {
                                                     mmrValue = playerStats.profile.competitive_rank;
-                                                } else if (playerStats.profile.mmr_estimate) {
+                                                    mmrSource = 'competitive_rank';
+                                                } 
+                                                // Приоритет 3: mmr_estimate
+                                                else if (playerStats.profile.mmr_estimate) {
                                                     if (typeof playerStats.profile.mmr_estimate === 'object' && playerStats.profile.mmr_estimate.estimate) {
                                                         mmrValue = playerStats.profile.mmr_estimate.estimate;
+                                                        mmrSource = 'mmr_estimate.estimate';
                                                     } else if (typeof playerStats.profile.mmr_estimate === 'number' && playerStats.profile.mmr_estimate > 0) {
                                                         mmrValue = playerStats.profile.mmr_estimate;
+                                                        mmrSource = 'mmr_estimate';
                                                     }
                                                 }
+                                                // Приоритет 4: leaderboard_rank для очень высоких MMR
+                                                else if (playerStats.profile.leaderboard_rank && playerStats.profile.leaderboard_rank > 0) {
+                                                    mmrValue = 5500 + Math.round((1000 - playerStats.profile.leaderboard_rank) * 10);
+                                                    mmrSource = 'leaderboard_rank_estimate';
+                                                }
+                                                
+                                                console.log('🎯 DotaStats результат MMR:', { mmrValue, mmrSource });
                                                 
                                                 // Отображаем MMR в скобках рядом с названием ранга
                                                 if (mmrValue && typeof mmrValue === 'number' && mmrValue > 0) {
-                                                    return ` (${mmrValue} MMR)`;
+                                                    const mmrText = mmrSource === 'leaderboard_rank_estimate' ? 
+                                                        ` (~${Math.round(mmrValue)} MMR)` : 
+                                                        ` (${Math.round(mmrValue)} MMR)`;
+                                                    return mmrText;
                                                 }
                                                 
                                                 return '';

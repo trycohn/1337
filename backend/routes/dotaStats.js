@@ -59,6 +59,9 @@ router.get('/player/:steamid', async (req, res) => {
                         seasonRankId
                         asOfDateTime
                     }
+                    mmr {
+                        estimate
+                    }
                     matchCount
                     winCount
                     heroesPerformance(request: { take: 10 }) {
@@ -125,6 +128,31 @@ router.get('/player/:steamid', async (req, res) => {
         const latestRank = player.ranks && player.ranks.length > 0 ? player.ranks[0] : null;
         const activity = player.activity || {};
         
+        // Определяем MMR из различных источников
+        let mmrValue = null;
+        let mmrSource = null;
+        
+        if (latestRank && latestRank.rank && latestRank.rank > 0) {
+            mmrValue = latestRank.rank;
+            mmrSource = 'ranks';
+        } else if (player.mmr?.estimate && player.mmr.estimate > 0) {
+            mmrValue = player.mmr.estimate;
+            mmrSource = 'mmr_estimate';
+        } else if (player.leaderboardRanks && player.leaderboardRanks.length > 0 && player.leaderboardRanks[0].rank) {
+            mmrValue = player.leaderboardRanks[0].rank;
+            mmrSource = 'leaderboard';
+        }
+        
+        // Отладочная информация
+        console.log(`🎯 MMR для игрока ${steamid}:`, {
+            mmrValue,
+            mmrSource,
+            latestRank: latestRank?.rank,
+            mmrEstimate: player.mmr?.estimate,
+            leaderboardRank: player.leaderboardRanks?.[0]?.rank,
+            seasonRankId: latestRank?.seasonRankId
+        });
+        
         const result = {
             profile: {
                 account_id: player.steamAccountId,
@@ -136,13 +164,14 @@ router.get('/player/:steamid', async (req, res) => {
                 profileurl: player.steamAccount?.profileUri,
                 country_code: player.steamAccount?.countryCode,
                 rank_tier: latestRank?.seasonRankId,
-                mmr_estimate: latestRank?.rank,
-                solo_competitive_rank: latestRank?.rank,
-                competitive_rank: latestRank?.rank,
+                mmr_estimate: mmrValue,
+                solo_competitive_rank: mmrValue,
+                competitive_rank: mmrValue,
                 leaderboard_rank: player.leaderboardRanks && player.leaderboardRanks.length > 0 ? 
                     player.leaderboardRanks[0].rank : null,
                 behavior_score: player.behaviorScore,
-                last_rank_update: latestRank?.asOfDateTime
+                last_rank_update: latestRank?.asOfDateTime,
+                mmr_source: mmrSource
             },
             stats: {
                 win: activity.win || 0,
