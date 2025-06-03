@@ -84,6 +84,12 @@ const publicRoutes = [
   /^\/api\/maps($|\/)/,  // Маршруты /api/maps и /api/maps/:id
   /^\/api\/games($|\/)/,  // Маршруты /api/games и /api/games/:id
   /^\/api\/tournaments($|\/\d+$)/,  // Маршруты /api/tournaments и /api/tournaments/:id
+  /^\/api\/users\/login$/,  // Авторизация пользователей
+  /^\/api\/users\/register$/,  // Регистрация пользователей
+  /^\/api\/users\/steam$/,  // Steam OAuth
+  /^\/api\/users\/faceit-login$/,  // FACEIT OAuth
+  /^\/api\/users\/steam\/callback$/,  // Steam callback
+  /^\/api\/users\/faceit-callback$/,  // FACEIT callback
   /^\/testdb$/  // Тестовый маршрут
 ];
 
