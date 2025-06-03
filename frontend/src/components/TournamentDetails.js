@@ -1,4 +1,4 @@
-﻿// Импорты React и связанные
+// Импорты React и связанные
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
@@ -260,6 +260,51 @@ function TournamentDetails() {
         );
     }, [tournament?.participants, user?.id]);
     
+    // Функция для загрузки информации о создателе турнира (ИСПРАВЛЕНО: определяем ПЕРЕД использованием)
+    const fetchCreatorInfo = useCallback(async (creatorId) => {
+        if (!creatorId) return;
+        
+        try {
+            console.log(`Загружаем информацию о создателе турнира (ID: ${creatorId}) из базы данных`);
+            const response = await api.get(`/api/users/profile/${creatorId}`);
+            
+            if (response.data) {
+                console.log(`Информация о создателе турнира успешно загружена из БД:`, response.data);
+                setCreator(response.data);
+                
+                const cacheKey = `user_${creatorId}`;
+                localStorage.setItem(cacheKey, JSON.stringify(response.data));
+                localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке данных создателя турнира из БД:', error);
+            
+            if (tournament && tournament.participants && Array.isArray(tournament.participants)) {
+                const creatorFromParticipants = tournament.participants.find(
+                    participant => participant.user_id === creatorId || participant.id === creatorId
+                );
+                
+                if (creatorFromParticipants) {
+                    const creatorInfo = {
+                        id: creatorId,
+                        username: creatorFromParticipants.name || creatorFromParticipants.username || `Участник #${creatorId}`,
+                        avatar_url: creatorFromParticipants.avatar_url || null,
+                        fromParticipants: true
+                    };
+                    setCreator(creatorInfo);
+                    return;
+                }
+            }
+            
+            setCreator({
+                id: creatorId,
+                username: `Создатель #${creatorId}`,
+                avatar_url: null,
+                isError: true
+            });
+        }
+    }, [tournament]);
+    
     const addMap = () => {
         const defaultMap = getDefaultMap(tournament?.game, availableMaps);
         setMaps([...maps, { map: defaultMap, score1: 0, score2: 0 }]);
@@ -459,50 +504,7 @@ function TournamentDetails() {
         }
     }, [id, fetchCreatorInfo]);
     
-    // Функция для загрузки информации о создателе турнира (КРИТИЧНО: определяем ПЕРЕД использованием)
-    const fetchCreatorInfo = useCallback(async (creatorId) => {
-        if (!creatorId) return;
-        
-        try {
-            console.log(`Загружаем информацию о создателе турнира (ID: ${creatorId}) из базы данных`);
-            const response = await api.get(`/api/users/profile/${creatorId}`);
-            
-            if (response.data) {
-                console.log(`Информация о создателе турнира успешно загружена из БД:`, response.data);
-                setCreator(response.data);
-                
-                const cacheKey = `user_${creatorId}`;
-                localStorage.setItem(cacheKey, JSON.stringify(response.data));
-                localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
-            }
-        } catch (error) {
-            console.error('Ошибка при загрузке данных создателя турнира из БД:', error);
-            
-            if (tournament && tournament.participants && Array.isArray(tournament.participants)) {
-                const creatorFromParticipants = tournament.participants.find(
-                    participant => participant.user_id === creatorId || participant.id === creatorId
-                );
-                
-                if (creatorFromParticipants) {
-                    const creatorInfo = {
-                        id: creatorId,
-                        username: creatorFromParticipants.name || creatorFromParticipants.username || `Участник #${creatorId}`,
-                        avatar_url: creatorFromParticipants.avatar_url || null,
-                        fromParticipants: true
-                    };
-                    setCreator(creatorInfo);
-                    return;
-                }
-            }
-            
-            setCreator({
-                id: creatorId,
-                username: `Создатель #${creatorId}`,
-                avatar_url: null,
-                isError: true
-            });
-        }
-    }, [tournament]);
+
     
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
