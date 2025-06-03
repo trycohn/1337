@@ -73,6 +73,9 @@ export const useV4ProfileHooks = (user, activeTab) => {
             case 'performance_milestone':
                 setRealTimeUpdates(prev => [data, ...prev.slice(0, 4)]);
                 break;
+            default:
+                console.log('Unknown real-time update type:', data.type);
+                break;
         }
     };
     
@@ -180,7 +183,7 @@ export const useV4ProfileHooks = (user, activeTab) => {
             
             return cleanup;
         }
-    }, [user?.id, activeTab]);
+    }, [user?.id, activeTab, initializeWebSocket, fetchV4EnhancedStats, fetchAchievements, fetchLeaderboards]);
 
     return {
         // Состояния
