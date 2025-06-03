@@ -2272,45 +2272,6 @@
     border-radius: 8px;
 }
 
-/* Иконки рангов */
-.rank-info {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-
-.rank-icon {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    margin: 0 var(--spacing-xs);
-    transition: var(--transition);
-}
-
-.rank-icon:hover {
-    transform: scale(1.1);
-}
-
-.mmr-value {
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    font-weight: normal;
-}
-
-@media (max-width: 768px) {
-    .rank-icon {
-        width: 32px;
-        height: 32px;
-    }
-}
-
-@media (max-width: 480px) {
-    .rank-icon {
-        width: 28px;
-        height: 28px;
-    }
-}
-
 /* Сообщения о отсутствии данных */
 .no-dota-stats,
 .no-dota-profile {

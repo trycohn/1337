@@ -226,68 +226,6 @@ function Profile() {
         }
     };
 
-    // Получение названия ранга
-    const getRankName = (rankTier) => {
-        if (!rankTier) return 'Неизвестно';
-        
-        // Определение основного ранга (первая цифра)
-        const mainRank = Math.floor(rankTier / 10);
-        // Определение звезды (вторая цифра)
-        const stars = rankTier % 10;
-        
-        const ranks = {
-            1: 'Вестник',
-            2: 'Страж',
-            3: 'Рыцарь',
-            4: 'Герой',
-            5: 'Легенда',
-            6: 'Властелин',
-            7: 'Божество',
-            8: 'Титан'
-        };
-        
-        const rankName = ranks[mainRank] || 'Неизвестно';
-        
-        // Для Immortal ранга (80) не отображаем звезды
-        if (mainRank === 8) {
-            return rankName;
-        }
-        
-        return `${rankName} ${stars}`;
-    };
-
-    // Функция для получения URL картинки ранга Dota 2
-    const getRankImageUrl = (rankTier) => {
-        if (!rankTier) return '/default-rank.png';
-        
-        // Определение основного ранга (первая цифра)
-        const mainRank = Math.floor(rankTier / 10);
-        // Определение звезды (вторая цифра)
-        const stars = rankTier % 10;
-        
-        // Массив названий рангов
-        const rankNames = {
-            1: 'herald',
-            2: 'guardian',
-            3: 'crusader',
-            4: 'archon',
-            5: 'legend',
-            6: 'ancient',
-            7: 'divine',
-            8: 'immortal'
-        };
-        
-        const rankName = rankNames[mainRank] || 'unranked';
-        
-        // Используем прямые ссылки на ресурсы Valve
-        // Для Immortal ранга (80) не отображаем звезды
-        if (mainRank === 8) {
-            return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/rank_icons/${rankName}.png`;
-        }
-        
-        return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/rank_icons/${rankName}_${stars}.png`;
-    };
-
     // Функция для получения URL картинки героя Dota 2
     const getHeroImageUrl = (heroId) => {
         if (!heroId) return '/default-hero.png';
@@ -2253,26 +2191,24 @@ function Profile() {
                                                     />
                                                     <div className="dota-profile-details">
                                                         <h4>{dotaStats.profile?.personaname || 'Неизвестно'}</h4>
+                                                        <p><strong>Account ID:</strong> {dotaStats.profile?.account_id}</p>
                                                         {dotaStats.profile?.rank_tier && (
-                                                            <p className="rank-info">
-                                                                <strong>Ранг:</strong> 
-                                                                <img 
-                                                                    src={getRankImageUrl(dotaStats.profile.rank_tier)} 
-                                                                    alt={`Rank ${dotaStats.profile.rank_tier}`}
-                                                                    className="rank-icon"
-                                                                    onError={(e) => {
-                                                                        e.target.src = '/default-rank.png';
-                                                                    }}
-                                                                />
-                                                                <span>
-                                                                    {getRankName(dotaStats.profile.rank_tier)}
-                                                                    {dotaStats.mmr_estimate && dotaStats.mmr_estimate.estimate && (
-                                                                        <span className="mmr-value"> ({dotaStats.mmr_estimate.estimate} MMR)</span>
-                                                                    )}
-                                                                </span>
-                                                            </p>
+                                                            <p><strong>Медаль:</strong> {dotaStats.profile.rank_tier}</p>
+                                                        )}
+                                                        {dotaStats.profile?.mmr_estimate && (
+                                                            <p><strong>MMR (примерно):</strong> {dotaStats.profile.mmr_estimate}</p>
+                                                        )}
+                                                        {dotaStats.profile?.leaderboard_rank && (
+                                                            <p><strong>Место в рейтинге:</strong> #{dotaStats.profile.leaderboard_rank}</p>
                                                         )}
                                                     </div>
+                                                    <button 
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={unlinkDotaSteam}
+                                                        style={{ marginLeft: 'auto' }}
+                                                    >
+                                                        Отвязать
+                                                    </button>
                                                 </div>
 
                                                 {/* Общая статистика */}
@@ -2314,6 +2250,33 @@ function Profile() {
                                                                     <div className="match-kda">{match.kills}/{match.deaths}/{match.assists}</div>
                                                                     <div className="match-duration">{Math.floor(match.duration / 60)}:{(match.duration % 60).toString().padStart(2, '0')}</div>
                                                                     <div className="match-result">{match.win ? 'Победа' : 'Поражение'}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Топ героев */}
+                                                {dotaStats.top_heroes && dotaStats.top_heroes.length > 0 && (
+                                                    <div className="dota-top-heroes">
+                                                        <h5>Топ героев</h5>
+                                                        <div className="heroes-list">
+                                                            {dotaStats.top_heroes.slice(0, 5).map((hero, index) => (
+                                                                <div key={index} className="hero-item">
+                                                                    <div className="hero-name">
+                                                                        <img 
+                                                                            src={getHeroImageUrl(hero.hero_id)} 
+                                                                            alt={`Hero ${hero.hero_id}`}
+                                                                            className="hero-icon"
+                                                                            onError={(e) => {
+                                                                                e.target.src = '/default-hero.png';
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="hero-stats-container">
+                                                                        <div className="hero-games">Игр: {hero.games}</div>
+                                                                        <div className="hero-winrate">Винрейт: {hero.winrate}%</div>
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
