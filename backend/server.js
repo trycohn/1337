@@ -321,7 +321,7 @@ app.use((err, req, res, next) => {
 
 // Запуск сервера
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, async () => {
+const serverInstance = server.listen(PORT, async () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
     try {
         await pool.query('SELECT NOW()');
@@ -338,5 +338,25 @@ server.listen(PORT, async () => {
         
     } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
+    }
+});
+
+// Обработка ошибок запуска сервера
+serverInstance.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Порт ${PORT} уже занят!`);
+        console.error(`🔍 Возможные причины:`);
+        console.error(`   1. Другой экземпляр 1337-backend уже запущен`);
+        console.error(`   2. Другое приложение занимает порт ${PORT}`);
+        console.error(`   3. PM2 запустил несколько экземпляров сервера`);
+        console.error(`🛠️ Решения:`);
+        console.error(`   1. Остановите все PM2 процессы: pm2 stop all`);
+        console.error(`   2. Проверьте занятые порты: netstat -tulpn | grep :${PORT}`);
+        console.error(`   3. Убейте процессы на порту: sudo kill -9 $(sudo lsof -t -i:${PORT})`);
+        console.error(`   4. Или измените PORT в .env файле`);
+        process.exit(1);
+    } else {
+        console.error('❌ Ошибка запуска сервера:', err);
+        process.exit(1);
     }
 });
