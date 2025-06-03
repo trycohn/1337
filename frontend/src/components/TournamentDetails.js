@@ -9,9 +9,6 @@ import { ensureHttps } from '../utils/userHelpers';
 // Импортируем вспомогательные функции для работы с картами
 import { isCounterStrike2, gameHasMaps, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
 
-// Импорт уведомлений и тостов
-import { useToast } from './Notifications/ToastContext';
-
 // eslint-disable-next-line no-unused-vars
 import TournamentChat from './TournamentChat';
 // eslint-disable-next-line no-unused-vars
@@ -80,18 +77,6 @@ const GAME_CONFIGS = {
     // },
 };
 
-// Функция для проверки, поддерживает ли игра карты
-const gameHasMaps = (game) => {
-    if (isCounterStrike2(game)) {
-        return true;
-    }
-    
-    // Добавлять проверки для других игр по мере необходимости
-    // if (isValorant(game)) return true;
-    
-    return false;
-};
-
 // Компонент для отображения оригинального списка участников
 const OriginalParticipantsList = ({ participants, tournament }) => {
   if (!participants || participants.length === 0) {
@@ -146,7 +131,14 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
 
 function TournamentDetails() {
     const { id } = useParams();
-    const toast = useToast(); // Получаем функции для отображения toast-уведомлений
+    
+    // Заглушка для toast уведомлений (ToastContext был удален)
+    const toast = {
+        success: (message) => console.log('✅', message),
+        error: (message) => console.error('❌', message),
+        warning: (message) => console.warn('⚠️', message),
+        info: (message) => console.info('ℹ️', message)
+    };
     
     // eslint-disable-next-line no-unused-vars
     const [tournament, setTournament] = useState(null);
@@ -632,19 +624,6 @@ const getDefaultMap = useCallback((game) => {
                 .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
         }
     }, [user, tournament, id]);
-    
-    // Функция для получения карт для конкретной игры
-// Функция для получения карт для конкретной игры с использованием хелпера
-const getGameMaps = useCallback((game) => {
-    return getGameMapsHelper(game, availableMaps);
-}, [availableMaps]);
-    
-// Функция для получения одной карты по умолчанию для данной игры
-const getDefaultMap = useCallback((game) => {
-    return getDefaultMapHelper(game, availableMaps);
-}, [availableMaps]);
-
-
         // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
         const token = localStorage.getItem('token');
