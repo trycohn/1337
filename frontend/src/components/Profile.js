@@ -2264,11 +2264,13 @@ function Profile() {
                                                                         e.target.src = '/default-rank.png';
                                                                     }}
                                                                 />
-                                                                <span>{getRankName(dotaStats.profile.rank_tier)}</span>
+                                                                <span>
+                                                                    {getRankName(dotaStats.profile.rank_tier)}
+                                                                    {dotaStats.mmr_estimate && dotaStats.mmr_estimate.estimate && (
+                                                                        <span className="mmr-value"> ({dotaStats.mmr_estimate.estimate} MMR)</span>
+                                                                    )}
+                                                                </span>
                                                             </p>
-                                                        )}
-                                                        {dotaStats.mmr_estimate && dotaStats.mmr_estimate.estimate && (
-                                                            <p><strong>MMR:</strong> {dotaStats.mmr_estimate.estimate}</p>
                                                         )}
                                                     </div>
                                                 </div>
