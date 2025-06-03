@@ -366,21 +366,6 @@ function TournamentDetails() {
         return true;
     }, [mapLoadingFlags, MAP_REQUEST_DEBOUNCE]);
     
-    // Загружаем карты для турнира
-    useEffect(() => {
-        const { tournamentGame, availableMapsForGame, isMapLoading } = memoizedGameData;
-        
-        // Загружаем карты только если:
-        // 1. Есть игра
-        // 2. У нас нет карт для этой игры
-        // 3. Мы еще не начали загрузку карт
-        // 4. Прошел debounce период
-        if (tournamentGame && availableMapsForGame.length === 0 && !isMapLoading && shouldLoadMaps(tournamentGame)) {
-            console.log(`Инициирую загрузку карт для ${tournamentGame}`);
-            fetchMapsForGame(tournamentGame);
-        }
-    }, [memoizedGameData, shouldLoadMaps]); // Убрали fetchMapsForGame из зависимостей
-    
     // Функция для загрузки карт из БД
     const fetchMapsForGame = useCallback(async (gameName) => {
         try {
@@ -647,94 +632,6 @@ function TournamentDetails() {
                 .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
         }
     }, [user, tournament, id]);
-        // Настройка Socket.IO для получения обновлений турнира
-    const setupWebSocket = useCallback(() => {
-        const token = localStorage.getItem('token');
-        const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', { query: { token } });
-
-        socket.on('connect', () => {
-            console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
-            socket.emit('watch_tournament', id);
-            // Присоединяемся к чату турнира
-            socket.emit('join_tournament_chat', id);
-        });
-
-        socket.on('tournament_update', (tournamentData) => {
-            if (tournamentData.tournamentId === id || tournamentData.id === parseInt(id)) {
-                console.log('Получено обновление турнира через WebSocket:', tournamentData);
-                
-                // Обрабатываем различные форматы данных
-                const data = tournamentData.data || tournamentData;
-                
-                // Обновляем данные турнира
-                setTournament(prev => {
-                    // Если получены только определенные поля, сохраняем остальные
-                    const updatedTournament = { ...prev, ...data };
-                    console.log('Обновленные данные турнира:', updatedTournament);
-                    return updatedTournament;
-                });
-                
-                // Обновляем список матчей, учитывая разные форматы
-                const matchesData = data.matches || tournamentData.matches || [];
-                if (Array.isArray(matchesData)) {
-                    console.log(`Получено ${matchesData.length} матчей через WebSocket`);
-                    
-                    // Проверяем наличие team_id для каждого матча
-                    matchesData.forEach(match => {
-                        if (!match.team1_id && !match.team2_id) {
-                            console.warn(`Матч ${match.id} не имеет участников (TBD)`);
-                        }
-                    });
-                    
-                    setMatches(matchesData);
-                    
-                    // Форсируем обновление компонента после получения новых данных
-                    setTimeout(() => {
-                        setMessage(prev => {
-                            // Если есть предыдущее сообщение, сохраняем его
-                            // иначе устанавливаем временное сообщение, которое скоро исчезнет
-                            return prev || 'Данные турнира обновлены';
-                        });
-                        
-                        // Очищаем сообщение через 2 секунды, если это наше временное сообщение
-                        setTimeout(() => {
-                            setMessage(currentMessage => 
-                                currentMessage === 'Данные турнира обновлены' ? '' : currentMessage
-                            );
-                        }, 2000);
-                    }, 100);
-                }
-                
-                // Устанавливаем сообщение для пользователя
-                if (tournamentData.message) {
-                    setMessage(tournamentData.message);
-                    // Очищаем сообщение через 3 секунды
-                    setTimeout(() => setMessage(''), 3000);
-                }
-            }
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log('Socket.IO соединение закрыто в компоненте TournamentDetails:', reason);
-        });
-
-        // Обработка новых сообщений чата турнира
-        socket.on('tournament_message', (message) => {
-            setChatMessages(prev => [...prev, message]);
-        });
-
-        wsRef.current = socket;
-    }, [id]);
-
-    useEffect(() => {
-        setupWebSocket();
-        return () => {
-          if (wsRef.current) {
-            wsRef.current.close();
-          }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
 
     // Загрузка истории сообщений чата турнира
     useEffect(() => {
@@ -2097,8 +1994,7 @@ function TournamentDetails() {
     };
     
     // Проверка кэша приглашений при загрузке турнира
-    
-    
+
     // Обработчик приглашения конкретного пользователя
     const handleInviteUser = async (userId, username) => {
         if (!tournament || !tournament.id || !userId || !username) return;
