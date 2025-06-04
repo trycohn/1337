@@ -175,19 +175,25 @@ function TournamentDetails() {
             console.log('🔌 Подключение к WebSocket для турнира', tournament.id);
             
             const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', {
-                auth: { token },
+                query: { token },
                 transports: ['websocket', 'polling'],
-                timeout: 10000
+                timeout: 10000,
+                forceNew: true
             });
 
             socket.on('connect', () => {
-                console.log('✅ WebSocket подключен');
+                console.log('✅ WebSocket подключен к турниру', tournament.id);
                 setWsConnected(true);
+                
                 socket.emit('join-tournament', tournament.id);
+                
+                socket.emit('join_tournament_chat', tournament.id);
+                
+                console.log(`📡 Присоединился к турниру ${tournament.id} и чату`);
             });
 
-            socket.on('disconnect', () => {
-                console.log('🔌 WebSocket отключен');
+            socket.on('disconnect', (reason) => {
+                console.log('🔌 WebSocket отключен:', reason);
                 setWsConnected(false);
             });
 
@@ -201,7 +207,16 @@ function TournamentDetails() {
                 }
             });
 
+            socket.on('tournament_message', (data) => {
+                console.log('💬 Сообщение чата турнира:', data);
+            });
+
             socket.on('connect_error', (error) => {
+                console.warn('⚠️ WebSocket ошибка подключения:', error.message);
+                setWsConnected(false);
+            });
+
+            socket.on('error', (error) => {
                 console.warn('⚠️ WebSocket ошибка:', error.message);
                 setWsConnected(false);
             });
