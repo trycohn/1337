@@ -117,7 +117,7 @@ const BracketRenderer = ({
         
         return result;
     }, [games]);
-
+    
     // Сброс вида - упрощенная версия
     const resetView = useCallback(() => {
         console.log('BracketRenderer: resetView');
@@ -125,99 +125,7 @@ const BracketRenderer = ({
         setScale(1);
     }, []);
 
-    // Упрощенная инициализация DOM элементов
-    useEffect(() => {
-        console.log('BracketRenderer: установка обработчиков событий');
-        
-        const wrapper = wrapperRef.current;
-        if (!wrapper) {
-            console.log('BracketRenderer: wrapperRef не инициализирован');
-            return;
-        }
-
-        wrapper.style.cursor = 'grab';
-        
-        // Устанавливаем адаптивную высоту
-        const handleResize = () => {
-            const windowHeight = window.innerHeight;
-            if (window.innerWidth < 768) {
-                wrapper.style.height = `${windowHeight - 100}px`;
-            } else if (window.innerWidth >= 1028) {
-                wrapper.style.height = '800px';
-            } else {
-                wrapper.style.height = '600px';
-            }
-        };
-        
-        handleResize();
-        
-        // Инициализируем через 100ms для гарантии готовности DOM
-        const timer = setTimeout(() => {
-            if (wrapperRef.current && bracketContentRef.current) {
-                console.log('BracketRenderer: DOM готов, применяем начальный вид');
-                setIsInitialized(true);
-                resetView();
-            }
-        }, 100);
-        
-        window.addEventListener('resize', handleResize);
-        
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(timer);
-        };
-    }, []); // Только при монтировании!
-
-    // Обновление сгруппированных матчей - только при изменении games
-    useEffect(() => {
-        console.log('BracketRenderer: обновление группировки матчей');
-        
-        try {
-            const grouped = groupMatchesByRoundAndBracket();
-            setGroupedMatches(grouped);
-            
-            // Проверяем результат
-            const hasAnyMatches = 
-                Object.keys(grouped.winnerRounds).length > 0 || 
-                Object.keys(grouped.loserRounds).length > 0 || 
-                grouped.placementMatch || 
-                grouped.grandFinalMatch;
-                
-            if (!hasAnyMatches) {
-                console.log('BracketRenderer: нет матчей для отображения после группировки');
-            }
-        } catch (error) {
-            console.error('BracketRenderer: ошибка при обновлении группировки:', error);
-        }
-    }, [games]); // Только зависимость от games, НЕ от groupMatchesByRoundAndBracket!
-
-    // Обработчики событий мыши и тач - упрощенные версии
-    useEffect(() => {
-        const wrapper = wrapperRef.current;
-        if (!wrapper) return;
-
-        wrapper.addEventListener('mousedown', handleMouseDown);
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-        wrapper.addEventListener('wheel', handleWheel);
-        wrapper.addEventListener('touchstart', handleTouchStart);
-        window.addEventListener('touchmove', handleTouchMove);
-        window.addEventListener('touchend', handleTouchEnd);
-
-        return () => {
-            if (wrapper) {
-                wrapper.removeEventListener('mousedown', handleMouseDown);
-                wrapper.removeEventListener('wheel', handleWheel);
-                wrapper.removeEventListener('touchstart', handleTouchStart);
-            }
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-            window.removeEventListener('touchmove', handleTouchMove);
-            window.removeEventListener('touchend', handleTouchEnd);
-        };
-    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
-
-    // --- Логика перетаскивания и масштабирования ---
+    // --- Логика перетаскивания и масштабирования (ПЕРЕМЕЩЕНО ВЫШЕ) ---
     const handleMouseDown = useCallback((e) => {
         if (e.button !== 0) return; // Только левая кнопка
         if (e.target.closest('button, .custom-seed')) return; // Не перетаскиваем на элементах управления
@@ -260,7 +168,7 @@ const BracketRenderer = ({
                 x: touch.clientX - position.x,
                 y: touch.clientY - position.y,
             });
-        }
+            }
         e.preventDefault();
     }, [position]);
 
@@ -275,7 +183,7 @@ const BracketRenderer = ({
     }, [isDragging, startDragPos]);
 
     const handleTouchEnd = useCallback(() => {
-        setIsDragging(false);
+            setIsDragging(false);
     }, []);
 
     // Обработчик изменения масштаба
@@ -302,7 +210,7 @@ const BracketRenderer = ({
     const handleZoomOut = useCallback(() => {
         console.log('handleZoomOut: уменьшаем масштаб');
         const newScale = Math.max(scale - 0.1, 0.5);
-        handleScaleChange(newScale);
+            handleScaleChange(newScale);
     }, [scale, handleScaleChange]);
     
     const handleResetView = useCallback(() => {
@@ -374,6 +282,98 @@ const BracketRenderer = ({
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
     }, [games, format, groupedMatches]);
+
+    // Упрощенная инициализация DOM элементов
+    useEffect(() => {
+        console.log('BracketRenderer: установка обработчиков событий');
+        
+        const wrapper = wrapperRef.current;
+        if (!wrapper) {
+            console.log('BracketRenderer: wrapperRef не инициализирован');
+            return;
+        }
+
+        wrapper.style.cursor = 'grab';
+        
+        // Устанавливаем адаптивную высоту
+        const handleResize = () => {
+            const windowHeight = window.innerHeight;
+            if (window.innerWidth < 768) {
+                wrapper.style.height = `${windowHeight - 100}px`;
+            } else if (window.innerWidth >= 1028) {
+                wrapper.style.height = '800px';
+            } else {
+                wrapper.style.height = '600px';
+            }
+        };
+        
+        handleResize();
+        
+        // Инициализируем через 100ms для гарантии готовности DOM
+        const timer = setTimeout(() => {
+            if (wrapperRef.current && bracketContentRef.current) {
+                console.log('BracketRenderer: DOM готов, применяем начальный вид');
+                setIsInitialized(true);
+                resetView();
+            }
+        }, 100);
+        
+        window.addEventListener('resize', handleResize);
+        
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timer);
+        };
+    }, []); // Только при монтировании!
+
+    // Обновление сгруппированных матчей - только при изменении games
+    useEffect(() => {
+        console.log('BracketRenderer: обновление группировки матчей');
+        
+        try {
+            const grouped = groupMatchesByRoundAndBracket();
+            setGroupedMatches(grouped);
+            
+            // Проверяем результат
+            const hasAnyMatches = 
+                Object.keys(grouped.winnerRounds).length > 0 || 
+                Object.keys(grouped.loserRounds).length > 0 || 
+                grouped.placementMatch || 
+                grouped.grandFinalMatch;
+                
+            if (!hasAnyMatches) {
+                console.log('BracketRenderer: нет матчей для отображения после группировки');
+            }
+                        } catch (error) {
+            console.error('BracketRenderer: ошибка при обновлении группировки:', error);
+        }
+    }, [games]); // Только зависимость от games, НЕ от groupMatchesByRoundAndBracket!
+
+    // Обработчики событий мыши и тач - теперь функции уже объявлены выше
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return;
+
+        wrapper.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        wrapper.addEventListener('wheel', handleWheel);
+        wrapper.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            if (wrapper) {
+                wrapper.removeEventListener('mousedown', handleMouseDown);
+                wrapper.removeEventListener('wheel', handleWheel);
+                wrapper.removeEventListener('touchstart', handleTouchStart);
+            }
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
     // Защитная проверка входных данных (после объявления всех хуков)
     useEffect(() => {
