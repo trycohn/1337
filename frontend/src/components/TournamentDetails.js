@@ -88,28 +88,19 @@ function TournamentDetails() {
     const fetchTournamentData = useCallback(async () => {
         try {
             setLoading(true);
+            setError(null); // Сбрасываем предыдущие ошибки
+            
             const response = await api.get(`/api/tournaments/${id}`);
             const tournamentData = response.data;
             
             setTournament(tournamentData);
             
-            // Проверяем участие пользователя
-            if (user && tournamentData.participants) {
-                const participating = tournamentData.participants.some(
-                    p => p.user_id === user.id || p.id === user.id
-                );
-                setIsParticipating(participating);
+            // Матчи уже включены в ответ турнира - используем их
+            if (tournamentData.matches) {
+                setMatches(Array.isArray(tournamentData.matches) ? tournamentData.matches : []);
+            } else {
+                setMatches([]);
             }
-            
-            // Проверяем права создателя
-            if (user && tournamentData.creator_id === user.id) {
-                setIsCreator(true);
-                setIsAdminOrCreator(true);
-            }
-            
-            // Загружаем матчи
-            const matchesResponse = await api.get(`/api/tournaments/${id}/matches`);
-            setMatches(matchesResponse.data || []);
             
         } catch (error) {
             console.error('Ошибка загрузки турнира:', error);
@@ -117,14 +108,36 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
         }
-    }, [id, user]);
+    }, [id]); // Убираем user из зависимостей чтобы избежать бесконечных циклов
     
-    // Загрузка турнира при изменении ID или пользователя
+    // Загрузка турнира при изменении ID
     useEffect(() => {
         if (id) {
             fetchTournamentData();
         }
     }, [id, fetchTournamentData]);
+    
+    // Обработка изменений пользователя отдельно
+    useEffect(() => {
+        if (user && tournament) {
+            // Проверяем участие пользователя
+            if (tournament.participants) {
+                const participating = tournament.participants.some(
+                    p => p.user_id === user.id || p.id === user.id
+                );
+                setIsParticipating(participating);
+            }
+            
+            // Проверяем права создателя
+            if (tournament.creator_id === user.id) {
+                setIsCreator(true);
+                setIsAdminOrCreator(true);
+            } else {
+                setIsCreator(false);
+                setIsAdminOrCreator(false);
+            }
+        }
+    }, [user, tournament]);
     
     // WebSocket подключение
     useEffect(() => {
