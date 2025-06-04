@@ -134,9 +134,9 @@ router.get('/:id', async (req, res) => {
             [id]
         );
 
-        // Для командных турниров загружаем команды с участниками
+        // Для командных турниров И микс турниров загружаем команды с участниками
         let teams = [];
-        if (tournament.participant_type === 'team') {
+        if (tournament.participant_type === 'team' || tournament.format === 'mix') {
             // Получаем все команды турнира
             const teamsRes = await pool.query(
                 `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
@@ -169,9 +169,17 @@ router.get('/:id', async (req, res) => {
             participants: participantsResult.rows,
             participant_count: participantsResult.rows.length,
             matches: matchesResult.rows,
-            teams: teams // Добавляем команды в ответ
+            teams: teams, // Команды теперь загружаются и для микс турниров
+            mixed_teams: teams // Добавляем поле mixed_teams для обратной совместимости
         };
-        console.log('🔍 Tournament details fetched:', responseData);
+        console.log('🔍 Tournament details fetched:', {
+            name: responseData.name,
+            format: responseData.format,
+            participant_type: responseData.participant_type,
+            participants: responseData.participants.length,
+            matches: responseData.matches.length,
+            teams: responseData.teams.length
+        });
         res.json(responseData);
     } catch (err) {
         console.error('❌ Ошибка получения деталей турнира:', err);
@@ -273,7 +281,8 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
             participants: participantsResult.rows,
             participant_count: participantsResult.rows.length,
             matches: matchesResult2.rows,
-            teams: teams // Добавляем команды в ответ
+            teams: teams, // Добавляем команды в ответ
+            mixed_teams: teams // Добавляем поле mixed_teams для обратной совместимости
         };
         
         // Отправляем обновление через WebSocket
