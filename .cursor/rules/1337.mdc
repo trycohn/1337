@@ -20,4 +20,7 @@ Focus on practical, server-side implementation and avoid local development assum
 
 Проект написан на react.js, Node.js, PostgreSQL, использует самые современные технологии и библиотеки.
 Писать и создавать md файлы после каждой задачи не нужно. Веди один файл лога с изменениями changes.md и пополняй его после каждого выполненного запроса запроса в виде краткого описания изменений.
+
+В файле SYSTEM_ARCHITECTURE.md описание всей структуры проекта.
+
 Use context7
