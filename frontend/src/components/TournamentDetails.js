@@ -270,6 +270,80 @@ function TournamentDetails() {
         }
     }, [user, tournament, id, loadTournamentData]);
 
+    // 🎯 ФУНКЦИЯ ТРАНСФОРМАЦИИ МАТЧЕЙ ДЛЯ BRACKETRENDERER
+    const transformMatchesToGames = useCallback((matchesArray) => {
+        if (!matchesArray || !Array.isArray(matchesArray)) {
+            console.warn('transformMatchesToGames: некорректные данные матчей', matchesArray);
+            return [];
+        }
+
+        console.log('🔄 Трансформация матчей для BracketRenderer:', matchesArray.length);
+
+        return matchesArray.map(match => {
+            // Создаем участников из данных матча
+            const participants = [];
+            
+            // Участник 1
+            if (match.team1_id || match.team1_name) {
+                participants.push({
+                    id: match.team1_id || `team1_${match.id}`,
+                    name: match.team1_name || 'TBD',
+                    score: match.team1_score || 0,
+                    isWinner: match.winner_id === match.team1_id,
+                    avatarUrl: match.team1_avatar_url || null
+                });
+            }
+
+            // Участник 2
+            if (match.team2_id || match.team2_name) {
+                participants.push({
+                    id: match.team2_id || `team2_${match.id}`,
+                    name: match.team2_name || 'TBD', 
+                    score: match.team2_score || 0,
+                    isWinner: match.winner_id === match.team2_id,
+                    avatarUrl: match.team2_avatar_url || null
+                });
+            }
+
+            // Если нет участников, создаем пустых
+            while (participants.length < 2) {
+                participants.push({
+                    id: `empty_${match.id}_${participants.length}`,
+                    name: 'TBD',
+                    score: 0,
+                    isWinner: false,
+                    avatarUrl: null
+                });
+            }
+
+            // Возвращаем объект в формате, ожидаемом BracketRenderer
+            return {
+                id: match.id,
+                round: match.round !== undefined ? match.round : 0,
+                match_number: match.match_number || 0,
+                bracket_type: match.bracket_type || 'winner',
+                is_third_place_match: match.is_third_place_match || false,
+                state: match.status === 'completed' ? 'DONE' : 'OPEN',
+                name: match.name || `Матч ${match.match_number || match.id}`,
+                participants: participants,
+                winner_id: match.winner_id || null,
+                status: match.status || 'pending'
+            };
+        });
+    }, []);
+
+    // 🎯 МЕМОИЗИРОВАННЫЕ ДАННЫЕ ДЛЯ BRACKETRENDERER
+    const bracketGames = useMemo(() => {
+        if (!matches || matches.length === 0) {
+            console.log('🎯 Нет матчей для трансформации');
+            return [];
+        }
+
+        const transformedGames = transformMatchesToGames(matches);
+        console.log('🎯 Трансформированные игры для BracketRenderer:', transformedGames.length);
+        return transformedGames;
+    }, [matches, transformMatchesToGames]);
+
     const handleWithdraw = useCallback(async () => {
         if (!user || !tournament) return;
 
@@ -733,7 +807,7 @@ function TournamentDetails() {
                             {matches && matches.length > 0 ? (
                                 <div className="custom-tournament-bracket">
                                     <BracketRenderer 
-                                        games={matches}
+                                        games={bracketGames}
                                         canEditMatches={userPermissions.canEdit}
                                         selectedMatch={selectedMatch}
                                         setSelectedMatch={setSelectedMatch}
