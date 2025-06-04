@@ -111,7 +111,107 @@ function TournamentDetails() {
         }
     }, []);
 
-    // 🎯 ЗАГРУЗКА ТУРНИРА И ДАННЫХ
+    // 🎯 ФУНКЦИЯ ТРАНСФОРМАЦИИ МАТЧЕЙ ДЛЯ BRACKETRENDERER (ИСПРАВЛЕНА)
+    const transformMatchesToGames = useCallback((matchesArray) => {
+        if (!matchesArray || !Array.isArray(matchesArray)) {
+            console.warn('transformMatchesToGames: некорректные данные матчей', matchesArray);
+            return [];
+        }
+
+        console.log('🔄 Трансформация матчей для BracketRenderer:', matchesArray.length);
+        console.log('🔄 Структура первого матча:', matchesArray[0]);
+
+        return matchesArray.map((match, index) => {
+            // Создаем участников из данных матча
+            const participants = [];
+            
+            // Участник 1
+            if (match.team1_id || match.team1_name) {
+                participants.push({
+                    id: match.team1_id || `team1_${match.id}`,
+                    name: match.team1_name || match.participant1_name || 'TBD',
+                    score: match.team1_score !== undefined ? Number(match.team1_score) : 0,
+                    isWinner: match.winner_id && (match.winner_id === match.team1_id),
+                    avatarUrl: match.team1_avatar_url || null
+                });
+            }
+
+            // Участник 2
+            if (match.team2_id || match.team2_name) {
+                participants.push({
+                    id: match.team2_id || `team2_${match.id}`,
+                    name: match.team2_name || match.participant2_name || 'TBD',
+                    score: match.team2_score !== undefined ? Number(match.team2_score) : 0,
+                    isWinner: match.winner_id && (match.winner_id === match.team2_id),
+                    avatarUrl: match.team2_avatar_url || null
+                });
+            }
+
+            // Если участников меньше 2, создаем пустых (для будущих матчей)
+            while (participants.length < 2) {
+                participants.push({
+                    id: `empty_${match.id}_${participants.length}`,
+                    name: 'TBD',
+                    score: 0,
+                    isWinner: false,
+                    avatarUrl: null
+                });
+            }
+
+            // Определяем раунд
+            let round = 0;
+            if (match.round !== undefined && match.round !== null) {
+                round = Number(match.round);
+            } else if (match.round_number !== undefined && match.round_number !== null) {
+                round = Number(match.round_number);
+            }
+
+            // Определяем тип матча
+            let bracket_type = 'winner';
+            if (match.bracket_type) {
+                bracket_type = match.bracket_type;
+            } else if (match.match_type) {
+                bracket_type = match.match_type;
+            }
+
+            // Определяем статус матча
+            let state = 'OPEN';
+            if (match.status === 'completed' || match.status === 'DONE' || match.state === 'DONE') {
+                state = 'DONE';
+            } else if (match.status === 'in_progress' || match.status === 'PENDING') {
+                state = 'PENDING';
+            }
+
+            // Возвращаем объект в формате, ожидаемом BracketRenderer
+            const transformedGame = {
+                id: match.id,
+                round: round,
+                match_number: match.match_number || match.number || index + 1,
+                bracket_type: bracket_type,
+                is_third_place_match: Boolean(match.is_third_place_match || match.is_third_place),
+                state: state,
+                name: match.name || `Матч ${match.match_number || match.number || index + 1}`,
+                participants: participants,
+                winner_id: match.winner_id || null,
+                status: match.status || 'pending',
+                // Дополнительные поля для совместимости
+                completed_at: match.completed_at || match.updated_at,
+                maps_data: match.maps_data || null
+            };
+
+            console.log(`🔄 Матч ${match.id} трансформирован:`, {
+                round: transformedGame.round,
+                bracket_type: transformedGame.bracket_type,
+                state: transformedGame.state,
+                participants: transformedGame.participants.length,
+                hasWinner: !!transformedGame.winner_id
+            });
+
+            return transformedGame;
+        });
+    }, []);
+
+    // 🎯 УЛУЧШЕННАЯ ЗАГРУЗКА ТУРНИРА И ДАННЫХ
     const loadTournamentData = useCallback(async () => {
         if (!id) return;
 
@@ -120,35 +220,92 @@ function TournamentDetails() {
             setError(null);
             setDataLoadingStates(prev => ({ ...prev, tournament: true }));
 
+            console.log('🔍 Загружаем данные турнира:', id);
+
             // Основной запрос турнира
             const tournamentResponse = await api.get(`/api/tournaments/${id}`);
             const tournamentData = tournamentResponse.data;
             
+            console.log('✅ Турнир загружен:', {
+                name: tournamentData.name,
+                status: tournamentData.status,
+                participantsCount: tournamentData.participants?.length,
+                hasMatches: !!tournamentData.matches
+            });
+            
             setTournament(tournamentData);
 
-            // Загружаем матчи
+            // Загружаем матчи с несколькими источниками
             let matchesData = [];
             
-            if (tournamentData.matches && Array.isArray(tournamentData.matches)) {
+            // Источник 1: Матчи из основного ответа турнира
+            if (tournamentData.matches && Array.isArray(tournamentData.matches) && tournamentData.matches.length > 0) {
                 matchesData = tournamentData.matches;
-                console.log('✅ Матчи загружены из основного ответа турнира');
-            } else {
+                console.log('✅ Матчи загружены из основного ответа турнира:', matchesData.length);
+            } 
+            // Источник 2: Отдельный запрос матчей (fallback)
+            else {
                 try {
                     setDataLoadingStates(prev => ({ ...prev, matches: true }));
+                    console.log('🔍 Пробуем загрузить матчи отдельным запросом...');
+                    
                     const matchesResponse = await api.get(`/api/tournaments/${id}/matches`);
                     matchesData = matchesResponse.data || [];
-                    console.log('✅ Матчи загружены отдельным запросом');
+                    
+                    if (matchesData.length > 0) {
+                        console.log('✅ Матчи загружены отдельным запросом:', matchesData.length);
+                    } else {
+                        console.log('ℹ️ Отдельный запрос матчей вернул пустой массив');
+                    }
                 } catch (matchesError) {
-                    console.warn('⚠️ Матчи не удалось загрузить:', matchesError.message);
-                    matchesData = [];
+                    console.warn('⚠️ Ошибка загрузки матчей отдельным запросом:', matchesError.message);
+                    
+                    // Источник 3: Проверяем альтернативные поля в турнире
+                    if (tournamentData.bracket_matches) {
+                        matchesData = tournamentData.bracket_matches;
+                        console.log('✅ Матчи найдены в bracket_matches:', matchesData.length);
+                    } else if (tournamentData.tournament_matches) {
+                        matchesData = tournamentData.tournament_matches;
+                        console.log('✅ Матчи найдены в tournament_matches:', matchesData.length);
+                    } else {
+                        console.log('ℹ️ Матчи не найдены ни в одном источнике');
+                        matchesData = [];
+                    }
                 }
+            }
+
+            // Логируем структуру данных матчей для диагностики
+            if (matchesData.length > 0) {
+                console.log('🔍 Структура первого матча:', matchesData[0]);
+                console.log('🔍 Все ключи первого матча:', Object.keys(matchesData[0]));
+                
+                // Проверяем наличие результатов
+                const completedMatches = matchesData.filter(m => 
+                    m.status === 'completed' || m.state === 'DONE' || m.status === 'DONE'
+                );
+                console.log(`📊 Завершенных матчей: ${completedMatches.length} из ${matchesData.length}`);
             }
 
             setMatches(matchesData);
             
             // Загружаем микс команды для mix турниров
-            if (tournamentData.format === 'mix' && tournamentData.mixed_teams) {
-                setMixedTeams(tournamentData.mixed_teams);
+            if (tournamentData.format === 'mix') {
+                if (tournamentData.mixed_teams && Array.isArray(tournamentData.mixed_teams)) {
+                    setMixedTeams(tournamentData.mixed_teams);
+                    console.log('✅ Микс команды загружены:', tournamentData.mixed_teams.length);
+                } else {
+                    // Пробуем загрузить команды отдельным запросом
+                    try {
+                        const teamsResponse = await api.get(`/api/tournaments/${id}/teams`);
+                        if (teamsResponse.data && Array.isArray(teamsResponse.data)) {
+                            setMixedTeams(teamsResponse.data);
+                            console.log('✅ Микс команды загружены отдельным запросом:', teamsResponse.data.length);
+                        }
+                    } catch (teamsError) {
+                        console.warn('⚠️ Ошибка загрузки команд:', teamsError.message);
+                        setMixedTeams([]);
+                    }
+                }
             }
 
         } catch (tournamentError) {
@@ -270,68 +427,6 @@ function TournamentDetails() {
         }
     }, [user, tournament, id, loadTournamentData]);
 
-    // 🎯 ФУНКЦИЯ ТРАНСФОРМАЦИИ МАТЧЕЙ ДЛЯ BRACKETRENDERER
-    const transformMatchesToGames = useCallback((matchesArray) => {
-        if (!matchesArray || !Array.isArray(matchesArray)) {
-            console.warn('transformMatchesToGames: некорректные данные матчей', matchesArray);
-            return [];
-        }
-
-        console.log('🔄 Трансформация матчей для BracketRenderer:', matchesArray.length);
-
-        return matchesArray.map(match => {
-            // Создаем участников из данных матча
-            const participants = [];
-            
-            // Участник 1
-            if (match.team1_id || match.team1_name) {
-                participants.push({
-                    id: match.team1_id || `team1_${match.id}`,
-                    name: match.team1_name || 'TBD',
-                    score: match.team1_score || 0,
-                    isWinner: match.winner_id === match.team1_id,
-                    avatarUrl: match.team1_avatar_url || null
-                });
-            }
-
-            // Участник 2
-            if (match.team2_id || match.team2_name) {
-                participants.push({
-                    id: match.team2_id || `team2_${match.id}`,
-                    name: match.team2_name || 'TBD', 
-                    score: match.team2_score || 0,
-                    isWinner: match.winner_id === match.team2_id,
-                    avatarUrl: match.team2_avatar_url || null
-                });
-            }
-
-            // Если нет участников, создаем пустых
-            while (participants.length < 2) {
-                participants.push({
-                    id: `empty_${match.id}_${participants.length}`,
-                    name: 'TBD',
-                    score: 0,
-                    isWinner: false,
-                    avatarUrl: null
-                });
-            }
-
-            // Возвращаем объект в формате, ожидаемом BracketRenderer
-            return {
-                id: match.id,
-                round: match.round !== undefined ? match.round : 0,
-                match_number: match.match_number || 0,
-                bracket_type: match.bracket_type || 'winner',
-                is_third_place_match: match.is_third_place_match || false,
-                state: match.status === 'completed' ? 'DONE' : 'OPEN',
-                name: match.name || `Матч ${match.match_number || match.id}`,
-                participants: participants,
-                winner_id: match.winner_id || null,
-                status: match.status || 'pending'
-            };
-        });
-    }, []);
-
     // 🎯 МЕМОИЗИРОВАННЫЕ ДАННЫЕ ДЛЯ BRACKETRENDERER
     const bracketGames = useMemo(() => {
         if (!matches || matches.length === 0) {
@@ -339,8 +434,25 @@ function TournamentDetails() {
             return [];
         }
 
+        console.log('🎯 Начинаем трансформацию матчей:', {
+            totalMatches: matches.length,
+            sampleMatch: matches[0] ? {
+                id: matches[0].id,
+                status: matches[0].status,
+                hasTeam1: !!matches[0].team1_name,
+                hasTeam2: !!matches[0].team2_name,
+                hasScore: matches[0].team1_score !== undefined
+            } : 'нет матчей'
+        });
+
         const transformedGames = transformMatchesToGames(matches);
-        console.log('🎯 Трансформированные игры для BracketRenderer:', transformedGames.length);
+        
+        console.log('🎯 Трансформированные игры для BracketRenderer:', {
+            totalGames: transformedGames.length,
+            validGames: transformedGames.filter(g => g.participants.length >= 2).length,
+            completedGames: transformedGames.filter(g => g.state === 'DONE').length
+        });
+        
         return transformedGames;
     }, [matches, transformMatchesToGames]);
 

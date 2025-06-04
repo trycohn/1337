@@ -25,16 +25,13 @@ const BracketRenderer = ({
     const [isDragging, setIsDragging] = useState(false);
     const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
     const [groupedMatches, setGroupedMatches] = useState({ winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null });
-    // Добавляем состояние, которое гарантирует инициализацию обработчиков
-    const [isInitialized, setIsInitialized] = useState(false);
-    // Добавляем состояние для отслеживания ошибок данных
     const [dataError, setDataError] = useState(null);
 
     // Ссылки для работы с DOM
-    const wrapperRef = useRef(null); // Внешний контейнер для обработчиков
-    const bracketContentRef = useRef(null); // Внутренний контейнер для трансформации
+    const wrapperRef = useRef(null);
+    const bracketContentRef = useRef(null);
     
-    // Группировка матчей по раундам и сеткам (упрощенная версия)
+    // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = useCallback(() => {
         let result = { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
         
@@ -44,19 +41,25 @@ const BracketRenderer = ({
         }
         
         console.log('BracketRenderer: Группировка матчей, количество:', games.length);
+        console.log('BracketRenderer: Структура первого матча:', games[0]);
         
         try {
             // Проверяем валидность игр
-            const validGames = games.filter(game => 
-                game && 
-                game.id !== undefined && 
-                game.round !== undefined && 
-                Array.isArray(game.participants) && 
-                game.participants.length >= 2
-            );
+            const validGames = games.filter(game => {
+                const isValid = game && 
+                    game.id !== undefined && 
+                    Array.isArray(game.participants) && 
+                    game.participants.length >= 2;
+                
+                if (!isValid) {
+                    console.warn('BracketRenderer: Невалидная игра:', game);
+                }
+                return isValid;
+            });
             
             if (validGames.length === 0) {
                 console.error('BracketRenderer: нет валидных матчей для группировки');
+                setDataError('Нет валидных матчей для отображения');
                 return result;
             }
             
@@ -111,21 +114,25 @@ const BracketRenderer = ({
                 hasGrandFinal: !!grandFinalMatch
             });
 
+            // Сбрасываем ошибку, если группировка прошла успешно
+            setDataError(null);
+
         } catch (error) {
             console.error('BracketRenderer: Ошибка при группировке матчей:', error);
+            setDataError('Ошибка при обработке данных матчей');
         }
         
         return result;
     }, [games]);
     
-    // Сброс вида - упрощенная версия
+    // Сброс вида
     const resetView = useCallback(() => {
         console.log('BracketRenderer: resetView');
         setPosition({ x: 20, y: 20 });
         setScale(1);
     }, []);
-
-    // --- Логика перетаскивания и масштабирования (ПЕРЕМЕЩЕНО ВЫШЕ) ---
+    
+    // Обработчики событий для перетаскивания и масштабирования
     const handleMouseDown = useCallback((e) => {
         if (e.button !== 0) return; // Только левая кнопка
         if (e.target.closest('button, .custom-seed')) return; // Не перетаскиваем на элементах управления
@@ -168,7 +175,7 @@ const BracketRenderer = ({
                 x: touch.clientX - position.x,
                 y: touch.clientY - position.y,
             });
-            }
+        }
         e.preventDefault();
     }, [position]);
 
@@ -183,7 +190,7 @@ const BracketRenderer = ({
     }, [isDragging, startDragPos]);
 
     const handleTouchEnd = useCallback(() => {
-            setIsDragging(false);
+        setIsDragging(false);
     }, []);
 
     // Обработчик изменения масштаба
@@ -210,7 +217,7 @@ const BracketRenderer = ({
     const handleZoomOut = useCallback(() => {
         console.log('handleZoomOut: уменьшаем масштаб');
         const newScale = Math.max(scale - 0.1, 0.5);
-            handleScaleChange(newScale);
+        handleScaleChange(newScale);
     }, [scale, handleScaleChange]);
     
     const handleResetView = useCallback(() => {
@@ -218,7 +225,7 @@ const BracketRenderer = ({
         resetView();
     }, [resetView]);
 
-    // Функция для открытия сетки в отдельной вкладке (упрощенная версия)
+    // Функция для открытия сетки в отдельной вкладке
     const handleOpenInNewTab = useCallback(() => {
         const currentGroupedMatches = groupedMatches || { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
         
@@ -283,20 +290,21 @@ const BracketRenderer = ({
         window.open(url, '_blank');
     }, [games, format, groupedMatches]);
 
-    // Упрощенная инициализация DOM элементов
+    // ИСПРАВЛЕНА ИНИЦИАЛИЗАЦИЯ: убрана задержка, перетаскивание доступно сразу
     useEffect(() => {
-        console.log('BracketRenderer: установка обработчиков событий');
+        console.log('BracketRenderer: инициализация DOM элементов');
         
         const wrapper = wrapperRef.current;
         if (!wrapper) {
             console.log('BracketRenderer: wrapperRef не инициализирован');
             return;
         }
-
+            
+        // Сразу устанавливаем cursor и высоту
         wrapper.style.cursor = 'grab';
         
         // Устанавливаем адаптивную высоту
-        const handleResize = () => {
+        const setResponsiveHeight = () => {
             const windowHeight = window.innerHeight;
             if (window.innerWidth < 768) {
                 wrapper.style.height = `${windowHeight - 100}px`;
@@ -307,26 +315,19 @@ const BracketRenderer = ({
             }
         };
         
-        handleResize();
+        setResponsiveHeight();
         
-        // Инициализируем через 100ms для гарантии готовности DOM
-        const timer = setTimeout(() => {
-            if (wrapperRef.current && bracketContentRef.current) {
-                console.log('BracketRenderer: DOM готов, применяем начальный вид');
-                setIsInitialized(true);
-                resetView();
-            }
-        }, 100);
+        // Сразу применяем начальный вид (БЕЗ setTimeout!)
+        resetView();
         
-        window.addEventListener('resize', handleResize);
+        window.addEventListener('resize', setResponsiveHeight);
         
         return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(timer);
+            window.removeEventListener('resize', setResponsiveHeight);
         };
     }, []); // Только при монтировании!
 
-    // Обновление сгруппированных матчей - только при изменении games
+    // Обновление сгруппированных матчей при изменении games
     useEffect(() => {
         console.log('BracketRenderer: обновление группировки матчей');
         
@@ -344,16 +345,20 @@ const BracketRenderer = ({
             if (!hasAnyMatches) {
                 console.log('BracketRenderer: нет матчей для отображения после группировки');
             }
-                        } catch (error) {
+        } catch (error) {
             console.error('BracketRenderer: ошибка при обновлении группировки:', error);
+            setDataError('Ошибка при обработке данных матчей');
         }
-    }, [games]); // Только зависимость от games, НЕ от groupMatchesByRoundAndBracket!
+    }, [groupMatchesByRoundAndBracket]);
 
-    // Обработчики событий мыши и тач - теперь функции уже объявлены выше
+    // ИСПРАВЛЕНЫ ОБРАБОТЧИКИ СОБЫТИЙ: привязываются сразу после монтирования
     useEffect(() => {
         const wrapper = wrapperRef.current;
         if (!wrapper) return;
 
+        console.log('BracketRenderer: привязка обработчиков событий');
+
+        // Сразу привязываем все обработчики событий
         wrapper.addEventListener('mousedown', handleMouseDown);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
@@ -375,21 +380,27 @@ const BracketRenderer = ({
         };
     }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-    // Защитная проверка входных данных (после объявления всех хуков)
+    // Защитная проверка входных данных
     useEffect(() => {
         try {
-            // Проверяем структуру данных games
             if (!games || !Array.isArray(games)) {
                 console.error('BracketRenderer: games не является массивом или не определен', games);
                 setDataError('Ошибка: Неверный формат данных для отображения сетки.');
                 return;
             }
             
-            // Проверяем, что все элементы games имеют id и participants
-            const invalidGames = games.filter(game => !game || !game.id || !Array.isArray(game.participants));
-            if (invalidGames.length > 0) {
-                console.error('BracketRenderer: обнаружены некорректные игры', invalidGames);
-                setDataError('Ошибка: Некорректные данные матчей. Попробуйте регенерировать сетку.');
+            // Если есть games, но они не валидные, даем детальную информацию
+            if (games.length === 0) {
+                console.log('BracketRenderer: массив games пустой');
+                setDataError(null); // Пустой массив - не ошибка
+                return;
+            }
+            
+            // Проверяем структуру первого элемента для диагностики
+            const firstGame = games[0];
+            if (!firstGame || !firstGame.id || !Array.isArray(firstGame.participants)) {
+                console.error('BracketRenderer: некорректная структура данных игры:', firstGame);
+                setDataError('Ошибка: Некорректные данные матчей. Попробуйте обновить страницу.');
                 return;
             }
             
@@ -403,7 +414,15 @@ const BracketRenderer = ({
 
     // Рендеринг ошибки данных, если она есть
     if (dataError) {
-        return <div className="empty-bracket-message">{dataError}</div>;
+        return (
+            <div className="empty-bracket-message">
+                <h3>⚠️ Проблема с данными</h3>
+                <p>{dataError}</p>
+                <button onClick={() => window.location.reload()}>
+                    🔄 Обновить страницу
+                </button>
+            </div>
+        );
     }
 
     // Если нет данных для отображения, показываем сообщение
