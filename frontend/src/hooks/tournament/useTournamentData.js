@@ -1,3 +1,18 @@
+/**
+ * useTournamentData - Custom Hook для управления данными турнира
+ * 
+ * @version 1.1.0 
+ * @created 2025-01-22
+ * @updated 2025-01-22 (VDS deployment update)
+ * 
+ * Часть модульной архитектуры TournamentDetails v2.0
+ * Извлечен из монолитного компонента для улучшения:
+ * - Переиспользования логики
+ * - Тестируемости 
+ * - Разделения ответственности
+ * - Performance оптимизации
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 

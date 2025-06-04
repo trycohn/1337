@@ -1,3 +1,21 @@
+/**
+ * TournamentDetails - Модульная архитектура турнирной системы
+ * 
+ * @version 2.0.0 (Modular Architecture)
+ * @created 2025-01-22
+ * @author 1337 Community Development Team
+ * @updated 2025-01-22 (VDS deployment fix)
+ * 
+ * Это главный компонент турнира, использующий модульную архитектуру:
+ * - 4 Custom Hooks для логики
+ * - 7 Tab компонентов для отображения
+ * - 6 Modal компонентов для взаимодействия
+ * - Enterprise-grade структура с SOLID принципами
+ * 
+ * Заменяет предыдущий монолитный TournamentDetails.js (3967 строк)
+ * на современную модульную архитектуру (25+ файлов)
+ */
+
 import React, { useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
