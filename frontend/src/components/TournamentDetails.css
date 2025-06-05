@@ -1364,6 +1364,8 @@
     font-weight: 300;
     color: #ffffff;
     margin: 10px 0;
+    display: block;
+    text-align: center;
 }
 
 .team-info.winner .team-score {
