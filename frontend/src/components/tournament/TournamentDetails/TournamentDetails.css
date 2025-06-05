@@ -1457,7 +1457,7 @@
     border-radius: 0;
     overflow: hidden;
     border: 1px solid #333333;
-    color: #ffffff;
+    color: #000000;
 }
 
 .maps-table th,
@@ -1535,7 +1535,7 @@
 .stat-value {
     font-size: 1.5em;
     font-weight: 300;
-    color: #ffffff;
+    color: #000000;
 }
 
 /* Стили для случая отсутствия карт */
@@ -2871,7 +2871,7 @@ a.participant-name:hover {
 .stat-value {
     font-size: 18px;
     font-weight: 300;
-    color: #ffffff;
+    color: #000000;
 }
 
 .team-members-list {
