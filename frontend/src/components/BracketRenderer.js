@@ -243,58 +243,83 @@ const BracketRenderer = ({
         const wrapper = wrapperRef.current;
         if (!wrapper) {
             console.log('BracketRenderer: wrapperRef не инициализирован');
-                return;
-            }
+            return;
+        }
             
         // Сразу устанавливаем cursor и высоту
         wrapper.style.cursor = 'grab';
+        console.log('BracketRenderer: установлен cursor grab');
         
         // Устанавливаем адаптивную высоту
         const setResponsiveHeight = () => {
-                const windowHeight = window.innerHeight;
-                if (window.innerWidth < 768) {
+            const windowHeight = window.innerHeight;
+            if (window.innerWidth < 768) {
                 wrapper.style.height = `${windowHeight - 100}px`;
-                } else if (window.innerWidth >= 1028) {
+            } else if (window.innerWidth >= 1028) {
                 wrapper.style.height = '800px';
-                } else {
+            } else {
                 wrapper.style.height = '600px';
             }
         };
         
         setResponsiveHeight();
         
-        // Сразу применяем начальный вид (БЕЗ setTimeout!)
-        resetView();
+        // УБИРАЕМ resetView() отсюда - он может мешать перетаскиванию
+        console.log('BracketRenderer: начальная позиция установлена');
         
         // СРАЗУ ПРИВЯЗЫВАЕМ ОБРАБОТЧИКИ СОБЫТИЙ В ТОМ ЖЕ useEffect!
         console.log('BracketRenderer: привязка обработчиков событий перетаскивания');
 
-        // Создаем функции-обработчики с использованием refs для актуальных значений состояния
+        // Создаем функции-обработчики с ИСПРАВЛЕННОЙ логикой
         const mouseDownHandler = (e) => {
             if (e.button !== 0) return; // Только левая кнопка
-            if (e.target.closest('button, .custom-seed')) return; // Не перетаскиваем на элементах управления
             
-            console.log('BracketRenderer: начинаем перетаскивание');
+            // ИСПРАВЛЕНО: убираем .custom-seed из исключений! 
+            // Пользователь должен иметь возможность тащить сетку за области команд
+            if (e.target.closest('button:not(.custom-seed)')) return; // Исключаем только реальные кнопки управления
+            
+            console.log('BracketRenderer: mousedown событие обработано, начинаем перетаскивание');
+            console.log('BracketRenderer: текущая позиция перед перетаскиванием:', positionRef.current);
+            
+            // ИСПРАВЛЕНО: обновляем и state и ref одновременно для синхронизации
+            isDraggingRef.current = true;
             setIsDragging(true);
-            setStartDragPos({
+            
+            const newStartPos = {
                 x: e.clientX - positionRef.current.x,
                 y: e.clientY - positionRef.current.y,
-            });
+            };
+            startDragPosRef.current = newStartPos;
+            setStartDragPos(newStartPos);
+            
             wrapper.style.cursor = 'grabbing';
+            console.log('BracketRenderer: ✅ Перетаскивание активировано, startPos:', newStartPos);
             e.preventDefault();
         };
 
         const mouseMoveHandler = (e) => {
-            if (!isDraggingRef.current) return;
-            setPosition({
+            // Проверяем состояние перетаскивания
+            if (!isDraggingRef.current) {
+                return;
+            }
+            
+            const newPosition = {
                 x: e.clientX - startDragPosRef.current.x,
                 y: e.clientY - startDragPosRef.current.y,
-            });
+            };
+            
+            // Обновляем и ref и state
+            positionRef.current = newPosition;
+            setPosition(newPosition);
+            
+            console.log('BracketRenderer: перетаскивание в процессе, новая позиция:', newPosition);
             e.preventDefault();
         };
 
         const mouseUpHandler = () => {
             if (isDraggingRef.current) {
+                console.log('BracketRenderer: завершение перетаскивания');
+                isDraggingRef.current = false;
                 setIsDragging(false);
                 wrapper.style.cursor = 'grab';
             }
@@ -304,33 +329,51 @@ const BracketRenderer = ({
             e.preventDefault();
             const delta = e.deltaY > 0 ? -0.1 : 0.1;
             const newScale = Math.max(0.5, Math.min(3, scaleRef.current + delta));
+            scaleRef.current = newScale;
             setScale(newScale);
+            console.log('BracketRenderer: масштабирование колесом, новый scale:', newScale);
         };
 
         const touchStartHandler = (e) => {
             if (e.touches.length === 1) {
                 const touch = e.touches[0];
+                console.log('BracketRenderer: touch start, начинаем перетаскивание');
+                
+                isDraggingRef.current = true;
                 setIsDragging(true);
-                setStartDragPos({
+                
+                const newStartPos = {
                     x: touch.clientX - positionRef.current.x,
                     y: touch.clientY - positionRef.current.y,
-                });
+                };
+                startDragPosRef.current = newStartPos;
+                setStartDragPos(newStartPos);
             }
             e.preventDefault();
         };
 
         const touchMoveHandler = (e) => {
             if (!isDraggingRef.current || e.touches.length !== 1) return;
+            
             const touch = e.touches[0];
-            setPosition({
+            const newPosition = {
                 x: touch.clientX - startDragPosRef.current.x,
                 y: touch.clientY - startDragPosRef.current.y,
-            });
+            };
+            
+            positionRef.current = newPosition;
+            setPosition(newPosition);
+            
+            console.log('BracketRenderer: touch move, новая позиция:', newPosition);
             e.preventDefault();
         };
 
         const touchEndHandler = () => {
-            setIsDragging(false);
+            if (isDraggingRef.current) {
+                console.log('BracketRenderer: touch end, завершение перетаскивания');
+                isDraggingRef.current = false;
+                setIsDragging(false);
+            }
         };
 
         // Привязываем все обработчики событий СРАЗУ
@@ -343,11 +386,14 @@ const BracketRenderer = ({
         window.addEventListener('touchend', touchEndHandler);
 
         console.log('BracketRenderer: ✅ Все обработчики событий привязаны, перетаскивание готово к работе');
+        console.log('BracketRenderer: wrapper element:', wrapper);
+        console.log('BracketRenderer: начальные refs - isDragging:', isDraggingRef.current, 'position:', positionRef.current);
 
         window.addEventListener('resize', setResponsiveHeight);
         
         return () => {
             // Очистка всех обработчиков
+            console.log('BracketRenderer: очистка обработчиков событий');
             if (wrapper) {
                 wrapper.removeEventListener('mousedown', mouseDownHandler);
                 wrapper.removeEventListener('wheel', wheelHandler);
