@@ -624,8 +624,12 @@ function TournamentDetails() {
         // Здесь может быть логика показа состава команды
     }, []);
 
-    const handleMatchClick = useCallback((match) => {
-        console.log('🔍 Клик по матчу для просмотра деталей:', match.id || match);
+    const handleMatchClick = useCallback((matchParam) => {
+        // Определяем ID матча - может прийти как число или как объект с полем id
+        const matchId = typeof matchParam === 'object' ? matchParam.id : matchParam;
+        
+        console.log('🔍 Клик по матчу для просмотра деталей:', matchId);
+        console.log('🔍 Тип параметра:', typeof matchParam, ', значение:', matchParam);
         
         // Специальная диагностика для турнира 54
         if (tournament?.id === 54 || tournament?.id === '54') {
@@ -640,30 +644,30 @@ function TournamentDetails() {
             
             // Дополнительная диагностика поиска матча
             console.log('🔍 ДИАГНОСТИКА ПОИСКА МАТЧА:');
-            console.log('- Ищем матч с ID:', match.id);
+            console.log('- Ищем матч с ID:', matchId);
             console.log('- Все ID матчей в массиве:', matches.map(m => m.id));
             console.log('- Типы ID в массиве:', matches.map(m => typeof m.id));
-            console.log('- Тип искомого ID:', typeof match.id);
+            console.log('- Тип искомого ID:', typeof matchId);
         }
         
         // Ищем полные данные матча в исходном массиве matches
         // Пробуем найти как по числовому, так и по строковому ID
-        let fullMatchData = matches.find(m => m.id === match.id);
+        let fullMatchData = matches.find(m => m.id === matchId);
         
         // Если не найден, пробуем преобразовать типы
         if (!fullMatchData) {
             fullMatchData = matches.find(m => 
-                String(m.id) === String(match.id) || 
-                Number(m.id) === Number(match.id)
+                String(m.id) === String(matchId) || 
+                Number(m.id) === Number(matchId)
             );
         }
         
-        // Если все еще не найден, пробуем по другим полям
-        if (!fullMatchData) {
+        // Если все еще не найден и у нас есть объект матча, пробуем по другим полям
+        if (!fullMatchData && typeof matchParam === 'object') {
             fullMatchData = matches.find(m => 
-                m.match_number === match.match_number ||
-                m.number === match.match_number ||
-                (m.round === match.round && m.match_number === match.match_number)
+                m.match_number === matchParam.match_number ||
+                m.number === matchParam.match_number ||
+                (m.round === matchParam.round && m.match_number === matchParam.match_number)
             );
         }
         
@@ -680,31 +684,34 @@ function TournamentDetails() {
             console.log('- Длина (если массив):', Array.isArray(fullMatchData.maps_data) ? fullMatchData.maps_data.length : 'N/A');
             console.log('- Содержимое maps_data:', fullMatchData.maps_data);
             
-            // Обогащаем данные матча информацией из game объекта
+            // Обогащаем данные матча информацией из game объекта (если был передан объект)
             const enrichedMatch = {
                 ...fullMatchData,
-                // Добавляем имена команд из game объекта, если их нет в полных данных
+                // Добавляем имена команд из переданного объекта, если их нет в полных данных
                 team1_name: fullMatchData.team1_name || 
-                           (match.participants && match.participants[0] ? match.participants[0].name : 'Команда 1'),
+                           (typeof matchParam === 'object' && matchParam.participants?.[0] 
+                            ? matchParam.participants[0].name : 'Команда 1'),
                 team2_name: fullMatchData.team2_name || 
-                           (match.participants && match.participants[1] ? match.participants[1].name : 'Команда 2')
+                           (typeof matchParam === 'object' && matchParam.participants?.[1] 
+                            ? matchParam.participants[1].name : 'Команда 2')
             };
             
             console.log('🎯 Устанавливаем selectedMatch:', enrichedMatch);
             setSelectedMatch(enrichedMatch);
         } else {
             console.warn('⚠️ Полные данные матча не найдены в массиве matches');
-            console.log('- Объект матча из клика:', match);
-            console.log('- Доступные поля в объекте матча:', Object.keys(match));
+            console.log('- Параметр матча:', matchParam);
+            console.log('- Искомый ID:', matchId);
+            console.log('- Доступные ID в matches:', matches.map(m => m.id));
             
             // Все равно показываем модальное окно с доступными данными
             const fallbackMatch = {
-                id: match.id,
-                team1_name: match.participants?.[0]?.name || 'Команда 1',
-                team2_name: match.participants?.[1]?.name || 'Команда 2',
-                score1: match.participants?.[0]?.score || 0,
-                score2: match.participants?.[1]?.score || 0,
-                winner_team_id: match.winner_id,
+                id: matchId,
+                team1_name: typeof matchParam === 'object' && matchParam.participants?.[0]?.name || 'Команда 1',
+                team2_name: typeof matchParam === 'object' && matchParam.participants?.[1]?.name || 'Команда 2',
+                score1: typeof matchParam === 'object' && matchParam.participants?.[0]?.score || 0,
+                score2: typeof matchParam === 'object' && matchParam.participants?.[1]?.score || 0,
+                winner_team_id: typeof matchParam === 'object' ? matchParam.winner_id : null,
                 maps_data: null // Нет данных карт
             };
             
