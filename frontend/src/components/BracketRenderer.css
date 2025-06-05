@@ -11,7 +11,7 @@
     background-color: #0e0e0e;
     border: 1px solid #ccc;
     user-select: none;
-    cursor: grab;
+    cursor: grab !important;
     touch-action: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -51,6 +51,7 @@
     padding: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     display: flex;
+    pointer-events: auto;
 }
 
 .bracket-controls button {
@@ -60,13 +61,14 @@
     border: 1px solid #ccc;
     background-color: #ffffff;
     border-radius: 50%;
-    cursor: pointer;
+    cursor: pointer !important;
     font-size: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     color: #000000;
     transition: background-color 0.3s, color 0.3s;
+    pointer-events: auto;
 }
 
 .bracket-controls button:hover {
@@ -165,9 +167,10 @@
     width: 200px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
-    cursor: pointer;
+    cursor: inherit;
     display: flex;
     align-items: center;
+    pointer-events: auto;
 }
 
 .custom-seed:hover {
@@ -216,7 +219,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    cursor: pointer !important;
     opacity: 0.5;
     transition: all 0.3s ease;
     color: white;
@@ -224,7 +227,7 @@
     font-size: 16px;
     position: relative;
     margin-left: 5px;
-
+    pointer-events: auto;
 }
 
 .match-container.completed:hover .match-view-block {
@@ -275,7 +278,7 @@
 }
 
 .match-container.completed .custom-seed {
-    cursor: default;
+    cursor: inherit;
 }
 
 .match-container.completed .custom-seed:hover {
