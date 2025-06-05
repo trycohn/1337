@@ -47,8 +47,8 @@ const BracketRenderer = ({
             // Проверяем валидность игр
             const validGames = games.filter(game => {
                 const isValid = game && 
-                    game.id !== undefined && 
-                    Array.isArray(game.participants) && 
+                game.id !== undefined && 
+                Array.isArray(game.participants) && 
                     game.participants.length >= 2;
                 
                 if (!isValid) {
@@ -175,7 +175,7 @@ const BracketRenderer = ({
                 x: touch.clientX - position.x,
                 y: touch.clientY - position.y,
             });
-        }
+            }
         e.preventDefault();
     }, [position]);
 
@@ -190,7 +190,7 @@ const BracketRenderer = ({
     }, [isDragging, startDragPos]);
 
     const handleTouchEnd = useCallback(() => {
-        setIsDragging(false);
+            setIsDragging(false);
     }, []);
 
     // Обработчик изменения масштаба
@@ -217,7 +217,7 @@ const BracketRenderer = ({
     const handleZoomOut = useCallback(() => {
         console.log('handleZoomOut: уменьшаем масштаб');
         const newScale = Math.max(scale - 0.1, 0.5);
-        handleScaleChange(newScale);
+            handleScaleChange(newScale);
     }, [scale, handleScaleChange]);
     
     const handleResetView = useCallback(() => {
@@ -297,20 +297,20 @@ const BracketRenderer = ({
         const wrapper = wrapperRef.current;
         if (!wrapper) {
             console.log('BracketRenderer: wrapperRef не инициализирован');
-            return;
-        }
+                return;
+            }
             
         // Сразу устанавливаем cursor и высоту
         wrapper.style.cursor = 'grab';
         
         // Устанавливаем адаптивную высоту
         const setResponsiveHeight = () => {
-            const windowHeight = window.innerHeight;
-            if (window.innerWidth < 768) {
+                const windowHeight = window.innerHeight;
+                if (window.innerWidth < 768) {
                 wrapper.style.height = `${windowHeight - 100}px`;
-            } else if (window.innerWidth >= 1028) {
+                } else if (window.innerWidth >= 1028) {
                 wrapper.style.height = '800px';
-            } else {
+                } else {
                 wrapper.style.height = '600px';
             }
         };

@@ -684,6 +684,22 @@ function TournamentDetails() {
             console.log('- Длина (если массив):', Array.isArray(fullMatchData.maps_data) ? fullMatchData.maps_data.length : 'N/A');
             console.log('- Содержимое maps_data:', fullMatchData.maps_data);
             
+            // ДОПОЛНИТЕЛЬНАЯ ДЕТАЛЬНАЯ ДИАГНОСТИКА СТРУКТУРЫ КАРТ
+            if (Array.isArray(fullMatchData.maps_data)) {
+                console.log('🗺️ ДЕТАЛЬНАЯ ДИАГНОСТИКА КАРТ:');
+                fullMatchData.maps_data.forEach((mapData, index) => {
+                    console.log(`Карта ${index + 1}:`, mapData);
+                    console.log(`- Все ключи:`, Object.keys(mapData));
+                    console.log(`- Название (map):`, mapData.map);
+                    console.log(`- Название (name):`, mapData.name);
+                    console.log(`- Счет 1 (score1):`, mapData.score1);
+                    console.log(`- Счет 2 (score2):`, mapData.score2);
+                    console.log(`- Счет команды 1 (team1_score):`, mapData.team1_score);
+                    console.log(`- Счет команды 2 (team2_score):`, mapData.team2_score);
+                    console.log(`- Объект карты (если есть):`, mapData.map && typeof mapData.map === 'object' ? mapData.map : 'N/A');
+                });
+            }
+            
             // Обогащаем данные матча информацией из game объекта (если был передан объект)
             const enrichedMatch = {
                 ...fullMatchData,
@@ -1447,6 +1463,8 @@ function TournamentDetails() {
                                             ? JSON.parse(selectedMatch.maps_data) 
                                             : selectedMatch.maps_data;
                                         
+                                        console.log('🗺️ ОБРАБОТКА MAPS_DATA В МОДАЛЬНОМ ОКНЕ:', mapsData);
+                                        
                                         if (Array.isArray(mapsData) && mapsData.length > 0) {
                                             // Подсчет выигранных карт
                                             let team1MapsWon = 0;
@@ -1454,9 +1472,15 @@ function TournamentDetails() {
                                             let totalTeam1Score = 0;
                                             let totalTeam2Score = 0;
 
-                                            mapsData.forEach(map => {
-                                                const score1 = parseInt(map.score1) || 0;
-                                                const score2 = parseInt(map.score2) || 0;
+                                            mapsData.forEach((map, index) => {
+                                                console.log(`🗺️ Обработка карты ${index + 1}:`, map);
+                                                
+                                                // Гибкое извлечение счета - пробуем разные поля
+                                                const score1 = parseInt(map.score1) || parseInt(map.team1_score) || 0;
+                                                const score2 = parseInt(map.score2) || parseInt(map.team2_score) || 0;
+                                                
+                                                console.log(`- Извлеченный счет: ${score1} : ${score2}`);
+                                                
                                                 totalTeam1Score += score1;
                                                 totalTeam2Score += score2;
                                                 
@@ -1500,14 +1524,30 @@ function TournamentDetails() {
                                                         </thead>
                                                         <tbody>
                                                             {mapsData.map((map, index) => {
-                                                                const score1 = parseInt(map.score1) || 0;
-                                                                const score2 = parseInt(map.score2) || 0;
+                                                                // Гибкое извлечение названия карты
+                                                                let mapName = 'Карта ' + (index + 1);
+                                                                
+                                                                if (map.name) {
+                                                                    mapName = map.name;
+                                                                } else if (typeof map.map === 'string') {
+                                                                    mapName = map.map;
+                                                                } else if (typeof map.map === 'object' && map.map?.name) {
+                                                                    mapName = map.map.name;
+                                                                } else if (map.mapName) {
+                                                                    mapName = map.mapName;
+                                                                }
+                                                                
+                                                                // Гибкое извлечение счета
+                                                                const score1 = parseInt(map.score1) || parseInt(map.team1_score) || 0;
+                                                                const score2 = parseInt(map.score2) || parseInt(map.team2_score) || 0;
                                                                 const mapWinner = score1 > score2 ? 'team1' : 
                                                                                  score2 > score1 ? 'team2' : 'draw';
                                                                 
+                                                                console.log(`🗺️ Рендер карты ${index + 1}: название="${mapName}", счет="${score1}:${score2}"`);
+                                                                
                                                                 return (
                                                                     <tr key={index}>
-                                                                        <td>{map.name || `Карта ${index + 1}`}</td>
+                                                                        <td>{mapName}</td>
                                                                         <td className={mapWinner === 'team1' ? 'map-winner' : ''}>
                                                                             {score1}
                                                                         </td>
@@ -1534,8 +1574,18 @@ function TournamentDetails() {
                                             );
                                         }
                                     } catch (error) {
-                                        console.error('Ошибка обработки данных карт:', error);
-                                        return null;
+                                        console.error('❌ Ошибка обработки данных карт:', error);
+                                        console.log('Исходные данные maps_data:', selectedMatch.maps_data);
+                                        return (
+                                            <div className="maps-results">
+                                                <h4>📋 Результаты по картам</h4>
+                                                <p>⚠️ Ошибка обработки данных карт</p>
+                                                <details>
+                                                    <summary>Показать техническую информацию</summary>
+                                                    <pre>{JSON.stringify(selectedMatch.maps_data, null, 2)}</pre>
+                                                </details>
+                                            </div>
+                                        );
                                     }
                                     return null;
                                 })()}
