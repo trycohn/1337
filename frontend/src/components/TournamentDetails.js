@@ -627,10 +627,30 @@ function TournamentDetails() {
     const handleMatchClick = useCallback((match) => {
         console.log('🔍 Клик по матчу для просмотра деталей:', match);
         
+        // Специальная диагностика для турнира 54
+        if (tournament?.id === 54 || tournament?.id === '54') {
+            console.log('🎯 СПЕЦИАЛЬНАЯ ДИАГНОСТИКА ТУРНИРА 54:');
+            console.log('- ID турнира:', tournament.id);
+            console.log('- Игра турнира:', tournament.game);
+            console.log('- Все матчи:', matches.length, 'шт.');
+            console.log('- Матчи с maps_data:', matches.filter(m => m.maps_data).length, 'шт.');
+            matches.filter(m => m.maps_data).forEach((m, i) => {
+                console.log(`  Матч ${i + 1} (ID ${m.id}): maps_data =`, m.maps_data);
+            });
+        }
+        
         // Ищем полные данные матча в исходном массиве matches
         const fullMatchData = matches.find(m => m.id === match.id);
         
         if (fullMatchData) {
+            // Дополнительная диагностика для любого матча
+            console.log('📊 ДИАГНОСТИКА ДАННЫХ МАТЧА:');
+            console.log('- ID матча:', fullMatchData.id);
+            console.log('- maps_data:', fullMatchData.maps_data);
+            console.log('- Тип maps_data:', typeof fullMatchData.maps_data);
+            console.log('- Длина (если строка):', typeof fullMatchData.maps_data === 'string' ? fullMatchData.maps_data.length : 'N/A');
+            console.log('- Содержимое maps_data:', fullMatchData.maps_data);
+            
             // Обогащаем данные матча информацией из game объекта
             const enrichedMatch = {
                 ...fullMatchData,
@@ -638,24 +658,16 @@ function TournamentDetails() {
                 team1_name: fullMatchData.team1_name || 
                            (match.participants && match.participants[0] ? match.participants[0].name : 'Команда 1'),
                 team2_name: fullMatchData.team2_name || 
-                           (match.participants && match.participants[1] ? match.participants[1].name : 'Команда 2'),
-                // Добавляем счет из game объекта, если его нет в полных данных
-                score1: fullMatchData.score1 !== undefined ? fullMatchData.score1 : 
-                       (match.participants && match.participants[0] ? match.participants[0].score : 0),
-                score2: fullMatchData.score2 !== undefined ? fullMatchData.score2 : 
-                       (match.participants && match.participants[1] ? match.participants[1].score : 0),
-                // Добавляем winner_team_id из game объекта
-                winner_team_id: fullMatchData.winner_team_id || match.winner_id
+                           (match.participants && match.participants[1] ? match.participants[1].name : 'Команда 2')
             };
             
-            console.log('📊 Полные данные матча для модального окна:', enrichedMatch);
+            console.log('🎯 Устанавливаем selectedMatch:', enrichedMatch);
             setSelectedMatch(enrichedMatch);
         } else {
-            console.warn('⚠️ Не удалось найти полные данные матча в массиве matches');
-            // В крайнем случае используем данные из game объекта
+            console.warn('⚠️ Полные данные матча не найдены в массиве matches');
             setSelectedMatch(match);
         }
-    }, [matches]);
+    }, [matches, tournament]);
 
     const handleRemoveParticipant = useCallback(async (participantId) => {
         if (!userPermissions.canEdit || !window.confirm('Удалить участника?')) return;
@@ -1309,10 +1321,24 @@ function TournamentDetails() {
                                     <div style={{ background: '#f0f0f0', padding: '10px', margin: '10px', fontSize: '12px', fontFamily: 'monospace' }}>
                                         <strong>🔍 DEBUG:</strong>
                                         <br />selectedMatch.maps_data: {JSON.stringify(selectedMatch.maps_data, null, 2)}
-                                        <br />Type: {typeof selectedMatch.maps_data}
-                                        <br />Has maps_data: {!!selectedMatch.maps_data}
-                                        <br />Is string: {typeof selectedMatch.maps_data === 'string'}
-                                        <br />Is array: {Array.isArray(selectedMatch.maps_data)}
+                                        <br />тип maps_data: {typeof selectedMatch.maps_data}
+                                        <br />tournament.game: {tournament?.game}
+                                        <br />tournament.id: {tournament?.id}
+                                        <br />длина maps_data: {selectedMatch.maps_data ? (typeof selectedMatch.maps_data === 'string' ? selectedMatch.maps_data.length : 'не строка') : 'null/undefined'}
+                                        {selectedMatch.maps_data && (
+                                            <>
+                                                <br />попытка парсинга: {(() => {
+                                                    try {
+                                                        const parsed = typeof selectedMatch.maps_data === 'string' 
+                                                            ? JSON.parse(selectedMatch.maps_data) 
+                                                            : selectedMatch.maps_data;
+                                                        return `успешно, ${Array.isArray(parsed) ? `массив из ${parsed.length} элементов` : `объект: ${typeof parsed}`}`;
+                                                    } catch (e) {
+                                                        return `ошибка: ${e.message}`;
+                                                    }
+                                                })()}
+                                            </>
+                                        )}
                                     </div>
                                 )}
                                 
