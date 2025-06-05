@@ -1148,54 +1148,144 @@ function TournamentDetails() {
                         <div className="tab-content-tournamentdetails">
                             <h3>📊 Результаты матчей</h3>
                             
-                            {matches && matches.filter(m => m.status === 'completed').length > 0 ? (
-                                <div className="results-compact-list">
-                                    {matches
-                                        .filter(match => match.status === 'completed')
-                                        .sort((a, b) => b.round - a.round || new Date(b.completed_at) - new Date(a.completed_at))
-                                        .map(match => (
-                                            <div key={match.id} className="result-compact-item">
-                                                <div className="result-compact-content">
-                                                    <div className="result-compact-round">
-                                                        Раунд {match.round}
-                                                        {match.is_third_place_match && (
-                                                            <span className="third-place-indicator">🥉 Матч за 3-е место</span>
-                                                        )}
-                                                    </div>
-                                                    <div className="result-compact-match">
-                                                        <button 
-                                                            className={`team-name-btn ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}
-                                                            onClick={() => handleTeamClick(match.team1_name)}
-                                                        >
-                                                            {match.team1_name || 'Команда 1'}
-                                                        </button>
-                                                        <span className="match-score">
-                                                            {match.team1_score || 0} : {match.team2_score || 0}
-                                                        </span>
-                                                        <button 
-                                                            className={`team-name-btn ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}
-                                                            onClick={() => handleTeamClick(match.team2_name)}
-                                                        >
-                                                            {match.team2_name || 'Команда 2'}
-                                                        </button>
-                                                    </div>
-                                                    <button 
-                                                        className="details-btn"
-                                                        onClick={() => handleMatchClick(match)}
-                                                    >
-                                                        Подробнее
-                                                    </button>
+                            {(() => {
+                                // Расширенная логика определения завершенных матчей
+                                const completedMatches = matches.filter(match => 
+                                    match.status === 'completed' || 
+                                    match.status === 'DONE' || 
+                                    match.state === 'DONE' || 
+                                    match.winner_team_id || 
+                                    match.winner_id ||
+                                    (match.score1 !== undefined && match.score2 !== undefined) ||
+                                    (match.team1_score !== undefined && match.team2_score !== undefined)
+                                );
+
+                                console.log('🎯 Результаты: найдено завершенных матчей:', completedMatches.length, 'из', matches.length);
+                                
+                                if (completedMatches.length > 0) {
+                                    return (
+                                        <div className="results-compact-list">
+                                            {completedMatches
+                                                .sort((a, b) => {
+                                                    // Сортируем по раунду (по убыванию) и времени завершения
+                                                    const roundA = Number(a.round) || 0;
+                                                    const roundB = Number(b.round) || 0;
+                                                    if (roundB !== roundA) return roundB - roundA;
+                                                    
+                                                    const timeA = new Date(a.completed_at || a.updated_at || 0);
+                                                    const timeB = new Date(b.completed_at || b.updated_at || 0);
+                                                    return timeB - timeA;
+                                                })
+                                                .map(match => {
+                                                    // Извлекаем счет из разных возможных полей
+                                                    const score1 = match.score1 !== undefined ? Number(match.score1) : 
+                                                                   (match.team1_score !== undefined ? Number(match.team1_score) : 0);
+                                                    const score2 = match.score2 !== undefined ? Number(match.score2) : 
+                                                                   (match.team2_score !== undefined ? Number(match.team2_score) : 0);
+                                                    
+                                                    // Определяем победителя
+                                                    const winnerId = match.winner_team_id || match.winner_id;
+                                                    const team1IsWinner = winnerId === match.team1_id;
+                                                    const team2IsWinner = winnerId === match.team2_id;
+                                                    
+                                                    // Получаем имена команд (для микс турниров может потребоваться поиск по ID)
+                                                    let team1Name = match.team1_name || match.participant1_name || 'Команда 1';
+                                                    let team2Name = match.team2_name || match.participant2_name || 'Команда 2';
+                                                    
+                                                    // Если есть ID команд и массив команд, ищем имена
+                                                    if (match.team1_id && mixedTeams && mixedTeams.length > 0) {
+                                                        const team1 = mixedTeams.find(team => team.id === match.team1_id);
+                                                        if (team1) team1Name = team1.name;
+                                                    }
+                                                    if (match.team2_id && mixedTeams && mixedTeams.length > 0) {
+                                                        const team2 = mixedTeams.find(team => team.id === match.team2_id);
+                                                        if (team2) team2Name = team2.name;
+                                                    }
+                                                    
+                                                    return (
+                                                        <div key={match.id} className="result-compact-item">
+                                                            <div className="result-compact-content">
+                                                                <div className="result-compact-round">
+                                                                    {match.round !== undefined ? (
+                                                                        match.round === -1 ? 'Предварительный' : `Раунд ${match.round}`
+                                                                    ) : (
+                                                                        `Матч ${match.match_number || match.number || match.id}`
+                                                                    )}
+                                                                    {match.is_third_place_match && (
+                                                                        <span className="third-place-indicator">🥉 Матч за 3-е место</span>
+                                                                    )}
+                                                                    {match.bracket_type === 'grand_final' && (
+                                                                        <span className="grand-final-indicator">👑 Гранд-финал</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="result-compact-match">
+                                                                    <button 
+                                                                        className={`team-name-btn ${team1IsWinner ? 'winner' : ''}`}
+                                                                        onClick={() => handleTeamClick(team1Name)}
+                                                                        title={team1IsWinner ? 'Победитель' : ''}
+                                                                    >
+                                                                        {team1IsWinner && '🏆 '}{team1Name}
+                                                                    </button>
+                                                                    <span className="match-score">
+                                                                        <span className={team1IsWinner ? 'winner-score' : ''}>{score1}</span>
+                                                                        <span className="score-separator">:</span>
+                                                                        <span className={team2IsWinner ? 'winner-score' : ''}>{score2}</span>
+                                                                    </span>
+                                                                    <button 
+                                                                        className={`team-name-btn ${team2IsWinner ? 'winner' : ''}`}
+                                                                        onClick={() => handleTeamClick(team2Name)}
+                                                                        title={team2IsWinner ? 'Победитель' : ''}
+                                                                    >
+                                                                        {team2IsWinner && '🏆 '}{team2Name}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="result-compact-actions">
+                                                                    <button 
+                                                                        className="details-btn"
+                                                                        onClick={() => handleMatchClick(match)}
+                                                                        title="Показать детали матча"
+                                                                    >
+                                                                        🔍 Подробнее
+                                                                    </button>
+                                                                    {match.completed_at && (
+                                                                        <span className="match-completed-time">
+                                                                            {new Date(match.completed_at).toLocaleString('ru-RU')}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            }
+                                        </div>
+                                    );
+                                } else {
+                                    return (
+                                        <div className="empty-state">
+                                            <p>📊 Результатов пока нет</p>
+                                            <p>Результаты появятся после завершения матчей</p>
+                                            {matches && matches.length > 0 && (
+                                                <div className="matches-debug-info">
+                                                    <details>
+                                                        <summary>🔍 Диагностика матчей ({matches.length} всего)</summary>
+                                                        <ul>
+                                                            {matches.slice(0, 5).map(match => (
+                                                                <li key={match.id}>
+                                                                    Матч {match.id}: статус="{match.status}", state="{match.state}", 
+                                                                    winner_id={match.winner_team_id || match.winner_id || 'нет'}, 
+                                                                    счет={match.score1 || match.team1_score || 0}:{match.score2 || match.team2_score || 0}
+                                                                </li>
+                                                            ))}
+                                                            {matches.length > 5 && <li>... и еще {matches.length - 5} матчей</li>}
+                                                        </ul>
+                                                    </details>
                                                 </div>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
-                            ) : (
-                                <div className="empty-state">
-                                    <p>📊 Результатов пока нет</p>
-                                    <p>Результаты появятся после завершения матчей</p>
-                                </div>
-                            )}
+                                            )}
+                                        </div>
+                                    );
+                                }
+                            })()}
 
                             {/* ПОБЕДИТЕЛИ */}
                             {tournament.status === 'completed' && tournament.winner_id && (

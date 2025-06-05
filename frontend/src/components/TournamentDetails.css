@@ -3740,3 +3740,156 @@ a.participant-name:hover {
         font-size: 1.3em;
     }
 }
+
+.result-compact-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    gap: 10px;
+}
+
+.match-completed-time {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+.grand-final-indicator {
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+}
+
+.result-compact-match .winner-score {
+    font-weight: bold;
+    color: #27ae60;
+}
+
+.result-compact-match .score-separator {
+    margin: 0 4px;
+    color: #666;
+}
+
+.matches-debug-info {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.matches-debug-info details {
+    cursor: pointer;
+}
+
+.matches-debug-info summary {
+    font-weight: 500;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.matches-debug-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.matches-debug-info li {
+    background: white;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #495057;
+}
+
+.team-name-btn.winner {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.3);
+}
+
+.team-name-btn.winner:hover {
+    background: linear-gradient(135deg, #229954, #27ae60);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(39, 174, 96, 0.4);
+}
+
+.details-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.details-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #212529;
+}
+
+@media (max-width: 768px) {
+    .result-compact-actions {
+        flex-direction: column;
+        gap: 6px;
+        align-items: stretch;
+    }
+    
+    .match-completed-time {
+        text-align: center;
+        font-size: 11px;
+    }
+    
+    .grand-final-indicator {
+        font-size: 9px;
+        padding: 1px 6px;
+    }
+    
+    .details-btn {
+        align-self: center;
+        min-width: 120px;
+        justify-content: center;
+    }
+    
+    .matches-debug-info {
+        padding: 10px;
+    }
+    
+    .matches-debug-info li {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .result-compact-actions {
+        gap: 4px;
+    }
+    
+    .match-completed-time {
+        font-size: 10px;
+    }
+    
+    .details-btn {
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+}
