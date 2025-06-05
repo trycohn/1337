@@ -400,7 +400,12 @@ function TournamentDetails() {
                 matches: false 
             }));
         }
-    }, [id]);
+    }, [id]); // ТОЛЬКО id в зависимостях
+
+    // СТАБИЛЬНАЯ ФУНКЦИЯ ПЕРЕЗАГРУЗКИ ДЛЯ ПРЕДОТВРАЩЕНИЯ ЦИКЛОВ
+    const reloadTournamentData = useCallback(() => {
+        loadTournamentData();
+    }, [loadTournamentData]);
 
     // 🎯 WEBSOCKET ПОДКЛЮЧЕНИЕ
     const setupWebSocket = useCallback(() => {
@@ -488,7 +493,7 @@ function TournamentDetails() {
         };
     }, [setupWebSocket]);
 
-    // 🎯 ОБРАБОТЧИКИ ДЕЙСТВИЙ
+    // 🎯 ОБРАБОТЧИКИ ДЕЙСТВИЙ (БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ)
     const handleParticipate = useCallback(async () => {
         if (!user || !tournament) return;
 
@@ -500,13 +505,13 @@ function TournamentDetails() {
             
             setMessage('✅ Вы успешно зарегистрировались в турнире!');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка участия:', error);
             setMessage(`❌ Ошибка регистрации: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [user, tournament, id, loadTournamentData]);
+    }, [user, tournament, id, reloadTournamentData]);
 
     // 🎯 МЕМОИЗИРОВАННЫЕ ДАННЫЕ ДЛЯ BRACKETRENDERER
     const bracketGames = useMemo(() => {
@@ -553,13 +558,13 @@ function TournamentDetails() {
             
             setMessage('✅ Вы покинули турнир');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка выхода:', error);
             setMessage(`❌ Ошибка выхода: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [user, tournament, id, loadTournamentData]);
+    }, [user, tournament, id, reloadTournamentData]);
 
     const handleGenerateBracket = useCallback(async () => {
         if (!userPermissions.canEdit) return;
@@ -572,13 +577,13 @@ function TournamentDetails() {
             
             setMessage('✅ Сетка турнира сгенерирована!');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка генерации сетки:', error);
             setMessage(`❌ Ошибка генерации: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [userPermissions.canEdit, id, loadTournamentData]);
+    }, [userPermissions.canEdit, id, reloadTournamentData]);
 
     const handleStartTournament = useCallback(async () => {
         if (!userPermissions.canEdit) return;
@@ -591,13 +596,13 @@ function TournamentDetails() {
             
             setMessage('✅ Турнир запущен!');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка запуска турнира:', error);
             setMessage(`❌ Ошибка запуска: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [userPermissions.canEdit, id, loadTournamentData]);
+    }, [userPermissions.canEdit, id, reloadTournamentData]);
 
     const handleEndTournament = useCallback(async () => {
         if (!userPermissions.canEdit || !window.confirm('Вы уверены, что хотите завершить турнир?')) return;
@@ -610,13 +615,13 @@ function TournamentDetails() {
             
             setMessage('✅ Турнир завершен!');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка завершения турнира:', error);
             setMessage(`❌ Ошибка завершения: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [userPermissions.canEdit, id, loadTournamentData]);
+    }, [userPermissions.canEdit, id, reloadTournamentData]);
 
     const handleClearResults = useCallback(async () => {
         if (!userPermissions.canEdit || !window.confirm('Вы уверены? Все результаты будут удалены!')) return;
@@ -629,13 +634,13 @@ function TournamentDetails() {
             
             setMessage('✅ Результаты очищены!');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка очистки результатов:', error);
             setMessage(`❌ Ошибка очистки: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [userPermissions.canEdit, id, loadTournamentData]);
+    }, [userPermissions.canEdit, id, reloadTournamentData]);
 
     const handleTeamClick = useCallback((teamName) => {
         console.log('Клик по команде:', teamName);
@@ -765,24 +770,24 @@ function TournamentDetails() {
             
             setMessage('✅ Участник удален');
             setTimeout(() => setMessage(''), 3000);
-            loadTournamentData();
+            reloadTournamentData(); // Используем стабильную функцию
         } catch (error) {
             console.error('❌ Ошибка удаления участника:', error);
             setMessage(`❌ Ошибка: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [userPermissions.canEdit, id, loadTournamentData]);
+    }, [userPermissions.canEdit, id, reloadTournamentData]);
 
     const handleTeamsGenerated = useCallback((teams) => {
         console.log('✅ Команды сгенерированы:', teams);
         setMixedTeams(teams);
-        loadTournamentData();
-    }, [loadTournamentData]);
+        reloadTournamentData(); // Используем стабильную функцию
+    }, [reloadTournamentData]);
 
     const handleTeamsUpdated = useCallback(() => {
         console.log('✅ Команды обновлены');
-        loadTournamentData();
-    }, [loadTournamentData]);
+        reloadTournamentData(); // Используем стабильную функцию
+    }, [reloadTournamentData]);
 
     // 🎯 НАВИГАЦИЯ ПО ВКЛАДКАМ
     const tabs = useMemo(() => [

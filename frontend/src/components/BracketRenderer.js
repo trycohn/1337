@@ -236,202 +236,211 @@ const BracketRenderer = ({
         window.open(url, '_blank');
     };
 
-    // ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ИНИЦИАЛИЗАЦИЯ ПЕРЕТАСКИВАНИЯ
+    // БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ DRAG-AND-DROP С ПРОВЕРКАМИ
     useEffect(() => {
-        console.log('BracketRenderer: 🚀 Инициализация drag-and-drop системы');
+        console.log('BracketRenderer: 🚀 Запуск инициализации drag-and-drop');
         
-        const wrapper = wrapperRef.current;
-        if (!wrapper) {
-            console.error('BracketRenderer: ❌ wrapperRef не инициализирован');
-            return;
-        }
-            
-        console.log('BracketRenderer: ✅ DOM элемент найден:', wrapper);
-        
-        // Устанавливаем базовые стили
-        wrapper.style.cursor = 'grab';
-        wrapper.style.userSelect = 'none'; // Запрещаем выделение текста
-        wrapper.style.touchAction = 'none'; // Запрещаем браузерные touch действия
-        
-        // Устанавливаем адаптивную высоту
-        const setResponsiveHeight = () => {
-            const windowHeight = window.innerHeight;
-            if (window.innerWidth < 768) {
-                wrapper.style.height = `${windowHeight - 100}px`;
-            } else if (window.innerWidth >= 1028) {
-                wrapper.style.height = '800px';
-            } else {
-                wrapper.style.height = '600px';
+        // Функция безопасной инициализации с повторными попытками
+        const initializeDragAndDrop = () => {
+            const wrapper = wrapperRef.current;
+            if (!wrapper) {
+                console.warn('BracketRenderer: ⚠️ wrapperRef еще не готов, попробуем через 100ms');
+                return false;
             }
-        };
-        setResponsiveHeight();
-        
-        console.log('BracketRenderer: 📏 Адаптивная высота установлена');
-
-        // СОЗДАЕМ ОБРАБОТЧИКИ СОБЫТИЙ С ИСПРАВЛЕННОЙ ЛОГИКОЙ
-        const mouseDownHandler = (e) => {
-            console.log('BracketRenderer: 🖱️ mousedown событие:', e.target);
-            
-            // Только левая кнопка мыши
-            if (e.button !== 0) {
-                console.log('BracketRenderer: ⚠️ Не левая кнопка мыши, пропускаем');
-                return;
-            }
-            
-            // ИСПРАВЛЕННАЯ ЛОГИКА ИСКЛЮЧЕНИЙ:
-            // Разрешаем перетаскивание везде, кроме кнопок управления в .bracket-controls
-            const isControlButton = e.target.closest('.bracket-controls button');
-            const isMatchViewBlock = e.target.closest('.match-view-block');
-            
-            if (isControlButton || isMatchViewBlock) {
-                console.log('BracketRenderer: ⚠️ Клик по кнопке управления или просмотра, пропускаем перетаскивание');
-                return;
-            }
-            
-            console.log('BracketRenderer: ✅ mousedown разрешен, начинаем перетаскивание');
-            
-            // Устанавливаем состояние перетаскивания
-            isDraggingRef.current = true;
-            setIsDragging(true);
-            
-            const newStartPos = {
-                x: e.clientX - positionRef.current.x,
-                y: e.clientY - positionRef.current.y,
-            };
-            startDragPosRef.current = newStartPos;
-            setStartDragPos(newStartPos);
-            
-            wrapper.style.cursor = 'grabbing';
-            
-            console.log('BracketRenderer: 🎯 Перетаскивание активировано:', {
-                clientX: e.clientX,
-                clientY: e.clientY,
-                currentPosition: positionRef.current,
-                startPos: newStartPos
-            });
-            
-            e.preventDefault();
-            e.stopPropagation();
-        };
-
-        const mouseMoveHandler = (e) => {
-            if (!isDraggingRef.current) {
-                return;
-            }
-            
-            const newPosition = {
-                x: e.clientX - startDragPosRef.current.x,
-                y: e.clientY - startDragPosRef.current.y,
-            };
-            
-            // Синхронно обновляем и ref и state
-            positionRef.current = newPosition;
-            setPosition(newPosition);
-            
-            console.log('BracketRenderer: 🔄 Перетаскивание:', newPosition);
-            e.preventDefault();
-        };
-
-        const mouseUpHandler = (e) => {
-            if (isDraggingRef.current) {
-                console.log('BracketRenderer: 🎯 Завершение перетаскивания');
-                isDraggingRef.current = false;
-                setIsDragging(false);
-                wrapper.style.cursor = 'grab';
-            }
-        };
-
-        const wheelHandler = (e) => {
-            console.log('BracketRenderer: 🔄 Масштабирование колесом');
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            const newScale = Math.max(0.5, Math.min(3, scaleRef.current + delta));
-            scaleRef.current = newScale;
-            setScale(newScale);
-            console.log('BracketRenderer: 📏 Новый масштаб:', newScale);
-        };
-
-        // TOUCH СОБЫТИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
-        const touchStartHandler = (e) => {
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                console.log('BracketRenderer: 📱 Touch start');
                 
+            console.log('BracketRenderer: ✅ DOM элемент найден, инициализируем drag-and-drop');
+            
+            // Устанавливаем базовые стили
+            wrapper.style.cursor = 'grab';
+            wrapper.style.userSelect = 'none';
+            wrapper.style.touchAction = 'none';
+            
+            // Устанавливаем адаптивную высоту
+            const setResponsiveHeight = () => {
+                const windowHeight = window.innerHeight;
+                if (window.innerWidth < 768) {
+                    wrapper.style.height = `${windowHeight - 100}px`;
+                } else if (window.innerWidth >= 1028) {
+                    wrapper.style.height = '800px';
+                } else {
+                    wrapper.style.height = '600px';
+                }
+            };
+            setResponsiveHeight();
+            
+            console.log('BracketRenderer: 📏 Адаптивная высота установлена');
+
+            // СОЗДАЕМ ОБРАБОТЧИКИ СОБЫТИЙ С ИСПРАВЛЕННОЙ ЛОГИКОЙ
+            const mouseDownHandler = (e) => {
+                console.log('BracketRenderer: 🖱️ mousedown событие');
+                
+                // Только левая кнопка мыши
+                if (e.button !== 0) return;
+                
+                // ИСПРАВЛЕННАЯ ЛОГИКА ИСКЛЮЧЕНИЙ:
+                const isControlButton = e.target.closest('.bracket-controls button');
+                const isMatchViewBlock = e.target.closest('.match-view-block');
+                
+                if (isControlButton || isMatchViewBlock) {
+                    console.log('BracketRenderer: ⚠️ Клик по кнопке управления, пропускаем перетаскивание');
+                    return;
+                }
+                
+                console.log('BracketRenderer: ✅ mousedown разрешен, начинаем перетаскивание');
+                
+                // Устанавливаем состояние перетаскивания
                 isDraggingRef.current = true;
                 setIsDragging(true);
                 
                 const newStartPos = {
-                    x: touch.clientX - positionRef.current.x,
-                    y: touch.clientY - positionRef.current.y,
+                    x: e.clientX - positionRef.current.x,
+                    y: e.clientY - positionRef.current.y,
                 };
                 startDragPosRef.current = newStartPos;
                 setStartDragPos(newStartPos);
                 
-                console.log('BracketRenderer: 📱 Touch перетаскивание активировано');
-            }
-            e.preventDefault();
-        };
-
-        const touchMoveHandler = (e) => {
-            if (!isDraggingRef.current || e.touches.length !== 1) return;
-            
-            const touch = e.touches[0];
-            const newPosition = {
-                x: touch.clientX - startDragPosRef.current.x,
-                y: touch.clientY - startDragPosRef.current.y,
+                wrapper.style.cursor = 'grabbing';
+                
+                console.log('BracketRenderer: 🎯 Перетаскивание активировано:', {
+                    clientX: e.clientX,
+                    clientY: e.clientY,
+                    currentPosition: positionRef.current,
+                    startPos: newStartPos
+                });
+                
+                e.preventDefault();
+                e.stopPropagation();
             };
-            
-            positionRef.current = newPosition;
-            setPosition(newPosition);
-            
-            console.log('BracketRenderer: 📱 Touch move:', newPosition);
-            e.preventDefault();
-        };
 
-        const touchEndHandler = () => {
-            if (isDraggingRef.current) {
-                console.log('BracketRenderer: 📱 Touch end');
-                isDraggingRef.current = false;
-                setIsDragging(false);
-            }
-        };
+            const mouseMoveHandler = (e) => {
+                if (!isDraggingRef.current) return;
+                
+                const newPosition = {
+                    x: e.clientX - startDragPosRef.current.x,
+                    y: e.clientY - startDragPosRef.current.y,
+                };
+                
+                // Синхронно обновляем и ref и state
+                positionRef.current = newPosition;
+                setPosition(newPosition);
+                
+                console.log('BracketRenderer: 🔄 Перетаскивание:', newPosition);
+                e.preventDefault();
+            };
 
-        // ПРИВЯЗЫВАЕМ ВСЕ ОБРАБОТЧИКИ
-        wrapper.addEventListener('mousedown', mouseDownHandler, { passive: false });
-        document.addEventListener('mousemove', mouseMoveHandler, { passive: false });
-        document.addEventListener('mouseup', mouseUpHandler, { passive: false });
-        wrapper.addEventListener('wheel', wheelHandler, { passive: false });
-        wrapper.addEventListener('touchstart', touchStartHandler, { passive: false });
-        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
-        document.addEventListener('touchend', touchEndHandler, { passive: false });
-        window.addEventListener('resize', setResponsiveHeight);
-        
-        console.log('BracketRenderer: ✅ Все обработчики событий успешно привязаны');
-        console.log('BracketRenderer: 🎯 Система перетаскивания полностью готова к работе');
-        
-        // Тестируем готовность
-        console.log('BracketRenderer: 🧪 Тест системы:', {
-            wrapperElement: !!wrapper,
-            hasMouseDown: wrapper.onmousedown !== undefined,
-            cursor: wrapper.style.cursor,
-            userSelect: wrapper.style.userSelect,
-            touchAction: wrapper.style.touchAction
-        });
-        
-        return () => {
-            console.log('BracketRenderer: 🧹 Очистка обработчиков событий');
-            if (wrapper) {
-                wrapper.removeEventListener('mousedown', mouseDownHandler);
-                wrapper.removeEventListener('wheel', wheelHandler);
-                wrapper.removeEventListener('touchstart', touchStartHandler);
-            }
-            document.removeEventListener('mousemove', mouseMoveHandler);
-            document.removeEventListener('mouseup', mouseUpHandler);
-            document.removeEventListener('touchmove', touchMoveHandler);
-            document.removeEventListener('touchend', touchEndHandler);
-            window.removeEventListener('resize', setResponsiveHeight);
+            const mouseUpHandler = (e) => {
+                if (isDraggingRef.current) {
+                    console.log('BracketRenderer: 🎯 Завершение перетаскивания');
+                    isDraggingRef.current = false;
+                    setIsDragging(false);
+                    wrapper.style.cursor = 'grab';
+                }
+            };
+
+            const wheelHandler = (e) => {
+                console.log('BracketRenderer: 🔄 Масштабирование колесом');
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                const newScale = Math.max(0.5, Math.min(3, scaleRef.current + delta));
+                scaleRef.current = newScale;
+                setScale(newScale);
+                console.log('BracketRenderer: 📏 Новый масштаб:', newScale);
+            };
+
+            // TOUCH СОБЫТИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
+            const touchStartHandler = (e) => {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    console.log('BracketRenderer: 📱 Touch start');
+                    
+                    isDraggingRef.current = true;
+                    setIsDragging(true);
+                    
+                    const newStartPos = {
+                        x: touch.clientX - positionRef.current.x,
+                        y: touch.clientY - positionRef.current.y,
+                    };
+                    startDragPosRef.current = newStartPos;
+                    setStartDragPos(newStartPos);
+                    
+                    console.log('BracketRenderer: 📱 Touch перетаскивание активировано');
+                }
+                e.preventDefault();
+            };
+
+            const touchMoveHandler = (e) => {
+                if (!isDraggingRef.current || e.touches.length !== 1) return;
+                
+                const touch = e.touches[0];
+                const newPosition = {
+                    x: touch.clientX - startDragPosRef.current.x,
+                    y: touch.clientY - startDragPosRef.current.y,
+                };
+                
+                positionRef.current = newPosition;
+                setPosition(newPosition);
+                
+                console.log('BracketRenderer: 📱 Touch move:', newPosition);
+                e.preventDefault();
+            };
+
+            const touchEndHandler = () => {
+                if (isDraggingRef.current) {
+                    console.log('BracketRenderer: 📱 Touch end');
+                    isDraggingRef.current = false;
+                    setIsDragging(false);
+                }
+            };
+
+            // ПРИВЯЗЫВАЕМ ВСЕ ОБРАБОТЧИКИ
+            wrapper.addEventListener('mousedown', mouseDownHandler, { passive: false });
+            document.addEventListener('mousemove', mouseMoveHandler, { passive: false });
+            document.addEventListener('mouseup', mouseUpHandler, { passive: false });
+            wrapper.addEventListener('wheel', wheelHandler, { passive: false });
+            wrapper.addEventListener('touchstart', touchStartHandler, { passive: false });
+            document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+            document.addEventListener('touchend', touchEndHandler, { passive: false });
+            window.addEventListener('resize', setResponsiveHeight);
+            
+            console.log('BracketRenderer: ✅ Все обработчики событий успешно привязаны');
+            console.log('BracketRenderer: 🎯 Система перетаскивания полностью готова к работе');
+            
+            // Возвращаем функцию очистки
+            return () => {
+                console.log('BracketRenderer: 🧹 Очистка обработчиков событий');
+                if (wrapper) {
+                    wrapper.removeEventListener('mousedown', mouseDownHandler);
+                    wrapper.removeEventListener('wheel', wheelHandler);
+                    wrapper.removeEventListener('touchstart', touchStartHandler);
+                }
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                document.removeEventListener('touchmove', touchMoveHandler);
+                document.removeEventListener('touchend', touchEndHandler);
+                window.removeEventListener('resize', setResponsiveHeight);
+            };
         };
-    }, []); // БЕЗ ЗАВИСИМОСТЕЙ для стабильности
+        
+        // Пробуем инициализацию сразу
+        const cleanup = initializeDragAndDrop();
+        
+        // Если не удалось, пробуем через small delay
+        if (!cleanup) {
+            console.log('BracketRenderer: ⏱️ Первая попытка неудачна, повторяем через 100ms');
+            const timeoutId = setTimeout(() => {
+                const delayedCleanup = initializeDragAndDrop();
+                if (!delayedCleanup) {
+                    console.error('BracketRenderer: ❌ Не удалось инициализировать drag-and-drop после повторной попытки');
+                }
+            }, 100);
+            
+            return () => {
+                clearTimeout(timeoutId);
+            };
+        }
+        
+        return cleanup;
+    }, []); // БЕЗ ЗАВИСИМОСТЕЙ для предотвращения циклов
 
     // Обновление сгруппированных матчей при изменении games
     useEffect(() => {
@@ -455,7 +464,7 @@ const BracketRenderer = ({
             console.error('BracketRenderer: ошибка при обновлении группировки:', error);
             setDataError('Ошибка при обработке данных матчей');
         }
-    }, [groupMatchesByRoundAndBracket]);
+    }, [groupMatchesByRoundAndBracket]); // Контролируемая зависимость
 
     // Защитная проверка входных данных
     useEffect(() => {
@@ -487,7 +496,7 @@ const BracketRenderer = ({
             console.error('BracketRenderer: ошибка при валидации входных данных', error);
             setDataError('Произошла ошибка при обработке данных турнирной сетки.');
         }
-    }, [games]);
+    }, [games]); // Только games в зависимостях
 
     // Рендеринг ошибки данных, если она есть
     if (dataError) {
