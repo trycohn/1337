@@ -1500,13 +1500,13 @@ function TournamentDetails() {
                                                         <div className="maps-stats">
                                                             <div className="stat-item">
                                                                 <span className="stat-label">Карт выиграно:</span>
-                                                                <span className="stat-value">
+                                                                <span className="stat-value-maps">
                                                                     {team1MapsWon} : {team2MapsWon}
                                                                 </span>
                                                             </div>
                                                             <div className="stat-item">
                                                                 <span className="stat-label">Общий счет:</span>
-                                                                <span className="stat-value">
+                                                                <span className="stat-value-maps">
                                                                     {totalTeam1Score} : {totalTeam2Score}
                                                                 </span>
                                                             </div>

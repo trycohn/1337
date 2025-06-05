@@ -278,6 +278,10 @@
     background-color: #2a2a2a;
 }
 
+.stat-value-maps {
+    color: #000000;
+}
+
 .error {
     color: #ff6b6b;
     margin-top: 10px;
@@ -2802,7 +2806,6 @@ a.participant-name:hover {
 /* Модальное окно состава команды */
 .team-composition-modal .modal-content {
     max-width: 600px;
-    width: 90%;
     max-height: 80vh;
     overflow-y: auto;
 }
@@ -3595,7 +3598,6 @@ a.participant-name:hover {
 .maps-results h4 {
     margin: 0;
     padding: 15px 20px;
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     font-size: 1.1em;
 }
