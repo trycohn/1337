@@ -71,6 +71,24 @@ function TournamentDetails() {
         user: false
     });
     
+    // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
+    const calculateTeamAverageRating = useCallback((team) => {
+        if (!team.members || team.members.length === 0) return '—';
+        
+        const ratings = team.members.map(member => {
+            if (ratingType === 'faceit') {
+                return parseInt(member.faceit_elo) || 1000; // Базовый рейтинг FACEIT
+            } else {
+                return parseInt(member.cs2_premier_rank) || 0; // Базовый ранг CS2
+            }
+        }).filter(rating => rating > 0);
+        
+        if (ratings.length === 0) return '—';
+        
+        const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+        return Math.round(average);
+    }, [ratingType]);
+
     // 🎯 ПРАВА ПОЛЬЗОВАТЕЛЯ
     const userPermissions = useMemo(() => {
         if (!user || !tournament) {
@@ -251,7 +269,7 @@ function TournamentDetails() {
 
             return transformedGame;
         });
-    }, [mixedTeams, tournament]);
+    }, [mixedTeams, tournament?.format, transformMatchesToGames]);
 
     // 🎯 УЛУЧШЕННАЯ ЗАГРУЗКА ТУРНИРА И ДАННЫХ
     const loadTournamentData = useCallback(async () => {
@@ -1008,7 +1026,7 @@ function TournamentDetails() {
                                                         <h4>
                                                             {team.name || `Команда ${index + 1}`}
                                                             <span className="team-rating">
-                                                                Средний рейтинг: {team.averageRating || '—'}
+                                                                Средний рейтинг: {calculateTeamAverageRating(team)}
                                                             </span>
                                                         </h4>
                                                         <table className="team-table">
@@ -1019,17 +1037,17 @@ function TournamentDetails() {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {team.players?.map((player, playerIndex) => (
-                                                                    <tr key={player.id || playerIndex}>
+                                                                {team.members?.map((member, memberIndex) => (
+                                                                    <tr key={member.user_id || member.participant_id || memberIndex}>
                                                                         <td>
-                                                                            <Link to={`/profile/${player.id}`}>
-                                                                                {player.name || player.username}
+                                                                            <Link to={`/profile/${member.user_id || member.participant_id}`}>
+                                                                                {member.name || member.username || 'Игрок'}
                                                                             </Link>
                                                                         </td>
                                                                         <td>
                                                                             {ratingType === 'faceit' 
-                                                                                ? player.faceit_elo || '—'
-                                                                                : player.cs2_rank || '—'
+                                                                                ? member.faceit_elo || '—'
+                                                                                : member.cs2_premier_rank || '—'
                                                                             }
                                                                         </td>
                                                                     </tr>
