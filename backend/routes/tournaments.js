@@ -134,6 +134,17 @@ router.get('/:id', async (req, res) => {
             [id]
         );
 
+        // 🔍 Диагностика данных карт при загрузке турнира
+        const matchesWithMaps = matchesResult.rows.filter(match => match.maps_data);
+        if (matchesWithMaps.length > 0) {
+            console.log(`🔍 DEBUG: Турнир ${id} - найдено ${matchesWithMaps.length} матчей с данными карт:`);
+            matchesWithMaps.slice(0, 3).forEach(match => {
+                console.log(`- Матч ${match.id}: maps_data = ${typeof match.maps_data === 'string' ? match.maps_data.substring(0, 100) + '...' : match.maps_data}`);
+            });
+        } else {
+            console.log(`ℹ️ DEBUG: Турнир ${id} - матчей с данными карт не найдено`);
+        }
+
         // Для командных турниров И микс турниров загружаем команды с участниками
         let teams = [];
         if (tournament.participant_type === 'team' || tournament.format === 'mix') {
@@ -1150,17 +1161,38 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         // Подготовка данных о картах (если они предоставлены)
         let mapsData = null;
         
-        // Проверяем, является ли игра Counter-Strike 2 (с учетом разных вариантов написания)
-        const isCS2Game = tournament.game && (
+        // Проверяем, является ли игра поддерживающей карты (расширенный список)
+        const isGameSupportingMaps = tournament.game && (
+            // Counter-Strike варианты
             tournament.game === 'Counter-Strike 2' ||
             tournament.game === 'Counter Strike 2' ||
-            tournament.game.toLowerCase().includes('counter') && tournament.game.toLowerCase().includes('strike') ||
-            tournament.game.toLowerCase().includes('cs2')
+            tournament.game === 'CS2' ||
+            tournament.game === 'cs2' ||
+            tournament.game.toLowerCase().includes('counter') ||
+            tournament.game.toLowerCase().includes('cs') ||
+            // Valorant
+            tournament.game === 'Valorant' ||
+            tournament.game === 'VALORANT' ||
+            tournament.game.toLowerCase().includes('valorant') ||
+            // Другие игры с картами
+            tournament.game.toLowerCase().includes('overwatch') ||
+            tournament.game.toLowerCase().includes('dota') ||
+            tournament.game.toLowerCase().includes('league') ||
+            // Общий подход - если есть массив карт, поддерживаем
+            (Array.isArray(maps) && maps.length > 0)
         );
         
-        if (Array.isArray(maps) && maps.length > 0 && isCS2Game) {
-            console.log(`Сохраняем данные о картах для игры: ${tournament.game}`);
-            console.log(`Данные карт:`, maps);
+        console.log(`🔍 DEBUG: Проверка данных карт для матча ${matchId}:`);
+        console.log(`- Получены карты:`, maps);
+        console.log(`- Тип данных карт:`, typeof maps);
+        console.log(`- Является ли массивом:`, Array.isArray(maps));
+        console.log(`- Количество карт:`, maps ? maps.length : 0);
+        console.log(`- Игра турнира:`, tournament.game);
+        console.log(`- Поддерживает ли карты:`, isGameSupportingMaps);
+        
+        if (Array.isArray(maps) && maps.length > 0 && isGameSupportingMaps) {
+            console.log(`✅ Сохраняем данные о картах для игры: ${tournament.game}`);
+            console.log(`📋 Данные карт:`, JSON.stringify(maps, null, 2));
             mapsData = JSON.stringify(maps);
             
             // Пересчитываем общий счет на основе выигранных карт
@@ -1194,7 +1226,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             console.log(`- Есть массив карт: ${Array.isArray(maps)}`);
             console.log(`- Количество карт: ${maps ? maps.length : 0}`);
             console.log(`- Игра: ${tournament.game}`);
-            console.log(`- Является ли CS2: ${isCS2Game}`);
+            console.log(`- Является ли CS2: ${isGameSupportingMaps}`);
         }
 
         // Обновление результата текущего матча

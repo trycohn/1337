@@ -1304,8 +1304,20 @@ function TournamentDetails() {
                     <div className="modal" onClick={() => setSelectedMatch(null)}>
                         <div className="match-details-modal" onClick={(e) => e.stopPropagation()}>
                             <div className="modal-content">
+                                {/* 🔍 Диагностика данных матча */}
+                                {process.env.NODE_ENV === 'development' && (
+                                    <div style={{ background: '#f0f0f0', padding: '10px', margin: '10px', fontSize: '12px', fontFamily: 'monospace' }}>
+                                        <strong>🔍 DEBUG:</strong>
+                                        <br />selectedMatch.maps_data: {JSON.stringify(selectedMatch.maps_data, null, 2)}
+                                        <br />Type: {typeof selectedMatch.maps_data}
+                                        <br />Has maps_data: {!!selectedMatch.maps_data}
+                                        <br />Is string: {typeof selectedMatch.maps_data === 'string'}
+                                        <br />Is array: {Array.isArray(selectedMatch.maps_data)}
+                                    </div>
+                                )}
+                                
                                 <div className="team-modal-header">
-                                    <h3>📊 Детали матча</h3>
+                                    <h3>�� Детали матча</h3>
                                     <button 
                                         className="close-btn"
                                         onClick={() => setSelectedMatch(null)}
