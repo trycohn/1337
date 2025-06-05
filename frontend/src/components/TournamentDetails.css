@@ -224,7 +224,7 @@
 
 .modal-content {
     background-color: #111111;
-    color: #ffffff;
+    color: #000000;
     padding: 20px;
     border-radius: 0;
     border: 1px solid #333333;
@@ -3475,7 +3475,6 @@ a.participant-name:hover {
 
 .match-summary h4 {
     margin: 20px 20px 15px;
-    color: #333;
     font-size: 1.2em;
     border-bottom: 2px solid #007bff;
     padding-bottom: 5px;
