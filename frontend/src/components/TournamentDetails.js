@@ -625,8 +625,37 @@ function TournamentDetails() {
     }, []);
 
     const handleMatchClick = useCallback((match) => {
-        setSelectedMatch(match);
-    }, []);
+        console.log('🔍 Клик по матчу для просмотра деталей:', match);
+        
+        // Ищем полные данные матча в исходном массиве matches
+        const fullMatchData = matches.find(m => m.id === match.id);
+        
+        if (fullMatchData) {
+            // Обогащаем данные матча информацией из game объекта
+            const enrichedMatch = {
+                ...fullMatchData,
+                // Добавляем имена команд из game объекта, если их нет в полных данных
+                team1_name: fullMatchData.team1_name || 
+                           (match.participants && match.participants[0] ? match.participants[0].name : 'Команда 1'),
+                team2_name: fullMatchData.team2_name || 
+                           (match.participants && match.participants[1] ? match.participants[1].name : 'Команда 2'),
+                // Добавляем счет из game объекта, если его нет в полных данных
+                score1: fullMatchData.score1 !== undefined ? fullMatchData.score1 : 
+                       (match.participants && match.participants[0] ? match.participants[0].score : 0),
+                score2: fullMatchData.score2 !== undefined ? fullMatchData.score2 : 
+                       (match.participants && match.participants[1] ? match.participants[1].score : 0),
+                // Добавляем winner_team_id из game объекта
+                winner_team_id: fullMatchData.winner_team_id || match.winner_id
+            };
+            
+            console.log('📊 Полные данные матча для модального окна:', enrichedMatch);
+            setSelectedMatch(enrichedMatch);
+        } else {
+            console.warn('⚠️ Не удалось найти полные данные матча в массиве matches');
+            // В крайнем случае используем данные из game объекта
+            setSelectedMatch(match);
+        }
+    }, [matches]);
 
     const handleRemoveParticipant = useCallback(async (participantId) => {
         if (!userPermissions.canEdit || !window.confirm('Удалить участника?')) return;
@@ -1267,6 +1296,172 @@ function TournamentDetails() {
                 {message && (
                     <div className={`message-notification ${message.includes('✅') ? 'success' : 'error'}`}>
                         {message}
+                    </div>
+                )}
+
+                {/* 🎯 МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ МАТЧА */}
+                {selectedMatch && (
+                    <div className="modal" onClick={() => setSelectedMatch(null)}>
+                        <div className="match-details-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-content">
+                                <div className="team-modal-header">
+                                    <h3>📊 Детали матча</h3>
+                                    <button 
+                                        className="close-btn"
+                                        onClick={() => setSelectedMatch(null)}
+                                        title="Закрыть"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                <div className="match-summary">
+                                    <h4>Общая информация</h4>
+                                    <div className="match-teams">
+                                        <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner' : ''}`}>
+                                            <h5>{selectedMatch.team1_name || 'Команда 1'}</h5>
+                                            <div className="team-score">{selectedMatch.score1 || 0}</div>
+                                            {selectedMatch.winner_team_id === selectedMatch.team1_id && (
+                                                <div className="winner-badge">🏆 Победитель</div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="vs-separator">VS</div>
+                                        
+                                        <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner' : ''}`}>
+                                            <h5>{selectedMatch.team2_name || 'Команда 2'}</h5>
+                                            <div className="team-score">{selectedMatch.score2 || 0}</div>
+                                            {selectedMatch.winner_team_id === selectedMatch.team2_id && (
+                                                <div className="winner-badge">🏆 Победитель</div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="final-score">
+                                        <div className="score-item">
+                                            <span className="score-label">Итоговый счет:</span>
+                                            <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner-score' : ''}`}>
+                                                {selectedMatch.score1 || 0}
+                                            </span>
+                                            <span className="score-separator">:</span>
+                                            <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner-score' : ''}`}>
+                                                {selectedMatch.score2 || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ДЕТАЛИ КАРТ/ИГР */}
+                                {selectedMatch.maps_data && (() => {
+                                    try {
+                                        const mapsData = typeof selectedMatch.maps_data === 'string' 
+                                            ? JSON.parse(selectedMatch.maps_data) 
+                                            : selectedMatch.maps_data;
+                                        
+                                        if (Array.isArray(mapsData) && mapsData.length > 0) {
+                                            // Подсчет выигранных карт
+                                            let team1MapsWon = 0;
+                                            let team2MapsWon = 0;
+                                            let totalTeam1Score = 0;
+                                            let totalTeam2Score = 0;
+
+                                            mapsData.forEach(map => {
+                                                const score1 = parseInt(map.score1) || 0;
+                                                const score2 = parseInt(map.score2) || 0;
+                                                totalTeam1Score += score1;
+                                                totalTeam2Score += score2;
+                                                
+                                                if (score1 > score2) {
+                                                    team1MapsWon++;
+                                                } else if (score2 > score1) {
+                                                    team2MapsWon++;
+                                                }
+                                            });
+
+                                            return (
+                                                <div className="maps-results">
+                                                    <h4>📋 Результаты по картам</h4>
+                                                    
+                                                    <div className="maps-statistics">
+                                                        <h5>Общая статистика</h5>
+                                                        <div className="maps-stats">
+                                                            <div className="stat-item">
+                                                                <span className="stat-label">Карт выиграно:</span>
+                                                                <span className="stat-value">
+                                                                    {team1MapsWon} : {team2MapsWon}
+                                                                </span>
+                                                            </div>
+                                                            <div className="stat-item">
+                                                                <span className="stat-label">Общий счет:</span>
+                                                                <span className="stat-value">
+                                                                    {totalTeam1Score} : {totalTeam2Score}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <table className="maps-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Карта</th>
+                                                                <th>{selectedMatch.team1_name || 'Команда 1'}</th>
+                                                                <th>{selectedMatch.team2_name || 'Команда 2'}</th>
+                                                                <th>Победитель</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {mapsData.map((map, index) => {
+                                                                const score1 = parseInt(map.score1) || 0;
+                                                                const score2 = parseInt(map.score2) || 0;
+                                                                const mapWinner = score1 > score2 ? 'team1' : 
+                                                                                 score2 > score1 ? 'team2' : 'draw';
+                                                                
+                                                                return (
+                                                                    <tr key={index}>
+                                                                        <td>{map.name || `Карта ${index + 1}`}</td>
+                                                                        <td className={mapWinner === 'team1' ? 'map-winner' : ''}>
+                                                                            {score1}
+                                                                        </td>
+                                                                        <td className={mapWinner === 'team2' ? 'map-winner' : ''}>
+                                                                            {score2}
+                                                                        </td>
+                                                                        <td>
+                                                                            {mapWinner === 'team1' && (
+                                                                                <span>🏆 {selectedMatch.team1_name || 'Команда 1'}</span>
+                                                                            )}
+                                                                            {mapWinner === 'team2' && (
+                                                                                <span>🏆 {selectedMatch.team2_name || 'Команда 2'}</span>
+                                                                            )}
+                                                                            {mapWinner === 'draw' && (
+                                                                                <span>🤝 Ничья</span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            );
+                                        }
+                                    } catch (error) {
+                                        console.error('Ошибка обработки данных карт:', error);
+                                        return null;
+                                    }
+                                    return null;
+                                })()}
+
+                                {/* ОТСУТСТВИЕ ДЕТАЛЕЙ ПО КАРТАМ */}
+                                {(!selectedMatch.maps_data || 
+                                  (typeof selectedMatch.maps_data === 'string' && selectedMatch.maps_data === '[]') ||
+                                  (Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length === 0)) && (
+                                    <div className="no-maps-info">
+                                        <p>ℹ️ Детальная информация по картам недоступна</p>
+                                        <p>Отображается только общий результат матча</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </section>
