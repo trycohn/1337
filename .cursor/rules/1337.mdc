@@ -9,7 +9,7 @@ alwaysApply: true
 I am working on a project hosted on a remote VDS server. The project is updated via GitHub, where the repository is pulled to the server to deploy changes. Please provide code, configurations, or instructions that account for the following:
 
 The project runs on a remote VDS server (Linux-based, e.g., Ubuntu/CentOS). 
-Path to project on VDS - "/var/www/1337community.com/"
+Path to project on VDS - "/var/www/1337community.com/" root@80.87.200.23
 Паролль на VDS - "01012006Fortnite!"
 Backend server name - "1337-backend"
 The server uses Git to fetch updates from a GitHub repository (e.g., via git pull or automated CI/CD pipelines).

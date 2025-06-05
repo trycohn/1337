@@ -31,6 +31,29 @@ const BracketRenderer = ({
     const wrapperRef = useRef(null);
     const bracketContentRef = useRef(null);
     
+    // Refs для отслеживания состояния в обработчиках событий
+    const isDraggingRef = useRef(false);
+    const positionRef = useRef({ x: 0, y: 0 });
+    const startDragPosRef = useRef({ x: 0, y: 0 });
+    const scaleRef = useRef(1);
+    
+    // Обновляем refs при изменении состояний
+    useEffect(() => {
+        isDraggingRef.current = isDragging;
+    }, [isDragging]);
+    
+    useEffect(() => {
+        positionRef.current = position;
+    }, [position]);
+    
+    useEffect(() => {
+        startDragPosRef.current = startDragPos;
+    }, [startDragPos]);
+    
+    useEffect(() => {
+        scaleRef.current = scale;
+    }, [scale]);
+    
     // Группировка матчей по раундам и сеткам
     const groupMatchesByRoundAndBracket = useCallback(() => {
         let result = { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
@@ -132,101 +155,24 @@ const BracketRenderer = ({
         setScale(1);
     }, []);
     
-    // Обработчики событий для перетаскивания и масштабирования
-    const handleMouseDown = useCallback((e) => {
-        if (e.button !== 0) return; // Только левая кнопка
-        if (e.target.closest('button, .custom-seed')) return; // Не перетаскиваем на элементах управления
-        
-        console.log('BracketRenderer: начинаем перетаскивание');
-        setIsDragging(true);
-        setStartDragPos({
-            x: e.clientX - position.x,
-            y: e.clientY - position.y,
-        });
-        if (wrapperRef.current) {
-            wrapperRef.current.style.cursor = 'grabbing';
-        }
-        e.preventDefault();
-    }, [position]);
-
-    const handleMouseMove = useCallback((e) => {
-        if (!isDragging) return;
-        setPosition({
-            x: e.clientX - startDragPos.x,
-            y: e.clientY - startDragPos.y,
-        });
-        e.preventDefault();
-    }, [isDragging, startDragPos]);
-
-    const handleMouseUp = useCallback(() => {
-        if (isDragging) {
-            setIsDragging(false);
-            if (wrapperRef.current) {
-                wrapperRef.current.style.cursor = 'grab';
-            }
-        }
-    }, [isDragging]);
-
-    const handleTouchStart = useCallback((e) => {
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            setIsDragging(true);
-            setStartDragPos({
-                x: touch.clientX - position.x,
-                y: touch.clientY - position.y,
-            });
-            }
-        e.preventDefault();
-    }, [position]);
-
-    const handleTouchMove = useCallback((e) => {
-        if (!isDragging || e.touches.length !== 1) return;
-        const touch = e.touches[0];
-        setPosition({
-            x: touch.clientX - startDragPos.x,
-            y: touch.clientY - startDragPos.y,
-        });
-        e.preventDefault();
-    }, [isDragging, startDragPos]);
-
-    const handleTouchEnd = useCallback(() => {
-            setIsDragging(false);
-    }, []);
-
-    // Обработчик изменения масштаба
-    const handleScaleChange = useCallback((newScale) => {
-        console.log(`BracketRenderer: масштаб изменен на ${newScale}`);
-        setScale(newScale);
-    }, []);
-
-    // Обработчик масштабирования колесом мыши
-    const handleWheel = useCallback((e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        const newScale = Math.max(0.5, Math.min(3, scale + delta));
-        handleScaleChange(newScale);
-    }, [scale, handleScaleChange]);
-
-    // Обработчики для кнопок масштабирования
-    const handleZoomIn = useCallback(() => {
+    // Функции для кнопок управления (упрощенные, без лишних зависимостей)
+    const handleZoomIn = () => {
         console.log('handleZoomIn: увеличиваем масштаб');
-        const newScale = Math.min(scale + 0.1, 3);
-        handleScaleChange(newScale);
-    }, [scale, handleScaleChange]);
+        setScale(prevScale => Math.min(prevScale + 0.1, 3));
+    };
     
-    const handleZoomOut = useCallback(() => {
+    const handleZoomOut = () => {
         console.log('handleZoomOut: уменьшаем масштаб');
-        const newScale = Math.max(scale - 0.1, 0.5);
-            handleScaleChange(newScale);
-    }, [scale, handleScaleChange]);
+        setScale(prevScale => Math.max(prevScale - 0.1, 0.5));
+    };
     
-    const handleResetView = useCallback(() => {
+    const handleResetView = () => {
         console.log('handleResetView: сбрасываем вид');
         resetView();
-    }, [resetView]);
+    };
 
     // Функция для открытия сетки в отдельной вкладке
-    const handleOpenInNewTab = useCallback(() => {
+    const handleOpenInNewTab = () => {
         const currentGroupedMatches = groupedMatches || { winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null };
         
         const bracketData = {
@@ -288,7 +234,7 @@ const BracketRenderer = ({
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
-    }, [games, format, groupedMatches]);
+    };
 
     // ИСПРАВЛЕНА ИНИЦИАЛИЗАЦИЯ: убрана задержка, перетаскивание доступно сразу
     useEffect(() => {
@@ -320,12 +266,100 @@ const BracketRenderer = ({
         // Сразу применяем начальный вид (БЕЗ setTimeout!)
         resetView();
         
+        // СРАЗУ ПРИВЯЗЫВАЕМ ОБРАБОТЧИКИ СОБЫТИЙ В ТОМ ЖЕ useEffect!
+        console.log('BracketRenderer: привязка обработчиков событий перетаскивания');
+
+        // Создаем функции-обработчики с использованием refs для актуальных значений состояния
+        const mouseDownHandler = (e) => {
+            if (e.button !== 0) return; // Только левая кнопка
+            if (e.target.closest('button, .custom-seed')) return; // Не перетаскиваем на элементах управления
+            
+            console.log('BracketRenderer: начинаем перетаскивание');
+            setIsDragging(true);
+            setStartDragPos({
+                x: e.clientX - positionRef.current.x,
+                y: e.clientY - positionRef.current.y,
+            });
+            wrapper.style.cursor = 'grabbing';
+            e.preventDefault();
+        };
+
+        const mouseMoveHandler = (e) => {
+            if (!isDraggingRef.current) return;
+            setPosition({
+                x: e.clientX - startDragPosRef.current.x,
+                y: e.clientY - startDragPosRef.current.y,
+            });
+            e.preventDefault();
+        };
+
+        const mouseUpHandler = () => {
+            if (isDraggingRef.current) {
+                setIsDragging(false);
+                wrapper.style.cursor = 'grab';
+            }
+        };
+
+        const wheelHandler = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const newScale = Math.max(0.5, Math.min(3, scaleRef.current + delta));
+            setScale(newScale);
+        };
+
+        const touchStartHandler = (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                setIsDragging(true);
+                setStartDragPos({
+                    x: touch.clientX - positionRef.current.x,
+                    y: touch.clientY - positionRef.current.y,
+                });
+            }
+            e.preventDefault();
+        };
+
+        const touchMoveHandler = (e) => {
+            if (!isDraggingRef.current || e.touches.length !== 1) return;
+            const touch = e.touches[0];
+            setPosition({
+                x: touch.clientX - startDragPosRef.current.x,
+                y: touch.clientY - startDragPosRef.current.y,
+            });
+            e.preventDefault();
+        };
+
+        const touchEndHandler = () => {
+            setIsDragging(false);
+        };
+
+        // Привязываем все обработчики событий СРАЗУ
+        wrapper.addEventListener('mousedown', mouseDownHandler);
+        window.addEventListener('mousemove', mouseMoveHandler);
+        window.addEventListener('mouseup', mouseUpHandler);
+        wrapper.addEventListener('wheel', wheelHandler, { passive: false });
+        wrapper.addEventListener('touchstart', touchStartHandler, { passive: false });
+        window.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        window.addEventListener('touchend', touchEndHandler);
+
+        console.log('BracketRenderer: ✅ Все обработчики событий привязаны, перетаскивание готово к работе');
+
         window.addEventListener('resize', setResponsiveHeight);
         
         return () => {
+            // Очистка всех обработчиков
+            if (wrapper) {
+                wrapper.removeEventListener('mousedown', mouseDownHandler);
+                wrapper.removeEventListener('wheel', wheelHandler);
+                wrapper.removeEventListener('touchstart', touchStartHandler);
+            }
+            window.removeEventListener('mousemove', mouseMoveHandler);
+            window.removeEventListener('mouseup', mouseUpHandler);
+            window.removeEventListener('touchmove', touchMoveHandler);
+            window.removeEventListener('touchend', touchEndHandler);
             window.removeEventListener('resize', setResponsiveHeight);
         };
-    }, []); // Только при монтировании!
+    }, []); // БЕЗ ЗАВИСИМОСТЕЙ! Выполняется только при монтировании
 
     // Обновление сгруппированных матчей при изменении games
     useEffect(() => {
@@ -350,35 +384,6 @@ const BracketRenderer = ({
             setDataError('Ошибка при обработке данных матчей');
         }
     }, [groupMatchesByRoundAndBracket]);
-
-    // ИСПРАВЛЕНЫ ОБРАБОТЧИКИ СОБЫТИЙ: привязываются сразу после монтирования
-    useEffect(() => {
-        const wrapper = wrapperRef.current;
-        if (!wrapper) return;
-
-        console.log('BracketRenderer: привязка обработчиков событий');
-
-        // Сразу привязываем все обработчики событий
-        wrapper.addEventListener('mousedown', handleMouseDown);
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-        wrapper.addEventListener('wheel', handleWheel);
-        wrapper.addEventListener('touchstart', handleTouchStart);
-        window.addEventListener('touchmove', handleTouchMove);
-        window.addEventListener('touchend', handleTouchEnd);
-
-        return () => {
-            if (wrapper) {
-                wrapper.removeEventListener('mousedown', handleMouseDown);
-                wrapper.removeEventListener('wheel', handleWheel);
-                wrapper.removeEventListener('touchstart', handleTouchStart);
-            }
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-            window.removeEventListener('touchmove', handleTouchMove);
-            window.removeEventListener('touchend', handleTouchEnd);
-        };
-    }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
 
     // Защитная проверка входных данных
     useEffect(() => {
