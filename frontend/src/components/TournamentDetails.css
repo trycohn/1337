@@ -3563,7 +3563,7 @@ a.participant-name:hover {
 
 .score-label {
     font-weight: bold;
-    color: #333;
+    color: #ffffff;
 }
 
 .score-value {
@@ -3585,7 +3585,7 @@ a.participant-name:hover {
 .score-separator {
     font-size: 1.5em;
     font-weight: bold;
-    color: #666;
+    color: #ffffff;
 }
 
 .maps-results {
