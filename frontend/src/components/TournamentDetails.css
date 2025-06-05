@@ -1324,9 +1324,6 @@
     border: 1px solid #333333;
 }
 
-.match-details-modal-content {
-    width: auto;
-}
 
 .match-teams {
     display: flex;
@@ -3442,6 +3439,10 @@ a.participant-name:hover {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.match-details-modal-content {
+    width: auto;
 }
 
 .team-modal-header {
