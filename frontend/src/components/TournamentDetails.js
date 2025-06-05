@@ -1382,7 +1382,7 @@ function TournamentDetails() {
                 {selectedMatch && (
                     <div className="modal" onClick={() => setSelectedMatch(null)}>
                         <div className="match-details-modal" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-content">
+                            <div className="modal-content match-details-modal-content">
                                 {/* 🔍 Диагностика данных матча */}
                                 {process.env.NODE_ENV === 'development' && (
                                     <div style={{ background: '#f0f0f0', padding: '10px', margin: '10px', fontSize: '12px', fontFamily: 'monospace' }}>

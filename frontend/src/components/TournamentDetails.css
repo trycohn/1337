@@ -1320,9 +1320,12 @@
     max-height: 90vh;
     overflow-y: auto;
     background-color: #111111;
-    color: #ffffff;
+    color: #000000;
     border: 1px solid #333333;
 }
+
+.match-details-modal-content {
+    width: auto;
 
 .match-teams {
     display: flex;
@@ -3446,7 +3449,6 @@ a.participant-name:hover {
     align-items: center;
     padding: 20px;
     border-bottom: 1px solid #eee;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 8px 8px 0 0;
 }
 
