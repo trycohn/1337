@@ -269,7 +269,7 @@ function TournamentDetails() {
 
             return transformedGame;
         });
-    }, [mixedTeams, tournament?.format, transformMatchesToGames]);
+    }, [mixedTeams, tournament?.format]);
 
     // 🎯 УЛУЧШЕННАЯ ЗАГРУЗКА ТУРНИРА И ДАННЫХ
     const loadTournamentData = useCallback(async () => {
@@ -540,7 +540,7 @@ function TournamentDetails() {
         });
         
         return transformedGames;
-    }, [matches, mixedTeams, tournament?.format, transformMatchesToGames]);
+    }, [matches, mixedTeams, tournament?.format]);
 
     const handleWithdraw = useCallback(async () => {
         if (!user || !tournament) return;
