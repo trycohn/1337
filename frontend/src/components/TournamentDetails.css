@@ -3519,6 +3519,8 @@ a.participant-name:hover {
     font-weight: bold;
     margin: 10px 0;
     color: #666;
+    display: block;
+    text-align: center;
 }
 
 .team-info.winner .team-score {
