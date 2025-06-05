@@ -320,7 +320,6 @@ nav a:hover, nav button:hover {
 .modal-content {
   background-color: var(--card-background);
   border-radius: var(--border-radius-md);
-  width: 90%;
   max-width: 500px;
   box-shadow: var(--shadow-lg);
 }
