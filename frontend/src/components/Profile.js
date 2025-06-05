@@ -226,14 +226,58 @@ function Profile() {
         }
     };
 
-    // Функция для получения URL картинки героя Dota 2
-    const getHeroImageUrl = (heroId) => {
-        if (!heroId) return '/default-hero.png';
-        return `https://cdn.dota2.com/apps/dota2/images/heroes/${getHeroName(heroId)}_full.png`;
+    // OpenDota константы героев (будем кэшировать)
+    const [heroesData, setHeroesData] = useState(null);
+    const [dotaConstants, setDotaConstants] = useState(null);
+
+    // Функция для получения данных о героях из OpenDota API
+    const fetchHeroesData = async () => {
+        if (heroesData) return heroesData; // Используем кэш
+        
+        try {
+            const response = await api.get('/api/dota-stats/heroes', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setHeroesData(response.data);
+            return response.data;
+        } catch (err) {
+            console.error('Ошибка получения данных о героях:', err);
+            return null;
+        }
     };
 
-    // Функция для получения имени героя по ID
+    // Функция для получения констант из OpenDota API
+    const fetchDotaConstants = async (resource) => {
+        try {
+            const response = await api.get(`/api/dota-stats/constants/${resource}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            return response.data;
+        } catch (err) {
+            console.error(`Ошибка получения констант ${resource}:`, err);
+            return null;
+        }
+    };
+
+    // Функция для получения URL изображения героя через OpenDota CDN
+    const getHeroImageUrl = (heroId) => {
+        if (!heroId) return '/default-hero.png';
+        
+        // OpenDota использует прямые ссылки на изображения героев
+        return `https://cdn.opendota.com/apps/dota2/images/heroes/${getHeroName(heroId)}_full.png`;
+    };
+
+    // Обновленная функция для получения имени героя с поддержкой OpenDota констант
     const getHeroName = (heroId) => {
+        // Если есть данные о героях из API, используем их
+        if (heroesData) {
+            const hero = heroesData.find(h => h.id === heroId);
+            if (hero) {
+                return hero.name.replace('npc_dota_hero_', '');
+            }
+        }
+        
+        // Фолбэк на хардкод мапинг для совместимости
         const heroNames = {
             1: 'antimage',
             2: 'axe',
@@ -364,7 +408,147 @@ function Profile() {
         return heroNames[heroId] || `hero_${heroId}`;
     };
 
-    // Функция для получения URL иконки ранга Dota 2
+    // Функция для получения локализованного имени героя
+    const getHeroLocalizedName = (heroId) => {
+        if (heroesData) {
+            const hero = heroesData.find(h => h.id === heroId);
+            if (hero) {
+                return hero.localized_name;
+            }
+        }
+        
+        // Фолбэк на английские имена
+        const heroLocalizedNames = {
+            1: 'Anti-Mage',
+            2: 'Axe',
+            3: 'Bane',
+            4: 'Bloodseeker',
+            5: 'Crystal Maiden',
+            6: 'Drow Ranger',
+            7: 'Earthshaker',
+            8: 'Juggernaut',
+            9: 'Mirana',
+            10: 'Morphling',
+            11: 'Shadow Fiend',
+            12: 'Phantom Lancer',
+            13: 'Puck',
+            14: 'Pudge',
+            15: 'Razor',
+            16: 'Sand King',
+            17: 'Storm Spirit',
+            18: 'Sven',
+            19: 'Tiny',
+            20: 'Vengeful Spirit',
+            21: 'Windranger',
+            22: 'Zeus',
+            23: 'Kunkka',
+            25: 'Lina',
+            26: 'Lion',
+            27: 'Shadow Shaman',
+            28: 'Slardar',
+            29: 'Tidehunter',
+            30: 'Witch Doctor',
+            31: 'Lich',
+            32: 'Riki',
+            33: 'Enigma',
+            34: 'Tinker',
+            35: 'Sniper',
+            36: 'Necrophos',
+            37: 'Warlock',
+            38: 'Beastmaster',
+            39: 'Queen of Pain',
+            40: 'Venomancer',
+            41: 'Faceless Void',
+            42: 'Wraith King',
+            43: 'Death Prophet',
+            44: 'Phantom Assassin',
+            45: 'Pugna',
+            46: 'Templar Assassin',
+            47: 'Viper',
+            48: 'Luna',
+            49: 'Dragon Knight',
+            50: 'Dazzle',
+            51: 'Clockwerk',
+            52: 'Leshrac',
+            53: 'Nature\'s Prophet',
+            54: 'Lifestealer',
+            55: 'Dark Seer',
+            56: 'Clinkz',
+            57: 'Omniknight',
+            58: 'Enchantress',
+            59: 'Huskar',
+            60: 'Night Stalker',
+            61: 'Broodmother',
+            62: 'Bounty Hunter',
+            63: 'Weaver',
+            64: 'Jakiro',
+            65: 'Batrider',
+            66: 'Chen',
+            67: 'Spectre',
+            68: 'Ancient Apparition',
+            69: 'Doom',
+            70: 'Ursa',
+            71: 'Spirit Breaker',
+            72: 'Gyrocopter',
+            73: 'Alchemist',
+            74: 'Invoker',
+            75: 'Silencer',
+            76: 'Outworld Destroyer',
+            77: 'Lycan',
+            78: 'Brewmaster',
+            79: 'Shadow Demon',
+            80: 'Lone Druid',
+            81: 'Chaos Knight',
+            82: 'Meepo',
+            83: 'Treant Protector',
+            84: 'Ogre Magi',
+            85: 'Undying',
+            86: 'Rubick',
+            87: 'Disruptor',
+            88: 'Nyx Assassin',
+            89: 'Naga Siren',
+            90: 'Keeper of the Light',
+            91: 'Io',
+            92: 'Visage',
+            93: 'Slark',
+            94: 'Medusa',
+            95: 'Troll Warlord',
+            96: 'Centaur Warrunner',
+            97: 'Magnus',
+            98: 'Timbersaw',
+            99: 'Bristleback',
+            100: 'Tusk',
+            101: 'Skywrath Mage',
+            102: 'Abaddon',
+            103: 'Elder Titan',
+            104: 'Legion Commander',
+            105: 'Techies',
+            106: 'Ember Spirit',
+            107: 'Earth Spirit',
+            108: 'Underlord',
+            109: 'Terrorblade',
+            110: 'Phoenix',
+            111: 'Oracle',
+            112: 'Winter Wyvern',
+            113: 'Arc Warden',
+            114: 'Monkey King',
+            119: 'Dark Willow',
+            120: 'Pangolier',
+            121: 'Grimstroke',
+            123: 'Hoodwink',
+            126: 'Void Spirit',
+            128: 'Snapfire',
+            129: 'Mars',
+            135: 'Dawnbreaker',
+            136: 'Marci',
+            137: 'Primal Beast',
+            138: 'Muerta'
+        };
+        
+        return heroLocalizedNames[heroId] || `Hero ${heroId}`;
+    };
+
+    // Обновленная функция для получения URL иконки ранга с поддержкой новой системы OpenDota
     const getRankImageUrl = (rankTier) => {
         if (!rankTier) return null;
         
@@ -373,16 +557,16 @@ function Profile() {
         
         if (rank === 8) {
             // Immortal ранг
-            return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}0.png`;
+            return `https://cdn.opendota.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}0.png`;
         } else if (rank >= 1 && rank <= 7) {
             // Остальные ранги с звездами
-            return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}${stars}.png`;
+            return `https://cdn.opendota.com/apps/dota2/images/dota_react/icons/ranks/rank_tier_${rank}${stars}.png`;
         }
         
         return null;
     };
 
-    // Функция для получения названия ранга
+    // Обновленная функция для получения названия ранга
     const getRankName = (rankTier) => {
         if (!rankTier) return 'Без ранга';
         
@@ -564,7 +748,7 @@ function Profile() {
             
             // Автоматически обновляем статистику если профиль существует
             if (response.data.steam_id) {
-                fetchDotaStats(response.data.steam_id);
+                await fetchDotaStats(response.data.steam_id);
             }
         } catch (err) {
             // Профиль может не существовать - это нормально, не логируем ошибку
@@ -577,22 +761,36 @@ function Profile() {
         
         setIsLoadingDotaStats(true);
         try {
+            console.log('🔍 Загружаем статистику Dota 2 через OpenDota API...');
+            
+            // Получаем статистику игрока
             const response = await api.get(`/api/dota-stats/player/${steamId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
+            
+            console.log('✅ Статистика Dota 2 получена:', response.data);
             setDotaStats(response.data);
             
+            // Загружаем данные о героях если их еще нет
+            if (!heroesData) {
+                await fetchHeroesData();
+            }
+            
             // Автоматически сохраняем обновленную статистику
-            await api.post('/api/dota-stats/profile/save', {
-                user_id: user.id,
-                steam_id: steamId,
-                dota_stats: response.data
-            }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            if (user?.id) {
+                await api.post('/api/dota-stats/profile/save', {
+                    user_id: user.id,
+                    steam_id: steamId,
+                    dota_stats: response.data
+                }, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                console.log('✅ Статистика Dota 2 сохранена в профиль');
+            }
             
         } catch (err) {
-            // Dota API может быть недоступен - это нормально
+            console.error('❌ Ошибка получения статистики Dota 2:', err);
+            setError(err.response?.data?.details || 'OpenDota API временно недоступен');
             setDotaStats(null);
         } finally {
             setIsLoadingDotaStats(false);
@@ -605,11 +803,19 @@ function Profile() {
             return;
         }
 
+        setIsLoadingDotaStats(true);
         try {
+            console.log('🔗 Привязываем Dota 2 профиль через OpenDota API...');
+            
             // Получаем статистику игрока используя привязанный Steam ID
             const response = await api.get(`/api/dota-stats/player/${user.steam_id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
+            
+            // Загружаем данные о героях если их еще нет
+            if (!heroesData) {
+                await fetchHeroesData();
+            }
             
             // Если статистика получена успешно, сохраняем профиль
             await api.post('/api/dota-stats/profile/save', {
@@ -623,21 +829,68 @@ function Profile() {
             setDotaStats(response.data);
             setDotaProfile({ user_id: user.id, steam_id: user.steam_id, dota_stats: response.data });
             setError('');
+            console.log('✅ Dota 2 профиль успешно привязан');
         } catch (err) {
-            setError('Dota API временно недоступен');
+            console.error('❌ Ошибка привязки Dota 2 профиля:', err);
+            setError(err.response?.data?.details || 'OpenDota API временно недоступен');
+        } finally {
+            setIsLoadingDotaStats(false);
         }
     };
 
     const unlinkDotaSteam = async () => {
         try {
+            console.log('🔗 Отвязываем Dota 2 профиль...');
+            
             await api.delete(`/api/dota-stats/profile/${user.id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
+            
             setDotaProfile(null);
             setDotaStats(null);
             setError('');
+            console.log('✅ Dota 2 профиль успешно отвязан');
         } catch (err) {
-            setError('Dota API временно недоступен');
+            console.error('❌ Ошибка отвязки Dota 2 профиля:', err);
+            setError(err.response?.data?.details || 'OpenDota API временно недоступен');
+        }
+    };
+
+    // Функция для обновления статистики Dota 2 через OpenDota API
+    const refreshDotaStats = async () => {
+        if (!dotaProfile || !dotaProfile.steam_id) {
+            setError('Сначала привяжите аккаунт Dota 2');
+            return;
+        }
+
+        setIsLoadingDotaStats(true);
+        try {
+            console.log('🔄 Запрашиваем обновление статистики Dota 2...');
+            
+            // Запрашиваем обновление данных игрока в OpenDota
+            await api.post(`/api/dota-stats/player/${dotaProfile.steam_id}/refresh`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            setError('Запрос на обновление отправлен в OpenDota. Данные будут обновлены в течение нескольких минут.');
+            
+            // Повторно получаем статистику через некоторое время
+            setTimeout(async () => {
+                try {
+                    await fetchDotaStats(dotaProfile.steam_id);
+                    console.log('✅ Статистика Dota 2 обновлена');
+                } catch (err) {
+                    console.error('Ошибка получения обновленной статистики:', err);
+                }
+            }, 10000); // Ждем 10 секунд перед получением обновленных данных
+            
+        } catch (err) {
+            console.error('❌ Ошибка обновления статистики Dota 2:', err);
+            setError(err.response?.data?.details || 'Ошибка запроса обновления статистики');
+        } finally {
+            setTimeout(() => {
+                setIsLoadingDotaStats(false);
+            }, 2000); // Показываем загрузку еще 2 секунды
         }
     };
 
@@ -900,6 +1153,8 @@ function Profile() {
             fetchOrganizationRequest();
             // Загружаем профиль Dota 2
             fetchDotaProfile();
+            // Загружаем данные о героях для Dota 2
+            fetchHeroesData();
             // Загружаем турниры пользователя
             fetchUserTournaments();
         }

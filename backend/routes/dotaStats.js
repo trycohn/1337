@@ -3,37 +3,54 @@ const router = express.Router();
 const axios = require('axios');
 const pool = require('../db');
 
-// Базовый URL STRATZ GraphQL API
-const STRATZ_API_BASE = 'https://api.stratz.com/graphql';
+// Базовый URL OpenDota API
+const OPENDOTA_API_BASE = 'https://api.opendota.com/api';
 
-// STRATZ API Token (нужно будет добавить в переменные окружения)
-const STRATZ_API_TOKEN = process.env.STRATZ_API_TOKEN || 'your-stratz-api-token';
+// OpenDota API Token (опционально, для повышения лимитов)
+const OPENDOTA_API_TOKEN = process.env.OPENDOTA_API_TOKEN || null;
 
-// Функция для выполнения GraphQL запросов к STRATZ API
-async function makeStratzRequest(query, variables = {}) {
+// Функция для выполнения запросов к OpenDota API
+async function makeOpenDotaRequest(endpoint, params = {}, method = 'GET') {
     try {
-        const response = await axios.post(STRATZ_API_BASE, {
-            query,
-            variables
-        }, {
+        const url = `${OPENDOTA_API_BASE}${endpoint}`;
+        const config = {
+            method: method,
             timeout: 15000,
             headers: {
-                'Authorization': `Bearer ${STRATZ_API_TOKEN}`,
                 'Content-Type': 'application/json',
-                'User-Agent': '1337Community-DotaStats/2.0'
-            }
-        });
+                'User-Agent': '1337Community-DotaStats/3.0'
+            },
+            params: {}
+        };
+
+        // Добавляем API ключ если есть
+        if (OPENDOTA_API_TOKEN) {
+            config.params.api_key = OPENDOTA_API_TOKEN;
+        }
+
+        // Добавляем дополнительные параметры
+        Object.assign(config.params, params);
+
+        const response = await axios(url, config);
+        return response.data;
+    } catch (error) {
+        console.error(`Ошибка запроса к OpenDota API (${endpoint}):`, error.message);
         
-        if (response.data.errors) {
-            console.error('STRATZ GraphQL errors:', response.data.errors);
-            throw new Error(`STRATZ API errors: ${response.data.errors.map(e => e.message).join(', ')}`);
+        if (error.response?.status === 429) {
+            throw new Error('Превышен лимит запросов к OpenDota API. Попробуйте позже.');
         }
         
-        return response.data.data;
-    } catch (error) {
-        console.error(`Ошибка запроса к STRATZ API:`, error.message);
-        throw new Error(`Не удалось получить данные от STRATZ API: ${error.message}`);
+        if (error.response?.status === 404) {
+            throw new Error('Игрок не найден или профиль приватный');
+        }
+        
+        throw new Error(`Не удалось получить данные от OpenDota API: ${error.message}`);
     }
+}
+
+// Конвертация Steam ID64 в Account ID для OpenDota
+function steamIdToAccountId(steamId64) {
+    return String(BigInt(steamId64) - BigInt('76561197960265728'));
 }
 
 // Получение информации об игроке по Steam ID
@@ -41,174 +58,108 @@ router.get('/player/:steamid', async (req, res) => {
     const { steamid } = req.params;
     
     try {
-        console.log(`🔍 Получение статистики игрока Steam ID: ${steamid} через STRATZ API`);
+        console.log(`🔍 Получение статистики игрока Steam ID: ${steamid} через OpenDota API`);
         
-        const query = `
-            query GetPlayer($steamAccountId: Long!) {
-                player(steamAccountId: $steamAccountId) {
-                    steamAccountId
-                    steamAccount {
-                        id
-                        name
-                        avatar
-                        profileUri
-                        countryCode
-                    }
-                    ranks {
-                        rank
-                        seasonRankId
-                        asOfDateTime
-                    }
-                    matchCount
-                    winCount
-                    heroesPerformance(request: { take: 10 }) {
-                        heroId
-                        matchCount
-                        winCount
-                        avgKills
-                        avgDeaths
-                        avgAssists
-                        goldPerMinute
-                        experiencePerMinute
-                    }
-                    matches(request: { take: 10 }) {
-                        id
-                        startDateTime
-                        durationSeconds
-                        gameMode
-                        lobbyType
-                        didRadiantWin
-                        players {
-                            steamAccountId
-                            heroId
-                            kills
-                            deaths
-                            assists
-                            goldPerMinute
-                            experiencePerMinute
-                            level
-                            networth
-                            isRadiant
-                        }
-                    }
-                    leaderboardRanks {
-                        seasonRankId
-                        asOfDateTime
-                        rank
-                    }
-                    behaviorScore
-                }
-            }
-        `;
+        // Конвертируем Steam ID в account ID
+        const accountId = steamIdToAccountId(steamid);
         
-        // Конвертируем Steam ID в account ID для STRATZ
-        const steamAccountId = String(BigInt(steamid) - BigInt('76561197960265728'));
-        
-        const data = await makeStratzRequest(query, { steamAccountId: Number(steamAccountId) });
-        
-        if (!data.player) {
+        // Получаем основную информацию об игроке
+        const [playerProfile, winLoss, recentMatches, playerHeroes] = await Promise.all([
+            makeOpenDotaRequest(`/players/${accountId}`),
+            makeOpenDotaRequest(`/players/${accountId}/wl`),
+            makeOpenDotaRequest(`/players/${accountId}/recentMatches`),
+            makeOpenDotaRequest(`/players/${accountId}/heroes`, { significant: 1 })
+        ]);
+
+        if (!playerProfile || playerProfile.profile === null) {
             return res.status(404).json({ 
-                error: 'Игрок не найден в STRATZ API',
+                error: 'Игрок не найден в OpenDota API',
                 details: 'Возможно, профиль приватный или игрок не играл в Dota 2'
             });
         }
-        
-        const player = data.player;
-        const latestRank = player.ranks && player.ranks.length > 0 ? player.ranks[0] : null;
-        
-        // Определяем MMR из различных источников (упрощенно - только из ранга)
-        let mmrValue = null;
-        let mmrSource = null;
-        
-        if (latestRank && latestRank.rank && latestRank.rank > 0) {
-            mmrValue = latestRank.rank;
-            mmrSource = 'ranks';
-        } else if (player.leaderboardRanks && player.leaderboardRanks.length > 0 && player.leaderboardRanks[0].rank) {
-            // Для leaderboard rank, примерный MMR можно оценить как 5500+ для топ игроков
-            mmrValue = 5500 + Math.round((1000 - player.leaderboardRanks[0].rank) * 10);
-            mmrSource = 'leaderboard';
+
+        // Получаем дополнительную статистику
+        let rankings = [];
+        try {
+            rankings = await makeOpenDotaRequest(`/players/${accountId}/rankings`);
+        } catch (error) {
+            console.log('Не удалось получить рейтинги игрока:', error.message);
         }
-        
-        // Отладочная информация
-        console.log(`🎯 MMR для игрока ${steamid}:`, {
-            mmrValue,
-            mmrSource,
-            latestRank: latestRank?.rank,
-            leaderboardRank: player.leaderboardRanks?.[0]?.rank,
-            seasonRankId: latestRank?.seasonRankId
-        });
-        
+
+        // Формируем ответ в формате, совместимом с фронтендом
         const result = {
             profile: {
-                account_id: player.steamAccountId,
+                account_id: parseInt(accountId),
                 steam_id: steamid,
-                avatar: player.steamAccount?.avatar,
-                avatarmedium: player.steamAccount?.avatar,
-                avatarfull: player.steamAccount?.avatar,
-                personaname: player.steamAccount?.name,
-                profileurl: player.steamAccount?.profileUri,
-                country_code: player.steamAccount?.countryCode,
-                rank_tier: latestRank?.seasonRankId,
-                mmr_estimate: mmrValue,
-                solo_competitive_rank: mmrValue,
-                competitive_rank: mmrValue,
-                leaderboard_rank: player.leaderboardRanks && player.leaderboardRanks.length > 0 ? 
-                    player.leaderboardRanks[0].rank : null,
-                behavior_score: player.behaviorScore,
-                last_rank_update: latestRank?.asOfDateTime,
-                mmr_source: mmrSource
+                avatar: playerProfile.profile?.avatar,
+                avatarmedium: playerProfile.profile?.avatarmedium,
+                avatarfull: playerProfile.profile?.avatarfull,
+                personaname: playerProfile.profile?.personaname,
+                profileurl: playerProfile.profile?.profileurl,
+                country_code: playerProfile.profile?.loccountrycode,
+                rank_tier: playerProfile.rank_tier,
+                leaderboard_rank: playerProfile.leaderboard_rank,
+                mmr_estimate: playerProfile.competitive_rank || playerProfile.solo_competitive_rank,
+                solo_competitive_rank: playerProfile.solo_competitive_rank,
+                competitive_rank: playerProfile.competitive_rank,
+                last_login: playerProfile.profile?.last_login,
+                is_contributor: playerProfile.profile?.is_contributor,
+                is_subscriber: playerProfile.profile?.is_subscriber,
+                plus: playerProfile.profile?.plus
             },
             stats: {
-                win: player.winCount || 0,
-                lose: player.matchCount ? (player.matchCount - player.winCount) : 0,
-                total_matches: player.matchCount || 0,
-                winrate: player.matchCount > 0 ? 
-                    ((player.winCount / player.matchCount) * 100).toFixed(2) : 0,
-                mvp_count: 0, // Не доступно в новой версии API
-                top_core_count: 0, // Не доступно в новой версии API
-                top_support_count: 0 // Не доступно в новой версии API
+                win: winLoss.win || 0,
+                lose: winLoss.lose || 0,
+                total_matches: (winLoss.win || 0) + (winLoss.lose || 0),
+                winrate: (winLoss.win || 0) + (winLoss.lose || 0) > 0 ? 
+                    (((winLoss.win || 0) / ((winLoss.win || 0) + (winLoss.lose || 0))) * 100).toFixed(2) : 0
             },
-            recent_matches: (player.matches || []).map(match => {
-                const playerData = match.players.find(p => p.steamAccountId === player.steamAccountId);
-                return {
-                    match_id: match.id,
-                    hero_id: playerData?.heroId,
-                    start_time: new Date(match.startDateTime).getTime() / 1000,
-                    duration: match.durationSeconds,
-                    game_mode: match.gameMode,
-                    lobby_type: match.lobbyType,
-                    kills: playerData?.kills,
-                    deaths: playerData?.deaths,
-                    assists: playerData?.assists,
-                    gold_per_min: playerData?.goldPerMinute,
-                    xp_per_min: playerData?.experiencePerMinute,
-                    level: playerData?.level,
-                    net_worth: playerData?.networth,
-                    is_radiant: playerData?.isRadiant,
-                    radiant_win: match.didRadiantWin,
-                    win: playerData?.isRadiant === match.didRadiantWin
-                };
-            }),
-            top_heroes: (player.heroesPerformance || []).map(hero => ({
-                hero_id: hero.heroId,
-                games: hero.matchCount,
-                win: hero.winCount,
-                winrate: hero.matchCount > 0 ? ((hero.winCount / hero.matchCount) * 100).toFixed(2) : 0,
-                avg_kills: hero.avgKills?.toFixed(1),
-                avg_deaths: hero.avgDeaths?.toFixed(1),
-                avg_assists: hero.avgAssists?.toFixed(1),
-                avg_gpm: hero.goldPerMinute?.toFixed(0),
-                avg_xpm: hero.experiencePerMinute?.toFixed(0)
+            recent_matches: (recentMatches || []).slice(0, 10).map(match => ({
+                match_id: match.match_id,
+                hero_id: match.hero_id,
+                start_time: match.start_time,
+                duration: match.duration,
+                game_mode: match.game_mode,
+                lobby_type: match.lobby_type,
+                kills: match.kills,
+                deaths: match.deaths,
+                assists: match.assists,
+                gold_per_min: match.gold_per_min,
+                xp_per_min: match.xp_per_min,
+                hero_damage: match.hero_damage,
+                hero_healing: match.hero_healing,
+                last_hits: match.last_hits,
+                player_slot: match.player_slot,
+                radiant_win: match.radiant_win,
+                win: ((match.player_slot < 128) === match.radiant_win) ? 1 : 0,
+                lane: match.lane,
+                lane_role: match.lane_role,
+                is_roaming: match.is_roaming,
+                cluster: match.cluster,
+                leaver_status: match.leaver_status,
+                party_size: match.party_size
             })),
-            rankings: player.leaderboardRanks || []
+            top_heroes: (playerHeroes || [])
+                .sort((a, b) => b.games - a.games)
+                .slice(0, 10)
+                .map(hero => ({
+                    hero_id: hero.hero_id,
+                    games: hero.games,
+                    win: hero.win,
+                    lose: hero.games - hero.win,
+                    winrate: hero.games > 0 ? ((hero.win / hero.games) * 100).toFixed(2) : 0,
+                    last_played: hero.last_played
+                })),
+            rankings: rankings || []
         };
         
+        console.log(`✅ Успешно получена статистика для игрока ${steamid}`);
         res.json(result);
         
     } catch (error) {
-        console.error('❌ Ошибка получения статистики игрока:', error);
+        console.error(`❌ Ошибка при получении статистики игрока ${steamid}:`, error.message);
         res.status(500).json({ 
-            error: 'Не удалось получить статистику игрока',
+            error: 'Ошибка получения статистики игрока',
             details: error.message 
         });
     }
@@ -219,477 +170,270 @@ router.get('/match/:matchid', async (req, res) => {
     const { matchid } = req.params;
     
     try {
-        console.log(`🔍 Получение информации о матче: ${matchid} через STRATZ API`);
+        console.log(`🔍 Получение информации о матче ${matchid} через OpenDota API`);
         
-        const query = `
-            query GetMatch($matchId: Long!) {
-                match(id: $matchId) {
-                    id
-                    startDateTime
-                    durationSeconds
-                    gameMode
-                    lobbyType
-                    didRadiantWin
-                    radiantKills
-                    direKills
-                    radiantTeam {
-                        id
-                        name
-                    }
-                    direTeam {
-                        id
-                        name
-                    }
-                    players {
-                        steamAccountId
-                        steamAccount {
-                            name
-                            avatar
-                        }
-                        heroId
-                        kills
-                        deaths
-                        assists
-                        lastHits
-                        denies
-                        goldPerMinute
-                        experiencePerMinute
-                        level
-                        networth
-                        heroDamage
-                        towerDamage
-                        heroHealing
-                        isRadiant
-                        position
-                        items {
-                            itemId
-                            timeCreated
-                        }
-                        stats {
-                            campStack
-                            creepsStacked
-                            runePowerUpCount
-                            runePickupCount
-                            wardsPurchased
-                            wardsPlaced
-                            wardsDestroyed
-                        }
-                    }
-                    analysisOutcome {
-                        winRates {
-                            radiantWinRate
-                            direWinRate
-                        }
-                    }
-                }
-            }
-        `;
+        const matchData = await makeOpenDotaRequest(`/matches/${matchid}`);
         
-        const data = await makeStratzRequest(query, { matchId: Number(matchid) });
-        
-        if (!data.match) {
+        if (!matchData) {
             return res.status(404).json({ 
-                error: 'Матч не найден в STRATZ API',
-                details: 'Возможно, матч слишком старый или не записан в базе данных'
+                error: 'Матч не найден',
+                details: 'Матч не существует или еще не обработан'
             });
         }
         
-        const match = data.match;
-        
-        const result = {
-            match_id: match.id,
-            duration: match.durationSeconds,
-            start_time: new Date(match.startDateTime).getTime() / 1000,
-            radiant_win: match.didRadiantWin,
-            game_mode: match.gameMode,
-            lobby_type: match.lobbyType,
-            radiant_team: {
-                id: match.radiantTeam?.id,
-                name: match.radiantTeam?.name,
-                score: match.radiantKills
-            },
-            dire_team: {
-                id: match.direTeam?.id,
-                name: match.direTeam?.name,
-                score: match.direKills
-            },
-            players: match.players.map(player => ({
-                account_id: player.steamAccountId,
-                personaname: player.steamAccount?.name,
-                avatar: player.steamAccount?.avatar,
-                hero_id: player.heroId,
-                kills: player.kills,
-                deaths: player.deaths,
-                assists: player.assists,
-                last_hits: player.lastHits,
-                denies: player.denies,
-                gold_per_min: player.goldPerMinute,
-                xp_per_min: player.experiencePerMinute,
-                level: player.level,
-                net_worth: player.networth,
-                hero_damage: player.heroDamage,
-                tower_damage: player.towerDamage,
-                hero_healing: player.heroHealing,
-                is_radiant: player.isRadiant,
-                position: player.position,
-                items: player.items?.map(item => item.itemId) || [],
-                stats: {
-                    camp_stack: player.stats?.campStack,
-                    creeps_stacked: player.stats?.creepsStacked,
-                    rune_powerup_count: player.stats?.runePowerUpCount,
-                    rune_pickup_count: player.stats?.runePickupCount,
-                    wards_purchased: player.stats?.wardsPurchased,
-                    wards_placed: player.stats?.wardsPlaced,
-                    wards_destroyed: player.stats?.wardsDestroyed
-                }
-            })),
-            win_rates: match.analysisOutcome?.winRates || null
-        };
-        
-        res.json(result);
+        console.log(`✅ Успешно получена информация о матче ${matchid}`);
+        res.json(matchData);
         
     } catch (error) {
-        console.error('❌ Ошибка получения информации о матче:', error);
+        console.error(`❌ Ошибка при получении информации о матче ${matchid}:`, error.message);
         res.status(500).json({ 
-            error: 'Не удалось получить информацию о матче',
+            error: 'Ошибка получения информации о матче',
             details: error.message 
         });
     }
 });
 
-// Поиск игрока по нику
-router.get('/search/:query', async (req, res) => {
-    const { query } = req.params;
-    
+// Получение списка героев
+router.get('/heroes', async (req, res) => {
     try {
-        console.log(`🔍 Поиск игрока: ${query} через STRATZ API`);
+        console.log('🔍 Получение списка героев через OpenDota API');
         
-        const searchQuery = `
-            query SearchPlayers($request: PlayerSearchRequestType!) {
-                search {
-                    players(request: $request) {
-                        steamAccountId
-                        steamAccount {
-                            name
-                            avatar
-                            profileUri
-                            countryCode
-                        }
-                        matchCount
-                        winCount
-                        lastMatchDateTime
-                        ranks {
-                            rank
-                            seasonRankId
-                        }
-                    }
-                }
-            }
-        `;
+        const heroes = await makeOpenDotaRequest('/heroes');
         
-        const data = await makeStratzRequest(searchQuery, {
-            request: {
-                name: query,
-                take: 20
-            }
-        });
-        
-        const searchResults = data.search?.players || [];
-        
-        const result = searchResults.map(player => ({
-            account_id: player.steamAccountId,
-            avatar: player.steamAccount?.avatar,
-            avatarmedium: player.steamAccount?.avatar,
-            personaname: player.steamAccount?.name,
-            profile_url: player.steamAccount?.profileUri,
-            country_code: player.steamAccount?.countryCode,
-            last_match_time: player.lastMatchDateTime ? 
-                new Date(player.lastMatchDateTime).getTime() / 1000 : null,
-            match_count: player.matchCount,
-            win_count: player.winCount,
-            winrate: player.matchCount > 0 ? 
-                ((player.winCount / player.matchCount) * 100).toFixed(2) : 0,
-            current_rank: player.ranks && player.ranks.length > 0 ? player.ranks[0].rank : null
-        }));
-        
-        res.json(result);
+        console.log(`✅ Успешно получен список героев (${heroes.length} героев)`);
+        res.json(heroes);
         
     } catch (error) {
-        console.error('❌ Ошибка поиска игрока:', error);
+        console.error('❌ Ошибка при получении списка героев:', error.message);
         res.status(500).json({ 
-            error: 'Не удалось найти игрока',
+            error: 'Ошибка получения списка героев',
             details: error.message 
         });
     }
 });
 
 // Получение статистики героев
-router.get('/heroes', async (req, res) => {
+router.get('/hero-stats', async (req, res) => {
     try {
-        console.log('🔍 Получение статистики героев через STRATZ API');
+        console.log('🔍 Получение статистики героев через OpenDota API');
         
-        const query = `
-            query GetHeroStats {
-                constants {
-                    heroes {
-                        id
-                        name
-                        displayName
-                        shortName
-                        primaryAttribute
-                        attackType
-                        roles
-                    }
-                }
-            }
-        `;
+        const heroStats = await makeOpenDotaRequest('/heroStats');
         
-        const data = await makeStratzRequest(query);
-        
-        const heroes = data.constants?.heroes || [];
-        
-        const result = heroes.map(hero => {
-            return {
-                hero_id: hero.id,
-                name: hero.displayName || hero.name,
-                short_name: hero.shortName,
-                primary_attr: hero.primaryAttribute,
-                attack_type: hero.attackType,
-                roles: hero.roles || [],
-                pro_pick: 0, // Статистика не доступна в базовом запросе
-                pro_win: 0,
-                pro_ban: 0,
-                total_matches: 0,
-                pick_rate: 0,
-                win_rate: 0,
-                ban_rate: 0
-            };
-        });
-        
-        // Сортируем по ID героя
-        result.sort((a, b) => a.hero_id - b.hero_id);
-        
-        res.json(result);
+        console.log(`✅ Успешно получена статистика героев (${heroStats.length} героев)`);
+        res.json(heroStats);
         
     } catch (error) {
-        console.error('❌ Ошибка получения статистики героев:', error);
+        console.error('❌ Ошибка при получении статистики героев:', error.message);
         res.status(500).json({ 
-            error: 'Не удалось получить статистику героев',
+            error: 'Ошибка получения статистики героев',
             details: error.message 
         });
     }
 });
 
-// Получение последних профессиональных матчей
-router.get('/pro-matches', async (req, res) => {
+// Получение константы (например, героев, предметов и т.д.)
+router.get('/constants/:resource', async (req, res) => {
+    const { resource } = req.params;
+    
     try {
-        console.log('🔍 Получение профессиональных матчей через STRATZ API');
+        console.log(`🔍 Получение константы ${resource} через OpenDota API`);
         
-        const query = `
-            query GetProMatches($request: MatchRequestType!) {
-                matches(request: $request) {
-                    id
-                    startDateTime
-                    durationSeconds
-                    didRadiantWin
-                    radiantKills
-                    direKills
-                    gameMode
-                    lobbyType
-                    radiantTeam {
-                        id
-                        name
-                        tag
-                    }
-                    direTeam {
-                        id
-                        name
-                        tag
-                    }
-                    league {
-                        id
-                        displayName
-                        tier
-                    }
-                    series {
-                        id
-                        type
-                    }
-                }
-            }
-        `;
+        const constants = await makeOpenDotaRequest(`/constants/${resource}`);
         
-        const data = await makeStratzRequest(query, {
-            request: {
-                take: 50,
-                orderBy: "START_DATE_TIME_DESC",
-                lobbyTypeIds: [1, 2] // Professional matches
-            }
-        });
-        
-        const matches = data.matches || [];
-        
-        const result = matches.map(match => ({
-            match_id: match.id,
-            duration: match.durationSeconds,
-            start_time: new Date(match.startDateTime).getTime() / 1000,
-            radiant_team_id: match.radiantTeam?.id,
-            radiant_name: match.radiantTeam?.name || match.radiantTeam?.tag,
-            dire_team_id: match.direTeam?.id,
-            dire_name: match.direTeam?.name || match.direTeam?.tag,
-            radiant_score: match.radiantKills,
-            dire_score: match.direKills,
-            radiant_win: match.didRadiantWin,
-            league_name: match.league?.displayName,
-            league_tier: match.league?.tier,
-            series_type: match.series?.type,
-            game_mode: match.gameMode,
-            lobby_type: match.lobbyType
-        }));
-        
-        res.json(result);
+        console.log(`✅ Успешно получена константа ${resource}`);
+        res.json(constants);
         
     } catch (error) {
-        console.error('❌ Ошибка получения профессиональных матчей:', error);
+        console.error(`❌ Ошибка при получении константы ${resource}:`, error.message);
         res.status(500).json({ 
-            error: 'Не удалось получить профессиональные матчи',
+            error: `Ошибка получения константы ${resource}`,
             details: error.message 
         });
     }
 });
 
-// Получение общей статистики распределения рангов
-router.get('/distributions', async (req, res) => {
+// Поиск игроков
+router.get('/search', async (req, res) => {
+    const { q } = req.query;
+    
+    if (!q || q.length < 3) {
+        return res.status(400).json({ 
+            error: 'Поисковый запрос должен содержать минимум 3 символа' 
+        });
+    }
+    
     try {
-        console.log('🔍 Получение распределения рангов через STRATZ API');
+        console.log(`🔍 Поиск игроков: "${q}" через OpenDota API`);
         
-        const query = `
-            query GetRankDistributions {
-                constants {
-                    ranks {
-                        rank
-                        seasonRankId
-                    }
-                }
-            }
-        `;
+        const searchResults = await makeOpenDotaRequest('/search', { q });
         
-        const data = await makeStratzRequest(query);
-        
-        const result = {
-            ranks: {
-                rows: (data.constants?.ranks || []).map((rank, index) => ({
-                    bin: rank.seasonRankId || index,
-                    bin_name: `Rank ${rank.seasonRankId || index}`,
-                    game_count: Math.round(Math.random() * 1000), // Примерное значение
-                    percentile: Math.random()
-                })),
-                sum: 100000 // Примерное общее количество игроков
-            },
-            leaderboard: {
-                season: null,
-                player_count: 0,
-                top_players: []
-            }
-        };
-        
-        res.json(result);
+        console.log(`✅ Найдено ${searchResults.length} игроков`);
+        res.json(searchResults);
         
     } catch (error) {
-        console.error('❌ Ошибка получения распределения рангов:', error);
+        console.error(`❌ Ошибка при поиске игроков:`, error.message);
         res.status(500).json({ 
-            error: 'Не удалось получить распределение рангов',
+            error: 'Ошибка поиска игроков',
             details: error.message 
         });
     }
 });
 
-// Сохранение/обновление профиля Dota 2 пользователя в базе данных
+// Получение рейтингов игроков по герою
+router.get('/rankings/:heroId', async (req, res) => {
+    const { heroId } = req.params;
+    
+    try {
+        console.log(`🔍 Получение рейтингов для героя ${heroId} через OpenDota API`);
+        
+        const rankings = await makeOpenDotaRequest('/rankings', { hero_id: heroId });
+        
+        console.log(`✅ Успешно получены рейтинги для героя ${heroId}`);
+        res.json(rankings);
+        
+    } catch (error) {
+        console.error(`❌ Ошибка при получении рейтингов для героя ${heroId}:`, error.message);
+        res.status(500).json({ 
+            error: 'Ошибка получения рейтингов',
+            details: error.message 
+        });
+    }
+});
+
+// Получение данных о производительности героя
+router.get('/benchmarks/:heroId', async (req, res) => {
+    const { heroId } = req.params;
+    
+    try {
+        console.log(`🔍 Получение бенчмарков для героя ${heroId} через OpenDota API`);
+        
+        const benchmarks = await makeOpenDotaRequest('/benchmarks', { hero_id: heroId });
+        
+        console.log(`✅ Успешно получены бенчмарки для героя ${heroId}`);
+        res.json(benchmarks);
+        
+    } catch (error) {
+        console.error(`❌ Ошибка при получении бенчмарков для героя ${heroId}:`, error.message);
+        res.status(500).json({ 
+            error: 'Ошибка получения бенчмарков',
+            details: error.message 
+        });
+    }
+});
+
+// Сохранение профиля игрока в базу данных
 router.post('/profile/save', async (req, res) => {
     const { user_id, steam_id, dota_stats } = req.body;
     
-    if (!user_id || !steam_id) {
-        return res.status(400).json({ error: 'Необходимы user_id и steam_id' });
+    if (!user_id || !steam_id || !dota_stats) {
+        return res.status(400).json({ 
+            error: 'Недостаточно данных для сохранения профиля' 
+        });
     }
     
     try {
-        // Проверяем, существует ли уже запись
-        const existingProfile = await pool.query(
-            'SELECT id FROM dota_profiles WHERE user_id = $1',
-            [user_id]
-        );
+        const query = `
+            INSERT INTO dota_profiles (user_id, steam_id, dota_stats, updated_at) 
+            VALUES ($1, $2, $3, NOW()) 
+            ON CONFLICT (user_id) 
+            DO UPDATE SET 
+                steam_id = EXCLUDED.steam_id,
+                dota_stats = EXCLUDED.dota_stats,
+                updated_at = NOW()
+        `;
         
-        if (existingProfile.rows.length > 0) {
-            // Обновляем существующую запись
-            await pool.query(`
-                UPDATE dota_profiles 
-                SET steam_id = $1, dota_stats = $2, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = $3
-            `, [steam_id, JSON.stringify(dota_stats), user_id]);
-        } else {
-            // Создаем новую запись
-            await pool.query(`
-                INSERT INTO dota_profiles (user_id, steam_id, dota_stats, created_at, updated_at)
-                VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            `, [user_id, steam_id, JSON.stringify(dota_stats)]);
-        }
+        await pool.query(query, [user_id, steam_id, JSON.stringify(dota_stats)]);
         
-        res.json({ success: true, message: 'Профиль Dota 2 сохранен (STRATZ API)' });
+        console.log(`✅ Профиль Dota 2 сохранен для пользователя ${user_id}`);
+        res.json({ message: 'Профиль Dota 2 успешно сохранен' });
         
     } catch (error) {
-        console.error('❌ Ошибка сохранения профиля Dota 2:', error);
+        console.error('❌ Ошибка при сохранении профиля Dota 2:', error.message);
         res.status(500).json({ 
-            error: 'Не удалось сохранить профиль Dota 2',
+            error: 'Ошибка сохранения профиля',
             details: error.message 
         });
     }
 });
 
-// Получение профиля Dota 2 пользователя из базы данных
-router.get('/profile/:user_id', async (req, res) => {
-    const { user_id } = req.params;
+// Получение сохраненного профиля игрока
+router.get('/profile/:userId', async (req, res) => {
+    const { userId } = req.params;
     
     try {
-        const profile = await pool.query(
-            'SELECT * FROM dota_profiles WHERE user_id = $1',
-            [user_id]
-        );
-        
-        if (profile.rows.length === 0) {
-            return res.status(404).json({ error: 'Профиль Dota 2 не найден' });
-        }
-        
-        res.json(profile.rows[0]);
-        
-    } catch (error) {
-        console.error('❌ Ошибка получения профиля Dota 2:', error);
-        res.status(500).json({ 
-            error: 'Не удалось получить профиль Dota 2',
-            details: error.message 
-        });
-    }
-});
-
-// Удаление профиля Dota 2 пользователя
-router.delete('/profile/:user_id', async (req, res) => {
-    const { user_id } = req.params;
-    
-    try {
-        const result = await pool.query(
-            'DELETE FROM dota_profiles WHERE user_id = $1 RETURNING id',
-            [user_id]
-        );
+        const query = 'SELECT * FROM dota_profiles WHERE user_id = $1';
+        const result = await pool.query(query, [userId]);
         
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Профиль Dota 2 не найден' });
+            return res.status(404).json({ 
+                error: 'Профиль Dota 2 не найден' 
+            });
         }
         
-        res.json({ success: true, message: 'Профиль Dota 2 удален' });
+        const profile = result.rows[0];
+        res.json({
+            user_id: profile.user_id,
+            steam_id: profile.steam_id,
+            dota_stats: profile.dota_stats,
+            created_at: profile.created_at,
+            updated_at: profile.updated_at
+        });
         
     } catch (error) {
-        console.error('❌ Ошибка удаления профиля Dota 2:', error);
+        console.error('❌ Ошибка при получении профиля Dota 2:', error.message);
         res.status(500).json({ 
-            error: 'Не удалось удалить профиль Dota 2',
+            error: 'Ошибка получения профиля',
+            details: error.message 
+        });
+    }
+});
+
+// Удаление профиля игрока
+router.delete('/profile/:userId', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        const query = 'DELETE FROM dota_profiles WHERE user_id = $1';
+        const result = await pool.query(query, [userId]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ 
+                error: 'Профиль Dota 2 не найден' 
+            });
+        }
+        
+        console.log(`✅ Профиль Dota 2 удален для пользователя ${userId}`);
+        res.json({ message: 'Профиль Dota 2 успешно удален' });
+        
+    } catch (error) {
+        console.error('❌ Ошибка при удалении профиля Dota 2:', error.message);
+        res.status(500).json({ 
+            error: 'Ошибка удаления профиля',
+            details: error.message 
+        });
+    }
+});
+
+// Получение обновлений игрока (рефреш данных)
+router.post('/player/:steamid/refresh', async (req, res) => {
+    const { steamid } = req.params;
+    
+    try {
+        console.log(`🔄 Запрос обновления данных игрока ${steamid}`);
+        
+        const accountId = steamIdToAccountId(steamid);
+        const refreshResult = await makeOpenDotaRequest(`/players/${accountId}/refresh`, {}, 'POST');
+        
+        console.log(`✅ Данные игрока ${steamid} поставлены в очередь на обновление`);
+        res.json({ 
+            message: 'Данные поставлены в очередь на обновление',
+            ...refreshResult 
+        });
+        
+    } catch (error) {
+        console.error(`❌ Ошибка при запросе обновления данных игрока ${steamid}:`, error.message);
+        res.status(500).json({ 
+            error: 'Ошибка запроса обновления',
             details: error.message 
         });
     }
