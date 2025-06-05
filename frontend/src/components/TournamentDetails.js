@@ -625,7 +625,7 @@ function TournamentDetails() {
     }, []);
 
     const handleMatchClick = useCallback((match) => {
-        console.log('🔍 Клик по матчу для просмотра деталей:', match);
+        console.log('🔍 Клик по матчу для просмотра деталей:', match.id || match);
         
         // Специальная диагностика для турнира 54
         if (tournament?.id === 54 || tournament?.id === '54') {
@@ -637,18 +637,47 @@ function TournamentDetails() {
             matches.filter(m => m.maps_data).forEach((m, i) => {
                 console.log(`  Матч ${i + 1} (ID ${m.id}): maps_data =`, m.maps_data);
             });
+            
+            // Дополнительная диагностика поиска матча
+            console.log('🔍 ДИАГНОСТИКА ПОИСКА МАТЧА:');
+            console.log('- Ищем матч с ID:', match.id);
+            console.log('- Все ID матчей в массиве:', matches.map(m => m.id));
+            console.log('- Типы ID в массиве:', matches.map(m => typeof m.id));
+            console.log('- Тип искомого ID:', typeof match.id);
         }
         
         // Ищем полные данные матча в исходном массиве matches
-        const fullMatchData = matches.find(m => m.id === match.id);
+        // Пробуем найти как по числовому, так и по строковому ID
+        let fullMatchData = matches.find(m => m.id === match.id);
+        
+        // Если не найден, пробуем преобразовать типы
+        if (!fullMatchData) {
+            fullMatchData = matches.find(m => 
+                String(m.id) === String(match.id) || 
+                Number(m.id) === Number(match.id)
+            );
+        }
+        
+        // Если все еще не найден, пробуем по другим полям
+        if (!fullMatchData) {
+            fullMatchData = matches.find(m => 
+                m.match_number === match.match_number ||
+                m.number === match.match_number ||
+                (m.round === match.round && m.match_number === match.match_number)
+            );
+        }
         
         if (fullMatchData) {
+            console.log('✅ НАЙДЕН МАТЧ В МАССИВЕ!');
+            console.log('- Найденный матч ID:', fullMatchData.id);
+            console.log('- maps_data найденного матча:', fullMatchData.maps_data);
+            
             // Дополнительная диагностика для любого матча
             console.log('📊 ДИАГНОСТИКА ДАННЫХ МАТЧА:');
             console.log('- ID матча:', fullMatchData.id);
             console.log('- maps_data:', fullMatchData.maps_data);
             console.log('- Тип maps_data:', typeof fullMatchData.maps_data);
-            console.log('- Длина (если строка):', typeof fullMatchData.maps_data === 'string' ? fullMatchData.maps_data.length : 'N/A');
+            console.log('- Длина (если массив):', Array.isArray(fullMatchData.maps_data) ? fullMatchData.maps_data.length : 'N/A');
             console.log('- Содержимое maps_data:', fullMatchData.maps_data);
             
             // Обогащаем данные матча информацией из game объекта
@@ -665,7 +694,22 @@ function TournamentDetails() {
             setSelectedMatch(enrichedMatch);
         } else {
             console.warn('⚠️ Полные данные матча не найдены в массиве matches');
-            setSelectedMatch(match);
+            console.log('- Объект матча из клика:', match);
+            console.log('- Доступные поля в объекте матча:', Object.keys(match));
+            
+            // Все равно показываем модальное окно с доступными данными
+            const fallbackMatch = {
+                id: match.id,
+                team1_name: match.participants?.[0]?.name || 'Команда 1',
+                team2_name: match.participants?.[1]?.name || 'Команда 2',
+                score1: match.participants?.[0]?.score || 0,
+                score2: match.participants?.[1]?.score || 0,
+                winner_team_id: match.winner_id,
+                maps_data: null // Нет данных карт
+            };
+            
+            console.log('🎯 Используем fallback данные:', fallbackMatch);
+            setSelectedMatch(fallbackMatch);
         }
     }, [matches, tournament]);
 
@@ -1074,7 +1118,7 @@ function TournamentDetails() {
                                                     </div>
                                                     <div className="result-compact-match">
                                                         <button 
-                                                            className={`team-name-btn ${match.winner_id === match.team1_id ? 'winner' : ''}`}
+                                                            className={`team-name-btn ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}
                                                             onClick={() => handleTeamClick(match.team1_name)}
                                                         >
                                                             {match.team1_name || 'Команда 1'}
@@ -1083,7 +1127,7 @@ function TournamentDetails() {
                                                             {match.team1_score || 0} : {match.team2_score || 0}
                                                         </span>
                                                         <button 
-                                                            className={`team-name-btn ${match.winner_id === match.team2_id ? 'winner' : ''}`}
+                                                            className={`team-name-btn ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}
                                                             onClick={() => handleTeamClick(match.team2_name)}
                                                         >
                                                             {match.team2_name || 'Команда 2'}
@@ -1343,7 +1387,7 @@ function TournamentDetails() {
                                 )}
                                 
                                 <div className="team-modal-header">
-                                    <h3>�� Детали матча</h3>
+                                    <h3>Детали матча</h3>
                                     <button 
                                         className="close-btn"
                                         onClick={() => setSelectedMatch(null)}
