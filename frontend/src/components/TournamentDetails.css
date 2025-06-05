@@ -1537,7 +1537,7 @@
 .stat-value {
     font-size: 1.5em;
     font-weight: 300;
-    color: #ffffff;
+    color: #000000;
 }
 
 /* Стили для случая отсутствия карт */
