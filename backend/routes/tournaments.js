@@ -2223,11 +2223,37 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
             return res.status(400).json({ error: 'Можно завершить только активный или идущий турнир' });
         }
         
-        // Устанавливаем дату окончания и меняем статус на 'completed'
-        const updateResult = await pool.query(
-            'UPDATE tournaments SET status = $1, end_date = NOW() WHERE id = $2 RETURNING *',
-            ['completed', id]
-        );
+        // 🎯 ОПРЕДЕЛЯЕМ ПРИЗЕРОВ АВТОМАТИЧЕСКИ
+        const winnersData = await determineTournamentWinners(id);
+        console.log('🏆 Определенные призеры:', winnersData);
+        
+        // Создаем строку для обновления с информацией о призерах
+        let updateQuery = 'UPDATE tournaments SET status = $1, end_date = NOW()';
+        let updateParams = ['completed', id];
+        let paramIndex = 3;
+        
+        if (winnersData.winner) {
+            updateQuery += `, winner_id = $${paramIndex}, winner_name = $${paramIndex + 1}`;
+            updateParams.splice(-1, 0, winnersData.winner.id, winnersData.winner.name);
+            paramIndex += 2;
+        }
+        
+        if (winnersData.secondPlace) {
+            updateQuery += `, second_place_id = $${paramIndex}, second_place_name = $${paramIndex + 1}`;
+            updateParams.splice(-1, 0, winnersData.secondPlace.id, winnersData.secondPlace.name);
+            paramIndex += 2;
+        }
+        
+        if (winnersData.thirdPlace) {
+            updateQuery += `, third_place_id = $${paramIndex}, third_place_name = $${paramIndex + 1}`;
+            updateParams.splice(-1, 0, winnersData.thirdPlace.id, winnersData.thirdPlace.name);
+            paramIndex += 2;
+        }
+        
+        updateQuery += ` WHERE id = $${paramIndex} RETURNING *`;
+        
+        // Устанавливаем дату окончания, меняем статус на 'completed' и сохраняем информацию о призерах
+        const updateResult = await pool.query(updateQuery, updateParams);
         
         // Получаем обновленные данные турнира
         const updatedTournament = updateResult.rows[0];
@@ -2280,7 +2306,7 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         // Отправляем объявление в чат турнира о завершении
         await sendTournamentChatAnnouncement(
             updatedTournament.name,
-            `Турнир "${updatedTournament.name}" завершён`,
+            `Турнир "${updatedTournament.name}" завершён${winnersData.winner ? `. Победитель: ${winnersData.winner.name}` : ''}`,
             id
         );
         
@@ -2294,6 +2320,252 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         res.status(500).json({ error: err.message });
     }
 });
+
+// 🎯 ФУНКЦИЯ ОПРЕДЕЛЕНИЯ ПРИЗЕРОВ ТУРНИРА
+async function determineTournamentWinners(tournamentId) {
+    try {
+        console.log('🏆 Начинаем определение призеров для турнира:', tournamentId);
+        
+        // Получаем все матчи турнира
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round DESC, match_number',
+            [tournamentId]
+        );
+        
+        const matches = matchesResult.rows;
+        if (matches.length === 0) {
+            console.log('⚠️ Нет матчей для определения призеров');
+            return { winner: null, secondPlace: null, thirdPlace: null };
+        }
+        
+        console.log(`🔍 Найдено ${matches.length} матчей для анализа`);
+        
+        // Получаем информацию о турнире
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
+        const tournament = tournamentResult.rows[0];
+        
+        // Находим матч за третье место
+        const thirdPlaceMatch = matches.find(match => 
+            match.is_third_place_match === true || match.is_third_place === true
+        );
+        
+        // Находим финальный матч (самый высокий раунд, не является матчем за 3-е место, завершен)
+        const completedMatches = matches.filter(match => 
+            (match.winner_team_id || match.winner_id) && 
+            !match.is_third_place_match && 
+            !match.is_third_place
+        );
+        
+        const finalMatch = completedMatches
+            .sort((a, b) => (b.round || 0) - (a.round || 0))[0];
+        
+        console.log('🎯 Финальный матч:', finalMatch?.id);
+        console.log('🎯 Матч за 3-е место:', thirdPlaceMatch?.id);
+        
+        let winner = null;
+        let secondPlace = null;
+        let thirdPlace = null;
+        
+        // Определяем победителя и второе место из финального матча
+        if (finalMatch) {
+            const winnerId = finalMatch.winner_team_id || finalMatch.winner_id;
+            const loserId = winnerId === finalMatch.team1_id ? finalMatch.team2_id : finalMatch.team1_id;
+            
+            console.log(`🏆 Победитель ID: ${winnerId}, Проигравший в финале ID: ${loserId}`);
+            
+            // Получаем информацию об участниках
+            winner = await getParticipantInfo(winnerId, tournament);
+            secondPlace = await getParticipantInfo(loserId, tournament);
+        }
+        
+        // Определяем третье место из матча за 3-е место
+        if (thirdPlaceMatch && (thirdPlaceMatch.winner_team_id || thirdPlaceMatch.winner_id)) {
+            const thirdWinnerId = thirdPlaceMatch.winner_team_id || thirdPlaceMatch.winner_id;
+            console.log(`🥉 Третье место ID: ${thirdWinnerId}`);
+            
+            thirdPlace = await getParticipantInfo(thirdWinnerId, tournament);
+        }
+
+        // 🎯 НОВАЯ ФУНКЦИЯ: Сохраняем всех участников команд как призеров
+        await saveTeamMembersAsWinners(tournamentId, tournament, winner, secondPlace, thirdPlace);
+        
+        const result = { winner, secondPlace, thirdPlace };
+        console.log('🏆 Итоговые призеры:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Ошибка определения призеров:', error);
+        return { winner: null, secondPlace: null, thirdPlace: null };
+    }
+}
+
+// 🎯 НОВАЯ ФУНКЦИЯ: Сохранение всех участников команд как призеров
+async function saveTeamMembersAsWinners(tournamentId, tournament, winner, secondPlace, thirdPlace) {
+    try {
+        console.log('👥 Сохраняем участников команд как призеров...');
+        
+        // Функция для обработки призеров определенного места
+        const processPrizePlace = async (prizeData, place, position) => {
+            if (!prizeData) return;
+            
+            console.log(`🏆 Обрабатываем ${place} место:`, prizeData.name);
+            
+            if (tournament.participant_type === 'team' || tournament.format === 'mix') {
+                // Для командных турниров - получаем всех участников команды
+                const teamMembersResult = await pool.query(
+                    `SELECT ttm.user_id, ttm.participant_id, tp.name as participant_name, u.username
+                     FROM tournament_team_members ttm
+                     LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                     LEFT JOIN users u ON ttm.user_id = u.id
+                     WHERE ttm.team_id = $1`,
+                    [prizeData.id]
+                );
+                
+                const teamMembers = teamMembersResult.rows;
+                console.log(`👥 Найдено ${teamMembers.length} участников в команде ${prizeData.name}`);
+                
+                // Сохраняем каждого участника команды как призера
+                for (const member of teamMembers) {
+                    if (member.user_id) {
+                        await saveIndividualWinner(tournamentId, member.user_id, place, position, prizeData.name, true);
+                        console.log(`✅ Участник ${member.username} записан как ${place} (команда: ${prizeData.name})`);
+                    } else if (member.participant_id) {
+                        // Для незарегистрированных участников (гостей)
+                        await saveGuestWinner(tournamentId, member.participant_id, place, position, prizeData.name);
+                        console.log(`✅ Гость ${member.participant_name} записан как ${place} (команда: ${prizeData.name})`);
+                    }
+                }
+            } else {
+                // Для одиночных турниров - сохраняем одного участника
+                if (prizeData.user_id) {
+                    await saveIndividualWinner(tournamentId, prizeData.user_id, place, position, prizeData.name, false);
+                    console.log(`✅ Игрок ${prizeData.name} записан как ${place}`);
+                }
+            }
+        };
+        
+        // Обрабатываем всех призеров
+        await processPrizePlace(winner, 'Победитель', 1);
+        await processPrizePlace(secondPlace, 'Второе место', 2);
+        await processPrizePlace(thirdPlace, 'Третье место', 3);
+        
+        console.log('✅ Все участники команд успешно записаны как призеры');
+        
+    } catch (error) {
+        console.error('❌ Ошибка сохранения участников команд как призеров:', error);
+    }
+}
+
+// 🎯 ФУНКЦИЯ СОХРАНЕНИЯ ИНДИВИДУАЛЬНОГО ПРИЗЕРА
+async function saveIndividualWinner(tournamentId, userId, place, position, teamName, isTeamMember) {
+    try {
+        // Проверяем, есть ли уже запись для этого пользователя в этом турнире
+        const existingRecord = await pool.query(
+            'SELECT * FROM user_tournament_stats WHERE user_id = $1 AND tournament_id = $2',
+            [userId, tournamentId]
+        );
+        
+        if (existingRecord.rows.length > 0) {
+            // Обновляем существующую запись
+            await pool.query(
+                `UPDATE user_tournament_stats 
+                 SET result = $1, final_position = $2, is_winner = $3, 
+                     team_name = $4, is_team_member = $5, updated_at = NOW()
+                 WHERE user_id = $6 AND tournament_id = $7`,
+                [place, position, position === 1, teamName, isTeamMember, userId, tournamentId]
+            );
+        } else {
+            // Создаем новую запись
+            await pool.query(
+                `INSERT INTO user_tournament_stats 
+                 (user_id, tournament_id, result, final_position, is_winner, team_name, is_team_member, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+                [userId, tournamentId, place, position, position === 1, teamName, isTeamMember]
+            );
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка сохранения индивидуального призера:', error);
+    }
+}
+
+// 🎯 ФУНКЦИЯ СОХРАНЕНИЯ ПРИЗЕРА-ГОСТЯ
+async function saveGuestWinner(tournamentId, participantId, place, position, teamName) {
+    try {
+        // Для гостей можем создать отдельную таблицу или расширить существующую
+        // Пока логируем информацию
+        console.log(`📝 Гость (participant_id: ${participantId}) - ${place} в турнире ${tournamentId} (команда: ${teamName})`);
+        
+        // Можно добавить в tournament_logs для истории
+        await pool.query(
+            `INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data, created_at)
+             VALUES ($1, $2, $3, $4, NOW())`,
+            [
+                tournamentId, 
+                1, // системный пользователь
+                'guest_winner',
+                JSON.stringify({
+                    participant_id: participantId,
+                    place: place,
+                    position: position,
+                    team_name: teamName,
+                    tournament_completed: true
+                })
+            ]
+        );
+        
+    } catch (error) {
+        console.error('❌ Ошибка сохранения призера-гостя:', error);
+    }
+}
+
+// 🎯 ФУНКЦИЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ ОБ УЧАСТНИКЕ
+async function getParticipantInfo(participantId, tournament) {
+    if (!participantId) return null;
+    
+    try {
+        if (tournament.participant_type === 'team' || tournament.format === 'mix') {
+            // Для командных турниров
+            const teamResult = await pool.query(
+                'SELECT * FROM tournament_teams WHERE id = $1',
+                [participantId]
+            );
+            
+            if (teamResult.rows.length > 0) {
+                const team = teamResult.rows[0];
+                return {
+                    id: team.id,
+                    name: team.name,
+                    type: 'team'
+                };
+            }
+        } else {
+            // Для одиночных турниров
+            const participantResult = await pool.query(
+                `SELECT tp.*, u.username, u.avatar_url 
+                 FROM tournament_participants tp 
+                 LEFT JOIN users u ON tp.user_id = u.id 
+                 WHERE tp.id = $1`,
+                [participantId]
+            );
+            
+            if (participantResult.rows.length > 0) {
+                const participant = participantResult.rows[0];
+                return {
+                    id: participant.id,
+                    name: participant.name || participant.username,
+                    type: 'solo',
+                    user_id: participant.user_id
+                };
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('❌ Ошибка получения информации об участнике:', error);
+        return null;
+    }
+}
 
 // Получение сообщений чата турнира
 router.get('/:tournamentId/chat/messages', authenticateToken, async (req, res) => {

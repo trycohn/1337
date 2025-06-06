@@ -131,6 +131,254 @@ function TournamentDetails() {
         return Math.round(average);
     }, [ratingType]);
 
+    // 🎯 ФУНКЦИЯ ДИНАМИЧЕСКОГО ОПРЕДЕЛЕНИЯ ПРИЗЕРОВ ТУРНИРА
+    const calculateTournamentWinners = useCallback(() => {
+        if (!tournament || tournament?.status !== 'completed') {
+            return { winner: null, secondPlace: null, thirdPlace: null };
+        }
+
+        console.log('🏆 Рассчитываем призеров для турнира:', tournament.name);
+
+        // 🎯 ПРИОРИТЕТ 1: Используем данные из базы данных, если они есть
+        if (tournament.winner_id || tournament.winner_name) {
+            console.log('✅ Используем данные о призерах из базы данных');
+            
+            let winner = null;
+            let secondPlace = null;
+            let thirdPlace = null;
+            
+            // Первое место
+            if (tournament.winner_id || tournament.winner_name) {
+                winner = {
+                    id: tournament.winner_id,
+                    name: tournament.winner_name || 'Победитель',
+                    type: tournament.format === 'mix' || tournament.participant_type === 'team' ? 'team' : 'solo'
+                };
+                
+                // Пытаемся найти дополнительную информацию о команде
+                if (winner.type === 'team' && mixedTeams && tournament.winner_id) {
+                    const winnerTeam = mixedTeams.find(team => team.id === tournament.winner_id) || 
+                                      tournament.teams?.find(team => team.id === tournament.winner_id);
+                    if (winnerTeam) {
+                        winner.members = winnerTeam.members;
+                        winner.avatar = winnerTeam.avatar_url;
+                    }
+                } else if (winner.type === 'solo' && tournament.participants && tournament.winner_id) {
+                    const winnerParticipant = tournament.participants.find(p => p.id === tournament.winner_id);
+                    if (winnerParticipant) {
+                        winner.user_id = winnerParticipant.user_id;
+                        winner.avatar = winnerParticipant.avatar_url;
+                    }
+                }
+            }
+            
+            // Второе место
+            if (tournament.second_place_id || tournament.second_place_name) {
+                secondPlace = {
+                    id: tournament.second_place_id,
+                    name: tournament.second_place_name || 'Второе место',
+                    type: tournament.format === 'mix' || tournament.participant_type === 'team' ? 'team' : 'solo'
+                };
+                
+                // Пытаемся найти дополнительную информацию
+                if (secondPlace.type === 'team' && mixedTeams && tournament.second_place_id) {
+                    const secondTeam = mixedTeams.find(team => team.id === tournament.second_place_id) || 
+                                      tournament.teams?.find(team => team.id === tournament.second_place_id);
+                    if (secondTeam) {
+                        secondPlace.members = secondTeam.members;
+                        secondPlace.avatar = secondTeam.avatar_url;
+                    }
+                } else if (secondPlace.type === 'solo' && tournament.participants && tournament.second_place_id) {
+                    const secondParticipant = tournament.participants.find(p => p.id === tournament.second_place_id);
+                    if (secondParticipant) {
+                        secondPlace.user_id = secondParticipant.user_id;
+                        secondPlace.avatar = secondParticipant.avatar_url;
+                    }
+                }
+            }
+            
+            // Третье место
+            if (tournament.third_place_id || tournament.third_place_name) {
+                thirdPlace = {
+                    id: tournament.third_place_id,
+                    name: tournament.third_place_name || 'Третье место',
+                    type: tournament.format === 'mix' || tournament.participant_type === 'team' ? 'team' : 'solo'
+                };
+                
+                // Пытаемся найти дополнительную информацию
+                if (thirdPlace.type === 'team' && mixedTeams && tournament.third_place_id) {
+                    const thirdTeam = mixedTeams.find(team => team.id === tournament.third_place_id) || 
+                                     tournament.teams?.find(team => team.id === tournament.third_place_id);
+                    if (thirdTeam) {
+                        thirdPlace.members = thirdTeam.members;
+                        thirdPlace.avatar = thirdTeam.avatar_url;
+                    }
+                } else if (thirdPlace.type === 'solo' && tournament.participants && tournament.third_place_id) {
+                    const thirdParticipant = tournament.participants.find(p => p.id === tournament.third_place_id);
+                    if (thirdParticipant) {
+                        thirdPlace.user_id = thirdParticipant.user_id;
+                        thirdPlace.avatar = thirdParticipant.avatar_url;
+                    }
+                }
+            }
+            
+            return { winner, secondPlace, thirdPlace };
+        }
+
+        // 🎯 ПРИОРИТЕТ 2: Динамическое вычисление на основе матчей (fallback)
+        if (!matches || matches.length === 0) {
+            console.log('⚠️ Нет данных о призерах в БД и нет матчей для динамического вычисления');
+            return { winner: null, secondPlace: null, thirdPlace: null };
+        }
+
+        console.log('🔄 Используем динамическое вычисление призеров на основе матчей');
+        console.log('🏆 Всего матчей:', matches.length);
+
+        // Находим матч за третье место
+        const thirdPlaceMatch = matches.find(match => 
+            match.is_third_place_match === true || match.is_third_place === true
+        );
+
+        // Находим финальный матч (самый высокий раунд, не является матчем за 3-е место)
+        const completedMatches = matches.filter(match => 
+            match.winner_team_id || match.winner_id || 
+            match.status === 'completed' || match.status === 'DONE'
+        );
+
+        // Сортируем по раунду (по убыванию) и находим финал
+        const sortedMatches = completedMatches
+            .filter(match => !match.is_third_place_match && !match.is_third_place)
+            .sort((a, b) => (b.round || 0) - (a.round || 0));
+
+        const finalMatch = sortedMatches.find(match => match.winner_team_id || match.winner_id);
+
+        console.log('🏆 Финальный матч:', finalMatch);
+        console.log('🏆 Матч за 3-е место:', thirdPlaceMatch);
+
+        let winner = null;
+        let secondPlace = null;
+        let thirdPlace = null;
+
+        // Определяем победителя и второе место из финального матча
+        if (finalMatch) {
+            const winnerId = finalMatch.winner_team_id || finalMatch.winner_id;
+            const loserId = winnerId === finalMatch.team1_id ? finalMatch.team2_id : finalMatch.team1_id;
+
+            // Получаем информацию о победителе
+            if (tournament.format === 'mix' || tournament.participant_type === 'team') {
+                const winnerTeam = mixedTeams?.find(team => team.id === winnerId) || 
+                                tournament.teams?.find(team => team.id === winnerId);
+                if (winnerTeam) {
+                    winner = {
+                        id: winnerId,
+                        name: winnerTeam.name,
+                        type: 'team',
+                        members: winnerTeam.members,
+                        avatar: winnerTeam.avatar_url
+                    };
+                } else {
+                    // Fallback: ищем по именам в матче
+                    winner = {
+                        id: winnerId,
+                        name: winnerId === finalMatch.team1_id ? 
+                              finalMatch.team1_name || finalMatch.participant1_name || 'Победитель' :
+                              finalMatch.team2_name || finalMatch.participant2_name || 'Победитель',
+                        type: 'team',
+                        members: null
+                    };
+                }
+
+                // Получаем информацию о втором месте
+                const secondTeam = mixedTeams?.find(team => team.id === loserId) || 
+                                 tournament.teams?.find(team => team.id === loserId);
+                if (secondTeam) {
+                    secondPlace = {
+                        id: loserId,
+                        name: secondTeam.name,
+                        type: 'team',
+                        members: secondTeam.members,
+                        avatar: secondTeam.avatar_url
+                    };
+                } else {
+                    secondPlace = {
+                        id: loserId,
+                        name: loserId === finalMatch.team1_id ? 
+                              finalMatch.team1_name || finalMatch.participant1_name || 'Второе место' :
+                              finalMatch.team2_name || finalMatch.participant2_name || 'Второе место',
+                        type: 'team',
+                        members: null
+                    };
+                }
+            } else {
+                // Для одиночных турниров
+                const winnerParticipant = tournament.participants?.find(p => p.id === winnerId);
+                const loserParticipant = tournament.participants?.find(p => p.id === loserId);
+
+                winner = {
+                    id: winnerId,
+                    name: winnerParticipant?.name || winnerParticipant?.username || 'Победитель',
+                    type: 'solo',
+                    user_id: winnerParticipant?.user_id,
+                    avatar: winnerParticipant?.avatar_url
+                };
+
+                secondPlace = {
+                    id: loserId,
+                    name: loserParticipant?.name || loserParticipant?.username || 'Второе место',
+                    type: 'solo',
+                    user_id: loserParticipant?.user_id,
+                    avatar: loserParticipant?.avatar_url
+                };
+            }
+        }
+
+        // Определяем третье место из матча за 3-е место
+        if (thirdPlaceMatch && (thirdPlaceMatch.winner_team_id || thirdPlaceMatch.winner_id)) {
+            const thirdWinnerId = thirdPlaceMatch.winner_team_id || thirdPlaceMatch.winner_id;
+
+            if (tournament.format === 'mix' || tournament.participant_type === 'team') {
+                const thirdTeam = mixedTeams?.find(team => team.id === thirdWinnerId) || 
+                                tournament.teams?.find(team => team.id === thirdWinnerId);
+                if (thirdTeam) {
+                    thirdPlace = {
+                        id: thirdWinnerId,
+                        name: thirdTeam.name,
+                        type: 'team',
+                        members: thirdTeam.members,
+                        avatar: thirdTeam.avatar_url
+                    };
+                } else {
+                    thirdPlace = {
+                        id: thirdWinnerId,
+                        name: thirdWinnerId === thirdPlaceMatch.team1_id ? 
+                              thirdPlaceMatch.team1_name || thirdPlaceMatch.participant1_name || 'Третье место' :
+                              thirdPlaceMatch.team2_name || thirdPlaceMatch.participant2_name || 'Третье место',
+                        type: 'team',
+                        members: null
+                    };
+                }
+            } else {
+                const thirdParticipant = tournament.participants?.find(p => p.id === thirdWinnerId);
+                thirdPlace = {
+                    id: thirdWinnerId,
+                    name: thirdParticipant?.name || thirdParticipant?.username || 'Третье место',
+                    type: 'solo',
+                    user_id: thirdParticipant?.user_id,
+                    avatar: thirdParticipant?.avatar_url
+                };
+            }
+        }
+
+        const result = { winner, secondPlace, thirdPlace };
+        console.log('🏆 Результат динамического расчета призеров:', result);
+        return result;
+    }, [matches, tournament, mixedTeams]);
+
+    // 🎯 МЕМОИЗИРОВАННЫЕ ПРИЗЕРЫ ТУРНИРА
+    const tournamentWinners = useMemo(() => {
+        return calculateTournamentWinners();
+    }, [calculateTournamentWinners]);
+
     // 🎯 ПРАВА ПОЛЬЗОВАТЕЛЯ
     const userPermissions = useMemo(() => {
         if (!user || !tournament) {
@@ -1230,117 +1478,142 @@ function TournamentDetails() {
                             </div>
 
                             {/* Блок с подиумом победителей (только для завершенных турниров) */}
-                            {tournament.status === 'completed' && (
+                            {tournament.status === 'completed' && tournamentWinners.winner && (
                                 <div className="info-winners-section">
                                     <div className="winners-section">
                                         <h3>🏆 Призёры турнира</h3>
                                         <div className="winners-podium">
                                             {/* Первое место */}
-                                            {tournament.winner_id && (
-                                                <div className="winner-card place-1">
-                                                    <div className="medal-icon gold-medal">🥇</div>
-                                                    <div className="winner-info">
-                                                        {tournament.format === 'mix' || tournament.participant_type === 'team' ? (
-                                                            <div className="team-winner">
-                                                                <h4>{tournament.winner_name || 'Команда победитель'}</h4>
-                                                                {mixedTeams?.find(team => team.id === tournament.winner_id)?.members && (
-                                                                    <div className="team-members">
-                                                                        <h5>Состав команды:</h5>
-                                                                        <ul>
-                                                                            {mixedTeams.find(team => team.id === tournament.winner_id).members.map((member, idx) => (
-                                                                                <li key={idx} className="team-member">
-                                                                                    {member.user_id ? (
-                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name">
-                                                                                            {member.name || member.username}
-                                                                                        </Link>
-                                                                                    ) : (
-                                                                                        <span className="member-name">{member.name}</span>
-                                                                                    )}
-                                                                                    {member.faceit_elo && (
-                                                                                        <span className="member-elo">({member.faceit_elo} ELO)</span>
-                                                                                    )}
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
+                                            <div className="winner-card place-1">
+                                                <div className="medal-icon gold-medal">🥇</div>
+                                                <div className="winner-info">
+                                                    {tournamentWinners.winner.type === 'team' ? (
+                                                        <div className="team-winner">
+                                                            <h4>{tournamentWinners.winner.name}</h4>
+                                                            {tournamentWinners.winner.members && (
+                                                                <div className="team-members">
+                                                                    <h5>🏆 Победители (участники команды):</h5>
+                                                                    <ul>
+                                                                        {tournamentWinners.winner.members.map((member, idx) => (
+                                                                            <li key={idx} className="team-member winner-member">
+                                                                                <span className="member-medal">🥇</span>
+                                                                                {member.user_id ? (
+                                                                                    <Link to={`/profile/${member.user_id}`} className="member-name winner-name-link">
+                                                                                        {member.name || member.username}
+                                                                                    </Link>
+                                                                                ) : (
+                                                                                    <span className="member-name winner-name-text">{member.name}</span>
+                                                                                )}
+                                                                                {member.faceit_elo && (
+                                                                                    <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                                )}
+                                                                                <span className="member-achievement">- Чемпион турнира</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                    <div className="team-achievement">
+                                                                        <strong>Каждый участник команды получает статус "Победитель турнира"</strong>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <Link to={`/profile/${tournament.winner_id}`} className="winner-name">
-                                                                {tournament.winner_name || 'Победитель'}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="solo-winner">
+                                                            <Link to={`/profile/${tournamentWinners.winner.user_id}`} className="winner-name">
+                                                                <span className="winner-medal">🥇</span>
+                                                                {tournamentWinners.winner.name}
                                                             </Link>
-                                                        )}
-                                                    </div>
+                                                            <div className="winner-achievement">Чемпион турнира</div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
+                                            </div>
 
                                             {/* Второе место */}
-                                            {tournament.second_place_id && (
+                                            {tournamentWinners.secondPlace && (
                                                 <div className="winner-card place-2">
                                                     <div className="medal-icon silver-medal">🥈</div>
                                                     <div className="winner-info">
-                                                        {tournament.format === 'mix' || tournament.participant_type === 'team' ? (
+                                                        {tournamentWinners.secondPlace.type === 'team' ? (
                                                             <div className="team-winner">
-                                                                <h4>{tournament.second_place_name || 'Второе место'}</h4>
-                                                                {mixedTeams?.find(team => team.id === tournament.second_place_id)?.members && (
+                                                                <h4>{tournamentWinners.secondPlace.name}</h4>
+                                                                {tournamentWinners.secondPlace.members && (
                                                                     <div className="team-members">
-                                                                        <h5>Состав команды:</h5>
+                                                                        <h5>🥈 Серебряные призеры (участники команды):</h5>
                                                                         <ul>
-                                                                            {mixedTeams.find(team => team.id === tournament.second_place_id).members.map((member, idx) => (
-                                                                                <li key={idx} className="team-member">
+                                                                            {tournamentWinners.secondPlace.members.map((member, idx) => (
+                                                                                <li key={idx} className="team-member second-place-member">
+                                                                                    <span className="member-medal">🥈</span>
                                                                                     {member.user_id ? (
-                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name">
+                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name second-place-name-link">
                                                                                             {member.name || member.username}
                                                                                         </Link>
                                                                                     ) : (
-                                                                                        <span className="member-name">{member.name}</span>
+                                                                                        <span className="member-name second-place-name-text">{member.name}</span>
                                                                                     )}
+                                                                                    <span className="member-achievement">- Серебряный призер</span>
                                                                                 </li>
                                                                             ))}
                                                                         </ul>
+                                                                        <div className="team-achievement">
+                                                                            <strong>Каждый участник команды получает статус "Серебряный призер"</strong>
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <Link to={`/profile/${tournament.second_place_id}`} className="winner-name">
-                                                                {tournament.second_place_name || 'Второе место'}
-                                                            </Link>
+                                                            <div className="solo-winner">
+                                                                <Link to={`/profile/${tournamentWinners.secondPlace.user_id}`} className="winner-name">
+                                                                    <span className="winner-medal">🥈</span>
+                                                                    {tournamentWinners.secondPlace.name}
+                                                                </Link>
+                                                                <div className="winner-achievement">Серебряный призер</div>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
                                             )}
 
                                             {/* Третье место */}
-                                            {tournament.third_place_id && (
+                                            {tournamentWinners.thirdPlace && (
                                                 <div className="winner-card place-3">
                                                     <div className="medal-icon bronze-medal">🥉</div>
                                                     <div className="winner-info">
-                                                        {tournament.format === 'mix' || tournament.participant_type === 'team' ? (
+                                                        {tournamentWinners.thirdPlace.type === 'team' ? (
                                                             <div className="team-winner">
-                                                                <h4>{tournament.third_place_name || 'Третье место'}</h4>
-                                                                {mixedTeams?.find(team => team.id === tournament.third_place_id)?.members && (
+                                                                <h4>{tournamentWinners.thirdPlace.name}</h4>
+                                                                {tournamentWinners.thirdPlace.members && (
                                                                     <div className="team-members">
-                                                                        <h5>Состав команды:</h5>
+                                                                        <h5>🥉 Бронзовые призеры (участники команды):</h5>
                                                                         <ul>
-                                                                            {mixedTeams.find(team => team.id === tournament.third_place_id).members.map((member, idx) => (
-                                                                                <li key={idx} className="team-member">
+                                                                            {tournamentWinners.thirdPlace.members.map((member, idx) => (
+                                                                                <li key={idx} className="team-member third-place-member">
+                                                                                    <span className="member-medal">🥉</span>
                                                                                     {member.user_id ? (
-                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name">
+                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name third-place-name-link">
                                                                                             {member.name || member.username}
                                                                                         </Link>
                                                                                     ) : (
-                                                                                        <span className="member-name">{member.name}</span>
+                                                                                        <span className="member-name third-place-name-text">{member.name}</span>
                                                                                     )}
+                                                                                    <span className="member-achievement">- Бронзовый призер</span>
                                                                                 </li>
                                                                             ))}
                                                                         </ul>
+                                                                        <div className="team-achievement">
+                                                                            <strong>Каждый участник команды получает статус "Бронзовый призер"</strong>
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <Link to={`/profile/${tournament.third_place_id}`} className="winner-name">
-                                                                {tournament.third_place_name || 'Третье место'}
-                                                            </Link>
+                                                            <div className="solo-winner">
+                                                                <Link to={`/profile/${tournamentWinners.thirdPlace.user_id}`} className="winner-name">
+                                                                    <span className="winner-medal">🥉</span>
+                                                                    {tournamentWinners.thirdPlace.name}
+                                                                </Link>
+                                                                <div className="winner-achievement">Бронзовый призер</div>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1830,7 +2103,7 @@ function TournamentDetails() {
                             })()}
 
                             {/* ПОБЕДИТЕЛИ */}
-                            {tournament.status === 'completed' && tournament.winner_id && (
+                            {tournament.status === 'completed' && tournamentWinners.winner && (
                                 <div className="winners-section">
                                     <h3>🏆 Призёры турнира</h3>
                                     <div className="winners-podium">
@@ -1838,50 +2111,133 @@ function TournamentDetails() {
                                         <div className="winner-card place-1">
                                             <div className="medal-icon gold-medal">🥇</div>
                                             <div className="winner-info">
-                                                {tournament.format === 'mix' ? (
+                                                {tournamentWinners.winner.type === 'team' ? (
                                                     <div className="team-winner">
-                                                        <h4>{tournament.winner_name || 'Команда победитель'}</h4>
-                                                        {/* Здесь можно показать состав команды */}
+                                                        <h4>{tournamentWinners.winner.name}</h4>
+                                                        {tournamentWinners.winner.members && (
+                                                            <div className="team-members">
+                                                                <h5>🏆 Победители (участники команды):</h5>
+                                                                <ul>
+                                                                    {tournamentWinners.winner.members.map((member, idx) => (
+                                                                        <li key={idx} className="team-member winner-member">
+                                                                            <span className="member-medal">🥇</span>
+                                                                            {member.user_id ? (
+                                                                                <Link to={`/profile/${member.user_id}`} className="member-name winner-name-link">
+                                                                                    {member.name || member.username}
+                                                                                </Link>
+                                                                            ) : (
+                                                                                <span className="member-name winner-name-text">{member.name}</span>
+                                                                            )}
+                                                                            {member.faceit_elo && (
+                                                                                <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                            )}
+                                                                            <span className="member-achievement">- Чемпион турнира</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                                <div className="team-achievement">
+                                                                    <strong>Каждый участник команды получает статус "Победитель турнира"</strong>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ) : (
-                                                    <Link to={`/profile/${tournament.winner_id}`} className="winner-name">
-                                                        {tournament.winner_name || 'Победитель'}
-                                                    </Link>
+                                                    <div className="solo-winner">
+                                                        <Link to={`/profile/${tournamentWinners.winner.user_id}`} className="winner-name">
+                                                            <span className="winner-medal">🥇</span>
+                                                            {tournamentWinners.winner.name}
+                                                        </Link>
+                                                        <div className="winner-achievement">Чемпион турнира</div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
 
                                         {/* Второе место */}
-                                        {tournament.second_place_id && (
+                                        {tournamentWinners.secondPlace && (
                                             <div className="winner-card place-2">
                                                 <div className="medal-icon silver-medal">🥈</div>
                                                 <div className="winner-info">
-                                                    {tournament.format === 'mix' ? (
+                                                    {tournamentWinners.secondPlace.type === 'team' ? (
                                                         <div className="team-winner">
-                                                            <h4>{tournament.second_place_name || 'Второе место'}</h4>
+                                                            <h4>{tournamentWinners.secondPlace.name}</h4>
+                                                            {tournamentWinners.secondPlace.members && (
+                                                                <div className="team-members">
+                                                                    <h5>🥈 Серебряные призеры (участники команды):</h5>
+                                                                    <ul>
+                                                                        {tournamentWinners.secondPlace.members.map((member, idx) => (
+                                                                            <li key={idx} className="team-member second-place-member">
+                                                                                <span className="member-medal">🥈</span>
+                                                                                {member.user_id ? (
+                                                                                    <Link to={`/profile/${member.user_id}`} className="member-name second-place-name-link">
+                                                                                        {member.name || member.username}
+                                                                                    </Link>
+                                                                                ) : (
+                                                                                    <span className="member-name second-place-name-text">{member.name}</span>
+                                                                                )}
+                                                                                <span className="member-achievement">- Серебряный призер</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                    <div className="team-achievement">
+                                                                        <strong>Каждый участник команды получает статус "Серебряный призер"</strong>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ) : (
-                                                        <Link to={`/profile/${tournament.second_place_id}`} className="winner-name">
-                                                            {tournament.second_place_name || 'Второе место'}
-                                                        </Link>
+                                                        <div className="solo-winner">
+                                                            <Link to={`/profile/${tournamentWinners.secondPlace.user_id}`} className="winner-name">
+                                                                <span className="winner-medal">🥈</span>
+                                                                {tournamentWinners.secondPlace.name}
+                                                            </Link>
+                                                            <div className="winner-achievement">Серебряный призер</div>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* Третье место */}
-                                        {tournament.third_place_id && (
+                                        {tournamentWinners.thirdPlace && (
                                             <div className="winner-card place-3">
                                                 <div className="medal-icon bronze-medal">🥉</div>
                                                 <div className="winner-info">
-                                                    {tournament.format === 'mix' ? (
+                                                    {tournamentWinners.thirdPlace.type === 'team' ? (
                                                         <div className="team-winner">
-                                                            <h4>{tournament.third_place_name || 'Третье место'}</h4>
+                                                            <h4>{tournamentWinners.thirdPlace.name}</h4>
+                                                            {tournamentWinners.thirdPlace.members && (
+                                                                <div className="team-members">
+                                                                    <h5>🥉 Бронзовые призеры (участники команды):</h5>
+                                                                    <ul>
+                                                                        {tournamentWinners.thirdPlace.members.map((member, idx) => (
+                                                                            <li key={idx} className="team-member third-place-member">
+                                                                                <span className="member-medal">🥉</span>
+                                                                                {member.user_id ? (
+                                                                                    <Link to={`/profile/${member.user_id}`} className="member-name third-place-name-link">
+                                                                                        {member.name || member.username}
+                                                                                    </Link>
+                                                                                ) : (
+                                                                                    <span className="member-name third-place-name-text">{member.name}</span>
+                                                                                )}
+                                                                                <span className="member-achievement">- Бронзовый призер</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                    <div className="team-achievement">
+                                                                        <strong>Каждый участник команды получает статус "Бронзовый призер"</strong>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ) : (
-                                                        <Link to={`/profile/${tournament.third_place_id}`} className="winner-name">
-                                                            {tournament.third_place_name || 'Третье место'}
-                                                        </Link>
+                                                        <div className="solo-winner">
+                                                            <Link to={`/profile/${tournamentWinners.thirdPlace.user_id}`} className="winner-name">
+                                                                <span className="winner-medal">🥉</span>
+                                                                {tournamentWinners.thirdPlace.name}
+                                                            </Link>
+                                                            <div className="winner-achievement">Бронзовый призер</div>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -2014,8 +2370,14 @@ function TournamentDetails() {
                                             <span className="btn-icon">🏆</span>
                                             <div className="status-text">
                                                 <p>Турнир завершен</p>
-                                                {tournament.winner_name && (
-                                                    <p>Победитель: <strong>{tournament.winner_name}</strong></p>
+                                                {tournamentWinners.winner && (
+                                                    <p>Победитель: <strong>{tournamentWinners.winner.name}</strong></p>
+                                                )}
+                                                {tournamentWinners.secondPlace && (
+                                                    <p>Второе место: <strong>{tournamentWinners.secondPlace.name}</strong></p>
+                                                )}
+                                                {tournamentWinners.thirdPlace && (
+                                                    <p>Третье место: <strong>{tournamentWinners.thirdPlace.name}</strong></p>
                                                 )}
                                             </div>
                                         </div>

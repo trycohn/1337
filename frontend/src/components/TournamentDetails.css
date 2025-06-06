@@ -4206,3 +4206,227 @@ a.participant-name:hover {
         padding: 40px 15px;
     }
 }
+
+/* Стили для новой системы отображения призеров */
+
+/* Медали для участников команд */
+.member-medal {
+    font-size: 16px;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.winner-medal {
+    font-size: 18px;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+/* Стили для участников команд-призеров */
+.winner-member {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.second-place-member {
+    background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+    border: 2px solid #c0c0c0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.third-place-member {
+    background: linear-gradient(135deg, #cd7f32, #daa520);
+    border: 2px solid #cd7f32;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Ссылки на профили призеров */
+.winner-name-link, .second-place-name-link, .third-place-name-link {
+    font-weight: bold;
+    text-decoration: none;
+    color: #333;
+    transition: color 0.2s ease;
+}
+
+.winner-name-link:hover {
+    color: #b8860b;
+    text-decoration: underline;
+}
+
+.second-place-name-link:hover {
+    color: #808080;
+    text-decoration: underline;
+}
+
+.third-place-name-link:hover {
+    color: #8b4513;
+    text-decoration: underline;
+}
+
+/* Текст для незарегистрированных призеров */
+.winner-name-text, .second-place-name-text, .third-place-name-text {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Достижения участников */
+.member-achievement {
+    font-style: italic;
+    color: #666;
+    font-size: 14px;
+    margin-left: auto;
+}
+
+.winner-achievement {
+    font-style: italic;
+    color: #b8860b;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* Информация о командном достижении */
+.team-achievement {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid #ffd700;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: #b8860b;
+}
+
+.team-achievement strong {
+    color: #8b7000;
+}
+
+/* Стили для одиночных призеров */
+.solo-winner {
+    text-align: center;
+}
+
+.solo-winner .winner-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    text-decoration: none;
+    color: #333;
+    margin-bottom: 8px;
+    transition: color 0.2s ease;
+}
+
+.solo-winner .winner-name:hover {
+    color: #b8860b;
+    text-decoration: underline;
+}
+
+/* Заголовки для списков призеров */
+.team-members h5 {
+    color: #333;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-align: center;
+    padding: 6px 0;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+/* Список участников команды */
+.team-members ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+}
+
+.team-members li {
+    margin: 0;
+}
+
+/* Рейтинг участника */
+.member-elo {
+    color: #888;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .member-medal, .winner-medal {
+        font-size: 14px;
+        margin-right: 4px;
+    }
+    
+    .winner-member, .second-place-member, .third-place-member {
+        padding: 6px 8px;
+        font-size: 14px;
+    }
+    
+    .member-achievement {
+        font-size: 12px;
+        margin-left: 0;
+        margin-top: 4px;
+        width: 100%;
+    }
+    
+    .team-achievement {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+    
+    .solo-winner .winner-name {
+        font-size: 16px;
+    }
+}
+
+/* Анимация для призеров */
+.winner-member, .second-place-member, .third-place-member {
+    animation: prizeShine 3s ease-in-out infinite;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes prizeShine {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+    }
+}
+
+/* Особые стили для золотых призеров */
+.winner-member {
+    animation: goldShine 3s ease-in-out infinite;
+}
+
+@keyframes goldShine {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        transform: scale(1.02);
+    }
+}
