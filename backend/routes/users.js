@@ -1692,18 +1692,30 @@ function getDaysWord(days) {
 router.get('/search', authenticateToken, async (req, res) => {
     const { query } = req.query;
     
+    console.log('🔍 [Backend] ПОИСК ПОЛЬЗОВАТЕЛЕЙ - ЗАПРОС ПОЛУЧЕН');
+    console.log('🔍 [Backend] Параметры запроса:', { query });
+    console.log('🔍 [Backend] Пользователь:', { id: req.user?.id, username: req.user?.username });
+    
     if (!query || query.length < 2) {
+        console.log('🔍 [Backend] Запрос слишком короткий');
         return res.status(400).json({ error: 'Минимальная длина запроса - 2 символа' });
     }
 
     try {
+        console.log('🔍 [Backend] Выполняем SQL запрос с паттерном:', `%${query}%`);
+        
         const result = await pool.query(
-            'SELECT id, username, avatar_url FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10',
+            'SELECT id, username, avatar_url, faceit_elo, cs2_premier_rank FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10',
             [`%${query}%`]
         );
+        
+        console.log('🔍 [Backend] SQL запрос выполнен успешно');
+        console.log('🔍 [Backend] Найдено пользователей:', result.rows.length);
+        console.log('🔍 [Backend] Результаты:', result.rows.map(user => ({ id: user.id, username: user.username })));
+        
         res.json(result.rows);
     } catch (err) {
-        console.error('Ошибка при поиске пользователей:', err);
+        console.error('🔍 [Backend] Ошибка при поиске пользователей:', err);
         res.status(500).json({ error: 'Ошибка сервера при поиске пользователей' });
     }
 });

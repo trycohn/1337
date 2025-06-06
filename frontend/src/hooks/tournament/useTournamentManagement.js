@@ -43,7 +43,11 @@ const useTournamentManagement = (tournamentId) => {
 
     // Поиск пользователей
     const searchUsers = useCallback(async (query) => {
+        console.log('🔍 [useTournamentManagement] НАЧАЛО ПОИСКА');
+        console.log('🔍 [useTournamentManagement] Запрос:', query);
+        
         if (!query || query.trim().length < 2) {
+            console.log('🔍 [useTournamentManagement] Запрос слишком короткий');
             return { success: true, data: [] };
         }
 
@@ -51,18 +55,31 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
+            console.log('🔍 [useTournamentManagement] Отправляем запрос к API...');
+            const headers = getAuthHeaders();
+            console.log('🔍 [useTournamentManagement] Заголовки авторизации:', headers);
+            
             const response = await axios.get(`/api/users/search`, {
                 params: { query: query.trim() },
-                headers: getAuthHeaders()
+                headers: headers
             });
+
+            console.log('🔍 [useTournamentManagement] Ответ API получен:', response.data);
+            console.log('🔍 [useTournamentManagement] Количество найденных пользователей:', response.data.length);
 
             return { success: true, data: response.data };
         } catch (error) {
+            console.error('🔍 [useTournamentManagement] Ошибка API:', error);
+            console.error('🔍 [useTournamentManagement] Статус ошибки:', error.response?.status);
+            console.error('🔍 [useTournamentManagement] Данные ошибки:', error.response?.data);
+            console.error('🔍 [useTournamentManagement] Заголовки запроса:', error.config?.headers);
+            
             const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при поиске пользователей';
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
             setIsLoading(false);
+            console.log('🔍 [useTournamentManagement] КОНЕЦ ПОИСКА');
         }
     }, [getAuthHeaders]);
 

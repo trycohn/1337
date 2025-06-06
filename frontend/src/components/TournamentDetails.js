@@ -465,37 +465,69 @@ function TournamentDetails() {
 
     // 🎯 ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДОБАВЛЕНИЯ В ТУРНИР
     const searchUsers = useCallback(async (query) => {
+        console.log('🔍 НАЧАЛО ПОИСКА ПОЛЬЗОВАТЕЛЕЙ');
+        console.log('🔍 Параметры поиска:', {
+            query,
+            queryType: typeof query,
+            queryLength: query?.length,
+            tournamentId: tournament?.id,
+            userLoggedIn: !!user
+        });
+
         // Безопасная проверка query на undefined/null/пустую строку
         if (!query || typeof query !== 'string' || query.trim().length < 2) {
+            console.log('🔍 Запрос слишком короткий или некорректный, очищаем результаты');
             modals.updateSearchResults([]);
             return;
         }
 
         try {
+            console.log('🔍 Устанавливаем состояние загрузки...');
             modals.setSearchLoading(true);
+            
+            console.log('🔍 Вызываем tournamentManagement.searchUsers с запросом:', query);
             const result = await tournamentManagement.searchUsers(query);
+            console.log('🔍 Результат от tournamentManagement.searchUsers:', result);
             
             if (result.success) {
+                console.log('🔍 Поиск успешен, полученные данные:', result.data);
+                
                 // Фильтруем пользователей, которые уже участвуют в турнире
                 const existingParticipantIds = tournament?.participants?.map(p => p.user_id || p.id) || [];
+                console.log('🔍 ID существующих участников:', existingParticipantIds);
+                
                 const filteredResults = result.data.filter(user => 
                     !existingParticipantIds.includes(user.id)
                 );
+                console.log('🔍 Отфильтрованные результаты:', filteredResults);
                 
                 modals.updateSearchResults(filteredResults);
-                console.log('🔍 Найдено пользователей:', filteredResults.length);
+                console.log('🔍 Найдено пользователей после фильтрации:', filteredResults.length);
+                
+                if (filteredResults.length === 0 && result.data.length > 0) {
+                    setMessage('ℹ️ Найденные пользователи уже участвуют в турнире');
+                    setTimeout(() => setMessage(''), 3000);
+                }
             } else {
+                console.error('🔍 Ошибка поиска:', result.error);
                 modals.updateSearchResults([]);
                 setMessage(`❌ ${result.error}`);
                 setTimeout(() => setMessage(''), 3000);
             }
         } catch (error) {
-            console.error('❌ Ошибка поиска пользователей:', error);
+            console.error('🔍 Исключение при поиске пользователей:', error);
+            console.error('🔍 Детали ошибки:', {
+                message: error.message,
+                stack: error.stack,
+                response: error.response?.data
+            });
             modals.updateSearchResults([]);
             setMessage(`❌ Ошибка поиска: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         } finally {
+            console.log('🔍 Снимаем состояние загрузки...');
             modals.setSearchLoading(false);
+            console.log('🔍 КОНЕЦ ПОИСКА ПОЛЬЗОВАТЕЛЕЙ');
         }
     }, [tournament, tournamentManagement, modals]);
 

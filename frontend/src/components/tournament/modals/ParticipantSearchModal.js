@@ -16,36 +16,44 @@ const ParticipantSearchModal = ({
 }) => {
     const [debounceTimer, setDebounceTimer] = useState(null);
 
-    // Дебаунс для поиска
-    const debouncedSearch = useCallback((query) => {
+    // Исправленный дебаунс для поиска
+    useEffect(() => {
+        // Очищаем предыдущий таймер
         if (debounceTimer) {
             clearTimeout(debounceTimer);
         }
+
+        // Если запрос слишком короткий, очищаем результаты
+        if (!searchQuery || searchQuery.length < 2) {
+            return;
+        }
+
+        console.log('🔍 Настраиваем поиск для:', searchQuery);
         
+        // Устанавливаем новый таймер
         const timer = setTimeout(() => {
-            onSearchUsers(query);
+            console.log('🔍 Выполняем поиск для:', searchQuery);
+            onSearchUsers(searchQuery);
         }, 300);
         
         setDebounceTimer(timer);
-    }, [debounceTimer, onSearchUsers]);
 
-    useEffect(() => {
-        if (searchQuery.length >= 2) {
-            debouncedSearch(searchQuery);
-        }
-        
+        // Cleanup функция
         return () => {
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
+            if (timer) {
+                clearTimeout(timer);
             }
         };
-    }, [searchQuery, debouncedSearch, debounceTimer]);
+    }, [searchQuery, onSearchUsers]); // Убираем debounceTimer из зависимостей
 
     const handleInputChange = (e) => {
-        setSearchQuery(e.target.value);
+        const value = e.target.value;
+        console.log('🔍 Изменение поискового запроса:', value);
+        setSearchQuery(value);
     };
 
     const handleAddUser = (userId) => {
+        console.log('🔍 Добавление пользователя:', userId);
         onAddParticipant(userId);
     };
 
@@ -54,6 +62,14 @@ const ParticipantSearchModal = ({
     };
 
     if (!isOpen) return null;
+
+    console.log('🔍 Рендер ParticipantSearchModal:', {
+        isOpen,
+        searchQuery,
+        searchResultsCount: searchResults.length,
+        isSearching,
+        existingParticipantsCount: existingParticipants.length
+    });
 
     return (
         <div className="modal-overlay" onClick={onClose}>
