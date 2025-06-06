@@ -3837,4 +3837,6 @@ bash deploy-teams-fix.sh
 - **Результат:** Страница турнира теперь загружается без ошибок
 
 **2. SQL ошибка в backend achievementSystem**
-- **Ошибка:** `column "ua.achievement_id" does not exist`
+- **Ошибка:** `column "ua.achievement_id" does not exist`# #   2 0 2 5 - 0 1 - 2 2   -   "  !  ":   <?>@B  a u t h e n t i c a t e T o k e n   8A?@02;5=!   ( { }   45AB@C:BC@870F8O)   -   CAB@0=O5B  R o u t e . g e t ( )   c a l l b a c k   e r r o r 
+ 
+ 

@@ -277,7 +277,24 @@ const AchievementsPanel = ({ userId }) => {
 
             {/* Список достижений */}
             <div className="achievements-grid">
-                {filteredAchievements.length > 0 ? (
+                {/* Проверяем сначала есть ли достижения в системе вообще */}
+                {achievements.length === 0 && !isLoading && !error ? (
+                    <div className="empty-achievements new-user">
+                        <div className="empty-achievements-icon">🌟</div>
+                        <h3>Добро пожаловать в систему достижений!</h3>
+                        <p>Система достижений готовится специально для вас. Ваш прогресс будет отслеживаться автоматически.</p>
+                        <div className="new-user-tips">
+                            <h4>Как получить первые достижения:</h4>
+                            <ul>
+                                <li>🎯 Создайте свой первый турнир</li>
+                                <li>👥 Добавьте друзей в систему</li>
+                                <li>📝 Заполните профиль полностью</li>
+                                <li>🎮 Подключите Steam или FACEIT</li>
+                                <li>📅 Заходите на сайт регулярно</li>
+                            </ul>
+                        </div>
+                    </div>
+                ) : filteredAchievements.length > 0 ? (
                     filteredAchievements.map(achievement => {
                         const isUnlocked = isAchievementUnlocked(achievement.id);
                         const progress = getAchievementProgress(achievement.id);
@@ -340,11 +357,31 @@ const AchievementsPanel = ({ userId }) => {
                             </div>
                         );
                     })
-                ) : (
-                    <div className="empty-achievements">
-                        <div className="empty-achievements-icon">🏆</div>
+                ) : achievements.length > 0 && filteredAchievements.length === 0 ? (
+                    <div className="empty-achievements filtered">
+                        <div className="empty-achievements-icon">🔍</div>
                         <h3>Достижения не найдены</h3>
                         <p>Попробуйте изменить фильтры или выберите другую категорию</p>
+                        <button 
+                            className="reset-filters-btn"
+                            onClick={() => {
+                                setSelectedCategory('all');
+                                setShowCompleted(true);
+                                setShowInProgress(true);
+                                setShowLocked(true);
+                            }}
+                        >
+                            Сбросить фильтры
+                        </button>
+                    </div>
+                ) : (
+                    <div className="empty-achievements no-achievements">
+                        <div className="empty-achievements-icon">🏆</div>
+                        <h3>У вас пока нет достижений</h3>
+                        <p>Начните активность на сайте, чтобы получить свои первые достижения!</p>
+                        <div className="achievement-suggestions">
+                            <p>💡 <strong>Совет:</strong> Создайте турнир или добавьте друзей для быстрого старта</p>
+                        </div>
                     </div>
                 )}
             </div>

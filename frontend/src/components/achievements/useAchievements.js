@@ -34,6 +34,12 @@ export const useAchievements = (userId) => {
             
             if (response.data.success) {
                 setAchievements(response.data.achievements || []);
+                
+                // Если есть сообщение от сервера, показываем его
+                if (response.data.message && response.data.achievements?.length === 0) {
+                    console.info('🎯 Система достижений:', response.data.message);
+                }
+                
                 return response.data.achievements;
             }
             
@@ -41,7 +47,17 @@ export const useAchievements = (userId) => {
             return [];
         } catch (err) {
             console.error('Ошибка загрузки достижений:', err);
-            setError('Не удалось загрузить достижения');
+            
+            // Более дружелюбная обработка ошибок
+            if (err.response?.status === 500) {
+                setError('Система достижений временно недоступна. Попробуйте позже.');
+            } else if (err.response?.status === 401) {
+                setError('Необходимо войти в систему для просмотра достижений');
+            } else {
+                setError('Не удалось загрузить достижения. Проверьте подключение к интернету.');
+            }
+            
+            setAchievements([]);
             return [];
         }
     }, []);
@@ -69,6 +85,14 @@ export const useAchievements = (userId) => {
                 const progress = progressResponse.data.progress;
                 const allAchievements = achievementsResponse.data.achievements;
                 
+                // Показываем сообщения от сервера если они есть
+                if (progressResponse.data.message) {
+                    console.info('📊 Прогресс пользователя:', progressResponse.data.message);
+                }
+                if (achievementsResponse.data.message) {
+                    console.info('🏆 Достижения:', achievementsResponse.data.message);
+                }
+                
                 // Фильтруем разблокированные достижения
                 const unlockedAchievements = allAchievements.filter(a => a.is_unlocked);
                 
@@ -87,6 +111,9 @@ export const useAchievements = (userId) => {
                     longest: progress.daily_streak_longest || 0
                 });
                 
+                // Очищаем ошибки если загрузка прошла успешно
+                setError(null);
+                
                 return {
                     achievements: unlockedAchievements,
                     progress: progressByAchievement,
@@ -102,7 +129,16 @@ export const useAchievements = (userId) => {
             return {};
         } catch (err) {
             console.error('Ошибка загрузки достижений пользователя:', err);
-            setError('Не удалось загрузить прогресс достижений');
+            
+            // Более дружелюбная обработка ошибок
+            if (err.response?.status === 500) {
+                setError('Не удалось загрузить ваш прогресс. Система достижений может быть в процессе обновления.');
+            } else if (err.response?.status === 401) {
+                setError('Сессия истекла. Пожалуйста, войдите в систему заново.');
+            } else {
+                setError('Временные проблемы с загрузкой данных. Попробуйте обновить страницу.');
+            }
+            
             return {};
         }
     }, [userId]);
