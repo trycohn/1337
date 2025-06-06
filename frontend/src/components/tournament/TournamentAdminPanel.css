@@ -1,0 +1,435 @@
+.tournament-admin-panel {
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 0;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.admin-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #2a2a2a;
+    border-bottom: 1px solid #333333;
+}
+
+.admin-panel-header h3 {
+    margin: 0;
+    color: #ffffff;
+    font-weight: 300;
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tournament-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-icon {
+    font-size: 1.2em;
+}
+
+.status-text {
+    font-size: 0.9em;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-panel-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Информация о турнире */
+.tournament-info-section {
+    background-color: #2a2a2a;
+    border: 1px solid #333333;
+    padding: 15px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #333333;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 0.9em;
+    color: #888888;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 0.9em;
+    color: #ffffff;
+    font-weight: 300;
+}
+
+/* Управление участниками */
+.participants-management h4,
+.tournament-controls h4,
+.matches-management h4 {
+    margin: 0 0 15px 0;
+    color: #ffffff;
+    font-weight: 300;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.management-actions,
+.control-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    border: 1px solid;
+    border-radius: 0;
+    cursor: pointer;
+    font-weight: 300;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.add-user-btn,
+.add-guest-btn {
+    background-color: transparent;
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+.add-user-btn:hover:not(:disabled),
+.add-guest-btn:hover:not(:disabled) {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.regenerate-btn {
+    background-color: transparent;
+    color: #ffa500;
+    border-color: #ffa500;
+}
+
+.regenerate-btn:hover:not(:disabled) {
+    background-color: #ffa500;
+    color: #000000;
+}
+
+.start-btn {
+    background-color: transparent;
+    color: #4caf50;
+    border-color: #4caf50;
+}
+
+.start-btn:hover:not(:disabled) {
+    background-color: #4caf50;
+    color: #ffffff;
+}
+
+.end-btn {
+    background-color: transparent;
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+.end-btn:hover:not(:disabled) {
+    background-color: #ff6b6b;
+    color: #ffffff;
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.warning-message {
+    padding: 10px 15px;
+    background-color: rgba(255, 165, 0, 0.1);
+    border: 1px solid #ffa500;
+    color: #ffa500;
+    font-size: 0.9em;
+    font-weight: 300;
+    margin-top: 10px;
+}
+
+/* Список участников */
+.participants-list {
+    background-color: #2a2a2a;
+    border: 1px solid #333333;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.participant-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #333333;
+    transition: background-color 0.2s ease;
+}
+
+.participant-item:last-child {
+    border-bottom: none;
+}
+
+.participant-item:hover {
+    background-color: #333333;
+}
+
+.participant-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.participant-name {
+    font-size: 0.9em;
+    color: #ffffff;
+    font-weight: 300;
+}
+
+.guest-badge {
+    background-color: #ffa500;
+    color: #000000;
+    padding: 2px 6px;
+    font-size: 0.7em;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.remove-participant-btn {
+    background: none;
+    border: 1px solid #ff6b6b;
+    color: #ff6b6b;
+    cursor: pointer;
+    padding: 6px 8px;
+    font-size: 0.8em;
+    transition: all 0.2s ease;
+    border-radius: 0;
+}
+
+.remove-participant-btn:hover:not(:disabled) {
+    background-color: #ff6b6b;
+    color: #ffffff;
+}
+
+.remove-participant-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Список матчей */
+.matches-list {
+    background-color: #2a2a2a;
+    border: 1px solid #333333;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.match-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #333333;
+    transition: background-color 0.2s ease;
+}
+
+.match-item:last-child {
+    border-bottom: none;
+}
+
+.match-item:hover {
+    background-color: #333333;
+}
+
+.match-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+}
+
+.match-teams {
+    font-size: 0.9em;
+    color: #ffffff;
+    font-weight: 300;
+}
+
+.match-round {
+    font-size: 0.8em;
+    color: #888888;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.edit-match-btn {
+    background: none;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 6px 8px;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    border-radius: 0;
+}
+
+.edit-match-btn:hover:not(:disabled) {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.edit-match-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.more-matches-info {
+    padding: 10px 15px;
+    text-align: center;
+    color: #888888;
+    font-size: 0.8em;
+    font-style: italic;
+}
+
+/* Scrollbars */
+.participants-list::-webkit-scrollbar,
+.matches-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.participants-list::-webkit-scrollbar-track,
+.matches-list::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.participants-list::-webkit-scrollbar-thumb,
+.matches-list::-webkit-scrollbar-thumb {
+    background: #333333;
+    border-radius: 0;
+}
+
+.participants-list::-webkit-scrollbar-thumb:hover,
+.matches-list::-webkit-scrollbar-thumb:hover {
+    background: #555555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-panel-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .tournament-status {
+        justify-content: center;
+    }
+    
+    .admin-panel-content {
+        padding: 15px;
+        gap: 20px;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .management-actions,
+    .control-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .participant-item,
+    .match-item {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .participant-info {
+        justify-content: space-between;
+    }
+    
+    .match-info {
+        align-items: center;
+        text-align: center;
+    }
+    
+    .remove-participant-btn,
+    .edit-match-btn {
+        align-self: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-panel-header {
+        padding: 15px;
+    }
+    
+    .admin-panel-header h3 {
+        font-size: 1em;
+    }
+    
+    .admin-panel-content {
+        padding: 10px;
+    }
+    
+    .tournament-info-section {
+        padding: 10px;
+    }
+    
+    .info-item {
+        padding: 8px 0;
+    }
+    
+    .action-btn {
+        padding: 8px 16px;
+        font-size: 0.8em;
+    }
+    
+    .participant-item,
+    .match-item {
+        padding: 10px;
+    }
+} 

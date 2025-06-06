@@ -16,6 +16,14 @@ import TeamGenerator from './TeamGenerator';
 import BracketRenderer from './BracketRenderer';
 import { ensureHttps } from '../utils/userHelpers';
 
+// Новые компоненты и хуки
+import TournamentAdminPanel from './tournament/TournamentAdminPanel';
+import AddParticipantModal from './tournament/modals/AddParticipantModal';
+import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
+import MatchResultModal from './tournament/modals/MatchResultModal';
+import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
+import useTournamentModals from '../hooks/tournament/useTournamentModals';
+
 // Error Boundary для критических ошибок
 class TournamentErrorBoundary extends React.Component {
     constructor(props) {
@@ -71,6 +79,40 @@ function TournamentDetails() {
         user: false
     });
     
+    // 🎯 НОВЫЕ ХУКИ ДЛЯ УПРАВЛЕНИЯ
+    const tournamentManagement = useTournamentManagement(id);
+    const modals = useTournamentModals();
+    
+    // 🎯 LEGACY СОСТОЯНИЯ ДЛЯ СОВМЕСТИМОСТИ
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState({
+        type: '',
+        title: '',
+        message: '',
+        onConfirm: null,
+        onCancel: null,
+        data: null
+    });
+    
+    // 🎯 УПРАВЛЕНИЕ УЧАСТНИКАМИ
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [newParticipantData, setNewParticipantData] = useState({
+        name: '',
+        email: '',
+        faceit_elo: '',
+        cs2_premier_rank: ''
+    });
+    
+    // 🎯 УПРАВЛЕНИЕ МАТЧАМИ
+    const [editingMatchResult, setEditingMatchResult] = useState(null);
+    const [matchResultData, setMatchResultData] = useState({
+        score1: 0,
+        score2: 0,
+        maps_data: []
+    });
+    
     // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
     const calculateTeamAverageRating = useCallback((team) => {
         if (!team.members || team.members.length === 0) return '—';
@@ -100,18 +142,21 @@ function TournamentDetails() {
             };
         }
 
-        const isCreator = tournament.creator_id === user.id;
+        const isCreator = tournament.creator_id === user.id || tournament.created_by === user.id;
         const isParticipating = tournament.participants?.some(
             p => p.user_id === user.id || p.id === user.id
         ) || false;
+        
+        // Используем новый хук для проверки прав доступа
+        const hasAccess = tournamentManagement.checkAccess(tournament);
 
         return {
             isParticipating,
             isCreator,
-            isAdminOrCreator: isCreator,
-            canEdit: isCreator
+            isAdminOrCreator: hasAccess,
+            canEdit: hasAccess
         };
-    }, [user, tournament]);
+    }, [user, tournament, tournamentManagement]);
 
     // 🎯 ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ
     const loadUser = useCallback(async () => {
@@ -128,6 +173,243 @@ function TournamentDetails() {
             setDataLoadingStates(prev => ({ ...prev, user: false }));
         }
     }, []);
+
+    // 🎯 ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДОБАВЛЕНИЯ В ТУРНИР
+    const searchUsers = useCallback(async (query) => {
+        if (!query || query.length < 2) {
+            modals.updateSearchResults([]);
+            return;
+        }
+
+        try {
+            modals.setSearchLoading(true);
+            const result = await tournamentManagement.searchUsers(query);
+            
+            if (result.success) {
+                // Фильтруем пользователей, которые уже участвуют в турнире
+                const existingParticipantIds = tournament.participants?.map(p => p.user_id || p.id) || [];
+                const filteredResults = result.data.filter(user => 
+                    !existingParticipantIds.includes(user.id)
+                );
+                
+                modals.updateSearchResults(filteredResults);
+                console.log('🔍 Найдено пользователей:', filteredResults.length);
+            } else {
+                modals.updateSearchResults([]);
+                setMessage(`❌ ${result.error}`);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка поиска пользователей:', error);
+            modals.updateSearchResults([]);
+            setMessage(`❌ Ошибка поиска: ${error.message}`);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [tournament, tournamentManagement, modals]);
+
+    // 🎯 ДОБАВЛЕНИЕ ЗАРЕГИСТРИРОВАННОГО УЧАСТНИКА
+    const addRegisteredParticipant = useCallback(async (userId) => {
+        try {
+            const result = await tournamentManagement.addRegisteredParticipant(userId);
+            
+            if (result.success) {
+                setMessage('✅ Участник добавлен в турнир!');
+                setTimeout(() => setMessage(''), 3000);
+                modals.closeParticipantSearchModal();
+                reloadTournamentData();
+            } else {
+                setMessage(`❌ ${result.error}`);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка добавления участника:', error);
+            setMessage(`❌ Ошибка: ${error.message}`);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [tournamentManagement, modals, reloadTournamentData]);
+
+    // 🎯 ДОБАВЛЕНИЕ НЕЗАРЕГИСТРИРОВАННОГО УЧАСТНИКА
+    const addUnregisteredParticipant = useCallback(async () => {
+        if (!modals.newParticipantData.display_name?.trim()) {
+            setMessage('❌ Имя участника обязательно');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        try {
+            const result = await tournamentManagement.addGuestParticipant(modals.newParticipantData);
+            
+            if (result.success) {
+                setMessage('✅ Незарегистрированный участник добавлен!');
+                setTimeout(() => setMessage(''), 3000);
+                modals.closeAddParticipantModal();
+                reloadTournamentData();
+            } else {
+                setMessage(`❌ ${result.error}`);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка добавления незарегистрированного участника:', error);
+            setMessage(`❌ Ошибка: ${error.message}`);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [tournamentManagement, modals, reloadTournamentData]);
+
+    // 🎯 СОХРАНЕНИЕ РЕЗУЛЬТАТА МАТЧА
+    const saveMatchResult = useCallback(async () => {
+        if (!modals.selectedMatch) return;
+
+        try {
+            const result = await tournamentManagement.saveMatchResult(
+                modals.selectedMatch.id,
+                modals.matchResultData
+            );
+            
+            if (result.success) {
+                setMessage('✅ Результат матча сохранен!');
+                setTimeout(() => setMessage(''), 3000);
+                modals.closeMatchResultModal();
+                reloadTournamentData();
+            } else {
+                setMessage(`❌ ${result.error}`);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка сохранения результата:', error);
+            setMessage(`❌ Ошибка: ${error.message}`);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [tournamentManagement, modals, reloadTournamentData]);
+
+    // 🎯 ОТКРЫТИЕ МОДАЛЬНОГО ОКНА РЕЗУЛЬТАТА МАТЧА
+    const openMatchResultModal = useCallback((match) => {
+        modals.openMatchResultModal(match);
+    }, [modals]);
+
+    // 🎯 ФУНКЦИЯ ПОДТВЕРЖДЕНИЯ ДЕЙСТВИЙ
+    const showConfirmation = useCallback((type, title, message, onConfirm, data = null) => {
+        setConfirmAction({
+            type,
+            title,
+            message,
+            onConfirm,
+            onCancel: () => setShowConfirmModal(false),
+            data
+        });
+        setShowConfirmModal(true);
+    }, []);
+
+    // 🎯 ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ УЧАСТНИКА
+    const confirmRemoveParticipant = useCallback((participantId, participantName) => {
+        showConfirmation(
+            'remove_participant',
+            'Удалить участника?',
+            `Вы уверены, что хотите удалить "${participantName}" из турнира? Это действие нельзя отменить.`,
+            async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    await api.delete(`/api/tournaments/${id}/participants/${participantId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    setMessage('✅ Участник удален из турнира');
+                    setTimeout(() => setMessage(''), 3000);
+                    setShowConfirmModal(false);
+                    reloadTournamentData();
+                } catch (error) {
+                    console.error('❌ Ошибка удаления участника:', error);
+                    setMessage(`❌ Ошибка: ${error.response?.data?.message || error.message}`);
+                    setTimeout(() => setMessage(''), 3000);
+                }
+            },
+            { participantId, participantName }
+        );
+    }, [id, showConfirmation, reloadTournamentData]);
+
+    // 🎯 ПОДТВЕРЖДЕНИЕ ЗАПУСКА ТУРНИРА
+    const confirmStartTournament = useCallback(() => {
+        showConfirmation(
+            'start_tournament',
+            'Запустить турнир?',
+            'После запуска турнира нельзя будет добавлять или удалять участников. Убедитесь, что сетка создана и все готово.',
+            async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    await api.post(`/api/tournaments/${id}/start`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    setMessage('✅ Турнир запущен!');
+                    setTimeout(() => setMessage(''), 3000);
+                    setShowConfirmModal(false);
+                    reloadTournamentData();
+                } catch (error) {
+                    console.error('❌ Ошибка запуска турнира:', error);
+                    setMessage(`❌ Ошибка: ${error.response?.data?.message || error.message}`);
+                    setTimeout(() => setMessage(''), 3000);
+                }
+            }
+        );
+    }, [id, showConfirmation, reloadTournamentData]);
+
+    // 🎯 ПОДТВЕРЖДЕНИЕ ЗАВЕРШЕНИЯ ТУРНИРА
+    const confirmEndTournament = useCallback(() => {
+        showConfirmation(
+            'end_tournament',
+            'Завершить турнир?',
+            'Вы уверены, что хотите завершить турнир? После завершения нельзя будет изменять результаты матчей.',
+            async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    await api.post(`/api/tournaments/${id}/end`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    setMessage('✅ Турнир завершен!');
+                    setTimeout(() => setMessage(''), 3000);
+                    setShowConfirmModal(false);
+                    reloadTournamentData();
+                } catch (error) {
+                    console.error('❌ Ошибка завершения турнира:', error);
+                    setMessage(`❌ Ошибка: ${error.response?.data?.message || error.message}`);
+                    setTimeout(() => setMessage(''), 3000);
+                }
+            }
+        );
+    }, [id, showConfirmation, reloadTournamentData]);
+
+    // 🎯 ПОДТВЕРЖДЕНИЕ ГЕНЕРАЦИИ СЕТКИ
+    const confirmGenerateBracket = useCallback(() => {
+        const participantsCount = tournament?.participants?.length || 0;
+        if (participantsCount < 2) {
+            setMessage('❌ Для создания сетки нужно минимум 2 участника');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        showConfirmation(
+            'generate_bracket',
+            'Создать турнирную сетку?',
+            `Будет создана сетка для ${participantsCount} участников. Если сетка уже существует, она будет пересоздана.`,
+            async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    await api.post(`/api/tournaments/${id}/generate-bracket`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    setMessage('✅ Турнирная сетка создана!');
+                    setTimeout(() => setMessage(''), 3000);
+                    setShowConfirmModal(false);
+                    reloadTournamentData();
+                } catch (error) {
+                    console.error('❌ Ошибка генерации сетки:', error);
+                    setMessage(`❌ Ошибка: ${error.response?.data?.message || error.message}`);
+                    setTimeout(() => setMessage(''), 3000);
+                }
+            }
+        );
+    }, [tournament, id, showConfirmation, reloadTournamentData]);
 
     // 🎯 ФУНКЦИЯ ТРАНСФОРМАЦИИ МАТЧЕЙ ДЛЯ BRACKETRENDERER (УЛУЧШЕНА ДЛЯ МИКС ТУРНИРОВ)
     const transformMatchesToGames = useCallback((matchesArray, teamsArray = null) => {
@@ -567,61 +849,16 @@ function TournamentDetails() {
     }, [user, tournament, id, reloadTournamentData]);
 
     const handleGenerateBracket = useCallback(async () => {
-        if (!userPermissions.canEdit) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            await api.post(`/api/tournaments/${id}/generate-bracket`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setMessage('✅ Сетка турнира сгенерирована!');
-            setTimeout(() => setMessage(''), 3000);
-            reloadTournamentData(); // Используем стабильную функцию
-        } catch (error) {
-            console.error('❌ Ошибка генерации сетки:', error);
-            setMessage(`❌ Ошибка генерации: ${error.message}`);
-            setTimeout(() => setMessage(''), 3000);
-        }
-    }, [userPermissions.canEdit, id, reloadTournamentData]);
+        confirmGenerateBracket();
+    }, [confirmGenerateBracket]);
 
     const handleStartTournament = useCallback(async () => {
-        if (!userPermissions.canEdit) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            await api.post(`/api/tournaments/${id}/start`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setMessage('✅ Турнир запущен!');
-            setTimeout(() => setMessage(''), 3000);
-            reloadTournamentData(); // Используем стабильную функцию
-        } catch (error) {
-            console.error('❌ Ошибка запуска турнира:', error);
-            setMessage(`❌ Ошибка запуска: ${error.message}`);
-            setTimeout(() => setMessage(''), 3000);
-        }
-    }, [userPermissions.canEdit, id, reloadTournamentData]);
+        confirmStartTournament();
+    }, [confirmStartTournament]);
 
     const handleEndTournament = useCallback(async () => {
-        if (!userPermissions.canEdit || !window.confirm('Вы уверены, что хотите завершить турнир?')) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            await api.post(`/api/tournaments/${id}/end`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setMessage('✅ Турнир завершен!');
-            setTimeout(() => setMessage(''), 3000);
-            reloadTournamentData(); // Используем стабильную функцию
-        } catch (error) {
-            console.error('❌ Ошибка завершения турнира:', error);
-            setMessage(`❌ Ошибка завершения: ${error.message}`);
-            setTimeout(() => setMessage(''), 3000);
-        }
-    }, [userPermissions.canEdit, id, reloadTournamentData]);
+        confirmEndTournament();
+    }, [confirmEndTournament]);
 
     const handleClearResults = useCallback(async () => {
         if (!userPermissions.canEdit || !window.confirm('Вы уверены? Все результаты будут удалены!')) return;
@@ -760,23 +997,10 @@ function TournamentDetails() {
     }, [matches, tournament]);
 
     const handleRemoveParticipant = useCallback(async (participantId) => {
-        if (!userPermissions.canEdit || !window.confirm('Удалить участника?')) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            await api.delete(`/api/tournaments/${id}/participants/${participantId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setMessage('✅ Участник удален');
-            setTimeout(() => setMessage(''), 3000);
-            reloadTournamentData(); // Используем стабильную функцию
-        } catch (error) {
-            console.error('❌ Ошибка удаления участника:', error);
-            setMessage(`❌ Ошибка: ${error.message}`);
-            setTimeout(() => setMessage(''), 3000);
-        }
-    }, [userPermissions.canEdit, id, reloadTournamentData]);
+        const participant = tournament.participants?.find(p => p.id === participantId);
+        const participantName = participant?.name || participant?.username || 'Участник';
+        confirmRemoveParticipant(participantId, participantName);
+    }, [tournament, confirmRemoveParticipant]);
 
     const handleTeamsGenerated = useCallback((teams) => {
         console.log('✅ Команды сгенерированы:', teams);
@@ -967,7 +1191,29 @@ function TournamentDetails() {
                     {/* ВКЛАДКА: УЧАСТНИКИ */}
                     {activeTab === 'participants' && (
                         <div className="tab-content-tournamentdetails">
-                            <h3>👥 Участники турнира ({tournament.participants?.length || 0})</h3>
+                            <div className="participants-header">
+                                <h3>👥 Участники турнира ({tournament.participants?.length || 0})</h3>
+                                
+                                {/* КНОПКИ УПРАВЛЕНИЯ УЧАСТНИКАМИ */}
+                                {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                                    <div className="participant-management-controls">
+                                        <button 
+                                            className="btn btn-primary add-participant-btn"
+                                            onClick={() => setShowParticipantSearchModal(true)}
+                                            title="Найти и добавить зарегистрированного пользователя"
+                                        >
+                                            🔍 Найти участника
+                                        </button>
+                                        <button 
+                                            className="btn btn-secondary add-unregistered-btn"
+                                            onClick={() => setShowAddParticipantModal(true)}
+                                            title="Добавить незарегистрированного участника"
+                                        >
+                                            👤 Добавить незарегистрированного
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                             
                             {tournament.participants && tournament.participants.length > 0 ? (
                                 <>
@@ -990,30 +1236,42 @@ function TournamentDetails() {
                                                         )}
                                                     </div>
                                                     <div className="participant-info">
-                                                        <Link 
-                                                            to={`/profile/${participant.user_id || participant.id}`}
-                                                            className="participant-name"
-                                                        >
-                                                            {participant.name || participant.username || 'Участник'}
-                                                        </Link>
+                                                        {participant.user_id ? (
+                                                            <Link 
+                                                                to={`/profile/${participant.user_id}`}
+                                                                className="participant-name"
+                                                            >
+                                                                {participant.name || participant.username || 'Участник'}
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="participant-name unregistered-participant">
+                                                                {participant.name || 'Незарегистрированный участник'}
+                                                                <span className="unregistered-badge">👤 Незарегистрированный</span>
+                                                            </span>
+                                                        )}
                                                         {participant.faceit_elo && (
                                                             <div className="participant-elo">
                                                                 FACEIT: {participant.faceit_elo}
                                                             </div>
                                                         )}
-                                                        {participant.cs2_rank && (
+                                                        {participant.cs2_premier_rank && (
                                                             <div className="participant-rank">
-                                                                CS2: {participant.cs2_rank}
+                                                                CS2: {participant.cs2_premier_rank}
+                                                            </div>
+                                                        )}
+                                                        {participant.email && (
+                                                            <div className="participant-email">
+                                                                📧 {participant.email}
                                                             </div>
                                                         )}
                                                     </div>
-                                                    {userPermissions.isAdminOrCreator && (
+                                                    {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
                                                         <button
                                                             className="remove-participant"
                                                             onClick={() => handleRemoveParticipant(participant.id)}
                                                             title="Удалить участника"
                                                         >
-                                                            ❌
+                                                            🗑️
                                                         </button>
                                                     )}
                                                 </div>
@@ -1045,9 +1303,15 @@ function TournamentDetails() {
                                                                 {team.members?.map((member, memberIndex) => (
                                                                     <tr key={member.user_id || member.participant_id || memberIndex}>
                                                                         <td>
-                                                                            <Link to={`/profile/${member.user_id || member.participant_id}`}>
-                                                                                {member.name || member.username || 'Игрок'}
-                                                                            </Link>
+                                                                            {member.user_id ? (
+                                                                                <Link to={`/profile/${member.user_id}`}>
+                                                                                    {member.name || member.username || 'Игрок'}
+                                                                                </Link>
+                                                                            ) : (
+                                                                                <span className="unregistered-member">
+                                                                                    {member.name || 'Игрок'}
+                                                                                </span>
+                                                                            )}
                                                                         </td>
                                                                         <td>
                                                                             {ratingType === 'faceit' 
@@ -1075,6 +1339,25 @@ function TournamentDetails() {
                                         >
                                             Стать первым участником
                                         </button>
+                                    )}
+                                    {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                                        <div className="empty-state-management">
+                                            <p>Как организатор, вы можете:</p>
+                                            <div className="empty-state-actions">
+                                                <button 
+                                                    className="btn btn-primary"
+                                                    onClick={() => setShowParticipantSearchModal(true)}
+                                                >
+                                                    🔍 Найти участников
+                                                </button>
+                                                <button 
+                                                    className="btn btn-secondary"
+                                                    onClick={() => setShowAddParticipantModal(true)}
+                                                >
+                                                    👤 Добавить незарегистрированного
+                                                </button>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -1247,6 +1530,15 @@ function TournamentDetails() {
                                                                     >
                                                                         🔍 Подробнее
                                                                     </button>
+                                                                    {userPermissions.canEdit && tournament.status !== 'completed' && (
+                                                                        <button 
+                                                                            className="edit-compact-btn"
+                                                                            onClick={() => openMatchResultModal(match)}
+                                                                            title="Редактировать результат"
+                                                                        >
+                                                                            ✏️ Изменить
+                                                                        </button>
+                                                                    )}
                                                                     {match.completed_at && (
                                                                         <span className="match-completed-time">
                                                                             {new Date(match.completed_at).toLocaleString('ru-RU')}
@@ -1488,232 +1780,6 @@ function TournamentDetails() {
                 {message && (
                     <div className={`message-notification ${message.includes('✅') ? 'success' : 'error'}`}>
                         {message}
-                    </div>
-                )}
-
-                {/* 🎯 МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ МАТЧА */}
-                {selectedMatch && (
-                    <div className="modal" onClick={() => setSelectedMatch(null)}>
-                        <div className="match-details-modal" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-content match-details-modal-content">
-                                {/* 🔍 Диагностика данных матча */}
-                                {process.env.NODE_ENV === 'development' && (
-                                    <div style={{ background: '#f0f0f0', padding: '10px', margin: '10px', fontSize: '12px', fontFamily: 'monospace' }}>
-                                        <strong>🔍 DEBUG:</strong>
-                                        <br />selectedMatch.maps_data: {JSON.stringify(selectedMatch.maps_data, null, 2)}
-                                        <br />тип maps_data: {typeof selectedMatch.maps_data}
-                                        <br />tournament.game: {tournament?.game}
-                                        <br />tournament.id: {tournament?.id}
-                                        <br />длина maps_data: {selectedMatch.maps_data ? (typeof selectedMatch.maps_data === 'string' ? selectedMatch.maps_data.length : 'не строка') : 'null/undefined'}
-                                        {selectedMatch.maps_data && (
-                                            <>
-                                                <br />попытка парсинга: {(() => {
-                                                    try {
-                                                        const parsed = typeof selectedMatch.maps_data === 'string' 
-                                                            ? JSON.parse(selectedMatch.maps_data) 
-                                                            : selectedMatch.maps_data;
-                                                        return `успешно, ${Array.isArray(parsed) ? `массив из ${parsed.length} элементов` : `объект: ${typeof parsed}`}`;
-                                                    } catch (e) {
-                                                        return `ошибка: ${e.message}`;
-                                                    }
-                                                })()}
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                <div className="team-modal-header">
-                                    <h3>Детали матча</h3>
-                                    <button 
-                                        className="close-btn"
-                                        onClick={() => setSelectedMatch(null)}
-                                        title="Закрыть"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-
-                                <div className="match-summary">
-                                    <h4>Общая информация</h4>
-                                    <div className="match-teams">
-                                        <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner' : ''}`}>
-                                            <h5>{selectedMatch.team1_name || 'Команда 1'}</h5>
-                                            <div className="team-score">{selectedMatch.score1 || 0}</div>
-                                            {selectedMatch.winner_team_id === selectedMatch.team1_id && (
-                                                <div className="winner-badge">🏆 Победитель</div>
-                                            )}
-                                        </div>
-                                        
-                                        <div className="vs-separator">VS</div>
-                                        
-                                        <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner' : ''}`}>
-                                            <h5>{selectedMatch.team2_name || 'Команда 2'}</h5>
-                                            <div className="team-score">{selectedMatch.score2 || 0}</div>
-                                            {selectedMatch.winner_team_id === selectedMatch.team2_id && (
-                                                <div className="winner-badge">🏆 Победитель</div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="final-score">
-                                        <div className="score-item">
-                                            <span className="score-label">Итоговый счет:</span>
-                                            <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner-score' : ''}`}>
-                                                {selectedMatch.score1 || 0}
-                                            </span>
-                                            <span className="score-separator">:</span>
-                                            <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner-score' : ''}`}>
-                                                {selectedMatch.score2 || 0}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* ДЕТАЛИ КАРТ/ИГР */}
-                                {selectedMatch.maps_data && (() => {
-                                    try {
-                                        const mapsData = typeof selectedMatch.maps_data === 'string' 
-                                            ? JSON.parse(selectedMatch.maps_data) 
-                                            : selectedMatch.maps_data;
-                                        
-                                        console.log('🗺️ ОБРАБОТКА MAPS_DATA В МОДАЛЬНОМ ОКНЕ:', mapsData);
-                                        
-                                        if (Array.isArray(mapsData) && mapsData.length > 0) {
-                                            // Подсчет выигранных карт
-                                            let team1MapsWon = 0;
-                                            let team2MapsWon = 0;
-                                            let totalTeam1Score = 0;
-                                            let totalTeam2Score = 0;
-
-                                            mapsData.forEach((map, index) => {
-                                                console.log(`🗺️ Обработка карты ${index + 1}:`, map);
-                                                
-                                                // Гибкое извлечение счета - пробуем разные поля
-                                                const score1 = parseInt(map.score1) || parseInt(map.team1_score) || 0;
-                                                const score2 = parseInt(map.score2) || parseInt(map.team2_score) || 0;
-                                                
-                                                console.log(`- Извлеченный счет: ${score1} : ${score2}`);
-                                                
-                                                totalTeam1Score += score1;
-                                                totalTeam2Score += score2;
-                                                
-                                                if (score1 > score2) {
-                                                    team1MapsWon++;
-                                                } else if (score2 > score1) {
-                                                    team2MapsWon++;
-                                                }
-                                            });
-
-                                            return (
-                                                <div className="maps-results">
-                                                    <h4>📋 Результаты по картам</h4>
-                                                    
-                                                    <div className="maps-statistics">
-                                                        <h5>Общая статистика</h5>
-                                                        <div className="maps-stats">
-                                                            <div className="stat-item">
-                                                                <span className="stat-label">Карт выиграно:</span>
-                                                                <span className="stat-value-maps">
-                                                                    {team1MapsWon} : {team2MapsWon}
-                                                                </span>
-                                                            </div>
-                                                            <div className="stat-item">
-                                                                <span className="stat-label">Общий счет:</span>
-                                                                <span className="stat-value-maps">
-                                                                    {totalTeam1Score} : {totalTeam2Score}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <table className="maps-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Карта</th>
-                                                                <th>{selectedMatch.team1_name || 'Команда 1'}</th>
-                                                                <th>{selectedMatch.team2_name || 'Команда 2'}</th>
-                                                                <th>Победитель</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {mapsData.map((map, index) => {
-                                                                // Гибкое извлечение названия карты
-                                                                let mapName = 'Карта ' + (index + 1);
-                                                                
-                                                                if (map.name) {
-                                                                    mapName = map.name;
-                                                                } else if (typeof map.map === 'string') {
-                                                                    mapName = map.map;
-                                                                } else if (typeof map.map === 'object' && map.map?.name) {
-                                                                    mapName = map.map.name;
-                                                                } else if (map.mapName) {
-                                                                    mapName = map.mapName;
-                                                                }
-                                                                
-                                                                // Гибкое извлечение счета
-                                                                const score1 = parseInt(map.score1) || parseInt(map.team1_score) || 0;
-                                                                const score2 = parseInt(map.score2) || parseInt(map.team2_score) || 0;
-                                                                const mapWinner = score1 > score2 ? 'team1' : 
-                                                                                 score2 > score1 ? 'team2' : 'draw';
-                                                                
-                                                                console.log(`🗺️ Рендер карты ${index + 1}: название="${mapName}", счет="${score1}:${score2}"`);
-                                                                
-                                                                return (
-                                                                    <tr key={index}>
-                                                                        <td>{mapName}</td>
-                                                                        <td className={mapWinner === 'team1' ? 'map-winner' : ''}>
-                                                                            {score1}
-                                                                        </td>
-                                                                        <td className={mapWinner === 'team2' ? 'map-winner' : ''}>
-                                                                            {score2}
-                                                                        </td>
-                                                                        <td>
-                                                                            {mapWinner === 'team1' && (
-                                                                                <span>🏆 {selectedMatch.team1_name || 'Команда 1'}</span>
-                                                                            )}
-                                                                            {mapWinner === 'team2' && (
-                                                                                <span>🏆 {selectedMatch.team2_name || 'Команда 2'}</span>
-                                                                            )}
-                                                                            {mapWinner === 'draw' && (
-                                                                                <span>🤝 Ничья</span>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            );
-                                        }
-                                    } catch (error) {
-                                        console.error('❌ Ошибка обработки данных карт:', error);
-                                        console.log('Исходные данные maps_data:', selectedMatch.maps_data);
-                                        return (
-                                            <div className="maps-results">
-                                                <h4>📋 Результаты по картам</h4>
-                                                <p>⚠️ Ошибка обработки данных карт</p>
-                                                <details>
-                                                    <summary>Показать техническую информацию</summary>
-                                                    <pre>{JSON.stringify(selectedMatch.maps_data, null, 2)}</pre>
-                                                </details>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-
-                                {/* ОТСУТСТВИЕ ДЕТАЛЕЙ ПО КАРТАМ */}
-                                {(!selectedMatch.maps_data || 
-                                  (typeof selectedMatch.maps_data === 'string' && selectedMatch.maps_data === '[]') ||
-                                  (Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length === 0)) && (
-                                    <div className="no-maps-info">
-                                        <p>ℹ️ Детальная информация по картам недоступна</p>
-                                        <p>Отображается только общий результат матча</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
                     </div>
                 )}
             </section>
