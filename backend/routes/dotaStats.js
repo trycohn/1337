@@ -53,6 +53,83 @@ function steamIdToAccountId(steamId64) {
     return String(BigInt(steamId64) - BigInt('76561197960265728'));
 }
 
+// Конвертация rank_tier в приблизительный MMR
+function rankTierToMMR(rankTier) {
+    if (!rankTier || rankTier === 0) return 0;
+    
+    // OpenDota rank_tier: десятки = ранг, единицы = звезды (1-5)
+    const rankNumber = Math.floor(rankTier / 10); // 1-8 (Herald-Immortal)
+    const stars = rankTier % 10; // 1-5
+    
+    // MMR диапазоны для каждого ранга (средние значения)
+    const mmrRanges = {
+        1: { // Herald
+            1: 77,   // 0-153 MMR
+            2: 231,  // 154-307 MMR
+            3: 385,  // 308-461 MMR
+            4: 539,  // 462-615 MMR
+            5: 693   // 616-769 MMR
+        },
+        2: { // Guardian
+            1: 847,  // 770-923 MMR
+            2: 1001, // 924-1077 MMR
+            3: 1155, // 1078-1231 MMR
+            4: 1309, // 1232-1385 MMR
+            5: 1463  // 1386-1539 MMR
+        },
+        3: { // Crusader
+            1: 1617, // 1540-1693 MMR
+            2: 1771, // 1694-1847 MMR
+            3: 1925, // 1848-2001 MMR
+            4: 2079, // 2002-2155 MMR
+            5: 2233  // 2156-2309 MMR
+        },
+        4: { // Archon
+            1: 2387, // 2310-2463 MMR
+            2: 2541, // 2464-2617 MMR
+            3: 2695, // 2618-2771 MMR
+            4: 2849, // 2772-2925 MMR
+            5: 3003  // 2926-3079 MMR
+        },
+        5: { // Legend
+            1: 3157, // 3080-3233 MMR
+            2: 3311, // 3234-3387 MMR
+            3: 3465, // 3388-3541 MMR
+            4: 3619, // 3542-3695 MMR
+            5: 3773  // 3696-3849 MMR
+        },
+        6: { // Ancient
+            1: 3927, // 3850-4003 MMR
+            2: 4081, // 4004-4157 MMR
+            3: 4235, // 4158-4311 MMR
+            4: 4389, // 4312-4465 MMR
+            5: 4543  // 4466-4619 MMR
+        },
+        7: { // Divine
+            1: 4720, // 4620-4819 MMR
+            2: 4920, // 4820-5019 MMR
+            3: 5120, // 5020-5219 MMR
+            4: 5320, // 5220-5419 MMR
+            5: 5420  // 5420+ MMR
+        },
+        8: { // Immortal
+            1: 5620, // 5620+ MMR
+            2: 5720,
+            3: 5820,
+            4: 5920,
+            5: 6020
+        }
+    };
+    
+    // Валидация входных данных
+    if (rankNumber < 1 || rankNumber > 8 || stars < 1 || stars > 5) {
+        console.warn(`Неверный rank_tier: ${rankTier}, rankNumber: ${rankNumber}, stars: ${stars}`);
+        return 0;
+    }
+    
+    return mmrRanges[rankNumber] && mmrRanges[rankNumber][stars] ? mmrRanges[rankNumber][stars] : 0;
+}
+
 // Получение информации об игроке по Steam ID
 router.get('/player/:steamid', async (req, res) => {
     const { steamid } = req.params;
@@ -86,6 +163,9 @@ router.get('/player/:steamid', async (req, res) => {
             console.log('Не удалось получить рейтинги игрока:', error.message);
         }
 
+        // Рассчитываем приблизительный MMR на основе rank_tier
+        const estimatedMMR = rankTierToMMR(playerProfile.rank_tier);
+        
         // Формируем ответ в формате, совместимом с фронтендом
         const result = {
             profile: {
@@ -98,8 +178,9 @@ router.get('/player/:steamid', async (req, res) => {
                 profileurl: playerProfile.profile?.profileurl,
                 country_code: playerProfile.profile?.loccountrycode,
                 rank_tier: playerProfile.rank_tier,
+                estimated_mmr: estimatedMMR,
                 leaderboard_rank: playerProfile.leaderboard_rank,
-                mmr_estimate: playerProfile.competitive_rank || playerProfile.solo_competitive_rank,
+                mmr_estimate: playerProfile.competitive_rank || playerProfile.solo_competitive_rank || estimatedMMR,
                 solo_competitive_rank: playerProfile.solo_competitive_rank,
                 competitive_rank: playerProfile.competitive_rank,
                 last_login: playerProfile.profile?.last_login,
@@ -375,6 +456,7 @@ router.get('/profile/:userId', async (req, res) => {
             user_id: profile.user_id,
             steam_id: profile.steam_id,
             dota_stats: profile.dota_stats,
+            estimated_mmr: profile.estimated_mmr,
             created_at: profile.created_at,
             updated_at: profile.updated_at
         });
@@ -439,4 +521,55 @@ router.post('/player/:steamid/refresh', async (req, res) => {
     }
 });
 
-module.exports = router; 
+// Массовое обновление MMR для существующих профилей
+router.post('/profiles/update-mmr', async (req, res) => {
+    try {
+        console.log('🔄 Массовое обновление MMR для существующих профилей...');
+        
+        // Получаем все профили где есть rank_tier, но нет estimated_mmr
+        const profiles = await pool.query(`
+            SELECT id, dota_stats 
+            FROM dota_profiles 
+            WHERE estimated_mmr IS NULL OR estimated_mmr = 0
+        `);
+        
+        let updatedCount = 0;
+        
+        for (const profile of profiles.rows) {
+            try {
+                const dotaStats = profile.dota_stats;
+                
+                if (dotaStats && dotaStats.profile && dotaStats.profile.rank_tier) {
+                    const estimatedMMR = rankTierToMMR(dotaStats.profile.rank_tier);
+                    
+                    if (estimatedMMR > 0) {
+                        await pool.query(
+                            'UPDATE dota_profiles SET estimated_mmr = $1 WHERE id = $2',
+                            [estimatedMMR, profile.id]
+                        );
+                        updatedCount++;
+                        console.log(`✅ Обновлен профиль ID ${profile.id}: rank_tier ${dotaStats.profile.rank_tier} → ${estimatedMMR} MMR`);
+                    }
+                }
+            } catch (err) {
+                console.error(`❌ Ошибка обновления профиля ID ${profile.id}:`, err.message);
+            }
+        }
+        
+        console.log(`✅ Массовое обновление завершено. Обновлено профилей: ${updatedCount}`);
+        res.json({ 
+            message: 'Массовое обновление MMR завершено',
+            updated_profiles: updatedCount,
+            total_profiles: profiles.rows.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Ошибка массового обновления MMR:', error.message);
+        res.status(500).json({ 
+            error: 'Ошибка массового обновления MMR',
+            details: error.message 
+        });
+    }
+});
+
+module.exports = router;
