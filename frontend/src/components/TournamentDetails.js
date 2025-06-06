@@ -1315,7 +1315,7 @@ function TournamentDetails() {
                                                         <h4>
                                                             {team.name || `Команда ${index + 1}`}
                                                             <span className="team-rating">
-                                                                Средний рейтинг: {calculateTeamAverageRating(team)}
+                                                                Team elo: {calculateTeamAverageRating(team)}
                                                             </span>
                                                         </h4>
                                                         <table className="team-table">
