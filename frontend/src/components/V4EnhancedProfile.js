@@ -193,23 +193,27 @@ function V4EnhancedProfile() {
                 }
             };
             
-            wsRef.current.onclose = () => {
+            wsRef.current.onclose = (event) => {
                 console.log('🔌 WebSocket отключен');
                 setIsRealTimeConnected(false);
                 
-                // Автоматическое переподключение через 5 секунд
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    console.log('🔄 Переподключение WebSocket...');
-                    initializeWebSocket();
-                }, 5000);
+                // Переподключение только если не было явного закрытия
+                if (event.code !== 1000 && event.code !== 1006) {
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        console.log('🔄 Переподключение WebSocket...');
+                        initializeWebSocket();
+                    }, 5000);
+                }
             };
             
             wsRef.current.onerror = (error) => {
-                console.error('❌ WebSocket ошибка:', error);
+                console.warn('⚠️ WebSocket недоступен, продолжаем без real-time обновлений');
                 setIsRealTimeConnected(false);
+                // Не выводим ошибку, просто логируем warning
             };
         } catch (error) {
-            console.error('❌ Ошибка инициализации WebSocket:', error);
+            console.warn('⚠️ WebSocket недоступен, продолжаем без real-time обновлений:', error.message);
+            setIsRealTimeConnected(false);
         }
     };
 

@@ -53,53 +53,60 @@ export const useV4ProfileHooks = (user, activeTab) => {
         
         const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
         const wsUrl = baseUrl.replace('http', 'ws') + '/ws/stats';
-        const ws = new WebSocket(wsUrl);
         
-        ws.onopen = () => {
-            console.log('🚀 WebSocket соединение установлено');
-            ws.send(JSON.stringify({
-                type: 'authenticate',
-                userId: user.id,
-                token: localStorage.getItem('token')
-            }));
-        };
-        
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                handleRealTimeUpdate(data);
-            } catch (error) {
-                console.error('❌ Ошибка обработки WebSocket сообщения:', error);
-            }
-        };
-        
-        ws.onerror = (error) => {
-            console.error('❌ Ошибка WebSocket:', error);
-        };
-        
-        ws.onclose = (event) => {
-            console.log('🔌 WebSocket соединение закрыто:', event.code, event.reason);
+        try {
+            const ws = new WebSocket(wsUrl);
             
-            // Переподключение только если не было явного закрытия и пользователь все еще на вкладке stats
-            if (event.code !== 1000 && activeTab === 'stats' && user?.id) {
-                console.log('🔄 Переподключение WebSocket через 5 секунд...');
-                setTimeout(() => {
-                    if (activeTab === 'stats' && user?.id) {
-                        initializeWebSocket();
-                    }
-                }, 5000);
-            }
-        };
-        
-        setWebsocket(ws);
-        
-        // Возвращаем функцию очистки
-        return () => {
-            console.log('🧹 Очистка WebSocket соединения');
-            if (ws.readyState !== WebSocket.CLOSED) {
-                ws.close(1000, 'Component unmounting');
-            }
-        };
+            ws.onopen = () => {
+                console.log('🚀 WebSocket соединение установлено');
+                ws.send(JSON.stringify({
+                    type: 'authenticate',
+                    userId: user.id,
+                    token: localStorage.getItem('token')
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleRealTimeUpdate(data);
+                } catch (error) {
+                    console.error('❌ Ошибка обработки WebSocket сообщения:', error);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.warn('⚠️ WebSocket недоступен, продолжаем без real-time обновлений');
+                // Не выводим ошибку, просто логируем warning
+            };
+            
+            ws.onclose = (event) => {
+                console.log('🔌 WebSocket соединение закрыто:', event.code, event.reason);
+                
+                // Переподключение только если было успешное соединение и не было явного закрытия
+                if (event.code !== 1000 && event.code !== 1006 && activeTab === 'stats' && user?.id) {
+                    console.log('🔄 Попытка переподключения WebSocket через 5 секунд...');
+                    setTimeout(() => {
+                        if (activeTab === 'stats' && user?.id) {
+                            initializeWebSocket();
+                        }
+                    }, 5000);
+                }
+            };
+            
+            setWebsocket(ws);
+            
+            // Возвращаем функцию очистки
+            return () => {
+                console.log('🧹 Очистка WebSocket соединения');
+                if (ws.readyState !== WebSocket.CLOSED) {
+                    ws.close(1000, 'Component unmounting');
+                }
+            };
+        } catch (error) {
+            console.warn('⚠️ WebSocket недоступен, продолжаем без real-time обновлений:', error.message);
+            return () => {}; // Возвращаем пустую функцию очистки
+        }
     };
     
     // 📡 Обработка real-time обновлений (с debounce)

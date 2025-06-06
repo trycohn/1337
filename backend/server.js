@@ -44,6 +44,22 @@ app.set('trust proxy', 1);
 // Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
 
+// 🔌 Инициализация WebSocket сервера для real-time статистики
+let realTimeStatsService = null;
+try {
+    console.log('🔌 Инициализация WebSocket сервера для real-time статистики...');
+    realTimeStatsService = require('./services/realTimeStatsService');
+    realTimeStatsService.initialize(server).then(() => {
+        console.log('✅ WebSocket сервер для статистики успешно инициализирован');
+    }).catch((initError) => {
+        console.warn('⚠️ Ошибка инициализации WebSocket:', initError.message);
+    });
+} catch (error) {
+    console.warn('⚠️ WebSocket сервер недоступен, продолжаем без real-time обновлений:', error.message);
+    console.warn('   Причины: отсутствует модуль realTimeStatsService или ошибка инициализации');
+    console.warn('   Приложение будет работать в обычном режиме без real-time функций');
+}
+
 // Настройка middleware в правильном порядке
 app.use(helmet()); // Безопасность должна быть в начале
 app.use(morgan('dev')); // Логгирование запросов

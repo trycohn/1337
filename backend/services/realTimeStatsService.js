@@ -96,6 +96,7 @@ class RealTimeStatsService {
         const { type, userId, token } = data;
 
         switch (type) {
+            case 'authenticate':
             case 'subscribe_stats':
                 if (await this.validateUserToken(userId, token)) {
                     this.clients.set(userId, ws);
