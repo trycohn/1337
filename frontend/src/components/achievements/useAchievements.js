@@ -32,8 +32,13 @@ export const useAchievements = (userId) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            setAchievements(response.data || []);
-            return response.data;
+            if (response.data.success) {
+                setAchievements(response.data.achievements || []);
+                return response.data.achievements;
+            }
+            
+            setAchievements([]);
+            return [];
         } catch (err) {
             console.error('Ошибка загрузки достижений:', err);
             setError('Не удалось загрузить достижения');
@@ -49,17 +54,52 @@ export const useAchievements = (userId) => {
         
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get(`/api/achievements/user/${userId}`, {
+            
+            // Получаем прогресс пользователя
+            const progressResponse = await api.get('/api/achievements/user/progress', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            setUserAchievements(response.data.achievements || []);
-            setAchievementProgress(response.data.progress || {});
-            setPlayerLevel(response.data.level || 1);
-            setPlayerXP(response.data.xp || 0);
-            setDailyStreak(response.data.streak || { current: 0, longest: 0 });
+            // Получаем список всех достижений с информацией о разблокированных
+            const achievementsResponse = await api.get('/api/achievements', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             
-            return response.data;
+            if (progressResponse.data.success && achievementsResponse.data.success) {
+                const progress = progressResponse.data.progress;
+                const allAchievements = achievementsResponse.data.achievements;
+                
+                // Фильтруем разблокированные достижения
+                const unlockedAchievements = allAchievements.filter(a => a.is_unlocked);
+                
+                // Создаем объект прогресса по ID достижений
+                const progressByAchievement = {};
+                allAchievements.forEach(achievement => {
+                    progressByAchievement[achievement.id] = achievement.user_progress || 0;
+                });
+                
+                setUserAchievements(unlockedAchievements);
+                setAchievementProgress(progressByAchievement);
+                setPlayerLevel(progress.level || 1);
+                setPlayerXP(progress.total_xp || 0);
+                setDailyStreak({
+                    current: progress.daily_streak_current || 0,
+                    longest: progress.daily_streak_longest || 0
+                });
+                
+                return {
+                    achievements: unlockedAchievements,
+                    progress: progressByAchievement,
+                    level: progress.level,
+                    xp: progress.total_xp,
+                    streak: {
+                        current: progress.daily_streak_current || 0,
+                        longest: progress.daily_streak_longest || 0
+                    }
+                };
+            }
+            
+            return {};
         } catch (err) {
             console.error('Ошибка загрузки достижений пользователя:', err);
             setError('Не удалось загрузить прогресс достижений');
@@ -75,44 +115,38 @@ export const useAchievements = (userId) => {
         
         try {
             const token = localStorage.getItem('token');
-            const response = await api.post('/api/achievements/check-progress', {
-                userId,
-                actionType,
-                actionData
+            const response = await api.post('/api/achievements/user/action', {
+                action_type: actionType,
+                action_data: actionData
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             if (response.data.success) {
-                // Обновляем прогресс
-                if (response.data.updatedProgress) {
-                    setAchievementProgress(prev => ({
-                        ...prev,
-                        ...response.data.updatedProgress
-                    }));
-                }
+                const progress = response.data.progress;
                 
-                // Обновляем XP и уровень
-                if (response.data.xpGained) {
-                    setPlayerXP(prev => prev + response.data.xpGained);
-                    
-                    if (response.data.levelUp) {
-                        setPlayerLevel(prev => prev + 1);
-                        showAchievementNotification({
-                            type: 'level_up',
-                            message: `Поздравляем! Достигнут ${response.data.newLevel} уровень!`,
-                            icon: '🎉'
-                        });
-                    }
+                // Обновляем уровень и XP
+                if (progress) {
+                    setPlayerLevel(progress.level || 1);
+                    setPlayerXP(progress.total_xp || 0);
+                    setDailyStreak({
+                        current: progress.daily_streak_current || 0,
+                        longest: progress.daily_streak_longest || 0
+                    });
                 }
                 
                 // Обрабатываем новые достижения
-                if (response.data.newAchievements && response.data.newAchievements.length > 0) {
-                    setUserAchievements(prev => [...prev, ...response.data.newAchievements]);
-                    setNewAchievements(prev => [...prev, ...response.data.newAchievements]);
+                if (response.data.new_achievements && response.data.new_achievements.length > 0) {
+                    const newAchievements = response.data.new_achievements.map(achievement => ({
+                        achievement_id: achievement.id,
+                        ...achievement
+                    }));
+                    
+                    setUserAchievements(prev => [...prev, ...newAchievements]);
+                    setNewAchievements(prev => [...prev, ...newAchievements]);
                     
                     // Показываем уведомления о новых достижениях
-                    response.data.newAchievements.forEach(achievement => {
+                    newAchievements.forEach(achievement => {
                         setTimeout(() => {
                             showAchievementNotification({
                                 type: 'achievement_unlocked',
@@ -121,6 +155,15 @@ export const useAchievements = (userId) => {
                                 icon: achievement.icon || '🏆'
                             });
                         }, 500);
+                    });
+                }
+                
+                // Проверяем повышение уровня
+                if (response.data.level_up) {
+                    showAchievementNotification({
+                        type: 'level_up',
+                        message: `Поздравляем! Достигнут ${progress.level} уровень!`,
+                        icon: '🎉'
                     });
                 }
             }
@@ -231,8 +274,8 @@ export const useAchievements = (userId) => {
         
         try {
             const token = localStorage.getItem('token');
-            await api.post('/api/achievements/mark-seen', {
-                achievementIds: newAchievements.map(a => a.achievement_id)
+            await api.post('/api/achievements/user/mark-seen', {
+                achievement_ids: newAchievements.map(a => a.achievement_id || a.id)
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });

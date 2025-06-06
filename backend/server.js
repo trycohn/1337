@@ -226,6 +226,7 @@ const friendsRouter = require('./routes/friends');
 const chatsRouter = require('./routes/chats');
 const organizersRouter = require('./routes/organizers');
 const adminRouter = require('./routes/admin');
+const achievementsRouter = require('./routes/achievements'); // Роуты для системы достижений
 // ✨ V4 ULTIMATE: Импорт революционных API
 const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
 
@@ -246,6 +247,7 @@ app.use('/api/chats', chatsRouter);
 app.use('/api/maps', mapsRouter);
 app.use('/api/organizers', organizersRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/achievements', achievementsRouter); // Подключаем систему достижений
 // ✨ V4 ULTIMATE: Революционные API endpoints
 app.use('/api/v4', v4EnhancedStatsRouter);
 
