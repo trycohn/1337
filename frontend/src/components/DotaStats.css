@@ -229,7 +229,6 @@
     display: flex;
     justify-content: space-between;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     border-left: 4px solid #cc0000;
 }

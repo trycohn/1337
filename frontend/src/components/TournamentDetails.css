@@ -1526,9 +1526,6 @@
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    background-color: #111111;
-    border-radius: 0;
-    border: 1px solid #333333;
     min-width: 120px;
 }
 
@@ -3625,9 +3622,6 @@ a.participant-name:hover {
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
 }
 
 .stat-label {
