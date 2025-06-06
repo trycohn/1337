@@ -498,8 +498,12 @@ function TournamentDetails() {
 
     // 🎯 ДОБАВЛЕНИЕ ЗАРЕГИСТРИРОВАННОГО УЧАСТНИКА
     const addRegisteredParticipant = useCallback(async (userId) => {
+        // Находим пользователя в результатах поиска для получения имени
+        const selectedUser = modals.searchResults.find(user => user.id === userId);
+        const userName = selectedUser?.username || `User ${userId}`;
+        
         try {
-            const result = await tournamentManagement.addRegisteredParticipant(userId);
+            const result = await tournamentManagement.addRegisteredParticipant(userId, userName);
             
             if (result.success) {
                 setMessage('✅ Участник добавлен в турнир!');
@@ -974,13 +978,15 @@ function TournamentDetails() {
             
             const socket = io(apiUrl, {
                 query: { token },
-                transports: ['polling'], // Используем только polling для стабильности
-                timeout: 10000, // Уменьшаем timeout
-                forceNew: false, // Позволяем переиспользование соединения
+                transports: ['polling'], // Только polling
+                upgrade: false, // Запрещаем upgrade до websocket
+                rememberUpgrade: false, // Не запоминаем upgrade
+                timeout: 10000,
+                forceNew: false,
                 autoConnect: true,
                 reconnection: true,
                 reconnectionDelay: 2000,
-                reconnectionAttempts: 3, // Уменьшаем количество попыток
+                reconnectionAttempts: 3,
                 pingTimeout: 30000,
                 pingInterval: 10000
             });
@@ -1009,15 +1015,12 @@ function TournamentDetails() {
             });
 
             socket.on('connect_error', (error) => {
-                console.warn('⚠️ WebSocket ошибка подключения:', error.message);
+                console.warn('⚠️ WebSocket ошибка подключения (игнорируется):', error.message);
                 setWsConnected(false);
-                
-                // Не пытаемся переключаться на другие транспорты
-                // Просто логируем ошибку и продолжаем работу без WebSocket
             });
 
             socket.on('error', (error) => {
-                console.warn('⚠️ WebSocket ошибка:', error.message);
+                console.warn('⚠️ WebSocket ошибка (игнорируется):', error.message);
                 setWsConnected(false);
             });
 
@@ -1027,8 +1030,7 @@ function TournamentDetails() {
             });
 
             socket.on('reconnect_error', (error) => {
-                console.warn('⚠️ Ошибка переподключения WebSocket:', error.message);
-                // Не показываем ошибку пользователю, работаем без WebSocket
+                console.warn('⚠️ Ошибка переподключения WebSocket (игнорируется):', error.message);
             });
 
             socket.on('reconnect_failed', () => {

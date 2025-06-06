@@ -18,15 +18,14 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.post(`/tournaments/${tournamentId}/participants/guest`, {
-                display_name: participantData.display_name,
-                steam_id: participantData.steam_id || null,
-                rating: participantData.rating || 0
+            const response = await axios.post(`/api/tournaments/${tournamentId}/add-participant`, {
+                participantName: participantData.display_name,
+                userId: null // Для незарегистрированных участников
             });
 
             return { success: true, data: response.data };
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Ошибка при добавлении участника';
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при добавлении участника';
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -44,7 +43,7 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.get(`/users/search`, {
+            const response = await axios.get(`/api/users/search`, {
                 params: { query: query.trim() }
             });
 
@@ -59,18 +58,19 @@ const useTournamentManagement = (tournamentId) => {
     }, []);
 
     // Добавление зарегистрированного участника
-    const addRegisteredParticipant = useCallback(async (userId) => {
+    const addRegisteredParticipant = useCallback(async (userId, userName) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await axios.post(`/tournaments/${tournamentId}/participants`, {
-                user_id: userId
+            const response = await axios.post(`/api/tournaments/${tournamentId}/add-participant`, {
+                participantName: userName || `User ${userId}`,
+                userId: userId
             });
 
             return { success: true, data: response.data };
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Ошибка при добавлении участника';
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при добавлении участника';
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -84,7 +84,7 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            await axios.delete(`/tournaments/${tournamentId}/participants/${participantId}`);
+            await axios.delete(`/api/tournaments/${tournamentId}/participants/${participantId}`);
             return { success: true };
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Ошибка при удалении участника';
@@ -101,7 +101,7 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.post(`/tournaments/${tournamentId}/start`);
+            const response = await axios.post(`/api/tournaments/${tournamentId}/start`);
             return { success: true, data: response.data };
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Ошибка при запуске турнира';
@@ -118,7 +118,7 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.post(`/tournaments/${tournamentId}/end`);
+            const response = await axios.post(`/api/tournaments/${tournamentId}/end`);
             return { success: true, data: response.data };
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Ошибка при завершении турнира';
@@ -135,7 +135,7 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.post(`/tournaments/${tournamentId}/regenerate-bracket`);
+            const response = await axios.post(`/api/tournaments/${tournamentId}/regenerate-bracket`);
             return { success: true, data: response.data };
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Ошибка при перегенерации сетки';
@@ -152,7 +152,7 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.put(`/tournaments/${tournamentId}/matches/${matchId}/result`, {
+            const response = await axios.put(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
                 score1: resultData.score1,
                 score2: resultData.score2,
                 maps_data: resultData.maps_data || null
