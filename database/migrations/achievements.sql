@@ -72,10 +72,302 @@ CREATE TABLE IF NOT EXISTS achievement_action_logs (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     action_type VARCHAR(100) NOT NULL,
     action_data JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_action (user_id, action_type),
-    INDEX idx_created_at (created_at)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ==============================================
+-- ОБНОВЛЕНИЕ СТРУКТУРЫ СУЩЕСТВУЮЩИХ ТАБЛИЦ
+-- ==============================================
+
+-- Шаг 1: Добавляем базовые колонки в achievement_categories
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_categories' AND column_name = 'name') THEN
+        ALTER TABLE achievement_categories ADD COLUMN name VARCHAR(100) NOT NULL DEFAULT 'Категория';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_categories' AND column_name = 'icon') THEN
+        ALTER TABLE achievement_categories ADD COLUMN icon VARCHAR(50) DEFAULT '🏆';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_categories' AND column_name = 'description') THEN
+        ALTER TABLE achievement_categories ADD COLUMN description TEXT;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_categories' AND column_name = 'sort_order') THEN
+        ALTER TABLE achievement_categories ADD COLUMN sort_order INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_categories' AND column_name = 'created_at') THEN
+        ALTER TABLE achievement_categories ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_categories' AND column_name = 'updated_at') THEN
+        ALTER TABLE achievement_categories ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+END $$;
+
+-- Шаг 2: Добавляем базовые колонки в achievements
+DO $$ 
+BEGIN
+    -- Сначала проверяем и обрабатываем поле title (из старых версий)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'title') THEN
+        -- Убираем NOT NULL constraint с title если он есть
+        ALTER TABLE achievements ALTER COLUMN title DROP NOT NULL;
+    ELSE
+        -- Добавляем title как nullable поле если его нет
+        ALTER TABLE achievements ADD COLUMN title VARCHAR(255);
+    END IF;
+    
+    -- Проверяем и обрабатываем поле category (из старых версий)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'category') THEN
+        -- Убираем NOT NULL constraint с category если он есть
+        ALTER TABLE achievements ALTER COLUMN category DROP NOT NULL;
+    ELSE
+        -- Добавляем category как nullable поле если его нет
+        ALTER TABLE achievements ADD COLUMN category VARCHAR(255);
+    END IF;
+    
+    -- Проверяем и обрабатываем поле condition_type (из старых версий)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'condition_type') THEN
+        -- Убираем NOT NULL constraint с condition_type если он есть
+        ALTER TABLE achievements ALTER COLUMN condition_type DROP NOT NULL;
+    ELSE
+        -- Добавляем condition_type как nullable поле если его нет
+        ALTER TABLE achievements ADD COLUMN condition_type VARCHAR(255);
+    END IF;
+    
+    -- Проверяем и обрабатываем поле condition_value (из старых версий)
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'condition_value') THEN
+        -- Убираем NOT NULL constraint с condition_value если он есть
+        ALTER TABLE achievements ALTER COLUMN condition_value DROP NOT NULL;
+    ELSE
+        -- Добавляем condition_value как nullable поле если его нет
+        ALTER TABLE achievements ADD COLUMN condition_value INTEGER;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'name') THEN
+        ALTER TABLE achievements ADD COLUMN name VARCHAR(255) NOT NULL DEFAULT 'Новое достижение';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'description') THEN
+        ALTER TABLE achievements ADD COLUMN description TEXT DEFAULT 'Описание достижения';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'icon') THEN
+        ALTER TABLE achievements ADD COLUMN icon VARCHAR(50) DEFAULT '🏆';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'rarity') THEN
+        ALTER TABLE achievements ADD COLUMN rarity VARCHAR(20) DEFAULT 'common';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'xp_reward') THEN
+        ALTER TABLE achievements ADD COLUMN xp_reward INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'conditions') THEN
+        ALTER TABLE achievements ADD COLUMN conditions JSONB DEFAULT '{}';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'is_active') THEN
+        ALTER TABLE achievements ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'is_hidden') THEN
+        ALTER TABLE achievements ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'unlock_order') THEN
+        ALTER TABLE achievements ADD COLUMN unlock_order INTEGER;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'created_at') THEN
+        ALTER TABLE achievements ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'updated_at') THEN
+        ALTER TABLE achievements ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+END $$;
+
+-- Шаг 3: Добавляем category_id ПОСЛЕ создания всех колонок
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'category_id') THEN
+        ALTER TABLE achievements ADD COLUMN category_id INTEGER;
+    END IF;
+END $$;
+
+-- Шаг 4: Добавляем foreign key constraint отдельно (если его нет)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name LIKE '%achievements_category_id_fkey%' 
+        AND table_name = 'achievements'
+    ) THEN
+        ALTER TABLE achievements ADD CONSTRAINT achievements_category_id_fkey FOREIGN KEY (category_id) REFERENCES achievement_categories(id);
+    END IF;
+END $$;
+
+-- Шаг 5: Сначала очищаем некорректные данные rarity, затем добавляем CHECK constraint
+DO $$
+BEGIN
+    -- Сначала обновляем все некорректные значения rarity на 'common'
+    UPDATE achievements 
+    SET rarity = 'common' 
+    WHERE rarity IS NULL OR rarity NOT IN ('common', 'rare', 'epic', 'legendary');
+    
+    -- Теперь безопасно добавляем CHECK constraint
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name LIKE '%achievements_rarity_check%' 
+        AND table_name = 'achievements'
+    ) THEN
+        ALTER TABLE achievements ADD CONSTRAINT achievements_rarity_check CHECK (rarity IN ('common', 'rare', 'epic', 'legendary'));
+    END IF;
+END $$;
+
+-- Шаг 6: Обновляем user_achievements
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_achievements' AND column_name = 'user_id') THEN
+        ALTER TABLE user_achievements ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_achievements' AND column_name = 'achievement_id') THEN
+        ALTER TABLE user_achievements ADD COLUMN achievement_id INTEGER NOT NULL DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_achievements' AND column_name = 'unlocked_at') THEN
+        ALTER TABLE user_achievements ADD COLUMN unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_achievements' AND column_name = 'progress') THEN
+        ALTER TABLE user_achievements ADD COLUMN progress JSONB DEFAULT '{}';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_achievements' AND column_name = 'is_new') THEN
+        ALTER TABLE user_achievements ADD COLUMN is_new BOOLEAN DEFAULT TRUE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_achievements' AND column_name = 'notified_at') THEN
+        ALTER TABLE user_achievements ADD COLUMN notified_at TIMESTAMP;
+    END IF;
+END $$;
+
+-- Шаг 7: Обновляем user_progress
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'user_id') THEN
+        ALTER TABLE user_progress ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'total_xp') THEN
+        ALTER TABLE user_progress ADD COLUMN total_xp INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'level') THEN
+        ALTER TABLE user_progress ADD COLUMN level INTEGER DEFAULT 1;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'tournaments_created') THEN
+        ALTER TABLE user_progress ADD COLUMN tournaments_created INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'tournaments_won') THEN
+        ALTER TABLE user_progress ADD COLUMN tournaments_won INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'tournaments_participated') THEN
+        ALTER TABLE user_progress ADD COLUMN tournaments_participated INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'matches_won') THEN
+        ALTER TABLE user_progress ADD COLUMN matches_won INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'matches_lost') THEN
+        ALTER TABLE user_progress ADD COLUMN matches_lost INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'matches_draw') THEN
+        ALTER TABLE user_progress ADD COLUMN matches_draw INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'friends_count') THEN
+        ALTER TABLE user_progress ADD COLUMN friends_count INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'messages_sent') THEN
+        ALTER TABLE user_progress ADD COLUMN messages_sent INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'daily_streak_current') THEN
+        ALTER TABLE user_progress ADD COLUMN daily_streak_current INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'daily_streak_longest') THEN
+        ALTER TABLE user_progress ADD COLUMN daily_streak_longest INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'last_login_date') THEN
+        ALTER TABLE user_progress ADD COLUMN last_login_date DATE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'profile_completion_percentage') THEN
+        ALTER TABLE user_progress ADD COLUMN profile_completion_percentage INTEGER DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'steam_connected') THEN
+        ALTER TABLE user_progress ADD COLUMN steam_connected BOOLEAN DEFAULT FALSE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'faceit_connected') THEN
+        ALTER TABLE user_progress ADD COLUMN faceit_connected BOOLEAN DEFAULT FALSE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'created_at') THEN
+        ALTER TABLE user_progress ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_progress' AND column_name = 'updated_at') THEN
+        ALTER TABLE user_progress ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+END $$;
+
+-- Шаг 8: Обновляем achievement_action_logs
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_action_logs' AND column_name = 'user_id') THEN
+        ALTER TABLE achievement_action_logs ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_action_logs' AND column_name = 'action_type') THEN
+        ALTER TABLE achievement_action_logs ADD COLUMN action_type VARCHAR(100) NOT NULL DEFAULT 'unknown';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_action_logs' AND column_name = 'action_data') THEN
+        ALTER TABLE achievement_action_logs ADD COLUMN action_data JSONB DEFAULT '{}';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievement_action_logs' AND column_name = 'created_at') THEN
+        ALTER TABLE achievement_action_logs ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    END IF;
+END $$;
+
+-- Шаг 9: Добавляем UNIQUE constraint для user_achievements
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'user_achievements_user_achievement_unique' 
+        AND table_name = 'user_achievements'
+    ) THEN
+        ALTER TABLE user_achievements ADD CONSTRAINT user_achievements_user_achievement_unique UNIQUE (user_id, achievement_id);
+    END IF;
+END $$;
 
 -- Индексы для оптимизации запросов
 CREATE INDEX IF NOT EXISTS idx_achievements_category ON achievements(category_id);
@@ -86,6 +378,8 @@ CREATE INDEX IF NOT EXISTS idx_user_achievements_achievement ON user_achievement
 CREATE INDEX IF NOT EXISTS idx_user_achievements_unlocked ON user_achievements(unlocked_at);
 CREATE INDEX IF NOT EXISTS idx_user_progress_level ON user_progress(level);
 CREATE INDEX IF NOT EXISTS idx_user_progress_xp ON user_progress(total_xp);
+CREATE INDEX IF NOT EXISTS idx_user_action ON achievement_action_logs(user_id, action_type);
+CREATE INDEX IF NOT EXISTS idx_action_created_at ON achievement_action_logs(created_at);
 
 -- Триггер для автоматического обновления updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -96,14 +390,18 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Удаляем существующие триггеры если они есть, затем создаем новые
+DROP TRIGGER IF EXISTS update_achievement_categories_updated_at ON achievement_categories CASCADE;
 CREATE TRIGGER update_achievement_categories_updated_at 
     BEFORE UPDATE ON achievement_categories 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_achievements_updated_at ON achievements CASCADE;
 CREATE TRIGGER update_achievements_updated_at 
     BEFORE UPDATE ON achievements 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_progress_updated_at ON user_progress CASCADE;
 CREATE TRIGGER update_user_progress_updated_at 
     BEFORE UPDATE ON user_progress 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -372,58 +670,91 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Вставка базовых категорий достижений
-INSERT INTO achievement_categories (name, icon, description, sort_order) VALUES
-('Турниры', '🏆', 'Достижения, связанные с турнирами', 1),
-('Матчи', '⚔️', 'Достижения в матчах и играх', 2),
-('Социальные', '👥', 'Социальные взаимодействия', 3),
-('Серии', '🔥', 'Достижения за постоянство', 4),
-('Особые', '💎', 'Уникальные и редкие достижения', 5);
+-- =================================================================== 
+-- ВСТАВКА БАЗОВЫХ ДАННЫХ (ТОЛЬКО ПОСЛЕ ВСЕХ ИЗМЕНЕНИЙ СТРУКТУРЫ)
+-- ===================================================================
 
--- Вставка базовых достижений
-INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions) VALUES
--- Турнирные достижения
-('Первый турнир', 'Создайте свой первый турнир', '🎯', 1, 'common', 100, '{"tournaments_created": 1}'),
-('Организатор', 'Создайте 5 турниров', '📋', 1, 'rare', 250, '{"tournaments_created": 5}'),
-('Турнирный король', 'Создайте 25 турниров', '👑', 1, 'epic', 500, '{"tournaments_created": 25}'),
-('Первая победа', 'Выиграйте ваш первый турнир', '🥇', 1, 'rare', 200, '{"tournaments_won": 1}'),
-('Победитель', 'Выиграйте 5 турниров', '🏆', 1, 'epic', 500, '{"tournaments_won": 5}'),
-('Чемпион', 'Выиграйте 10 турниров', '💫', 1, 'legendary', 1000, '{"tournaments_won": 10}'),
-('Участник', 'Примите участие в 10 турнирах', '🎮', 1, 'common', 150, '{"tournaments_participated": 10}'),
-('Опытный игрок', 'Примите участие в 50 турнирах', '⭐', 1, 'rare', 400, '{"tournaments_participated": 50}'),
+-- Безопасная вставка категорий достижений
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM achievement_categories WHERE name = 'Турниры') THEN
+        INSERT INTO achievement_categories (name, icon, description, sort_order) 
+        VALUES ('Турниры', '🏆', 'Достижения, связанные с турнирами', 1);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievement_categories WHERE name = 'Матчи') THEN
+        INSERT INTO achievement_categories (name, icon, description, sort_order) 
+        VALUES ('Матчи', '⚔️', 'Достижения в матчах и играх', 2);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievement_categories WHERE name = 'Социальные') THEN
+        INSERT INTO achievement_categories (name, icon, description, sort_order) 
+        VALUES ('Социальные', '👥', 'Социальные взаимодействия', 3);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievement_categories WHERE name = 'Серии') THEN
+        INSERT INTO achievement_categories (name, icon, description, sort_order) 
+        VALUES ('Серии', '🔥', 'Достижения за постоянство', 4);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievement_categories WHERE name = 'Особые') THEN
+        INSERT INTO achievement_categories (name, icon, description, sort_order) 
+        VALUES ('Особые', '💎', 'Уникальные и редкие достижения', 5);
+    END IF;
+END $$;
 
--- Матчевые достижения
-('Первая кровь', 'Выиграйте первый матч', '🩸', 2, 'common', 50, '{"matches_won": 1}'),
-('Воин', 'Выиграйте 25 матчей', '⚔️', 2, 'rare', 300, '{"matches_won": 25}'),
-('Ветеран', 'Выиграйте 100 матчей', '🛡️', 2, 'epic', 600, '{"matches_won": 100}'),
-('Непобедимый', 'Выиграйте 500 матчей', '🗡️', 2, 'legendary', 1500, '{"matches_won": 500}'),
-
--- Социальные достижения
-('Дружелюбный', 'Добавьте 5 друзей', '👋', 3, 'common', 75, '{"friends_count": 5}'),
-('Социальная бабочка', 'Добавьте 25 друзей', '🦋', 3, 'rare', 200, '{"friends_count": 25}'),
-('Коммуникатор', 'Отправьте 100 сообщений', '💬', 3, 'common', 50, '{"messages_sent": 100}'),
-('Болтун', 'Отправьте 1000 сообщений', '🗣️', 3, 'rare', 150, '{"messages_sent": 1000}'),
-
--- Достижения за серии
-('Постоянство', 'Заходите 3 дня подряд', '📅', 4, 'common', 60, '{"daily_streak_current": 3}'),
-('Преданный', 'Заходите 7 дней подряд', '🔥', 4, 'rare', 200, '{"daily_streak_current": 7}'),
-('Фанатик', 'Заходите 30 дней подряд', '💯', 4, 'epic', 600, '{"daily_streak_current": 30}'),
-('Марафонец', 'Максимальная серия 100 дней', '🏃', 4, 'legendary', 2000, '{"daily_streak_longest": 100}'),
-
--- Уровневые достижения
-('Новичок', 'Достигните 5 уровня', '🌱', 5, 'common', 100, '{"level": 5}'),
-('Любитель', 'Достигните 15 уровня', '📈', 5, 'rare', 300, '{"level": 15}'),
-('Эксперт', 'Достигните 35 уровня', '🎓', 5, 'epic', 700, '{"level": 35}'),
-('Мастер', 'Достигните 50 уровня', '👨‍🎓', 5, 'epic', 1000, '{"level": 50}'),
-('Гуру', 'Достигните 75 уровня', '🧙', 5, 'legendary', 1500, '{"level": 75}'),
-('Легенда', 'Достигните 100 уровня', '🌟', 5, 'legendary', 2500, '{"level": 100}'),
-
--- Особые достижения
-('Первый раз', 'Зарегистрируйтесь в системе', '🎉', 5, 'common', 50, '{"profile_created": 1}'),
-('Полный профиль', 'Заполните профиль на 100%', '✅', 5, 'rare', 200, '{"profile_completion_percentage": 100}'),
-('Steam подключен', 'Подключите Steam аккаунт', '🎮', 5, 'common', 100, '{"steam_connected": true}'),
-('FACEIT подключен', 'Подключите FACEIT аккаунт', '🎯', 5, 'common', 100, '{"faceit_connected": true}'),
-('Полная интеграция', 'Подключите Steam и FACEIT', '🔗', 5, 'epic', 300, '{"steam_connected": true, "faceit_connected": true}');
+-- Безопасная вставка базовых достижений
+DO $$
+DECLARE
+    cat_tournaments INTEGER;
+    cat_matches INTEGER;
+    cat_social INTEGER;
+    cat_streaks INTEGER;
+    cat_special INTEGER;
+BEGIN
+    -- Получаем ID категорий
+    SELECT id INTO cat_tournaments FROM achievement_categories WHERE name = 'Турниры';
+    SELECT id INTO cat_matches FROM achievement_categories WHERE name = 'Матчи';
+    SELECT id INTO cat_social FROM achievement_categories WHERE name = 'Социальные';
+    SELECT id INTO cat_streaks FROM achievement_categories WHERE name = 'Серии';
+    SELECT id INTO cat_special FROM achievement_categories WHERE name = 'Особые';
+    
+    -- Вставляем достижения только если их нет
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Первый турнир') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Первый турнир', 'Создайте свой первый турнир', '🎯', cat_tournaments, 'common', 100, '{"tournaments_created": 1}'::jsonb);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Организатор') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Организатор', 'Создайте 5 турниров', '📋', cat_tournaments, 'rare', 250, '{"tournaments_created": 5}'::jsonb);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Первая победа') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Первая победа', 'Выиграйте ваш первый турнир', '🥇', cat_tournaments, 'rare', 200, '{"tournaments_won": 1}'::jsonb);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Первая кровь') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Первая кровь', 'Выиграйте первый матч', '🩸', cat_matches, 'common', 50, '{"matches_won": 1}'::jsonb);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Дружелюбный') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Дружелюбный', 'Добавьте 5 друзей', '👋', cat_social, 'common', 75, '{"friends_count": 5}'::jsonb);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Постоянство') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Постоянство', 'Заходите 3 дня подряд', '📅', cat_streaks, 'common', 60, '{"daily_streak_current": 3}'::jsonb);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM achievements WHERE name = 'Steam подключен') THEN
+        INSERT INTO achievements (name, description, icon, category_id, rarity, xp_reward, conditions)
+        VALUES ('Steam подключен', 'Подключите Steam аккаунт', '🎮', cat_special, 'common', 100, '{"steam_connected": true}'::jsonb);
+    END IF;
+END $$;
 
 -- Комментарии для документации
 COMMENT ON TABLE achievement_categories IS 'Категории достижений для группировки';
