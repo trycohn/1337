@@ -174,6 +174,37 @@ function TournamentDetails() {
         }
     }, []);
 
+    // 🎯 УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕЗАГРУЗКИ БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ
+    // ОПРЕДЕЛЕНА ВЫШЕ ВСЕХ ФУНКЦИЙ КОТОРЫЕ ЕЕ ИСПОЛЬЗУЮТ
+    const reloadTournamentData = useCallback(() => {
+        if (!id) return;
+        
+        // Загружаем данные турнира напрямую через API
+        const loadData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const tournamentResponse = await api.get(`/api/tournaments/${id}`);
+                const tournamentData = tournamentResponse.data;
+                
+                setTournament(tournamentData);
+                setMatches(tournamentData.matches || []);
+                
+                if (tournamentData.format === 'mix' || tournamentData.participant_type === 'team') {
+                    setMixedTeams(tournamentData.teams || tournamentData.mixed_teams || []);
+                }
+            } catch (error) {
+                console.error('❌ Ошибка перезагрузки турнира:', error);
+                setError(`Ошибка загрузки: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        loadData();
+    }, [id]); // Только id для предотвращения циклических зависимостей
+
     // 🎯 ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДОБАВЛЕНИЯ В ТУРНИР
     const searchUsers = useCallback(async (query) => {
         if (!query || query.length < 2) {
@@ -683,15 +714,6 @@ function TournamentDetails() {
             }));
         }
     }, [id]); // ТОЛЬКО id в зависимостях
-
-    // УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕЗАГРУЗКИ БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ
-    // ОПРЕДЕЛЕНА СРАЗУ ПОСЛЕ loadTournamentData ДЛЯ ПРЕДОТВРАЩЕНИЯ 'USE BEFORE DEFINE'
-    const reloadTournamentData = useCallback(() => {
-        if (!id) return;
-        
-        // Вызываем загрузку напрямую без зависимостей
-        loadTournamentData();
-    }, [id, loadTournamentData]); // Возвращаем правильные зависимости для избежания ошибок
 
     // 🎯 WEBSOCKET ПОДКЛЮЧЕНИЕ
     const setupWebSocket = useCallback(() => {
