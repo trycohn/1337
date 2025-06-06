@@ -974,15 +974,15 @@ function TournamentDetails() {
             
             const socket = io(apiUrl, {
                 query: { token },
-                transports: ['polling', 'websocket'], // Меняем порядок - сначала polling, потом websocket
-                timeout: 20000, // Увеличиваем timeout
-                forceNew: true,
+                transports: ['polling'], // Используем только polling для стабильности
+                timeout: 10000, // Уменьшаем timeout
+                forceNew: false, // Позволяем переиспользование соединения
                 autoConnect: true,
                 reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionAttempts: 5,
-                pingTimeout: 60000,
-                pingInterval: 25000
+                reconnectionDelay: 2000,
+                reconnectionAttempts: 3, // Уменьшаем количество попыток
+                pingTimeout: 30000,
+                pingInterval: 10000
             });
 
             socket.on('connect', () => {
@@ -990,10 +990,7 @@ function TournamentDetails() {
                 setWsConnected(true);
                 
                 socket.emit('join-tournament', tournament.id);
-                
-                socket.emit('join_tournament_chat', tournament.id);
-                
-                console.log(`📡 Присоединился к турниру ${tournament.id} и чату`);
+                console.log(`📡 Присоединился к турниру ${tournament.id}`);
             });
 
             socket.on('disconnect', (reason) => {
@@ -1011,19 +1008,12 @@ function TournamentDetails() {
                 }
             });
 
-            socket.on('tournament_message', (data) => {
-                console.log('💬 Сообщение чата турнира:', data);
-            });
-
             socket.on('connect_error', (error) => {
                 console.warn('⚠️ WebSocket ошибка подключения:', error.message);
                 setWsConnected(false);
                 
-                // Fallback: пробуем переподключиться только через polling
-                if (socket.io.opts.transports.includes('websocket')) {
-                    console.log('🔄 Переключаемся на polling транспорт');
-                    socket.io.opts.transports = ['polling'];
-                }
+                // Не пытаемся переключаться на другие транспорты
+                // Просто логируем ошибку и продолжаем работу без WebSocket
             });
 
             socket.on('error', (error) => {
@@ -1038,11 +1028,19 @@ function TournamentDetails() {
 
             socket.on('reconnect_error', (error) => {
                 console.warn('⚠️ Ошибка переподключения WebSocket:', error.message);
+                // Не показываем ошибку пользователю, работаем без WebSocket
+            });
+
+            socket.on('reconnect_failed', () => {
+                console.warn('⚠️ WebSocket не смог переподключиться, работаем без real-time обновлений');
+                setWsConnected(false);
             });
 
             return socket;
         } catch (error) {
             console.warn('⚠️ WebSocket не удалось создать:', error.message);
+            console.log('ℹ️ Работаем без real-time обновлений');
+            setWsConnected(false);
             return null;
         }
     }, [user?.id, tournament?.id]);
@@ -2711,6 +2709,77 @@ function TournamentDetails() {
                                     onClick={confirmWithdrawFromInProgressTournament}
                                 >
                                     ⚠️ Я понимаю, покинуть турнир
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 🎯 МОДАЛЬНОЕ ОКНО ПОИСКА УЧАСТНИКОВ */}
+                <ParticipantSearchModal
+                    isOpen={modals.showParticipantSearchModal}
+                    onClose={modals.closeParticipantSearchModal}
+                    searchQuery={modals.searchQuery}
+                    setSearchQuery={modals.setSearchQuery}
+                    searchResults={modals.searchResults}
+                    isSearching={modals.isSearching}
+                    onSearchUsers={searchUsers}
+                    onAddParticipant={addRegisteredParticipant}
+                    existingParticipants={tournament.participants || []}
+                />
+
+                {/* 🎯 МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ НЕЗАРЕГИСТРИРОВАННОГО УЧАСТНИКА */}
+                <AddParticipantModal
+                    isOpen={modals.showAddParticipantModal}
+                    onClose={modals.closeAddParticipantModal}
+                    newParticipantData={modals.newParticipantData}
+                    setNewParticipantData={modals.setNewParticipantData}
+                    onSubmit={addUnregisteredParticipant}
+                    isLoading={false}
+                />
+
+                {/* 🎯 МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТОВ МАТЧА */}
+                <MatchResultModal
+                    isOpen={modals.showMatchResultModal}
+                    onClose={modals.closeMatchResultModal}
+                    selectedMatch={modals.selectedMatch}
+                    matchResultData={modals.matchResultData}
+                    setMatchResultData={modals.setMatchResultData}
+                    onSave={saveMatchResult}
+                    isLoading={false}
+                />
+
+                {/* 🎯 LEGACY МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ */}
+                {showConfirmModal && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h3>{confirmAction.title}</h3>
+                                <button 
+                                    className="close-btn"
+                                    onClick={confirmAction.onCancel}
+                                    title="Закрыть"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            <div className="modal-body">
+                                <p>{confirmAction.message}</p>
+                            </div>
+                            
+                            <div className="modal-footer">
+                                <button 
+                                    className="btn-cancel"
+                                    onClick={confirmAction.onCancel}
+                                >
+                                    Отмена
+                                </button>
+                                <button 
+                                    className="btn-confirm"
+                                    onClick={confirmAction.onConfirm}
+                                >
+                                    Подтвердить
                                 </button>
                             </div>
                         </div>
