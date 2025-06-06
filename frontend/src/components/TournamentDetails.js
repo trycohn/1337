@@ -684,10 +684,14 @@ function TournamentDetails() {
         }
     }, [id]); // ТОЛЬКО id в зависимостях
 
-    // СТАБИЛЬНАЯ ФУНКЦИЯ ПЕРЕЗАГРУЗКИ ДЛЯ ПРЕДОТВРАЩЕНИЯ ЦИКЛОВ
+    // УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕЗАГРУЗКИ БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ
+    // ОПРЕДЕЛЕНА СРАЗУ ПОСЛЕ loadTournamentData ДЛЯ ПРЕДОТВРАЩЕНИЯ 'USE BEFORE DEFINE'
     const reloadTournamentData = useCallback(() => {
+        if (!id) return;
+        
+        // Вызываем загрузку напрямую без зависимостей
         loadTournamentData();
-    }, [loadTournamentData]);
+    }, [id, loadTournamentData]); // Возвращаем правильные зависимости для избежания ошибок
 
     // 🎯 WEBSOCKET ПОДКЛЮЧЕНИЕ
     const setupWebSocket = useCallback(() => {
@@ -762,7 +766,7 @@ function TournamentDetails() {
         if (id) {
             loadTournamentData();
         }
-    }, [id, loadTournamentData]);
+    }, [id]); // УБИРАЕМ loadTournamentData из зависимостей для предотвращения цикла
 
     useEffect(() => {
         const socket = setupWebSocket();
