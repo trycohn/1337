@@ -1199,14 +1199,14 @@ function TournamentDetails() {
                                     <div className="participant-management-controls">
                                         <button 
                                             className="btn btn-primary add-participant-btn"
-                                            onClick={() => setShowParticipantSearchModal(true)}
+                                            onClick={() => modals.openParticipantSearchModal()}
                                             title="Найти и добавить зарегистрированного пользователя"
                                         >
                                             🔍 Найти участника
                                         </button>
                                         <button 
                                             className="btn btn-secondary add-unregistered-btn"
-                                            onClick={() => setShowAddParticipantModal(true)}
+                                            onClick={() => modals.openAddParticipantModal()}
                                             title="Добавить незарегистрированного участника"
                                         >
                                             👤 Добавить незарегистрированного
@@ -1346,13 +1346,13 @@ function TournamentDetails() {
                                             <div className="empty-state-actions">
                                                 <button 
                                                     className="btn btn-primary"
-                                                    onClick={() => setShowParticipantSearchModal(true)}
+                                                    onClick={() => modals.openParticipantSearchModal()}
                                                 >
                                                     🔍 Найти участников
                                                 </button>
                                                 <button 
                                                     className="btn btn-secondary"
-                                                    onClick={() => setShowAddParticipantModal(true)}
+                                                    onClick={() => modals.openAddParticipantModal()}
                                                 >
                                                     👤 Добавить незарегистрированного
                                                 </button>
