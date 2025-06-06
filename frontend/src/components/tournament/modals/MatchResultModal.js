@@ -230,7 +230,7 @@ const MatchResultModal = ({
                             className="save-btn"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Сохранение...' : 'Сохранить результат'}
+                            {isLoading ? 'Сохранение...' : 'Сохранить'}
                         </button>
                     </div>
                 </form>

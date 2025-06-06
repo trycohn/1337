@@ -2721,13 +2721,13 @@ function TournamentDetails() {
                                     className="btn-cancel"
                                     onClick={cancelWithdraw}
                                 >
-                                    ❌ Остаться в турнире
+                                    ❌ Остаться
                                 </button>
                                 <button 
                                     className="btn-confirm-withdraw"
                                     onClick={confirmWithdrawFromInProgressTournament}
                                 >
-                                    ⚠️ Я понимаю, покинуть турнир
+                                    ⚠️ Покинуть турнир
                                 </button>
                             </div>
                         </div>
@@ -2798,7 +2798,7 @@ function TournamentDetails() {
                                     className="btn-confirm"
                                     onClick={confirmAction.onConfirm}
                                 >
-                                    Подтвердить
+                                    ✓ Да
                                 </button>
                             </div>
                         </div>

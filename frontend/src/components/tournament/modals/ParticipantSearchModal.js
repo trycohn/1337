@@ -156,12 +156,6 @@ const ParticipantSearchModal = ({
                         )}
                     </div>
                 </div>
-
-                <div className="modal-footer">
-                    <button className="close-modal-btn" onClick={onClose}>
-                        Закрыть
-                    </button>
-                </div>
             </div>
         </div>
     );

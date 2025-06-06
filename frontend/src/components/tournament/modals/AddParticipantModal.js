@@ -106,7 +106,7 @@ const AddParticipantModal = ({
                             className="confirm-btn"
                             disabled={isLoading || !newParticipantData.display_name?.trim()}
                         >
-                            {isLoading ? 'Добавление...' : 'Добавить участника'}
+                            {isLoading ? 'Добавление...' : 'Добавить'}
                         </button>
                     </div>
                 </form>
