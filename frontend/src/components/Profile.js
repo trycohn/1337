@@ -24,6 +24,8 @@ import { useV4ProfileHooks } from './V4ProfileHooks';
 import V4StatsDashboard from './V4StatsDashboard';
 import './V4Stats.css';
 
+import AchievementsPanel from './achievements/AchievementsPanel';
+
 // Регистрируем компоненты Chart.js
 ChartJS.register(
     CategoryScale,
@@ -154,14 +156,11 @@ function Profile() {
 
     // ✨ V4 ULTIMATE: Новые состояния для революционной функциональности
     const [v4EnhancedStats, setV4EnhancedStats] = useState(null);
-    const [achievements, setAchievements] = useState([]);
-    const [userAchievements, setUserAchievements] = useState([]);
     const [aiAnalysis, setAiAnalysis] = useState(null);
     const [performanceData, setPerformanceData] = useState([]);
     const [leaderboards, setLeaderboards] = useState([]);
     const [currentStreak, setCurrentStreak] = useState(null);
     const [isLoadingV4Stats, setIsLoadingV4Stats] = useState(false);
-    const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
     const [isLoadingAI, setIsLoadingAI] = useState(false);
     const [websocket, setWebsocket] = useState(null);
     const [realTimeUpdates, setRealTimeUpdates] = useState([]);
@@ -188,6 +187,16 @@ function Profile() {
 
     // ✨ V4 ULTIMATE: Инициализация революционного хука
     const v4Data = useV4ProfileHooks(user, activeTab);
+
+    // 🏆 КОНСТАНТЫ КАТЕГОРИЙ ДОСТИЖЕНИЙ
+    const achievementCategories = [
+        { id: 'all', name: 'Все', icon: '🎯' },
+        { id: 'tournaments', name: 'Турниры', icon: '🏆' },
+        { id: 'matches', name: 'Матчи', icon: '⚔️' },
+        { id: 'social', name: 'Социальные', icon: '👥' },
+        { id: 'streaks', name: 'Серии', icon: '🔥' },
+        { id: 'special', name: 'Особые', icon: '💎' }
+    ];
 
     // 🔄 Функция расширенного пересчета с AI анализом
     const requestEnhancedRecalculation = async () => {
@@ -3531,248 +3540,7 @@ function Profile() {
                         
                         {/* Achievements Tab */}
                         {activeTab === 'achievements' && (
-                            <>
-                                <div className="content-header">
-                                    <h2 className="content-title">🏆 Достижения</h2>
-                                    <div className="achievements-summary">
-                                        <div className="achievement-stat">
-                                            <span className="achievement-count">{userAchievements.length}</span>
-                                            <span className="achievement-label">получено</span>
-                                        </div>
-                                        <div className="achievement-stat">
-                                            <span className="achievement-count">{achievements.length - userAchievements.length}</span>
-                                            <span className="achievement-label">осталось</span>
-                                        </div>
-                                        <div className="achievement-stat">
-                                            <span className="achievement-count">{playerLevel || 1}</span>
-                                            <span className="achievement-label">уровень</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Player Progress Card */}
-                                <div className="content-card player-progress-card">
-                                    <div className="card-header">
-                                        <h3 className="card-title">🔥 Прогресс игрока</h3>
-                                    </div>
-                                    <div className="card-content">
-                                        <div className="player-level-section">
-                                            <div className="level-info">
-                                                <div className="current-level">
-                                                    <span className="level-number">{playerLevel || 1}</span>
-                                                    <span className="level-label">УРОВЕНЬ</span>
-                                                </div>
-                                                <div className="xp-progress">
-                                                    <div className="xp-info">
-                                                        <span className="current-xp">{playerXP || 0} XP</span>
-                                                        {(playerLevel || 1) < 100 && (
-                                                            <span className="next-level-xp">
-                                                                / {((playerLevel || 1) * 1000)} XP до {(playerLevel || 1) + 1} уровня
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="xp-bar">
-                                                        <div 
-                                                            className="xp-fill" 
-                                                            style={{
-                                                                width: `${(playerLevel || 1) < 100 ? 
-                                                                    Math.min(((playerXP || 0) / ((playerLevel || 1) * 1000)) * 100, 100) : 
-                                                                    100}%`
-                                                            }}
-                                                        ></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {dailyStreak > 0 && (
-                                                <div className="daily-streak">
-                                                    <div className="streak-icon">🔥</div>
-                                                    <div className="streak-info">
-                                                        <div className="streak-number">{dailyStreak}</div>
-                                                        <div className="streak-label">дней подряд</div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Achievement Categories */}
-                                <div className="content-card achievements-section">
-                                    <div className="card-header">
-                                        <h3 className="card-title">Категории достижений</h3>
-                                        <div className="achievement-filters">
-                                            {achievementCategories.map(category => (
-                                                <button
-                                                    key={category.id}
-                                                    className={`category-filter ${selectedAchievementCategory === category.id ? 'active' : ''}`}
-                                                    onClick={() => setSelectedAchievementCategory(category.id)}
-                                                >
-                                                    <span className="category-icon">{category.icon}</span>
-                                                    <span className="category-name">{category.name}</span>
-                                                    <span className="category-count">
-                                                        {userAchievements.filter(ua => achievements.find(a => a.id === ua.achievement_id)?.category_id === category.id).length}/
-                                                        {achievements.filter(a => a.category_id === category.id).length}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="card-content">
-                                        <div className="achievements-grid">
-                                            {achievements
-                                                .filter(achievement => 
-                                                    selectedAchievementCategory === 'all' || 
-                                                    achievement.category_id === selectedAchievementCategory
-                                                )
-                                                .map(achievement => {
-                                                    const userAchievement = userAchievements.find(ua => ua.achievement_id === achievement.id);
-                                                    const isUnlocked = !!userAchievement;
-                                                    const progress = achievementProgress[achievement.id] || 0;
-                                                    const progressPercent = achievement.max_progress > 0 ? 
-                                                        Math.min((progress / achievement.max_progress) * 100, 100) : 0;
-
-                                                    return (
-                                                        <div key={achievement.id} className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}>
-                                                            <div className="achievement-icon">
-                                                                {isUnlocked ? achievement.icon : '🔒'}
-                                                            </div>
-                                                            <div className="achievement-info">
-                                                                <h4 className="achievement-name">{achievement.name}</h4>
-                                                                <p className="achievement-description">{achievement.description}</p>
-                                                                
-                                                                {achievement.max_progress > 0 && (
-                                                                    <div className="achievement-progress">
-                                                                        <div className="progress-bar">
-                                                                            <div 
-                                                                                className="progress-fill" 
-                                                                                style={{width: `${progressPercent}%`}}
-                                                                            ></div>
-                                                                        </div>
-                                                                        <div className="progress-text">
-                                                                            {progress} / {achievement.max_progress}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                <div className="achievement-meta">
-                                                                    <div className="achievement-xp">
-                                                                        <span className="xp-icon">⭐</span>
-                                                                        <span className="xp-value">{achievement.xp_reward} XP</span>
-                                                                    </div>
-                                                                    {isUnlocked && userAchievement && (
-                                                                        <div className="achievement-date">
-                                                                            Получено: {new Date(userAchievement.unlocked_at).toLocaleDateString('ru-RU')}
-                                                                        </div>
-                                                                    )}
-                                                                    {achievement.rarity && (
-                                                                        <div className={`achievement-rarity rarity-${achievement.rarity}`}>
-                                                                            {achievement.rarity === 'common' && '🥉 Обычное'}
-                                                                            {achievement.rarity === 'rare' && '🥈 Редкое'}
-                                                                            {achievement.rarity === 'epic' && '🥇 Эпическое'}
-                                                                            {achievement.rarity === 'legendary' && '💎 Легендарное'}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            {newAchievementsCount > 0 && userAchievement && 
-                                                                Date.now() - new Date(userAchievement.unlocked_at).getTime() < 24 * 60 * 60 * 1000 && (
-                                                                <div className="achievement-new-badge">NEW!</div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                        </div>
-                                        
-                                        {achievements
-                                            .filter(achievement => 
-                                                selectedAchievementCategory === 'all' || 
-                                                achievement.category_id === selectedAchievementCategory
-                                            ).length === 0 && (
-                                            <div className="empty-state">
-                                                <div className="empty-state-title">Достижения не найдены</div>
-                                                <div className="empty-state-description">
-                                                    В выбранной категории пока нет достижений
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Recent Achievements */}
-                                {userAchievements.slice(0, 5).length > 0 && (
-                                    <div className="content-card recent-achievements">
-                                        <div className="card-header">
-                                            <h3 className="card-title">🌟 Недавние достижения</h3>
-                                        </div>
-                                        <div className="card-content">
-                                            <div className="recent-achievements-list">
-                                                {userAchievements
-                                                    .sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at))
-                                                    .slice(0, 5)
-                                                    .map(userAchievement => {
-                                                        const achievement = achievements.find(a => a.id === userAchievement.achievement_id);
-                                                        if (!achievement) return null;
-                                                        
-                                                        return (
-                                                            <div key={userAchievement.id} className="recent-achievement-item">
-                                                                <div className="recent-achievement-icon">{achievement.icon}</div>
-                                                                <div className="recent-achievement-info">
-                                                                    <div className="recent-achievement-name">{achievement.name}</div>
-                                                                    <div className="recent-achievement-date">
-                                                                        {new Date(userAchievement.unlocked_at).toLocaleDateString('ru-RU')}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="recent-achievement-xp">
-                                                                    +{achievement.xp_reward} XP
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Achievement Statistics */}
-                                <div className="content-card achievement-statistics">
-                                    <div className="card-header">
-                                        <h3 className="card-title">📊 Статистика достижений</h3>
-                                    </div>
-                                    <div className="card-content">
-                                        <div className="stats-grid">
-                                            <div className="stat-item">
-                                                <div className="stat-value">{userAchievements.length}</div>
-                                                <div className="stat-label">Получено достижений</div>
-                                            </div>
-                                            <div className="stat-item">
-                                                <div className="stat-value">
-                                                    {Math.round((userAchievements.length / Math.max(achievements.length, 1)) * 100)}%
-                                                </div>
-                                                <div className="stat-label">Прогресс</div>
-                                            </div>
-                                            <div className="stat-item">
-                                                <div className="stat-value">
-                                                    {userAchievements.reduce((total, ua) => {
-                                                        const achievement = achievements.find(a => a.id === ua.achievement_id);
-                                                        return total + (achievement?.xp_reward || 0);
-                                                    }, 0)}
-                                                </div>
-                                                <div className="stat-label">XP из достижений</div>
-                                            </div>
-                                            <div className="stat-item">
-                                                <div className="stat-value">
-                                                    {userAchievements.filter(ua => {
-                                                        const achievement = achievements.find(a => a.id === ua.achievement_id);
-                                                        return achievement?.rarity === 'epic' || achievement?.rarity === 'legendary';
-                                                    }).length}
-                                                </div>
-                                                <div className="stat-label">Редких достижений</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
+                            <AchievementsPanel userId={user.id} />
                         )}
                     </div>
                 </div>
