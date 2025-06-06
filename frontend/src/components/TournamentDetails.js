@@ -79,6 +79,13 @@ function TournamentDetails() {
         user: false
     });
     
+    // 🎯 НОВЫЕ СОСТОЯНИЯ ДЛЯ РЕДАКТИРОВАНИЯ ПРАВИЛ И ОПИСАНИЯ
+    const [isEditingRules, setIsEditingRules] = useState(false);
+    const [editedRules, setEditedRules] = useState('');
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [editedDescription, setEditedDescription] = useState('');
+    const [saveLoading, setSaveLoading] = useState(false);
+    
     // 🎯 НОВЫЕ ХУКИ ДЛЯ УПРАВЛЕНИЯ
     const tournamentManagement = useTournamentManagement(id);
     const modals = useTournamentModals();
@@ -1287,6 +1294,87 @@ function TournamentDetails() {
         reloadTournamentData(); // Используем стабильную функцию
     }, [reloadTournamentData]);
 
+    // 🎯 ФУНКЦИИ РЕДАКТИРОВАНИЯ ПРАВИЛ И ОПИСАНИЯ ТУРНИРА
+    const startEditingRules = useCallback(() => {
+        setEditedRules(tournament?.rules || '');
+        setIsEditingRules(true);
+    }, [tournament?.rules]);
+
+    const cancelEditingRules = useCallback(() => {
+        setIsEditingRules(false);
+        setEditedRules('');
+    }, []);
+
+    const saveRules = useCallback(async () => {
+        if (!userPermissions.isAdminOrCreator) {
+            setMessage('❌ Недостаточно прав для редактирования правил');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        try {
+            setSaveLoading(true);
+            const token = localStorage.getItem('token');
+            
+            await api.patch(`/api/tournaments/${id}`, {
+                rules: editedRules
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setMessage('✅ Правила турнира обновлены!');
+            setTimeout(() => setMessage(''), 3000);
+            setIsEditingRules(false);
+            reloadTournamentData();
+        } catch (error) {
+            console.error('❌ Ошибка сохранения правил:', error);
+            setMessage(`❌ Ошибка сохранения: ${error.response?.data?.message || error.message}`);
+            setTimeout(() => setMessage(''), 3000);
+        } finally {
+            setSaveLoading(false);
+        }
+    }, [editedRules, userPermissions.isAdminOrCreator, id, reloadTournamentData]);
+
+    const startEditingDescription = useCallback(() => {
+        setEditedDescription(tournament?.description || '');
+        setIsEditingDescription(true);
+    }, [tournament?.description]);
+
+    const cancelEditingDescription = useCallback(() => {
+        setIsEditingDescription(false);
+        setEditedDescription('');
+    }, []);
+
+    const saveDescription = useCallback(async () => {
+        if (!userPermissions.isAdminOrCreator) {
+            setMessage('❌ Недостаточно прав для редактирования описания');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        try {
+            setSaveLoading(true);
+            const token = localStorage.getItem('token');
+            
+            await api.patch(`/api/tournaments/${id}`, {
+                description: editedDescription
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setMessage('✅ Описание турнира обновлено!');
+            setTimeout(() => setMessage(''), 3000);
+            setIsEditingDescription(false);
+            reloadTournamentData();
+        } catch (error) {
+            console.error('❌ Ошибка сохранения описания:', error);
+            setMessage(`❌ Ошибка сохранения: ${error.response?.data?.message || error.message}`);
+            setTimeout(() => setMessage(''), 3000);
+        } finally {
+            setSaveLoading(false);
+        }
+    }, [editedDescription, userPermissions.isAdminOrCreator, id, reloadTournamentData]);
+
     // 🎯 НАВИГАЦИЯ ПО ВКЛАДКАМ
     const tabs = useMemo(() => [
         { id: 'info', label: 'Информация', icon: 'ℹ️' },
@@ -1390,10 +1478,77 @@ function TournamentDetails() {
                     {/* ВКЛАДКА: ИНФОРМАЦИЯ */}
                     {activeTab === 'info' && (
                         <div className="tab-content-tournamentdetails tab-info-tournamentdetails">
-                            {/* Горизонтальная сетка для основной информации и правил */}
+                            {/* НОВАЯ СТРУКТУРА: Левый столбец (описание + основная информация) + Правый столбец (правила) */}
                             <div className="tournament-info-horizontal-grid">
+                                {/* ЛЕВЫЙ СТОЛБЕЦ: Описание + Основная информация */}
                                 <div className="info-main-tournamentdetails">
-                                    <div className="info-block-tournamentdetails">
+                                    {/* БЛОК ОПИСАНИЯ ТУРНИРА */}
+                                    <div className="info-block-tournamentdetails description-block">
+                                        <div className="block-header">
+                                            <h3>📝 Описание турнира</h3>
+                                            {userPermissions.isAdminOrCreator && (
+                                                <div className="edit-controls">
+                                                    {!isEditingDescription ? (
+                                                        <button 
+                                                            className="edit-btn"
+                                                            onClick={startEditingDescription}
+                                                            title="Редактировать описание"
+                                                        >
+                                                            ✏️ Редактировать
+                                                        </button>
+                                                    ) : (
+                                                        <div className="edit-actions">
+                                                            <button 
+                                                                className="save-btn"
+                                                                onClick={saveDescription}
+                                                                disabled={saveLoading}
+                                                                title="Сохранить описание"
+                                                            >
+                                                                {saveLoading ? '⏳' : '💾'} Сохранить
+                                                            </button>
+                                                            <button 
+                                                                className="cancel-btn"
+                                                                onClick={cancelEditingDescription}
+                                                                disabled={saveLoading}
+                                                                title="Отменить редактирование"
+                                                            >
+                                                                ❌ Отмена
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="tournament-description-content">
+                                            {isEditingDescription ? (
+                                                <textarea
+                                                    className="description-editor"
+                                                    value={editedDescription}
+                                                    onChange={(e) => setEditedDescription(e.target.value)}
+                                                    placeholder="Введите описание турнира..."
+                                                    rows={4}
+                                                    disabled={saveLoading}
+                                                />
+                                            ) : (
+                                                <>
+                                                    {tournament.description ? (
+                                                        <p className="tournament-description">{tournament.description}</p>
+                                                    ) : (
+                                                        <p className="no-description">
+                                                            {userPermissions.isAdminOrCreator 
+                                                                ? "Нажмите 'Редактировать', чтобы добавить описание турнира" 
+                                                                : "Описание не указано"
+                                                            }
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* БЛОК ОСНОВНОЙ ИНФОРМАЦИИ */}
+                                    <div className="info-block-tournamentdetails main-info-block">
                                         <h3>📋 Основная информация</h3>
                                         <div className="tournament-meta-info-tournamentdetails">
                                             <div className="meta-item-tournamentdetails">
@@ -1420,57 +1575,106 @@ function TournamentDetails() {
                                                 </div>
                                             )}
                                         </div>
-
-                                        {tournament.description && (
-                                            <div className="tournament-description-section">
-                                                <h4>📝 Описание</h4>
-                                                <p className="tournament-description">{tournament.description}</p>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* Новый блок с правилами */}
+                                {/* ПРАВЫЙ СТОЛБЕЦ: Правила турнира */}
                                 <div className="info-rules-tournamentdetails">
-                                    <div className="info-block-tournamentdetails">
-                                        <h3>📜 Правила турнира</h3>
+                                    <div className="info-block-tournamentdetails rules-block">
+                                        <div className="block-header">
+                                            <h3>📜 Правила турнира</h3>
+                                            {userPermissions.isAdminOrCreator && (
+                                                <div className="edit-controls">
+                                                    {!isEditingRules ? (
+                                                        <button 
+                                                            className="edit-btn"
+                                                            onClick={startEditingRules}
+                                                            title="Редактировать правила"
+                                                        >
+                                                            ✏️ Редактировать
+                                                        </button>
+                                                    ) : (
+                                                        <div className="edit-actions">
+                                                            <button 
+                                                                className="save-btn"
+                                                                onClick={saveRules}
+                                                                disabled={saveLoading}
+                                                                title="Сохранить правила"
+                                                            >
+                                                                {saveLoading ? '⏳' : '💾'} Сохранить
+                                                            </button>
+                                                            <button 
+                                                                className="cancel-btn"
+                                                                onClick={cancelEditingRules}
+                                                                disabled={saveLoading}
+                                                                title="Отменить редактирование"
+                                                            >
+                                                                ❌ Отмена
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
                                         <div className="tournament-rules-content">
-                                            {tournament.rules ? (
-                                                <div className="rules-text">
-                                                    {tournament.rules.split('\n').map((rule, index) => (
-                                                        <p key={index} className="rule-item">{rule}</p>
-                                                    ))}
-                                                </div>
+                                            {isEditingRules ? (
+                                                <textarea
+                                                    className="rules-editor"
+                                                    value={editedRules}
+                                                    onChange={(e) => setEditedRules(e.target.value)}
+                                                    placeholder="Введите правила турнира... (каждое правило с новой строки)"
+                                                    rows={12}
+                                                    disabled={saveLoading}
+                                                />
                                             ) : (
-                                                <div className="default-rules">
-                                                    <div className="rule-section">
-                                                        <h4>🎯 Общие правила</h4>
-                                                        <ul>
-                                                            <li>Запрещены читы и любые нарушения правил игры</li>
-                                                            <li>Обязательна взаимная вежливость участников</li>
-                                                            <li>Решения администраторов являются окончательными</li>
-                                                        </ul>
-                                                    </div>
-                                                    
-                                                    <div className="rule-section">
-                                                        <h4>⏱️ Временные рамки</h4>
-                                                        <ul>
-                                                            <li>Опоздание на матч более 15 минут = техническое поражение</li>
-                                                            <li>Перерыв между картами не более 5 минут</li>
-                                                        </ul>
-                                                    </div>
+                                                <>
+                                                    {tournament.rules ? (
+                                                        <div className="rules-text">
+                                                            {tournament.rules.split('\n').map((rule, index) => (
+                                                                rule.trim() && <p key={index} className="rule-item">{rule}</p>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="default-rules">
+                                                            {userPermissions.isAdminOrCreator ? (
+                                                                <p className="no-rules-admin">
+                                                                    Нажмите "Редактировать", чтобы добавить правила турнира
+                                                                </p>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="rule-section">
+                                                                        <h4>🎯 Общие правила</h4>
+                                                                        <ul>
+                                                                            <li>Запрещены читы и любые нарушения правил игры</li>
+                                                                            <li>Обязательна взаимная вежливость участников</li>
+                                                                            <li>Решения администраторов являются окончательными</li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    
+                                                                    <div className="rule-section">
+                                                                        <h4>⏱️ Временные рамки</h4>
+                                                                        <ul>
+                                                                            <li>Опоздание на матч более 15 минут = техническое поражение</li>
+                                                                            <li>Перерыв между картами не более 5 минут</li>
+                                                                        </ul>
+                                                                    </div>
 
-                                                    <div className="rule-section">
-                                                        <h4>🏆 Формат турнира</h4>
-                                                        <ul>
-                                                            <li>Тип: {tournament.format || 'Одиночная элиминация'}</li>
-                                                            <li>Игра: {tournament.game || 'Не указана'}</li>
-                                                            {tournament.max_participants && (
-                                                                <li>Максимум участников: {tournament.max_participants}</li>
+                                                                    <div className="rule-section">
+                                                                        <h4>🏆 Формат турнира</h4>
+                                                                        <ul>
+                                                                            <li>Тип: {tournament.format || 'Одиночная элиминация'}</li>
+                                                                            <li>Игра: {tournament.game || 'Не указана'}</li>
+                                                                            {tournament.max_participants && (
+                                                                                <li>Максимум участников: {tournament.max_participants}</li>
+                                                                            )}
+                                                                        </ul>
+                                                                    </div>
+                                                                </>
                                                             )}
-                                                        </ul>
-                                                    </div>
-                                                </div>
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
