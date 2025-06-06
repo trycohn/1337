@@ -9,13 +9,47 @@ const { generateBracket } = require('../bracketGenerator');
 // Вспомогательная функция для записи событий в журнал турнира
 async function logTournamentEvent(tournamentId, userId, eventType, eventData = {}) {
     try {
-        await pool.query(
+        console.log('📊 Записываем событие в tournament_logs:', {
+            tournamentId,
+            userId,
+            eventType,
+            eventData
+        });
+        
+        // Проверяем, что tournament_logs таблица существует
+        const tableExists = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'tournament_logs'
+            );
+        `);
+        
+        if (!tableExists.rows[0].exists) {
+            console.error('❌ Таблица tournament_logs не существует!');
+            return;
+        }
+        
+        const result = await pool.query(
             `INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data)
-             VALUES ($1, $2, $3, $4)`,
-            [tournamentId, userId, eventType, JSON.stringify(eventData)]
+             VALUES ($1, $2, $3, $4)
+             RETURNING id`,
+            [tournamentId, userId, eventType, eventData] // Передаем объект напрямую для jsonb
         );
+        
+        console.log('✅ Событие записано в tournament_logs, ID:', result.rows[0].id);
     } catch (error) {
-        console.error('Ошибка при записи в журнал турнира:', error);
+        console.error('❌ Ошибка при записи в журнал турнира:', error);
+        console.error('❌ Подробности ошибки logTournamentEvent:', {
+            message: error.message,
+            code: error.code,
+            detail: error.detail,
+            tournamentId,
+            userId,
+            eventType,
+            eventData
+        });
+        // Не выбрасываем ошибку, чтобы не нарушить основной флоу
     }
 }
 
@@ -3354,13 +3388,27 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
     const allowedFields = ['name', 'description', 'rules', 'game', 'format', 'max_participants', 'start_date', 'prize_pool'];
     
     try {
+        console.log('🔧 PATCH /tournaments/:id - Начало обработки запроса:', {
+            tournamentId: id,
+            userId: req.user.id,
+            body: req.body
+        });
+
         // Проверка существования турнира
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         if (tournamentResult.rows.length === 0) {
+            console.log('❌ Турнир не найден:', id);
             return res.status(404).json({ error: 'Турнир не найден' });
         }
         
         const tournament = tournamentResult.rows[0];
+        console.log('✅ Турнир найден:', {
+            id: tournament.id,
+            name: tournament.name,
+            created_by: tournament.created_by,
+            current_description: tournament.description,
+            current_rules: tournament.rules
+        });
         
         // Проверка прав доступа (выполняется middleware verifyAdminOrCreator)
         
@@ -3376,11 +3424,13 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
                 updateValues.push(req.body[field]);
                 updatePlaceholders.push(`${field} = $${placeholderIndex}`);
                 placeholderIndex++;
+                console.log(`📝 Поле для обновления: ${field} = "${req.body[field]}"`);
             }
         }
         
         // Проверка, что есть поля для обновления
         if (Object.keys(updateFields).length === 0) {
+            console.log('❌ Не указаны поля для обновления');
             return res.status(400).json({ error: 'Не указаны поля для обновления' });
         }
         
@@ -3395,23 +3445,32 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
             RETURNING *
         `;
         
-        console.log('🔧 Обновление турнира:', {
-            tournamentId: id,
-            fields: Object.keys(updateFields),
-            query: query.replace(/\$\d+/g, '?')
+        console.log('🔧 SQL запрос для обновления:', {
+            query,
+            updateValues,
+            placeholderIndex
         });
         
         // Выполняем обновление
+        console.log('⏳ Выполняем SQL запрос...');
         const updateResult = await pool.query(query, updateValues);
+        console.log('✅ SQL запрос выполнен успешно:', {
+            rowCount: updateResult.rowCount,
+            updatedData: updateResult.rows[0]
+        });
+        
         const updatedTournament = updateResult.rows[0];
         
         // Логируем изменения
+        console.log('📊 Логируем событие в tournament_logs...');
         await logTournamentEvent(id, req.user.id, 'tournament_updated', {
             updatedFields: Object.keys(updateFields),
             changes: updateFields
         });
+        console.log('✅ Событие залогировано');
         
         // Загружаем полные данные турнира для ответа
+        console.log('📚 Загружаем дополнительные данные турнира...');
         const participantsQuery = tournament.participant_type === 'solo' 
             ? `SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
                FROM tournament_participants tp 
@@ -3423,15 +3482,18 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
                WHERE tt.tournament_id = $1`;
         
         const participantsResult = await pool.query(participantsQuery, [id]);
+        console.log('✅ Участники загружены:', participantsResult.rows.length);
         
         const matchesResult = await pool.query(
             'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
             [id]
         );
+        console.log('✅ Матчи загружены:', matchesResult.rows.length);
         
         // Для командных турниров загружаем команды с участниками
         let teams = [];
         if (tournament.participant_type === 'team' || tournament.format === 'mix') {
+            console.log('🔄 Загружаем команды...');
             const teamsRes = await pool.query(
                 `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
                  FROM tournament_teams tt
@@ -3455,6 +3517,7 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
                     members: membersRes.rows
                 };
             }));
+            console.log('✅ Команды загружены:', teams.length);
         }
         
         const responseData = {
@@ -3467,11 +3530,15 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
         };
         
         // Отправляем обновление через WebSocket всем подключенным пользователям
+        console.log('📡 Отправляем WebSocket обновление...');
         broadcastTournamentUpdate(id, responseData);
+        console.log('✅ WebSocket обновление отправлено');
         
-        console.log('✅ Турнир обновлен:', {
+        console.log('✅ Турнир обновлен успешно:', {
             tournamentId: id,
-            updatedFields: Object.keys(updateFields)
+            updatedFields: Object.keys(updateFields),
+            newDescription: updatedTournament.description,
+            newRules: updatedTournament.rules
         });
         
         res.json({
@@ -3481,6 +3548,13 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
         
     } catch (err) {
         console.error('❌ Ошибка обновления турнира:', err);
+        console.error('❌ Подробности ошибки:', {
+            message: err.message,
+            stack: err.stack,
+            tournamentId: id,
+            userId: req.user?.id,
+            requestBody: req.body
+        });
         res.status(500).json({ error: err.message });
     }
 });
