@@ -871,34 +871,19 @@ function TournamentDetails() {
                 matchesData = tournamentData.matches;
                 console.log('✅ Матчи загружены из основного ответа турнира:', matchesData.length);
             } 
-            // Источник 2: Отдельный запрос матчей (fallback)
+            // Источник 2: Проверяем альтернативные поля в турнире
             else {
-                try {
-                    setDataLoadingStates(prev => ({ ...prev, matches: true }));
-                    console.log('🔍 Пробуем загрузить матчи отдельным запросом...');
-                    
-                    const matchesResponse = await api.get(`/api/tournaments/${id}/matches`);
-                    matchesData = matchesResponse.data || [];
-                    
-                    if (matchesData.length > 0) {
-                        console.log('✅ Матчи загружены отдельным запросом:', matchesData.length);
-                    } else {
-                        console.log('ℹ️ Отдельный запрос матчей вернул пустой массив');
-                    }
-                } catch (matchesError) {
-                    console.warn('⚠️ Ошибка загрузки матчей отдельным запросом:', matchesError.message);
-                    
-                    // Источник 3: Проверяем альтернативные поля в турнире
-                    if (tournamentData.bracket_matches) {
-                        matchesData = tournamentData.bracket_matches;
-                        console.log('✅ Матчи найдены в bracket_matches:', matchesData.length);
-                    } else if (tournamentData.tournament_matches) {
-                        matchesData = tournamentData.tournament_matches;
-                        console.log('✅ Матчи найдены в tournament_matches:', matchesData.length);
-                    } else {
-                        console.log('ℹ️ Матчи не найдены ни в одном источнике');
-                        matchesData = [];
-                    }
+                console.log('ℹ️ Матчи не найдены в основном ответе, проверяем альтернативные поля...');
+                
+                if (tournamentData.bracket_matches) {
+                    matchesData = tournamentData.bracket_matches;
+                    console.log('✅ Матчи найдены в bracket_matches:', matchesData.length);
+                } else if (tournamentData.tournament_matches) {
+                    matchesData = tournamentData.tournament_matches;
+                    console.log('✅ Матчи найдены в tournament_matches:', matchesData.length);
+                } else {
+                    console.log('ℹ️ Матчи не найдены ни в одном источнике');
+                    matchesData = [];
                 }
             }
 
@@ -980,11 +965,21 @@ function TournamentDetails() {
         try {
             console.log('🔌 Подключение к WebSocket для турнира', tournament.id);
             
-            const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', {
+            // Определяем правильный URL для WebSocket
+            const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
+            console.log('🔌 WebSocket URL:', apiUrl);
+            
+            const socket = io(apiUrl, {
                 query: { token },
-                transports: ['websocket', 'polling'],
-                timeout: 10000,
-                forceNew: true
+                transports: ['polling', 'websocket'], // Меняем порядок - сначала polling, потом websocket
+                timeout: 20000, // Увеличиваем timeout
+                forceNew: true,
+                autoConnect: true,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5,
+                pingTimeout: 60000,
+                pingInterval: 25000
             });
 
             socket.on('connect', () => {
@@ -1020,11 +1015,26 @@ function TournamentDetails() {
             socket.on('connect_error', (error) => {
                 console.warn('⚠️ WebSocket ошибка подключения:', error.message);
                 setWsConnected(false);
+                
+                // Fallback: пробуем переподключиться только через polling
+                if (socket.io.opts.transports.includes('websocket')) {
+                    console.log('🔄 Переключаемся на polling транспорт');
+                    socket.io.opts.transports = ['polling'];
+                }
             });
 
             socket.on('error', (error) => {
                 console.warn('⚠️ WebSocket ошибка:', error.message);
                 setWsConnected(false);
+            });
+
+            socket.on('reconnect', (attemptNumber) => {
+                console.log('🔄 WebSocket переподключен после', attemptNumber, 'попыток');
+                setWsConnected(true);
+            });
+
+            socket.on('reconnect_error', (error) => {
+                console.warn('⚠️ Ошибка переподключения WebSocket:', error.message);
             });
 
             return socket;
