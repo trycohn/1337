@@ -36,11 +36,19 @@ CREATE INDEX IF NOT EXISTS idx_tournaments_third_place_id ON tournaments(third_p
 CREATE INDEX IF NOT EXISTS idx_user_tournament_stats_team_name ON user_tournament_stats(team_name);
 CREATE INDEX IF NOT EXISTS idx_user_tournament_stats_is_team_member ON user_tournament_stats(is_team_member);
 
--- Логирование миграции
-INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data, created_at)
-SELECT 1, 1, 'migration', 
-       '{"migration": "add_tournament_winners", "description": "Добавлены поля для хранения информации о призерах турнира и командной статистики"}',
-       NOW()
-WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tournament_logs');
+-- Логирование миграции (только если есть существующие турниры)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM tournaments LIMIT 1) THEN
+        INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data, created_at)
+        SELECT 
+            (SELECT id FROM tournaments ORDER BY id LIMIT 1), -- Берем ID первого существующего турнира
+            1, 
+            'migration', 
+            '{"migration": "add_tournament_winners", "description": "Добавлены поля для хранения информации о призерах турнира и командной статистики"}',
+            NOW()
+        WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tournament_logs');
+    END IF;
+END $$;
 
 COMMIT; 
