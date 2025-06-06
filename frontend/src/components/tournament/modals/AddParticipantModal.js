@@ -40,8 +40,8 @@ const AddParticipantModal = ({
                         <input
                             id="participant-name"
                             type="text"
-                            name="name"
-                            value={newParticipantData.name}
+                            name="display_name"
+                            value={newParticipantData.display_name || ''}
                             onChange={handleInputChange}
                             placeholder="Введите имя участника"
                             required
@@ -104,7 +104,7 @@ const AddParticipantModal = ({
                         <button 
                             type="submit" 
                             className="confirm-btn"
-                            disabled={isLoading || !newParticipantData.name.trim()}
+                            disabled={isLoading || !newParticipantData.display_name?.trim()}
                         >
                             {isLoading ? 'Добавление...' : 'Добавить участника'}
                         </button>

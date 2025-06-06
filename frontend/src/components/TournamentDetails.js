@@ -465,7 +465,8 @@ function TournamentDetails() {
 
     // 🎯 ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДОБАВЛЕНИЯ В ТУРНИР
     const searchUsers = useCallback(async (query) => {
-        if (!query || query.length < 2) {
+        // Безопасная проверка query на undefined/null/пустую строку
+        if (!query || typeof query !== 'string' || query.trim().length < 2) {
             modals.updateSearchResults([]);
             return;
         }
@@ -476,7 +477,7 @@ function TournamentDetails() {
             
             if (result.success) {
                 // Фильтруем пользователей, которые уже участвуют в турнире
-                const existingParticipantIds = tournament.participants?.map(p => p.user_id || p.id) || [];
+                const existingParticipantIds = tournament?.participants?.map(p => p.user_id || p.id) || [];
                 const filteredResults = result.data.filter(user => 
                     !existingParticipantIds.includes(user.id)
                 );
@@ -493,6 +494,8 @@ function TournamentDetails() {
             modals.updateSearchResults([]);
             setMessage(`❌ Ошибка поиска: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
+        } finally {
+            modals.setSearchLoading(false);
         }
     }, [tournament, tournamentManagement, modals]);
 
@@ -523,26 +526,34 @@ function TournamentDetails() {
 
     // 🎯 ДОБАВЛЕНИЕ НЕЗАРЕГИСТРИРОВАННОГО УЧАСТНИКА
     const addUnregisteredParticipant = useCallback(async () => {
+        console.log('🔍 Начинается добавление незарегистрированного участника');
+        console.log('🔍 Данные участника:', modals.newParticipantData);
+        
         if (!modals.newParticipantData.display_name?.trim()) {
+            console.warn('❌ Отсутствует имя участника');
             setMessage('❌ Имя участника обязательно');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
 
         try {
+            console.log('🔍 Вызываем tournamentManagement.addGuestParticipant...');
             const result = await tournamentManagement.addGuestParticipant(modals.newParticipantData);
+            console.log('🔍 Результат добавления:', result);
             
             if (result.success) {
+                console.log('✅ Участник успешно добавлен');
                 setMessage('✅ Незарегистрированный участник добавлен!');
                 setTimeout(() => setMessage(''), 3000);
                 modals.closeAddParticipantModal();
                 reloadTournamentData();
             } else {
+                console.error('❌ Ошибка при добавлении:', result.error);
                 setMessage(`❌ ${result.error}`);
                 setTimeout(() => setMessage(''), 3000);
             }
         } catch (error) {
-            console.error('❌ Ошибка добавления незарегистрированного участника:', error);
+            console.error('❌ Исключение при добавлении незарегистрированного участника:', error);
             setMessage(`❌ Ошибка: ${error.message}`);
             setTimeout(() => setMessage(''), 3000);
         }
@@ -978,17 +989,23 @@ function TournamentDetails() {
             
             const socket = io(apiUrl, {
                 query: { token },
-                transports: ['polling'], // Только polling
-                upgrade: false, // Запрещаем upgrade до websocket
+                transports: ['polling'], // ТОЛЬКО polling транспорт
+                upgrade: false, // Полностью запрещаем upgrade
                 rememberUpgrade: false, // Не запоминаем upgrade
-                timeout: 10000,
+                forceBase64: false, // Не принуждаем к base64
+                enablesXDR: false, // Отключаем XDR
+                timestampRequests: false, // Отключаем timestamp
+                timestampParam: 't', // Параметр времени
+                closeOnBeforeunload: true, // Закрывать при выгрузке страницы
+                timeout: 15000, // Уменьшаем timeout
                 forceNew: false,
                 autoConnect: true,
                 reconnection: true,
-                reconnectionDelay: 2000,
-                reconnectionAttempts: 3,
-                pingTimeout: 30000,
-                pingInterval: 10000
+                reconnectionDelay: 3000, // Увеличиваем задержку
+                reconnectionAttempts: 2, // Уменьшаем попытки переподключения
+                randomizationFactor: 0.5,
+                pingTimeout: 20000,
+                pingInterval: 15000
             });
 
             socket.on('connect', () => {
@@ -2737,7 +2754,7 @@ function TournamentDetails() {
                     newParticipantData={modals.newParticipantData}
                     setNewParticipantData={modals.setNewParticipantData}
                     onSubmit={addUnregisteredParticipant}
-                    isLoading={false}
+                    isLoading={tournamentManagement.isLoading}
                 />
 
                 {/* 🎯 МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТОВ МАТЧА */}
@@ -2748,7 +2765,7 @@ function TournamentDetails() {
                     matchResultData={modals.matchResultData}
                     setMatchResultData={modals.setMatchResultData}
                     onSave={saveMatchResult}
-                    isLoading={false}
+                    isLoading={tournamentManagement.isLoading}
                 />
 
                 {/* 🎯 LEGACY МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ */}
