@@ -3221,7 +3221,7 @@ async function recalculateAllParticipantsStats(tournamentId, participantType) {
                 const result = await calculateTournamentResult(tournamentId, userId, participantType);
                 
                 if (result) {
-                    // ✅ БЕЗОПАСНЫЙ UPSERT вместо DELETE+INSERT
+                    // ✅ БЕЗОПАСНЫЙ UPSERT вместо DELETE+INSERT (без updated_at)
                     await pool.query(`
                         INSERT INTO user_tournament_stats (user_id, tournament_id, result, wins, losses, is_team)
                         VALUES ($1, $2, $3, $4, $5, $6)
@@ -3230,8 +3230,7 @@ async function recalculateAllParticipantsStats(tournamentId, participantType) {
                             result = EXCLUDED.result,
                             wins = EXCLUDED.wins,
                             losses = EXCLUDED.losses,
-                            is_team = EXCLUDED.is_team,
-                            updated_at = CURRENT_TIMESTAMP
+                            is_team = EXCLUDED.is_team
                     `, [
                         userId,
                         tournamentId, 
@@ -3437,10 +3436,10 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
         // Добавляем ID турнира в конец массива значений
         updateValues.push(id);
         
-        // Формируем SQL запрос
+        // Формируем SQL запрос БЕЗ updated_at (поле не существует в таблице tournaments)
         const query = `
             UPDATE tournaments 
-            SET ${updatePlaceholders.join(', ')}, updated_at = NOW()
+            SET ${updatePlaceholders.join(', ')}
             WHERE id = $${placeholderIndex}
             RETURNING *
         `;
