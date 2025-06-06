@@ -4430,3 +4430,260 @@ a.participant-name:hover {
         transform: scale(1.02);
     }
 }
+
+@keyframes goldShine {
+    0% { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+    50% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.6); }
+    100% { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+}
+
+/* НОВЫЕ СТИЛИ ДЛЯ РЕДАКТИРОВАНИЯ ПРАВИЛ И ОПИСАНИЯ */
+
+/* Заголовок блока с кнопками редактирования */
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333333;
+}
+
+.block-header h3 {
+    margin: 0;
+    color: #ffffff;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Контейнер для элементов управления редактированием */
+.edit-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Кнопка редактирования */
+.edit-btn {
+    background-color: transparent;
+    color: #ffffff;
+    border: 1px solid #555555;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.edit-btn:hover {
+    background-color: #555555;
+    border-color: #777777;
+    transform: translateY(-1px);
+}
+
+/* Контейнер для кнопок сохранения/отмены */
+.edit-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Кнопка сохранения */
+.save-btn {
+    background-color: #28a745;
+    color: #ffffff;
+    border: 1px solid #28a745;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.save-btn:hover:not(:disabled) {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-1px);
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Кнопка отмены */
+.cancel-btn {
+    background-color: transparent;
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background-color: #dc3545;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Текстовые области для редактирования */
+.description-editor,
+.rules-editor {
+    width: 100%;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 100px;
+    transition: all 0.2s ease;
+}
+
+.description-editor:focus,
+.rules-editor:focus {
+    outline: none;
+    border-color: #777777;
+    background-color: #2a2a2a;
+    box-shadow: 0 0 0 2px rgba(119, 119, 119, 0.2);
+}
+
+.description-editor:disabled,
+.rules-editor:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.rules-editor {
+    min-height: 200px;
+}
+
+/* Контент блоков */
+.tournament-description-content,
+.tournament-rules-content {
+    padding-top: 10px;
+}
+
+/* Стили для пустых блоков */
+.no-description,
+.no-rules-admin {
+    color: #888888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed #444444;
+    border-radius: 4px;
+    background-color: #0f0f0f;
+}
+
+.no-rules-admin {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.no-rules-admin:hover {
+    border-color: #666666;
+    background-color: #1a1a1a;
+    color: #aaaaaa;
+}
+
+/* Отступы между блоками */
+.description-block {
+    margin-bottom: 30px;
+}
+
+.main-info-block {
+    margin-bottom: 20px;
+}
+
+.rules-block {
+    /* Нет дополнительных отступов, так как это последний блок в колонке */
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .block-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .edit-controls {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .edit-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .edit-btn,
+    .save-btn,
+    .cancel-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+    
+    .description-editor,
+    .rules-editor {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-actions {
+        flex-direction: column;
+        gap: 5px;
+        width: 100%;
+    }
+    
+    .edit-btn,
+    .save-btn,
+    .cancel-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+    }
+    
+    .description-editor {
+        min-height: 80px;
+    }
+    
+    .rules-editor {
+        min-height: 150px;
+    }
+}

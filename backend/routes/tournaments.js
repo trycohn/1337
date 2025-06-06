@@ -3348,4 +3348,141 @@ async function calculateTournamentResult(tournamentId, userId, participantType) 
     }
 }
 
+// Обновление турнира (правила, описание и другие поля)
+router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const allowedFields = ['name', 'description', 'rules', 'game', 'format', 'max_participants', 'start_date', 'prize_pool'];
+    
+    try {
+        // Проверка существования турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверка прав доступа (выполняется middleware verifyAdminOrCreator)
+        
+        // Фильтрация только разрешенных полей из запроса
+        const updateFields = {};
+        const updateValues = [];
+        const updatePlaceholders = [];
+        let placeholderIndex = 1;
+        
+        for (const field of allowedFields) {
+            if (req.body.hasOwnProperty(field)) {
+                updateFields[field] = req.body[field];
+                updateValues.push(req.body[field]);
+                updatePlaceholders.push(`${field} = $${placeholderIndex}`);
+                placeholderIndex++;
+            }
+        }
+        
+        // Проверка, что есть поля для обновления
+        if (Object.keys(updateFields).length === 0) {
+            return res.status(400).json({ error: 'Не указаны поля для обновления' });
+        }
+        
+        // Добавляем ID турнира в конец массива значений
+        updateValues.push(id);
+        
+        // Формируем SQL запрос
+        const query = `
+            UPDATE tournaments 
+            SET ${updatePlaceholders.join(', ')}, updated_at = NOW()
+            WHERE id = $${placeholderIndex}
+            RETURNING *
+        `;
+        
+        console.log('🔧 Обновление турнира:', {
+            tournamentId: id,
+            fields: Object.keys(updateFields),
+            query: query.replace(/\$\d+/g, '?')
+        });
+        
+        // Выполняем обновление
+        const updateResult = await pool.query(query, updateValues);
+        const updatedTournament = updateResult.rows[0];
+        
+        // Логируем изменения
+        await logTournamentEvent(id, req.user.id, 'tournament_updated', {
+            updatedFields: Object.keys(updateFields),
+            changes: updateFields
+        });
+        
+        // Загружаем полные данные турнира для ответа
+        const participantsQuery = tournament.participant_type === 'solo' 
+            ? `SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
+               FROM tournament_participants tp 
+               LEFT JOIN users u ON tp.user_id = u.id
+               WHERE tp.tournament_id = $1`
+            : `SELECT tt.*, u.avatar_url, u.username
+               FROM tournament_teams tt
+               LEFT JOIN users u ON tt.creator_id = u.id
+               WHERE tt.tournament_id = $1`;
+        
+        const participantsResult = await pool.query(participantsQuery, [id]);
+        
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [id]
+        );
+        
+        // Для командных турниров загружаем команды с участниками
+        let teams = [];
+        if (tournament.participant_type === 'team' || tournament.format === 'mix') {
+            const teamsRes = await pool.query(
+                `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
+                 FROM tournament_teams tt
+                 WHERE tt.tournament_id = $1`,
+                [id]
+            );
+
+            teams = await Promise.all(teamsRes.rows.map(async (team) => {
+                const membersRes = await pool.query(
+                    `SELECT tm.team_id, tm.user_id, tm.participant_id, 
+                            tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
+                     FROM tournament_team_members tm
+                     LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
+                     LEFT JOIN users u ON tm.user_id = u.id
+                     WHERE tm.team_id = $1`,
+                    [team.id]
+                );
+
+                return {
+                    ...team,
+                    members: membersRes.rows
+                };
+            }));
+        }
+        
+        const responseData = {
+            ...updatedTournament,
+            participants: participantsResult.rows,
+            participant_count: participantsResult.rows.length,
+            matches: matchesResult.rows,
+            teams: teams,
+            mixed_teams: teams
+        };
+        
+        // Отправляем обновление через WebSocket всем подключенным пользователям
+        broadcastTournamentUpdate(id, responseData);
+        
+        console.log('✅ Турнир обновлен:', {
+            tournamentId: id,
+            updatedFields: Object.keys(updateFields)
+        });
+        
+        res.json({
+            message: 'Турнир успешно обновлен',
+            tournament: responseData
+        });
+        
+    } catch (err) {
+        console.error('❌ Ошибка обновления турнира:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
