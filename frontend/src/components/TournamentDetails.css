@@ -4687,3 +4687,416 @@ a.participant-name:hover {
         min-height: 150px;
     }
 }
+
+/* ... existing styles ... */
+
+/* Заблокированные элементы управления */
+.participation-blocked,
+.management-blocked {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    text-align: center;
+}
+
+.blocked-message {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.blocked-message::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background-color: #dc3545;
+    border-radius: 50%;
+    display: inline-block;
+    opacity: 0.1;
+}
+
+/* Информационные уведомления */
+.bracket-generated-notice {
+    background-color: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    text-align: center;
+}
+
+.info-message {
+    color: #1976d2;
+    font-size: 14px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.info-message::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background-color: #2196f3;
+    border-radius: 50%;
+    display: inline-block;
+    opacity: 0.2;
+}
+
+/* Стили для участия */
+.participation-controls {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.participate-btn {
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.participate-btn:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+}
+
+.withdraw-btn {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+}
+
+.withdraw-btn:hover {
+    background: linear-gradient(135deg, #d32f2f, #c62828);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.4);
+}
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 768px) {
+    .participation-blocked,
+    .management-blocked,
+    .bracket-generated-notice {
+        margin: 8px 0;
+        padding: 10px 12px;
+    }
+    
+    .blocked-message,
+    .info-message {
+        font-size: 13px;
+    }
+    
+    .participate-btn,
+    .withdraw-btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 15px;
+    }
+}
+
+/* ... existing styles ... */
+
+/* Стили для модального окна подтверждения отказа от участия */
+.withdraw-confirm-modal {
+    max-width: 600px;
+    width: 90%;
+    background-color: #1a1a1a;
+    border: 2px solid #dc3545;
+    color: #ffffff;
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.withdraw-confirm-modal .modal-header {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: #ffffff;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #b02a37;
+}
+
+.withdraw-confirm-modal .modal-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.withdraw-confirm-modal .close-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+.withdraw-confirm-modal .close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.withdraw-confirm-modal .modal-body {
+    padding: 30px;
+    background-color: #1a1a1a;
+}
+
+.warning-content {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.warning-icon {
+    font-size: 48px;
+    color: #ffc107;
+    flex-shrink: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    animation: warningPulse 2s infinite;
+}
+
+@keyframes warningPulse {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.warning-text {
+    flex: 1;
+}
+
+.warning-text h4 {
+    margin: 0 0 15px 0;
+    color: #dc3545;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.warning-message {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+    font-size: 1.1rem;
+    line-height: 1.4;
+}
+
+.warning-message strong {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.warning-details {
+    margin: 20px 0 10px 0;
+    font-weight: 600;
+    color: #ffc107;
+}
+
+.warning-list {
+    margin: 10px 0 20px 20px;
+    padding: 0;
+    list-style-type: none;
+}
+
+.warning-list li {
+    margin: 8px 0;
+    padding-left: 20px;
+    position: relative;
+    color: #ffffff;
+    line-height: 1.4;
+}
+
+.warning-list li::before {
+    content: '⚠️';
+    position: absolute;
+    left: 0;
+    color: #ffc107;
+}
+
+.confirmation-question {
+    margin: 25px 0 0 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffc107;
+    text-align: center;
+    padding: 15px;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 6px;
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.withdraw-confirm-modal .modal-footer {
+    background-color: #2a2a2a;
+    padding: 20px 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: space-between;
+    border-top: 1px solid #333333;
+}
+
+.btn-cancel {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    max-width: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-cancel:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-confirm-withdraw {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    max-width: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-confirm-withdraw:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.btn-confirm-withdraw:active,
+.btn-cancel:active {
+    transform: translateY(0);
+}
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 768px) {
+    .withdraw-confirm-modal {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .warning-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .warning-icon {
+        align-self: center;
+        font-size: 40px;
+    }
+    
+    .withdraw-confirm-modal .modal-header {
+        padding: 15px;
+    }
+    
+    .withdraw-confirm-modal .modal-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .withdraw-confirm-modal .modal-body {
+        padding: 20px;
+    }
+    
+    .withdraw-confirm-modal .modal-footer {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px 20px;
+    }
+    
+    .btn-cancel,
+    .btn-confirm-withdraw {
+        width: 100%;
+        max-width: none;
+        padding: 14px 20px;
+    }
+    
+    .warning-text h4 {
+        font-size: 1.2rem;
+    }
+    
+    .warning-list {
+        margin-left: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .withdraw-confirm-modal .modal-header h3 {
+        font-size: 1rem;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .warning-message {
+        font-size: 1rem;
+        padding: 12px;
+    }
+    
+    .confirmation-question {
+        font-size: 1rem;
+        padding: 12px;
+    }
+    
+    .btn-cancel,
+    .btn-confirm-withdraw {
+        font-size: 0.9rem;
+        padding: 12px 16px;
+    }
+}

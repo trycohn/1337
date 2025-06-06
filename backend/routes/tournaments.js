@@ -478,25 +478,109 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     try {
+        console.log(`🚪 Запрос на отказ от участия в турнире ${id} от пользователя ${userId}`);
+        
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
         }
         const tournament = tournamentResult.rows[0];
 
-        if (tournament.status !== 'active') {
-            return res.status(400).json({ error: 'Турнир неактивен' });
+        // Разрешаем отказ только для активных турниров и турниров в процессе
+        if (!['active', 'in_progress'].includes(tournament.status)) {
+            return res.status(400).json({ 
+                error: 'Отказ от участия возможен только в активных турнирах или турнирах в процессе' 
+            });
         }
 
-        // Проверка, сгенерирована ли сетка
-        const matchesCheck = await pool.query(
-            'SELECT * FROM matches WHERE tournament_id = $1',
-            [id]
-        );
-        if (matchesCheck.rows.length > 0) {
-            return res.status(400).json({ error: 'Нельзя отказаться от участия после генерации сетки' });
+        // Проверяем участие пользователя в турнире
+        let participantInfo = null;
+        if (tournament.participant_type === 'solo') {
+            const participantResult = await pool.query(
+                'SELECT * FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (participantResult.rows.length === 0) {
+                return res.status(400).json({ error: 'Вы не участвуете в этом турнире' });
+            }
+            participantInfo = participantResult.rows[0];
+        } else {
+            const teamCheck = await pool.query(
+                'SELECT tt.id, tt.name FROM tournament_teams tt JOIN tournament_team_members ttm ON tt.id = ttm.team_id WHERE tt.tournament_id = $1 AND ttm.user_id = $2',
+                [id, userId]
+            );
+            if (teamCheck.rows.length === 0) {
+                return res.status(400).json({ error: 'Вы не участвуете в этом турнире' });
+            }
+            participantInfo = teamCheck.rows[0];
         }
 
+        // Если турнир в процессе, назначаем поражения в несыгранных матчах
+        if (tournament.status === 'in_progress') {
+            console.log(`⚠️ Турнир в процессе: назначаем поражения в несыгранных матчах для участника ${userId}`);
+            
+            if (tournament.participant_type === 'solo') {
+                // Найти все несыгранные матчи участника
+                const unfinishedMatches = await pool.query(`
+                    SELECT m.*, 
+                           tp1.name as participant1_name, tp1.user_id as participant1_user_id,
+                           tp2.name as participant2_name, tp2.user_id as participant2_user_id
+                    FROM matches m
+                    LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id
+                    LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id
+                    WHERE m.tournament_id = $1 
+                    AND (tp1.user_id = $2 OR tp2.user_id = $2)
+                    AND m.status = 'pending'
+                `, [id, userId]);
+
+                console.log(`🎯 Найдено ${unfinishedMatches.rows.length} несыгранных матчей`);
+
+                // Назначаем поражения в каждом матче
+                for (const match of unfinishedMatches.rows) {
+                    const isParticipant1 = match.participant1_user_id === userId;
+                    const winnerId = isParticipant1 ? match.participant2_id : match.participant1_id;
+                    const loserId = isParticipant1 ? match.participant1_id : match.participant2_id;
+                    
+                    console.log(`⚔️ Назначаем техническое поражение в матче ${match.id}: участник ${userId} проигрывает`);
+                    
+                    // Обновляем результат матча
+                    await pool.query(`
+                        UPDATE matches 
+                        SET winner_id = $1, 
+                            status = 'completed',
+                            updated_at = NOW(),
+                            score = $2
+                        WHERE id = $3
+                    `, [winnerId, 'Техническое поражение (отказ от участия)', match.id]);
+
+                    // Логируем событие
+                    await logTournamentEvent(id, userId, 'technical_loss', {
+                        match_id: match.id,
+                        reason: 'participant_withdrawal'
+                    });
+
+                    // Уведомляем сопернику о технической победе
+                    const opponentId = isParticipant1 ? match.participant2_user_id : match.participant1_user_id;
+                    if (opponentId) {
+                        const opponentNotificationMessage = `Вам засчитана техническая победа в турнире "${tournament.name}" из-за отказа соперника от участия`;
+                        await pool.query(
+                            'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                            [opponentId, opponentNotificationMessage, 'technical_victory', id]
+                        );
+                        sendNotification(opponentId, {
+                            user_id: opponentId,
+                            message: opponentNotificationMessage,
+                            type: 'technical_victory',
+                            tournament_id: id,
+                            created_at: new Date().toISOString(),
+                        });
+                    }
+                }
+            }
+            // Для командных турниров в будущем можно добавить аналогичную логику
+        }
+
+        // Удаляем участника из турнира
         let deleted = false;
         if (tournament.participant_type === 'solo') {
             const deleteResult = await pool.query(
@@ -530,10 +614,18 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
         }
 
         if (!deleted) {
-            return res.status(400).json({ error: 'Вы не участвуете в этом турнире' });
+            return res.status(400).json({ error: 'Ошибка при удалении участника' });
         }
 
-        const notificationMessage = `Пользователь ${req.user.username || userId} отказался от участия в вашем турнире "${tournament.name}"`;
+        // Логируем событие отказа от участия
+        await logTournamentEvent(id, userId, 'participant_withdrawn', {
+            tournament_status: tournament.status,
+            had_technical_losses: tournament.status === 'in_progress'
+        });
+
+        // Уведомление создателю турнира
+        const statusText = tournament.status === 'in_progress' ? ' (с назначением поражений в несыгранных матчах)' : '';
+        const notificationMessage = `Пользователь ${req.user.username || userId} отказался от участия в вашем турнире "${tournament.name}"${statusText}`;
         await pool.query(
             'INSERT INTO notifications (user_id, message, type) VALUES ($1, $2, $3)',
             [tournament.created_by, notificationMessage, 'participant_withdrawn']
@@ -545,7 +637,12 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
             created_at: new Date().toISOString(),
         });
 
-        res.status(200).json({ message: 'Вы отказались от участия в турнире' });
+        const responseMessage = tournament.status === 'in_progress' 
+            ? 'Вы отказались от участия в турнире. Вам назначены поражения во всех несыгранных матчах.' 
+            : 'Вы отказались от участия в турнире';
+
+        console.log(`✅ Участник ${userId} успешно исключен из турнира ${id}`);
+        res.status(200).json({ message: responseMessage });
     } catch (err) {
         console.error('❌ Ошибка отказа от участия:', err);
         res.status(500).json({ error: err.message });
@@ -3554,6 +3651,144 @@ router.patch('/:id', authenticateToken, verifyAdminOrCreator, async (req, res) =
             userId: req.user?.id,
             requestBody: req.body
         });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Удаление участника из турнира (для администраторов и создателей)
+router.delete('/:id/participants/:participantId', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id, participantId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        console.log(`🗑️ Запрос на удаление участника ${participantId} из турнира ${id} пользователем ${userId}`);
+        
+        // Проверка существования турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверка статуса турнира - разрешаем удаление только для активных турниров
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Удаление участников доступно только для активных турниров' });
+        }
+        
+        // Проверка, не сгенерирована ли сетка
+        const matchesCheck = await pool.query(
+            'SELECT COUNT(*) FROM matches WHERE tournament_id = $1',
+            [id]
+        );
+        if (parseInt(matchesCheck.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Нельзя удалять участников после генерации сетки' });
+        }
+        
+        // Проверяем существование участника и получаем его данные
+        let participantInfo = null;
+        let deleted = false;
+        
+        if (tournament.participant_type === 'solo') {
+            // Для одиночных турниров
+            const participantResult = await pool.query(
+                'SELECT tp.*, u.username FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.id = $1 AND tp.tournament_id = $2',
+                [participantId, id]
+            );
+            
+            if (participantResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Участник не найден' });
+            }
+            
+            participantInfo = participantResult.rows[0];
+            
+            // Удаляем участника
+            const deleteResult = await pool.query(
+                'DELETE FROM tournament_participants WHERE id = $1 AND tournament_id = $2 RETURNING *',
+                [participantId, id]
+            );
+            
+            deleted = deleteResult.rowCount > 0;
+            
+        } else {
+            // Для командных турниров
+            const teamResult = await pool.query(
+                'SELECT tt.*, u.username as creator_name FROM tournament_teams tt LEFT JOIN users u ON tt.creator_id = u.id WHERE tt.id = $1 AND tt.tournament_id = $2',
+                [participantId, id]
+            );
+            
+            if (teamResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Команда не найдена' });
+            }
+            
+            participantInfo = teamResult.rows[0];
+            
+            // Удаляем всех участников команды
+            await pool.query(
+                'DELETE FROM tournament_team_members WHERE team_id = $1',
+                [participantId]
+            );
+            
+            // Удаляем саму команду
+            const deleteResult = await pool.query(
+                'DELETE FROM tournament_teams WHERE id = $1 AND tournament_id = $2 RETURNING *',
+                [participantId, id]
+            );
+            
+            deleted = deleteResult.rowCount > 0;
+        }
+        
+        if (!deleted) {
+            return res.status(400).json({ error: 'Не удалось удалить участника' });
+        }
+        
+        // Логируем удаление
+        await logTournamentEvent(id, userId, 'participant_removed', {
+            removedParticipant: {
+                id: participantId,
+                name: participantInfo.name || participantInfo.username,
+                type: tournament.participant_type
+            },
+            removedBy: req.user.username
+        });
+        
+        // Отправляем уведомление создателю турнира (если удаляет админ)
+        if (tournament.created_by !== userId) {
+            const notificationMessage = `Администратор ${req.user.username} удалил участника "${participantInfo.name || participantInfo.username}" из турнира "${tournament.name}"`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [tournament.created_by, notificationMessage, 'participant_removed', id]
+            );
+        }
+        
+        // Отправляем уведомление удаленному участнику (если он зарегистрирован)
+        if (participantInfo.user_id) {
+            const notificationMessage = `Вы были удалены из турнира "${tournament.name}" администратором`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [participantInfo.user_id, notificationMessage, 'removed_from_tournament', id]
+            );
+        }
+        
+        // Отправляем объявление в чат турнира
+        await sendTournamentChatAnnouncement(
+            tournament.name,
+            `Участник "${participantInfo.name || participantInfo.username}" был удален из турнира "${tournament.name}"`,
+            id
+        );
+        
+        console.log(`✅ Участник ${participantId} успешно удален из турнира ${id}`);
+        
+        res.status(200).json({ 
+            message: 'Участник успешно удален из турнира',
+            removedParticipant: {
+                id: participantId,
+                name: participantInfo.name || participantInfo.username
+            }
+        });
+        
+    } catch (err) {
+        console.error('❌ Ошибка удаления участника:', err);
         res.status(500).json({ error: err.message });
     }
 });

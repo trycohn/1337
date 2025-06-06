@@ -101,6 +101,9 @@ function TournamentDetails() {
         data: null
     });
     
+    // 🎯 НОВОЕ СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ОКНА ОТКАЗА ОТ УЧАСТИЯ
+    const [showWithdrawConfirmModal, setShowWithdrawConfirmModal] = useState(false);
+    
     // 🎯 УПРАВЛЕНИЕ УЧАСТНИКАМИ
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -1123,21 +1126,42 @@ function TournamentDetails() {
     const handleWithdraw = useCallback(async () => {
         if (!user || !tournament) return;
 
+        // Проверяем статус турнира и тип участников
+        if (tournament.status === 'in_progress' && tournament.participant_type === 'solo') {
+            // Показываем модальное окно с предупреждением для идущих турниров
+            setShowWithdrawConfirmModal(true);
+            return;
+        }
+
+        // Для турниров в статусе 'active' выходим сразу без предупреждения
+        await performWithdraw();
+    }, [user, tournament]);
+
+    // Функция выполнения отказа от участия
+    const performWithdraw = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            await api.delete(`/api/tournaments/${id}/participate`, {
+            await api.post(`/api/tournaments/${tournament.id}/withdraw`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
-            setMessage('✅ Вы покинули турнир');
-            setTimeout(() => setMessage(''), 3000);
-            reloadTournamentData(); // Используем стабильную функцию
+            setMessage('✅ Вы отказались от участия в турнире');
+            await reloadTournamentData();
         } catch (error) {
-            console.error('❌ Ошибка выхода:', error);
-            setMessage(`❌ Ошибка выхода: ${error.message}`);
-            setTimeout(() => setMessage(''), 3000);
+            console.error('Ошибка отказа от участия:', error);
+            setMessage(`❌ Ошибка: ${error.response?.data?.error || error.message}`);
         }
-    }, [user, tournament, id, reloadTournamentData]);
+    }, [tournament?.id, reloadTournamentData]);
+
+    // Отмена отказа от участия
+    const cancelWithdraw = useCallback(() => {
+        setShowWithdrawConfirmModal(false);
+    }, []);
+
+    // Подтверждение отказа от участия в турнире в процессе
+    const confirmWithdrawFromInProgressTournament = useCallback(async () => {
+        setShowWithdrawConfirmModal(false);
+        await performWithdraw();
+    }, [performWithdraw]);
 
     const handleGenerateBracket = useCallback(async () => {
         confirmGenerateBracket();
@@ -1903,22 +1927,32 @@ function TournamentDetails() {
                             </div>
 
                             {/* Кнопки участия */}
-                            {user && tournament.status === 'registration' && (
+                            {user && tournament.status === 'active' && (
                                 <div className="participation-controls">
-                                    {!userPermissions.isParticipating ? (
-                                        <button 
-                                            className="btn btn-primary participate-btn"
-                                            onClick={handleParticipate}
-                                        >
-                                            🎯 Участвовать в турнире
-                                        </button>
+                                    {(!matches || matches.length === 0) ? (
+                                        <>
+                                            {!userPermissions.isParticipating ? (
+                                                <button 
+                                                    className="btn btn-primary participate-btn"
+                                                    onClick={handleParticipate}
+                                                >
+                                                    🎯 Участвовать в турнире
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    className="btn btn-secondary withdraw-btn"
+                                                    onClick={handleWithdraw}
+                                                >
+                                                    ❌ Покинуть турнир
+                                                </button>
+                                            )}
+                                        </>
                                     ) : (
-                                        <button 
-                                            className="btn btn-secondary withdraw-btn"
-                                            onClick={handleWithdraw}
-                                        >
-                                            ❌ Покинуть турнир
-                                        </button>
+                                        <div className="participation-blocked">
+                                            <p className="blocked-message">
+                                                🚫 Участие заблокировано - сетка уже сгенерирована
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -1932,23 +1966,33 @@ function TournamentDetails() {
                                 <h3>👥 Участники турнира ({tournament.participants?.length || 0})</h3>
                                 
                                 {/* КНОПКИ УПРАВЛЕНИЯ УЧАСТНИКАМИ */}
-                                {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
-                                    <div className="participant-management-controls">
-                                        <button 
-                                            className="btn btn-primary add-participant-btn"
-                                            onClick={() => modals.openParticipantSearchModal()}
-                                            title="Найти и добавить зарегистрированного пользователя"
-                                        >
-                                            🔍 Найти участника
-                                        </button>
-                                        <button 
-                                            className="btn btn-secondary add-unregistered-btn"
-                                            onClick={() => modals.openAddParticipantModal()}
-                                            title="Добавить незарегистрированного участника"
-                                        >
-                                            👤 Добавить незарегистрированного
-                                        </button>
-                                    </div>
+                                {userPermissions.isAdminOrCreator && tournament.status === 'active' && (
+                                    <>
+                                        {(!matches || matches.length === 0) ? (
+                                            <div className="participant-management-controls">
+                                                <button 
+                                                    className="btn btn-primary add-participant-btn"
+                                                    onClick={() => modals.openParticipantSearchModal()}
+                                                    title="Найти и добавить зарегистрированного пользователя"
+                                                >
+                                                    🔍 Найти участника
+                                                </button>
+                                                <button 
+                                                    className="btn btn-secondary add-unregistered-btn"
+                                                    onClick={() => modals.openAddParticipantModal()}
+                                                    title="Добавить незарегистрированного участника"
+                                                >
+                                                    👤 Добавить незарегистрированного
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="management-blocked">
+                                                <p className="blocked-message">
+                                                    🚫 Управление участниками заблокировано - сетка уже сгенерирована
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                             
@@ -2002,7 +2046,7 @@ function TournamentDetails() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                                                    {userPermissions.isAdminOrCreator && tournament.status === 'active' && (!matches || matches.length === 0) && (
                                                         <button
                                                             className="remove-participant"
                                                             onClick={() => handleRemoveParticipant(participant.id)}
@@ -2069,7 +2113,7 @@ function TournamentDetails() {
                             ) : (
                                 <div className="empty-state">
                                     <p>👤 Пока нет участников</p>
-                                    {user && tournament.status === 'registration' && !userPermissions.isParticipating && (
+                                    {user && tournament.status === 'active' && !userPermissions.isParticipating && (!matches || matches.length === 0) && (
                                         <button 
                                             className="btn btn-primary"
                                             onClick={handleParticipate}
@@ -2077,7 +2121,7 @@ function TournamentDetails() {
                                             Стать первым участником
                                         </button>
                                     )}
-                                    {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                                    {userPermissions.isAdminOrCreator && tournament.status === 'active' && (!matches || matches.length === 0) && (
                                         <div className="empty-state-management">
                                             <p>Как организатор, вы можете:</p>
                                             <div className="empty-state-actions">
@@ -2096,11 +2140,18 @@ function TournamentDetails() {
                                             </div>
                                         </div>
                                     )}
+                                    {matches && matches.length > 0 && (
+                                        <div className="bracket-generated-notice">
+                                            <p className="info-message">
+                                                ℹ️ Сетка турнира уже сгенерирована - изменение участников недоступно
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {/* MIX ТУРНИРЫ: ГЕНЕРАЦИЯ КОМАНД */}
-                            {tournament.format === 'mix' && userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                            {tournament.format === 'mix' && userPermissions.isAdminOrCreator && tournament.status === 'active' && (
                                 <div className="team-generator-section">
                                     <h3>⚡ Управление командами</h3>
                                     <div className="rating-type-selector">
@@ -2606,6 +2657,63 @@ function TournamentDetails() {
                 {message && (
                     <div className={`message-notification ${message.includes('✅') ? 'success' : 'error'}`}>
                         {message}
+                    </div>
+                )}
+
+                {/* 🎯 МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ОТКАЗА ОТ УЧАСТИЯ */}
+                {showWithdrawConfirmModal && (
+                    <div className="modal">
+                        <div className="modal-content withdraw-confirm-modal">
+                            <div className="modal-header">
+                                <h3>⚠️ Предупреждение об отказе от участия</h3>
+                                <button 
+                                    className="close-btn"
+                                    onClick={cancelWithdraw}
+                                    title="Закрыть"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            <div className="modal-body">
+                                <div className="warning-content">
+                                    <div className="warning-icon">⚠️</div>
+                                    <div className="warning-text">
+                                        <h4>Турнир уже начался!</h4>
+                                        <p className="warning-message">
+                                            <strong>При отказе от участия вам будет засчитано поражение во всех оставшихся матчах.</strong>
+                                        </p>
+                                        <p className="warning-details">
+                                            Это означает, что:
+                                        </p>
+                                        <ul className="warning-list">
+                                            <li>Все ваши несыгранные матчи будут автоматически проиграны</li>
+                                            <li>Соперники получат технические победы</li>
+                                            <li>Это повлияет на турнирную сетку и может изменить ход турнира</li>
+                                            <li>Действие нельзя будет отменить</li>
+                                        </ul>
+                                        <p className="confirmation-question">
+                                            Вы уверены, что хотите покинуть турнир?
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="modal-footer">
+                                <button 
+                                    className="btn-cancel"
+                                    onClick={cancelWithdraw}
+                                >
+                                    ❌ Остаться в турнире
+                                </button>
+                                <button 
+                                    className="btn-confirm-withdraw"
+                                    onClick={confirmWithdrawFromInProgressTournament}
+                                >
+                                    ⚠️ Я понимаю, покинуть турнир
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </section>
