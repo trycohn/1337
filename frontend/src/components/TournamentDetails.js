@@ -1041,23 +1041,21 @@ function TournamentDetails() {
             
             const socket = io(apiUrl, {
                 query: { token },
-                transports: ['polling'], // ТОЛЬКО polling транспорт
-                upgrade: false, // Полностью запрещаем upgrade
-                rememberUpgrade: false, // Не запоминаем upgrade
-                forceBase64: false, // Не принуждаем к base64
-                enablesXDR: false, // Отключаем XDR
-                timestampRequests: false, // Отключаем timestamp
-                timestampParam: 't', // Параметр времени
-                closeOnBeforeunload: true, // Закрывать при выгрузке страницы
-                timeout: 15000, // Уменьшаем timeout
+                // 🔌 Правильные транспорты: сначала websocket, потом polling fallback
+                transports: ['websocket', 'polling'],
+                // 🍪 Важно для работы с cookies на HTTPS
+                withCredentials: true,
+                // ⚙️ Настройки переподключения
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                timeout: 20000,
+                // 🔄 Дополнительные настройки для стабильности
                 forceNew: false,
                 autoConnect: true,
-                reconnection: true,
-                reconnectionDelay: 3000, // Увеличиваем задержку
-                reconnectionAttempts: 2, // Уменьшаем попытки переподключения
-                randomizationFactor: 0.5,
-                pingTimeout: 20000,
-                pingInterval: 15000
+                upgrade: true,
+                rememberUpgrade: false,
+                pingTimeout: 60000,
+                pingInterval: 25000
             });
 
             socket.on('connect', () => {

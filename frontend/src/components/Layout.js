@@ -79,14 +79,34 @@ function Layout() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        // Создаем WebSocket соединение
-        const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:3000', {
+        // 🔧 Определяем правильный URL для Socket.IO
+        const getSocketURL = () => {
+            // В production используем текущий домен, в development - localhost:3000
+            if (process.env.NODE_ENV === 'production') {
+                return window.location.origin;
+            }
+            return process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        };
+
+        // Создаем WebSocket соединение с правильными настройками для production
+        const socket = io(getSocketURL(), {
             query: { token },
-            transports: ['websocket', 'polling']
+            // 🔌 Правильные транспорты: сначала websocket, потом polling fallback
+            transports: ['websocket', 'polling'],
+            // 🍪 Важно для работы с cookies на HTTPS
+            withCredentials: true,
+            // ⚙️ Настройки переподключения  
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 20000
         });
 
         socket.on('connect', () => {
-            console.log('Layout: WebSocket соединение установлено');
+            console.log('✅ Layout: WebSocket соединение установлено:', socket.id);
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('🔥 Layout: Ошибка подключения Socket.IO:', error);
         });
 
         // Обновляем счетчик при получении нового сообщения
@@ -107,6 +127,7 @@ function Layout() {
 
         return () => {
             if (socket) {
+                console.log('🧹 Layout: Закрываем Socket.IO соединение');
                 socket.disconnect();
             }
         };

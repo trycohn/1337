@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+// 🔧 Используем window.location.origin для правильной работы на production
+const getSocketURL = () => {
+    // В production используем текущий домен, в development - localhost:3000
+    if (process.env.NODE_ENV === 'production') {
+        return window.location.origin;
+    }
+    return process.env.REACT_APP_API_URL || 'http://localhost:3000';
+};
 
 /**
  * Custom hook для управления WebSocket соединениями турнира
@@ -33,40 +40,48 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
             wsRef.current = null;
         }
         
-        // Создаем новое соединение с улучшенными параметрами подключения
-        const socket = io(API_URL, {
+        // 🔧 Создаем новое соединение с правильными настройками для production
+        const socket = io(getSocketURL(), {
             query: { token },
+            // 🔌 Правильные транспорты: сначала websocket, потом polling fallback
             transports: ['websocket', 'polling'],
+            // 🍪 Важно для работы с cookies на HTTPS
+            withCredentials: true,
+            // ⚙️ Настройки переподключения
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
-            timeout: 10000
+            timeout: 20000,
+            // 🔄 Дополнительные настройки для стабильности
+            forceNew: false,
+            autoConnect: true,
+            upgrade: true
         });
         
         socket.on('connect', () => {
-            console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
+            console.log('✅ Socket.IO турнир соединение установлено:', socket.id);
             socket.emit('watch_tournament', tournamentId);
             socket.emit('join_tournament_chat', tournamentId);
             setWsConnected(true);
         });
         
         socket.on('disconnect', (reason) => {
-            console.log('Socket.IO соединение закрыто:', reason);
+            console.log('❌ Socket.IO турнир соединение закрыто:', reason);
             setWsConnected(false);
         });
         
         socket.on('error', (error) => {
-            console.error('Ошибка Socket.IO соединения:', error);
+            console.error('🔥 Ошибка Socket.IO турнир соединения:', error);
             setWsConnected(false);
         });
         
         socket.on('connect_error', (error) => {
-            console.error('Ошибка подключения Socket.IO:', error);
+            console.error('🔥 Ошибка подключения Socket.IO турнир:', error);
             setWsConnected(false);
         });
         
         socket.on('tournament_update', (tournamentData) => {
             if (tournamentData.tournamentId === parseInt(tournamentId) || tournamentData.id === parseInt(tournamentId)) {
-                console.log('Получено обновление турнира через WebSocket:', tournamentData);
+                console.log('🔄 Получено обновление турнира через WebSocket:', tournamentData);
                 
                 // Вызываем callback для обновления турнира
                 if (onTournamentUpdate) {
@@ -99,13 +114,13 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
 
     // Функция для ручного переподключения
     const reconnectWebSocket = useCallback(() => {
-        console.log('Ручное переподключение WebSocket');
+        console.log('🔄 Ручное переподключение WebSocket');
         setupWebSocket();
     }, [setupWebSocket]);
 
     // Функция для отключения WebSocket
     const disconnectWebSocket = useCallback(() => {
-        console.log('Отключение WebSocket соединения');
+        console.log('🔌 Отключение WebSocket соединения');
         if (wsRef.current) {
             wsRef.current.disconnect();
             wsRef.current = null;
@@ -119,7 +134,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
         
         // Очистка при размонтировании
         return () => {
-            console.log('Закрываем Socket.IO соединение при размонтировании');
+            console.log('🧹 Закрываем Socket.IO соединение при размонтировании');
             if (wsRef.current) {
                 wsRef.current.disconnect();
             }
