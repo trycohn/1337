@@ -282,13 +282,11 @@ const io = new SocketIOServer(server, {
       "http://localhost:3001"
     ],
     methods: ['GET', 'POST'],
-    credentials: true,
-    allowEIO3: true
+    credentials: true
   },
   // Настройки транспортов - сначала пытаемся websocket, потом fallback на polling
   transports: ['websocket', 'polling'],
   // Настройки для production
-  allowEIO3: true,
   pingTimeout: 60000,
   pingInterval: 25000,
   // Дополнительные настройки для стабильности соединения
@@ -304,9 +302,44 @@ const io = new SocketIOServer(server, {
     httpOnly: true,
     path: "/",
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 });
+
+// 🔐 Middleware для авторизации Socket.IO соединений
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token || socket.handshake.query.token;
+    
+    if (!token) {
+      console.log('⚠️ Socket.IO: токен отсутствует в соединении');
+      return next(new Error('Токен отсутствует'));
+    }
+
+    // Проверяем JWT токен
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Проверяем пользователя в базе данных
+    const result = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [decoded.id]);
+    
+    if (result.rows.length === 0) {
+      console.log('⚠️ Socket.IO: пользователь не найден в базе данных');
+      return next(new Error('Пользователь не найден'));
+    }
+
+    // Присваиваем данные пользователя к сокету
+    socket.userId = decoded.id;
+    socket.user = result.rows[0];
+    
+    console.log(`✅ Socket.IO: пользователь ${decoded.username} (ID: ${decoded.id}) авторизован`);
+    next();
+  } catch (error) {
+    console.log('❌ Socket.IO ошибка авторизации:', error.message);
+    next(new Error('Ошибка авторизации'));
+  }
+});
+
 setupChatSocketIO(io);
 // Устанавливаю экземпляр io в app для использования в маршрутах
 app.set('io', io);
