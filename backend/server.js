@@ -275,9 +275,36 @@ app.get(/^\/(?!api).*/, (req, res) => {
 // Устанавливаю Socket.IO сервер для чата
 const io = new SocketIOServer(server, {
   cors: {
-    origin: [process.env.SERVER_URL || '*'],
+    origin: [
+      "https://1337community.com", 
+      "https://www.1337community.com",
+      "http://localhost:3000",
+      "http://localhost:3001"
+    ],
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: true,
+    allowEIO3: true
+  },
+  // Настройки транспортов - сначала пытаемся websocket, потом fallback на polling
+  transports: ['websocket', 'polling'],
+  // Настройки для production
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  // Дополнительные настройки для стабильности соединения
+  upgradeTimeout: 30000,
+  maxHttpBufferSize: 1e6,
+  // Принудительно разрешаем polling как fallback
+  allowUpgrades: true,
+  // Настройки для работы за прокси (Nginx)
+  rememberUpgrade: false,
+  // Cookie настройки для работы с HTTPS
+  cookie: {
+    name: "io",
+    httpOnly: true,
+    path: "/",
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   }
 });
 setupChatSocketIO(io);
