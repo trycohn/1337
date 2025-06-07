@@ -214,14 +214,14 @@ const TournamentFloatingActionPanel = ({
 
                     {/* 🆕 СЕКЦИЯ СЕЛЕКТОРА ВИДА ОТОБРАЖЕНИЯ */}
                     {showDisplayModeSelector && onDisplayModeChange && (
-                        <div className="display-mode-section">
-                            <div className="section-header">
-                                <span className="section-icon">🎨</span>
-                                <span className="section-title">Вид участников</span>
+                        <div className="display-mode-section-participants-list">
+                            <div className="section-header-participants-list">
+                                <span className="section-icon-participants-list">🎨</span>
+                                <span className="section-title-participants-list">Вид участников</span>
                             </div>
-                            <div className="display-mode-selector">
+                            <div className="display-mode-selector-participants-list">
                                 <select
-                                    className="floating-display-mode-select"
+                                    className="floating-display-mode-select-participants-list"
                                     value={displayMode}
                                     onChange={(e) => handleDisplayModeChange(e.target.value)}
                                     title="Переключить вид отображения участников"
@@ -232,7 +232,7 @@ const TournamentFloatingActionPanel = ({
                                         </option>
                                     ))}
                                 </select>
-                                <div className="mode-description">
+                                <div className="mode-description-participants-list">
                                     {displayModes.find(mode => mode.id === displayMode)?.description}
                                 </div>
                             </div>
