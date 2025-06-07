@@ -107,6 +107,9 @@ function TournamentDetails() {
     // 🎯 НОВОЕ СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ОКНА ОТКАЗА ОТ УЧАСТИЯ
     const [showWithdrawConfirmModal, setShowWithdrawConfirmModal] = useState(false);
     
+    // 🆕 СОСТОЯНИЕ ВИДА ОТОБРАЖЕНИЯ УЧАСТНИКОВ
+    const [displayMode, setDisplayMode] = useState('smart-cards');
+    
     // 🎯 УПРАВЛЕНИЕ УЧАСТНИКАМИ
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -1265,6 +1268,12 @@ function TournamentDetails() {
         // Здесь может быть логика показа состава команды
     }, []);
 
+    // 🎨 Обработчик изменения вида отображения участников
+    const handleDisplayModeChange = useCallback((newMode) => {
+        console.log('🎨 Смена вида отображения участников:', newMode);
+        setDisplayMode(newMode);
+    }, []);
+
     const handleMatchClick = useCallback((matchParam) => {
         // Определяем ID матча - может прийти как число или как объект с полем id
         const matchId = typeof matchParam === 'object' ? matchParam.id : matchParam;
@@ -2060,6 +2069,9 @@ function TournamentDetails() {
                                 userPermissions={userPermissions}
                                 handleParticipate={handleParticipate}
                                 setMessage={setMessage}
+                                // 🆕 Пропсы для мультивидового отображения
+                                displayMode={displayMode}
+                                onViewChange={handleDisplayModeChange}
                             />
                         </div>
                     )}
@@ -2599,6 +2611,10 @@ function TournamentDetails() {
                         onClearResults={handleClearResults}
                         hasMatches={hasMatches}
                         hasBracket={hasBracket}
+                        // 🆕 Пропсы для селектора вида отображения участников
+                        displayMode={displayMode}
+                        onDisplayModeChange={handleDisplayModeChange}
+                        showDisplayModeSelector={activeTab === 'participants'}
                     />
                 )}
             </section>

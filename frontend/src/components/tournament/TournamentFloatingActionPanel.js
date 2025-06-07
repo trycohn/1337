@@ -1,11 +1,12 @@
 /**
- * TournamentFloatingActionPanel v1.0.1 - Плавающая панель действий
+ * TournamentFloatingActionPanel v1.1.0 - Плавающая панель действий + Селектор вида
  * 
- * @version 1.0.1 (Исправлено нарушение правил React Hooks)
+ * @version 1.1.0 (Добавлен селектор вида отображения участников)
  * @created 2025-01-22
+ * @updated 2025-01-22
  * @author 1337 Community Development Team
- * @purpose Компактная плавающая панель управления турниром
- * @features Сворачивание/разворачивание, умное отображение кнопок, анимации
+ * @purpose Компактная плавающая панель управления турниром + переключение видов участников
+ * @features Сворачивание/разворачивание, умное отображение кнопок, анимации, селектор вида участников
  */
 
 import React, { useState, useMemo } from 'react';
@@ -21,10 +22,36 @@ const TournamentFloatingActionPanel = ({
     onRegenerateBracket,
     onClearResults,
     hasMatches = false,
-    hasBracket = false
+    hasBracket = false,
+    // 🆕 Новые пропсы для управления видом отображения участников
+    displayMode = 'smart-cards',
+    onDisplayModeChange,
+    showDisplayModeSelector = true // Флаг для показа/скрытия селектора
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
+
+    // 🎨 Конфигурация видов отображения
+    const displayModes = [
+        {
+            id: 'smart-cards',
+            label: 'Smart Cards',
+            description: 'Современные карточки с богатым контентом',
+            icon: '🃏'
+        },
+        {
+            id: 'data-table', 
+            label: 'Data Table',
+            description: 'Профессиональная таблица данных',
+            icon: '📋'
+        },
+        {
+            id: 'gaming-roster',
+            label: 'Gaming Roster', 
+            description: 'Геймифицированный интерфейс',
+            icon: '⚡'
+        }
+    ];
 
     // Проверка прав доступа
     const isAdminOrCreator = hasAccess || (user && tournament && 
@@ -135,6 +162,13 @@ const TournamentFloatingActionPanel = ({
         }
     };
 
+    // 🎨 Обработчик изменения вида отображения участников
+    const handleDisplayModeChange = (newMode) => {
+        if (onDisplayModeChange && typeof onDisplayModeChange === 'function') {
+            onDisplayModeChange(newMode);
+        }
+    };
+
     // Определяем цвет индикатора статуса
     const getStatusIndicatorColor = () => {
         switch (tournament.status) {
@@ -177,6 +211,33 @@ const TournamentFloatingActionPanel = ({
                         <h4>Управление турниром</h4>
                         <span className="tournament-name">{tournament.name}</span>
                     </div>
+
+                    {/* 🆕 СЕКЦИЯ СЕЛЕКТОРА ВИДА ОТОБРАЖЕНИЯ */}
+                    {showDisplayModeSelector && onDisplayModeChange && (
+                        <div className="display-mode-section">
+                            <div className="section-header">
+                                <span className="section-icon">🎨</span>
+                                <span className="section-title">Вид участников</span>
+                            </div>
+                            <div className="display-mode-selector">
+                                <select
+                                    className="floating-display-mode-select"
+                                    value={displayMode}
+                                    onChange={(e) => handleDisplayModeChange(e.target.value)}
+                                    title="Переключить вид отображения участников"
+                                >
+                                    {displayModes.map(mode => (
+                                        <option key={mode.id} value={mode.id}>
+                                            {mode.icon} {mode.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="mode-description">
+                                    {displayModes.find(mode => mode.id === displayMode)?.description}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     
                     <div className="panel-actions">
                         {availableActions.map((action) => (
