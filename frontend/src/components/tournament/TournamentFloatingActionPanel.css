@@ -1,0 +1,481 @@
+/**
+ * TournamentFloatingActionPanel.css v1.0.0
+ * Стили для плавающей панели управления турниром
+ * 
+ * @features Современный дизайн, анимации, градиенты, адаптивность
+ * @author 1337 Community Development Team
+ * @created 2025-01-22
+ */
+
+/* ===== ОСНОВНАЯ ПАНЕЛЬ ===== */
+.tournament-floating-panel {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.tournament-floating-panel.animating {
+    pointer-events: none;
+}
+
+/* ===== КНОПКА-ПЕРЕКЛЮЧАТЕЛЬ ===== */
+.floating-panel-toggle {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+        0 8px 25px rgba(102, 126, 234, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.floating-panel-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(102, 126, 234, 0.5),
+        0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.floating-panel-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Иконка переключателя */
+.toggle-icon {
+    font-size: 20px;
+    color: white;
+    transition: transform 0.3s ease;
+    z-index: 2;
+}
+
+.tournament-floating-panel.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Индикатор статуса */
+.status-indicator {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+.status-text {
+    font-size: 8px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    transform: rotate(-45deg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 14px;
+}
+
+/* Счетчик действий */
+.actions-count {
+    position: absolute;
+    bottom: -4px;
+    left: -4px;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border-radius: 50%;
+    border: 3px solid white;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(238, 90, 36, 0.4);
+}
+
+/* ===== РАЗВЕРНУТАЯ ПАНЕЛЬ ===== */
+.floating-panel-content {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 320px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.15),
+        0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Заголовок панели */
+.panel-header {
+    padding: 20px 20px 15px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    text-align: center;
+}
+
+.panel-header h4 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tournament-name {
+    font-size: 12px;
+    opacity: 0.9;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+}
+
+/* ===== ДЕЙСТВИЯ ===== */
+.panel-actions {
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.floating-action-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.floating-action-item:last-child {
+    margin-bottom: 0;
+}
+
+.floating-action-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.floating-action-item:active {
+    transform: translateX(2px) scale(0.98);
+}
+
+/* Цвета действий */
+.floating-action-item.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 20%, #667eea 100%);
+    color: white;
+}
+
+.floating-action-item.primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 20%, #5a6fd8 100%);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.floating-action-item.success {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 20%, #4CAF50 100%);
+    color: white;
+}
+
+.floating-action-item.success:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 20%, #45a049 100%);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+}
+
+.floating-action-item.warning {
+    background: linear-gradient(135deg, #FF9800 0%, #f57c00 20%, #FF9800 100%);
+    color: white;
+}
+
+.floating-action-item.warning:hover {
+    background: linear-gradient(135deg, #f57c00 0%, #ef6c00 20%, #f57c00 100%);
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
+}
+
+.floating-action-item.danger {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 20%, #f44336 100%);
+    color: white;
+}
+
+.floating-action-item.danger:hover {
+    background: linear-gradient(135deg, #d32f2f 0%, #c62828 20%, #d32f2f 100%);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.3);
+}
+
+/* Иконка действия */
+.action-icon {
+    font-size: 20px;
+    margin-right: 12px;
+    min-width: 24px;
+    text-align: center;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* Контент действия */
+.action-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.action-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.action-description {
+    font-size: 11px;
+    opacity: 0.85;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Стрелка действия */
+.action-arrow {
+    font-size: 16px;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+    margin-left: 8px;
+}
+
+.floating-action-item:hover .action-arrow {
+    transform: translateX(2px);
+    opacity: 1;
+}
+
+/* ===== ПОДВАЛ ПАНЕЛИ ===== */
+.panel-footer {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.panel-info {
+    font-size: 11px;
+    color: #6c757d;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.panel-info strong {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* Анимация появления действий */
+.floating-action-item {
+    animation: fadeInAction 0.3s ease;
+    animation-fill-mode: both;
+}
+
+.floating-action-item:nth-child(1) { animation-delay: 0.1s; }
+.floating-action-item:nth-child(2) { animation-delay: 0.15s; }
+.floating-action-item:nth-child(3) { animation-delay: 0.2s; }
+.floating-action-item:nth-child(4) { animation-delay: 0.25s; }
+.floating-action-item:nth-child(5) { animation-delay: 0.3s; }
+
+@keyframes fadeInAction {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===== СОСТОЯНИЯ ПАНЕЛИ ===== */
+.tournament-floating-panel.collapsed .floating-panel-content {
+    display: none;
+}
+
+.tournament-floating-panel.expanded .floating-panel-toggle {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+    .tournament-floating-panel {
+        right: 15px;
+        bottom: 15px;
+    }
+    
+    .floating-panel-toggle {
+        width: 56px;
+        height: 56px;
+    }
+    
+    .toggle-icon {
+        font-size: 18px;
+    }
+    
+    .floating-panel-content {
+        width: 280px;
+        bottom: 70px;
+        right: 0;
+    }
+    
+    .panel-header h4 {
+        font-size: 15px;
+    }
+    
+    .action-title {
+        font-size: 13px;
+    }
+    
+    .action-description {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tournament-floating-panel {
+        right: 10px;
+        bottom: 10px;
+    }
+    
+    .floating-panel-toggle {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .toggle-icon {
+        font-size: 16px;
+    }
+    
+    .floating-panel-content {
+        width: calc(100vw - 40px);
+        max-width: 300px;
+        bottom: 65px;
+        right: -10px;
+    }
+    
+    .panel-actions {
+        max-height: 250px;
+    }
+    
+    .floating-action-item {
+        padding: 10px 12px;
+    }
+    
+    .action-icon {
+        font-size: 18px;
+        margin-right: 10px;
+    }
+}
+
+/* ===== ДОПОЛНИТЕЛЬНЫЕ ЭФФЕКТЫ ===== */
+.floating-panel-content::before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 20px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid white;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.1));
+}
+
+/* Эффект стеклянности */
+.floating-panel-content {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+/* Скроллбар для действий */
+.panel-actions::-webkit-scrollbar {
+    width: 4px;
+}
+
+.panel-actions::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
+}
+
+.panel-actions::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+}
+
+.panel-actions::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* ===== ТЕМНАЯ ТЕМА (опционально) ===== */
+@media (prefers-color-scheme: dark) {
+    .floating-panel-content {
+        background: rgba(33, 37, 41, 0.95);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .panel-footer {
+        background: linear-gradient(135deg, rgba(52, 58, 64, 0.8) 0%, rgba(73, 80, 87, 0.8) 100%);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .panel-info {
+        color: #adb5bd;
+    }
+    
+    .panel-info strong {
+        color: #dee2e6;
+    }
+    
+    .floating-panel-content::before {
+        border-top-color: rgba(33, 37, 41, 0.95);
+    }
+} 

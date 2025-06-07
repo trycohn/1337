@@ -1,10 +1,11 @@
 /**
- * TournamentDetails v4.1.0 - Full Feature Restoration
+ * TournamentDetails v4.2.0 - Синергия вариантов 1+3
  * 
- * @version 4.1.0 (Полный функционал)
+ * @version 4.2.0 (Синергия AdminPanel + FloatingPanel)
  * @created 2025-01-22
  * @author 1337 Community Development Team
- * @purpose Восстановление всех функций турнирной системы
+ * @purpose Комбинация детального управления и быстрого доступа
+ * @features AdminPanel (вкладка) + FloatingActionPanel (всегда видимая)
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -18,6 +19,7 @@ import { ensureHttps } from '../utils/userHelpers';
 
 // Новые компоненты и хуки
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
+import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
 import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
 import MatchResultModal from './tournament/modals/MatchResultModal';
@@ -388,6 +390,20 @@ function TournamentDetails() {
     const tournamentWinners = useMemo(() => {
         return calculateTournamentWinners();
     }, [calculateTournamentWinners]);
+
+    // 🎯 СОСТОЯНИЯ ДЛЯ ПЛАВАЮЩЕЙ ПАНЕЛИ (ВАРИАНТ 3)
+    const hasBracket = useMemo(() => {
+        // Проверяем наличие матчей или команд с турнирной сеткой
+        return matches && matches.length > 0;
+    }, [matches]);
+
+    const hasMatches = useMemo(() => {
+        // Проверяем наличие матчей с результатами
+        return matches && matches.some(match => 
+            match.winner_id || match.winner_team_id || 
+            match.status === 'completed' || match.status === 'DONE'
+        );
+    }, [matches]);
 
     // 🎯 ПРАВА ПОЛЬЗОВАТЕЛЯ
     const userPermissions = useMemo(() => {
@@ -1472,6 +1488,19 @@ function TournamentDetails() {
         [tabs, userPermissions.isAdminOrCreator]
     );
 
+    // 🎯 ЛОГИКА ОТОБРАЖЕНИЯ ПЛАВАЮЩЕЙ ПАНЕЛИ (СИНЕРГИЯ 1+3)
+    const shouldShowFloatingPanel = useMemo(() => {
+        // Показываем плавающую панель если:
+        // 1. Пользователь - админ или создатель турнира
+        // 2. НЕ находимся во вкладке "Управление" (чтобы не дублировать AdminPanel)
+        // 3. Турнир существует
+        return (
+            userPermissions.isAdminOrCreator && 
+            activeTab !== 'admin' && 
+            tournament
+        );
+    }, [userPermissions.isAdminOrCreator, activeTab, tournament]);
+
     // 🎯 СОСТОЯНИЯ ЗАГРУЗКИ
     if (loading) {
         return (
@@ -2233,7 +2262,36 @@ function TournamentDetails() {
                     {/* ВКЛАДКА: СЕТКА */}
                     {activeTab === 'bracket' && (
                         <div className="tab-content-tournamentdetails">
-                            <h3>🏆 Турнирная сетка</h3>
+                            <div className="bracket-tab-header">
+                                <h3>🏆 Турнирная сетка</h3>
+                                
+                                {/* Кнопки управления сеткой */}
+                                {userPermissions.isAdminOrCreator && (
+                                    <div className="bracket-controls">
+                                        {/* Генерация сетки */}
+                                        {tournament.status === 'active' && (!matches || matches.length === 0) && tournament.participants?.length >= 2 && (
+                                            <button 
+                                                className="btn btn-primary generate-bracket-button"
+                                                onClick={handleGenerateBracket}
+                                                title="Создать турнирную сетку"
+                                            >
+                                                ⚡ Сгенерировать сетку
+                                            </button>
+                                        )}
+
+                                        {/* Перегенерация сетки */}
+                                        {tournament.status === 'active' && matches && matches.length > 0 && (
+                                            <button 
+                                                className="btn btn-secondary regenerate-bracket-button"
+                                                onClick={handleGenerateBracket}
+                                                title="Пересоздать турнирную сетку"
+                                            >
+                                                🔄 Перегенерировать сетку
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             
                             {matches && matches.length > 0 ? (
                                 <div className="custom-tournament-bracket">
@@ -2250,13 +2308,16 @@ function TournamentDetails() {
                             ) : (
                                 <div className="empty-state">
                                     <p>🏆 Сетка турнира еще не создана</p>
-                                    {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                                    {userPermissions.isAdminOrCreator && tournament.status === 'active' && tournament.participants?.length >= 2 && (
                                         <button 
                                             className="btn btn-primary generate-bracket-button"
                                             onClick={handleGenerateBracket}
                                         >
                                             ⚡ Создать сетку
                                         </button>
+                                    )}
+                                    {tournament.participants?.length < 2 && (
+                                        <p className="text-muted">Для создания сетки нужно минимум 2 участника</p>
                                     )}
                                 </div>
                             )}
@@ -2565,139 +2626,22 @@ function TournamentDetails() {
                     {/* ВКЛАДКА: УПРАВЛЕНИЕ */}
                     {activeTab === 'admin' && userPermissions.isAdminOrCreator && (
                         <div className="tab-content-tournamentdetails">
-                            <div className="tournament-management-panel">
-                                <h3 className="management-title">⚙️ Панель управления турниром</h3>
-                                
-                                <div className="management-actions">
-                                    {/* Управление турниром */}
-                                    <div className="action-group">
-                                        <h4 className="action-group-title">🎮 Управление турниром</h4>
-                                        <div className="action-buttons">
-                                            {tournament.status === 'registration' && (
-                                                <>
-                                                    {(!matches || matches.length === 0) && (
-                                                        <button 
-                                                            className="management-btn generate-bracket-button"
-                                                            onClick={handleGenerateBracket}
-                                                            title="Создать турнирную сетку"
-                                                        >
-                                                            <span className="btn-icon">⚡</span>
-                                                            Создать сетку
-                                                        </button>
-                                                    )}
-                                                    
-                                                    {matches && matches.length > 0 && (
-                                                        <button 
-                                                            className="management-btn start-tournament"
-                                                            onClick={handleStartTournament}
-                                                            title="Запустить турнир"
-                                                        >
-                                                            <span className="btn-icon">🚀</span>
-                                                            Запустить турнир
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                            
-                                            {(tournament.status === 'active' || tournament.status === 'in_progress') && (
-                                                <button 
-                                                    className="management-btn end-tournament"
-                                                    onClick={handleEndTournament}
-                                                    title="Завершить турнир"
-                                                >
-                                                    <span className="btn-icon">🏁</span>
-                                                    Завершить турнир
-                                                </button>
-                                            )}
-                                            
-                                            {matches && matches.length > 0 && tournament.status !== 'completed' && (
-                                                <button 
-                                                    className="management-btn regenerate-bracket"
-                                                    onClick={handleGenerateBracket}
-                                                    title="Пересоздать сетку"
-                                                >
-                                                    <span className="btn-icon">🔄</span>
-                                                    Пересоздать сетку
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Управление результатами */}
-                                    <div className="action-group">
-                                        <h4 className="action-group-title">📊 Управление результатами</h4>
-                                        <div className="action-buttons">
-                                            {matches && matches.some(m => m.status === 'completed') && (
-                                                <button 
-                                                    className="management-btn clear-results-button"
-                                                    onClick={handleClearResults}
-                                                    title="Очистить все результаты"
-                                                >
-                                                    <span className="btn-icon">🗑️</span>
-                                                    Очистить результаты
-                                                </button>
-                                            )}
-                                            
-                                            <button 
-                                                className="management-btn"
-                                                onClick={loadTournamentData}
-                                                title="Обновить данные турнира"
-                                            >
-                                                <span className="btn-icon">🔄</span>
-                                                Обновить данные
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Статистика */}
-                                    <div className="action-group">
-                                        <h4 className="action-group-title">📈 Статистика турнира</h4>
-                                        <div className="tournament-stats">
-                                            <div className="stat-item">
-                                                <span className="stat-label">Участников:</span>
-                                                <span className="stat-value">{tournament.participants?.length || 0}</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">Матчей:</span>
-                                                <span className="stat-value">{matches?.length || 0}</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">Завершено:</span>
-                                                <span className="stat-value">
-                                                    {matches?.filter(m => m.status === 'completed').length || 0}
-                                                </span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">В процессе:</span>
-                                                <span className="stat-value">
-                                                    {matches?.filter(m => m.status === 'in_progress').length || 0}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Информация о завершенном турнире */}
-                                {tournament.status === 'completed' && (
-                                    <div className="tournament-completed-info">
-                                        <div className="completed-status">
-                                            <span className="btn-icon">🏆</span>
-                                            <div className="status-text">
-                                                <p>Турнир завершен</p>
-                                                {tournamentWinners.winner && (
-                                                    <p>Победитель: <strong>{tournamentWinners.winner.name}</strong></p>
-                                                )}
-                                                {tournamentWinners.secondPlace && (
-                                                    <p>Второе место: <strong>{tournamentWinners.secondPlace.name}</strong></p>
-                                                )}
-                                                {tournamentWinners.thirdPlace && (
-                                                    <p>Третье место: <strong>{tournamentWinners.thirdPlace.name}</strong></p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            <TournamentAdminPanel
+                                tournament={tournament}
+                                participants={tournament.participants || []}
+                                matches={matches}
+                                isCreatorOrAdmin={userPermissions.isAdminOrCreator}
+                                isLoading={false}
+                                onStartTournament={handleStartTournament}
+                                onEndTournament={handleEndTournament}
+                                onRegenerateBracket={confirmGenerateBracket}
+                                onShowAddParticipantModal={() => modals.openAddParticipantModal()}
+                                onShowParticipantSearchModal={() => modals.openParticipantSearchModal()}
+                                onRemoveParticipant={handleRemoveParticipant}
+                                onEditMatchResult={openMatchResultModal}
+                                onGenerateBracket={confirmGenerateBracket}
+                                onClearResults={handleClearResults}
+                            />
                         </div>
                     )}
                 </div>
@@ -2835,6 +2779,22 @@ function TournamentDetails() {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* 🎯 ПЛАВАЮЩАЯ ПАНЕЛЬ ДЕЙСТВИЙ (СИНЕРГИЯ 1+3) */}
+                {shouldShowFloatingPanel && (
+                    <TournamentFloatingActionPanel
+                        tournament={tournament}
+                        user={user}
+                        hasAccess={userPermissions.isAdminOrCreator}
+                        onStartTournament={handleStartTournament}
+                        onEndTournament={handleEndTournament}
+                        onGenerateBracket={handleGenerateBracket}
+                        onRegenerateBracket={confirmGenerateBracket}
+                        onClearResults={handleClearResults}
+                        hasMatches={hasMatches}
+                        hasBracket={hasBracket}
+                    />
                 )}
             </section>
         </TournamentErrorBoundary>

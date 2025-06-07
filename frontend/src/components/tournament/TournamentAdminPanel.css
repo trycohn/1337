@@ -432,4 +432,183 @@
     .match-item {
         padding: 10px;
     }
+}
+
+/* Статусы турнира */
+.tournament-status.status-registration {
+    background: linear-gradient(45deg, #ffa726, #ffcc02);
+}
+
+.tournament-status.status-active {
+    background: linear-gradient(45deg, #4caf50, #8bc34a);
+}
+
+.tournament-status.status-in-progress {
+    background: linear-gradient(45deg, #2196f3, #03a9f4);
+}
+
+.tournament-status.status-completed {
+    background: linear-gradient(45deg, #9e9e9e, #607d8b);
+}
+
+/* Секции управления */
+.bracket-management,
+.tournament-status-management,
+.results-management {
+    margin-bottom: 1.5rem;
+}
+
+.bracket-management h4,
+.tournament-status-management h4,
+.results-management h4 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Кнопки действий */
+.start-btn {
+    background: linear-gradient(45deg, #4caf50, #8bc34a);
+    color: white;
+}
+
+.start-btn:hover:not(:disabled) {
+    background: linear-gradient(45deg, #45a049, #7cb342);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.end-btn {
+    background: linear-gradient(45deg, #f44336, #e91e63);
+    color: white;
+}
+
+.end-btn:hover:not(:disabled) {
+    background: linear-gradient(45deg, #d32f2f, #c2185b);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.regenerate-btn {
+    background: linear-gradient(45deg, #ff9800, #ffc107);
+    color: white;
+}
+
+.regenerate-btn:hover:not(:disabled) {
+    background: linear-gradient(45deg, #f57c00, #ffa000);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+}
+
+/* Предупреждающие сообщения */
+.warning-message {
+    background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+    color: #856404;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Информация о дополнительных участниках */
+.more-participants-info {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    color: var(--secondary-color);
+    font-style: italic;
+    font-size: 0.9rem;
+    border-top: 1px solid var(--light-gray);
+}
+
+/* Бейдж для гостей */
+.guest-badge {
+    background: var(--secondary-color);
+    color: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+/* Завершенный турнир */
+.tournament-completed-info {
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.completed-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.completed-status .status-icon {
+    font-size: 2rem;
+    animation: trophy-shine 2s ease-in-out infinite;
+}
+
+@keyframes trophy-shine {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); filter: brightness(1.2); }
+}
+
+.status-text p {
+    margin: 0.25rem 0;
+    color: var(--text-color);
+}
+
+.status-text p:first-child {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .tournament-status-management h4,
+    .bracket-management h4,
+    .results-management h4 {
+        font-size: 1rem;
+    }
+    
+    .warning-message {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .completed-status {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .completed-status .status-icon {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tournament-status-management h4,
+    .bracket-management h4,
+    .results-management h4 {
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .warning-message {
+        font-size: 0.75rem;
+    }
+    
+    .guest-badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.3rem;
+    }
 } 

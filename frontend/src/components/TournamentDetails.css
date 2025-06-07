@@ -5587,3 +5587,170 @@ a.participant-name:hover {
 /* =================================================
    КОНЕЦ СТИЛЕЙ ДЛЯ МОДАЛЬНЫХ ОКОН
    ================================================= */
+
+/* Заголовок вкладки Сетка с кнопками */
+.bracket-tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light-gray);
+}
+
+.bracket-tab-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.bracket-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.generate-bracket-button,
+.regenerate-bracket-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    outline: none;
+}
+
+.generate-bracket-button {
+    background: linear-gradient(45deg, #4caf50, #8bc34a);
+    color: white;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+}
+
+.generate-bracket-button:hover {
+    background: linear-gradient(45deg, #45a049, #7cb342);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.regenerate-bracket-button {
+    background: linear-gradient(45deg, #ff9800, #ffc107);
+    color: white;
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
+}
+
+.regenerate-bracket-button:hover {
+    background: linear-gradient(45deg, #f57c00, #ffa000);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+}
+
+.generate-bracket-button:active,
+.regenerate-bracket-button:active {
+    transform: translateY(0);
+}
+
+/* Пустое состояние сетки */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
+}
+
+.empty-state p {
+    margin: 1rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.empty-state .text-muted {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.empty-state .generate-bracket-button {
+    margin-top: 1.5rem;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Адаптивность для вкладки Сетка */
+@media (max-width: 1024px) {
+    .bracket-tab-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .bracket-controls {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .bracket-tab-header {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+    }
+    
+    .bracket-tab-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .bracket-controls {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+    }
+    
+    .generate-bracket-button,
+    .regenerate-bracket-button {
+        width: 100%;
+        justify-content: center;
+        padding: 0.875rem 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state p {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bracket-tab-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .generate-bracket-button,
+    .regenerate-bracket-button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .empty-state {
+        padding: 1.5rem 0.75rem;
+    }
+    
+    .empty-state p {
+        font-size: 0.95rem;
+    }
+    
+    .empty-state .text-muted {
+        font-size: 0.85rem;
+    }
+}
