@@ -9,7 +9,7 @@
  * @features Smart Cards + Data Table + Gaming Roster + Табы + Фильтры + Статистика
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import TeamGenerator from '../TeamGenerator';
 import './UnifiedParticipantsPanel.css';
@@ -69,17 +69,6 @@ const UnifiedParticipantsPanel = ({
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterRating, setFilterRating] = useState('all');
 
-    // 🎯 СОСТОЯНИЯ ФИЛЬТРОВ
-    const [filters, setFilters] = useState({
-        search: '',
-        status: 'all', // 'all', 'registered', 'unregistered'
-        rating: 'all', // 'all', 'low', 'medium', 'high'
-        sortBy: 'name' // 'name', 'rating', 'date'
-    });
-
-    // 🆕 СОСТОЯНИЕ ВИДА ОТОБРАЖЕНИЯ
-    const [displayMode, setDisplayMode] = useState('smart-cards'); // 'smart-cards', 'data-table', 'gaming-roster'
-
     // 🎯 ДОСТУПНЫЕ ВИДЫ ОТОБРАЖЕНИЯ
     const displayModes = [
         {
@@ -101,6 +90,41 @@ const UnifiedParticipantsPanel = ({
             icon: '⚡'
         }
     ];
+
+    // 🎯 УТИЛИТАРНЫЕ ФУНКЦИИ (ПЕРЕМЕЩЕНЫ ВЫШЕ ДЛЯ ИСПРАВЛЕНИЯ use-before-define)
+    const getRating = useCallback((participant) => {
+        if (ratingType === 'faceit') {
+            return parseInt(participant.faceit_elo) || 0;
+        } else {
+            return parseInt(participant.cs2_premier_rank) || 0;
+        }
+    }, [ratingType]);
+
+    const getStatusFromRating = useCallback((rating) => {
+        if (rating > 2000) return 'high';
+        if (rating > 1200) return 'medium';
+        return 'low';
+    }, []);
+
+    const getOnlineStatus = useCallback((participant) => {
+        // Заглушка для определения онлайн статуса
+        return Math.random() > 0.5 ? 'online' : 'offline';
+    }, []);
+
+    const getAchievements = useCallback((participant) => {
+        // Заглушка для количества достижений
+        return Math.floor(Math.random() * 20);
+    }, []);
+
+    const getWins = useCallback((participant) => {
+        // Заглушка для количества побед
+        return Math.floor(Math.random() * 50);
+    }, []);
+
+    const getTournaments = useCallback((participant) => {
+        // Заглушка для количества турниров
+        return Math.floor(Math.random() * 10);
+    }, []);
 
     // 🆕 ОБРАБОТЧИКИ ФИЛЬТРОВ
     const handleFilterChange = useCallback((filterType, value) => {
@@ -226,41 +250,6 @@ const UnifiedParticipantsPanel = ({
             remaining: max ? Math.max(0, max - current) : null
         };
     }, [participants.length, tournament?.max_participants]);
-
-    // 🎯 УТИЛИТАРНЫЕ ФУНКЦИИ
-    const getRating = useCallback((participant) => {
-        if (ratingType === 'faceit') {
-            return parseInt(participant.faceit_elo) || 0;
-        } else {
-            return parseInt(participant.cs2_premier_rank) || 0;
-        }
-    }, [ratingType]);
-
-    const getStatusFromRating = useCallback((rating) => {
-        if (rating > 2000) return 'high';
-        if (rating > 1200) return 'medium';
-        return 'low';
-    }, []);
-
-    const getOnlineStatus = useCallback((participant) => {
-        // Заглушка для определения онлайн статуса
-        return Math.random() > 0.5 ? 'online' : 'offline';
-    }, []);
-
-    const getAchievements = useCallback((participant) => {
-        // Заглушка для количества достижений
-        return Math.floor(Math.random() * 20);
-    }, []);
-
-    const getWins = useCallback((participant) => {
-        // Заглушка для количества побед
-        return Math.floor(Math.random() * 50);
-    }, []);
-
-    const getTournaments = useCallback((participant) => {
-        // Заглушка для количества турниров
-        return Math.floor(Math.random() * 10);
-    }, []);
 
     // 🎯 ФУНКЦИИ РЕНДЕРИНГА ВИДОВ ОТОБРАЖЕНИЯ
     const renderSmartCards = useCallback((participantsToRender) => {
