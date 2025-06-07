@@ -1,4 +1,16 @@
+/**
+ * TournamentAdminPanel v2.0.0 - Минималистичная панель управления
+ * 
+ * @version 2.0.0 (Оптимизированная версия)
+ * @updated 2025-01-22
+ * @author 1337 Community Development Team
+ * @purpose Минималистичная панель управления турниром с умным дизайном
+ * @features Аватары участников, ELO рейтинги, кнопки в заголовке, масштабируемость
+ */
+
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { ensureHttps } from '../../utils/userHelpers';
 import './TournamentAdminPanel.css';
 
 const TournamentAdminPanel = ({
@@ -37,106 +49,163 @@ const TournamentAdminPanel = ({
     const hasBracket = hasMatches;
 
     return (
-        <div className="tournament-admin-panel">
-            <div className="admin-panel-header">
-                <h3>⚙️ Панель управления турниром</h3>
-                <div className={`tournament-status ${statusDisplay.class}`}>
-                    <span className="status-icon">{statusDisplay.icon}</span>
-                    <span className="status-text">{statusDisplay.text}</span>
+        <div className="tournament-admin-panel-v2">
+            {/* 🎯 ЗАГОЛОВОК С СТАТУСОМ И КНОПКАМИ УПРАВЛЕНИЯ */}
+            <div className="admin-panel-header-v2">
+                <div className="header-main-info">
+                    <h3>⚙️ Панель управления турниром</h3>
+                    <div className={`tournament-status-v2 ${statusDisplay.class}`}>
+                        <span className="status-icon-v2">{statusDisplay.icon}</span>
+                        <span className="status-text-v2">{statusDisplay.text}</span>
+                    </div>
+                </div>
+
+                {/* 🎯 КНОПКИ УПРАВЛЕНИЯ СТАТУСОМ В ЗАГОЛОВКЕ */}
+                <div className="header-controls">
+                    {/* Начать турнир */}
+                    {tournament?.status === 'active' && hasBracket && (
+                        <button 
+                            className="header-control-btn start-btn-v2"
+                            onClick={onStartTournament}
+                            disabled={isLoading}
+                            title="Запустить турнир"
+                        >
+                            🚀 Начать турнир
+                        </button>
+                    )}
+
+                    {/* Завершить турнир */}
+                    {tournament?.status === 'in_progress' && (
+                        <button 
+                            className="header-control-btn end-btn-v2"
+                            onClick={onEndTournament}
+                            disabled={isLoading}
+                            title="Завершить турнир"
+                        >
+                            🏁 Завершить турнир
+                        </button>
+                    )}
                 </div>
             </div>
 
-            <div className="admin-panel-content">
-                {/* Информация о турнире */}
-                <div className="tournament-info-section">
-                    <h4>📊 Информация</h4>
-                    <div className="info-grid">
-                        <div className="info-item">
-                            <span className="info-label">Игра:</span>
-                            <span className="info-value">{tournament?.game || 'Не указана'}</span>
+            <div className="admin-panel-content-v2">
+                {/* 🎯 КРАТКАЯ ИНФОРМАЦИЯ О ТУРНИРЕ */}
+                <div className="tournament-info-compact">
+                    <div className="info-stats">
+                        <div className="stat-item">
+                            <span className="stat-value">{participants?.length || 0}</span>
+                            <span className="stat-label">Участников</span>
                         </div>
-                        <div className="info-item">
-                            <span className="info-label">Формат:</span>
-                            <span className="info-value">{tournament?.format || 'Не указан'}</span>
+                        <div className="stat-item">
+                            <span className="stat-value">{matches?.length || 0}</span>
+                            <span className="stat-label">Матчей</span>
                         </div>
-                        <div className="info-item">
-                            <span className="info-label">Участников:</span>
-                            <span className="info-value">{participants?.length || 0}</span>
+                        <div className="stat-item">
+                            <span className="stat-value">{tournament?.game || 'N/A'}</span>
+                            <span className="stat-label">Игра</span>
                         </div>
-                        <div className="info-item">
-                            <span className="info-label">Матчей:</span>
-                            <span className="info-value">{matches?.length || 0}</span>
+                        <div className="stat-item">
+                            <span className="stat-value">{tournament?.format || 'N/A'}</span>
+                            <span className="stat-label">Формат</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Управление участниками */}
-                {tournament?.status === 'active' && !hasBracket && (
-                    <div className="participants-management">
-                        <h4>👥 Управление участниками</h4>
-                        <div className="management-actions">
-                            <button 
-                                className="action-btn add-user-btn"
-                                onClick={onShowParticipantSearchModal}
-                                disabled={isLoading}
-                            >
-                                🔍 Найти участника
-                            </button>
-                            <button 
-                                className="action-btn add-user-btn"
-                                onClick={onShowAddParticipantModal}
-                                disabled={isLoading}
-                            >
-                                👤 Добавить незарегистрированного
-                            </button>
+                {/* 🎯 МИНИМАЛИСТИЧНЫЙ СПИСОК УЧАСТНИКОВ */}
+                {participants && participants.length > 0 && (
+                    <div className="participants-section-v2">
+                        <div className="section-header">
+                            <h4>👥 Участники ({participants.length})</h4>
+                            {tournament?.status === 'active' && !hasBracket && (
+                                <div className="section-controls">
+                                    <button 
+                                        className="add-btn-compact"
+                                        onClick={onShowParticipantSearchModal}
+                                        disabled={isLoading}
+                                        title="Найти участника"
+                                    >
+                                        🔍
+                                    </button>
+                                    <button 
+                                        className="add-btn-compact"
+                                        onClick={onShowAddParticipantModal}
+                                        disabled={isLoading}
+                                        title="Добавить незарегистрированного"
+                                    >
+                                        👤
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
-                        {participants && participants.length > 0 && (
-                            <div className="participants-list">
-                                {participants.slice(0, 5).map((participant, index) => (
-                                    <div key={participant.id || index} className="participant-item">
-                                        <div className="participant-info">
-                                            <span className="participant-name">
-                                                {participant.name || participant.username || 'Участник'}
-                                                {!participant.user_id && (
-                                                    <span className="guest-badge">👤 Гость</span>
-                                                )}
-                                            </span>
+                        <div className="participants-grid-v2">
+                            {participants.map((participant, index) => (
+                                <div key={participant.id || index} className="participant-card-v2">
+                                    <div className="participant-info-v2">
+                                        {/* АВАТАР УЧАСТНИКА */}
+                                        <div className="participant-avatar-v2">
+                                            {participant.avatar_url ? (
+                                                <img 
+                                                    src={ensureHttps(participant.avatar_url)} 
+                                                    alt={participant.name || participant.username || 'Участник'}
+                                                    onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                />
+                                            ) : (
+                                                <div className="avatar-placeholder-v2">
+                                                    {(participant.name || participant.username || 'У').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* ИНФОРМАЦИЯ ОБ УЧАСТНИКЕ */}
+                                        <div className="participant-details-v2">
+                                            {participant.user_id ? (
+                                                <Link 
+                                                    to={`/profile/${participant.user_id}`}
+                                                    className="participant-name-v2"
+                                                >
+                                                    {participant.name || participant.username || 'Участник'}
+                                                </Link>
+                                            ) : (
+                                                <span className="participant-name-v2 unregistered">
+                                                    {participant.name || 'Незарегистрированный участник'}
+                                                </span>
+                                            )}
+                                            
+                                            {/* ELO РЕЙТИНГ */}
+                                            {participant.faceit_elo && (
+                                                <div className="participant-elo-v2">
+                                                    {participant.faceit_elo} ELO
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* КНОПКА УДАЛЕНИЯ */}
+                                    {tournament?.status === 'active' && !hasBracket && (
                                         <button
-                                            className="remove-participant-btn"
+                                            className="remove-participant-btn-v2"
                                             onClick={() => onRemoveParticipant(participant.id)}
                                             disabled={isLoading}
                                             title="Удалить участника"
                                         >
                                             🗑️
                                         </button>
-                                    </div>
-                                ))}
-                                {participants.length > 5 && (
-                                    <div className="more-participants-info">
-                                        И еще {participants.length - 5} участников...
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {participants?.length < 2 && (
-                            <div className="warning-message">
-                                ⚠️ Для создания сетки нужно минимум 2 участника
-                            </div>
-                        )}
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                {/* Управление турнирной сеткой */}
-                <div className="bracket-management">
+                {/* 🎯 УПРАВЛЕНИЕ ТУРНИРНОЙ СЕТКОЙ */}
+                <div className="bracket-section-v2">
                     <h4>🏆 Управление сеткой</h4>
-                    <div className="management-actions">
+                    <div className="bracket-actions">
                         {/* Генерация сетки */}
                         {tournament?.status === 'active' && !hasBracket && participants?.length >= 2 && (
                             <button 
-                                className="action-btn regenerate-btn"
+                                className="action-btn-v2 generate-btn"
                                 onClick={onGenerateBracket}
                                 disabled={isLoading}
                                 title="Создать турнирную сетку"
@@ -148,7 +217,7 @@ const TournamentAdminPanel = ({
                         {/* Перегенерация сетки */}
                         {tournament?.status === 'active' && hasBracket && (
                             <button 
-                                className="action-btn regenerate-btn"
+                                className="action-btn-v2 regenerate-btn"
                                 onClick={onRegenerateBracket}
                                 disabled={isLoading}
                                 title="Пересоздать турнирную сетку"
@@ -157,45 +226,21 @@ const TournamentAdminPanel = ({
                             </button>
                         )}
                     </div>
+
+                    {participants?.length < 2 && (
+                        <div className="warning-message-v2">
+                            ⚠️ Для создания сетки нужно минимум 2 участника
+                        </div>
+                    )}
                 </div>
 
-                {/* Управление статусом турнира */}
-                <div className="tournament-status-management">
-                    <h4>🎮 Управление турниром</h4>
-                    <div className="management-actions">
-                        {/* Начать турнир */}
-                        {tournament?.status === 'active' && hasBracket && (
-                            <button 
-                                className="action-btn start-btn"
-                                onClick={onStartTournament}
-                                disabled={isLoading}
-                                title="Запустить турнир"
-                            >
-                                🚀 Начать турнир
-                            </button>
-                        )}
-
-                        {/* Завершить турнир */}
-                        {tournament?.status === 'in_progress' && (
-                            <button 
-                                className="action-btn end-btn"
-                                onClick={onEndTournament}
-                                disabled={isLoading}
-                                title="Завершить турнир"
-                            >
-                                🏁 Завершить турнир
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Управление результатами */}
+                {/* 🎯 УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ */}
                 {tournament?.status === 'in_progress' && matches?.some(m => m.status === 'completed') && (
-                    <div className="results-management">
+                    <div className="results-section-v2">
                         <h4>📊 Управление результатами</h4>
-                        <div className="management-actions">
+                        <div className="results-actions">
                             <button 
-                                className="action-btn end-btn"
+                                className="action-btn-v2 clear-btn"
                                 onClick={onClearResults}
                                 disabled={isLoading}
                                 title="Очистить все результаты матчей"
@@ -206,17 +251,17 @@ const TournamentAdminPanel = ({
                     </div>
                 )}
 
-                {/* Управление матчами */}
+                {/* 🎯 УПРАВЛЕНИЕ МАТЧАМИ */}
                 {tournament?.status === 'in_progress' && matches && matches.length > 0 && (
-                    <div className="matches-management">
-                        <h4>⚔️ Незавершенные матчи</h4>
-                        <div className="matches-list">
+                    <div className="matches-section-v2">
+                        <h4>⚔️ Активные матчи</h4>
+                        <div className="matches-list-v2">
                             {matches
                                 .filter(match => match.status !== 'completed')
                                 .slice(0, 3)
                                 .map((match, index) => (
-                                    <div key={match.id || index} className="match-item">
-                                        <div className="match-info">
+                                    <div key={match.id || index} className="match-item-v2">
+                                        <div className="match-info-v2">
                                             <div className="match-teams">
                                                 {match.team1_name || match.participant1_name || 'Команда 1'} vs{' '}
                                                 {match.team2_name || match.participant2_name || 'Команда 2'}
@@ -226,7 +271,7 @@ const TournamentAdminPanel = ({
                                             </div>
                                         </div>
                                         <button
-                                            className="edit-match-btn"
+                                            className="edit-match-btn-v2"
                                             onClick={() => onEditMatchResult(match)}
                                             disabled={isLoading}
                                             title="Редактировать результат"
@@ -239,13 +284,13 @@ const TournamentAdminPanel = ({
                     </div>
                 )}
 
-                {/* Завершенный турнир */}
+                {/* 🎯 ЗАВЕРШЕННЫЙ ТУРНИР */}
                 {tournament?.status === 'completed' && (
-                    <div className="tournament-completed-info">
-                        <div className="completed-status">
-                            <span className="status-icon">🏆</span>
-                            <div className="status-text">
-                                <p>Турнир завершен</p>
+                    <div className="completed-section-v2">
+                        <div className="completed-status-v2">
+                            <span className="completed-icon">🏆</span>
+                            <div className="completed-text">
+                                <p>Турнир успешно завершен</p>
                                 <p>Все результаты сохранены</p>
                             </div>
                         </div>
