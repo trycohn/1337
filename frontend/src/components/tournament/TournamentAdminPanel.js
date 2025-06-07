@@ -53,13 +53,22 @@ const TournamentAdminPanel = ({
         switch (tournament?.status) {
             case 'registration':
             case 'active':
-                if (!hasBracket) {
+                if (hasBracket) {
+                    // Если сетка есть - можно начинать турнир
+                    return {
+                        action: 'start',
+                        label: '🚀 Начать турнир',
+                        className: 'next-stage-btn start-stage',
+                        handler: onStartTournament
+                    };
+                } else {
+                    // Если сетки нет - показываем кнопку начала с предупреждением
                     if (participantsCount >= 2) {
                         return {
-                            action: 'generate',
-                            label: '⚡ Создать сетку',
-                            className: 'next-stage-btn generate-stage',
-                            handler: onGenerateBracket
+                            action: 'start_warning',
+                            label: '🚀 Начать турнир',
+                            className: 'next-stage-btn start-stage',
+                            handler: () => handleStartWithWarning()
                         };
                     } else {
                         return {
@@ -69,13 +78,6 @@ const TournamentAdminPanel = ({
                             disabled: true
                         };
                     }
-                } else {
-                    return {
-                        action: 'start',
-                        label: '🚀 Начать турнир',
-                        className: 'next-stage-btn start-stage',
-                        handler: onStartTournament
-                    };
                 }
 
             case 'in_progress':
@@ -96,6 +98,22 @@ const TournamentAdminPanel = ({
 
             default:
                 return null;
+        }
+    };
+
+    // 🎯 НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ НАЧАЛА ТУРНИРА БЕЗ СЕТКИ
+    const handleStartWithWarning = () => {
+        const confirmed = window.confirm(
+            '⚠️ Внимание!\n\n' +
+            'Сетка турнира еще не создана. Перед началом турнира необходимо сгенерировать турнирную сетку.\n\n' +
+            'Вы можете:\n' +
+            '1. Сначала создать сетку в разделе "Управление сеткой"\n' +
+            '2. Затем нажать "Начать турнир"\n\n' +
+            'Хотите создать сетку сейчас?'
+        );
+        
+        if (confirmed && onGenerateBracket) {
+            onGenerateBracket();
         }
     };
 
