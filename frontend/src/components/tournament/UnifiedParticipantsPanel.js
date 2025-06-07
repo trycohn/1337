@@ -14,6 +14,32 @@ import { ensureHttps } from '../../utils/userHelpers';
 import TeamGenerator from '../TeamGenerator';
 import './UnifiedParticipantsPanel.css';
 
+/**
+ * 🎯 ГЛАВНЫЙ КОМПОНЕНТ: UnifiedParticipantsPanel
+ * 
+ * Унифицированная панель управления участниками турнира с табами, фильтрами и статистикой.
+ * Объединяет функциональность Варианта 1 (табы) с возможностями Варианта 2 (фильтры/статистика).
+ * 
+ * @param {Object} props - Пропсы компонента
+ * @param {Object} props.tournament - Объект турнира с информацией о турнире
+ * @param {Array} props.participants - Массив участников турнира
+ * @param {Array} props.matches - Массив матчей турнира
+ * @param {Array} props.mixedTeams - Массив сгенерированных команд
+ * @param {boolean} props.isCreatorOrAdmin - Права администратора/создателя
+ * @param {string} props.ratingType - Тип рейтинга ('faceit' | 'cs2')
+ * @param {Function} props.onRemoveParticipant - Обработчик удаления участника
+ * @param {Function} props.onShowAddParticipantModal - Обработчик открытия модалки добавления
+ * @param {Function} props.onShowParticipantSearchModal - Обработчик открытия модалки поиска
+ * @param {Function} props.onTeamsGenerated - Обработчик генерации команд
+ * @param {Function} props.onTeamsUpdated - Обработчик обновления команд
+ * @param {Function} props.calculateTeamAverageRating - Функция расчета среднего рейтинга команды
+ * @param {Function} props.setRatingType - Функция изменения типа рейтинга
+ * @param {Object} props.user - Текущий пользователь
+ * @param {Object} props.userPermissions - Права пользователя
+ * @param {Function} props.handleParticipate - Обработчик участия в турнире
+ * @param {Function} props.setMessage - Функция установки сообщений
+ * @returns {JSX.Element} Унифицированная панель управления участниками
+ */
 const UnifiedParticipantsPanel = ({
     tournament,
     participants = [],
@@ -41,676 +67,772 @@ const UnifiedParticipantsPanel = ({
     // 🎯 СОСТОЯНИЯ ФИЛЬТРОВ
     const [filters, setFilters] = useState({
         search: '',
-        status: 'all', // all, registered, unregistered
-        ratingRange: 'all', // all, low, medium, high
-        sortBy: 'name', // name, rating, joinDate
-        sortOrder: 'asc' // asc, desc
+        status: 'all', // 'all', 'registered', 'unregistered'
+        rating: 'all', // 'all', 'low', 'medium', 'high'
+        sortBy: 'name' // 'name', 'rating', 'date'
     });
 
-    // 🎯 СТАТИСТИКА УЧАСТНИКОВ
-    const statistics = useMemo(() => {
-        const registered = participants.filter(p => p.user_id).length;
-        const unregistered = participants.filter(p => !p.user_id).length;
-        
-        const ratings = participants
-            .map(p => ratingType === 'faceit' ? parseInt(p.faceit_elo) || 0 : parseInt(p.cs2_premier_rank) || 0)
-            .filter(r => r > 0);
-        
-        const avgRating = ratings.length > 0 
-            ? Math.round(ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length)
-            : 0;
-        
-        const maxRating = ratings.length > 0 ? Math.max(...ratings) : 0;
-        const minRating = ratings.length > 0 ? Math.min(...ratings) : 0;
-        
-        return {
-            total: participants.length,
-            registered,
-            unregistered,
-            avgRating,
-            maxRating,
-            minRating,
-            hasRatings: ratings.length > 0
-        };
-    }, [participants, ratingType]);
+    // 🎯 КОНФИГУРАЦИЯ ТАБОВ
+    /**
+     * 📋 Конфигурация табов панели участников
+     * 
+     * Определяет структуру навигации по табам с иконками, названиями и счетчиками.
+     * Используется для генерации табочной навигации и определения активных вкладок.
+     * 
+     * @constant {Array<Object>} tabsConfig - Массив конфигураций табов
+     * @property {string} id - Уникальный идентификатор таба
+     * @property {string} icon - Эмодзи иконка для таба
+     * @property {string} label - Отображаемое название таба
+     * @property {Function} getCount - Функция для расчета счетчика таба
+     */
+    const tabsConfig = [
+        {
+            id: 'current',
+            icon: '👥',
+            label: 'Текущие участники',
+            getCount: () => participants.length
+        },
+        {
+            id: 'add',
+            icon: '➕',
+            label: 'Добавить участников',
+            getCount: () => null // Без счетчика
+        },
+        {
+            id: 'teams',
+            icon: '🎲',
+            label: 'Команды',
+            getCount: () => mixedTeams.length
+        },
+        {
+            id: 'stats',
+            icon: '📊',
+            label: 'Статистика',
+            getCount: () => null // Без счетчика
+        }
+    ];
 
-    // 🎯 ФИЛЬТРОВАННЫЕ И ОТСОРТИРОВАННЫЕ УЧАСТНИКИ
+    // 🔍 ФИЛЬТРАЦИЯ И ПОИСК УЧАСТНИКОВ
+    /**
+     * 🔍 Фильтрация и сортировка участников
+     * 
+     * Применяет все активные фильтры (поиск, статус, рейтинг) и сортировку к списку участников.
+     * Использует useMemo для оптимизации производительности и предотвращения лишних вычислений.
+     * 
+     * @returns {Array} Отфильтрованный и отсортированный массив участников
+     * 
+     * Логика фильтрации:
+     * 1. Поиск по имени (регистронезависимый)
+     * 2. Фильтр по статусу (зарегистрированные/незарегистрированные)
+     * 3. Фильтр по рейтингу (низкий/средний/высокий)
+     * 4. Сортировка по выбранному критерию
+     */
     const filteredParticipants = useMemo(() => {
         let filtered = [...participants];
 
-        // Поиск по имени
-        if (filters.search) {
-            const searchLower = filters.search.toLowerCase();
-            filtered = filtered.filter(p => 
-                (p.name || p.username || '').toLowerCase().includes(searchLower)
+        // 🔎 Поиск по имени
+        if (filters.search.trim()) {
+            const searchLower = filters.search.toLowerCase().trim();
+            filtered = filtered.filter(participant => 
+                participant.name?.toLowerCase().includes(searchLower)
             );
         }
 
-        // Фильтр по статусу
+        // 📋 Фильтр по статусу регистрации
         if (filters.status !== 'all') {
-            filtered = filtered.filter(p => 
-                filters.status === 'registered' ? !!p.user_id : !p.user_id
-            );
-        }
-
-        // Фильтр по рейтингу
-        if (filters.ratingRange !== 'all' && statistics.hasRatings) {
-            filtered = filtered.filter(p => {
-                const rating = ratingType === 'faceit' 
-                    ? parseInt(p.faceit_elo) || 0 
-                    : parseInt(p.cs2_premier_rank) || 0;
-                
-                if (rating === 0) return filters.ratingRange === 'low';
-                
-                const { avgRating } = statistics;
-                switch (filters.ratingRange) {
-                    case 'low': return rating < avgRating * 0.8;
-                    case 'medium': return rating >= avgRating * 0.8 && rating <= avgRating * 1.2;
-                    case 'high': return rating > avgRating * 1.2;
-                    default: return true;
-                }
+            filtered = filtered.filter(participant => {
+                const isRegistered = participant.user_id !== null;
+                return filters.status === 'registered' ? isRegistered : !isRegistered;
             });
         }
 
-        // Сортировка
+        // ⭐ Фильтр по рейтингу
+        if (filters.rating !== 'all') {
+            filtered = filtered.filter(participant => {
+                const rating = getRating(participant);
+                if (!rating) return filters.rating === 'low'; // Нет рейтинга = низкий
+                
+                if (filters.rating === 'low') return rating < 1500;
+                if (filters.rating === 'medium') return rating >= 1500 && rating < 2500;
+                if (filters.rating === 'high') return rating >= 2500;
+                return true;
+            });
+        }
+
+        // 📊 Сортировка
         filtered.sort((a, b) => {
-            let valueA, valueB;
-            
             switch (filters.sortBy) {
-                case 'rating':
-                    valueA = ratingType === 'faceit' 
-                        ? parseInt(a.faceit_elo) || 0 
-                        : parseInt(a.cs2_premier_rank) || 0;
-                    valueB = ratingType === 'faceit' 
-                        ? parseInt(b.faceit_elo) || 0 
-                        : parseInt(b.cs2_premier_rank) || 0;
-                    break;
-                case 'joinDate':
-                    valueA = new Date(a.created_at || a.joined_at || 0);
-                    valueB = new Date(b.created_at || b.joined_at || 0);
-                    break;
                 case 'name':
+                    return (a.name || '').localeCompare(b.name || '');
+                case 'rating':
+                    const ratingA = getRating(a) || 0;
+                    const ratingB = getRating(b) || 0;
+                    return ratingB - ratingA; // По убыванию
+                case 'date':
+                    // Предполагаем что есть поле created_at или similar
+                    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
                 default:
-                    valueA = (a.name || a.username || '').toLowerCase();
-                    valueB = (b.name || b.username || '').toLowerCase();
-                    break;
-            }
-            
-            if (filters.sortOrder === 'desc') {
-                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-            } else {
-                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+                    return 0;
             }
         });
 
         return filtered;
-    }, [participants, filters, statistics, ratingType]);
+    }, [participants, filters, ratingType]);
 
-    // 🎯 ОБРАБОТЧИКИ ФИЛЬТРОВ
-    const updateFilter = useCallback((key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+    // 📊 СТАТИСТИКА УЧАСТНИКОВ
+    /**
+     * 📊 Расчет статистики участников
+     * 
+     * Вычисляет различные метрики участников турнира для отображения в разделе статистики.
+     * Включает общую статистику, рейтинговые показатели и статистику команд.
+     * 
+     * @returns {Object} Объект со всей статистикой участников
+     * 
+     * Вычисляемые метрики:
+     * - Общее количество участников
+     * - Количество зарегистрированных/незарегистрированных
+     * - Средний, максимальный, минимальный рейтинг
+     * - Статистика команд и заполненности турнира
+     */
+    const participantsStats = useMemo(() => {
+        const totalCount = participants.length;
+        const registeredCount = participants.filter(p => p.user_id !== null).length;
+        const unregisteredCount = totalCount - registeredCount;
+
+        // 📈 Рейтинговые статистики
+        const ratings = participants
+            .map(p => getRating(p))
+            .filter(r => r !== null && r > 0);
+
+        const avgRating = ratings.length > 0 
+            ? Math.round(ratings.reduce((sum, r) => sum + r, 0) / ratings.length)
+            : 0;
+
+        const maxRating = ratings.length > 0 ? Math.max(...ratings) : 0;
+        const minRating = ratings.length > 0 ? Math.min(...ratings) : 0;
+
+        // 🎲 Статистика команд
+        const teamsCount = mixedTeams.length;
+        const avgTeamSize = teamsCount > 0 
+            ? Math.round(mixedTeams.reduce((sum, team) => sum + team.members.length, 0) / teamsCount)
+            : 0;
+
+        // 📊 Заполненность турнира
+        const maxParticipants = tournament.max_participants || null;
+        const fillPercentage = maxParticipants 
+            ? Math.round((totalCount / maxParticipants) * 100)
+            : null;
+
+        return {
+            totalCount,
+            registeredCount,
+            unregisteredCount,
+            avgRating,
+            maxRating,
+            minRating,
+            teamsCount,
+            avgTeamSize,
+            maxParticipants,
+            fillPercentage
+        };
+    }, [participants, mixedTeams, tournament.max_participants, ratingType]);
+
+    // 🎯 ОБРАБОТЧИКИ СОБЫТИЙ
+    /**
+     * 🔄 Обработчик изменения фильтров
+     * 
+     * Обновляет состояние фильтров при изменении параметров фильтрации.
+     * Использует useCallback для оптимизации производительности.
+     * 
+     * @param {string} filterType - Тип фильтра ('search', 'status', 'rating', 'sortBy')
+     * @param {string} value - Новое значение фильтра
+     */
+    const handleFilterChange = useCallback((filterType, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterType]: value
+        }));
     }, []);
 
-    const clearFilters = useCallback(() => {
+    /**
+     * 🎨 Сброс всех фильтров
+     * 
+     * Возвращает все фильтры к значениям по умолчанию.
+     * Полезно для быстрой очистки всех примененных фильтров.
+     */
+    const handleResetFilters = useCallback(() => {
         setFilters({
             search: '',
             status: 'all',
-            ratingRange: 'all',
-            sortBy: 'name',
-            sortOrder: 'asc'
+            rating: 'all',
+            sortBy: 'name'
         });
     }, []);
 
-    // 🎯 ПРОВЕРКА БЛОКИРОВКИ (если сетка создана)
-    const isManagementBlocked = useMemo(() => {
-        return matches && matches.length > 0;
-    }, [matches]);
-
-    // 🎯 ПРОВЕРКА УЧАСТИЯ ПОЛЬЗОВАТЕЛЯ
-    const isUserParticipating = useMemo(() => {
-        return userPermissions?.isParticipating || false;
-    }, [userPermissions]);
-
-    // 🎯 ТАБЫ НАВИГАЦИИ
-    const tabs = [
-        {
-            id: 'current',
-            label: 'Текущие участники',
-            icon: '👥',
-            count: participants.length
-        },
-        {
-            id: 'add',
-            label: 'Добавить участников', 
-            icon: '➕',
-            disabled: isManagementBlocked || !isCreatorOrAdmin
-        },
-        {
-            id: 'teams',
-            label: 'Команды',
-            icon: '🎲',
-            count: mixedTeams.length,
-            show: tournament?.format === 'mix'
-        },
-        {
-            id: 'statistics',
-            label: 'Статистика',
-            icon: '📊'
+    /**
+     * 📱 Переключение таба
+     * 
+     * Изменяет активный таб панели участников.
+     * При переключении табов может выполняться дополнительная логика.
+     * 
+     * @param {string} tabId - Идентификатор таба для активации
+     */
+    const handleTabChange = useCallback((tabId) => {
+        setActiveTab(tabId);
+        
+        // Дополнительная логика при переключении табов
+        if (tabId === 'current') {
+            // Сбросить фильтры при возврате к списку участников
+            // handleResetFilters(); // Опционально
         }
-    ];
+    }, []);
 
-    // 🎯 РЕНДЕР КАРТОЧКИ УЧАСТНИКА
-    const renderParticipantCard = useCallback((participant, index) => {
-        const rating = ratingType === 'faceit' 
-            ? participant.faceit_elo 
-            : participant.cs2_premier_rank;
+    // 🔧 УТИЛИТАРНЫЕ ФУНКЦИИ
+    /**
+     * ⭐ Получение рейтинга участника
+     * 
+     * Извлекает рейтинг участника в зависимости от выбранного типа рейтинга.
+     * Обрабатывает различные форматы данных и возвращает числовое значение.
+     * 
+     * @param {Object} participant - Объект участника
+     * @returns {number|null} Рейтинг участника или null если отсутствует
+     * 
+     * Поддерживаемые типы рейтинга:
+     * - 'faceit': FACEIT ELO рейтинг
+     * - 'cs2': CS2 Premier рейтинг
+     */
+    const getRating = useCallback((participant) => {
+        if (!participant) return null;
 
+        if (ratingType === 'faceit') {
+            return participant.faceit_elo || null;
+        } else if (ratingType === 'cs2') {
+            return participant.cs2_premier_rank || null;
+        }
+
+        return null;
+    }, [ratingType]);
+
+    /**
+     * 🎨 Получение CSS класса для рейтинга
+     * 
+     * Определяет CSS класс для цветовой индикации рейтинга участника.
+     * Используется для визуального выделения разных уровней рейтинга.
+     * 
+     * @param {number} rating - Рейтинг участника
+     * @returns {string} CSS класс для рейтинга
+     * 
+     * Классификация рейтингов:
+     * - rating-high: >= 2500 (зеленый)
+     * - rating-medium: 1500-2499 (желтый)
+     * - rating-low: < 1500 (красный)
+     * - rating-none: отсутствует (серый)
+     */
+    const getRatingClass = useCallback((rating) => {
+        if (!rating) return 'rating-none';
+        if (rating >= 2500) return 'rating-high';
+        if (rating >= 1500) return 'rating-medium';
+        return 'rating-low';
+    }, []);
+
+    /**
+     * 🎯 Форматирование рейтинга для отображения
+     * 
+     * Преобразует числовой рейтинг в отформатированную строку для UI.
+     * Обрабатывает случаи отсутствия рейтинга и различные форматы.
+     * 
+     * @param {number|null} rating - Рейтинг участника
+     * @returns {string} Отформатированная строка рейтинга
+     */
+    const formatRating = useCallback((rating) => {
+        if (!rating) return 'Н/Д';
+        return rating.toLocaleString();
+    }, []);
+
+    /**
+     * 🏷️ Получение бейджа статуса участника
+     * 
+     * Создает JSX элемент бейджа для отображения статуса участника.
+     * Визуально различает зарегистрированных и незарегистрированных участников.
+     * 
+     * @param {Object} participant - Объект участника
+     * @returns {JSX.Element} JSX элемент бейджа статуса
+     */
+    const getStatusBadge = useCallback((participant) => {
+        const isRegistered = participant.user_id !== null;
         return (
-            <div key={participant.id || index} className="unified-participant-card">
-                <div className="participant-avatar-section">
-                    {participant.avatar_url ? (
-                        <img 
-                            src={ensureHttps(participant.avatar_url)} 
-                            alt={participant.name || participant.username || 'Участник'}
-                            className="unified-participant-avatar"
-                            onError={(e) => {e.target.src = '/default-avatar.png'}}
-                        />
-                    ) : (
-                        <div className="unified-avatar-placeholder">
-                            {(participant.name || participant.username || 'У').charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    {!participant.user_id && (
-                        <div className="unregistered-indicator" title="Незарегистрированный участник">
-                            👤
-                        </div>
-                    )}
-                </div>
-                
-                <div className="participant-info-section">
-                    <div className="participant-main-info">
-                        {participant.user_id ? (
-                            <Link 
-                                to={`/profile/${participant.user_id}`}
-                                className="participant-name-link"
-                            >
-                                {participant.name || participant.username}
-                            </Link>
-                        ) : (
-                            <span className="participant-name-text">
-                                {participant.name || 'Незарегистрированный участник'}
-                            </span>
-                        )}
-                        
-                        {rating && (
-                            <div className="participant-rating-badge">
-                                <span className="rating-type">
-                                    {ratingType === 'faceit' ? 'FACEIT' : 'CS2'}
-                                </span>
-                                <span className="rating-value">{rating}</span>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {participant.email && (
-                        <div className="participant-secondary-info">
-                            📧 {participant.email}
-                        </div>
-                    )}
-                </div>
-                
-                {isCreatorOrAdmin && !isManagementBlocked && (
-                    <div className="participant-actions">
-                        <button
-                            className="remove-participant-btn"
-                            onClick={() => onRemoveParticipant(participant.id)}
-                            title="Удалить участника"
-                        >
-                            🗑️
-                        </button>
-                    </div>
-                )}
-            </div>
+            <span className={`participant-status-badge ${isRegistered ? 'registered' : 'unregistered'}`}>
+                {isRegistered ? '✅ Зарегистрирован' : '👤 Гость'}
+            </span>
         );
-    }, [ratingType, isCreatorOrAdmin, isManagementBlocked, onRemoveParticipant]);
+    }, []);
 
-    // 🎯 РЕНДЕР ВКЛАДКИ "ТЕКУЩИЕ УЧАСТНИКИ"
-    const renderCurrentParticipantsTab = () => (
-        <div className="current-participants-tab">
-            {/* Фильтры и поиск */}
-            <div className="participants-controls">
-                <div className="search-and-filters">
-                    <div className="search-section">
+    // 🎨 РЕНДЕР КОМПОНЕНТОВ ТАБОВ
+    /**
+     * 👥 Рендер таба "Текущие участники"
+     * 
+     * Отображает список участников с фильтрами, поиском и возможностями управления.
+     * Включает умные фильтры, карточки участников и действия администратора.
+     * 
+     * @returns {JSX.Element} Таб со списком участников
+     */
+    const renderCurrentParticipants = () => (
+        <div className="unified-tab-content current-participants">
+            {/* 🔍 ПАНЕЛЬ ФИЛЬТРОВ */}
+            <div className="filters-panel">
+                <div className="filters-row">
+                    {/* Поиск */}
+                    <div className="filter-group search-group">
+                        <label htmlFor="participant-search">🔍 Поиск участников:</label>
                         <input
+                            id="participant-search"
                             type="text"
-                            placeholder="🔍 Поиск по имени..."
+                            placeholder="Введите имя участника..."
                             value={filters.search}
-                            onChange={(e) => updateFilter('search', e.target.value)}
-                            className="participants-search-input"
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
+                            className="search-input"
                         />
                     </div>
-                    
-                    <div className="filters-section">
+
+                    {/* Фильтр по статусу */}
+                    <div className="filter-group">
+                        <label htmlFor="status-filter">📋 Статус:</label>
                         <select
+                            id="status-filter"
                             value={filters.status}
-                            onChange={(e) => updateFilter('status', e.target.value)}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
                             className="filter-select"
                         >
                             <option value="all">Все участники</option>
                             <option value="registered">Зарегистрированные</option>
-                            <option value="unregistered">Незарегистрированные</option>
+                            <option value="unregistered">Гости</option>
                         </select>
-                        
-                        {statistics.hasRatings && (
-                            <select
-                                value={filters.ratingRange}
-                                onChange={(e) => updateFilter('ratingRange', e.target.value)}
-                                className="filter-select"
-                            >
-                                <option value="all">Все рейтинги</option>
-                                <option value="high">Высокий рейтинг</option>
-                                <option value="medium">Средний рейтинг</option>
-                                <option value="low">Низкий рейтинг</option>
-                            </select>
-                        )}
-                        
+                    </div>
+
+                    {/* Фильтр по рейтингу */}
+                    <div className="filter-group">
+                        <label htmlFor="rating-filter">⭐ Рейтинг:</label>
                         <select
-                            value={`${filters.sortBy}-${filters.sortOrder}`}
-                            onChange={(e) => {
-                                const [sortBy, sortOrder] = e.target.value.split('-');
-                                updateFilter('sortBy', sortBy);
-                                updateFilter('sortOrder', sortOrder);
-                            }}
+                            id="rating-filter"
+                            value={filters.rating}
+                            onChange={(e) => handleFilterChange('rating', e.target.value)}
                             className="filter-select"
                         >
-                            <option value="name-asc">Имя (А-Я)</option>
-                            <option value="name-desc">Имя (Я-А)</option>
-                            <option value="rating-desc">Рейтинг (↓)</option>
-                            <option value="rating-asc">Рейтинг (↑)</option>
-                            <option value="joinDate-desc">Дата (новые)</option>
-                            <option value="joinDate-asc">Дата (старые)</option>
+                            <option value="all">Все рейтинги</option>
+                            <option value="high">Высокий (2500+)</option>
+                            <option value="medium">Средний (1500-2499)</option>
+                            <option value="low">Низкий (&lt;1500)</option>
                         </select>
-                        
-                        {(filters.search || filters.status !== 'all' || filters.ratingRange !== 'all') && (
-                            <button
-                                onClick={clearFilters}
-                                className="clear-filters-btn"
-                                title="Очистить фильтры"
-                            >
-                                ✕ Сбросить
-                            </button>
-                        )}
                     </div>
+
+                    {/* Сортировка */}
+                    <div className="filter-group">
+                        <label htmlFor="sort-filter">📊 Сортировка:</label>
+                        <select
+                            id="sort-filter"
+                            value={filters.sortBy}
+                            onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                            className="filter-select"
+                        >
+                            <option value="name">По имени</option>
+                            <option value="rating">По рейтингу</option>
+                            <option value="date">По дате</option>
+                        </select>
+                    </div>
+
+                    {/* Кнопка сброса */}
+                    <button
+                        onClick={handleResetFilters}
+                        className="reset-filters-btn"
+                        title="Сбросить все фильтры"
+                    >
+                        🔄 Сброс
+                    </button>
                 </div>
-                
-                {/* Статистика результатов */}
-                <div className="results-summary">
-                    <span className="results-count">
-                        Показано: {filteredParticipants.length} из {participants.length}
-                    </span>
-                    {filteredParticipants.length !== participants.length && (
-                        <span className="filtered-indicator">
-                            (фильтр активен)
-                        </span>
-                    )}
+
+                {/* Информация о фильтрации */}
+                <div className="filter-info">
+                    Показано <strong>{filteredParticipants.length}</strong> из <strong>{participants.length}</strong> участников
+                    {filters.search && <span className="filter-tag">Поиск: "{filters.search}"</span>}
+                    {filters.status !== 'all' && <span className="filter-tag">Статус: {filters.status === 'registered' ? 'Зарегистрированные' : 'Гости'}</span>}
+                    {filters.rating !== 'all' && <span className="filter-tag">Рейтинг: {filters.rating}</span>}
                 </div>
             </div>
-            
-            {/* Список участников */}
-            {filteredParticipants.length > 0 ? (
-                <div className="unified-participants-grid">
-                    {filteredParticipants.map(renderParticipantCard)}
-                </div>
-            ) : (
-                <div className="empty-participants-state">
-                    {filters.search || filters.status !== 'all' || filters.ratingRange !== 'all' ? (
-                        <div className="no-results">
-                            <div className="no-results-icon">🔍</div>
-                            <h4>Участники не найдены</h4>
-                            <p>Попробуйте изменить критерии поиска или фильтры</p>
-                            <button onClick={clearFilters} className="clear-filters-btn">
-                                Сбросить фильтры
+
+            {/* 👥 СПИСОК УЧАСТНИКОВ */}
+            <div className="participants-list">
+                {filteredParticipants.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-icon">😔</div>
+                        <h3>Участники не найдены</h3>
+                        <p>
+                            {participants.length === 0 
+                                ? 'В турнире пока нет участников'
+                                : 'Попробуйте изменить параметры фильтрации'
+                            }
+                        </p>
+                        {filters.search || filters.status !== 'all' || filters.rating !== 'all' ? (
+                            <button onClick={handleResetFilters} className="btn btn-primary">
+                                🔄 Сбросить фильтры
                             </button>
-                        </div>
-                    ) : (
-                        <div className="no-participants">
-                            <div className="no-participants-icon">👥</div>
-                            <h4>Пока нет участников</h4>
-                            <p>Участники появятся после регистрации в турнире</p>
-                            
-                            {/* Кнопка участия для пользователя */}
-                            {user && tournament.status === 'active' && !isUserParticipating && !isManagementBlocked && handleParticipate && (
-                                <button 
-                                    className="participate-btn"
-                                    onClick={handleParticipate}
-                                >
-                                    🎯 Стать первым участником
-                                </button>
-                            )}
-                            
-                            {/* Быстрые действия для админов */}
-                            {isCreatorOrAdmin && tournament.status === 'active' && !isManagementBlocked && (
-                                <div className="quick-admin-actions">
-                                    <p>Как организатор, вы можете:</p>
-                                    <div className="quick-actions-grid">
-                                        <button 
-                                            className="quick-action-btn primary"
-                                            onClick={onShowParticipantSearchModal}
-                                        >
-                                            🔍 Найти участников
-                                        </button>
-                                        <button 
-                                            className="quick-action-btn secondary"
-                                            onClick={onShowAddParticipantModal}
-                                        >
-                                            👤 Добавить незарегистрированного
-                                        </button>
+                        ) : null}
+                    </div>
+                ) : (
+                    <div className="participants-grid">
+                        {filteredParticipants.map(participant => (
+                            <div key={participant.id} className="participant-card">
+                                {/* Аватар и основная информация */}
+                                <div className="participant-header">
+                                    <div className="participant-avatar">
+                                        <img
+                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
+                                            alt={participant.name}
+                                            onError={(e) => {
+                                                e.target.src = '/default-avatar.png';
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="participant-info">
+                                        <h4 className="participant-name">
+                                            {participant.user_id ? (
+                                                <Link 
+                                                    to={`/profile/${participant.user_id}`}
+                                                    className="participant-link"
+                                                >
+                                                    {participant.name}
+                                                </Link>
+                                            ) : (
+                                                participant.name
+                                            )}
+                                        </h4>
+                                        {getStatusBadge(participant)}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
 
-    // 🎯 РЕНДЕР ВКЛАДКИ "ДОБАВИТЬ УЧАСТНИКОВ"
-    const renderAddParticipantsTab = () => (
-        <div className="add-participants-tab">
-            <div className="add-participants-header">
-                <h4>Управление участниками</h4>
-                <p>Добавляйте зарегистрированных пользователей или незарегистрированных участников</p>
-            </div>
-            
-            <div className="add-participants-options">
-                <div className="add-option-card">
-                    <div className="option-icon">🔍</div>
-                    <div className="option-content">
-                        <h5>Найти пользователя</h5>
-                        <p>Поиск среди зарегистрированных пользователей системы</p>
-                        <button 
-                            className="add-option-btn primary"
-                            onClick={onShowParticipantSearchModal}
-                        >
-                            Открыть поиск
-                        </button>
-                    </div>
-                </div>
-                
-                <div className="add-option-card">
-                    <div className="option-icon">👤</div>
-                    <div className="option-content">
-                        <h5>Добавить незарегистрированного</h5>
-                        <p>Добавление участника без аккаунта в системе</p>
-                        <button 
-                            className="add-option-btn secondary"
-                            onClick={onShowAddParticipantModal}
-                        >
-                            Добавить вручную
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            {isManagementBlocked && (
-                <div className="management-blocked-notice">
-                    <div className="blocked-icon">🚫</div>
-                    <div className="blocked-content">
-                        <h5>Управление заблокировано</h5>
-                        <p>Сетка турнира уже сгенерирована. Изменение участников недоступно.</p>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+                                {/* Рейтинги */}
+                                <div className="participant-ratings">
+                                    <div className={`rating-item ${getRatingClass(getRating(participant))}`}>
+                                        <span className="rating-label">
+                                            {ratingType === 'faceit' ? 'FACEIT:' : 'CS2:'}
+                                        </span>
+                                        <span className="rating-value">
+                                            {formatRating(getRating(participant))}
+                                        </span>
+                                    </div>
+                                </div>
 
-    // 🎯 РЕНДЕР ВКЛАДКИ "КОМАНДЫ"
-    const renderTeamsTab = () => (
-        <div className="teams-tab">
-            <div className="teams-header">
-                <h4>Управление командами</h4>
-                <p>Генерация и просмотр команд для mix турнира</p>
-                
-                {/* Селектор типа рейтинга */}
-                {setRatingType && (
-                    <div className="rating-type-selector">
-                        <label>Тип рейтинга для балансировки:</label>
-                        <select 
-                            value={ratingType} 
-                            onChange={(e) => setRatingType(e.target.value)}
-                            className="rating-type-select"
-                        >
-                            <option value="faceit">FACEIT ELO</option>
-                            <option value="cs2">CS2 Premier</option>
-                        </select>
-                    </div>
-                )}
-            </div>
-            
-            {/* Генератор команд */}
-            {isCreatorOrAdmin && tournament.status === 'active' && (
-                <div className="team-generator-section">
-                    <TeamGenerator 
-                        tournament={tournament}
-                        participants={participants}
-                        onTeamsGenerated={onTeamsGenerated}
-                        onTeamsUpdated={onTeamsUpdated}
-                        onRemoveParticipant={onRemoveParticipant}
-                        isAdminOrCreator={isCreatorOrAdmin}
-                        toast={(msg) => {
-                            // Если есть setMessage, используем его для уведомлений
-                            if (setMessage) {
-                                setMessage(msg);
-                                setTimeout(() => setMessage(''), 3000);
-                            } else {
-                                console.log('Team Generator Message:', msg);
-                            }
-                        }}
-                    />
-                </div>
-            )}
-            
-            {/* Список команд */}
-            {mixedTeams.length > 0 ? (
-                <div className="teams-display-section">
-                    <div className="teams-section-header">
-                        <h5>🎲 Сформированные команды ({mixedTeams.length})</h5>
-                    </div>
-                    
-                    <div className="teams-grid">
-                        {mixedTeams.map((team, index) => (
-                            <div key={team.id || index} className="team-card-unified">
-                                <div className="team-header">
-                                    <h5>{team.name || `Команда ${index + 1}`}</h5>
-                                    {calculateTeamAverageRating && (
-                                        <div className="team-rating">
-                                            Средний рейтинг: {calculateTeamAverageRating(team)}
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                <div className="team-members">
-                                    {team.members?.map((member, memberIndex) => (
-                                        <div key={member.user_id || member.participant_id || memberIndex} className="team-member">
-                                            <span className="member-name">
-                                                {member.user_id ? (
-                                                    <Link to={`/profile/${member.user_id}`}>
-                                                        {member.name || member.username}
-                                                    </Link>
-                                                ) : (
-                                                    <span>{member.name}</span>
-                                                )}
-                                            </span>
-                                            <span className="member-rating">
-                                                {ratingType === 'faceit' 
-                                                    ? member.faceit_elo || '—'
-                                                    : member.cs2_premier_rank || '—'
-                                                }
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
+                                {/* Действия администратора */}
+                                {isCreatorOrAdmin && (
+                                    <div className="participant-actions">
+                                        <button
+                                            onClick={() => onRemoveParticipant(participant.id)}
+                                            className="btn btn-danger btn-sm"
+                                            title="Удалить участника"
+                                        >
+                                            🗑️ Удалить
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
+                )}
+            </div>
+        </div>
+    );
+
+    /**
+     * ➕ Рендер таба "Добавить участников"
+     * 
+     * Отображает опции для добавления новых участников в турнир.
+     * Включает кнопки для поиска зарегистрированных пользователей и добавления гостей.
+     * 
+     * @returns {JSX.Element} Таб для добавления участников
+     */
+    const renderAddParticipants = () => (
+        <div className="unified-tab-content add-participants">
+            <div className="add-options">
+                <div className="add-option-card">
+                    <div className="option-icon">🔍</div>
+                    <h3>Найти зарегистрированного пользователя</h3>
+                    <p>Поиск среди зарегистрированных пользователей системы</p>
+                    <button
+                        onClick={onShowParticipantSearchModal}
+                        className="btn btn-primary"
+                        disabled={!isCreatorOrAdmin}
+                    >
+                        🔍 Открыть поиск
+                    </button>
+                </div>
+
+                <div className="add-option-card">
+                    <div className="option-icon">👤</div>
+                    <h3>Добавить незарегистрированного участника</h3>
+                    <p>Добавление участника-гостя без регистрации в системе</p>
+                    <button
+                        onClick={onShowAddParticipantModal}
+                        className="btn btn-secondary"
+                        disabled={!isCreatorOrAdmin}
+                    >
+                        ➕ Добавить гостя
+                    </button>
+                </div>
+            </div>
+
+            {!isCreatorOrAdmin && (
+                <div className="permission-notice">
+                    <p>ℹ️ Только создатель турнира и администраторы могут добавлять участников</p>
+                </div>
+            )}
+
+            {/* Переключатель типа рейтинга */}
+            {setRatingType && (
+                <div className="rating-type-selector">
+                    <h4>⚙️ Тип рейтинга для отображения:</h4>
+                    <div className="rating-options">
+                        <label className="rating-option">
+                            <input
+                                type="radio"
+                                value="faceit"
+                                checked={ratingType === 'faceit'}
+                                onChange={(e) => setRatingType(e.target.value)}
+                            />
+                            <span>🎯 FACEIT ELO</span>
+                        </label>
+                        <label className="rating-option">
+                            <input
+                                type="radio"
+                                value="cs2"
+                                checked={ratingType === 'cs2'}
+                                onChange={(e) => setRatingType(e.target.value)}
+                            />
+                            <span>🏆 CS2 Premier</span>
+                        </label>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    /**
+     * 🎲 Рендер таба "Команды"
+     * 
+     * Отображает управление командами для mix турниров.
+     * Включает генерацию команд и просмотр существующих команд.
+     * 
+     * @returns {JSX.Element} Таб для управления командами
+     */
+    const renderTeams = () => (
+        <div className="unified-tab-content teams">
+            {tournament.type === 'mix' ? (
+                <div className="teams-content">
+                    {/* Генератор команд */}
+                    {isCreatorOrAdmin && (
+                        <div className="team-generator-section">
+                            <h3>🎲 Генератор команд</h3>
+                            <TeamGenerator
+                                participants={participants}
+                                onTeamsGenerated={onTeamsGenerated}
+                                ratingType={ratingType}
+                                calculateTeamAverageRating={calculateTeamAverageRating}
+                            />
+                        </div>
+                    )}
+
+                    {/* Просмотр команд */}
+                    {mixedTeams.length > 0 && (
+                        <div className="teams-display">
+                            <h3>👥 Сформированные команды ({mixedTeams.length})</h3>
+                            <div className="teams-grid">
+                                {mixedTeams.map((team, index) => (
+                                    <div key={index} className="team-card">
+                                        <div className="team-header">
+                                            <h4>Команда {index + 1}</h4>
+                                            <div className="team-average-rating">
+                                                Средний рейтинг: {calculateTeamAverageRating ? Math.round(calculateTeamAverageRating(team)) : 'Н/Д'}
+                                            </div>
+                                        </div>
+                                        <div className="team-members">
+                                            {team.members.map(member => (
+                                                <div key={member.id} className="team-member">
+                                                    <img
+                                                        src={ensureHttps(member.avatar_url) || '/default-avatar.png'}
+                                                        alt={member.name}
+                                                        className="member-avatar"
+                                                        onError={(e) => {
+                                                            e.target.src = '/default-avatar.png';
+                                                        }}
+                                                    />
+                                                    <div className="member-info">
+                                                        <span className="member-name">{member.name}</span>
+                                                        <span className="member-rating">
+                                                            {formatRating(getRating(member))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {mixedTeams.length === 0 && (
+                        <div className="no-teams-message">
+                            <p>🎲 Команды еще не сформированы</p>
+                            {isCreatorOrAdmin && participants.length >= 2 && (
+                                <p>Используйте генератор команд выше для создания команд</p>
+                            )}
+                        </div>
+                    )}
                 </div>
             ) : (
-                <div className="no-teams-state">
-                    <div className="no-teams-icon">🎲</div>
-                    <h4>Команды не сформированы</h4>
-                    <p>
-                        {participants.length < 2 
-                            ? 'Для генерации команд необходимо минимум 2 участника'
-                            : 'Используйте генератор команд выше для создания команд'
-                        }
-                    </p>
+                <div className="not-mix-tournament">
+                    <div className="info-message">
+                        <div className="info-icon">ℹ️</div>
+                        <h3>Управление командами недоступно</h3>
+                        <p>Функция управления командами доступна только для mix турниров</p>
+                        <p>Тип текущего турнира: <strong>{tournament.type}</strong></p>
+                    </div>
                 </div>
             )}
         </div>
     );
 
-    // 🎯 РЕНДЕР ВКЛАДКИ "СТАТИСТИКА"
-    const renderStatisticsTab = () => (
-        <div className="statistics-tab">
-            <div className="statistics-header">
-                <h4>Статистика участников</h4>
-                <p>Общая информация о составе турнира</p>
-            </div>
-            
-            <div className="statistics-grid">
-                <div className="stat-card">
-                    <div className="stat-icon">👥</div>
-                    <div className="stat-content">
-                        <div className="stat-value">{statistics.total}</div>
-                        <div className="stat-label">Всего участников</div>
+    /**
+     * 📊 Рендер таба "Статистика"
+     * 
+     * Отображает детальную статистику участников, команд и турнира.
+     * Включает общие метрики, рейтинговую статистику и прогресс заполнения.
+     * 
+     * @returns {JSX.Element} Таб со статистикой
+     */
+    const renderStatistics = () => (
+        <div className="unified-tab-content statistics">
+            <div className="stats-grid">
+                {/* Общая статистика */}
+                <div className="stats-card">
+                    <h3>👥 Общая статистика</h3>
+                    <div className="stats-list">
+                        <div className="stat-item">
+                            <span className="stat-label">Всего участников:</span>
+                            <span className="stat-value">{participantsStats.totalCount}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Зарегистрированные:</span>
+                            <span className="stat-value registered">{participantsStats.registeredCount}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Гости:</span>
+                            <span className="stat-value unregistered">{participantsStats.unregisteredCount}</span>
+                        </div>
                     </div>
                 </div>
-                
-                <div className="stat-card">
-                    <div className="stat-icon">✅</div>
-                    <div className="stat-content">
-                        <div className="stat-value">{statistics.registered}</div>
-                        <div className="stat-label">Зарегистрированных</div>
-                    </div>
-                </div>
-                
-                <div className="stat-card">
-                    <div className="stat-icon">👤</div>
-                    <div className="stat-content">
-                        <div className="stat-value">{statistics.unregistered}</div>
-                        <div className="stat-label">Незарегистрированных</div>
-                    </div>
-                </div>
-                
-                {statistics.hasRatings && (
-                    <>
-                        <div className="stat-card">
-                            <div className="stat-icon">📊</div>
-                            <div className="stat-content">
-                                <div className="stat-value">{statistics.avgRating}</div>
-                                <div className="stat-label">Средний рейтинг</div>
-                            </div>
-                        </div>
-                        
-                        <div className="stat-card">
-                            <div className="stat-icon">📈</div>
-                            <div className="stat-content">
-                                <div className="stat-value">{statistics.maxRating}</div>
-                                <div className="stat-label">Максимальный</div>
-                            </div>
-                        </div>
-                        
-                        <div className="stat-card">
-                            <div className="stat-icon">📉</div>
-                            <div className="stat-content">
-                                <div className="stat-value">{statistics.minRating}</div>
-                                <div className="stat-label">Минимальный</div>
-                            </div>
-                        </div>
-                    </>
-                )}
-                
-                {/* Статистика команд для mix турниров */}
-                {tournament?.format === 'mix' && mixedTeams.length > 0 && (
-                    <>
-                        <div className="stat-card">
-                            <div className="stat-icon">🎲</div>
-                            <div className="stat-content">
-                                <div className="stat-value">{mixedTeams.length}</div>
-                                <div className="stat-label">Команд сформировано</div>
-                            </div>
-                        </div>
-                        
-                        <div className="stat-card">
-                            <div className="stat-icon">⚖️</div>
-                            <div className="stat-content">
-                                <div className="stat-value">
-                                    {Math.round(participants.length / Math.max(mixedTeams.length, 1))}
-                                </div>
-                                <div className="stat-label">Участников в команде</div>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
-            
-            {tournament?.max_participants && (
-                <div className="capacity-indicator">
-                    <div className="capacity-header">
-                        <span>Заполненность турнира</span>
-                        <span>{statistics.total} / {tournament.max_participants}</span>
-                    </div>
-                    <div className="capacity-bar">
-                        <div 
-                            className="capacity-fill"
-                            style={{ 
-                                width: `${Math.min((statistics.total / tournament.max_participants) * 100, 100)}%` 
-                            }}
-                        />
-                    </div>
-                    <div className="capacity-status">
-                        {statistics.total >= tournament.max_participants ? (
-                            <span className="status-full">🔴 Турнир заполнен</span>
-                        ) : (
-                            <span className="status-available">
-                                🟢 Доступно мест: {tournament.max_participants - statistics.total}
+
+                {/* Рейтинговая статистика */}
+                <div className="stats-card">
+                    <h3>⭐ Рейтинговая статистика</h3>
+                    <div className="stats-list">
+                        <div className="stat-item">
+                            <span className="stat-label">Средний рейтинг:</span>
+                            <span className={`stat-value ${getRatingClass(participantsStats.avgRating)}`}>
+                                {formatRating(participantsStats.avgRating)}
                             </span>
-                        )}
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Максимальный:</span>
+                            <span className={`stat-value ${getRatingClass(participantsStats.maxRating)}`}>
+                                {formatRating(participantsStats.maxRating)}
+                            </span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Минимальный:</span>
+                            <span className={`stat-value ${getRatingClass(participantsStats.minRating)}`}>
+                                {formatRating(participantsStats.minRating)}
+                            </span>
+                        </div>
                     </div>
                 </div>
-            )}
+
+                {/* Статистика команд */}
+                {tournament.type === 'mix' && (
+                    <div className="stats-card">
+                        <h3>🎲 Статистика команд</h3>
+                        <div className="stats-list">
+                            <div className="stat-item">
+                                <span className="stat-label">Сформировано команд:</span>
+                                <span className="stat-value">{participantsStats.teamsCount}</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-label">Средний размер команды:</span>
+                                <span className="stat-value">{participantsStats.avgTeamSize || 'Н/Д'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Заполненность турнира */}
+                {participantsStats.maxParticipants && (
+                    <div className="stats-card">
+                        <h3>📊 Заполненность турнира</h3>
+                        <div className="fill-progress">
+                            <div className="progress-bar">
+                                <div 
+                                    className="progress-fill"
+                                    style={{ width: `${participantsStats.fillPercentage}%` }}
+                                ></div>
+                            </div>
+                            <div className="progress-text">
+                                {participantsStats.totalCount} / {participantsStats.maxParticipants} 
+                                ({participantsStats.fillPercentage}%)
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Дополнительная информация */}
+            <div className="stats-additional">
+                <h4>ℹ️ Дополнительная информация</h4>
+                <ul>
+                    <li>Тип турнира: <strong>{tournament.type}</strong></li>
+                    <li>Отображаемый рейтинг: <strong>{ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier'}</strong></li>
+                    <li>Статус турнира: <strong>{tournament.status}</strong></li>
+                    {tournament.max_participants && (
+                        <li>Ограничение участников: <strong>{tournament.max_participants}</strong></li>
+                    )}
+                </ul>
+            </div>
         </div>
     );
 
+    // 🎨 ОСНОВНОЙ РЕНДЕР
     return (
         <div className="unified-participants-panel">
-            {/* Навигация по табам */}
+            {/* 📋 НАВИГАЦИЯ ПО ТАБАМ */}
             <div className="unified-tabs-navigation">
-                {tabs
-                    .filter(tab => tab.show !== false)
-                    .map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`unified-tab-btn ${activeTab === tab.id ? 'active' : ''} ${tab.disabled ? 'disabled' : ''}`}
-                            onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                            disabled={tab.disabled}
-                        >
-                            <span className="tab-icon">{tab.icon}</span>
-                            <span className="tab-label">{tab.label}</span>
-                            {tab.count !== undefined && (
-                                <span className="tab-count">{tab.count}</span>
-                            )}
-                        </button>
-                    ))}
+                {tabsConfig.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => handleTabChange(tab.id)}
+                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                    >
+                        <span className="tab-icon">{tab.icon}</span>
+                        <span className="tab-label">{tab.label}</span>
+                        {tab.getCount && tab.getCount() !== null && (
+                            <span className="tab-count">{tab.getCount()}</span>
+                        )}
+                    </button>
+                ))}
             </div>
-            
-            {/* Контент табов */}
-            <div className="unified-tab-content">
-                {activeTab === 'current' && renderCurrentParticipantsTab()}
-                {activeTab === 'add' && renderAddParticipantsTab()}
-                {activeTab === 'teams' && renderTeamsTab()}
-                {activeTab === 'statistics' && renderStatisticsTab()}
+
+            {/* 📄 СОДЕРЖИМОЕ ТАБОВ */}
+            <div className="unified-tabs-content">
+                {activeTab === 'current' && renderCurrentParticipants()}
+                {activeTab === 'add' && renderAddParticipants()}
+                {activeTab === 'teams' && renderTeams()}
+                {activeTab === 'stats' && renderStatistics()}
             </div>
         </div>
     );
