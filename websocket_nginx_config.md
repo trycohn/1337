@@ -5,205 +5,300 @@ WebSocket соединения Socket.IO не работают на production �
 
 ## 🛠️ Решение
 
-### 1. Обновить конфигурацию Nginx
-
-Подключиться к серверу:
+### 1. Подключиться к серверу
 ```bash
 ssh root@80.87.200.23
 # Пароль: 01012006Fortnite!
 ```
 
-Отредактировать конфигурацию Nginx:
+### 2. Найти текущую конфигурацию Nginx
+```bash
+# Проверяем, где находится конфигурация сайта
+nginx -t
+ls -la /etc/nginx/sites-available/
+ls -la /etc/nginx/sites-enabled/
+
+# Ищем конфигурационный файл для 1337community.com
+find /etc/nginx -name "*1337*" -type f
+find /etc/nginx -name "*community*" -type f
+
+# Если не найден, проверяем основную конфигурацию
+cat /etc/nginx/nginx.conf | grep -A 5 -B 5 "1337\|community"
+```
+
+### 3. Определить правильный файл конфигурации
+```bash
+# Обычно это один из этих файлов:
+ls -la /etc/nginx/sites-available/default
+ls -la /etc/nginx/sites-available/1337community.com
+ls -la /etc/nginx/conf.d/default.conf
+
+# Проверяем содержимое активных конфигураций
+cat /etc/nginx/sites-enabled/* | grep -A 10 -B 10 "server_name.*1337"
+```
+
+### 4. Создать/обновить конфигурацию с поддержкой WebSocket
+
+#### Вариант A: Если используется `/etc/nginx/sites-available/default`
+```bash
+sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
+sudo nano /etc/nginx/sites-available/default
+```
+
+#### Вариант B: Если используется отдельный файл для домена
 ```bash
 sudo nano /etc/nginx/sites-available/1337community.com
 ```
 
-### 2. Добавить/обновить конфигурацию для Socket.IO
+### 5. Добавить эту конфигурацию:
 
 ```nginx
+# 🔧 ПОЛНАЯ КОНФИГУРАЦИЯ NGINX ДЛЯ 1337 COMMUNITY + WEBSOCKET
+
+# Upstream для Node.js backend (1337-backend)
+upstream nodejs_backend {
+    server 127.0.0.1:3000;
+    keepalive 64;
+}
+
+# HTTP -> HTTPS редирект
 server {
     listen 80;
     listen [::]:80;
+    server_name 1337community.com www.1337community.com;
+    
+    # Перенаправляем все HTTP запросы на HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+# ОСНОВНОЙ HTTPS СЕРВЕР
+server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
     
     server_name 1337community.com www.1337community.com;
     
-    # SSL сертификаты (если используются)
-    ssl_certificate /path/to/your/certificate.pem;
-    ssl_certificate_key /path/to/your/private.key;
+    # 🔐 SSL НАСТРОЙКИ (ОБЯЗАТЕЛЬНО ОБНОВИТЬ ПУТИ К СЕРТИФИКАТАМ)
+    ssl_certificate /path/to/your/fullchain.pem;  # ⚠️ ОБНОВИТЬ!
+    ssl_certificate_key /path/to/your/privkey.pem;  # ⚠️ ОБНОВИТЬ!
     
-    # Редирект HTTP на HTTPS
-    if ($scheme != "https") {
-        return 301 https://$server_name$request_uri;
-    }
+    # Современные SSL настройки
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
     
-    # Основная проксификация на Node.js приложение
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-Port $server_port;
-        
-        # Важные настройки для WebSocket
-        proxy_cache_bypass $http_upgrade;
-        proxy_read_timeout 86400;
-        proxy_send_timeout 86400;
-        proxy_connect_timeout 86400;
-    }
+    # 📁 СТАТИЧЕСКИЕ ФАЙЛЫ (React build)
+    root /var/www/1337community.com/frontend/build;
+    index index.html;
     
-    # 🔌 Специальная конфигурация для Socket.IO WebSocket
+    # 🔧 ОСНОВНЫЕ НАСТРОЙКИ
+    client_max_body_size 50M;
+    proxy_read_timeout 300s;
+    proxy_connect_timeout 75s;
+    
+    # 🌐 СПЕЦИАЛЬНЫЙ LOCATION ДЛЯ SOCKET.IO WEBSOCKET
     location /socket.io/ {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
+        proxy_pass http://nodejs_backend;
         
-        # Критически важные заголовки для WebSocket
+        # ⚡ КРИТИЧЕСКИ ВАЖНЫЕ WEBSOCKET ЗАГОЛОВКИ
+        proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
+        
+        # 🔗 ПРОКСИРОВАНИЕ ЗАГОЛОВКОВ
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        
+        # ⏱️ ТАЙМАУТЫ ДЛЯ WEBSOCKET
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 86400s;  # 24 часа для long-polling
+        
+        # 🚫 ОТКЛЮЧАЕМ КЭШИРОВАНИЕ
+        proxy_buffering off;
+        proxy_cache off;
+        
+        # 📡 ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ ДЛЯ СТАБИЛЬНОСТИ
+        proxy_redirect off;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    # 🔌 API МАРШРУТЫ (проксируем на Node.js)
+    location /api/ {
+        proxy_pass http://nodejs_backend;
+        
+        # 📋 СТАНДАРТНЫЕ PROXY ЗАГОЛОВКИ
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         
-        # Расширенные таймауты для WebSocket соединений
-        proxy_read_timeout 3600;
-        proxy_send_timeout 3600;
-        proxy_connect_timeout 3600;
+        # ⏱️ ТАЙМАУТЫ
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
         
-        # Отключаем кеширование для WebSocket
-        proxy_buffering off;
-        proxy_cache_bypass $http_upgrade;
-        
-        # Дополнительные настройки для стабильности
-        proxy_redirect off;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-Server $host;
-        proxy_set_header X-Forwarded-Port $server_port;
+        # 📤 БУФЕРИЗАЦИЯ
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
     }
     
-    # Статические файлы (опционально)
-    location /static/ {
-        alias /var/www/1337community.com/frontend/build/static/;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+    # 📁 UPLOADS (статические файлы через Node.js)
+    location /uploads/ {
+        proxy_pass http://nodejs_backend;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # 🕐 Кэширование для статических файлов
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
     }
+    
+    # 🎯 REACT SPA - ВСЕ ОСТАЛЬНЫЕ ЗАПРОСЫ
+    location / {
+        try_files $uri $uri/ @react_fallback;
+        
+        # 🕐 Кэширование статических ресурсов
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            try_files $uri =404;
+        }
+    }
+    
+    # 🔄 FALLBACK ДЛЯ REACT ROUTER
+    location @react_fallback {
+        rewrite ^.*$ /index.html last;
+    }
+    
+    # 🚫 БЕЗОПАСНОСТЬ
+    location ~ /\. {
+        deny all;
+    }
+    
+    # 📊 ЛОГИ
+    access_log /var/log/nginx/1337community_access.log;
+    error_log /var/log/nginx/1337community_error.log;
 }
 ```
 
-### 3. Проверить и перезагрузить Nginx
+### 6. Найти и обновить пути к SSL сертификатам
 
 ```bash
-# Проверить синтаксис конфигурации
+# Ищем SSL сертификаты
+find /etc -name "*1337*" -type f | grep -E '\.(crt|pem|key)$'
+find /etc -name "*community*" -type f | grep -E '\.(crt|pem|key)$'
+find /etc/letsencrypt -name "*1337*" -type f 2>/dev/null
+find /etc/ssl -name "*1337*" -type f 2>/dev/null
+
+# Если используется Let's Encrypt:
+ls -la /etc/letsencrypt/live/1337community.com/
+ls -la /etc/letsencrypt/live/
+
+# Обновляем пути в конфигурации:
+# ssl_certificate /etc/letsencrypt/live/1337community.com/fullchain.pem;
+# ssl_certificate_key /etc/letsencrypt/live/1337community.com/privkey.pem;
+```
+
+### 7. Проверить и применить конфигурацию
+
+```bash
+# Проверяем синтаксис конфигурации
 sudo nginx -t
 
-# Если все OK, перезагрузить Nginx
+# Если есть ошибки, исправляем их
+# Если всё ОК, перезагружаем Nginx
 sudo systemctl reload nginx
 
-# Проверить статус
+# Проверяем статус
 sudo systemctl status nginx
 ```
 
-### 4. Перезапустить Node.js приложение
+### 8. Проверить работу Node.js backend
 
 ```bash
-# Перейти в директорию проекта
+# Проверяем, что 1337-backend работает на порту 3000
+sudo ss -tulpn | grep :3000
+pm2 status
+
+# Если не работает, запускаем:
 cd /var/www/1337community.com
-
-# Остановить текущий процесс (если запущен через PM2)
-pm2 stop 1337-backend
-
-# Обновить код с GitHub
-git pull origin main
-
-# Установить зависимости (если нужно)
-npm install
-
-# Собрать frontend (если нужно)
-cd frontend && npm run build && cd ..
-
-# Запустить приложение
-pm2 start 1337-backend
-
-# Проверить логи
-pm2 logs 1337-backend
+pm2 start ecosystem.config.js --only 1337-backend
+# или
+pm2 restart 1337-backend
 ```
 
-### 5. Альтернативная простая конфигурация (если выше не работает)
-
-Если WebSocket все еще не работает, попробуйте эту упрощенную конфигурацию:
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name 1337community.com www.1337community.com;
-    
-    # SSL настройки...
-    
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-
-# Добавить в nginx.conf в секцию http:
-map $http_upgrade $connection_upgrade {
-    default upgrade;
-    '' close;
-}
-```
-
-### 6. Проверить работу WebSocket
-
-После применения конфигурации:
-
-1. Откройте браузер и перейдите на https://1337community.com
-2. Откройте Developer Tools (F12)
-3. Проверьте консоль на наличие ошибок WebSocket
-4. Проверьте вкладку Network для Socket.IO соединений
-
-### 7. Отладка (если проблемы остаются)
+### 9. Тестирование WebSocket соединения
 
 ```bash
-# Проверить, слушает ли Node.js на порту 3000
+# Проверяем логи Nginx
+sudo tail -f /var/log/nginx/1337community_error.log
+
+# Проверяем логи Node.js
+pm2 logs 1337-backend --lines 50
+
+# Тестируем WebSocket соединение из браузера:
+# - Откройте https://1337community.com
+# - Откройте DevTools -> Console
+# - Должны увидеть: "✅ WebSocket подключен к турниру"
+```
+
+### 10. Debugging (если не работает)
+
+```bash
+# Проверяем, слушает ли Node.js на правильном порту
 sudo netstat -tulpn | grep :3000
 
-# Проверить логи Nginx
-sudo tail -f /var/log/nginx/error.log
-sudo tail -f /var/log/nginx/access.log
+# Проверяем процессы PM2
+pm2 list
 
-# Проверить логи приложения
-pm2 logs 1337-backend --lines 50
+# Проверяем логи backend'а
+pm2 logs 1337-backend --lines 100
+
+# Проверяем логи Nginx
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/1337community_error.log
+
+# Перезапускаем всё
+pm2 restart 1337-backend
+sudo systemctl restart nginx
 ```
 
-### 8. Тестирование локального подключения
+### 11. Проверка firewall (если используется)
 
 ```bash
-# Тест подключения к WebSocket напрямую
-curl -i -N -H "Connection: Upgrade" \
-     -H "Upgrade: websocket" \
-     -H "Host: localhost:3000" \
-     -H "Origin: http://localhost:3000" \
-     http://localhost:3000/socket.io/?EIO=4&transport=websocket
+# Проверяем правила firewall
+sudo ufw status
+sudo iptables -L
+
+# Если нужно, разрешаем порты:
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 3000/tcp
 ```
 
-## 🔍 Дополнительные проверки
+## ✅ Ожидаемый результат
 
-1. **Firewall**: Убедитесь, что порты 80 и 443 открыты
-2. **SSL сертификат**: Проверьте, что SSL сертификат валиден
-3. **Node.js процесс**: Убедитесь, что приложение запущено и слушает на порту 3000
-4. **Память**: Проверьте, что сервер не перегружен
+После применения конфигурации:
+1. ✅ HTTP запросы должны перенаправляться на HTTPS
+2. ✅ API маршруты `/api/*` должны работать через Node.js
+3. ✅ WebSocket соединения `/socket.io/*` должны работать
+4. ✅ Статические файлы React должны отдаваться из `/var/www/1337community.com/frontend/build`
+5. ✅ В консоли браузера должно появиться: "✅ WebSocket подключен к турниру"
 
-Эта конфигурация должна решить проблему с WebSocket соединениями Socket.IO! 
+## 🚨 Критически важные моменты
+
+1. **SSL сертификаты**: Обязательно проверьте и обновите пути к SSL сертификатам
+2. **Backup**: Перед изменениями сделайте backup существующей конфигурации
+3. **Тестирование**: После каждого изменения проверяйте `nginx -t`
+4. **Логи**: Всегда проверяйте логи при проблемах 
