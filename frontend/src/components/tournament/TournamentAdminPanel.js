@@ -44,45 +44,103 @@ const TournamentAdminPanel = ({
         return statusMap[tournament?.status] || { icon: '❓', text: 'Неизвестно', class: 'status-unknown' };
     };
 
+    // 🎯 НОВАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ СЛЕДУЮЩЕГО ЭТАПА
+    const getNextStageAction = () => {
+        const hasMatches = matches && matches.length > 0;
+        const hasBracket = hasMatches;
+        const participantsCount = participants?.length || 0;
+
+        switch (tournament?.status) {
+            case 'registration':
+            case 'active':
+                if (!hasBracket) {
+                    if (participantsCount >= 2) {
+                        return {
+                            action: 'generate',
+                            label: '⚡ Создать сетку',
+                            className: 'next-stage-btn generate-stage',
+                            handler: onGenerateBracket
+                        };
+                    } else {
+                        return {
+                            action: 'waiting',
+                            label: '⏳ Ожидание участников',
+                            className: 'next-stage-btn waiting-stage',
+                            disabled: true
+                        };
+                    }
+                } else {
+                    return {
+                        action: 'start',
+                        label: '🚀 Начать турнир',
+                        className: 'next-stage-btn start-stage',
+                        handler: onStartTournament
+                    };
+                }
+
+            case 'in_progress':
+                return {
+                    action: 'end',
+                    label: '🏁 Завершить турнир',
+                    className: 'next-stage-btn end-stage',
+                    handler: onEndTournament
+                };
+
+            case 'completed':
+                return {
+                    action: 'completed',
+                    label: '✅ Турнир завершен',
+                    className: 'next-stage-btn completed-stage',
+                    disabled: true
+                };
+
+            default:
+                return null;
+        }
+    };
+
     const statusDisplay = getStatusDisplay();
+    const nextStageAction = getNextStageAction();
     const hasMatches = matches && matches.length > 0;
     const hasBracket = hasMatches;
 
     return (
         <div className="tournament-admin-panel-v2">
-            {/* 🎯 ЗАГОЛОВОК С СТАТУСОМ И КНОПКАМИ УПРАВЛЕНИЯ */}
+            {/* 🎯 ЗАГОЛОВОК С СТАТУСОМ И КНОПКОЙ СЛЕДУЮЩЕГО ЭТАПА */}
             <div className="admin-panel-header-v2">
                 <div className="header-main-info">
                     <h3>⚙️ Панель управления турниром</h3>
-                    <div className={`tournament-status-v2 ${statusDisplay.class}`}>
-                        <span className="status-icon-v2">{statusDisplay.icon}</span>
-                        <span className="status-text-v2">{statusDisplay.text}</span>
+                    <div className="status-and-action">
+                        <div className={`tournament-status-v2 ${statusDisplay.class}`}>
+                            <span className="status-icon-v2">{statusDisplay.icon}</span>
+                            <span className="status-text-v2">{statusDisplay.text}</span>
+                        </div>
+                        
+                        {/* 🎯 КНОПКА СЛЕДУЮЩЕГО ЭТАПА */}
+                        {nextStageAction && (
+                            <button 
+                                className={nextStageAction.className}
+                                onClick={nextStageAction.handler}
+                                disabled={nextStageAction.disabled || isLoading}
+                                title={nextStageAction.label}
+                            >
+                                {nextStageAction.label}
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* 🎯 КНОПКИ УПРАВЛЕНИЯ СТАТУСОМ В ЗАГОЛОВКЕ */}
+                {/* 🎯 ДОПОЛНИТЕЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ (ЕСЛИ НУЖНЫ) */}
                 <div className="header-controls">
-                    {/* Начать турнир */}
+                    {/* Перегенерация сетки */}
                     {tournament?.status === 'active' && hasBracket && (
                         <button 
-                            className="header-control-btn start-btn-v2"
-                            onClick={onStartTournament}
+                            className="header-control-btn secondary-btn-v2"
+                            onClick={onRegenerateBracket}
                             disabled={isLoading}
-                            title="Запустить турнир"
+                            title="Пересоздать турнирную сетку"
                         >
-                            🚀 Начать турнир
-                        </button>
-                    )}
-
-                    {/* Завершить турнир */}
-                    {tournament?.status === 'in_progress' && (
-                        <button 
-                            className="header-control-btn end-btn-v2"
-                            onClick={onEndTournament}
-                            disabled={isLoading}
-                            title="Завершить турнир"
-                        >
-                            🏁 Завершить турнир
+                            🔄 Перегенерировать
                         </button>
                     )}
                 </div>

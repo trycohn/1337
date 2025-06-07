@@ -5660,7 +5660,6 @@ a.participant-name:hover {
 .empty-state {
     text-align: center;
     padding: 3rem 2rem;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
     border-radius: 12px;
     border: 2px dashed #dee2e6;
 }

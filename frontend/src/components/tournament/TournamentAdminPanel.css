@@ -31,8 +31,9 @@
 
 .header-main-info {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
 }
 
 .admin-panel-header-v2 h3 {
@@ -44,6 +45,14 @@
     letter-spacing: 0.5px;
 }
 
+/* 🎯 НОВЫЙ КОНТЕЙНЕР ДЛЯ СТАТУСА И КНОПКИ */
+.status-and-action {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
 .tournament-status-v2 {
     display: flex;
     align-items: center;
@@ -52,6 +61,7 @@
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 .status-icon-v2 {
@@ -64,6 +74,76 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: #ffffff;
+}
+
+/* 🎯 КНОПКА СЛЕДУЮЩЕГО ЭТАПА */
+.next-stage-btn {
+    padding: 10px 16px;
+    border: 1px solid;
+    border-radius: 0;
+    cursor: pointer;
+    font-weight: 300;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    background-color: transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.next-stage-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Стили для разных этапов */
+.generate-stage {
+    color: #ffa500;
+    border-color: #ffa500;
+}
+
+.generate-stage:hover:not(:disabled) {
+    background-color: #ffa500;
+    color: #000000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 165, 0, 0.3);
+}
+
+.start-stage {
+    color: #4caf50;
+    border-color: #4caf50;
+}
+
+.start-stage:hover:not(:disabled) {
+    background-color: #4caf50;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.end-stage {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+.end-stage:hover:not(:disabled) {
+    background-color: #ff6b6b;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+}
+
+.waiting-stage {
+    color: #888888;
+    border-color: #888888;
+}
+
+.completed-stage {
+    color: #4caf50;
+    border-color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.1);
 }
 
 /* Кнопки управления в заголовке */
@@ -86,33 +166,16 @@
     white-space: nowrap;
 }
 
-.start-btn-v2 {
-    color: #4caf50;
-    border-color: #4caf50;
+.secondary-btn-v2 {
+    color: #888888;
+    border-color: #888888;
 }
 
-.start-btn-v2:hover:not(:disabled) {
-    background-color: #4caf50;
+.secondary-btn-v2:hover:not(:disabled) {
+    background-color: #888888;
     color: #ffffff;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
-}
-
-.end-btn-v2 {
-    color: #ff6b6b;
-    border-color: #ff6b6b;
-}
-
-.end-btn-v2:hover:not(:disabled) {
-    background-color: #ff6b6b;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
-}
-
-.header-control-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+    box-shadow: 0 4px 8px rgba(136, 136, 136, 0.3);
 }
 
 /* ===== КОНТЕНТ ПАНЕЛИ ===== */
@@ -557,7 +620,14 @@
     }
     
     .header-main-info {
+        align-items: center;
+        text-align: center;
+    }
+    
+    .status-and-action {
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 15px;
     }
     
     .header-controls {
@@ -577,6 +647,28 @@
     .admin-panel-content-v2 {
         padding: 15px;
         gap: 20px;
+    }
+    
+    .status-and-action {
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
+    
+    .next-stage-btn {
+        width: 100%;
+        text-align: center;
+        max-width: 280px;
+    }
+    
+    .header-controls {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .header-control-btn {
+        width: 100%;
+        max-width: 250px;
     }
     
     .info-stats {
@@ -604,8 +696,7 @@
         flex-direction: column;
     }
     
-    .action-btn-v2,
-    .header-control-btn {
+    .action-btn-v2 {
         width: 100%;
         text-align: center;
     }
@@ -643,6 +734,23 @@
         padding: 10px;
     }
     
+    .status-and-action {
+        gap: 10px;
+    }
+    
+    .next-stage-btn,
+    .header-control-btn {
+        padding: 8px 12px;
+        font-size: 0.8em;
+        width: 100%;
+        max-width: none;
+    }
+    
+    .tournament-status-v2 {
+        width: 100%;
+        justify-content: center;
+    }
+    
     .info-stats {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -671,12 +779,6 @@
     
     .participant-elo-v2 {
         font-size: 0.7em;
-    }
-    
-    .action-btn-v2,
-    .header-control-btn {
-        padding: 8px 12px;
-        font-size: 0.8em;
     }
     
     .add-btn-compact {
@@ -734,4 +836,9 @@
 /* ===== ПЕРЕХОДЫ ===== */
 * {
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.header-control-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 } 
