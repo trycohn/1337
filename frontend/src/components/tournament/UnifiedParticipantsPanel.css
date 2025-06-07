@@ -43,18 +43,19 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
-    padding: 20px 0;
+    padding: 20px 5px;
 }
 
 .smart-participant-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     border-radius: 16px;
     padding: 20px;
-    border: 1px solid #e1e8ed;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid #404040;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    color: #e2e8f0;
 }
 
 .smart-participant-card::before {
@@ -77,7 +78,7 @@
 
 .smart-participant-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     border-color: #667eea;
 }
 
@@ -155,7 +156,7 @@
 .smart-participant-name {
     font-size: 18px;
     font-weight: 600;
-    color: #1e293b;
+    color: #f8fafc;
     text-decoration: none;
     transition: color 0.2s ease;
 }
@@ -200,24 +201,24 @@
 
 .smart-mini-stats {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 8px;
 }
 
 .stat-chip {
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: #f1f5f9;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
+    gap: 3px;
+    background: #374151;
+    padding: 3px 6px;
+    border-radius: 8px;
+    font-size: 9px;
     font-weight: 500;
-    color: #64748b;
+    color: #d1d5db;
 }
 
 .stat-icon {
-    font-size: 14px;
+    font-size: 10px;
 }
 
 .rating-progress {
@@ -226,7 +227,7 @@
 
 .progress-bar {
     height: 6px;
-    background: #e2e8f0;
+    background: #4a5568;
     border-radius: 3px;
     overflow: hidden;
     margin-bottom: 4px;
@@ -241,7 +242,7 @@
 
 .progress-text {
     font-size: 11px;
-    color: #64748b;
+    color: #a0aec0;
     font-weight: 500;
 }
 
