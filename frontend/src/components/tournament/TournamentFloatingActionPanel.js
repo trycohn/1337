@@ -1,7 +1,7 @@
 /**
- * TournamentFloatingActionPanel v1.0.0 - Плавающая панель действий
+ * TournamentFloatingActionPanel v1.0.1 - Плавающая панель действий
  * 
- * @version 1.0.0 
+ * @version 1.0.1 (Исправлено нарушение правил React Hooks)
  * @created 2025-01-22
  * @author 1337 Community Development Team
  * @purpose Компактная плавающая панель управления турниром
@@ -30,13 +30,10 @@ const TournamentFloatingActionPanel = ({
     const isAdminOrCreator = hasAccess || (user && tournament && 
         (tournament.creator_id === user.id || tournament.created_by === user.id || user.role === 'admin'));
 
-    // Если нет прав - не показываем панель вообще
-    if (!isAdminOrCreator || !tournament) {
-        return null;
-    }
-
     // Определяем доступные действия на основе статуса турнира
     const availableActions = useMemo(() => {
+        if (!tournament) return [];
+        
         const actions = [];
         const status = tournament.status;
 
@@ -107,8 +104,13 @@ const TournamentFloatingActionPanel = ({
 
         // Сортируем по приоритету (меньшее число = выше приоритет)
         return actions.sort((a, b) => a.priority - b.priority);
-    }, [tournament.status, hasBracket, hasMatches, onStartTournament, onEndTournament, 
+    }, [tournament, hasBracket, hasMatches, onStartTournament, onEndTournament, 
         onGenerateBracket, onRegenerateBracket, onClearResults]);
+
+    // Если нет прав или турнира - не показываем панель вообще
+    if (!isAdminOrCreator || !tournament) {
+        return null;
+    }
 
     // Если нет доступных действий - не показываем панель
     if (availableActions.length === 0) {
