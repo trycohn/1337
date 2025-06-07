@@ -20,6 +20,7 @@ import { ensureHttps } from '../utils/userHelpers';
 // Новые компоненты и хуки
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
+import UnifiedParticipantsPanel from './tournament/UnifiedParticipantsPanel';
 import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
 import MatchResultModal from './tournament/modals/MatchResultModal';
@@ -2040,222 +2041,26 @@ function TournamentDetails() {
                     {/* ВКЛАДКА: УЧАСТНИКИ */}
                     {activeTab === 'participants' && (
                         <div className="tab-content-tournamentdetails">
-                            <div className="participants-header">
-                                <h3>👥 Участники турнира ({tournament.participants?.length || 0})</h3>
-                                
-                                {/* КНОПКИ УПРАВЛЕНИЯ УЧАСТНИКАМИ */}
-                                {userPermissions.isAdminOrCreator && tournament.status === 'active' && (
-                                    <>
-                                        {(!matches || matches.length === 0) ? (
-                                            <div className="participant-management-controls">
-                                                <button 
-                                                    className="btn btn-primary add-participant-btn"
-                                                    onClick={() => modals.openParticipantSearchModal()}
-                                                    title="Найти и добавить зарегистрированного пользователя"
-                                                >
-                                                    🔍 Найти участника
-                                                </button>
-                                                <button 
-                                                    className="btn btn-secondary add-unregistered-btn"
-                                                    onClick={() => modals.openAddParticipantModal()}
-                                                    title="Добавить незарегистрированного участника"
-                                                >
-                                                    👤 Добавить незарегистрированного
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="management-blocked">
-                                                <p className="blocked-message">
-                                                    🚫 Управление участниками заблокировано - сетка уже сгенерирована
-                                                </p>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                            
-                            {tournament.participants && tournament.participants.length > 0 ? (
-                                <>
-                                    <div className="original-participants-list-wrapper">
-                                        <h3>📋 Список участников</h3>
-                                        <div className="original-participants-grid">
-                                            {tournament.participants.map((participant, index) => (
-                                                <div key={participant.id || index} className="participant-card">
-                                                    <div className="participant-avatar">
-                                                        {participant.avatar_url ? (
-                                                            <img 
-                                                                src={ensureHttps(participant.avatar_url)} 
-                                                                alt={participant.name || participant.username || 'Участник'}
-                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                            />
-                                                        ) : (
-                                                            <div className="avatar-placeholder">
-                                                                {(participant.name || participant.username || 'У').charAt(0).toUpperCase()}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="participant-info">
-                                                        {participant.user_id ? (
-                                                            <Link 
-                                                                to={`/profile/${participant.user_id}`}
-                                                                className="participant-name"
-                                                            >
-                                                                {participant.name || participant.username || 'Участник'}
-                                                            </Link>
-                                                        ) : (
-                                                            <span className="participant-name unregistered-participant">
-                                                                {participant.name || 'Незарегистрированный участник'}
-                                                                <span className="unregistered-badge">👤 Незарегистрированный</span>
-                                                            </span>
-                                                        )}
-                                                        {participant.faceit_elo && (
-                                                            <div className="participant-elo">
-                                                                FACEIT: {participant.faceit_elo}
-                                                            </div>
-                                                        )}
-                                                        {participant.cs2_premier_rank && (
-                                                            <div className="participant-rank">
-                                                                CS2: {participant.cs2_premier_rank}
-                                                            </div>
-                                                        )}
-                                                        {participant.email && (
-                                                            <div className="participant-email">
-                                                                📧 {participant.email}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {userPermissions.isAdminOrCreator && tournament.status === 'active' && (!matches || matches.length === 0) && (
-                                                        <button
-                                                            className="remove-participant"
-                                                            onClick={() => handleRemoveParticipant(participant.id)}
-                                                            title="Удалить участника"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* MIX ТУРНИРЫ: ОТОБРАЖЕНИЕ КОМАНД */}
-                                    {tournament.format === 'mix' && mixedTeams && mixedTeams.length > 0 && (
-                                        <div className="mixed-teams">
-                                            <h3>🎲 Сформированные команды</h3>
-                                            <div className="mixed-teams-grid">
-                                                {mixedTeams.map((team, index) => (
-                                                    <div key={team.id || index} className="team-card">
-                                                        <h4>
-                                                            {team.name || `Команда ${index + 1}`}
-                                                            <span className="team-rating">
-                                                                Team elo: {calculateTeamAverageRating(team)}
-                                                            </span>
-                                                        </h4>
-                                                        <table className="team-table">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Игрок</th>
-                                                                    <th>{ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier'}</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {team.members?.map((member, memberIndex) => (
-                                                                    <tr key={member.user_id || member.participant_id || memberIndex}>
-                                                                        <td>
-                                                                            {member.user_id ? (
-                                                                                <Link to={`/profile/${member.user_id}`}>
-                                                                                    {member.name || member.username || 'Игрок'}
-                                                                                </Link>
-                                                                            ) : (
-                                                                                <span className="unregistered-member">
-                                                                                    {member.name || 'Игрок'}
-                                                                                </span>
-                                                                            )}
-                                                                        </td>
-                                                                        <td>
-                                                                            {ratingType === 'faceit' 
-                                                                                ? member.faceit_elo || '—'
-                                                                                : member.cs2_premier_rank || '—'
-                                                                            }
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="empty-state">
-                                    <p>👤 Пока нет участников</p>
-                                    {user && tournament.status === 'active' && !userPermissions.isParticipating && (!matches || matches.length === 0) && (
-                                        <button 
-                                            className="btn btn-primary"
-                                            onClick={handleParticipate}
-                                        >
-                                            Стать первым участником
-                                        </button>
-                                    )}
-                                    {userPermissions.isAdminOrCreator && tournament.status === 'active' && (!matches || matches.length === 0) && (
-                                        <div className="empty-state-management">
-                                            <p>Как организатор, вы можете:</p>
-                                            <div className="empty-state-actions">
-                                                <button 
-                                                    className="btn btn-primary"
-                                                    onClick={() => modals.openParticipantSearchModal()}
-                                                >
-                                                    🔍 Найти участников
-                                                </button>
-                                                <button 
-                                                    className="btn btn-secondary"
-                                                    onClick={() => modals.openAddParticipantModal()}
-                                                >
-                                                    👤 Добавить незарегистрированного
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {matches && matches.length > 0 && (
-                                        <div className="bracket-generated-notice">
-                                            <p className="info-message">
-                                                ℹ️ Сетка турнира уже сгенерирована - изменение участников недоступно
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* MIX ТУРНИРЫ: ГЕНЕРАЦИЯ КОМАНД */}
-                            {tournament.format === 'mix' && userPermissions.isAdminOrCreator && tournament.status === 'active' && (
-                                <div className="team-generator-section">
-                                    <h3>⚡ Управление командами</h3>
-                                    <div className="rating-type-selector">
-                                        <label>Тип рейтинга для балансировки:</label>
-                                        <select 
-                                            value={ratingType} 
-                                            onChange={(e) => setRatingType(e.target.value)}
-                                        >
-                                            <option value="faceit">FACEIT ELO</option>
-                                            <option value="cs2">CS2 Premier</option>
-                                        </select>
-                                    </div>
-                                    <TeamGenerator 
-                                        tournament={tournament}
-                                        participants={tournament.participants || []}
-                                        onTeamsGenerated={handleTeamsGenerated}
-                                        onTeamsUpdated={handleTeamsUpdated}
-                                        onRemoveParticipant={handleRemoveParticipant}
-                                        isAdminOrCreator={userPermissions.isAdminOrCreator}
-                                        toast={(msg) => {
-                                            setMessage(msg);
-                                            setTimeout(() => setMessage(''), 3000);
-                                        }}
-                                    />
-                                </div>
-                            )}
+                            <UnifiedParticipantsPanel
+                                tournament={tournament}
+                                participants={tournament.participants || []}
+                                matches={matches}
+                                mixedTeams={mixedTeams}
+                                isCreatorOrAdmin={userPermissions.isAdminOrCreator}
+                                ratingType={ratingType}
+                                onRemoveParticipant={handleRemoveParticipant}
+                                onShowAddParticipantModal={() => modals.openAddParticipantModal()}
+                                onShowParticipantSearchModal={() => modals.openParticipantSearchModal()}
+                                onTeamsGenerated={handleTeamsGenerated}
+                                onTeamsUpdated={handleTeamsUpdated}
+                                calculateTeamAverageRating={calculateTeamAverageRating}
+                                // Дополнительные пропсы для полной совместимости
+                                setRatingType={setRatingType}
+                                user={user}
+                                userPermissions={userPermissions}
+                                handleParticipate={handleParticipate}
+                                setMessage={setMessage}
+                            />
                         </div>
                     )}
 
