@@ -554,4 +554,21 @@ fi
 
 echo ""
 success "🎉 WebSocket Emergency Fix завершён!"
-echo "" 
+echo ""
+
+echo "🚀 Развертывание WebSocket исправлений на VDS..."
+
+# Копируем скрипты на сервер
+echo "📤 Копирование скриптов на сервер..."
+scp fix_websocket_issue.sh root@80.87.200.23:/var/www/1337community.com/
+scp apply_websocket_fix.sh root@80.87.200.23:/var/www/1337community.com/
+
+echo "✅ Скрипты скопированы"
+echo ""
+echo "📋 Теперь подключитесь к серверу и выполните:"
+echo ""
+echo "ssh root@80.87.200.23"
+echo "cd /var/www/1337community.com"
+echo "chmod +x fix_websocket_issue.sh apply_websocket_fix.sh"
+echo "./fix_websocket_issue.sh    # Для диагностики"
+echo "./apply_websocket_fix.sh    # Для исправления" 
