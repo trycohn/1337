@@ -307,7 +307,7 @@ console.log('🔌 Инициализация Socket.IO сервера...');
 const io = new SocketIOServer(server, {
   cors: {
     origin: [
-      "https://1337community.com", 
+      "https://1337community.com",
       "https://www.1337community.com",
       "http://localhost:3000",
       "http://localhost:3001"
@@ -315,9 +315,7 @@ const io = new SocketIOServer(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
-  // Указываем путь для Socket.IO
-  path: '/socket.io/',
-  // Настройки транспортов - сначала пытаемся websocket, потом fallback на polling
+  path: "/socket.io/",
   transports: ['websocket', 'polling'],
   // Настройки для production
   pingTimeout: 60000,
