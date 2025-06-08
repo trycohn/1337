@@ -315,6 +315,8 @@ const io = new SocketIOServer(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
+  // Указываем путь для Socket.IO
+  path: '/socket.io/',
   // Настройки транспортов - сначала пытаемся websocket, потом fallback на polling
   transports: ['websocket', 'polling'],
   // Настройки для production
