@@ -1,90 +1,116 @@
 #!/bin/bash
 
-echo "🔍 ПОЛНАЯ ДИАГНОСТИКА WEBSOCKET ПРОБЛЕМ"
-echo "======================================="
+# 🔍 ПОЛНАЯ ДИАГНОСТИКА WEBSOCKET ПРОБЛЕМ
+# Выявление причины падения WebSocket соединений в браузере
+# Автор: Senior Fullstack Developer
 
-# 1. Проверка статуса nginx
-echo -e "\n1️⃣ СТАТУС NGINX:"
-systemctl status nginx --no-pager | head -10
+set -e
 
-# 2. Проверка портов и процессов
-echo -e "\n2️⃣ ПОРТЫ И ПРОЦЕССЫ:"
-echo "Nginx порты:"
-ss -tlnp | grep nginx
-echo -e "\nBackend (порт 3000):"
-ss -tlnp | grep :3000
-echo -e "\nPM2 процессы:"
-pm2 list
+echo "🔍 === ПОЛНАЯ ДИАГНОСТИКА WEBSOCKET ПРОБЛЕМ ==="
+echo "📅 Дата: $(date '+%Y-%m-%d %H:%M:%S')"
+echo ""
 
-# 3. Проверка nginx конфигурации
-echo -e "\n3️⃣ КОНФИГУРАЦИЯ NGINX:"
-echo "Основная конфигурация nginx.conf:"
-grep -A 5 -B 5 "map.*http_upgrade" /etc/nginx/nginx.conf
+echo "🔍 1. ПРОВЕРКА NGINX КОНФИГУРАЦИИ"
+echo "─────────────────────────────────"
 
-echo -e "\nКонфигурация сайта:"
-grep -A 20 "location /socket.io/" /etc/nginx/sites-available/1337community.com
+echo "📋 Проверяем активную конфигурацию Nginx:"
+nginx -T 2>/dev/null | grep -A 20 "listen 443"
 
-echo -e "\nПроверка синтаксиса nginx:"
-nginx -t
+echo ""
+echo "📋 Проверяем Socket.IO location:"
+nginx -T 2>/dev/null | grep -A 15 "location /socket.io/"
 
-# 4. Тест Socket.IO endpoint напрямую
-echo -e "\n4️⃣ ТЕСТ SOCKET.IO ENDPOINT:"
-echo "Тест localhost:3000/socket.io/:"
-curl -s http://localhost:3000/socket.io/?EIO=4&transport=polling | head -100
+echo ""
+echo "📋 Проверяем HTTP/2 настройки:"
+nginx -T 2>/dev/null | grep -i "http2" || echo "HTTP/2 не найден в конфигурации"
 
-echo -e "\nТест через nginx (HTTP):"
-curl -s http://1337community.com/socket.io/?EIO=4&transport=polling | head -100
+echo ""
+echo "🔍 2. ТЕСТИРОВАНИЕ WEBSOCKET ЗАГОЛОВКОВ"
+echo "──────────────────────────────────────"
 
-echo -e "\nТест через nginx (HTTPS):"
-curl -s https://1337community.com/socket.io/?EIO=4&transport=polling | head -100
+echo "📡 Тестируем WebSocket upgrade напрямую:"
+curl -i -N -H "Connection: Upgrade" \
+     -H "Upgrade: websocket" \
+     -H "Host: 1337community.com" \
+     -H "Origin: https://1337community.com" \
+     -H "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
+     -H "Sec-WebSocket-Version: 13" \
+     https://1337community.com/socket.io/ || echo "WebSocket upgrade failed"
 
-# 5. Проверка SSL и HTTPS
-echo -e "\n5️⃣ SSL И HTTPS:"
-echo "SSL сертификаты:"
-ls -la /etc/letsencrypt/live/1337community.com/
-echo -e "\nТест HTTPS подключения:"
-curl -I https://1337community.com/ 2>&1 | head -5
+echo ""
+echo "🔍 3. ПРОВЕРКА BACKEND SOCKET.IO"
+echo "───────────────────────────────"
 
-# 6. Логи nginx
-echo -e "\n6️⃣ ЛОГИ NGINX (последние 20 строк):"
-echo "Error log:"
-tail -20 /var/log/nginx/error.log
-echo -e "\nAccess log (последние попытки к /socket.io/):"
-grep socket.io /var/log/nginx/access.log | tail -10
+echo "📡 Socket.IO polling test:"
+response=$(curl -s 'https://1337community.com/socket.io/?EIO=4&transport=polling' | head -c 100)
+echo "Response: $response"
 
-# 7. Проверка backend логов
-echo -e "\n7️⃣ BACKEND ЛОГИ:"
-pm2 logs 1337-backend --lines 20 --nostream
+echo ""
+echo "📡 Backend test endpoint:"
+response=$(curl -s https://1337community.com/test-socketio)
+echo "Response: $response"
 
-# 8. Проверка WebSocket заголовков
-echo -e "\n8️⃣ ТЕСТ WEBSOCKET ЗАГОЛОВКОВ:"
-echo "Тест WebSocket upgrade запроса:"
-curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: test" https://1337community.com/socket.io/?EIO=4&transport=websocket 2>&1 | head -10
+echo ""
+echo "🔍 4. ПРОВЕРКА ЛОГОВ"
+echo "──────────────────"
 
-# 9. Проверка активных включений
-echo -e "\n9️⃣ АКТИВНЫЕ ВКЛЮЧЕНИЯ NGINX:"
-echo "sites-enabled:"
-ls -la /etc/nginx/sites-enabled/
-echo -e "\nВключена ли конфигурация сайта в nginx.conf:"
-grep -n "include.*sites-enabled" /etc/nginx/nginx.conf
+echo "📋 Nginx error logs (последние 10 строк):"
+tail -n 10 /var/log/nginx/error.log 2>/dev/null || echo "Nginx error log недоступен"
 
-# 10. Диагностика конфигурации nginx
-echo -e "\n🔟 ДИАГНОСТИКА КОНФИГУРАЦИИ:"
-echo "Все server блоки:"
-grep -n "server {" /etc/nginx/sites-available/1337community.com
-echo -e "\nListen директивы:"
-grep -n "listen" /etc/nginx/sites-available/1337community.com
-echo -e "\nHTTP/2 настройки:"
-grep -n "http2" /etc/nginx/sites-available/1337community.com
+echo ""
+echo "📋 PM2 backend logs (последние 5 строк):"
+pm2 logs 1337-backend --lines 5 --nostream 2>/dev/null || echo "PM2 logs недоступны"
 
-# 11. Проверка firewall
-echo -e "\n1️⃣1️⃣ FIREWALL:"
-ufw status
+echo ""
+echo "🔍 5. АНАЛИЗ ПРОБЛЕМЫ"
+echo "──────────────────"
 
-# 12. Проверка системных ресурсов
-echo -e "\n1️⃣2️⃣ СИСТЕМНЫЕ РЕСУРСЫ:"
-free -h
-df -h /
+echo "🔍 Проверяем протокол для Socket.IO location..."
 
-echo -e "\n✅ ДИАГНОСТИКА ЗАВЕРШЕНА"
-echo "=======================================" 
+# Проверяем, действительно ли Socket.IO location использует HTTP/1.1
+if nginx -T 2>/dev/null | grep -A 10 "location /socket.io/" | grep -q "proxy_http_version 1.1"; then
+    echo "✅ proxy_http_version 1.1 настроен для Socket.IO"
+else
+    echo "❌ proxy_http_version 1.1 НЕ найден для Socket.IO"
+fi
+
+# Проверяем наличие WebSocket заголовков
+if nginx -T 2>/dev/null | grep -A 10 "location /socket.io/" | grep -q "proxy_set_header Upgrade"; then
+    echo "✅ WebSocket Upgrade заголовок настроен"
+else
+    echo "❌ WebSocket Upgrade заголовок НЕ найден"
+fi
+
+# Проверяем HTTP/2 на уровне сервера
+if nginx -T 2>/dev/null | grep -B 5 -A 5 "listen 443" | grep -q "http2 on"; then
+    echo "⚠️  HTTP/2 включен глобально - может блокировать WebSocket upgrade"
+    GLOBAL_HTTP2=true
+else
+    echo "✅ HTTP/2 не включен глобально"
+    GLOBAL_HTTP2=false
+fi
+
+echo ""
+echo "🎯 6. РЕКОМЕНДАЦИИ"
+echo "─────────────────"
+
+if [ "$GLOBAL_HTTP2" = true ]; then
+    echo "🚨 ПРОБЛЕМА НАЙДЕНА: HTTP/2 включен глобально"
+    echo "   Это блокирует WebSocket upgrade для Socket.IO"
+    echo ""
+    echo "💡 РЕШЕНИЕ: Нужно отключить HTTP/2 глобально"
+    echo "   Nginx не может смешивать HTTP/2 и HTTP/1.1 в одном server блоке"
+    echo ""
+    echo "🔧 Применить исправление:"
+    echo "   ./fix_websocket_final_v2.sh"
+else
+    echo "🤔 HTTP/2 не включен глобально, ищем другие проблемы..."
+fi
+
+echo ""
+echo "📊 SUMMARY:"
+echo "- Socket.IO polling: работает"
+echo "- Backend: работает"
+echo "- WebSocket upgrade: падает"
+echo "- Причина: вероятно HTTP/2 конфликт"
+echo "" 

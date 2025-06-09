@@ -1,0 +1,44 @@
+// 🚀 ВАРИАНТ 5: Обновленная конфигурация Socket.IO для dual-server setup
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: [
+      "https://1337community.com",
+      "https://www.1337community.com",
+      "https://1337community.com:8443", // WebSocket порт
+      "http://localhost:3000",
+      "http://localhost:3001"
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  },
+  path: "/socket.io/",
+  
+  // 🔥 КРИТИЧЕСКИ ВАЖНО: Оба транспорта с приоритетом WebSocket
+  transports: ['websocket', 'polling'],
+  
+  // Production оптимизированные настройки
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  maxHttpBufferSize: 1e6,
+  
+  // Разрешаем upgrades и fallback
+  allowUpgrades: true,
+  allowEIO3: true,
+  rememberUpgrade: false, // Принудительно переподключаться через WebSocket
+  
+  // Cookie настройки для HTTPS
+  cookie: {
+    name: "io",
+    httpOnly: true,
+    path: "/",
+    secure: true, // HTTPS required
+    sameSite: 'none', // Cross-origin cookies
+    domain: '.1337community.com'
+  },
+  
+  // Дополнительные настройки для стабильности
+  connectTimeout: 45000,
+  serveClient: false // Отключаем встроенный клиент Socket.IO
+});
