@@ -65,10 +65,20 @@ export const getSocketInstance = () => {
     socketInstance.on('connect_error', (error) => {
       console.error('❌ [Socket.IO Final] Ошибка подключения:', error.message);
       console.log('🔄 [Socket.IO Final] Попытка fallback на polling...');
+      console.log('🔍 [Socket.IO Final] Детали ошибки:', {
+        type: error.type,
+        description: error.description,
+        context: error.context,
+        message: error.message
+      });
     });
     
     socketInstance.on('disconnect', (reason) => {
       console.warn('⚠️ [Socket.IO Final] Отключение:', reason);
+      if (reason === 'io server disconnect') {
+        console.log('🔄 [Socket.IO Final] Сервер разорвал соединение, переподключаемся...');
+        socketInstance.connect();
+      }
     });
     
     // Transport events
@@ -83,6 +93,27 @@ export const getSocketInstance = () => {
     socketInstance.io.engine.on('upgradeError', (error) => {
       console.warn('⚠️ [Socket.IO Final] Ошибка upgrade, используем polling:', error.message);
     });
+    
+    // Обработка ошибок отправки событий
+    socketInstance.on('error', (error) => {
+      console.error('🚨 [Socket.IO Final] Ошибка Socket.IO:', error);
+    });
+    
+    socketInstance.on('reconnect', (attemptNumber) => {
+      console.log(`🔄 [Socket.IO Final] Переподключение успешно (попытка ${attemptNumber})`);
+    });
+    
+    socketInstance.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 [Socket.IO Final] Попытка переподключения ${attemptNumber}...`);
+    });
+    
+    socketInstance.on('reconnect_error', (error) => {
+      console.error('❌ [Socket.IO Final] Ошибка переподключения:', error.message);
+    });
+    
+    socketInstance.on('reconnect_failed', () => {
+      console.error('❌ [Socket.IO Final] Не удалось переподключиться после всех попыток');
+    });
   }
   
   return socketInstance;
@@ -91,12 +122,21 @@ export const getSocketInstance = () => {
 // Утилиты для авторизации
 export const authenticateSocket = (token) => {
   const socket = getSocketInstance();
+  
+  console.log('🔐 [Socket.IO Final] Устанавливаем авторизацию с токеном');
+  
+  // Устанавливаем авторизацию без разрыва соединения
   socket.auth = { token };
   
-  if (socket.connected) {
-    socket.disconnect();
+  // Если сокет еще не подключен, просто подключаемся
+  if (!socket.connected) {
+    console.log('🔌 [Socket.IO Final] Подключаемся с авторизацией...');
+    socket.connect();
+  } else {
+    // Если уже подключен, отправляем токен через событие
+    console.log('🔄 [Socket.IO Final] Обновляем авторизацию для активного соединения');
+    socket.emit('authenticate', { token });
   }
-  socket.connect();
 };
 
 // Утилиты для подписки на турниры
