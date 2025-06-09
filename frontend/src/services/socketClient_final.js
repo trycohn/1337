@@ -268,6 +268,25 @@ export const watchTournament = (tournamentId) => {
   }
 };
 
+// 🎯 ТУРНИРЫ: Отписка от турнира
+export const unwatchTournament = (tournamentId) => {
+  const socket = getSocketInstance();
+  
+  if (!tournamentId) {
+    console.warn('⚠️ [Socket.IO Final] Tournament ID не предоставлен для отписки');
+    return;
+  }
+  
+  console.log('👋 [Socket.IO Final] Отписываемся от турнира:', tournamentId);
+  
+  try {
+    socket.emit('leave-tournament', tournamentId);
+    console.log('✅ [Socket.IO Final] Отписались от турнира:', tournamentId);
+  } catch (error) {
+    console.error('❌ [Socket.IO Final] Ошибка отписки от турнира:', error);
+  }
+};
+
 // 🔄 ПЕРЕСОЗДАНИЕ: Полный перезапуск соединения
 export const recreateSocket = () => {
   console.log('🔄 [Socket.IO Final] Пересоздаем Socket соединение...');

@@ -487,10 +487,10 @@ io.on('connection', (socket) => {
     socketId: socket.id
   });
 
-  // Обработка подписки на обновления турнира
+  // Обработка подписки на обновления турнира (старый формат)
   socket.on('watch_tournament', (tournamentId) => {
     socket.join(`tournament_${tournamentId}`);
-    console.log(`🎯 [SOCKETIO] Подписка на турнир:`, {
+    console.log(`🎯 [SOCKETIO] Подписка на турнир (watch_tournament):`, {
       userId: socket.userId,
       tournamentId: tournamentId,
       room: `tournament_${tournamentId}`,
@@ -498,10 +498,31 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Обработка отписки от обновлений турнира
+  // Обработка отписки от обновлений турнира (старый формат)
   socket.on('unwatch_tournament', (tournamentId) => {
     socket.leave(`tournament_${tournamentId}`);
-    console.log(`👋 [SOCKETIO] Отписка от турнира:`, {
+    console.log(`👋 [SOCKETIO] Отписка от турнира (unwatch_tournament):`, {
+      userId: socket.userId,
+      tournamentId: tournamentId,
+      room: `tournament_${tournamentId}`,
+      socketId: socket.id
+    });
+  });
+
+  // ✅ НОВЫЕ обработчики для socketClient_final (join-tournament/leave-tournament)
+  socket.on('join-tournament', (tournamentId) => {
+    socket.join(`tournament_${tournamentId}`);
+    console.log(`🎯 [SOCKETIO] Присоединение к турниру (join-tournament):`, {
+      userId: socket.userId,
+      tournamentId: tournamentId,
+      room: `tournament_${tournamentId}`,
+      socketId: socket.id
+    });
+  });
+
+  socket.on('leave-tournament', (tournamentId) => {
+    socket.leave(`tournament_${tournamentId}`);
+    console.log(`👋 [SOCKETIO] Покидание турнира (leave-tournament):`, {
       userId: socket.userId,
       tournamentId: tournamentId,
       room: `tournament_${tournamentId}`,
