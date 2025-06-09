@@ -350,7 +350,10 @@ const io = new SocketIOServer(server, {
   cookie: {
     name: "io",
     httpOnly: true,
-    path: "/socket.io", // ← Соответствует пути без trailing slash
+    // Используем путь "/" чтобы избежать дублирующихся cookie
+    // в разных конфигурациях и предотвратить ошибку
+    // "Session ID unknown" из-за нескольких значений
+    path: "/",
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   },
