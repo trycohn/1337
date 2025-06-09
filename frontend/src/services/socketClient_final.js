@@ -27,18 +27,25 @@ const SOCKET_CONFIG = {
     
     // CORS и авторизация
     withCredentials: true,
-    autoConnect: true,
+    autoConnect: false,
+    
+    // 🔐 ИСПРАВЛЕНО: Токен авторизации будет добавлен динамически
+    auth: {
+      token: null // Будет установлен перед подключением
+    },
     
     // Транспорт-специфичные настройки
     transportOptions: {
       polling: {
         extraHeaders: {
           'X-Requested-With': 'XMLHttpRequest'
+          // Authorization будет добавлен динамически
         }
       },
       websocket: {
         extraHeaders: {
-          'Origin': 'https://1337community.com'
+          'Origin': process.env.NODE_ENV === 'production' ? 'https://1337community.com' : 'http://localhost:3000'
+          // Authorization будет добавлен динамически
         }
       }
     }
@@ -119,23 +126,48 @@ export const getSocketInstance = () => {
   return socketInstance;
 };
 
-// Утилиты для авторизации
+// 🔐 ИСПРАВЛЕНО: Утилиты для авторизации с правильной передачей токена
 export const authenticateSocket = (token) => {
   const socket = getSocketInstance();
   
   console.log('🔐 [Socket.IO Final] Устанавливаем авторизацию с токеном');
   
-  // Устанавливаем авторизацию без разрыва соединения
+  if (!token) {
+    console.error('❌ [Socket.IO Final] Токен не предоставлен!');
+    return;
+  }
+  
+  // 🔧 КРИТИЧЕСКИ ВАЖНО: Устанавливаем токен в auth объект
   socket.auth = { token };
   
-  // Если сокет еще не подключен, просто подключаемся
+  // 🔧 ИСПРАВЛЕНО: Добавляем токен в extraHeaders для всех транспортов
+  const authHeader = `Bearer ${token}`;
+  
+  // Устанавливаем заголовки авторизации для polling
+  if (socket.io.opts.transportOptions.polling) {
+    socket.io.opts.transportOptions.polling.extraHeaders.Authorization = authHeader;
+  }
+  
+  // Устанавливаем заголовки авторизации для websocket
+  if (socket.io.opts.transportOptions.websocket) {
+    socket.io.opts.transportOptions.websocket.extraHeaders.Authorization = authHeader;
+  }
+  
+  // Устанавливаем в общие extraHeaders (для Node.js окружения)
+  if (!socket.io.opts.extraHeaders) {
+    socket.io.opts.extraHeaders = {};
+  }
+  socket.io.opts.extraHeaders.Authorization = authHeader;
+  
+  // Если сокет еще не подключен, подключаемся с авторизацией
   if (!socket.connected) {
     console.log('🔌 [Socket.IO Final] Подключаемся с авторизацией...');
     socket.connect();
   } else {
-    // Если уже подключен, отправляем токен через событие
-    console.log('🔄 [Socket.IO Final] Обновляем авторизацию для активного соединения');
-    socket.emit('authenticate', { token });
+    // Если уже подключен, отключаемся и переподключаемся с новым токеном
+    console.log('🔄 [Socket.IO Final] Переподключаемся с новой авторизацией');
+    socket.disconnect();
+    socket.connect();
   }
 };
 
