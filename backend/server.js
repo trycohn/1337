@@ -329,34 +329,45 @@ const io = new SocketIOServer(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
-  path: "/socket.io/",
+  path: "/socket.io", // ← БЕЗ trailing slash для соответствия клиенту
+  addTrailingSlash: false, // ← КРИТИЧЕСКИ ВАЖНО для nginx reverse proxy
+  
   transports: ['polling', 'websocket'],
+  
+  // 🛡️ СИНХРОНИЗИРОВАНЫ С КЛИЕНТОМ
   pingTimeout: 20000,
   pingInterval: 25000,
   upgradeTimeout: 10000,
   maxHttpBufferSize: 1e6,
+  
+  // ✅ ИСПРАВЛЕНИЯ для предотвращения Session ID unknown
   allowUpgrades: true,
   allowEIO3: true,
-  rememberUpgrade: false,
+  rememberUpgrade: false, // ← КРИТИЧЕСКИ ВАЖНО: предотвращает session conflicts
+  serveClient: false,
+  
+  // 🛡️ COOKIE SUPPORT для sticky sessions (Context7 рекомендации)
   cookie: {
     name: "io",
     httpOnly: true,
-    path: "/",
+    path: "/socket.io", // ← Соответствует пути без trailing slash
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   },
-  transports: ['polling', 'websocket'],
-  allowEIO3: true,
-  serveClient: false,
+  
+  // 🔧 ПРОИЗВОДИТЕЛЬНОСТЬ и СЖАТИЕ
   httpCompression: true,
   perMessageDeflate: true,
   connectTimeout: 45000,
+  
+  // 📡 ОТЛАДКА Engine.IO запросов
   allowRequest: (req, callback) => {
-    console.log('🔍 [SOCKETIO] Engine Headers:', {
+    console.log('🔍 [SOCKETIO] Engine Request:', {
       headers: req.headers,
       url: req.url,
       method: req.method,
-      remoteAddress: req.connection?.remoteAddress
+      remoteAddress: req.connection?.remoteAddress,
+      sessionId: req.headers.cookie?.match(/io=([^;]+)/)?.[1]
     });
     
     callback(null, true);

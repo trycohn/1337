@@ -8,7 +8,7 @@ const SOCKET_CONFIG = {
     : 'http://localhost:3000',
     
   options: {
-    path: '/socket.io/',
+    path: '/socket.io',  // ← БЕЗ trailing slash для nginx
     
     // 🔥 КРИТИЧЕСКИ ВАЖНО: Начинаем с polling для избежания Session ID unknown
     transports: ['polling', 'websocket'],
@@ -21,232 +21,199 @@ const SOCKET_CONFIG = {
     
     // 🛡️ STICKY SESSIONS: Критически важно для polling
     withCredentials: true,
-    addTrailingSlash: false, // ← /socket.io вместо /socket.io/
+    addTrailingSlash: false, // ← ИСПРАВЛЕНИЕ: без trailing slash
     
-    // Продакшн настройки
-    timeout: 30000, // ← Увеличено для медленных соединений
-    reconnection: true,
-    reconnectionDelay: 2000, // ← Увеличена задержка
-    reconnectionDelayMax: 10000, // ← Больше максимум
-    maxReconnectionAttempts: 5, // ← Меньше попыток, но дольше интервалы
-    
-    // 📋 TRANSPORT OPTIONS: Специальные настройки для polling
+    // ✅ ИСПРАВЛЕНИЕ: Правильные заголовки для polling транспорта
     transportOptions: {
       polling: {
-        extraHeaders: {},
-        // ✅ ВАЖНО: Увеличиваем таймауты для polling
-        requestTimeout: 20000,
-        responseTimeout: 20000,
-      },
-      websocket: {
-        extraHeaders: {},
+        extraHeaders: {}  // ← Будет заполнено в authenticateSocket
       }
     },
     
-    // 🔧 Engine.IO настройки для исправления Session ID unknown
-    pingInterval: 25000, // ← Стандартное значение
-    pingTimeout: 20000,  // ← Стандартное значение
+    // 🔄 ТАЙМАУТЫ: Синхронизированы с сервером
+    pingTimeout: 20000,  // ← Должно совпадать с сервером
+    pingInterval: 25000, // ← Должно совпадать с сервером
     
-    // CORS и авторизация
-    extraHeaders: {},
+    // 📡 POLLING: Специальные настройки для предотвращения Session ID unknown
+    rememberUpgrade: false, // ← КРИТИЧЕСКИ ВАЖНО: предотвращает session conflicts
+    enablesXDR: false,      // ← Отключаем XDomainRequest для старых IE
+    jsonp: false,           // ← Отключаем JSONP
     
-    // ✅ ИСПРАВЛЕНИЕ: Правильные query параметры
-    query: {},
-    
-    // 🛡️ КРИТИЧЕСКИ ВАЖНО: Поддержка сессий
-    enablesXDR: false,
+    // 🔧 ОТЛАДКА
     timestampRequests: true,
-    timestampParam: 't',
-    
-    // Дополнительные опции для стабильности
-    jsonp: false,
-    forceJSONP: false,
-    forceBase64: false,
+    timestampParam: 't'
   }
 };
 
-// 🛡️ FALLBACK SOCKET: Безопасный объект для предотвращения undefined ошибок
-const createFallbackSocket = () => ({
-  connected: false,
-  id: null,
-  auth: {},
-  io: { 
-    opts: { 
-      transportOptions: { 
-        polling: { extraHeaders: {} }, 
-        websocket: { extraHeaders: {} } 
-      }, 
-      extraHeaders: {} 
-    } 
-  },
-  on: (event, callback) => { 
-    console.warn(`⚠️ [Socket.IO Final] Fallback: игнорируем событие "${event}"`); 
-    return this; 
-  },
-  emit: (event, ...args) => { 
-    console.warn(`⚠️ [Socket.IO Final] Fallback: игнорируем emit "${event}"`); 
-    return this; 
-  },
-  connect: () => { 
-    console.warn('⚠️ [Socket.IO Final] Fallback: игнорируем connect()'); 
-    return this; 
-  },
-  disconnect: () => { 
-    console.warn('⚠️ [Socket.IO Final] Fallback: игнорируем disconnect()'); 
-    return this; 
-  },
-  off: (event, callback) => {
-    console.warn(`⚠️ [Socket.IO Final] Fallback: игнорируем off "${event}"`);
-    return this;
-  },
-  removeAllListeners: (event) => {
-    console.warn(`⚠️ [Socket.IO Final] Fallback: игнорируем removeAllListeners "${event}"`);
-    return this;
-  }
-});
+let socket = null;
+let isInitialized = false;
+let lastToken = null;
 
-// Глобальный инстанс Socket
-let socketInstance = null;
-
-// ✅ ИСПРАВЛЕНИЕ: Защищенная функция создания Socket с обработкой Session ID unknown
-const createSocketInstance = () => {
+// 🛡️ ЗАЩИЩЕННАЯ ФУНКЦИЯ создания Socket с валидацией
+const createSocketSafely = () => {
   try {
-    console.log('🔧 [Socket.IO Final] Создаем новый Socket инстанс...');
-    console.log('🔗 [Socket.IO Final] URL:', SOCKET_CONFIG.url);
-    console.log('⚙️ [Socket.IO Final] Транспорты:', SOCKET_CONFIG.options.transports);
+    console.log('🔧 [Socket.IO Final] Создаем новый Socket с конфигурацией:', SOCKET_CONFIG);
     
-    const socket = io(SOCKET_CONFIG.url, SOCKET_CONFIG.options);
+    const newSocket = io(SOCKET_CONFIG.url, SOCKET_CONFIG.options);
     
-    // 🛡️ КРИТИЧЕСКИ ВАЖНО: Проверяем что инициализация прошла успешно
-    if (!socket) {
-      throw new Error('Socket.IO client initialization failed');
+    // Проверяем что Socket создался корректно
+    if (!newSocket || typeof newSocket.on !== 'function') {
+      console.error('❌ [Socket.IO Final] Создан некорректный Socket объект');
+      return createFallbackSocket();
     }
     
-    if (typeof socket.on !== 'function') {
-      throw new Error('Socket.IO client missing "on" method');
-    }
-    
-    // ✅ ОБРАБОТКА Session ID unknown и других ошибок
-    socket.on('connect_error', (error) => {
-      console.error('❌ [Socket.IO Final] ОШИБКА ПОДКЛЮЧЕНИЯ:', error);
-      
-      if (error.message && error.message.includes('Session ID unknown')) {
-        console.warn('🔄 [Socket.IO Final] Session ID unknown - пересоздаем соединение...');
-        
-        // Сбрасываем соединение и пытаемся заново через некоторое время
-        setTimeout(() => {
-          if (socket && socket.connected === false) {
-            console.log('🔄 [Socket.IO Final] Повторная попытка подключения...');
-            socket.connect();
-          }
-        }, 3000);
-      }
-      
-      if (error.message && error.message.includes('xhr poll error')) {
-        console.warn('🔄 [Socket.IO Final] XHR polling error - переключаемся на websocket...');
-        
-        // Принудительно переключаемся на websocket при ошибках polling
-        if (socket.io && socket.io.opts) {
-          socket.io.opts.transports = ['websocket'];
-        }
-      }
-    });
-    
-    // ✅ POLLING EVENTS: Логируем для диагностики Session ID unknown
-    socket.on('disconnect', (reason, details) => {
-      console.warn('💔 [Socket.IO Final] ОТКЛЮЧЕНО:', { reason, details });
-      
-      if (reason === 'transport error' && details && details.message) {
-        console.error('🚨 [Socket.IO Final] Transport error:', details.message);
-        
-        if (details.message.includes('Session ID unknown')) {
-          console.warn('🔄 [Socket.IO Final] Session lost - будет переподключение...');
-        }
-      }
-    });
-    
-    // ✅ УСПЕШНОЕ ПОДКЛЮЧЕНИЕ
-    socket.on('connect', () => {
-      console.log('✅ [Socket.IO Final] ПОДКЛЮЧЕНО!');
-      console.log('🔗 [Socket.IO Final] Socket ID:', socket.id);
-      console.log('🚀 [Socket.IO Final] Transport:', socket.io.engine.transport.name);
-      console.log('🔌 [Socket.IO Final] Connected:', socket.connected);
-    });
-    
-    // ✅ TRANSPORT UPGRADE LOGS
-    socket.io.on('upgrade', () => {
-      console.log('⬆️ [Socket.IO Final] Transport upgraded to:', socket.io.engine.transport.name);
-    });
-    
-    console.log('✅ [Socket.IO Final] Socket инициализирован успешно');
-    return socket;
+    console.log('✅ [Socket.IO Final] Socket успешно создан с ID:', newSocket.id);
+    return newSocket;
     
   } catch (error) {
-    console.error('❌ [Socket.IO Final] КРИТИЧЕСКАЯ ОШИБКА при создании Socket:', error);
-    console.error('📍 [Socket.IO Final] Stack trace:', error.stack);
+    console.error('❌ [Socket.IO Final] Критическая ошибка создания Socket:', error);
     return createFallbackSocket();
   }
 };
 
-// 🔧 ОСНОВНАЯ ФУНКЦИЯ: Получение Socket инстанса
-export const getSocketInstance = () => {
-  if (!socketInstance) {
-    socketInstance = createSocketInstance();
-  }
-  
-  // 🛡️ Дополнительная проверка что объект валидный
-  if (!socketInstance || typeof socketInstance.on !== 'function') {
-    console.warn('⚠️ [Socket.IO Final] Инстанс невалидный, создаем fallback...');
-    socketInstance = createFallbackSocket();
-  }
-  
-  return socketInstance;
+// 🔄 FALLBACK объект для предотвращения undefined ошибок
+const createFallbackSocket = () => {
+  console.warn('⚠️ [Socket.IO Final] Создаем fallback Socket объект');
+  return {
+    on: () => {},
+    emit: () => {},
+    connect: () => {},
+    disconnect: () => {},
+    id: 'fallback-socket',
+    connected: false
+  };
 };
 
-// 🔐 АВТОРИЗАЦИЯ: Исправленная функция без разрыва соединения
-export const authenticateSocket = (token) => {
-  const socket = getSocketInstance();
+// 🔌 ГЛАВНАЯ функция получения экземпляра Socket
+export const getSocketInstance = () => {
+  if (!socket) {
+    console.log('🔧 [Socket.IO Final] Первичная инициализация Socket...');
+    socket = createSocketSafely();
+    isInitialized = false;
+  }
   
+  return socket;
+};
+
+// 🔐 АУТЕНТИФИКАЦИЯ: Установка токена и подключение
+export const authenticateSocket = (token) => {
   if (!token) {
-    console.warn('⚠️ [Socket.IO Final] Токен не предоставлен для авторизации');
+    console.warn('⚠️ [Socket.IO Final] Токен не предоставлен для аутентификации');
     return;
   }
   
-  console.log('🔐 [Socket.IO Final] Устанавливаем авторизацию...');
+  console.log('🔐 [Socket.IO Final] Аутентификация Socket с токеном...');
   
   try {
-    // ✅ ИСПРАВЛЕНИЕ: Устанавливаем токен через auth объект
-    socket.auth = { token };
-    
-    // ✅ ИСПРАВЛЕНИЕ: Добавляем токен в заголовки для всех транспортов
-    const authHeader = `Bearer ${token}`;
-    
-    // Для polling транспорта
-    if (socket.io.opts.transportOptions && socket.io.opts.transportOptions.polling) {
-      socket.io.opts.transportOptions.polling.extraHeaders.authorization = authHeader;
+    // Пересоздаем Socket если токен изменился
+    if (lastToken !== token || !socket) {
+      console.log('🔄 [Socket.IO Final] Пересоздаем Socket для нового токена');
+      
+      // Отключаем старый Socket
+      if (socket && typeof socket.disconnect === 'function') {
+        socket.disconnect();
+      }
+      
+      // Создаем новый Socket с правильными заголовками
+      const authConfig = {
+        ...SOCKET_CONFIG.options,
+        auth: { token }, // ← Стандартный способ передачи токена
+        transportOptions: {
+          polling: {
+            extraHeaders: {
+              'Authorization': `Bearer ${token}` // ← Заголовок для polling
+            }
+          }
+        }
+      };
+      
+      socket = io(SOCKET_CONFIG.url, authConfig);
+      lastToken = token;
+      isInitialized = false;
     }
     
-    // Для websocket транспорта  
-    if (socket.io.opts.transportOptions && socket.io.opts.transportOptions.websocket) {
-      socket.io.opts.transportOptions.websocket.extraHeaders.authorization = authHeader;
+    // Устанавливаем обработчики событий если они еще не установлены
+    if (!isInitialized) {
+      setupSocketEventHandlers();
+      isInitialized = true;
     }
     
-    // Для общих заголовков
-    if (socket.io.opts.extraHeaders) {
-      socket.io.opts.extraHeaders.authorization = authHeader;
-    }
-    
-    // ✅ ПОДКЛЮЧАЕМСЯ если еще не подключены
+    // Подключаемся только если не подключены
     if (!socket.connected) {
-      console.log('🔌 [Socket.IO Final] Подключаемся с авторизацией...');
+      console.log('🔌 [Socket.IO Final] Подключение к серверу...');
       socket.connect();
     } else {
-      console.log('✅ [Socket.IO Final] Авторизация обновлена для активного соединения');
+      console.log('✅ [Socket.IO Final] Socket уже подключен');
     }
     
   } catch (error) {
-    console.error('❌ [Socket.IO Final] Ошибка авторизации:', error);
+    console.error('❌ [Socket.IO Final] Ошибка аутентификации Socket:', error);
   }
+};
+
+// 🎧 НАСТРОЙКА обработчиков событий
+const setupSocketEventHandlers = () => {
+  if (!socket) return;
+  
+  console.log('🎧 [Socket.IO Final] Настройка обработчиков событий...');
+  
+  // 🎉 ПОДКЛЮЧЕНИЕ
+  socket.on('connect', () => {
+    console.log('🎉 [Socket.IO Final] Успешное подключение!', {
+      socketId: socket.id,
+      transport: socket.io?.engine?.transport?.name,
+      upgraded: socket.io?.engine?.upgraded
+    });
+  });
+  
+  // 💔 ОТКЛЮЧЕНИЕ
+  socket.on('disconnect', (reason, details) => {
+    console.log('💔 [Socket.IO Final] Отключение:', {
+      reason,
+      details,
+      socketId: socket.id
+    });
+  });
+  
+  // ❌ ОШИБКИ ПОДКЛЮЧЕНИЯ - Context7 best practice
+  socket.on('connect_error', (error) => {
+    console.error('❌ [Socket.IO Final] Ошибка подключения:', {
+      message: error.message,
+      type: error.type,
+      description: error.description,
+      context: error.context,
+      data: error.data
+    });
+    
+    // Fallback на polling если WebSocket не работает
+    if (error.message?.includes('websocket')) {
+      console.log('🔄 [Socket.IO Final] Попытка fallback на polling...');
+      if (socket.io?.opts) {
+        socket.io.opts.transports = ['polling'];
+      }
+    }
+  });
+  
+  // 🔄 ПЕРЕПОДКЛЮЧЕНИЕ
+  socket.on('reconnect', (attemptNumber) => {
+    console.log('🔄 [Socket.IO Final] Переподключение успешно:', attemptNumber);
+  });
+  
+  socket.on('reconnect_attempt', (attemptNumber) => {
+    console.log('🔄 [Socket.IO Final] Попытка переподключения:', attemptNumber);
+  });
+  
+  socket.on('reconnecting', (attemptNumber) => {
+    console.log('🔄 [Socket.IO Final] Переподключение...', attemptNumber);
+  });
+  
+  socket.on('reconnect_error', (error) => {
+    console.error('❌ [Socket.IO Final] Ошибка переподключения:', error);
+  });
+  
+  socket.on('reconnect_failed', () => {
+    console.error('❌ [Socket.IO Final] Переподключение не удалось');
+  });
 };
 
 // 🎯 ТУРНИРЫ: Отслеживание турнира
@@ -289,22 +256,27 @@ export const unwatchTournament = (tournamentId) => {
 
 // 🔄 ПЕРЕСОЗДАНИЕ: Полный перезапуск соединения
 export const recreateSocket = () => {
-  console.log('🔄 [Socket.IO Final] Пересоздаем Socket соединение...');
+  console.log('🔄 [Socket.IO Final] Пересоздание Socket...');
   
-  try {
-    if (socketInstance) {
-      socketInstance.disconnect();
-      socketInstance = null;
+  // Отключаем текущий Socket
+  if (socket) {
+    try {
+      socket.disconnect();
+    } catch (error) {
+      console.warn('⚠️ [Socket.IO Final] Ошибка отключения старого Socket:', error);
     }
-    
-    socketInstance = createSocketInstance();
-    console.log('✅ [Socket.IO Final] Socket успешно пересоздан');
-    return socketInstance;
-    
-  } catch (error) {
-    console.error('❌ [Socket.IO Final] Ошибка пересоздания Socket:', error);
-    return createFallbackSocket();
   }
+  
+  // Сбрасываем состояние
+  socket = null;
+  isInitialized = false;
+  lastToken = null;
+  
+  // Создаем новый Socket
+  socket = createSocketSafely();
+  
+  console.log('✅ [Socket.IO Final] Socket пересоздан');
+  return socket;
 };
 
 // 📊 СТАТУС: Информация о соединении

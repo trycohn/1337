@@ -1,10 +1,10 @@
 # 📝 ЖУРНАЛ ИЗМЕНЕНИЙ
 
-## 🚨 [2025-01-30] ИСПРАВЛЕНА КРИТИЧЕСКАЯ ОШИБКА SESSION ID UNKNOWN! ✅
+## 🚨 [2025-01-30] КРИТИЧЕСКАЯ ОШИБКА SESSION ID UNKNOWN - ПОЛНОСТЬЮ ИСПРАВЛЕНА! ✅
 **Статус**: 🚀 ГОТОВО К ТЕСТИРОВАНИЮ!  
 **Проблема**: Socket.IO ошибка "Session ID unknown" (код 1) из-за проблем с polling транспортом  
 **Корневая причина**: Неправильные настройки sticky sessions и порядок транспортов  
-**Решение**: 🛡️ Полная переконфигурация Socket.IO клиента и сервера с Context7 best practices  
+**Решение**: 🛡️ Полная переконфигурация Socket.IO клиента и сервера с Context7 best practices + исправления nginx reverse proxy  
 
 ### 🚨 **ИСПРАВЛЕНИЯ SESSION ID UNKNOWN:**
 
@@ -15,11 +15,13 @@ transports: ['websocket', 'polling'], // ← WebSocket первый = Session ID
 autoConnect: true, // ← Неконтролируемое подключение
 addTrailingSlash: true, // ← /socket.io/ = проблемы с routing
 
-// ✅ СТАЛО - ПРАВИЛЬНО:
+// ✅ СТАЛО - CONTEXT7 BEST PRACTICES:
+path: '/socket.io', // ← БЕЗ trailing slash для nginx
+addTrailingSlash: false, // ← КРИТИЧЕСКИ для reverse proxy  
 transports: ['polling', 'websocket'], // ← Polling первый = stable sessions
-autoConnect: false, // ← Контролируемая авторизация
-addTrailingSlash: false, // ← /socket.io = правильный path
+rememberUpgrade: false, // ← Предотвращает session conflicts
 withCredentials: true, // ← Sticky sessions support
+autoConnect: false // ← Контролируемая авторизация
 ```
 
 #### 2. **Backend Socket.IO сервер (`backend/server.js`)**
