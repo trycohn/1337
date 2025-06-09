@@ -10,7 +10,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import api from '../utils/api';
 import './TournamentDetails.css';
 import TeamGenerator from './TeamGenerator';

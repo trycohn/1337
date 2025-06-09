@@ -1,18 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { io } from 'socket.io-client';
-
-// 🔧 Используем window.location.origin для правильной работы на production
-const getSocketURL = () => {
-    // В production используем текущий домен, в development - localhost:3000
-    if (process.env.NODE_ENV === 'production') {
-        return window.location.origin;
-    }
-    return process.env.REACT_APP_API_URL || 'http://localhost:3000';
-};
+// 🔧 ИСПРАВЛЕНО: Используем наш новый Socket.IO клиент вместо прямого импорта
+import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../../services/socketClient_final';
 
 /**
  * Custom hook для управления WebSocket соединениями турнира
- * Извлечен из TournamentDetails.js для модульности
+ * 🔧 ОБНОВЛЕНО: Использует новый socketClient_final.js для HTTP/1.1 совместимости
  */
 export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessage) => {
     const wsRef = useRef(null);
@@ -22,82 +14,94 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
     const setupWebSocket = useCallback(() => {
         // Только устанавливаем соединение, если у нас есть токен и ID турнира
         if (!user || !tournamentId) {
-            console.log('Отложена инициализация WebSocket: нет пользователя или ID турнира');
+            console.log('🔧 [useWebSocket] Отложена инициализация: нет пользователя или ID турнира');
             return;
         }
         
-        console.log('Инициализация WebSocket соединения для турнира', tournamentId);
+        console.log('🔧 [useWebSocket] Инициализация соединения для турнира', tournamentId);
         const token = localStorage.getItem('token');
         if (!token) {
-            console.log('Отсутствует токен для WebSocket подключения');
+            console.log('🔧 [useWebSocket] Отсутствует токен для подключения');
             return;
         }
         
-        // Если уже есть соединение, закрываем его перед созданием нового
-        if (wsRef.current) {
-            console.log('Закрываем существующее WebSocket соединение');
-            wsRef.current.disconnect();
-            wsRef.current = null;
-        }
+        // Получаем singleton instance нашего Socket.IO клиента
+        const socket = getSocketInstance();
         
-        // 🔧 Создаем новое соединение с правильными настройками для production
-        const socket = io(getSocketURL(), {
-            query: { token },
-            // 🔌 Правильные транспорты: сначала websocket, потом polling fallback
-            transports: ['websocket', 'polling'],
-            // 🍪 Важно для работы с cookies на HTTPS
-            withCredentials: true,
-            // ⚙️ Настройки переподключения
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 20000,
-            // 🔄 Дополнительные настройки для стабильности
-            forceNew: false,
-            autoConnect: true,
-            upgrade: true
-        });
+        // Авторизуем сокет с токеном
+        authenticateSocket(token);
         
-        socket.on('connect', () => {
-            console.log('✅ Socket.IO турнир соединение установлено:', socket.id);
-            socket.emit('watch_tournament', tournamentId);
+        // События для турнира
+        const handleConnect = () => {
+            console.log('✅ [useWebSocket] Socket.IO турнир соединение установлено:', socket.id);
+            console.log('🎉 [useWebSocket] Используется новый socketClient_final!');
+            
+            // Подключаемся к турниру через утилитные функции
+            watchTournament(tournamentId);
             socket.emit('join_tournament_chat', tournamentId);
             setWsConnected(true);
-        });
+        };
         
-        socket.on('disconnect', (reason) => {
-            console.log('❌ Socket.IO турнир соединение закрыто:', reason);
+        const handleDisconnect = (reason) => {
+            console.log('❌ [useWebSocket] Socket.IO турнир соединение закрыто:', reason);
             setWsConnected(false);
-        });
+        };
         
-        socket.on('error', (error) => {
-            console.error('🔥 Ошибка Socket.IO турнир соединения:', error);
+        const handleError = (error) => {
+            console.error('🔥 [useWebSocket] Ошибка Socket.IO турнир соединения:', error);
             setWsConnected(false);
-        });
+        };
         
-        socket.on('connect_error', (error) => {
-            console.error('🔥 Ошибка подключения Socket.IO турнир:', error);
+        const handleConnectError = (error) => {
+            console.error('🔥 [useWebSocket] Ошибка подключения Socket.IO турнир:', error);
             setWsConnected(false);
-        });
+        };
         
-        socket.on('tournament_update', (tournamentData) => {
+        const handleTournamentUpdate = (tournamentData) => {
             if (tournamentData.tournamentId === parseInt(tournamentId) || tournamentData.id === parseInt(tournamentId)) {
-                console.log('🔄 Получено обновление турнира через WebSocket:', tournamentData);
+                console.log('🔄 [useWebSocket] Получено обновление турнира через WebSocket:', tournamentData);
                 
                 // Вызываем callback для обновления турнира
                 if (onTournamentUpdate) {
                     onTournamentUpdate(tournamentData);
                 }
             }
-        });
+        };
 
-        // Обработка новых сообщений чата турнира
-        socket.on('tournament_message', (message) => {
+        const handleTournamentMessage = (message) => {
             if (onChatMessage) {
                 onChatMessage(message);
             }
-        });
+        };
+        
+        // Подключаем события
+        socket.on('connect', handleConnect);
+        socket.on('disconnect', handleDisconnect);
+        socket.on('error', handleError);
+        socket.on('connect_error', handleConnectError);
+        socket.on('tournament_update', handleTournamentUpdate);
+        socket.on('tournament_message', handleTournamentMessage);
 
         wsRef.current = socket;
+        
+        // Если сокет уже подключен, сразу инициализируем
+        if (socket.connected) {
+            handleConnect();
+        }
+        
+        // Возвращаем функцию очистки
+        return () => {
+            console.log('🧹 [useWebSocket] Отписываемся от событий турнира');
+            socket.off('connect', handleConnect);
+            socket.off('disconnect', handleDisconnect);
+            socket.off('error', handleError);
+            socket.off('connect_error', handleConnectError);
+            socket.off('tournament_update', handleTournamentUpdate);
+            socket.off('tournament_message', handleTournamentMessage);
+            
+            // Отключаемся от турнира
+            unwatchTournament(tournamentId);
+        };
     }, [tournamentId, user, onTournamentUpdate, onChatMessage]);
 
     // Функция для отправки сообщения чата
@@ -114,29 +118,30 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
 
     // Функция для ручного переподключения
     const reconnectWebSocket = useCallback(() => {
-        console.log('🔄 Ручное переподключение WebSocket');
+        console.log('🔄 [useWebSocket] Ручное переподключение WebSocket');
         setupWebSocket();
     }, [setupWebSocket]);
 
     // Функция для отключения WebSocket
     const disconnectWebSocket = useCallback(() => {
-        console.log('🔌 Отключение WebSocket соединения');
+        console.log('🔌 [useWebSocket] Отключение WebSocket соединения');
         if (wsRef.current) {
-            wsRef.current.disconnect();
+            // Отключаемся от турнира
+            unwatchTournament(tournamentId);
             wsRef.current = null;
         }
         setWsConnected(false);
-    }, []);
+    }, [tournamentId]);
 
     // Устанавливаем WebSocket соединение
     useEffect(() => {
-        setupWebSocket();
+        const cleanup = setupWebSocket();
         
         // Очистка при размонтировании
         return () => {
-            console.log('🧹 Закрываем Socket.IO соединение при размонтировании');
-            if (wsRef.current) {
-                wsRef.current.disconnect();
+            console.log('🧹 [useWebSocket] Закрываем соединение при размонтировании');
+            if (cleanup) {
+                cleanup();
             }
             setWsConnected(false);
         };

@@ -4,7 +4,7 @@ import './Messenger.css';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
 import './AttachmentModal.css';
-import { io } from 'socket.io-client';
+import { getSocketInstance, authenticateSocket } from '../services/socketClient_final';
 
 function Messenger() {
     const [chats, setChats] = useState([]);
@@ -52,36 +52,53 @@ function Messenger() {
         };
     }, []);
 
-    // Инициализация Socket.IO соединения
+    // 🔧 ИСПРАВЛЕНО: Инициализация Socket.IO соединения с новым клиентом
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        // Подключаемся к тому же хосту, что и React-приложение (CRA proxy)
-        const socketClient = io(window.location.origin, {
-            transports: ['websocket'],
-            query: { token },
-            withCredentials: true
-        });
+        console.log('🔧 [Messenger] Инициализация Socket.IO с новым клиентом...');
 
-        socketClient.on('connect', () => {
-            console.log('Socket.IO соединение установлено');
-        });
+        // Получаем singleton instance нашего Socket.IO клиента
+        const socketClient = getSocketInstance();
+        
+        // Авторизуем сокет с токеном
+        authenticateSocket(token);
 
+        // События для Messenger
+        const handleConnect = () => {
+            console.log('✅ [Messenger] Socket.IO соединение установлено:', socketClient.id);
+            console.log('🎉 [Messenger] Используется новый socketClient_final!');
+        };
+
+        const handleError = (error) => {
+            console.error('🔥 [Messenger] Socket.IO ошибка:', error);
+            setError('Ошибка подключения к серверу чата');
+        };
+
+        // Подключаем события
+        socketClient.on('connect', handleConnect);
         socketClient.on('message', handleNewMessage);
         socketClient.on('read_status', updateMessageReadStatus);
         socketClient.on('notification_update', handleNotificationUpdate);
-
-        socketClient.on('error', (error) => {
-            console.error('Socket.IO ошибка:', error);
-            setError('Ошибка подключения к серверу чата');
-        });
+        socketClient.on('error', handleError);
 
         setSocket(socketClient);
         fetchChats();
 
+        // Если сокет уже подключен, сразу инициализируем
+        if (socketClient.connected) {
+            handleConnect();
+        }
+
+        // Cleanup - отписываемся от событий
         return () => {
-            socketClient.disconnect();
+            console.log('🧹 [Messenger] Отписываемся от Socket.IO событий');
+            socketClient.off('connect', handleConnect);
+            socketClient.off('message', handleNewMessage);
+            socketClient.off('read_status', updateMessageReadStatus);
+            socketClient.off('notification_update', handleNotificationUpdate);
+            socketClient.off('error', handleError);
         };
     }, []);
     

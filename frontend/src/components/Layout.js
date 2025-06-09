@@ -8,7 +8,7 @@ import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { ensureHttps } from '../utils/userHelpers';
-import { io } from 'socket.io-client';
+import { getSocketInstance, authenticateSocket } from '../services/socketClient_final';
 
 function Layout() {
     const [user, setUser] = useState(null);
@@ -72,41 +72,33 @@ function Layout() {
         }
     }, [navigate, user, setLoading]);
 
-    // WebSocket подключение для обновления счетчика непрочитанных сообщений
+    // 🔧 ИСПРАВЛЕНО: WebSocket подключение с новым клиентом
     useEffect(() => {
         if (!user) return;
 
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        // 🔧 Определяем правильный URL для Socket.IO
-        const getSocketURL = () => {
-            // В production используем текущий домен, в development - localhost:3000
-            if (process.env.NODE_ENV === 'production') {
-                return window.location.origin;
-            }
-            return process.env.REACT_APP_API_URL || 'http://localhost:3000';
-        };
+        console.log('🔧 [Layout] Инициализация Socket.IO с новым клиентом...');
 
-        // Создаем WebSocket соединение с правильными настройками для production
-        const socket = io(getSocketURL(), {
-            query: { token },
-            // 🔌 Правильные транспорты: сначала websocket, потом polling fallback
-            transports: ['websocket', 'polling'],
-            // 🍪 Важно для работы с cookies на HTTPS
-            withCredentials: true,
-            // ⚙️ Настройки переподключения  
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 20000
-        });
+        // Получаем singleton instance нашего Socket.IO клиента
+        const socket = getSocketInstance();
+        
+        // Авторизуем сокет с токеном
+        authenticateSocket(token);
 
+        // События для Layout
         socket.on('connect', () => {
-            console.log('✅ Layout: WebSocket соединение установлено:', socket.id);
+            console.log('✅ [Layout] WebSocket соединение установлено:', socket.id);
+            console.log('🎉 [Layout] Используется новый socketClient_final!');
         });
 
         socket.on('connect_error', (error) => {
-            console.error('🔥 Layout: Ошибка подключения Socket.IO:', error);
+            console.error('🔥 [Layout] Ошибка подключения Socket.IO:', error);
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.warn('⚠️ [Layout] Socket.IO отключен:', reason);
         });
 
         // Обновляем счетчик при получении нового сообщения
@@ -125,11 +117,11 @@ function Layout() {
 
         socketRef.current = socket;
 
+        // Cleanup не нужен, так как используется singleton
         return () => {
-            if (socket) {
-                console.log('🧹 Layout: Закрываем Socket.IO соединение');
-                socket.disconnect();
-            }
+            console.log('🧹 [Layout] Отписываемся от Socket.IO событий');
+            socket.off('message');
+            socket.off('read_status');
         };
     }, [user, location.pathname]);
 
