@@ -22,15 +22,23 @@ class RealTimeStatsService {
 
     async initialize(server) {
         try {
+            console.log('🔌 [WEBSOCKET] Инициализация WebSocket сервера для статистики...');
+            console.log('🔌 [WEBSOCKET] NODE_ENV:', process.env.NODE_ENV);
+            console.log('🔌 [WEBSOCKET] Порт сервера:', process.env.PORT || 3000);
+            
             // Инициализация WebSocket сервера
             this.wss = new WebSocket.Server({ 
                 server,
                 path: '/ws/stats'
             });
 
+            console.log('✅ [WEBSOCKET] WebSocket сервер создан');
+            console.log('✅ [WEBSOCKET] Path: /ws/stats');
+
             // Инициализация Redis для кэширования (опционально)
             if (Redis) {
                 try {
+                    console.log('🔄 [WEBSOCKET] Подключение к Redis...');
                     this.redis = Redis.createClient({
                         host: process.env.REDIS_HOST || 'localhost',
                         port: process.env.REDIS_PORT || 6379,
@@ -38,21 +46,28 @@ class RealTimeStatsService {
                     });
 
                     await this.redis.connect();
-                    console.log('✅ Redis подключен для Real-time статистики');
+                    console.log('✅ [WEBSOCKET] Redis подключен для Real-time статистики');
                 } catch (redisError) {
-                    console.warn('⚠️ Не удалось подключиться к Redis, работаем без кэширования:', redisError.message);
+                    console.warn('⚠️ [WEBSOCKET] Не удалось подключиться к Redis:', {
+                        message: redisError.message,
+                        stack: redisError.stack
+                    });
+                    console.warn('⚠️ [WEBSOCKET] Работаем без кэширования');
                     this.redis = null;
                 }
             } else {
-                console.log('ℹ️ Redis недоступен, работаем без кэширования');
+                console.log('ℹ️ [WEBSOCKET] Redis недоступен, работаем без кэширования');
             }
 
             this.setupWebSocketHandlers();
             this.isInitialized = true;
             
-            console.log('🚀 Real-time Statistics Service инициализирован');
+            console.log('🚀 [WEBSOCKET] Real-time Statistics Service успешно инициализирован');
         } catch (error) {
-            console.error('❌ Ошибка инициализации Real-time Stats Service:', error);
+            console.error('❌ [WEBSOCKET] Ошибка инициализации Real-time Stats Service:', {
+                message: error.message,
+                stack: error.stack
+            });
             // Graceful fallback - работаем без WebSocket
             this.isInitialized = false;
         }
@@ -60,14 +75,39 @@ class RealTimeStatsService {
 
     setupWebSocketHandlers() {
         this.wss.on('connection', (ws, req) => {
-            console.log('🔌 Новое WebSocket подключение');
+            const connectTime = new Date().toISOString();
+            console.log('🔌 [WEBSOCKET] Новое WebSocket подключение:', {
+                timestamp: connectTime,
+                url: req.url,
+                origin: req.headers.origin,
+                userAgent: req.headers['user-agent'],
+                remoteAddress: req.connection?.remoteAddress || req.socket?.remoteAddress
+            });
 
             ws.on('message', async (message) => {
                 try {
+                    console.log('📨 [WEBSOCKET] Получено сообщение:', {
+                        messageLength: message.length,
+                        timestamp: new Date().toISOString()
+                    });
+                    
                     const data = JSON.parse(message);
+                    
+                    console.log('🔍 [WEBSOCKET] Обработка сообщения:', {
+                        type: data.type,
+                        userId: data.userId,
+                        hasToken: !!data.token,
+                        timestamp: new Date().toISOString()
+                    });
+                    
                     await this.handleMessage(ws, data);
                 } catch (error) {
-                    console.error('❌ Ошибка обработки WebSocket сообщения:', error);
+                    console.error('❌ [WEBSOCKET] Ошибка обработки сообщения:', {
+                        error: error.message,
+                        stack: error.stack,
+                        message: message.toString(),
+                        timestamp: new Date().toISOString()
+                    });
                     ws.send(JSON.stringify({
                         type: 'error',
                         message: 'Ошибка обработки сообщения'
@@ -75,21 +115,39 @@ class RealTimeStatsService {
                 }
             });
 
-            ws.on('close', () => {
+            ws.on('close', (code, reason) => {
+                const disconnectTime = new Date().toISOString();
+                let disconnectedUserId = null;
+                
                 // Удаляем клиента из Map при отключении
                 for (const [userId, client] of this.clients.entries()) {
                     if (client === ws) {
                         this.clients.delete(userId);
-                        console.log(`🔌 Пользователь ${userId} отключился от WebSocket`);
+                        disconnectedUserId = userId;
                         break;
                     }
                 }
+                
+                console.log('💔 [WEBSOCKET] WebSocket отключение:', {
+                    userId: disconnectedUserId,
+                    code: code,
+                    reason: reason?.toString(),
+                    disconnectTime: disconnectTime,
+                    activeClients: this.clients.size
+                });
             });
 
             ws.on('error', (error) => {
-                console.error('❌ WebSocket ошибка:', error);
+                console.error('❌ [WEBSOCKET] WebSocket ошибка:', {
+                    error: error.message,
+                    stack: error.stack,
+                    code: error.code,
+                    timestamp: new Date().toISOString()
+                });
             });
         });
+        
+        console.log('✅ [WEBSOCKET] WebSocket обработчики настроены');
     }
 
     async handleMessage(ws, data) {
@@ -98,9 +156,15 @@ class RealTimeStatsService {
         switch (type) {
             case 'authenticate':
             case 'subscribe_stats':
+                console.log(`🔐 [WEBSOCKET] Попытка аутентификации пользователя: ${userId}`);
+                
                 if (await this.validateUserToken(userId, token)) {
                     this.clients.set(userId, ws);
-                    console.log(`✅ Пользователь ${userId} подписался на real-time статистику`);
+                    console.log(`✅ [WEBSOCKET] Пользователь подписался на real-time статистику:`, {
+                        userId: userId,
+                        totalClients: this.clients.size,
+                        timestamp: new Date().toISOString()
+                    });
                     
                     // Отправляем текущую статистику при подключении
                     const currentStats = await this.getCurrentStats(userId);
@@ -108,7 +172,10 @@ class RealTimeStatsService {
                         type: 'stats_update',
                         data: currentStats
                     }));
+                    
+                    console.log(`📊 [WEBSOCKET] Отправлена текущая статистика пользователю: ${userId}`);
                 } else {
+                    console.warn(`❌ [WEBSOCKET] Недействительный токен для пользователя: ${userId}`);
                     ws.send(JSON.stringify({
                         type: 'error',
                         message: 'Недействительный токен'
@@ -117,21 +184,32 @@ class RealTimeStatsService {
                 break;
 
             case 'request_tournament_analysis':
+                console.log(`📈 [WEBSOCKET] Запрос анализа турниров от пользователя: ${userId}`);
+                
                 if (await this.validateUserToken(userId, token)) {
                     const analysis = await this.generateTournamentAnalysis(userId);
                     ws.send(JSON.stringify({
                         type: 'tournament_analysis',
                         data: analysis
                     }));
+                    
+                    console.log(`📈 [WEBSOCKET] Отправлен анализ турниров пользователю: ${userId}`);
+                } else {
+                    console.warn(`❌ [WEBSOCKET] Недействительный токен для запроса анализа: ${userId}`);
                 }
                 break;
 
             case 'ping':
+                console.log(`🏓 [WEBSOCKET] Ping от пользователя: ${userId}`);
                 ws.send(JSON.stringify({ type: 'pong' }));
                 break;
 
             default:
-                console.log(`❓ Неизвестный тип сообщения: ${type}`);
+                console.warn(`❓ [WEBSOCKET] Неизвестный тип сообщения:`, {
+                    type: type,
+                    userId: userId,
+                    timestamp: new Date().toISOString()
+                });
         }
     }
 
@@ -425,25 +503,64 @@ class RealTimeStatsService {
 
     // Метод для отправки real-time обновлений всем подключенным клиентам
     async broadcastStatsUpdate(userId, updateType = 'stats_update') {
+        if (!this.isInitialized) {
+            console.log(`⚠️ [WEBSOCKET] Broadcast пропущен - сервис не инициализирован для пользователя: ${userId}`);
+            return;
+        }
+        
         const client = this.clients.get(userId);
-        if (client && client.readyState === WebSocket.OPEN) {
-            try {
-                const currentStats = await this.getCurrentStats(userId);
-                client.send(JSON.stringify({
-                    type: updateType,
-                    data: currentStats,
-                    timestamp: new Date().toISOString()
-                }));
-                
-                // Очищаем кэш для форсированного обновления
-                if (this.redis) {
-                    await this.redis.del(`user_stats_${userId}`);
-                }
-                
-                console.log(`📊 Отправлено real-time обновление статистики для пользователя ${userId}`);
-            } catch (error) {
-                console.error('❌ Ошибка отправки real-time обновления:', error);
+        
+        if (!client) {
+            console.log(`⚠️ [WEBSOCKET] Broadcast пропущен - клиент не найден для пользователя: ${userId}`);
+            return;
+        }
+        
+        if (client.readyState !== WebSocket.OPEN) {
+            console.log(`⚠️ [WEBSOCKET] Broadcast пропущен - соединение не активно для пользователя: ${userId}, состояние: ${client.readyState}`);
+            this.clients.delete(userId); // Удаляем неактивного клиента
+            return;
+        }
+        
+        try {
+            console.log(`📡 [WEBSOCKET] Отправка broadcast обновления:`, {
+                userId: userId,
+                updateType: updateType,
+                totalClients: this.clients.size,
+                timestamp: new Date().toISOString()
+            });
+            
+            const currentStats = await this.getCurrentStats(userId);
+            const message = JSON.stringify({
+                type: updateType,
+                data: currentStats,
+                timestamp: new Date().toISOString()
+            });
+            
+            client.send(message);
+            
+            // Очищаем кэш для форсированного обновления
+            if (this.redis) {
+                await this.redis.del(`user_stats_${userId}`);
+                console.log(`🗑️ [WEBSOCKET] Кэш очищен для пользователя: ${userId}`);
             }
+            
+            console.log(`✅ [WEBSOCKET] Broadcast успешно отправлен:`, {
+                userId: userId,
+                updateType: updateType,
+                messageLength: message.length,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error('❌ [WEBSOCKET] Ошибка отправки real-time обновления:', {
+                userId: userId,
+                updateType: updateType,
+                error: error.message,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Удаляем проблемного клиента
+            this.clients.delete(userId);
         }
     }
 

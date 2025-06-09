@@ -42,7 +42,13 @@ function setupChatSocketIO(io) {
   });
 
   io.on('connection', socket => {
-    console.log('Socket.IO: пользователь подключился к чату, userId =', socket.userId);
+    console.log('🎉 [SOCKETIO-CHAT] Пользователь подключился к чату:', {
+      userId: socket.userId,
+      socketId: socket.id,
+      connectTime: new Date().toISOString(),
+      transport: socket.conn?.transport?.name,
+      clientIP: socket.handshake?.address
+    });
 
     // Флаг для отслеживания статуса подключения к комнатам
     let roomsJoined = false;
@@ -50,13 +56,25 @@ function setupChatSocketIO(io) {
     // Присоединение к чату турнира
     socket.on('join_tournament_chat', (tournamentId) => {
       socket.join(`chat_tournament_${tournamentId}`);
-      console.log(`Socket.IO: пользователь ${socket.userId} присоединился к комнате chat_tournament_${tournamentId}`);
+      console.log(`🏆 [SOCKETIO-CHAT] Присоединение к турниру:`, {
+        userId: socket.userId,
+        socketId: socket.id,
+        tournamentId: tournamentId,
+        room: `chat_tournament_${tournamentId}`,
+        timestamp: new Date().toISOString()
+      });
     });
 
     // Обработка запроса на присоединение к дополнительной комнате чата
     socket.on('join_chat', (chatId) => {
       socket.join(`chat_${chatId}`);
-      console.log(`Socket.IO: пользователь ${socket.userId} присоединился к комнате chat_${chatId}`);
+      console.log(`💬 [SOCKETIO-CHAT] Присоединение к чату:`, {
+        userId: socket.userId,
+        socketId: socket.id,
+        chatId: chatId,
+        room: `chat_${chatId}`,
+        timestamp: new Date().toISOString()
+      });
     });
 
     const userId = socket.userId;
@@ -90,15 +108,31 @@ function setupChatSocketIO(io) {
         if (systemChatResult.rows.length > 0) {
           const systemChatId = systemChatResult.rows[0].id;
           socket.join(`chat_${systemChatId}`);
-          console.log(`Socket.IO: пользователь ${userId} присоединён к персональному системному чату ${systemChatId}`);
+          console.log(`💬 [SOCKETIO-CHAT] Присоединение к системному чату:`, {
+            userId: userId,
+            socketId: socket.id,
+            systemChatId: systemChatId,
+            room: `chat_${systemChatId}`,
+            timestamp: new Date().toISOString()
+          });
         } else {
-          console.log(`Socket.IO: персональный системный чат для пользователя ${userId} не найден`);
+          console.log(`⚠️ [SOCKETIO-CHAT] Системный чат не найден:`, {
+            userId: userId,
+            socketId: socket.id,
+            timestamp: new Date().toISOString()
+          });
         }
         
         roomsJoined = true;
         return true;
       } catch (err) {
-        console.error('Ошибка при подключении пользователя к комнатам чатов:', err);
+        console.error('❌ [SOCKETIO-CHAT] Ошибка подключения к комнатам чатов:', {
+          userId: userId,
+          socketId: socket.id,
+          error: err.message,
+          stack: err.stack,
+          timestamp: new Date().toISOString()
+        });
         socket.emit('chat_connection_error', {
           message: 'Не удалось подключиться к чатам. Пожалуйста, попробуйте позже.'
         });
@@ -121,12 +155,27 @@ function setupChatSocketIO(io) {
 
     // Событие для ручного запроса переподключения от клиента
     socket.on('reconnect_chat_rooms', async () => {
-      console.log(`Socket.IO: запрос на переподключение к комнатам от пользователя ${userId}`);
+      console.log(`🔄 [SOCKETIO-CHAT] Запрос переподключения:`, {
+        userId: userId,
+        socketId: socket.id,
+        timestamp: new Date().toISOString()
+      });
       try {
         await joinUserChatRooms();
         socket.emit('rooms_reconnected', { success: true });
+        console.log(`✅ [SOCKETIO-CHAT] Переподключение успешно:`, {
+          userId: userId,
+          socketId: socket.id,
+          timestamp: new Date().toISOString()
+        });
       } catch (err) {
-        console.error('Ошибка при переподключении к комнатам чатов:', err);
+        console.error('❌ [SOCKETIO-CHAT] Ошибка переподключения:', {
+          userId: userId,
+          socketId: socket.id,
+          error: err.message,
+          stack: err.stack,
+          timestamp: new Date().toISOString()
+        });
         socket.emit('rooms_reconnected', { 
           success: false,
           error: 'Не удалось переподключиться к комнатам чатов'
@@ -136,7 +185,12 @@ function setupChatSocketIO(io) {
 
     // Обработка входящих сообщений в чат
     socket.on('message', async payload => {
-      console.log('Socket.IO: получено событие message от userId =', socket.userId, 'payload =', payload);
+      console.log('📝 [SOCKETIO-CHAT] Получено сообщение:', {
+        userId: socket.userId,
+        socketId: socket.id,
+        payload: payload,
+        timestamp: new Date().toISOString()
+      });
       const { chat_id } = payload;
       
       // Проверяем соединение с комнатами перед обработкой сообщения
@@ -189,9 +243,24 @@ function setupChatSocketIO(io) {
 
         // Отправляю сообщение всем участникам комнаты чата
         io.to(`chat_${chat_id}`).emit('message', message);
-        console.log('Socket.IO: событие message отправлено в комнату chat_' + chat_id, message);
+        console.log('📤 [SOCKETIO-CHAT] Сообщение отправлено:', {
+          userId: socket.userId,
+          socketId: socket.id,
+          chatId: chat_id,
+          room: `chat_${chat_id}`,
+          messageId: message.id,
+          messageType: message.message_type,
+          timestamp: new Date().toISOString()
+        });
       } catch (err) {
-        console.error('Ошибка обработки сообщения чата:', err);
+        console.error('❌ [SOCKETIO-CHAT] Ошибка обработки сообщения:', {
+          userId: socket.userId,
+          socketId: socket.id,
+          chatId: payload.chat_id,
+          error: err.message,
+          stack: err.stack,
+          timestamp: new Date().toISOString()
+        });
         socket.emit('message_error', { 
           error: 'Не удалось отправить сообщение. Пожалуйста, попробуйте еще раз.' 
         });
