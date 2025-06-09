@@ -330,32 +330,43 @@ const io = new SocketIOServer(server, {
     credentials: true
   },
   path: "/socket.io/",
-  transports: ['websocket', 'polling'],
-  // Настройки для production
-  pingTimeout: 60000,
+  transports: ['polling', 'websocket'],
+  pingTimeout: 20000,
   pingInterval: 25000,
-  // Дополнительные настройки для стабильности соединения
-  upgradeTimeout: 30000,
+  upgradeTimeout: 10000,
   maxHttpBufferSize: 1e6,
-  // Принудительно разрешаем polling как fallback
   allowUpgrades: true,
   allowEIO3: true,
-  // Настройки для работы за прокси (Nginx)
-  rememberUpgrade: true,
-  // Cookie настройки для работы с HTTPS
+  rememberUpgrade: false,
   cookie: {
     name: "io",
     httpOnly: true,
     path: "/",
-    secure: false, // Временно отключаем для тестирования WebSocket
-    sameSite: 'lax' // Упрощаем для WebSocket
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+  serveClient: false,
+  httpCompression: true,
+  perMessageDeflate: true,
+  connectTimeout: 45000,
+  allowRequest: (req, callback) => {
+    console.log('🔍 [SOCKETIO] Engine Headers:', {
+      headers: req.headers,
+      url: req.url,
+      method: req.method,
+      remoteAddress: req.connection?.remoteAddress
+    });
+    
+    callback(null, true);
   }
 });
 
 console.log('✅ [SOCKETIO] Socket.IO сервер создан');
 console.log('✅ [SOCKETIO] Endpoint: /socket.io/');
-console.log('✅ [SOCKETIO] Транспорты: websocket, polling');
-console.log('✅ [SOCKETIO] PingTimeout:', 60000);
+console.log('✅ [SOCKETIO] Транспорты: polling, websocket');
+console.log('✅ [SOCKETIO] PingTimeout:', 20000);
 console.log('✅ [SOCKETIO] PingInterval:', 25000);
 
 // 🔐 Middleware для авторизации Socket.IO соединений
@@ -367,14 +378,36 @@ io.use(async (socket, next) => {
     console.log('🔍 [SOCKETIO] Client IP:', socket.handshake.address);
     console.log('🔍 [SOCKETIO] Headers:', JSON.stringify(socket.handshake.headers, null, 2));
     
-    const token = socket.handshake.auth.token || socket.handshake.query.token;
+    // ✅ ИСПРАВЛЕНИЕ: Проверяем токен в разных местах по приоритету
+    let token = null;
+    
+    // 1. Из заголовка Authorization (самый надежный)
+    if (socket.handshake.headers.authorization) {
+      const authHeader = socket.handshake.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+        console.log('🔍 [SOCKETIO] Токен найден в заголовке Authorization');
+      }
+    }
+    
+    // 2. Из socket.handshake.auth (стандартный способ Socket.IO)
+    if (!token && socket.handshake.auth.token) {
+      token = socket.handshake.auth.token;
+      console.log('🔍 [SOCKETIO] Токен найден в handshake.auth');
+    }
+    
+    // 3. Из query параметров (fallback)
+    if (!token && socket.handshake.query.token) {
+      token = socket.handshake.query.token;
+      console.log('🔍 [SOCKETIO] Токен найден в query параметрах');
+    }
     
     if (!token) {
-      console.log('⚠️ [SOCKETIO] Токен отсутствует, но разрешаем для тестирования');
-      console.log('⚠️ [SOCKETIO] Handshake auth:', socket.handshake.auth);
-      console.log('⚠️ [SOCKETIO] Handshake query:', socket.handshake.query);
-      socket.userId = 'test-user';
-      return next();
+      console.log('❌ [SOCKETIO] Токен не найден во всех возможных местах');
+      console.log('❌ [SOCKETIO] Handshake auth:', socket.handshake.auth);
+      console.log('❌ [SOCKETIO] Handshake query:', socket.handshake.query);
+      console.log('❌ [SOCKETIO] Headers authorization:', socket.handshake.headers.authorization);
+      return next(new Error('Токен не предоставлен'));
     }
 
     console.log('🔍 [SOCKETIO] Проверяем JWT токен...');
