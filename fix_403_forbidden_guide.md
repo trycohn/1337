@@ -161,7 +161,7 @@ systemctl reload nginx
 
 ```bash
 # Установите правильные права для веб-сервера
-chown -R www-data:www-data /var/www/1337community.com/frontend/build/
+chown -R www-data:www-data /var/www/1337community.com/frontend/build/   
 chmod -R 755 /var/www/1337community.com/frontend/build/
 
 # Проверьте что права установлены
