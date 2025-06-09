@@ -325,16 +325,15 @@ const io = new SocketIOServer(server, {
   maxHttpBufferSize: 1e6,
   // Принудительно разрешаем polling как fallback
   allowUpgrades: true,
-  allowEIO3: true,
   // Настройки для работы за прокси (Nginx)
-  rememberUpgrade: true,
+  rememberUpgrade: false,
   // Cookie настройки для работы с HTTPS
   cookie: {
     name: "io",
     httpOnly: true,
     path: "/",
-    secure: false, // Временно отключаем для тестирования WebSocket
-    sameSite: 'lax' // Упрощаем для WebSocket
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 });
 

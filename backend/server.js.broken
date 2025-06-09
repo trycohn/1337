@@ -307,7 +307,7 @@ console.log('🔌 Инициализация Socket.IO сервера...');
 const io = new SocketIOServer(server, {
   cors: {
     origin: [
-      "https://1337community.com",
+      "https://1337community.com", 
       "https://www.1337community.com",
       "http://localhost:3000",
       "http://localhost:3001"
@@ -316,7 +316,7 @@ const io = new SocketIOServer(server, {
     credentials: true
   },
   path: "/socket.io/",
-  transports: ['websocket', 'polling'],
+  },
   // Настройки для production
   pingTimeout: 60000,
   pingInterval: 25000,
@@ -325,16 +325,15 @@ const io = new SocketIOServer(server, {
   maxHttpBufferSize: 1e6,
   // Принудительно разрешаем polling как fallback
   allowUpgrades: true,
-  allowEIO3: true,
   // Настройки для работы за прокси (Nginx)
-  rememberUpgrade: true,
+  rememberUpgrade: false,
   // Cookie настройки для работы с HTTPS
   cookie: {
     name: "io",
     httpOnly: true,
     path: "/",
-    secure: false, // Временно отключаем для тестирования WebSocket
-    sameSite: 'lax' // Упрощаем для WebSocket
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 });
 
@@ -348,9 +347,8 @@ io.use(async (socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.query.token;
     
     if (!token) {
-      console.log('⚠️ Socket.IO: токен отсутствует, но разрешаем для тестирования');
-      socket.userId = 'test-user';
-      return next();
+      console.log('⚠️ Socket.IO: токен отсутствует в соединении');
+      return next(new Error('Токен отсутствует'));
     }
 
     console.log('🔍 Socket.IO: проверяем JWT токен...');

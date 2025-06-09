@@ -44,22 +44,6 @@ app.set('trust proxy', 1);
 // Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
 
-// 🔌 Инициализация WebSocket сервера для real-time статистики
-let realTimeStatsService = null;
-try {
-    console.log('🔌 Инициализация WebSocket сервера для real-time статистики...');
-    realTimeStatsService = require('./services/realTimeStatsService');
-    realTimeStatsService.initialize(server).then(() => {
-        console.log('✅ WebSocket сервер для статистики успешно инициализирован');
-    }).catch((initError) => {
-        console.warn('⚠️ Ошибка инициализации WebSocket:', initError.message);
-    });
-} catch (error) {
-    console.warn('⚠️ WebSocket сервер недоступен, продолжаем без real-time обновлений:', error.message);
-    console.warn('   Причины: отсутствует модуль realTimeStatsService или ошибка инициализации');
-    console.warn('   Приложение будет работать в обычном режиме без real-time функций');
-}
-
 // Настройка middleware в правильном порядке
 app.use(helmet()); // Безопасность должна быть в начале
 app.use(morgan('dev')); // Логгирование запросов
@@ -219,36 +203,6 @@ app.get('/testdb', async (req, res) => {
     }
 });
 
-// 🔧 Тестовый маршрут для Socket.IO
-app.get('/test-socketio', (req, res) => {
-    try {
-        const io = req.app.get('io');
-        if (!io) {
-            return res.status(500).json({ 
-                status: 'error', 
-                message: 'Socket.IO не инициализирован' 
-            });
-        }
-        
-        const clientsCount = io.engine.clientsCount;
-        const engineTransports = io.engine.opts.transports;
-        
-        res.json({ 
-            status: 'success',
-            message: 'Socket.IO работает',
-            clientsCount: clientsCount,
-            transports: engineTransports,
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.error('❌ Ошибка тестирования Socket.IO:', err);
-        res.status(500).json({ 
-            status: 'error', 
-            message: err.message 
-        });
-    }
-});
-
 // Главный роут для проверки работы API
 app.get('/', (req, res) => {
     res.json({ message: 'Сервер 1337 Community API работает!' });
@@ -303,138 +257,35 @@ app.get(/^\/(?!api).*/, (req, res) => {
 });
 
 // Устанавливаю Socket.IO сервер для чата
-console.log('🔌 Инициализация Socket.IO сервера...');
 const io = new SocketIOServer(server, {
   cors: {
-    origin: [
-      "https://1337community.com",
-      "https://www.1337community.com",
-      "http://localhost:3000",
-      "http://localhost:3001"
-    ],
+    origin: [process.env.SERVER_URL || '*'],
     methods: ['GET', 'POST'],
     credentials: true
-  },
-  path: "/socket.io/",
-  transports: ['websocket', 'polling'],
-  // Настройки для production
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  // Дополнительные настройки для стабильности соединения
-  upgradeTimeout: 30000,
-  maxHttpBufferSize: 1e6,
-  // Принудительно разрешаем polling как fallback
-  allowUpgrades: true,
-  allowEIO3: true,
-  // Настройки для работы за прокси (Nginx)
-  rememberUpgrade: true,
-  // Cookie настройки для работы с HTTPS
-  cookie: {
-    name: "io",
-    httpOnly: true,
-    path: "/",
-    secure: false, // Временно отключаем для тестирования WebSocket
-    sameSite: 'lax' // Упрощаем для WebSocket
   }
 });
-
-console.log('✅ Socket.IO сервер создан');
-
-// 🔐 Middleware для авторизации Socket.IO соединений
-console.log('🔐 Настройка middleware авторизации Socket.IO...');
-io.use(async (socket, next) => {
-  try {
-    console.log('🔍 Socket.IO: попытка авторизации соединения');
-    const token = socket.handshake.auth.token || socket.handshake.query.token;
-    
-    if (!token) {
-      console.log('⚠️ Socket.IO: токен отсутствует, но разрешаем для тестирования');
-      socket.userId = 'test-user';
-      return next();
-    }
-
-    console.log('🔍 Socket.IO: проверяем JWT токен...');
-    // Проверяем JWT токен
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    console.log('🔍 Socket.IO: ищем пользователя в базе данных...');
-    // Проверяем пользователя в базе данных
-    const result = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [decoded.id]);
-    
-    if (result.rows.length === 0) {
-      console.log('⚠️ Socket.IO: пользователь не найден в базе данных');
-      return next(new Error('Пользователь не найден'));
-    }
-
-    // Присваиваем данные пользователя к сокету
-    socket.userId = decoded.id;
-    socket.user = result.rows[0];
-    
-    console.log(`✅ Socket.IO: пользователь ${decoded.username} (ID: ${decoded.id}) авторизован`);
-    next();
-  } catch (error) {
-    console.log('❌ Socket.IO ошибка авторизации:', error.message);
-    next(new Error('Ошибка авторизации'));
-  }
-});
-
-console.log('✅ Middleware авторизации Socket.IO настроен');
-
-// Инициализация чата через Socket.IO
-console.log('🔌 Инициализация чата через Socket.IO...');
-try {
-  setupChatSocketIO(io);
-  console.log('✅ Чат Socket.IO инициализирован');
-} catch (error) {
-  console.error('❌ Ошибка инициализации чата Socket.IO:', error);
-}
-
+setupChatSocketIO(io);
 // Устанавливаю экземпляр io в app для использования в маршрутах
 app.set('io', io);
-console.log('✅ Socket.IO экземпляр установлен в app');
 
 // Я настраиваю соединение для уведомлений через Socket.IO, чтобы пользователи автоматически подключались к своим комнатам
-console.log('🔔 Настройка обработчиков уведомлений Socket.IO...');
 io.on('connection', (socket) => {
-  console.log('🎉 Socket.IO: НОВОЕ ПОДКЛЮЧЕНИЕ! userId =', socket.userId);
+  console.log('Socket.IO Notifications: пользователь подключился, userId =', socket.userId);
   socket.join(`user_${socket.userId}`);
-  console.log(`✅ Socket.IO: пользователь ${socket.userId} присоединился к комнате user_${socket.userId}`);
+  console.log(`Socket.IO Notifications: пользователь ${socket.userId} присоединился к комнате user_${socket.userId}`);
 
   // Обработка подписки на обновления турнира
   socket.on('watch_tournament', (tournamentId) => {
     socket.join(`tournament_${tournamentId}`);
-    console.log(`🎯 Socket.IO: пользователь ${socket.userId} подписался на турнир ${tournamentId}`);
+    console.log(`Socket.IO Notifications: пользователь ${socket.userId} подписался на турнир ${tournamentId}`);
   });
 
   // Обработка отписки от обновлений турнира
   socket.on('unwatch_tournament', (tournamentId) => {
     socket.leave(`tournament_${tournamentId}`);
-    console.log(`👋 Socket.IO: пользователь ${socket.userId} отписался от турнира ${tournamentId}`);
-  });
-  
-  // Обработка отключения
-  socket.on('disconnect', (reason) => {
-    console.log(`👋 Socket.IO: пользователь ${socket.userId} отключился. Причина: ${reason}`);
-  });
-  
-  // Обработка ошибок
-  socket.on('error', (error) => {
-    console.log(`❌ Socket.IO: ошибка сокета пользователя ${socket.userId}:`, error);
+    console.log(`Socket.IO Notifications: пользователь ${socket.userId} отписался от турнира ${tournamentId}`);
   });
 });
-
-console.log('✅ Обработчики уведомлений Socket.IO настроены');
-
-// Глобальная обработка ошибок Socket.IO
-io.engine.on('connection_error', (err) => {
-  console.log('❌ Socket.IO connection_error:', err.req);      // the request object
-  console.log('❌ Socket.IO connection_error code:', err.code);     // the error code, for example 1
-  console.log('❌ Socket.IO connection_error message:', err.message);  // the error message, for example "Session ID unknown"
-  console.log('❌ Socket.IO connection_error context:', err.context);  // some additional error context
-});
-
-console.log('✅ Socket.IO полностью инициализирован и готов к работе!');
 
 // Инициализация транспорта электронной почты и проверка соединения
 const mailTransporter = nodemailer.createTransport({
