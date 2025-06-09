@@ -1,4 +1,4 @@
-// 🔧 ФИНАЛЬНЫЙ Socket.IO клиент без HTTP/2
+// 🔧 ФИНАЛЬНЫЙ Socket.IO клиент без HTTP/2 с защитой от ошибок
 import { io } from 'socket.io-client';
 
 // Конфигурация для HTTP/1.1 setup
@@ -55,78 +55,163 @@ const SOCKET_CONFIG = {
 // Создаем singleton instance
 let socketInstance = null;
 
-export const getSocketInstance = () => {
-  if (!socketInstance) {
+// 🛡️ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Защищенная инициализация Socket.IO
+const createSocketInstance = () => {
+  try {
     console.log('🔧 [Socket.IO Final] Инициализация HTTP/1.1 клиента...');
     console.log(`🔗 [Socket.IO Final] Подключение к: ${SOCKET_CONFIG.url}`);
     
-    socketInstance = io(SOCKET_CONFIG.url, SOCKET_CONFIG.options);
+    // Создаем Socket.IO клиент с защитой от ошибок
+    const socket = io(SOCKET_CONFIG.url, SOCKET_CONFIG.options);
     
-    // Debug events
-    socketInstance.on('connect', () => {
-      console.log('✅ [Socket.IO Final] ПОДКЛЮЧЕНО! Transport:', socketInstance.io.engine.transport.name);
-      console.log('🔗 [Socket.IO Final] Socket ID:', socketInstance.id);
-      console.log('🎉 [Socket.IO Final] WebSocket работает без HTTP/2!');
-    });
+    // 🛡️ КРИТИЧЕСКИ ВАЖНО: Проверяем что инициализация прошла успешно
+    if (!socket) {
+      throw new Error('Socket.IO client initialization failed - returned null/undefined');
+    }
     
-    socketInstance.on('connect_error', (error) => {
-      console.error('❌ [Socket.IO Final] Ошибка подключения:', error.message);
-      console.log('🔄 [Socket.IO Final] Попытка fallback на polling...');
-      console.log('🔍 [Socket.IO Final] Детали ошибки:', {
-        type: error.type,
-        description: error.description,
-        context: error.context,
-        message: error.message
-      });
-    });
+    // Проверяем что у объекта есть необходимые методы
+    if (typeof socket.on !== 'function') {
+      throw new Error('Socket.IO client initialization failed - missing "on" method');
+    }
     
-    socketInstance.on('disconnect', (reason) => {
-      console.warn('⚠️ [Socket.IO Final] Отключение:', reason);
-      if (reason === 'io server disconnect') {
-        console.log('🔄 [Socket.IO Final] Сервер разорвал соединение, переподключаемся...');
-        socketInstance.connect();
+    console.log('✅ [Socket.IO Final] Socket.IO клиент создан успешно');
+    
+    // Настраиваем обработчики событий
+    setupSocketEvents(socket);
+    
+    return socket;
+    
+  } catch (error) {
+    console.error('🚨 [Socket.IO Final] КРИТИЧЕСКАЯ ОШИБКА при инициализации:', error.message);
+    console.error('🚨 [Socket.IO Final] Stack trace:', error.stack);
+    
+    // Возвращаем mock объект для предотвращения undefined ошибок
+    return createFallbackSocket();
+  }
+};
+
+// 🛡️ Fallback объект на случай ошибки инициализации
+const createFallbackSocket = () => {
+  console.log('🔧 [Socket.IO Final] Создаем fallback socket объект...');
+  
+  const fallbackSocket = {
+    connected: false,
+    id: null,
+    auth: {},
+    io: {
+      engine: { transport: { name: 'fallback' } },
+      opts: {
+        transportOptions: {
+          polling: { extraHeaders: {} },
+          websocket: { extraHeaders: {} }
+        },
+        extraHeaders: {}
       }
-    });
+    },
     
-    // Transport events
-    socketInstance.io.on('ping', () => {
-      console.log('🏓 [Socket.IO Final] Ping от сервера');
+    // Mock методы для предотвращения ошибок
+    on: (event, callback) => {
+      console.warn(`⚠️ [Socket.IO Final] Fallback socket - event "${event}" ignored`);
+      return fallbackSocket;
+    },
+    emit: (event, ...args) => {
+      console.warn(`⚠️ [Socket.IO Final] Fallback socket - emit "${event}" ignored`);
+      return fallbackSocket;
+    },
+    connect: () => {
+      console.warn('⚠️ [Socket.IO Final] Fallback socket - connect ignored');
+      return fallbackSocket;
+    },
+    disconnect: () => {
+      console.warn('⚠️ [Socket.IO Final] Fallback socket - disconnect ignored');
+      return fallbackSocket;
+    }
+  };
+  
+  return fallbackSocket;
+};
+
+// 🔧 Настройка событий Socket.IO
+const setupSocketEvents = (socket) => {
+  // Debug events
+  socket.on('connect', () => {
+    console.log('✅ [Socket.IO Final] ПОДКЛЮЧЕНО! Transport:', socket.io.engine.transport.name);
+    console.log('🔗 [Socket.IO Final] Socket ID:', socket.id);
+    console.log('🎉 [Socket.IO Final] WebSocket работает без HTTP/2!');
+  });
+  
+  socket.on('connect_error', (error) => {
+    console.error('❌ [Socket.IO Final] Ошибка подключения:', error.message);
+    console.log('🔄 [Socket.IO Final] Попытка fallback на polling...');
+    console.log('🔍 [Socket.IO Final] Детали ошибки:', {
+      type: error.type,
+      description: error.description,
+      context: error.context,
+      message: error.message
     });
-    
-    socketInstance.io.engine.on('upgrade', () => {
+  });
+  
+  socket.on('disconnect', (reason) => {
+    console.warn('⚠️ [Socket.IO Final] Отключение:', reason);
+    if (reason === 'io server disconnect') {
+      console.log('🔄 [Socket.IO Final] Сервер разорвал соединение, переподключаемся...');
+      socket.connect();
+    }
+  });
+  
+  // Transport events
+  socket.io.on('ping', () => {
+    console.log('🏓 [Socket.IO Final] Ping от сервера');
+  });
+  
+  if (socket.io.engine) {
+    socket.io.engine.on('upgrade', () => {
       console.log('⬆️ [Socket.IO Final] Успешный upgrade на WebSocket!');
     });
     
-    socketInstance.io.engine.on('upgradeError', (error) => {
+    socket.io.engine.on('upgradeError', (error) => {
       console.warn('⚠️ [Socket.IO Final] Ошибка upgrade, используем polling:', error.message);
     });
-    
-    // Обработка ошибок отправки событий
-    socketInstance.on('error', (error) => {
-      console.error('🚨 [Socket.IO Final] Ошибка Socket.IO:', error);
-    });
-    
-    socketInstance.on('reconnect', (attemptNumber) => {
-      console.log(`🔄 [Socket.IO Final] Переподключение успешно (попытка ${attemptNumber})`);
-    });
-    
-    socketInstance.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`🔄 [Socket.IO Final] Попытка переподключения ${attemptNumber}...`);
-    });
-    
-    socketInstance.on('reconnect_error', (error) => {
-      console.error('❌ [Socket.IO Final] Ошибка переподключения:', error.message);
-    });
-    
-    socketInstance.on('reconnect_failed', () => {
-      console.error('❌ [Socket.IO Final] Не удалось переподключиться после всех попыток');
-    });
+  }
+  
+  // Обработка ошибок отправки событий
+  socket.on('error', (error) => {
+    console.error('🚨 [Socket.IO Final] Ошибка Socket.IO:', error);
+  });
+  
+  socket.on('reconnect', (attemptNumber) => {
+    console.log(`🔄 [Socket.IO Final] Переподключение успешно (попытка ${attemptNumber})`);
+  });
+  
+  socket.on('reconnect_attempt', (attemptNumber) => {
+    console.log(`🔄 [Socket.IO Final] Попытка переподключения ${attemptNumber}...`);
+  });
+  
+  socket.on('reconnect_error', (error) => {
+    console.error('❌ [Socket.IO Final] Ошибка переподключения:', error.message);
+  });
+  
+  socket.on('reconnect_failed', () => {
+    console.error('❌ [Socket.IO Final] Не удалось переподключиться после всех попыток');
+  });
+};
+
+// 🛡️ ИСПРАВЛЕННАЯ функция получения экземпляра Socket.IO
+export const getSocketInstance = () => {
+  if (!socketInstance) {
+    socketInstance = createSocketInstance();
+  }
+  
+  // Дополнительная проверка что объект валидный
+  if (!socketInstance || typeof socketInstance.on !== 'function') {
+    console.error('🚨 [Socket.IO Final] КРИТИЧЕСКАЯ ОШИБКА: Socket instance невалидный');
+    socketInstance = createFallbackSocket();
   }
   
   return socketInstance;
 };
 
-// 🔐 ИСПРАВЛЕНО: Утилиты для авторизации с правильной передачей токена
+// 🔐 ИСПРАВЛЕНО: Утилиты для авторизации без разрыва соединений
 export const authenticateSocket = (token) => {
   const socket = getSocketInstance();
   
@@ -143,43 +228,50 @@ export const authenticateSocket = (token) => {
   // 🔧 ИСПРАВЛЕНО: Добавляем токен в extraHeaders для всех транспортов
   const authHeader = `Bearer ${token}`;
   
-  // Устанавливаем заголовки авторизации для polling
-  if (socket.io.opts.transportOptions.polling) {
-    socket.io.opts.transportOptions.polling.extraHeaders.Authorization = authHeader;
+  try {
+    // Устанавливаем заголовки авторизации для polling
+    if (socket.io.opts.transportOptions.polling) {
+      socket.io.opts.transportOptions.polling.extraHeaders.Authorization = authHeader;
+    }
+    
+    // Устанавливаем заголовки авторизации для websocket
+    if (socket.io.opts.transportOptions.websocket) {
+      socket.io.opts.transportOptions.websocket.extraHeaders.Authorization = authHeader;
+    }
+    
+    // Устанавливаем в общие extraHeaders (для Node.js окружения)
+    if (!socket.io.opts.extraHeaders) {
+      socket.io.opts.extraHeaders = {};
+    }
+    socket.io.opts.extraHeaders.Authorization = authHeader;
+  } catch (error) {
+    console.warn('⚠️ [Socket.IO Final] Не удалось установить заголовки авторизации:', error.message);
   }
   
-  // Устанавливаем заголовки авторизации для websocket
-  if (socket.io.opts.transportOptions.websocket) {
-    socket.io.opts.transportOptions.websocket.extraHeaders.Authorization = authHeader;
-  }
-  
-  // Устанавливаем в общие extraHeaders (для Node.js окружения)
-  if (!socket.io.opts.extraHeaders) {
-    socket.io.opts.extraHeaders = {};
-  }
-  socket.io.opts.extraHeaders.Authorization = authHeader;
-  
-  // Если сокет еще не подключен, подключаемся с авторизацией
+  // 🔧 ИСПРАВЛЕНО: НЕ разрываем активные соединения
   if (!socket.connected) {
     console.log('🔌 [Socket.IO Final] Подключаемся с авторизацией...');
     socket.connect();
   } else {
-    // Если уже подключен, отключаемся и переподключаемся с новым токеном
-    console.log('🔄 [Socket.IO Final] Переподключаемся с новой авторизацией');
-    socket.disconnect();
-    socket.connect();
+    // Если уже подключен, отправляем токен через событие
+    console.log('🔄 [Socket.IO Final] Обновляем авторизацию для активного соединения');
+    socket.emit('authenticate', { token });
   }
 };
 
 // Утилиты для подписки на турниры
 export const watchTournament = (tournamentId) => {
   const socket = getSocketInstance();
-  socket.emit('watch_tournament', tournamentId);
+  if (socket && typeof socket.emit === 'function') {
+    socket.emit('watch_tournament', tournamentId);
+  }
 };
 
 export const unwatchTournament = (tournamentId) => {
   const socket = getSocketInstance();
-  socket.emit('unwatch_tournament', tournamentId);
+  if (socket && typeof socket.emit === 'function') {
+    socket.emit('unwatch_tournament', tournamentId);
+  }
 };
 
 export default getSocketInstance;
