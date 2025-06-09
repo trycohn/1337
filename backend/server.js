@@ -21,6 +21,7 @@ const http = require('http');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const { serialize } = require('cookie');
 const { Server: SocketIOServer } = require('socket.io');
 const pool = require('./db');
 const { setupChatSocketIO } = require('./chat-socketio');
@@ -375,6 +376,14 @@ const io = new SocketIOServer(server, {
     
     callback(null, true);
   }
+});
+io.engine.on('initial_headers', headers => {
+  if (!headers['Set-Cookie']) {
+    headers['Set-Cookie'] = [];
+  }
+  headers['Set-Cookie'].push(
+    serialize('io', '', { path: '/socket.io', maxAge: 0 })
+  );
 });
 
 console.log('✅ [SOCKETIO] Socket.IO сервер создан');
