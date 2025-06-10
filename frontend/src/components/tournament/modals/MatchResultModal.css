@@ -67,7 +67,7 @@
     justify-content: center;
     gap: 20px;
     padding: 15px;
-    flex-wrap: column;
+    flex-direction: column;
     justify-content: space-evenly;
 }
 
