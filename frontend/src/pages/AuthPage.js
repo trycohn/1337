@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import '../components/Home.css';
 
@@ -12,6 +13,7 @@ function AuthPage() {
   const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth(); // Получаем функцию login из AuthContext
 
   // Проверяем URL-параметр register при загрузке компонента
   useEffect(() => {
@@ -27,7 +29,8 @@ function AuthPage() {
     const token = searchParams.get('token');
     
     if (token) {
-      localStorage.setItem('token', token);
+      // Используем функцию login из AuthContext вместо прямого сохранения в localStorage
+      login(token);
       setSuccessMessage('Вы успешно вошли через Steam!');
       
       // Очищаем URL от параметров
@@ -55,7 +58,8 @@ function AuthPage() {
         password,
       });
       
-      localStorage.setItem('token', response.data.token);
+      // Используем функцию login из AuthContext вместо прямого сохранения в localStorage
+      await login(response.data.token);
       setSuccessMessage('Вы успешно вошли в систему!');
       setError(null);
       
@@ -77,7 +81,8 @@ function AuthPage() {
         password,
       });
       
-      localStorage.setItem('token', response.data.token);
+      // Используем функцию login из AuthContext вместо прямого сохранения в localStorage
+      await login(response.data.token);
       setSuccessMessage('Вы успешно зарегистрировались!');
       setError(null);
       

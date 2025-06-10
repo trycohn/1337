@@ -33,6 +33,25 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuth();
+
+    // Слушатель изменений localStorage для синхронизации между вкладками
+    const handleStorageChange = (event) => {
+      if (event.key === 'token') {
+        if (event.newValue) {
+          // Токен добавлен/изменен - проверяем авторизацию
+          checkAuth();
+        } else {
+          // Токен удален - выходим
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // Функция входа
