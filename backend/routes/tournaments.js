@@ -2040,6 +2040,23 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         const { team_size: sizeFromDb, created_by } = tourRes.rows[0];
         const teamSize = parseInt(sizeFromDb, 10) || 1;
 
+        // 🔧 УДАЛЯЕМ СУЩЕСТВУЮЩИЕ КОМАНДЫ ПЕРЕД СОЗДАНИЕМ НОВЫХ
+        console.log(`🗑️ Удаляем существующие команды для турнира ${id} перед переформированием`);
+        
+        // Сначала удаляем участников команд
+        await pool.query(
+            'DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)',
+            [id]
+        );
+        
+        // Затем удаляем сами команды
+        const deleteResult = await pool.query(
+            'DELETE FROM tournament_teams WHERE tournament_id = $1',
+            [id]
+        );
+        
+        console.log(`✅ Удалено ${deleteResult.rowCount} существующих команд`);
+
         // Получаем всех участников-игроков (solo)
         const partRes = await pool.query(
             `SELECT tp.id AS participant_id, tp.user_id, tp.name,
@@ -2068,12 +2085,15 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             const j = Math.floor(Math.random() * (i + 1));
             [participants[i], participants[j]] = [participants[j], participants[i]];
         }
+        
         // Сохраняем команды в БД
         const created = [];
         for (let idx = 0; idx < participants.length; idx += teamSize) {
             const group = participants.slice(idx, idx + teamSize);
             const teamNumber = idx / teamSize + 1;
             const name = `Команда ${teamNumber}`;
+            console.log(`🏗️ Создаем команду: ${name} с ${group.length} участниками`);
+            
             const insTeam = await pool.query(
                 'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1,$2,$3) RETURNING id',
                 [id, name, created_by]
@@ -2092,6 +2112,8 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             });
         }
 
+        console.log(`✅ Успешно создано ${created.length} новых команд для турнира ${id}`);
+
         // Переключаем тип турнира на командный
         await pool.query('UPDATE tournaments SET participant_type=$1 WHERE id=$2', ['team', id]);
         // Отправляем объявление в чат турнира о формировании команд
@@ -2099,7 +2121,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         const tourName = tourNameRes.rows[0]?.name;
         await sendTournamentChatAnnouncement(
             tourName,
-            `Сформированы команды для турнира "${tourName}"`,
+            `Переформированы команды для турнира "${tourName}"`,
             id
         );
 
