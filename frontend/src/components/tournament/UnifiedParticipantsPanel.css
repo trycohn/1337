@@ -2228,4 +2228,62 @@
     font-size: 13px;
     color: var(--info-text-light, #0c5460);
     line-height: 1.4;
+}
+
+/* 🎯 ИНФОРМАЦИОННЫЙ БЛОК ДЛЯ МИКС ТУРНИРОВ С КОМАНДАМИ */
+.mix-teams-info-participants-list {
+  margin: 20px 0;
+}
+
+.info-card-participants-list {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-icon-participants-list {
+  font-size: 2rem;
+  min-width: 60px;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.info-content-participants-list h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+}
+
+.info-content-participants-list p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .info-card-participants-list {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .info-icon-participants-list {
+    font-size: 1.5rem;
+    min-width: auto;
+  }
 } 

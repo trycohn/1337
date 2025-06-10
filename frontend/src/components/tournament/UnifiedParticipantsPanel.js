@@ -664,11 +664,26 @@ const UnifiedParticipantsPanel = ({
                 </div>
 
                 {/* 🆕 Область отображения с переключением видов */}
-                <div className={`participants-display-area-participants-list display-mode-${displayMode}`}>
-                    {displayMode === 'smart-cards' && renderSmartCards(processedParticipants)}
-                    {displayMode === 'data-table' && renderDataTable(processedParticipants)}
-                    {displayMode === 'gaming-roster' && renderGamingRoster(processedParticipants)}
-                </div>
+                {!(tournament?.format === 'mix' && mixedTeams?.length > 0) && (
+                    <div className={`participants-display-area-participants-list display-mode-${displayMode}`}>
+                        {displayMode === 'smart-cards' && renderSmartCards(processedParticipants)}
+                        {displayMode === 'data-table' && renderDataTable(processedParticipants)}
+                        {displayMode === 'gaming-roster' && renderGamingRoster(processedParticipants)}
+                    </div>
+                )}
+
+                {/* 🎯 ИНФОРМАЦИЯ ДЛЯ МИКС ТУРНИРОВ С КОМАНДАМИ */}
+                {(tournament?.format === 'mix' && mixedTeams?.length > 0) && (
+                    <div className="mix-teams-info-participants-list">
+                        <div className="info-card-participants-list">
+                            <div className="info-icon-participants-list">⚡</div>
+                            <div className="info-content-participants-list">
+                                <h4>Команды сформированы!</h4>
+                                <p>Все участники разделены на команды. Подробную информацию о командах и составах смотрите в блоке ниже.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 🎯 МИКС ТУРНИРЫ: TeamGenerator для формирования и отображения команд */}
                 {tournament?.format === 'mix' && (
@@ -722,6 +737,7 @@ const UnifiedParticipantsPanel = ({
         handleParticipate,
         // 🎯 НОВЫЕ ЗАВИСИМОСТИ ДЛЯ МИКС ТУРНИРОВ
         tournament?.format,
+        mixedTeams?.length,
         onTeamsGenerated,
         onTeamsUpdated,
         onRemoveParticipant,
