@@ -305,66 +305,107 @@ const TeamGenerator = ({
 
             return (
                 <div className="teams-display">
-                    {/* Заголовок с информацией о командах */}
+                    {/* 🎯 ЗАГОЛОВОК С УЛУЧШЕННОЙ СТАТИСТИКОЙ */}
                     <div className="teams-header">
                         <h4>🏆 Сформированные команды ({teamsToShow.length})</h4>
+                        
+                        {/* ПАНЕЛЬ СТАТИСТИКИ */}
                         <div className="teams-stats">
-                            <span className="stat-item">
-                                👥 {teamsToShow.reduce((total, team) => total + (team.members?.length || 0), 0)} игроков
-                            </span>
-                            <span className="stat-item">
-                                ⭐ Средний рейтинг: {teamsToShow.length > 0 
-                                    ? Math.round(teamsToShow.reduce((sum, team) => sum + (team.averageRating || 0), 0) / teamsToShow.length)
-                                    : 0
-                                }
-                            </span>
+                            <div className="team-stat">
+                                <div className="stat-value">{teamsToShow.length}</div>
+                                <div className="stat-label">👥 Команд</div>
+                            </div>
+                            <div className="team-stat">
+                                <div className="stat-value">
+                                    {teamsToShow.reduce((total, team) => total + (team.members?.length || 0), 0)}
+                                </div>
+                                <div className="stat-label">🎮 Игроков</div>
+                            </div>
+                            <div className="team-stat">
+                                <div className="stat-value">
+                                    {teamsToShow.length > 0 
+                                        ? Math.round(teamsToShow.reduce((sum, team) => sum + (team.averageRating || 0), 0) / teamsToShow.length)
+                                        : 0
+                                    }
+                                </div>
+                                <div className="stat-label">⭐ Средний рейтинг</div>
+                            </div>
+                            <div className="team-stat">
+                                <div className="stat-value">
+                                    {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}
+                                </div>
+                                <div className="stat-label">🎯 Тип рейтинга</div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Сетка команд */}
-                    <div className="teams-grid">
+                    {/* 🎯 УЛУЧШЕННАЯ СЕТКА КОМАНД */}
+                    <div className="mixed-teams-grid">
                         {teamsToShow.map((team, index) => (
-                            <div key={team.id || index} className="team-card">
-                                <div className="team-header">
-                                    <h5>{team.name || `Команда ${index + 1}`}</h5>
-                                    <div className="team-rating">
-                                        <span className="rating-value">{team.averageRating || '—'}</span>
-                                        <span className="rating-label">ELO</span>
+                            <div key={team.id || index} className="enhanced-team-card">
+                                {/* ЗАГОЛОВОК КОМАНДЫ */}
+                                <div className="team-card-header">
+                                    <div className="team-title">
+                                        <h4>{team.name || `Команда ${index + 1}`}</h4>
+                                        <div className="team-members-count">
+                                            👥 {team.members?.length || 0} игрок{team.members?.length === 1 ? '' : team.members?.length > 4 ? 'ов' : 'а'}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="team-rating-display">
+                                        <div className="rating-label">
+                                            {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}
+                                        </div>
+                                        <div className="rating-value">
+                                            {team.averageRating || '—'}
+                                            <span className="rating-suffix">
+                                                {ratingType === 'faceit' ? ' ELO' : ' Ранг'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <div className="team-members">
+                                {/* СОСТАВ КОМАНДЫ */}
+                                <div className="team-composition">
+                                    <h5>👥 Состав команды</h5>
                                     {team.members && team.members.length > 0 ? (
-                                        team.members.map((member, memberIndex) => (
-                                            <div key={memberIndex} className="team-member">
-                                                <div className="member-avatar">
-                                                    <img 
-                                                        src={member.avatar_url || '/default-avatar.png'} 
-                                                        alt={member.name}
-                                                        onError={(e) => {
-                                                            e.target.onerror = null;
-                                                            e.target.src = '/default-avatar.png';
-                                                        }}
-                                                    />
+                                        <div className="team-members-list">
+                                            {team.members.map((member, memberIndex) => (
+                                                <div key={memberIndex} className="team-member-row">
+                                                    <div className="member-avatar">
+                                                        <img 
+                                                            src={member.avatar_url || '/default-avatar.png'} 
+                                                            alt={member.name}
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = '/default-avatar.png';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="member-info">
+                                                        <div className="member-name">
+                                                            {member.user_id ? (
+                                                                <a href={`/profile/${member.user_id}`} className="member-profile-link">
+                                                                    {member.name || member.username}
+                                                                </a>
+                                                            ) : (
+                                                                member.name
+                                                            )}
+                                                        </div>
+                                                        <div className="member-rating">
+                                                            🎯 {ratingType === 'faceit' 
+                                                                ? `${member.faceit_elo || 1000} FACEIT ELO`
+                                                                : `${member.cs2_premier_rank || member.premier_rank || 5} Premier`
+                                                            }
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="member-info">
-                                                    <span className="member-name">
-                                                        {member.user_id ? (
-                                                            <a href={`/profile/${member.user_id}`}>
-                                                                {member.name || member.username}
-                                                            </a>
-                                                        ) : (
-                                                            member.name
-                                                        )}
-                                                    </span>
-                                                    <span className="member-rating">
-                                                        {member.faceit_elo || member.cs2_premier_rank || 'Н/Д'} ELO
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))
+                                            ))}
+                                        </div>
                                     ) : (
-                                        <p className="no-members">Состав не определен</p>
+                                        <div className="no-members">
+                                            🚫 Состав команды не определен
+                                        </div>
                                     )}
                                 </div>
                             </div>
