@@ -7,11 +7,12 @@ import './Home.css';
 import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
+import { useAuth } from '../context/AuthContext';
 import { ensureHttps } from '../utils/userHelpers';
 import { useSocket } from '../hooks/useSocket';
 
 function Layout() {
-    const [user, setUser] = useState(null);
+    const { user, logout } = useAuth(); // Получаем пользователя из AuthContext
     const [error, setError] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -25,55 +26,31 @@ function Layout() {
     const fetchUnreadCount = async () => {
         try {
             const token = localStorage.getItem('token');
-            if (!token) return;
+            if (!token) {
+                console.log('📊 [Layout] Нет токена для получения счетчика');
+                return;
+            }
             
+            console.log('📊 [Layout] Запрашиваем счетчик непрочитанных сообщений...');
             const response = await api.get('/api/chats/unread-count', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            setUnreadCount(response.data.unread_count || 0);
+            const count = response.data.unread_count || 0;
+            console.log('📊 [Layout] Получен счетчик из API:', count);
+            setUnreadCount(count);
         } catch (error) {
-            console.error('Ошибка получения количества непрочитанных сообщений:', error);
+            console.error('❌ [Layout] Ошибка получения количества непрочитанных сообщений:', error);
         }
     };
 
-    const fetchUser = async (token) => {
-        setLoading(true);
-        try {
-            const response = await api.get('/api/users/me', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setUser(response.data);
-            
-            // После получения пользователя, получаем количество непрочитанных сообщений
-            await fetchUnreadCount();
-        } catch (error) {
-            console.error('❌ Ошибка получения данных пользователя:', error.response ? error.response.data : error.message);
-            localStorage.removeItem('token');
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Загрузка пользователя только при монтировании компонента
+    // Загрузка счетчика при готовности пользователя
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetchUser(token);
-        } else {
-            setLoading(false);
+        if (user) {
+            console.log('📊 [Layout] Пользователь загружен, получаем счетчик сообщений');
+            fetchUnreadCount();
         }
-        
-        // Обработка Steam токена из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const steamToken = urlParams.get('token');
-        if (steamToken) {
-            localStorage.setItem('token', steamToken);
-            fetchUser(steamToken);
-            navigate('/profile', { replace: true });
-        }
-    }, []); // Убрали все зависимости для одноразового выполнения
+    }, [user]);
 
     // 🚀 Socket.IO подключение с новым hook
     const socket = useSocket();
@@ -93,14 +70,26 @@ function Layout() {
         if (connected) {
             // Обработчики событий
             const handleNewMessage = (message) => {
+                console.log('📬 [Layout] Получено новое сообщение:', message);
+                console.log('📬 [Layout] Sender ID:', message.sender_id, 'Current user ID:', user.id);
+                console.log('📬 [Layout] Current path:', location.pathname);
+                
                 // Увеличиваем счетчик только если сообщение не от текущего пользователя
                 // и мы не находимся в чатах
                 if (message.sender_id !== user.id && location.pathname !== '/messages') {
-                    setUnreadCount(prev => prev + 1);
+                    console.log('📬 [Layout] Увеличиваем счетчик непрочитанных сообщений');
+                    setUnreadCount(prev => {
+                        const newCount = prev + 1;
+                        console.log('📬 [Layout] Новый счетчик:', newCount);
+                        return newCount;
+                    });
+                } else {
+                    console.log('📬 [Layout] Не увеличиваем счетчик (собственное сообщение или в чатах)');
                 }
             };
 
             const handleReadStatus = () => {
+                console.log('📬 [Layout] Получено событие read_status, обновляем счетчик');
                 fetchUnreadCount();
             };
 
@@ -137,8 +126,7 @@ function Layout() {
     }, [location.pathname, setLoading]);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
+        logout(); // Используем logout из AuthContext
         navigate('/');
     };
 

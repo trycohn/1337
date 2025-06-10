@@ -76,6 +76,11 @@ function createSocketServer(httpServer) {
   io.on('connection', (socket) => {
     console.log(`🎉 [Socket.IO] Пользователь подключен: ${socket.user.username} (${socket.id})`);
     
+    // 👤 Присоединение к персональной комнате для уведомлений
+    const userRoomName = `user_${socket.userId}`;
+    socket.join(userRoomName);
+    console.log(`👤 [Socket.IO] ${socket.user.username} присоединился к персональной комнате ${userRoomName}`);
+    
     // 🏆 Присоединение к турниру
     socket.on('join_tournament', (tournamentId) => {
       const roomName = `tournament_${tournamentId}`;
@@ -131,6 +136,27 @@ function createSocketServer(httpServer) {
         console.log(`📡 [Socket.IO] Отправляем событие new_message в комнату ${roomName}, подключено клиентов: ${clientsInRoom.size}`);
         
         io.to(roomName).emit('new_message', message);
+
+        // Дополнительно отправляем персональные уведомления всем участникам чата
+        try {
+          const participants = await pool.query(
+            'SELECT user_id FROM chat_participants WHERE chat_id = $1',
+            [chatId]
+          );
+          
+          console.log(`🔔 [Socket.IO] Отправляем персональные уведомления ${participants.rows.length} участникам чата`);
+          
+          for (const participant of participants.rows) {
+            const userSockets = await io.in(`user_${participant.user_id}`).allSockets();
+            if (userSockets.size > 0) {
+              io.to(`user_${participant.user_id}`).emit('new_message', message);
+              console.log(`📱 [Socket.IO] Уведомление отправлено пользователю ${participant.user_id}`);
+            }
+          }
+        } catch (error) {
+          console.error('❌ [Socket.IO] Ошибка отправки персональных уведомлений:', error);
+        }
+
         console.log(`✅ [Socket.IO] Сообщение успешно отправлено в чат ${chatId}`);
       } catch (error) {
         console.error('❌ [Socket.IO] Ошибка отправки сообщения:', error);
