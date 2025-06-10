@@ -55,7 +55,7 @@ function Messenger() {
     // 🚀 Socket.IO подключение с новым hook
     const socketHook = useSocket();
 
-    // Инициализация Socket.IO
+    // Инициализация Socket.IO (только один раз)
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -68,30 +68,34 @@ function Messenger() {
         if (connected) {
             console.log('✅ [Messenger] Socket.IO инициализирован');
             
+            // Обработчики событий
+            const handleError = (error) => {
+                console.error('❌ [Messenger] Socket.IO ошибка:', error);
+                setError('Ошибка подключения к серверу чата');
+            };
+            
             // Подписываемся на события
             socketHook.on('new_message', handleNewMessage);
             socketHook.on('read_status', updateMessageReadStatus);
             socketHook.on('notification_update', handleNotificationUpdate);
-            socketHook.on('error', (error) => {
-                console.error('❌ [Messenger] Socket.IO ошибка:', error);
-                setError('Ошибка подключения к серверу чата');
-            });
+            socketHook.on('error', handleError);
 
             // Устанавливаем сокет для совместимости
             setSocket(socketHook.getSocket());
             
             // Загружаем чаты
             fetchChats();
-        }
 
-        // Cleanup - отписываемся от событий
-        return () => {
-            console.log('🧹 [Messenger] Отписываемся от Socket.IO событий');
-            socketHook.off('new_message', handleNewMessage);
-            socketHook.off('read_status', updateMessageReadStatus);
-            socketHook.off('notification_update', handleNotificationUpdate);
-        };
-    }, [socketHook]);
+            // Cleanup - отписываемся от событий
+            return () => {
+                console.log('🧹 [Messenger] Отписываемся от Socket.IO событий');
+                socketHook.off('new_message', handleNewMessage);
+                socketHook.off('read_status', updateMessageReadStatus);
+                socketHook.off('notification_update', handleNotificationUpdate);
+                socketHook.off('error', handleError);
+            };
+        }
+    }, []); // Убрали все зависимости для одноразового выполнения
     
     // Обновляем онлайн статус каждую минуту
     useEffect(() => {

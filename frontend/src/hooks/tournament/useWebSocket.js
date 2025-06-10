@@ -9,7 +9,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
     const socket = useSocket();
     const [wsConnected, setWsConnected] = useState(false);
 
-    // Подключение к Socket.IO при наличии пользователя
+    // Подключение к Socket.IO при наличии пользователя (только один раз)
     useEffect(() => {
         if (!user || !tournamentId) {
             console.log('🔧 [useWebSocket] Отложена инициализация: нет пользователя или ID турнира');
@@ -32,9 +32,9 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
             socket.tournament.join(tournamentId);
             setWsConnected(socket.connected);
         }
-    }, [tournamentId, user, socket]);
+    }, [tournamentId, user?.id]); // Убрали socket из зависимостей
 
-    // Подписка на события турнира
+    // Подписка на события турнира (стабильные зависимости)
     useEffect(() => {
         if (!tournamentId) return;
 
@@ -73,7 +73,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
                 socket.tournament.leave(tournamentId);
             }
         };
-    }, [tournamentId, onTournamentUpdate, onChatMessage, socket]);
+    }, [tournamentId]); // Убрали все нестабильные зависимости
 
     // Функция для отправки сообщения чата турнира
     const sendChatMessage = useCallback((content) => {
@@ -84,7 +84,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
         }
         console.warn('⚠️ [useWebSocket] Не удалось отправить сообщение: нет подключения');
         return false;
-    }, [tournamentId, socket]);
+    }, [tournamentId]); // Убрали socket из зависимостей
 
     // Функция для ручного переподключения
     const reconnectWebSocket = useCallback(() => {
@@ -93,7 +93,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
         if (token) {
             socket.connect(token);
         }
-    }, [socket]);
+    }, []); // Убрали socket из зависимостей
 
     // Функция для отключения
     const disconnectWebSocket = useCallback(() => {
@@ -102,7 +102,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
             socket.tournament.leave(tournamentId);
         }
         setWsConnected(false);
-    }, [socket, tournamentId]);
+    }, [tournamentId]); // Убрали socket из зависимостей
 
     return {
         // Состояние

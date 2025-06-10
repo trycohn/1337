@@ -75,7 +75,7 @@ function Layout() {
     // 🚀 Socket.IO подключение с новым hook
     const socket = useSocket();
 
-    // Подключение к Socket.IO при наличии пользователя
+    // Подключение к Socket.IO при наличии пользователя (только один раз)
     useEffect(() => {
         if (!user) return;
 
@@ -88,28 +88,31 @@ function Layout() {
         const connected = socket.connect(token);
         
         if (connected) {
-            // Подписываемся на события сообщений
-            socket.on('new_message', (message) => {
+            // Обработчики событий
+            const handleNewMessage = (message) => {
                 // Увеличиваем счетчик только если сообщение не от текущего пользователя
                 // и мы не находимся в чатах
                 if (message.sender_id !== user.id && location.pathname !== '/messages') {
                     setUnreadCount(prev => prev + 1);
                 }
-            });
+            };
 
-            // Обновляем счетчик при изменении статуса прочтения
-            socket.on('read_status', () => {
+            const handleReadStatus = () => {
                 fetchUnreadCount();
-            });
-        }
+            };
 
-        // Cleanup выполняется автоматически в useSocket hook
-        return () => {
-            console.log('🧹 [Layout] Отписываемся от Socket.IO событий');
-            socket.off('new_message');
-            socket.off('read_status');
-        };
-    }, [user, location.pathname, socket]);
+            // Подписываемся на события сообщений
+            socket.on('new_message', handleNewMessage);
+            socket.on('read_status', handleReadStatus);
+
+            // Cleanup
+            return () => {
+                console.log('🧹 [Layout] Отписываемся от Socket.IO событий');
+                socket.off('new_message', handleNewMessage);
+                socket.off('read_status', handleReadStatus);
+            };
+        }
+    }, [user?.id]); // Только user.id в зависимостях
 
     // Обновляем счетчик при переходе на страницу чатов
     useEffect(() => {

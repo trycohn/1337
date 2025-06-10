@@ -25,11 +25,19 @@ export const useSocket = () => {
   const socketRef = useRef(null);
   const listenersRef = useRef(new Map());
 
-  // 🔐 Подключение с авторизацией
+  // 🔐 Подключение с авторизацией (только один раз)
   const connect = useCallback((token) => {
     if (!token) {
       console.error('❌ [useSocket] Токен не предоставлен');
       return false;
+    }
+
+    // Если уже подключен, не подключаемся повторно
+    if (socketRef.current && isConnected()) {
+      console.log('ℹ️ [useSocket] Уже подключен, пропускаем');
+      setConnected(true);
+      setSocketId(getSocketId());
+      return true;
     }
 
     console.log('🔐 [useSocket] Инициализация подключения...');
@@ -37,28 +45,30 @@ export const useSocket = () => {
     // Получаем Socket.IO instance
     socketRef.current = getSocket();
     
-    // Подключаемся с авторизацией
+    // Подключаемся с авторизацией только если еще не подключены
     const success = connectWithAuth(token);
     
     if (success) {
-      // Устанавливаем базовые обработчики
-      socketRef.current.on('connect', () => {
-        console.log('✅ [useSocket] Подключен!');
-        setConnected(true);
-        setSocketId(getSocketId());
-      });
-      
-      socketRef.current.on('disconnect', () => {
-        console.log('🔌 [useSocket] Отключен');
-        setConnected(false);
-        setSocketId(null);
-      });
-      
-      socketRef.current.on('connect_error', (error) => {
-        console.error('❌ [useSocket] Ошибка подключения:', error.message);
-        setConnected(false);
-        setSocketId(null);
-      });
+      // Устанавливаем базовые обработчики только один раз
+      if (!socketRef.current.hasListeners('connect')) {
+        socketRef.current.on('connect', () => {
+          console.log('✅ [useSocket] Подключен!');
+          setConnected(true);
+          setSocketId(getSocketId());
+        });
+        
+        socketRef.current.on('disconnect', () => {
+          console.log('🔌 [useSocket] Отключен');
+          setConnected(false);
+          setSocketId(null);
+        });
+        
+        socketRef.current.on('connect_error', (error) => {
+          console.error('❌ [useSocket] Ошибка подключения:', error.message);
+          setConnected(false);
+          setSocketId(null);
+        });
+      }
     }
     
     return success;

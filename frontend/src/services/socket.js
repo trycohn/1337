@@ -83,18 +83,21 @@ export const connectWithAuth = (token) => {
     return false;
   }
   
+  // Если уже подключен с тем же токеном, не переподключаемся
+  if (socketInstance.connected && socketInstance.auth?.token === token) {
+    console.log('ℹ️ [Socket.IO] Уже подключен с этим токеном');
+    return true;
+  }
+  
   console.log('🔐 [Socket.IO] Подключение с авторизацией...');
   
   // Устанавливаем токен авторизации
   socketInstance.auth = { token };
   
-  // Если уже подключен, переподключаемся с новым токеном
-  if (socketInstance.connected) {
-    socketInstance.disconnect();
+  // Подключаемся только если не подключены
+  if (!socketInstance.connected) {
+    socketInstance.connect();
   }
-  
-  // Подключаемся
-  socketInstance.connect();
   
   return true;
 };

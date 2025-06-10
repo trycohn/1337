@@ -1041,7 +1041,7 @@ function TournamentDetails() {
         }
     }, [id]); // УБИРАЕМ loadTournamentData из зависимостей для предотвращения цикла
 
-    // Socket.IO подключение к турниру
+    // Socket.IO подключение к турниру (только один раз)
     useEffect(() => {
         if (!user?.id || !tournament?.id) return;
 
@@ -1058,8 +1058,8 @@ function TournamentDetails() {
             socketHook.tournament.join(tournament.id);
             setWsConnected(socketHook.connected);
             
-            // Подписываемся на обновления турнира
-            socketHook.on('tournament_updated', (data) => {
+            // Обработчик обновлений турнира
+            const handleTournamentUpdate = (data) => {
                 console.log('🔄 [TournamentDetails] Обновление турнира:', data);
                 setTournament(prev => ({ ...prev, ...data }));
                 
@@ -1067,19 +1067,23 @@ function TournamentDetails() {
                     setMessage(data.message);
                     setTimeout(() => setMessage(''), 3000);
                 }
-            });
+            };
+            
+            // Подписываемся на обновления турнира
+            socketHook.on('tournament_updated', handleTournamentUpdate);
             
             console.log('✅ [TournamentDetails] Socket.IO подключен к турниру');
+            
+            // Cleanup
+            return () => {
+                console.log('🧹 [TournamentDetails] Покидаем турнир при размонтировании');
+                if (socketHook.connected) {
+                    socketHook.tournament.leave(tournament.id);
+                }
+                socketHook.off('tournament_updated', handleTournamentUpdate);
+            };
         }
-        
-        return () => {
-            console.log('🧹 [TournamentDetails] Покидаем турнир при размонтировании');
-            if (socketHook.connected) {
-                socketHook.tournament.leave(tournament.id);
-            }
-            socketHook.off('tournament_updated');
-        };
-    }, [user?.id, tournament?.id, socketHook]);
+    }, [user?.id, tournament?.id]); // Убрали socketHook из зависимостей
 
     // 🎯 ОБРАБОТЧИКИ ДЕЙСТВИЙ (БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ)
     const handleParticipate = useCallback(async () => {
