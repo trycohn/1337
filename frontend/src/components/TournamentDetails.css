@@ -975,8 +975,7 @@
 }
 
 .mixed-teams-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    display: inline-flex;
     gap: 20px;
     margin-top: 15px;
 }
