@@ -17,7 +17,7 @@ import BracketRenderer from './BracketRenderer';
 import { ensureHttps } from '../utils/userHelpers';
 
 // 🔧 ИСПРАВЛЕНО: Используем наш новый Socket.IO клиент вместо прямого импорта
-import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_final';
+import { useSocket } from '../hooks/useSocket';
 
 // Новые компоненты и хуки
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
@@ -1027,116 +1027,8 @@ function TournamentDetails() {
         }
     }, [id]); // ТОЛЬКО id в зависимостях
 
-    // 🎯 WEBSOCKET ПОДКЛЮЧЕНИЕ
-    const setupWebSocket = useCallback(() => {
-        if (!user?.id || !tournament?.id) return null;
-
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-
-        try {
-            console.log('🔌 [TournamentDetails] Инициализация Socket.IO для турнира', tournament.id);
-            
-            // 🔧 ИСПРАВЛЕНО: Используем новый socketClient_final.js
-            const socket = getSocketInstance();
-            
-            // Авторизуем сокет с токеном
-            authenticateSocket(token);
-            
-            // Подключаемся к турниру
-            watchTournament(tournament.id);
-
-            // События для турнира
-            const handleConnect = () => {
-                console.log('✅ [TournamentDetails] Socket.IO подключен к турниру:', tournament.id);
-                console.log('🎉 [TournamentDetails] Используется новый socketClient_final!');
-                setWsConnected(true);
-                
-                socket.emit('join-tournament', tournament.id);
-                console.log(`📡 [TournamentDetails] Присоединился к турниру ${tournament.id}`);
-            };
-
-            const handleDisconnect = (reason) => {
-                console.log('🔌 [TournamentDetails] Socket.IO отключен:', reason);
-                setWsConnected(false);
-            };
-
-            const handleTournamentUpdate = (data) => {
-                console.log('📡 [TournamentDetails] Обновление турнира через WebSocket:', data);
-                setTournament(prev => ({ ...prev, ...data }));
-                
-                if (data.message) {
-                    setMessage(data.message);
-                    setTimeout(() => setMessage(''), 3000);
-                }
-            };
-
-            const handleConnectError = (error) => {
-                console.warn('⚠️ [TournamentDetails] Socket.IO ошибка подключения (игнорируется):', error.message);
-                setWsConnected(false);
-            };
-
-            const handleError = (error) => {
-                console.warn('⚠️ [TournamentDetails] Socket.IO ошибка (игнорируется):', error.message);
-                setWsConnected(false);
-            };
-
-            const handleReconnect = (attemptNumber) => {
-                console.log('🔄 [TournamentDetails] Socket.IO переподключен после', attemptNumber, 'попыток');
-                setWsConnected(true);
-            };
-
-            const handleReconnectError = (error) => {
-                console.warn('⚠️ [TournamentDetails] Ошибка переподключения Socket.IO (игнорируется):', error.message);
-            };
-
-            const handleReconnectFailed = () => {
-                console.warn('⚠️ [TournamentDetails] Socket.IO не смог переподключиться, работаем без real-time обновлений');
-                setWsConnected(false);
-            };
-
-            // Подключаем события
-            socket.on('connect', handleConnect);
-            socket.on('disconnect', handleDisconnect);
-            socket.on('tournament-update', handleTournamentUpdate);
-            socket.on('connect_error', handleConnectError);
-            socket.on('error', handleError);
-            socket.on('reconnect', handleReconnect);
-            socket.on('reconnect_error', handleReconnectError);
-            socket.on('reconnect_failed', handleReconnectFailed);
-
-            // Если сокет уже подключен, сразу инициализируем
-            if (socket.connected) {
-                handleConnect();
-            }
-
-            // Функция cleanup для отписки от событий
-            const cleanup = () => {
-                console.log('🧹 [TournamentDetails] Отписываемся от Socket.IO событий турнира');
-                socket.off('connect', handleConnect);
-                socket.off('disconnect', handleDisconnect);
-                socket.off('tournament-update', handleTournamentUpdate);
-                socket.off('connect_error', handleConnectError);
-                socket.off('error', handleError);
-                socket.off('reconnect', handleReconnect);
-                socket.off('reconnect_error', handleReconnectError);
-                socket.off('reconnect_failed', handleReconnectFailed);
-                
-                // Отключаемся от турнира
-                unwatchTournament(tournament.id);
-            };
-
-            // Сохраняем cleanup функцию в socket для использования в useEffect
-            socket._tournamentCleanup = cleanup;
-
-            return socket;
-        } catch (error) {
-            console.warn('⚠️ [TournamentDetails] Socket.IO не удалось создать:', error.message);
-            console.log('ℹ️ [TournamentDetails] Работаем без real-time обновлений');
-            setWsConnected(false);
-            return null;
-        }
-    }, [user?.id, tournament?.id]);
+    // 🚀 Socket.IO подключение с новым hook
+    const socketHook = useSocket();
 
     // 🎯 ЭФФЕКТЫ
     useEffect(() => {
@@ -1149,19 +1041,45 @@ function TournamentDetails() {
         }
     }, [id]); // УБИРАЕМ loadTournamentData из зависимостей для предотвращения цикла
 
+    // Socket.IO подключение к турниру
     useEffect(() => {
-        const socket = setupWebSocket();
+        if (!user?.id || !tournament?.id) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        console.log('🚀 [TournamentDetails] Подключение к турниру:', tournament.id);
+        
+        // Подключаемся к Socket.IO
+        const connected = socketHook.connect(token);
+        
+        if (connected) {
+            // Присоединяемся к турниру
+            socketHook.tournament.join(tournament.id);
+            setWsConnected(socketHook.connected);
+            
+            // Подписываемся на обновления турнира
+            socketHook.on('tournament_updated', (data) => {
+                console.log('🔄 [TournamentDetails] Обновление турнира:', data);
+                setTournament(prev => ({ ...prev, ...data }));
+                
+                if (data.message) {
+                    setMessage(data.message);
+                    setTimeout(() => setMessage(''), 3000);
+                }
+            });
+            
+            console.log('✅ [TournamentDetails] Socket.IO подключен к турниру');
+        }
         
         return () => {
-            if (socket && socket._tournamentCleanup) {
-                console.log('🧹 [TournamentDetails] Вызываем cleanup для Socket.IO');
-                socket._tournamentCleanup();
-            } else if (socket && socket.disconnect) {
-                console.log('🔌 [TournamentDetails] Отключение Socket.IO (fallback)');
-                socket.disconnect();
+            console.log('🧹 [TournamentDetails] Покидаем турнир при размонтировании');
+            if (socketHook.connected) {
+                socketHook.tournament.leave(tournament.id);
             }
+            socketHook.off('tournament_updated');
         };
-    }, [setupWebSocket]);
+    }, [user?.id, tournament?.id, socketHook]);
 
     // 🎯 ОБРАБОТЧИКИ ДЕЙСТВИЙ (БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ)
     const handleParticipate = useCallback(async () => {

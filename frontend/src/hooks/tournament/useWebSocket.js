@@ -1,67 +1,47 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-// 🔧 ИСПРАВЛЕНО: Используем наш новый Socket.IO клиент вместо прямого импорта
-import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../../services/socketClient_final';
+import { useEffect, useState, useCallback } from 'react';
+import { useSocket } from '../useSocket';
 
 /**
  * Custom hook для управления WebSocket соединениями турнира
- * 🔧 ОБНОВЛЕНО: Использует новый socketClient_final.js для HTTP/1.1 совместимости
+ * 🚀 ОБНОВЛЕНО: Использует новый useSocket hook
  */
 export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessage) => {
-    const wsRef = useRef(null);
+    const socket = useSocket();
     const [wsConnected, setWsConnected] = useState(false);
 
-    // Функция для установки WebSocket соединения
-    const setupWebSocket = useCallback(() => {
-        // Только устанавливаем соединение, если у нас есть токен и ID турнира
+    // Подключение к Socket.IO при наличии пользователя
+    useEffect(() => {
         if (!user || !tournamentId) {
             console.log('🔧 [useWebSocket] Отложена инициализация: нет пользователя или ID турнира');
             return;
         }
-        
-        console.log('🔧 [useWebSocket] Инициализация соединения для турнира', tournamentId);
+
         const token = localStorage.getItem('token');
         if (!token) {
             console.log('🔧 [useWebSocket] Отсутствует токен для подключения');
             return;
         }
+
+        console.log('🚀 [useWebSocket] Подключение к турниру', tournamentId);
         
-        // Получаем singleton instance нашего Socket.IO клиента
-        const socket = getSocketInstance();
+        // Подключаемся к Socket.IO
+        const connected = socket.connect(token);
         
-        // Авторизуем сокет с токеном
-        authenticateSocket(token);
-        
-        // События для турнира
-        const handleConnect = () => {
-            console.log('✅ [useWebSocket] Socket.IO турнир соединение установлено:', socket.id);
-            console.log('🎉 [useWebSocket] Используется новый socketClient_final!');
-            
-            // Подключаемся к турниру через утилитные функции
-            watchTournament(tournamentId);
-            socket.emit('join_tournament_chat', tournamentId);
-            setWsConnected(true);
-        };
-        
-        const handleDisconnect = (reason) => {
-            console.log('❌ [useWebSocket] Socket.IO турнир соединение закрыто:', reason);
-            setWsConnected(false);
-        };
-        
-        const handleError = (error) => {
-            console.error('🔥 [useWebSocket] Ошибка Socket.IO турнир соединения:', error);
-            setWsConnected(false);
-        };
-        
-        const handleConnectError = (error) => {
-            console.error('🔥 [useWebSocket] Ошибка подключения Socket.IO турнир:', error);
-            setWsConnected(false);
-        };
-        
+        if (connected) {
+            // Присоединяемся к турниру
+            socket.tournament.join(tournamentId);
+            setWsConnected(socket.connected);
+        }
+    }, [tournamentId, user, socket]);
+
+    // Подписка на события турнира
+    useEffect(() => {
+        if (!tournamentId) return;
+
+        // Обработчики событий
         const handleTournamentUpdate = (tournamentData) => {
             if (tournamentData.tournamentId === parseInt(tournamentId) || tournamentData.id === parseInt(tournamentId)) {
-                console.log('🔄 [useWebSocket] Получено обновление турнира через WebSocket:', tournamentData);
-                
-                // Вызываем callback для обновления турнира
+                console.log('🔄 [useWebSocket] Получено обновление турнира:', tournamentData);
                 if (onTournamentUpdate) {
                     onTournamentUpdate(tournamentData);
                 }
@@ -69,94 +49,71 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
         };
 
         const handleTournamentMessage = (message) => {
+            console.log('💬 [useWebSocket] Получено сообщение турнира:', message);
             if (onChatMessage) {
                 onChatMessage(message);
             }
         };
-        
-        // Подключаем события
-        socket.on('connect', handleConnect);
-        socket.on('disconnect', handleDisconnect);
-        socket.on('error', handleError);
-        socket.on('connect_error', handleConnectError);
-        socket.on('tournament_update', handleTournamentUpdate);
+
+        // Подписываемся на события
+        socket.on('tournament_updated', handleTournamentUpdate);
         socket.on('tournament_message', handleTournamentMessage);
 
-        wsRef.current = socket;
-        
-        // Если сокет уже подключен, сразу инициализируем
-        if (socket.connected) {
-            handleConnect();
-        }
-        
-        // Возвращаем функцию очистки
+        // Отслеживаем состояние подключения
+        setWsConnected(socket.connected);
+
+        // Cleanup
         return () => {
             console.log('🧹 [useWebSocket] Отписываемся от событий турнира');
-            socket.off('connect', handleConnect);
-            socket.off('disconnect', handleDisconnect);
-            socket.off('error', handleError);
-            socket.off('connect_error', handleConnectError);
-            socket.off('tournament_update', handleTournamentUpdate);
+            socket.off('tournament_updated', handleTournamentUpdate);
             socket.off('tournament_message', handleTournamentMessage);
             
-            // Отключаемся от турнира
-            unwatchTournament(tournamentId);
+            // Покидаем турнир
+            if (socket.connected) {
+                socket.tournament.leave(tournamentId);
+            }
         };
-    }, [tournamentId, user, onTournamentUpdate, onChatMessage]);
+    }, [tournamentId, onTournamentUpdate, onChatMessage, socket]);
 
-    // Функция для отправки сообщения чата
+    // Функция для отправки сообщения чата турнира
     const sendChatMessage = useCallback((content) => {
-        if (wsRef.current && wsRef.current.connected && content.trim()) {
-            wsRef.current.emit('tournament_message', { 
-                tournamentId, 
-                content: content.trim() 
-            });
+        if (socket.connected && content.trim()) {
+            socket.tournament.sendMessage(tournamentId, content.trim());
+            console.log('📨 [useWebSocket] Отправлено сообщение турнира:', content);
             return true;
         }
+        console.warn('⚠️ [useWebSocket] Не удалось отправить сообщение: нет подключения');
         return false;
-    }, [tournamentId]);
+    }, [tournamentId, socket]);
 
     // Функция для ручного переподключения
     const reconnectWebSocket = useCallback(() => {
-        console.log('🔄 [useWebSocket] Ручное переподключение WebSocket');
-        setupWebSocket();
-    }, [setupWebSocket]);
+        console.log('🔄 [useWebSocket] Ручное переподключение');
+        const token = localStorage.getItem('token');
+        if (token) {
+            socket.connect(token);
+        }
+    }, [socket]);
 
-    // Функция для отключения WebSocket
+    // Функция для отключения
     const disconnectWebSocket = useCallback(() => {
-        console.log('🔌 [useWebSocket] Отключение WebSocket соединения');
-        if (wsRef.current) {
-            // Отключаемся от турнира
-            unwatchTournament(tournamentId);
-            wsRef.current = null;
+        console.log('🔌 [useWebSocket] Отключение');
+        if (socket.connected && tournamentId) {
+            socket.tournament.leave(tournamentId);
         }
         setWsConnected(false);
-    }, [tournamentId]);
-
-    // Устанавливаем WebSocket соединение
-    useEffect(() => {
-        const cleanup = setupWebSocket();
-        
-        // Очистка при размонтировании
-        return () => {
-            console.log('🧹 [useWebSocket] Закрываем соединение при размонтировании');
-            if (cleanup) {
-                cleanup();
-            }
-            setWsConnected(false);
-        };
-    }, [setupWebSocket]);
+    }, [socket, tournamentId]);
 
     return {
         // Состояние
-        wsConnected,
+        wsConnected: socket.connected,
         
         // Функции
         sendChatMessage,
         reconnectWebSocket,
         disconnectWebSocket,
         
-        // Ref для прямого доступа к сокету
-        wsRef
+        // Объект сокета для совместимости
+        wsRef: { current: socket.getSocket() }
     };
 }; 
