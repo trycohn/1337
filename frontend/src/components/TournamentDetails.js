@@ -1492,7 +1492,7 @@ function TournamentDetails() {
     }
 
     // 🆕 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД ДЛЯ ПЛАВАЮЩЕЙ ПАНЕЛИ
-    const handleReformTeamsFromPanel = useCallback(async () => {
+    const handleReformTeamsFromPanel = async () => {
         // Проверим базовые условия
         if (!tournament || tournament.format !== 'mix' || tournament.status !== 'active') {
             setMessage('❌ Переформирование команд недоступно для данного турнира');
@@ -1558,7 +1558,7 @@ function TournamentDetails() {
             setMessage(`❌ ${errorMessage}`);
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [tournament, matches, mixedTeams, reloadTournamentData]);
+    };
 
     return (
         <TournamentErrorBoundary>
