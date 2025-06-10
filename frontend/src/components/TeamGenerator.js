@@ -367,7 +367,7 @@ const TeamGenerator = ({
                                 
                                 {/* СОСТАВ КОМАНДЫ */}
                                 <div className="team-composition">
-                                    <h5>👥 Состав команды</h5>
+                                    <h5>👥 Состав</h5>
                                     {team.members && team.members.length > 0 ? (
                                         <div className="team-members-list">
                                             {team.members.map((member, memberIndex) => (

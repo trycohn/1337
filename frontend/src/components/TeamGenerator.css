@@ -264,14 +264,7 @@
   border-color: #4b5563;
 }
 
-.team-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #374151;
-}
+
 
 .team-title {
   display: flex;
@@ -480,12 +473,6 @@
     min-width: auto;
   }
 
-  .team-card-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-
   .team-rating-display {
     align-items: center;
   }
@@ -607,12 +594,14 @@
 
 /* Заголовок карточки команды */
 .team-card-header {
+  align-items: center;
+  border-bottom: 1px solid #374151;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #374151;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .team-title h4 {

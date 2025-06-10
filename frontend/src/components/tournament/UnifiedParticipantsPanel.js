@@ -897,7 +897,7 @@ const UnifiedParticipantsPanel = ({
                             
                             {/* 🎯 СОСТАВ КОМАНДЫ */}
                             <div className="team-composition-participants-list">
-                                <h6>👥 Состав команды:</h6>
+                                <h6>👥 Состав:</h6>
                                 {team.members && team.members.length > 0 ? (
                                     <div className="team-members-participants-list">
                                         {team.members.map((member, memberIndex) => (
