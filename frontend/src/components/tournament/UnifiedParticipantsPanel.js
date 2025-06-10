@@ -811,33 +811,92 @@ const UnifiedParticipantsPanel = ({
                     <p>Автоматически сформированные команды на основе рейтинга участников</p>
                 </div>
 
+                {/* 🎯 СТАТИСТИКА КОМАНД */}
+                <div className="teams-stats-participants-list">
+                    <div className="team-stat-participants-list">
+                        <span className="stat-label-participants-list">Всего команд:</span>
+                        <span className="stat-value-participants-list">{mixedTeams.length}</span>
+                    </div>
+                    <div className="team-stat-participants-list">
+                        <span className="stat-label-participants-list">Игроков в командах:</span>
+                        <span className="stat-value-participants-list">
+                            {mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}
+                        </span>
+                    </div>
+                    <div className="team-stat-participants-list">
+                        <span className="stat-label-participants-list">Средний рейтинг:</span>
+                        <span className="stat-value-participants-list">
+                            {mixedTeams.length > 0 ? Math.round(
+                                mixedTeams.reduce((sum, team) => {
+                                    const teamRating = calculateTeamAverageRating ? calculateTeamAverageRating(team) : 0;
+                                    return sum + teamRating;
+                                }, 0) / mixedTeams.length
+                            ) : 0}
+                        </span>
+                    </div>
+                </div>
+
                 <div className="teams-grid-participants-list">
                     {mixedTeams.map((team, index) => (
-                        <div key={team.id || index} className="team-card-unified-participants-list">
+                        <div key={team.id || index} className="team-card-unified-participants-list enhanced">
                             <div className="team-header-participants-list">
-                                <h5>{team.name || `Команда ${index + 1}`}</h5>
-                                <div className="team-rating-participants-list">
-                                    Ср. рейтинг: {calculateTeamAverageRating ? calculateTeamAverageRating(team) : '—'}
+                                <div className="team-title-section-participants-list">
+                                    <h5>{team.name || `Команда ${index + 1}`}</h5>
+                                    <span className="team-members-count-participants-list">
+                                        👥 {team.members?.length || 0} участников
+                                    </span>
+                                </div>
+                                <div className="team-rating-participants-list enhanced">
+                                    <span className="rating-label-participants-list">
+                                        {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}:
+                                    </span>
+                                    <span className="rating-value-participants-list">
+                                        {calculateTeamAverageRating ? calculateTeamAverageRating(team) : '—'}
+                                    </span>
+                                    <span className="rating-suffix-participants-list">ELO</span>
                                 </div>
                             </div>
                             
-                            <div className="team-members-participants-list">
-                                {team.members && team.members.map((member, memberIndex) => (
-                                    <div key={memberIndex} className="team-member-participants-list">
-                                        <div className="member-name-participants-list">
-                                            {member.user_id ? (
-                                                <a href={`/profile/${member.user_id}`}>
-                                                    {member.name || member.username}
-                                                </a>
-                                            ) : (
-                                                <span>{member.name}</span>
-                                            )}
-                                        </div>
-                                        <div className="member-rating-participants-list">
-                                            {getRating(member) || '—'}
-                                        </div>
+                            {/* 🎯 СОСТАВ КОМАНДЫ */}
+                            <div className="team-composition-participants-list">
+                                <h6>👥 Состав команды:</h6>
+                                {team.members && team.members.length > 0 ? (
+                                    <div className="team-members-participants-list">
+                                        {team.members.map((member, memberIndex) => (
+                                            <div key={memberIndex} className="team-member-participants-list enhanced">
+                                                <div className="member-avatar-participants-list">
+                                                    <img 
+                                                        src={member.avatar_url || '/default-avatar.png'} 
+                                                        alt={member.name}
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = '/default-avatar.png';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="member-info-participants-list">
+                                                    <div className="member-name-participants-list">
+                                                        {member.user_id ? (
+                                                            <a href={`/profile/${member.user_id}`}>
+                                                                {member.name || member.username}
+                                                            </a>
+                                                        ) : (
+                                                            <span>{member.name}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="member-rating-participants-list">
+                                                        {ratingType === 'faceit' 
+                                                            ? `${member.faceit_elo || 1000} ELO`
+                                                            : `Ранг ${member.premier_rank || member.cs2_premier_rank || 5}`
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                ) : (
+                                    <p className="no-members-participants-list">Состав команды не определен</p>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -864,7 +923,8 @@ const UnifiedParticipantsPanel = ({
         onTeamsUpdated, 
         onRemoveParticipant, 
         calculateTeamAverageRating,
-        getRating
+        getRating,
+        ratingType
     ]);
 
     const renderStatistics = useCallback(() => {

@@ -158,11 +158,12 @@
   background-color: #ffffff;
   color: rgb(0, 0, 0);
   border: none;
-  padding: 0px 5px;
-  border-radius: 0px;
+  padding: 12px 24px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  border: 1px solid #374151;
 }
 
 .form-teams-button:hover {
@@ -171,6 +172,13 @@
 
 .reformate-teams-button:hover {
   background-color: #7d7d7d;
+}
+
+.form-teams-button:disabled,
+.reformate-teams-button:disabled {
+  background-color: #374151;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .loading-participants {
@@ -205,20 +213,228 @@
 
 .mixed-teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 16px;
   margin-top: 16px;
 }
 
-.no-teams-message {
+/* 🎯 НОВЫЕ СТИЛИ ДЛЯ СТАТИСТИКИ КОМАНД */
+.teams-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: #1f2937;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  flex-wrap: wrap;
+}
+
+.team-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.stat-label {
+  font-size: 0.875rem;
   color: #9ca3af;
   text-align: center;
-  padding: 20px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* 🎯 УЛУЧШЕННЫЕ КАРТОЧКИ КОМАНД */
+.enhanced-team-card {
+  background-color: #000000;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.enhanced-team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #4b5563;
+}
+
+.team-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #374151;
+}
+
+.team-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team-title h4 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.team-members-count {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.team-rating-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background-color: #1f2937;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+}
+
+.rating-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 2px;
+}
+
+.rating-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.rating-suffix {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* 🎯 СОСТАВ КОМАНДЫ */
+.team-composition {
+  margin-top: 12px;
+}
+
+.team-composition h5 {
+  margin: 0 0 12px 0;
+  color: #d1d5db;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.team-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-member-row {
+  display: flex;
+  align-items: center;
+  background-color: #1f2937;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  transition: background-color 0.2s;
+}
+
+.team-member-row:hover {
+  background-color: #374151;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 12px;
+  border: 1px solid #4b5563;
+}
+
+.member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-name {
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 0.875rem;
+}
+
+.member-rating {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.no-members {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 12px;
+}
+
+/* 🎯 УЛУЧШЕННОЕ СООБЩЕНИЕ ОБ ОТСУТСТВИИ КОМАНД */
+.no-teams-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 40px 20px;
   font-size: 1rem;
   background-color: #1f2937;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: 1px solid #374151;
   width: 100%;
   grid-column: 1 / -1;
+}
+
+.no-teams-icon {
+  font-size: 3rem;
+  opacity: 0.6;
+}
+
+.no-teams-message h4 {
+  margin: 0;
+  color: #d1d5db;
+  font-size: 1.25rem;
+}
+
+.no-teams-message p {
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* 🎯 УВЕДОМЛЕНИЕ О МИНИМУМЕ УЧАСТНИКОВ */
+.min-participants-notice {
+  background-color: #fbbf24;
+  color: #92400e;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-top: 8px;
+  text-align: center;
+  border: 1px solid #f59e0b;
 }
 
 @media (max-width: 768px) {
@@ -261,5 +477,39 @@
   .reformate-teams-button {
     width: 100%;
     margin-top: 10px;
+  }
+
+  /* 🎯 МОБИЛЬНЫЕ СТИЛИ ДЛЯ НОВЫХ ЭЛЕМЕНТОВ */
+  .teams-stats {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .team-stat {
+    flex-direction: row;
+    justify-content: space-between;
+    min-width: auto;
+  }
+
+  .team-card-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .team-rating-display {
+    align-items: center;
+  }
+
+  .enhanced-team-card {
+    padding: 12px;
+  }
+
+  .no-teams-message {
+    padding: 30px 15px;
+  }
+
+  .no-teams-icon {
+    font-size: 2rem;
   }
 } 

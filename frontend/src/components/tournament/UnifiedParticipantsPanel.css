@@ -994,7 +994,7 @@
 .team-header-participants-list {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-light, #f1f3f5);
@@ -1937,4 +1937,229 @@
     .roster-title-participants-list {
         font-size: 20px;
     }
+}
+
+/* 🎯 УЛУЧШЕННЫЕ СТИЛИ ДЛЯ КОМАНД */
+.team-card-unified-participants-list.enhanced {
+    background: var(--bg-primary, #ffffff);
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.team-card-unified-participants-list.enhanced:hover {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 8px 24px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.team-title-section-participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.team-title-section-participants-list h5 {
+    margin: 0;
+    color: var(--text-primary, #212529);
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.team-members-count-participants-list {
+    font-size: 0.875rem;
+    color: var(--text-muted, #6c757d);
+    font-weight: 500;
+}
+
+.team-rating-participants-list.enhanced {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: linear-gradient(135deg, var(--primary-color, #007bff), #0056b3);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+    min-width: 100px;
+    text-align: center;
+}
+
+.rating-label-participants-list {
+    font-size: 0.75rem;
+    opacity: 0.9;
+    margin-bottom: 2px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.rating-value-participants-list {
+    font-size: 1.25rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.rating-suffix-participants-list {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
+/* 🎯 СТАТИСТИКА КОМАНД */
+.teams-stats-participants-list {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #dee2e6);
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.team-stat-participants-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 120px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.team-stat-participants-list:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.team-stat-participants-list .stat-label-participants-list {
+    font-size: 0.875rem;
+    color: var(--text-muted, #6c757d);
+    text-align: center;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.team-stat-participants-list .stat-value-participants-list {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color, #007bff);
+    line-height: 1;
+}
+
+/* 🎯 СОСТАВ КОМАНДЫ */
+.team-composition-participants-list {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light, #f1f3f5);
+}
+
+.team-composition-participants-list h6 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary, #212529);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.team-members-participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-member-participants-list.enhanced {
+    display: flex;
+    align-items: center;
+    background: var(--bg-tertiary, #f8f9fa);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light, #e9ecef);
+    transition: all 0.3s ease;
+}
+
+.team-member-participants-list.enhanced:hover {
+    background: var(--bg-quaternary, #e9ecef);
+    border-color: var(--primary-color, #007bff);
+    transform: translateX(4px);
+}
+
+.member-avatar-participants-list {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 12px;
+    border: 2px solid var(--border-color, #dee2e6);
+    transition: all 0.3s ease;
+}
+
+.team-member-participants-list.enhanced:hover .member-avatar-participants-list {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+}
+
+.member-avatar-participants-list img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-info-participants-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.member-name-participants-list {
+    font-weight: 600;
+    color: var(--text-primary, #212529);
+    font-size: 0.875rem;
+}
+
+.member-name-participants-list a {
+    color: var(--text-primary, #212529);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.member-name-participants-list a:hover {
+    color: var(--primary-color, #007bff);
+}
+
+.member-rating-participants-list {
+    font-size: 0.75rem;
+    color: var(--text-muted, #6c757d);
+    font-weight: 500;
+    background: var(--bg-primary, #ffffff);
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border-light, #e9ecef);
+    align-self: flex-start;
+}
+
+.no-members-participants-list {
+    color: var(--text-muted, #6c757d);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-tertiary, #f8f9fa);
+    border-radius: 8px;
+    border: 1px solid var(--border-light, #e9ecef);
+}
+
+.team-rating-participants-list {
+    font-size: 12px;
+    color: var(--text-muted, #6c757d);
+    background: var(--bg-tertiary, #f1f3f5);
+    padding: 4px 8px;
+    border-radius: 12px;
 } 
