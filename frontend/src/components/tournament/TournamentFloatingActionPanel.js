@@ -26,7 +26,10 @@ const TournamentFloatingActionPanel = ({
     // 🆕 Новые пропсы для управления видом отображения участников
     displayMode = 'smart-cards',
     onDisplayModeChange,
-    showDisplayModeSelector = true // Флаг для показа/скрытия селектора
+    showDisplayModeSelector = true, // Флаг для показа/скрытия селектора
+    // 🆕 Новые пропсы для переформирования команд
+    mixedTeams = [],
+    onReformTeams
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -57,6 +60,29 @@ const TournamentFloatingActionPanel = ({
     const isAdminOrCreator = hasAccess || (user && tournament && 
         (tournament.creator_id === user.id || tournament.created_by === user.id || user.role === 'admin'));
 
+    // 🆕 ФУНКЦИЯ ПРОВЕРКИ ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ КОМАНД
+    const canReformTeams = useMemo(() => {
+        // Базовые проверки
+        if (!tournament || !isAdminOrCreator) return false;
+        
+        // Проверка статуса турнира - должен быть 'active', но НЕ 'in_progress'
+        if (tournament.status !== 'active') return false;
+        
+        // Проверка что турнир микс-формата
+        if (tournament.format !== 'mix') return false;
+        
+        // Проверка наличия команд для переформирования
+        const hasTeams = (mixedTeams && mixedTeams.length > 0) || 
+                         (tournament.teams && tournament.teams.length > 0);
+        if (!hasTeams) return false;
+        
+        // Проверка что нет созданных матчей (турнир еще не начался)
+        if (tournament.matches && tournament.matches.length > 0) return false;
+        if (hasMatches) return false;
+        
+        return true;
+    }, [tournament, isAdminOrCreator, mixedTeams, hasMatches]);
+
     // Определяем доступные действия на основе статуса турнира
     const availableActions = useMemo(() => {
         if (!tournament) return [];
@@ -85,6 +111,19 @@ const TournamentFloatingActionPanel = ({
                 title: 'Перегенерировать сетку',
                 description: 'Заново создать турнирную сетку',
                 onClick: onRegenerateBracket,
+                color: 'warning',
+                priority: 2
+            });
+        }
+
+        // 🆕 "Переформировать команды" - для микс турниров с активными командами
+        if (canReformTeams && onReformTeams) {
+            actions.push({
+                id: 'reform-teams',
+                icon: '🔄',
+                title: 'Переформировать команды',
+                description: 'Пересоздать команды на основе рейтинга участников',
+                onClick: onReformTeams,
                 color: 'warning',
                 priority: 2
             });
@@ -131,8 +170,9 @@ const TournamentFloatingActionPanel = ({
 
         // Сортируем по приоритету (меньшее число = выше приоритет)
         return actions.sort((a, b) => a.priority - b.priority);
-    }, [tournament, hasBracket, hasMatches, onStartTournament, onEndTournament, 
-        onGenerateBracket, onRegenerateBracket, onClearResults]);
+    }, [tournament, hasBracket, hasMatches, canReformTeams, 
+        onStartTournament, onEndTournament, onGenerateBracket, 
+        onRegenerateBracket, onClearResults, onReformTeams]);
 
     // Если нет прав или турнира - не показываем панель вообще
     if (!isAdminOrCreator || !tournament) {

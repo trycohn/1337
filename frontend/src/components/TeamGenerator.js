@@ -33,6 +33,10 @@ const TeamGenerator = ({
     const [loadingParticipants, setLoadingParticipants] = useState(false);
     const [loadingTeams, setLoadingTeams] = useState(false);
 
+    // 🆕 СОСТОЯНИЯ ДЛЯ МОДАЛЬНОГО ОКНА ПЕРЕФОРМИРОВАНИЯ
+    const [showReformModal, setShowReformModal] = useState(false);
+    const [reformLoading, setReformLoading] = useState(false);
+
     // ⏱️ Debounce механизм для предотвращения частых запросов
     const [lastRequestTime, setLastRequestTime] = useState({});
     const REQUEST_DEBOUNCE_MS = 3000; // 3 секунды между запросами одного типа
@@ -67,6 +71,104 @@ const TeamGenerator = ({
         const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
         return Math.round(average);
     }, [ratingType]);
+
+    // 🆕 ФУНКЦИЯ ПРОВЕРКИ ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ
+    const canReformTeams = useCallback(() => {
+        // Базовые проверки
+        if (!tournament || !isAdminOrCreator) return false;
+        
+        // Проверка статуса турнира - должен быть 'active', но НЕ 'in_progress'
+        if (tournament.status !== 'active') return false;
+        
+        // Проверка наличия команд для переформирования
+        const hasTeams = (mixedTeams && mixedTeams.length > 0) || 
+                         (tournament.teams && tournament.teams.length > 0);
+        if (!hasTeams) return false;
+        
+        // Проверка что турнир микс-формата
+        if (tournament.format !== 'mix') return false;
+        
+        // Проверка что нет созданных матчей (турнир еще не начался)
+        // Это важно - если матчи созданы, переформирование может нарушить сетку
+        if (tournament.matches && tournament.matches.length > 0) return false;
+        
+        return true;
+    }, [tournament, isAdminOrCreator, mixedTeams]);
+
+    // 🆕 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД
+    const handleReformTeams = async () => {
+        if (!canReformTeams() || displayParticipants.length < 2) {
+            console.warn('Переформирование команд недоступно');
+            return;
+        }
+
+        setReformLoading(true);
+        
+        try {
+            const teamSizeNumber = parseInt(teamSize);
+            const participantsData = displayParticipants;
+            
+            console.log('🔄 Переформируем команды:', {
+                teamSize: teamSizeNumber,
+                participantsCount: participantsData.length,
+                ratingType,
+                tournamentId: tournament.id
+            });
+
+            // Используем тот же эндпоинт, но сервер поймет что команды уже есть
+            const response = await api.post(`/api/tournaments/${tournament.id}/generate-teams`, {
+                participants: participantsData,
+                teamSize: teamSizeNumber,
+                ratingType: ratingType,
+                forceRegenerate: true // Флаг принудительной регенерации
+            });
+
+            if (response.data && response.data.teams) {
+                console.log('✅ Команды успешно переформированы:', response.data.teams);
+                
+                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
+                const enrichedTeams = response.data.teams.map(team => ({
+                    ...team,
+                    averageRating: calculateTeamAverageRating(team)
+                }));
+                
+                setMixedTeams(enrichedTeams);
+                
+                // 🎯 УВЕДОМЛЯЕМ О ПЕРЕФОРМИРОВАНИИ
+                if (onTeamsGenerated) {
+                    console.log('✅ Уведомляем родительский компонент о переформированных командах');
+                    onTeamsGenerated(enrichedTeams);
+                }
+                
+                if (onTeamsUpdated) {
+                    onTeamsUpdated();
+                }
+                
+                // Закрываем модальное окно
+                setShowReformModal(false);
+                
+                console.log('✅ Команды успешно переформированы');
+                
+                if (toast) {
+                    toast.success('🔄 Команды успешно переформированы!');
+                }
+            } else {
+                console.error('❌ Некорректный ответ сервера при переформировании команд');
+                if (toast) {
+                    toast.error('Ошибка переформирования команд');
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при переформировании команд:', error);
+            
+            if (toast) {
+                const errorMessage = error.response?.data?.message || 'Не удалось переформировать команды';
+                toast.error(errorMessage);
+            }
+        } finally {
+            setReformLoading(false);
+        }
+    };
 
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
@@ -520,13 +622,15 @@ const TeamGenerator = ({
                                     {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды из участников'}
                                 </button>
                             )}
-                            {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'active' && (
+                            
+                            {/* 🆕 УЛУЧШЕННАЯ КНОПКА ПЕРЕФОРМИРОВАНИЯ */}
+                            {canReformTeams() && (
                                 <button 
-                                    onClick={handleFormTeams} 
-                                    className="reformate-teams-button"
-                                    disabled={loading}
+                                    onClick={() => setShowReformModal(true)} 
+                                    className="reform-teams-button"
+                                    disabled={reformLoading || displayParticipants.length < 2}
                                 >
-                                    {loading ? '⏳ Пересоздание команд...' : '🔄 Переформировать команды'}
+                                    🔄 Переформировать команды
                                 </button>
                             )}
                             
@@ -534,6 +638,21 @@ const TeamGenerator = ({
                                 <p className="min-participants-notice">
                                     ⚠️ Для создания команд нужно минимум 2 участника
                                 </p>
+                            )}
+                            
+                            {/* 🆕 ИНФОРМАЦИЯ О ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ */}
+                            {mixedTeams.length > 0 && !canReformTeams() && (
+                                <div className="reform-blocked-notice">
+                                    {tournament.status !== 'active' && (
+                                        <p>⚠️ Переформирование доступно только для активных турниров</p>
+                                    )}
+                                    {tournament.matches && tournament.matches.length > 0 && (
+                                        <p>🚫 Переформирование недоступно - турнирная сетка уже создана</p>
+                                    )}
+                                    {tournament.status === 'in_progress' && (
+                                        <p>🚫 Переформирование недоступно - турнир уже начался</p>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
@@ -562,6 +681,72 @@ const TeamGenerator = ({
             
             {/* 🎯 КОМАНДЫ ОТОБРАЖАЮТСЯ НИЖЕ УЧАСТНИКОВ */}
             {renderTeamsList()}
+            
+            {/* 🆕 МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПЕРЕФОРМИРОВАНИЯ */}
+            {showReformModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content reform-modal">
+                        <div className="modal-header">
+                            <h3>🔄 Подтверждение переформирования</h3>
+                            <button 
+                                className="close-btn"
+                                onClick={() => setShowReformModal(false)}
+                                disabled={reformLoading}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body">
+                            <div className="warning-content">
+                                <div className="warning-icon">⚠️</div>
+                                <div className="warning-text">
+                                    <h4>Вы уверены что хотите переформировать команды?</h4>
+                                    <p className="warning-message">
+                                        <strong>Это действие полностью пересоздаст все команды на основе текущих участников и их рейтинга.</strong>
+                                    </p>
+                                    <p className="warning-details">
+                                        Что произойдет:
+                                    </p>
+                                    <ul className="warning-list">
+                                        <li>Все существующие команды будут удалены</li>
+                                        <li>Создадутся новые сбалансированные команды на основе рейтинга {ratingType === 'faceit' ? 'FACEIT' : 'CS2 Premier'}</li>
+                                        <li>Участники могут попасть в совершенно другие команды</li>
+                                        <li>Размер команд: {teamSize} игрок{teamSize === '1' ? '' : teamSize > '4' ? 'ов' : 'а'}</li>
+                                        <li>Действие нельзя будет отменить</li>
+                                    </ul>
+                                    
+                                    <div className="current-teams-info">
+                                        <p><strong>Текущее состояние:</strong></p>
+                                        <ul>
+                                            <li>Участников: {displayParticipants.length}</li>
+                                            <li>Команд: {mixedTeams.length}</li>
+                                            <li>Игроков в командах: {mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="modal-footer">
+                            <button 
+                                className="btn-cancel"
+                                onClick={() => setShowReformModal(false)}
+                                disabled={reformLoading}
+                            >
+                                ❌ Отмена
+                            </button>
+                            <button 
+                                className="btn-confirm-reform"
+                                onClick={handleReformTeams}
+                                disabled={reformLoading}
+                            >
+                                {reformLoading ? '⏳ Переформирование...' : '🔄 Да, переформировать'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

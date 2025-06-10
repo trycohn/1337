@@ -1491,6 +1491,75 @@ function TournamentDetails() {
         );
     }
 
+    // 🆕 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД ДЛЯ ПЛАВАЮЩЕЙ ПАНЕЛИ
+    const handleReformTeamsFromPanel = useCallback(async () => {
+        // Проверим базовые условия
+        if (!tournament || tournament.format !== 'mix' || tournament.status !== 'active') {
+            setMessage('❌ Переформирование команд недоступно для данного турнира');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+        
+        if (matches && matches.length > 0) {
+            setMessage('❌ Переформирование недоступно - турнирная сетка уже создана');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+        
+        if (!mixedTeams || mixedTeams.length === 0) {
+            setMessage('❌ Нет команд для переформирования');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        // Показываем подтверждение
+        const confirmed = window.confirm(
+            `🔄 Переформировать команды?\n\n` +
+            `Это действие полностью пересоздаст все команды на основе текущих участников.\n\n` +
+            `Текущее состояние:\n` +
+            `• Участников: ${tournament.participants?.length || 0}\n` +
+            `• Команд: ${mixedTeams.length}\n` +
+            `• Игроков в командах: ${mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}\n\n` +
+            `Продолжить?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setMessage('🔄 Переформирование команд...');
+            
+            const token = localStorage.getItem('token');
+            const response = await api.post(`/api/tournaments/${tournament.id}/generate-teams`, {
+                participants: tournament.participants || [],
+                teamSize: tournament.team_size || 5,
+                ratingType: 'faceit', // По умолчанию используем FACEIT
+                forceRegenerate: true // Флаг принудительной регенерации
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data && response.data.teams) {
+                console.log('✅ Команды успешно переформированы:', response.data.teams);
+                
+                // Обновляем состояние команд
+                setMixedTeams(response.data.teams);
+                
+                setMessage('✅ Команды успешно переформированы!');
+                setTimeout(() => setMessage(''), 3000);
+                
+                // Перезагружаем данные турнира для обновления всех компонентов
+                reloadTournamentData();
+            } else {
+                throw new Error('Некорректный ответ сервера');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка переформирования команд:', error);
+            const errorMessage = error.response?.data?.message || 'Не удалось переформировать команды';
+            setMessage(`❌ ${errorMessage}`);
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [tournament, matches, mixedTeams, reloadTournamentData]);
+
     return (
         <TournamentErrorBoundary>
             <section className="tournament-details-tournamentdetails">
@@ -2550,6 +2619,9 @@ function TournamentDetails() {
                         displayMode={displayMode}
                         onDisplayModeChange={handleDisplayModeChange}
                         showDisplayModeSelector={activeTab === 'participants'}
+                        // 🆕 Пропсы для переформирования команд
+                        mixedTeams={mixedTeams}
+                        onReformTeams={handleReformTeamsFromPanel}
                     />
                 )}
             </section>
