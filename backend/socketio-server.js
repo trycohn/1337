@@ -84,15 +84,19 @@ function createSocketServer(httpServer) {
     });
 
     // 💬 Присоединение к чату
-    socket.on('join_chat', (chatId) => {
+    socket.on('join_chat', async (chatId) => {
       const roomName = `chat_${chatId}`;
       socket.join(roomName);
-      console.log(`💬 [Socket.IO] ${socket.user.username} присоединился к чату ${chatId}`);
+      
+      // Проверяем сколько клиентов в комнате
+      const clientsInRoom = await io.in(roomName).allSockets();
+      console.log(`💬 [Socket.IO] ${socket.user.username} присоединился к чату ${chatId}, в комнате ${roomName} теперь ${clientsInRoom.size} клиентов`);
     });
 
     // 📨 Сообщение чата
     socket.on('send_message', async (data) => {
       try {
+        console.log(`📨 [Socket.IO] Получено сообщение от ${socket.user.username}:`, data);
         const { chatId, content, type = 'text' } = data;
         
         // Проверяем участие в чате
@@ -101,7 +105,10 @@ function createSocketServer(httpServer) {
           [chatId, socket.userId]
         );
         
+        console.log(`🔍 [Socket.IO] Проверка участия в чате ${chatId}: найдено ${participantCheck.rows.length} записей`);
+        
         if (participantCheck.rows.length === 0) {
+          console.log(`❌ [Socket.IO] Пользователь ${socket.user.username} не участник чата ${chatId}`);
           socket.emit('error', { message: 'Вы не участник этого чата' });
           return;
         }
@@ -116,9 +123,15 @@ function createSocketServer(httpServer) {
         message.sender_username = socket.user.username;
         message.sender_avatar = socket.user.avatar_url;
 
+        console.log(`💾 [Socket.IO] Сообщение сохранено в БД:`, message);
+
         // Отправляем в комнату чата
-        io.to(`chat_${chatId}`).emit('new_message', message);
-        console.log(`📨 [Socket.IO] Сообщение отправлено в чат ${chatId}`);
+        const roomName = `chat_${chatId}`;
+        const clientsInRoom = await io.in(roomName).allSockets();
+        console.log(`📡 [Socket.IO] Отправляем событие new_message в комнату ${roomName}, подключено клиентов: ${clientsInRoom.size}`);
+        
+        io.to(roomName).emit('new_message', message);
+        console.log(`✅ [Socket.IO] Сообщение успешно отправлено в чат ${chatId}`);
       } catch (error) {
         console.error('❌ [Socket.IO] Ошибка отправки сообщения:', error);
         socket.emit('error', { message: 'Ошибка отправки сообщения' });

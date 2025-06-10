@@ -129,6 +129,12 @@ function Messenger() {
         activeChatRef.current = activeChat ? activeChat.id : null;
 
         if (activeChat) {
+            console.log('🔄 [Messenger] Активный чат изменен на:', activeChat.id);
+            
+            // Присоединяемся к комнате чата через Socket.IO
+            console.log('🔗 [Messenger] Присоединяемся к комнате чата:', activeChat.id);
+            socketHook.chat.join(activeChat.id);
+            
             fetchMessages(activeChat.id);
             markChatAsRead(activeChat.id);
         }
@@ -136,12 +142,24 @@ function Messenger() {
     
     // Обработка нового сообщения: обновляем сообщения и динамически обновляем, сортируя список чатов
     const handleNewMessage = (message) => {
+        console.log('📨 [Messenger] Получено новое сообщение:', message);
         const chatId = Number(message.chat_id);
-        // Добавляем сообщение, избегая дубликатов
-        setMessages(prevMessages => {
-            if (prevMessages.some(m => m.id === message.id)) return prevMessages;
-            return [...prevMessages, message];
-        });
+        console.log('📨 [Messenger] Chat ID:', chatId, 'Active chat:', activeChatRef.current);
+        
+        // Добавляем сообщение только если оно для активного чата
+        if (Number(activeChatRef.current) === chatId) {
+            setMessages(prevMessages => {
+                if (prevMessages.some(m => m.id === message.id)) {
+                    console.log('📨 [Messenger] Сообщение уже существует, пропускаем');
+                    return prevMessages;
+                }
+                console.log('📨 [Messenger] Добавляем новое сообщение в активный чат');
+                return [...prevMessages, message];
+            });
+        } else {
+            console.log('📨 [Messenger] Сообщение не для активного чата, не добавляем в список');
+        }
+        
         // Обновляем last_message и пересортировываем чаты по дате последнего сообщения
         setChats(prevChats => {
             const updatedChats = prevChats.map(chat =>
@@ -156,10 +174,13 @@ function Messenger() {
                     return new Date(b.last_message?.created_at || b.updated_at) - new Date(a.last_message?.created_at || a.updated_at);
                 });
         });
+        
         // Если сообщение в активном чате, отмечаем как прочитанное, иначе увеличиваем счетчик непрочитанных
         if (Number(activeChatRef.current) === chatId) {
+            console.log('📨 [Messenger] Сообщение в активном чате, помечаем как прочитанное');
             markMessageAsRead(message.id);
         } else {
+            console.log('📨 [Messenger] Сообщение в неактивном чате, увеличиваем счетчик');
             setUnreadCounts(prev => ({
                 ...prev,
                 [chatId]: (prev[chatId] || 0) + 1
@@ -255,10 +276,18 @@ function Messenger() {
     
     // Отправка сообщения
     const sendMessage = () => {
-        if (!activeChat || !newMessage.trim()) return;
+        if (!activeChat || !newMessage.trim()) {
+            console.log('📤 [Messenger] Не отправляем: нет активного чата или сообщение пустое');
+            return;
+        }
+        
+        console.log('📤 [Messenger] Отправляем сообщение через Socket.IO:', {
+            chatId: activeChat.id,
+            message: newMessage.trim()
+        });
         
         // Используем новый API Socket.IO
-        socketHook.chat.sendMessage(activeChat.id, newMessage);
+        socketHook.chat.sendMessage(activeChat.id, newMessage.trim());
         setNewMessage('');
     };
     
@@ -358,8 +387,14 @@ function Messenger() {
     
     // Обработка изменения активного чата
     const handleChatSelect = (chat) => {
+        console.log('💬 [Messenger] Выбран новый чат:', chat.id);
         setActiveChat(chat);
         setNewMessage('');
+        
+        // Присоединяемся к комнате чата через Socket.IO
+        console.log('🔗 [Messenger] Присоединяемся к комнате чата через Socket.IO');
+        socketHook.chat.join(chat.id);
+        
         fetchMessages(chat.id);
         markChatAsRead(chat.id);
     };
