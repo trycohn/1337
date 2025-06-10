@@ -211,12 +211,6 @@
   font-size: 1.25rem;
 }
 
-.mixed-teams-grid {
-  display: inline-flex;
-  gap: 16px;
-  margin-top: 16px;
-}
-
 /* 🎯 НОВЫЕ СТИЛИ ДЛЯ СТАТИСТИКИ КОМАНД */
 .teams-stats {
   display: flex;
@@ -447,10 +441,6 @@
     width: 100%;
   }
 
-  .mixed-teams-grid {
-    grid-template-columns: 1fr;
-  }
-
   .mix-buttons-row {
     flex-direction: column;
   }
@@ -556,6 +546,7 @@
   display: inline-flex;
   gap: 20px;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 
 /* Карточки команд */
