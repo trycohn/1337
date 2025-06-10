@@ -1323,10 +1323,16 @@ function TournamentDetails() {
     }, [tournament, confirmRemoveParticipant]);
 
     const handleTeamsGenerated = useCallback((teams) => {
-        console.log('✅ Команды сгенерированы:', teams);
+        console.log('✅ Команды сгенерированы в TournamentDetails:', teams);
+        
+        // 🎯 ПРЯМО ОБНОВЛЯЕМ СОСТОЯНИЕ КОМАНД БЕЗ ПОЛНОЙ ПЕРЕЗАГРУЗКИ
         setMixedTeams(teams);
-        reloadTournamentData(); // Используем стабильную функцию
-    }, [reloadTournamentData]);
+        
+        // 🎯 НЕ ВЫЗЫВАЕМ reloadTournamentData() чтобы избежать циклических обновлений
+        // Команды уже обновлены в состоянии выше
+        
+        console.log('✅ Состояние команд обновлено без полной перезагрузки турнира');
+    }, []); // Убираем reloadTournamentData из зависимостей
 
     const handleTeamsUpdated = useCallback(() => {
         console.log('✅ Команды обновлены');

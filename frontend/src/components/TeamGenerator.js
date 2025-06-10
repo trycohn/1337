@@ -70,11 +70,9 @@ const TeamGenerator = ({
 
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
-        if (!tournament || !tournament.id || !shouldMakeRequest('teams')) return;
+        if (!tournament?.id) return;
         
-        setLoadingTeams(true);
         try {
-            console.log('🔍 Sending request to: /api/tournaments/' + tournament.id + '/teams');
             const response = await api.get(`/api/tournaments/${tournament.id}/teams`);
             if (response.data && Array.isArray(response.data)) {
                 console.log('Загруженные команды турнира:', response.data);
@@ -87,21 +85,19 @@ const TeamGenerator = ({
                 
                 setMixedTeams(enrichedTeams);
                 
-                // Уведомляем родительский компонент о загруженных командах
-                if (onTeamsGenerated && enrichedTeams.length > 0) {
-                    console.log('fetchTeams: вызываем onTeamsGenerated с загруженными командами', enrichedTeams);
+                // 🎯 ВЫЗЫВАЕМ onTeamsGenerated ТОЛЬКО если команды были ВПЕРВЫЕ загружены
+                // Проверяем что текущие команды пустые (это первая загрузка)
+                if (mixedTeams.length === 0 && onTeamsGenerated) {
+                    console.log('fetchTeams: вызываем onTeamsGenerated с загруженными командами (первая загрузка)', enrichedTeams);
                     onTeamsGenerated(enrichedTeams);
+                } else {
+                    console.log('fetchTeams: команды обновлены без вызова onTeamsGenerated (предотвращение цикла)');
                 }
             }
         } catch (error) {
-            console.error('Ошибка при загрузке команд турнира:', error);
-            if (toast) {
-                toast.error('Не удалось загрузить команды');
-            }
-        } finally {
-            setLoadingTeams(false);
+            console.error('❌ Ошибка загрузки команд:', error);
         }
-    }, [tournament?.id, calculateTeamAverageRating]); // ИСПРАВЛЕНО: добавлен calculateTeamAverageRating
+    }, [tournament?.id, calculateTeamAverageRating, mixedTeams.length]); // Добавляем mixedTeams.length для проверки
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
@@ -135,18 +131,10 @@ const TeamGenerator = ({
             setOriginalParticipants(participants);
         }
         
-        // Загружаем оригинальных участников, если это турнир с командами
-        if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix') {
-            fetchOriginalParticipants();
+        // 🎯 ИСПРАВЛЕНИЕ БЕСКОНЕЧНОГО ЦИКЛА: проверяем что команды еще не установлены
+        if (tournament && tournament.teams && tournament.teams.length > 0 && mixedTeams.length === 0) {
+            console.log('🔄 Устанавливаем существующие команды из турнира (один раз)');
             
-            // Загружаем команды турнира, если они есть
-            if (tournament.participant_type === 'team') {
-                fetchTeams();
-            }
-        }
-
-        // Если у турнира есть команды, устанавливаем их в состояние
-        if (tournament && tournament.teams && tournament.teams.length > 0) {
             // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
             const enrichedTeams = tournament.teams.map(team => ({
                 ...team,
@@ -155,20 +143,24 @@ const TeamGenerator = ({
             
             setMixedTeams(enrichedTeams);
             
-            // Уведомляем родительский компонент о наличии команд
-            if (onTeamsGenerated) {
-                console.log('TeamGenerator: вызываем onTeamsGenerated с существующими командами', enrichedTeams);
-                onTeamsGenerated(enrichedTeams);
-            }
+            // 🎯 НЕ ВЫЗЫВАЕМ onTeamsGenerated для уже существующих команд
+            // так как это приводит к бесконечному циклу перезагрузки
+            console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
+        }
+
+        // Загружаем оригинальных участников, если это микс турнир и участники не загружены
+        if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
+            fetchOriginalParticipants();
         }
 
         // Отладочная информация по командам
         console.log('TeamGenerator useEffect:', {
             tournamentTeams: tournament?.teams,
             hasTeams: tournament?.teams && tournament.teams.length > 0,
-            participantType: tournament?.participant_type
+            participantType: tournament?.participant_type,
+            mixedTeamsLength: mixedTeams.length
         });
-    }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length, calculateTeamAverageRating]); // ИСПРАВЛЕНО: добавлен calculateTeamAverageRating
+    }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length]); // УБИРАЕМ calculateTeamAverageRating и onTeamsGenerated из зависимостей
 
     // Функция для обновления размера команды на сервере
     const updateTeamSize = async (newSize) => {
@@ -201,58 +193,62 @@ const TeamGenerator = ({
 
     // Функция для формирования команд
     const handleFormTeams = async () => {
-        if (!tournament || !tournament.id) return;
-        
-        if (participants && participants.length > 0) {
-            setOriginalParticipants([...participants]);
+        if (!tournament?.id || displayParticipants.length < 2) {
+            console.warn('Недостаточно участников для формирования команд');
+            return;
         }
-        
+
         setLoading(true);
+        
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
-                ratingType: ratingType,
-                teamSize: parseInt(teamSize, 10)
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const teamSizeNumber = parseInt(teamSize);
+            const participantsData = displayParticipants;
             
-            if (response.data) {
-                if (response.data.teams) {
-                    console.log('Получены команды от сервера:', response.data.teams);
-                    
-                    // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
-                    const enrichedTeams = response.data.teams.map(team => ({
-                        ...team,
-                        averageRating: calculateTeamAverageRating(team)
-                    }));
-                    
-                    setMixedTeams(enrichedTeams);
-                    
-                    if (onTeamsGenerated) {
-                        onTeamsGenerated(enrichedTeams);
-                    }
+            console.log('🚀 Формируем команды:', {
+                teamSize: teamSizeNumber,
+                participantsCount: participantsData.length,
+                ratingType,
+                tournamentId: tournament.id
+            });
+
+            const response = await api.post(`/api/tournaments/${tournament.id}/generate-teams`, {
+                participants: participantsData,
+                teamSize: teamSizeNumber,
+                ratingType: ratingType
+            });
+
+            if (response.data && response.data.teams) {
+                console.log('✅ Команды успешно сгенерированы:', response.data.teams);
+                
+                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
+                const enrichedTeams = response.data.teams.map(team => ({
+                    ...team,
+                    averageRating: calculateTeamAverageRating(team)
+                }));
+                
+                setMixedTeams(enrichedTeams);
+                
+                // 🎯 ВЫЗЫВАЕМ onTeamsGenerated ТОЛЬКО при успешном создании НОВЫХ команд
+                if (onTeamsGenerated) {
+                    console.log('✅ Уведомляем родительский компонент о новых командах');
+                    onTeamsGenerated(enrichedTeams);
                 }
                 
+                // Обновляем tournament.participant_type на 'team' после успешного создания команд
                 if (onTeamsUpdated) {
                     onTeamsUpdated();
                 }
                 
-                // После формирования команд загружаем оригинальных участников для отображения
-                // Принудительно обходим debounce для пользовательских действий
-                setLastRequestTime(prev => ({ ...prev, 'original-participants': 0 }));
-                fetchOriginalParticipants();
-                
-                if (toast) {
-                    toast.success('Команды успешно сформированы');
-                }
+                console.log('✅ Команды успешно созданы и установлены');
+            } else {
+                console.error('❌ Некорректный ответ сервера при генерации команд');
             }
         } catch (error) {
-            console.error('Ошибка при формировании команд:', error);
-            if (toast) {
-                toast.error(error.response?.data?.error || 'Не удалось сформировать команды');
+            console.error('❌ Ошибка при формировании команд:', error);
+            
+            // Показываем пользователю ошибку
+            if (error.response?.data?.message) {
+                console.error('Сообщение об ошибке:', error.response.data.message);
             }
         } finally {
             setLoading(false);
@@ -283,219 +279,248 @@ const TeamGenerator = ({
         participantsCount: displayParticipants.length
     });
 
+    // Функция рендеринга команд (для микс турниров)
+    const renderTeamsList = () => {
+        const teamsExist = mixedTeams && mixedTeams.length > 0;
+        const tournamentTeams = tournament?.teams || [];
+        
+        console.log('TeamGenerator render:', {
+            teamsExist,
+            tournamentTeams,
+            mixedTeamsLength: mixedTeams.length,
+            teamsListLength: tournamentTeams.length,
+            shouldShowTeams: teamsExist || tournamentTeams.length > 0,
+            onTeamsGeneratedExists: !!onTeamsGenerated
+        });
+
+        // 🎯 УБИРАЕМ ДУБЛИРУЮЩИЙ ВЫЗОВ onTeamsGenerated ИЗ РЕНДЕРА
+        // Вызовы onTeamsGenerated должны происходить только в useEffect и при генерации новых команд
+        
+        // Если команды есть, отображаем их
+        if (teamsExist || tournamentTeams.length > 0) {
+            const teamsToShow = teamsExist ? mixedTeams : tournamentTeams.map(team => ({
+                ...team,
+                averageRating: calculateTeamAverageRating(team)
+            }));
+
+            return (
+                <div className="teams-display">
+                    {/* Заголовок с информацией о командах */}
+                    <div className="teams-header">
+                        <h4>🏆 Сформированные команды ({teamsToShow.length})</h4>
+                        <div className="teams-stats">
+                            <span className="stat-item">
+                                👥 {teamsToShow.reduce((total, team) => total + (team.members?.length || 0), 0)} игроков
+                            </span>
+                            <span className="stat-item">
+                                ⭐ Средний рейтинг: {teamsToShow.length > 0 
+                                    ? Math.round(teamsToShow.reduce((sum, team) => sum + (team.averageRating || 0), 0) / teamsToShow.length)
+                                    : 0
+                                }
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Сетка команд */}
+                    <div className="teams-grid">
+                        {teamsToShow.map((team, index) => (
+                            <div key={team.id || index} className="team-card">
+                                <div className="team-header">
+                                    <h5>{team.name || `Команда ${index + 1}`}</h5>
+                                    <div className="team-rating">
+                                        <span className="rating-value">{team.averageRating || '—'}</span>
+                                        <span className="rating-label">ELO</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="team-members">
+                                    {team.members && team.members.length > 0 ? (
+                                        team.members.map((member, memberIndex) => (
+                                            <div key={memberIndex} className="team-member">
+                                                <div className="member-avatar">
+                                                    <img 
+                                                        src={member.avatar_url || '/default-avatar.png'} 
+                                                        alt={member.name}
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = '/default-avatar.png';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="member-info">
+                                                    <span className="member-name">
+                                                        {member.user_id ? (
+                                                            <a href={`/profile/${member.user_id}`}>
+                                                                {member.name || member.username}
+                                                            </a>
+                                                        ) : (
+                                                            member.name
+                                                        )}
+                                                    </span>
+                                                    <span className="member-rating">
+                                                        {member.faceit_elo || member.cs2_premier_rank || 'Н/Д'} ELO
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="no-members">Состав не определен</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // Если команд нет, показываем интерфейс генерации (только для микс турниров)
+        if (tournament?.format === 'mix') {
+            return renderGenerationInterface();
+        }
+
+        // Для обычных турниров без команд
+        return (
+            <div className="no-teams-message">
+                <p>🏆 Команды будут добавлены организатором турнира</p>
+            </div>
+        );
+    };
+
+    // Функция рендеринга списка участников
+    const renderParticipantsList = () => {
+        if (tournament?.format !== 'mix') return null;
+
+        return (
+            <div className="original-participants-section">
+                <h3>🎮 Зарегистрированные игроки ({displayParticipants?.length || 0})</h3>
+                <div className="mix-players-list">
+                    {loadingParticipants ? (
+                        <p className="loading-participants">Загрузка участников...</p>
+                    ) : displayParticipants && displayParticipants.length > 0 ? (
+                        <div className="participants-grid">
+                            {displayParticipants.map((participant) => (
+                                <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
+                                    <div className="participant-avatar">
+                                        <img 
+                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                            alt={`${participant.name} avatar`}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/default-avatar.png';
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="participant-info">
+                                        <span className="participant-name">{participant.name}</span>
+                                        <span className="participant-rating">
+                                            {ratingType === 'faceit' 
+                                                ? `FACEIT: ${participant.faceit_elo || 1000}`
+                                                : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
+                                            }
+                                        </span>
+                                    </div>
+                                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
+                                        <button 
+                                            className="remove-participant"
+                                            onClick={() => onRemoveParticipant(participant.id)}
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="no-participants">Нет зарегистрированных игроков</p>
+                    )}
+                </div>
+
+                {/* 🎯 СЕКЦИЯ УПРАВЛЕНИЯ МИКСОМ */}
+                {isAdminOrCreator && (
+                    <div className="mix-settings-section">
+                        <h3>⚙️ Настройки микса</h3>
+                        <div className="mix-controls-row">
+                            <div className="mix-form-group">
+                                <label>Размер команды:</label>
+                                <select
+                                    value={teamSize}
+                                    onChange={(e) => {
+                                        const newSize = e.target.value;
+                                        setTeamSize(newSize);
+                                        updateTeamSize(newSize);
+                                    }}
+                                    disabled={mixedTeams.length > 0 || loading}
+                                >
+                                    <option value="2">2 игрока</option>
+                                    <option value="5">5 игроков</option>
+                                </select>
+                            </div>
+                        
+                            <div className="mix-form-group rating-group">
+                                <label>Миксовать по рейтингу:</label>
+                                <select
+                                    value={ratingType}
+                                    onChange={(e) => setRatingType(e.target.value)}
+                                >
+                                    <option value="faceit">FACEit</option>
+                                    <option value="premier">Steam Premier</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="mix-buttons-row">
+                            {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
+                                <button 
+                                    onClick={handleFormTeams} 
+                                    className="form-teams-button"
+                                    disabled={loading || displayParticipants.length < 2}
+                                >
+                                    {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды из участников'}
+                                </button>
+                            )}
+                            {tournament.participant_type === 'solo' && mixedTeams.length > 0 && tournament.status === 'active' && (
+                                <button 
+                                    onClick={handleFormTeams} 
+                                    className="reformate-teams-button"
+                                    disabled={loading}
+                                >
+                                    {loading ? '⏳ Пересоздание команд...' : '🔄 Переформировать команды'}
+                                </button>
+                            )}
+                            
+                            {displayParticipants.length < 2 && (
+                                <p className="min-participants-notice">
+                                    ⚠️ Для создания команд нужно минимум 2 участника
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Функция рендеринга интерфейса генерации команд
+    const renderGenerationInterface = () => {
+        return (
+            <div className="generation-interface">
+                <div className="no-teams-message">
+                    <div className="no-teams-icon">⚽</div>
+                    <h4>Команды еще не сформированы</h4>
+                    <p>Нажмите кнопку "Сформировать команды" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="team-generator">
-            {tournament?.format === 'mix' && (
-                <>
-                    {/* 🎯 СЕКЦИЯ УЧАСТНИКОВ - ВСЕГДА ВИДИМАЯ */}
-                    <div className="original-participants-section">
-                        <h3>🎮 Зарегистрированные игроки ({displayParticipants?.length || 0})</h3>
-                        <div className="mix-players-list">
-                            {loadingParticipants ? (
-                                <p className="loading-participants">Загрузка участников...</p>
-                            ) : displayParticipants && displayParticipants.length > 0 ? (
-                                <div className="participants-grid">
-                                    {displayParticipants.map((participant) => (
-                                        <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
-                                            <div className="participant-avatar">
-                                                <img 
-                                                    src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                                    alt={`${participant.name} avatar`}
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src = '/default-avatar.png';
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="participant-info">
-                                                <span className="participant-name">{participant.name}</span>
-                                                <span className="participant-rating">
-                                                    {ratingType === 'faceit' 
-                                                        ? `FACEIT: ${participant.faceit_elo || 1000}`
-                                                        : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
-                                                    }
-                                                </span>
-                                            </div>
-                                            {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                                <button 
-                                                    className="remove-participant"
-                                                    onClick={() => onRemoveParticipant(participant.id)}
-                                                >
-                                                    ✕
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="no-participants">Нет зарегистрированных игроков</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* 🎯 СЕКЦИЯ КОМАНД - ПОЯВЛЯЕТСЯ НИЖЕ УЧАСТНИКОВ */}
-                    <div className="mixed-teams-section">
-                        <h3>⚡ Сформированные команды {enrichedTeamsList.length > 0 ? `(${enrichedTeamsList.length})` : '(нет команд)'}</h3>
-                        
-                        {/* 🎯 СТАТИСТИКА КОМАНД */}
-                        {enrichedTeamsList.length > 0 && (
-                            <div className="teams-stats">
-                                <div className="team-stat">
-                                    <span className="stat-label">Всего команд:</span>
-                                    <span className="stat-value">{enrichedTeamsList.length}</span>
-                                </div>
-                                <div className="team-stat">
-                                    <span className="stat-label">Игроков в командах:</span>
-                                    <span className="stat-value">
-                                        {enrichedTeamsList.reduce((total, team) => total + (team.members?.length || 0), 0)}
-                                    </span>
-                                </div>
-                                <div className="team-stat">
-                                    <span className="stat-label">Средний рейтинг:</span>
-                                    <span className="stat-value">
-                                        {enrichedTeamsList.length > 0 
-                                            ? Math.round(enrichedTeamsList.reduce((sum, team) => sum + (team.averageRating || 0), 0) / enrichedTeamsList.length)
-                                            : 0
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-                        
-                        <div className="mixed-teams-grid">
-                            {loadingTeams ? (
-                                <p className="loading-teams">Загрузка команд...</p>
-                            ) : enrichedTeamsList.length > 0 ? (
-                                enrichedTeamsList.map((team, index) => (
-                                    <div key={team.id || index} className="enhanced-team-card">
-                                        <div className="team-card-header">
-                                            <div className="team-title">
-                                                <h4>{team.name || `Команда ${index + 1}`}</h4>
-                                                <span className="team-members-count">
-                                                    👥 {team.members?.length || 0} участников
-                                                </span>
-                                            </div>
-                                            <div className="team-rating-display">
-                                                <span className="rating-label">
-                                                    {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}:
-                                                </span>
-                                                <span className="rating-value">
-                                                    {team.averageRating || calculateTeamAverageRating(team)}
-                                                </span>
-                                                <span className="rating-suffix">ELO</span>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* 🎯 СОСТАВ КОМАНДЫ */}
-                                        <div className="team-composition">
-                                            <h5>👥 Состав команды:</h5>
-                                            {team.members && team.members.length > 0 ? (
-                                                <div className="team-members-list">
-                                                    {team.members.map((member, memberIndex) => (
-                                                        <div key={memberIndex} className="team-member-row">
-                                                            <div className="member-avatar">
-                                                                <img 
-                                                                    src={ensureHttps(member.avatar_url) || '/default-avatar.png'} 
-                                                                    alt={`${member.name} avatar`}
-                                                                    onError={(e) => {
-                                                                        e.target.onerror = null;
-                                                                        e.target.src = '/default-avatar.png';
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div className="member-info">
-                                                                <span className="member-name">
-                                                                    {member.name || member.username || 'Игрок'}
-                                                                </span>
-                                                                <span className="member-rating">
-                                                                    {ratingType === 'faceit' 
-                                                                        ? `${member.faceit_elo || 1000} ELO`
-                                                                        : `Ранг ${member.premier_rank || member.cs2_premier_rank || 5}`
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="no-members">Состав команды не определен</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="no-teams-message">
-                                    <div className="no-teams-icon">⚽</div>
-                                    <h4>Команды еще не сформированы</h4>
-                                    <p>Нажмите кнопку "Сформировать команды" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* 🎯 СЕКЦИЯ УПРАВЛЕНИЯ МИКСОМ */}
-                    {isAdminOrCreator && (
-                        <div className="mix-settings-section">
-                            <h3>⚙️ Настройки микса</h3>
-                            <div className="mix-controls-row">
-                                <div className="mix-form-group">
-                                    <label>Размер команды:</label>
-                                    <select
-                                        value={teamSize}
-                                        onChange={(e) => {
-                                            const newSize = e.target.value;
-                                            setTeamSize(newSize);
-                                            updateTeamSize(newSize);
-                                        }}
-                                        disabled={enrichedTeamsList.length > 0 || loading}
-                                    >
-                                        <option value="2">2 игрока</option>
-                                        <option value="5">5 игроков</option>
-                                    </select>
-                                </div>
-                            
-                                <div className="mix-form-group rating-group">
-                                    <label>Миксовать по рейтингу:</label>
-                                    <select
-                                        value={ratingType}
-                                        onChange={(e) => setRatingType(e.target.value)}
-                                    >
-                                        <option value="faceit">FACEit</option>
-                                        <option value="premier">Steam Premier</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="mix-buttons-row">
-                                {tournament.participant_type === 'solo' && enrichedTeamsList.length === 0 && (
-                                    <button 
-                                        onClick={handleFormTeams} 
-                                        className="form-teams-button"
-                                        disabled={loading || displayParticipants.length < 2}
-                                    >
-                                        {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды из участников'}
-                                    </button>
-                                )}
-                                {tournament.participant_type === 'solo' && enrichedTeamsList.length > 0 && tournament.status === 'active' && (
-                                    <button 
-                                        onClick={handleFormTeams} 
-                                        className="reformate-teams-button"
-                                        disabled={loading}
-                                    >
-                                        {loading ? '⏳ Пересоздание команд...' : '🔄 Переформировать команды'}
-                                    </button>
-                                )}
-                                
-                                {displayParticipants.length < 2 && (
-                                    <p className="min-participants-notice">
-                                        ⚠️ Для создания команд нужно минимум 2 участника
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
+            {/* 🎯 ВСЕГДА ПОКАЗЫВАЕМ УЧАСТНИКОВ */}
+            {renderParticipantsList()}
+            
+            {/* 🎯 КОМАНДЫ ОТОБРАЖАЮТСЯ НИЖЕ УЧАСТНИКОВ */}
+            {renderTeamsList()}
         </div>
     );
 };
