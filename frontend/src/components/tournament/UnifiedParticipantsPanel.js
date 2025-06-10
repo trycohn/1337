@@ -670,6 +670,20 @@ const UnifiedParticipantsPanel = ({
                     {displayMode === 'gaming-roster' && renderGamingRoster(processedParticipants)}
                 </div>
 
+                {/* 🎯 МИКС ТУРНИРЫ: TeamGenerator для формирования и отображения команд */}
+                {tournament?.format === 'mix' && (
+                    <div className="mix-tournament-section-participants-list">
+                        <TeamGenerator
+                            tournament={tournament}
+                            participants={participants}
+                            onTeamsGenerated={onTeamsGenerated}
+                            onTeamsUpdated={onTeamsUpdated}
+                            onRemoveParticipant={onRemoveParticipant}
+                            isAdminOrCreator={isCreatorOrAdmin}
+                        />
+                    </div>
+                )}
+
                 {/* Заглушка если нет участников */}
                 {participants.length === 0 && (
                     <div className="empty-participants-state-participants-list">
@@ -705,7 +719,13 @@ const UnifiedParticipantsPanel = ({
         renderSmartCards,
         renderDataTable,
         renderGamingRoster,
-        handleParticipate
+        handleParticipate,
+        // 🎯 НОВЫЕ ЗАВИСИМОСТИ ДЛЯ МИКС ТУРНИРОВ
+        tournament?.format,
+        onTeamsGenerated,
+        onTeamsUpdated,
+        onRemoveParticipant,
+        isCreatorOrAdmin
     ]);
 
     const renderAddParticipants = useCallback(() => {
@@ -782,24 +802,21 @@ const UnifiedParticipantsPanel = ({
                         <p>Здесь будут отображены сформированные команды</p>
                     </div>
                     
-                    {tournament?.format === 'mix' && isCreatorOrAdmin && (
-                        <TeamGenerator
-                            tournament={tournament}
-                            participants={participants}
-                            onTeamsGenerated={onTeamsGenerated}
-                            onTeamsUpdated={onTeamsUpdated}
-                            onRemoveParticipant={onRemoveParticipant}
-                            isAdminOrCreator={isCreatorOrAdmin}
-                        />
-                    )}
-                    
-                    {mixedTeams.length === 0 && (
-                        <div className="no-teams-state-participants-list">
-                            <div className="no-teams-icon-participants-list">⚽</div>
-                            <h4>Команды не сформированы</h4>
-                            <p>Команды появятся после их создания администратором турнира</p>
-                        </div>
-                    )}
+                    <div className="no-teams-state-participants-list">
+                        <div className="no-teams-icon-participants-list">⚽</div>
+                        <h4>Команды не сформированы</h4>
+                        <p>
+                            {tournament?.format === 'mix' 
+                                ? "Команды будут сформированы автоматически во вкладке 'Участники'"
+                                : "Команды появятся после их создания администратором турнира"
+                            }
+                        </p>
+                        {tournament?.format === 'mix' && (
+                            <p className="mix-teams-hint">
+                                💡 Для формирования команд перейдите во вкладку "Участники"
+                            </p>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -808,7 +825,12 @@ const UnifiedParticipantsPanel = ({
             <div className="teams-tab-participants-list">
                 <div className="teams-header-participants-list">
                     <h4>Команды турнира ({mixedTeams.length})</h4>
-                    <p>Автоматически сформированные команды на основе рейтинга участников</p>
+                    <p>
+                        {tournament?.format === 'mix' 
+                            ? "Автоматически сформированные команды на основе рейтинга участников"
+                            : "Команды турнира"
+                        }
+                    </p>
                 </div>
 
                 {/* 🎯 СТАТИСТИКА КОМАНД */}
@@ -902,15 +924,15 @@ const UnifiedParticipantsPanel = ({
                     ))}
                 </div>
 
-                {tournament?.format === 'mix' && isCreatorOrAdmin && (
-                    <TeamGenerator
-                        tournament={tournament}
-                        participants={participants}
-                        onTeamsGenerated={onTeamsGenerated}
-                        onTeamsUpdated={onTeamsUpdated}
-                        onRemoveParticipant={onRemoveParticipant}
-                        isAdminOrCreator={isCreatorOrAdmin}
-                    />
+                {/* 🎯 ПРИМЕЧАНИЕ ДЛЯ МИКС ТУРНИРОВ */}
+                {tournament?.format === 'mix' && (
+                    <div className="mix-teams-management-note">
+                        <div className="note-icon">💡</div>
+                        <div className="note-content">
+                            <h6>Управление командами</h6>
+                            <p>Для создания или редактирования команд перейдите во вкладку "Участники"</p>
+                        </div>
+                    </div>
                 )}
             </div>
         );
