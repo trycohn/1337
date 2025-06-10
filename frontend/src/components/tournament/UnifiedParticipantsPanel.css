@@ -626,7 +626,7 @@
 }
 
 .filtered-indicator-participants-list {
-    color: var(--primary-color, #007bff);
+    color: #ffffff;
     font-weight: 500;
 }
 
