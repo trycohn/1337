@@ -1529,11 +1529,9 @@ function TournamentDetails() {
             setMessage('🔄 Переформирование команд...');
             
             const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${tournament.id}/generate-teams`, {
-                participants: tournament.participants || [],
-                teamSize: tournament.team_size || 5,
+            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
                 ratingType: 'faceit', // По умолчанию используем FACEIT
-                forceRegenerate: true // Флаг принудительной регенерации
+                teamSize: tournament.team_size || 5 // Размер команды из турнира
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -1554,7 +1552,7 @@ function TournamentDetails() {
             }
         } catch (error) {
             console.error('❌ Ошибка переформирования команд:', error);
-            const errorMessage = error.response?.data?.message || 'Не удалось переформировать команды';
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Не удалось переформировать команды';
             setMessage(`❌ ${errorMessage}`);
             setTimeout(() => setMessage(''), 3000);
         }

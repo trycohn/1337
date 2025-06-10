@@ -106,21 +106,18 @@ const TeamGenerator = ({
         
         try {
             const teamSizeNumber = parseInt(teamSize);
-            const participantsData = displayParticipants;
             
             console.log('🔄 Переформируем команды:', {
                 teamSize: teamSizeNumber,
-                participantsCount: participantsData.length,
+                participantsCount: displayParticipants.length,
                 ratingType,
                 tournamentId: tournament.id
             });
 
-            // Используем тот же эндпоинт, но сервер поймет что команды уже есть
-            const response = await api.post(`/api/tournaments/${tournament.id}/generate-teams`, {
-                participants: participantsData,
-                teamSize: teamSizeNumber,
+            // Используем правильный эндпоинт для переформирования команд
+            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
                 ratingType: ratingType,
-                forceRegenerate: true // Флаг принудительной регенерации
+                teamSize: teamSizeNumber
             });
 
             if (response.data && response.data.teams) {
@@ -162,7 +159,7 @@ const TeamGenerator = ({
             console.error('❌ Ошибка при переформировании команд:', error);
             
             if (toast) {
-                const errorMessage = error.response?.data?.message || 'Не удалось переформировать команды';
+                const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Не удалось переформировать команды';
                 toast.error(errorMessage);
             }
         } finally {
@@ -299,24 +296,22 @@ const TeamGenerator = ({
             console.warn('Недостаточно участников для формирования команд');
             return;
         }
-
+        
         setLoading(true);
         
         try {
             const teamSizeNumber = parseInt(teamSize);
-            const participantsData = displayParticipants;
             
             console.log('🚀 Формируем команды:', {
                 teamSize: teamSizeNumber,
-                participantsCount: participantsData.length,
+                participantsCount: displayParticipants.length,
                 ratingType,
                 tournamentId: tournament.id
             });
 
-            const response = await api.post(`/api/tournaments/${tournament.id}/generate-teams`, {
-                participants: participantsData,
-                teamSize: teamSizeNumber,
-                ratingType: ratingType
+            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
+                ratingType: ratingType,
+                teamSize: teamSizeNumber
             });
 
             if (response.data && response.data.teams) {
@@ -534,105 +529,105 @@ const TeamGenerator = ({
     const renderParticipantsList = () => {
         if (tournament?.format !== 'mix') return null;
 
-        return (
-            <div className="original-participants-section">
+    return (
+                    <div className="original-participants-section">
                 <h3>🎮 Зарегистрированные игроки ({displayParticipants?.length || 0})</h3>
-                <div className="mix-players-list">
-                    {loadingParticipants ? (
-                        <p className="loading-participants">Загрузка участников...</p>
-                    ) : displayParticipants && displayParticipants.length > 0 ? (
-                        <div className="participants-grid">
-                            {displayParticipants.map((participant) => (
-                                <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
-                                    <div className="participant-avatar">
-                                        <img 
-                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                            alt={`${participant.name} avatar`}
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = '/default-avatar.png';
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="participant-info">
-                                        <span className="participant-name">{participant.name}</span>
-                                        <span className="participant-rating">
-                                            {ratingType === 'faceit' 
-                                                ? `FACEIT: ${participant.faceit_elo || 1000}`
+                        <div className="mix-players-list">
+                            {loadingParticipants ? (
+                                <p className="loading-participants">Загрузка участников...</p>
+                            ) : displayParticipants && displayParticipants.length > 0 ? (
+                                <div className="participants-grid">
+                                    {displayParticipants.map((participant) => (
+                                        <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
+                                            <div className="participant-avatar">
+                                                <img 
+                                                    src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                                    alt={`${participant.name} avatar`}
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = '/default-avatar.png';
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="participant-info">
+                                                <span className="participant-name">{participant.name}</span>
+                                                <span className="participant-rating">
+                                                    {ratingType === 'faceit' 
+                                                        ? `FACEIT: ${participant.faceit_elo || 1000}`
                                                 : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
-                                            }
-                                        </span>
-                                    </div>
-                                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                        <button 
-                                            className="remove-participant"
-                                            onClick={() => onRemoveParticipant(participant.id)}
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
+                                                    }
+                                                </span>
+                                            </div>
+                                            {isAdminOrCreator && tournament.participant_type === 'solo' && (
+                                                <button 
+                                                    className="remove-participant"
+                                                    onClick={() => onRemoveParticipant(participant.id)}
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="no-participants">Нет зарегистрированных игроков</p>
-                    )}
-                </div>
+                            ) : (
+                                <p className="no-participants">Нет зарегистрированных игроков</p>
+                            )}
+                    </div>
 
                 {/* 🎯 СЕКЦИЯ УПРАВЛЕНИЯ МИКСОМ */}
-                {isAdminOrCreator && (
-                    <div className="mix-settings-section">
+                    {isAdminOrCreator && (
+                        <div className="mix-settings-section">
                         <h3>⚙️ Настройки микса</h3>
-                        <div className="mix-controls-row">
-                            <div className="mix-form-group">
-                                <label>Размер команды:</label>
-                                <select
-                                    value={teamSize}
-                                    onChange={(e) => {
-                                        const newSize = e.target.value;
-                                        setTeamSize(newSize);
-                                        updateTeamSize(newSize);
-                                    }}
+                            <div className="mix-controls-row">
+                                <div className="mix-form-group">
+                                    <label>Размер команды:</label>
+                                    <select
+                                        value={teamSize}
+                                        onChange={(e) => {
+                                            const newSize = e.target.value;
+                                            setTeamSize(newSize);
+                                            updateTeamSize(newSize);
+                                        }}
                                     disabled={mixedTeams.length > 0 || loading}
-                                >
-                                    <option value="2">2 игрока</option>
-                                    <option value="5">5 игроков</option>
-                                </select>
+                                    >
+                                        <option value="2">2 игрока</option>
+                                        <option value="5">5 игроков</option>
+                                    </select>
+                                </div>
+                            
+                                <div className="mix-form-group rating-group">
+                                    <label>Миксовать по рейтингу:</label>
+                                    <select
+                                        value={ratingType}
+                                        onChange={(e) => setRatingType(e.target.value)}
+                                    >
+                                        <option value="faceit">FACEit</option>
+                                        <option value="premier">Steam Premier</option>
+                                    </select>
+                                </div>
                             </div>
-                        
-                            <div className="mix-form-group rating-group">
-                                <label>Миксовать по рейтингу:</label>
-                                <select
-                                    value={ratingType}
-                                    onChange={(e) => setRatingType(e.target.value)}
-                                >
-                                    <option value="faceit">FACEit</option>
-                                    <option value="premier">Steam Premier</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        <div className="mix-buttons-row">
+                            <div className="mix-buttons-row">
                             {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
-                                <button 
-                                    onClick={handleFormTeams} 
-                                    className="form-teams-button"
+                                    <button 
+                                        onClick={handleFormTeams} 
+                                        className="form-teams-button"
                                     disabled={loading || displayParticipants.length < 2}
-                                >
+                                    >
                                     {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды из участников'}
-                                </button>
-                            )}
+                                    </button>
+                                )}
                             
                             {/* 🆕 УЛУЧШЕННАЯ КНОПКА ПЕРЕФОРМИРОВАНИЯ */}
                             {canReformTeams() && (
-                                <button 
+                                    <button 
                                     onClick={() => setShowReformModal(true)} 
                                     className="reform-teams-button"
                                     disabled={reformLoading || displayParticipants.length < 2}
                                 >
                                     🔄 Переформировать команды
-                                </button>
-                            )}
+                                    </button>
+                                )}
                             
                             {displayParticipants.length < 2 && (
                                 <p className="min-participants-notice">
