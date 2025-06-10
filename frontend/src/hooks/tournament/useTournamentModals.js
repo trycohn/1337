@@ -9,8 +9,9 @@ const useTournamentModals = () => {
     // Данные для модальных окон
     const [newParticipantData, setNewParticipantData] = useState({
         display_name: '',
-        steam_id: '',
-        rating: 0
+        email: '',
+        faceit_elo: '',
+        cs2_premier_rank: ''
     });
     
     const [searchQuery, setSearchQuery] = useState('');
@@ -28,8 +29,9 @@ const useTournamentModals = () => {
     const openAddParticipantModal = useCallback(() => {
         setNewParticipantData({
             display_name: '',
-            steam_id: '',
-            rating: 0
+            email: '',
+            faceit_elo: '',
+            cs2_premier_rank: ''
         });
         setShowAddParticipantModal(true);
     }, []);
@@ -38,8 +40,9 @@ const useTournamentModals = () => {
         setShowAddParticipantModal(false);
         setNewParticipantData({
             display_name: '',
-            steam_id: '',
-            rating: 0
+            email: '',
+            faceit_elo: '',
+            cs2_premier_rank: ''
         });
     }, []);
 
@@ -97,8 +100,9 @@ const useTournamentModals = () => {
         
         setNewParticipantData({
             display_name: '',
-            steam_id: '',
-            rating: 0
+            email: '',
+            faceit_elo: '',
+            cs2_premier_rank: ''
         });
         
         setSearchQuery('');
