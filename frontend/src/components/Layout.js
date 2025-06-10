@@ -56,13 +56,16 @@ function Layout() {
         }
     };
 
+    // Загрузка пользователя только при монтировании компонента
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (token && !user) {
+        if (token) {
             fetchUser(token);
         } else {
             setLoading(false);
         }
+        
+        // Обработка Steam токена из URL
         const urlParams = new URLSearchParams(window.location.search);
         const steamToken = urlParams.get('token');
         if (steamToken) {
@@ -70,7 +73,7 @@ function Layout() {
             fetchUser(steamToken);
             navigate('/profile', { replace: true });
         }
-    }, [navigate, user, setLoading]);
+    }, []); // Убрали все зависимости для одноразового выполнения
 
     // 🚀 Socket.IO подключение с новым hook
     const socket = useSocket();

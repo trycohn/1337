@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../axios';
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
+import { useAuth } from '../context/AuthContext';
 // V4 ULTIMATE: Добавляем импорты для графиков и WebSocket
 import {
     Chart as ChartJS,
@@ -42,7 +43,7 @@ ChartJS.register(
 );
 
 function Profile() {
-    const [user, setUser] = useState(null);
+    const { user, loading: authLoading } = useAuth(); // Получаем пользователя из AuthContext
     const [stats, setStats] = useState(null);
     const [cs2Stats, setCs2Stats] = useState(null);
     const [isLoadingCs2Stats, setIsLoadingCs2Stats] = useState(false);
@@ -666,7 +667,7 @@ function Profile() {
             const response = await api.get('/api/users/me', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser(response.data);
+            // setUser(response.data); // Убран - используем AuthContext
             setNewUsername(response.data.username);
             
             // Устанавливаем аватар, если он есть
@@ -1198,8 +1199,8 @@ function Profile() {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (token) {
-            fetchUserData(token);
+        if (token && user) {
+            // Убрали fetchUserData - пользователь берется из AuthContext
             fetchStats(token);
             const urlParams = new URLSearchParams(window.location.search);
             const steamId = urlParams.get('steamId');
@@ -1242,7 +1243,7 @@ function Profile() {
                 localStorage.removeItem('resendCodeEndTime');
             }
         }
-    }, []);
+    }, [user]); // Добавляем user в зависимости для загрузки данных когда пользователь готов
 
     // Загружаем никнейм Steam при изменении user.steam_id
     useEffect(() => {

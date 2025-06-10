@@ -1,27 +1,10 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
 function Home() {
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            axios
-                .get('/api/users/me', {
-                    headers: { Authorization: `Bearer ${token}` },
-                })
-                .then((response) => {
-                    setUser(response.data);
-                })
-                .catch((error) => {
-                    console.error('Ошибка загрузки пользователя:', error);
-                });
-        }
-    }, []);
+    const { user } = useAuth(); // Получаем пользователя из AuthContext
 
     return (
         <div className="home-container">

@@ -15,6 +15,7 @@ import './TournamentDetails.css';
 import TeamGenerator from './TeamGenerator';
 import BracketRenderer from './BracketRenderer';
 import { ensureHttps } from '../utils/userHelpers';
+import { useAuth } from '../context/AuthContext';
 
 // 🔧 ИСПРАВЛЕНО: Используем наш новый Socket.IO клиент вместо прямого импорта
 import { useSocket } from '../hooks/useSocket';
@@ -63,10 +64,10 @@ class TournamentErrorBoundary extends React.Component {
 
 function TournamentDetails() {
     const { id } = useParams();
+    const { user } = useAuth(); // Получаем пользователя из AuthContext
     
     // 🎯 ОСНОВНЫЕ СОСТОЯНИЯ
     const [tournament, setTournament] = useState(null);
-    const [user, setUser] = useState(null);
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -80,8 +81,7 @@ function TournamentDetails() {
     const [ratingType, setRatingType] = useState('faceit');
     const [dataLoadingStates, setDataLoadingStates] = useState({
         tournament: false,
-        matches: false,
-        user: false
+        matches: false
     });
     
     // 🎯 НОВЫЕ СОСТОЯНИЯ ДЛЯ РЕДАКТИРОВАНИЯ ПРАВИЛ И ОПИСАНИЯ
@@ -438,21 +438,7 @@ function TournamentDetails() {
         };
     }, [user, tournament, tournamentManagement]);
 
-    // 🎯 ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ
-    const loadUser = useCallback(async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        try {
-            setDataLoadingStates(prev => ({ ...prev, user: true }));
-            const response = await api.get('/api/users/me');
-            setUser(response.data);
-        } catch (error) {
-            console.warn('⚠️ Пользователь не загружен:', error.message);
-        } finally {
-            setDataLoadingStates(prev => ({ ...prev, user: false }));
-        }
-    }, []);
+    // 🎯 ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ - убрана, получаем из AuthContext
 
     // 🎯 УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕЗАГРУЗКИ БЕЗ ЦИКЛИЧЕСКИХ ЗАВИСИМОСТЕЙ
     // ОПРЕДЕЛЕНА ВЫШЕ ВСЕХ ФУНКЦИЙ КОТОРЫЕ ЕЕ ИСПОЛЬЗУЮТ
@@ -1030,10 +1016,7 @@ function TournamentDetails() {
     // 🚀 Socket.IO подключение с новым hook
     const socketHook = useSocket();
 
-    // 🎯 ЭФФЕКТЫ
-    useEffect(() => {
-        loadUser();
-    }, []);
+    // 🎯 ЭФФЕКТЫ - убрали loadUser(), получаем пользователя из AuthContext
 
     useEffect(() => {
         if (id) {
@@ -1467,7 +1450,6 @@ function TournamentDetails() {
                 <div className="loading-details">
                     {dataLoadingStates.tournament && <p>📄 Загрузка данных турнира...</p>}
                     {dataLoadingStates.matches && <p>🏆 Загрузка матчей...</p>}
-                    {dataLoadingStates.user && <p>👤 Загрузка профиля...</p>}
                 </div>
             </div>
         );
