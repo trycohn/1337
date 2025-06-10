@@ -664,11 +664,40 @@ const UnifiedParticipantsPanel = ({
                 </div>
 
                 {/* 🆕 Область отображения с переключением видов */}
-                <div className={`participants-display-area-participants-list display-mode-${displayMode}`}>
-                    {displayMode === 'smart-cards' && renderSmartCards(processedParticipants)}
-                    {displayMode === 'data-table' && renderDataTable(processedParticipants)}
-                    {displayMode === 'gaming-roster' && renderGamingRoster(processedParticipants)}
-                </div>
+                {!(tournament?.format === 'mix' && mixedTeams?.length > 0) && (
+                    <div className={`participants-display-area-participants-list display-mode-${displayMode}`}>
+                        {displayMode === 'smart-cards' && renderSmartCards(processedParticipants)}
+                        {displayMode === 'data-table' && renderDataTable(processedParticipants)}
+                        {displayMode === 'gaming-roster' && renderGamingRoster(processedParticipants)}
+                    </div>
+                )}
+
+                {/* 🎯 ИНФОРМАЦИЯ ДЛЯ МИКС ТУРНИРОВ С КОМАНДАМИ */}
+                {(tournament?.format === 'mix' && mixedTeams?.length > 0) && (
+                    <div className="mix-teams-info-participants-list">
+                        <div className="info-card-participants-list">
+                            <div className="info-icon-participants-list">⚡</div>
+                            <div className="info-content-participants-list">
+                                <h4>Команды сформированы!</h4>
+                                <p>Все участники разделены на команды. Подробную информацию о командах и составах смотрите в блоке ниже.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 🎯 МИКС ТУРНИРЫ: TeamGenerator для формирования и отображения команд */}
+                {tournament?.format === 'mix' && (
+                    <div className="mix-tournament-section-participants-list">
+                        <TeamGenerator
+                            tournament={tournament}
+                            participants={participants}
+                            onTeamsGenerated={onTeamsGenerated}
+                            onTeamsUpdated={onTeamsUpdated}
+                            onRemoveParticipant={onRemoveParticipant}
+                            isAdminOrCreator={isCreatorOrAdmin}
+                        />
+                    </div>
+                )}
 
                 {/* Заглушка если нет участников */}
                 {participants.length === 0 && (
@@ -705,7 +734,14 @@ const UnifiedParticipantsPanel = ({
         renderSmartCards,
         renderDataTable,
         renderGamingRoster,
-        handleParticipate
+        handleParticipate,
+        // 🎯 НОВЫЕ ЗАВИСИМОСТИ ДЛЯ МИКС ТУРНИРОВ
+        tournament?.format,
+        mixedTeams?.length,
+        onTeamsGenerated,
+        onTeamsUpdated,
+        onRemoveParticipant,
+        isCreatorOrAdmin
     ]);
 
     const renderAddParticipants = useCallback(() => {
@@ -782,24 +818,21 @@ const UnifiedParticipantsPanel = ({
                         <p>Здесь будут отображены сформированные команды</p>
                     </div>
                     
-                    {tournament?.format === 'mix' && isCreatorOrAdmin && (
-                        <TeamGenerator
-                            tournament={tournament}
-                            participants={participants}
-                            onTeamsGenerated={onTeamsGenerated}
-                            onTeamsUpdated={onTeamsUpdated}
-                            onRemoveParticipant={onRemoveParticipant}
-                            isAdminOrCreator={isCreatorOrAdmin}
-                        />
-                    )}
-                    
-                    {mixedTeams.length === 0 && (
-                        <div className="no-teams-state-participants-list">
-                            <div className="no-teams-icon-participants-list">⚽</div>
-                            <h4>Команды не сформированы</h4>
-                            <p>Команды появятся после их создания администратором турнира</p>
-                        </div>
-                    )}
+                    <div className="no-teams-state-participants-list">
+                        <div className="no-teams-icon-participants-list">⚽</div>
+                        <h4>Команды не сформированы</h4>
+                        <p>
+                            {tournament?.format === 'mix' 
+                                ? "Команды будут сформированы автоматически во вкладке 'Участники'"
+                                : "Команды появятся после их создания администратором турнира"
+                            }
+                        </p>
+                        {tournament?.format === 'mix' && (
+                            <p className="mix-teams-hint">
+                                💡 Для формирования команд перейдите во вкладку "Участники"
+                            </p>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -808,50 +841,114 @@ const UnifiedParticipantsPanel = ({
             <div className="teams-tab-participants-list">
                 <div className="teams-header-participants-list">
                     <h4>Команды турнира ({mixedTeams.length})</h4>
-                    <p>Автоматически сформированные команды на основе рейтинга участников</p>
+                    <p>
+                        {tournament?.format === 'mix' 
+                            ? "Автоматически сформированные команды на основе рейтинга участников"
+                            : "Команды турнира"
+                        }
+                    </p>
+                </div>
+
+                {/* 🎯 СТАТИСТИКА КОМАНД */}
+                <div className="teams-stats-participants-list">
+                    <div className="team-stat-participants-list">
+                        <span className="stat-label-participants-list">Всего команд:</span>
+                        <span className="stat-value-participants-list">{mixedTeams.length}</span>
+                    </div>
+                    <div className="team-stat-participants-list">
+                        <span className="stat-label-participants-list">Игроков в командах:</span>
+                        <span className="stat-value-participants-list">
+                            {mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}
+                        </span>
+                    </div>
+                    <div className="team-stat-participants-list">
+                        <span className="stat-label-participants-list">Средний рейтинг:</span>
+                        <span className="stat-value-participants-list">
+                            {mixedTeams.length > 0 ? Math.round(
+                                mixedTeams.reduce((sum, team) => {
+                                    const teamRating = calculateTeamAverageRating ? calculateTeamAverageRating(team) : 0;
+                                    return sum + teamRating;
+                                }, 0) / mixedTeams.length
+                            ) : 0}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="teams-grid-participants-list">
                     {mixedTeams.map((team, index) => (
-                        <div key={team.id || index} className="team-card-unified-participants-list">
+                        <div key={team.id || index} className="team-card-unified-participants-list enhanced">
                             <div className="team-header-participants-list">
-                                <h5>{team.name || `Команда ${index + 1}`}</h5>
-                                <div className="team-rating-participants-list">
-                                    Ср. рейтинг: {calculateTeamAverageRating ? calculateTeamAverageRating(team) : '—'}
+                                <div className="team-title-section-participants-list">
+                                    <h5>{team.name || `Команда ${index + 1}`}</h5>
+                                    <span className="team-members-count-participants-list">
+                                        👥 {team.members?.length || 0} участников
+                                    </span>
+                                </div>
+                                <div className="team-rating-participants-list enhanced">
+                                    <span className="rating-label-participants-list">
+                                        {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}:
+                                    </span>
+                                    <span className="rating-value-participants-list">
+                                        {calculateTeamAverageRating ? calculateTeamAverageRating(team) : '—'}
+                                    </span>
+                                    <span className="rating-suffix-participants-list">ELO</span>
                                 </div>
                             </div>
                             
-                            <div className="team-members-participants-list">
-                                {team.members && team.members.map((member, memberIndex) => (
-                                    <div key={memberIndex} className="team-member-participants-list">
-                                        <div className="member-name-participants-list">
-                                            {member.user_id ? (
-                                                <a href={`/profile/${member.user_id}`}>
-                                                    {member.name || member.username}
-                                                </a>
-                                            ) : (
-                                                <span>{member.name}</span>
-                                            )}
-                                        </div>
-                                        <div className="member-rating-participants-list">
-                                            {getRating(member) || '—'}
-                                        </div>
+                            {/* 🎯 СОСТАВ КОМАНДЫ */}
+                            <div className="team-composition-participants-list">
+                                <h6>👥 Состав команды:</h6>
+                                {team.members && team.members.length > 0 ? (
+                                    <div className="team-members-participants-list">
+                                        {team.members.map((member, memberIndex) => (
+                                            <div key={memberIndex} className="team-member-participants-list enhanced">
+                                                <div className="member-avatar-participants-list">
+                                                    <img 
+                                                        src={member.avatar_url || '/default-avatar.png'} 
+                                                        alt={member.name}
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = '/default-avatar.png';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="member-info-participants-list">
+                                                    <div className="member-name-participants-list">
+                                                        {member.user_id ? (
+                                                            <a href={`/profile/${member.user_id}`}>
+                                                                {member.name || member.username}
+                                                            </a>
+                                                        ) : (
+                                                            <span>{member.name}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="member-rating-participants-list">
+                                                        {ratingType === 'faceit' 
+                                                            ? `${member.faceit_elo || 1000} ELO`
+                                                            : `Ранг ${member.premier_rank || member.cs2_premier_rank || 5}`
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                ) : (
+                                    <p className="no-members-participants-list">Состав команды не определен</p>
+                                )}
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {tournament?.format === 'mix' && isCreatorOrAdmin && (
-                    <TeamGenerator
-                        tournament={tournament}
-                        participants={participants}
-                        onTeamsGenerated={onTeamsGenerated}
-                        onTeamsUpdated={onTeamsUpdated}
-                        onRemoveParticipant={onRemoveParticipant}
-                        isAdminOrCreator={isCreatorOrAdmin}
-                    />
+                {/* 🎯 ПРИМЕЧАНИЕ ДЛЯ МИКС ТУРНИРОВ */}
+                {tournament?.format === 'mix' && (
+                    <div className="mix-teams-management-note">
+                        <div className="note-icon">💡</div>
+                        <div className="note-content">
+                            <h6>Управление командами</h6>
+                            <p>Для создания или редактирования команд перейдите во вкладку "Участники"</p>
+                        </div>
+                    </div>
                 )}
             </div>
         );
@@ -864,7 +961,8 @@ const UnifiedParticipantsPanel = ({
         onTeamsUpdated, 
         onRemoveParticipant, 
         calculateTeamAverageRating,
-        getRating
+        getRating,
+        ratingType
     ]);
 
     const renderStatistics = useCallback(() => {
@@ -985,7 +1083,7 @@ const UnifiedParticipantsPanel = ({
             icon: '⚽',
             count: mixedTeams?.length || 0,
             render: renderTeams,
-            hidden: tournament?.format !== 'mix' && (!mixedTeams || mixedTeams.length === 0)
+            hidden: tournament?.format === 'mix' || (!mixedTeams || mixedTeams.length === 0)
         },
         {
             id: 'statistics',

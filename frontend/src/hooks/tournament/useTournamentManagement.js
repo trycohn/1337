@@ -24,10 +24,28 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.post(`/api/tournaments/${tournamentId}/add-participant`, {
+            // 🎯 ПЕРЕДАЕМ ВСЕ ПОЛЯ УЧАСТНИКА ВКЛЮЧАЯ РЕЙТИНГИ
+            const requestData = {
                 participantName: participantData.display_name,
                 userId: null // Для незарегистрированных участников
-            }, {
+            };
+
+            // Добавляем поля рейтинга если они заполнены
+            if (participantData.email && participantData.email.trim()) {
+                requestData.email = participantData.email.trim();
+            }
+
+            if (participantData.faceit_elo && participantData.faceit_elo.toString().trim()) {
+                requestData.faceit_elo = parseInt(participantData.faceit_elo);
+            }
+
+            if (participantData.cs2_premier_rank && participantData.cs2_premier_rank.toString().trim()) {
+                requestData.cs2_premier_rank = parseInt(participantData.cs2_premier_rank);
+            }
+
+            console.log('🔍 Отправляем данные участника на сервер:', requestData);
+
+            const response = await axios.post(`/api/tournaments/${tournamentId}/add-participant`, requestData, {
                 headers: getAuthHeaders()
             });
 
