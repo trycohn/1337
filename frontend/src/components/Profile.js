@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../axios';
 import './Profile.css';
@@ -979,7 +980,7 @@ function Profile() {
             const response = await api.post('/api/users/link-steam', { steamId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser(prevUser => prevUser ? { ...prevUser, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` } : null);
+            // setUser(prevUser => prevUser ? { ...prevUser, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` } : null); // Убран - используем AuthContext
             setError('');
             window.history.replaceState({}, document.title, '/profile');
             
@@ -1004,7 +1005,7 @@ function Profile() {
             await api.post('/api/users/unlink-steam', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser(prevUser => prevUser ? { ...prevUser, steam_id: null, steam_url: null } : null);
+            // setUser(prevUser => prevUser ? { ...prevUser, steam_id: null, steam_url: null } : null); // Убран - используем AuthContext
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка отвязки Steam');
@@ -1025,7 +1026,7 @@ function Profile() {
             await api.post('/api/users/unlink-faceit', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser(prevUser => prevUser ? { ...prevUser, faceit_id: null } : null);
+            // setUser(prevUser => prevUser ? { ...prevUser, faceit_id: null } : null); // Убран - используем AuthContext
             setFaceitInfo(null);
             setError('');
         } catch (err) {
@@ -1039,7 +1040,7 @@ function Profile() {
             const response = await api.post('/api/users/update-username', { username: newUsername }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUser(prevUser => prevUser ? { ...prevUser, username: newUsername } : null);
+            // setUser(prevUser => prevUser ? { ...prevUser, username: newUsername } : null); // Убран - используем AuthContext
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка изменения никнейма');
@@ -1154,7 +1155,7 @@ function Profile() {
             });
             
             // Обновляем статус верификации пользователя
-            setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null);
+            // setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null); // Убран - используем AuthContext
             closeEmailVerificationModal();
             setError('');
         } catch (err) {
@@ -1386,7 +1387,7 @@ function Profile() {
             });
             
             // Обновляем данные пользователя с новым email
-            setUser(prevUser => prevUser ? { ...prevUser, email: newEmail, is_verified: false } : null);
+            setUser(prevUser => prevUser ? { ...prevUser, email: newEmail, is_verified: false } : null); // Убран - используем AuthContext
             
             // Закрываем модальное окно добавления email
             closeAddEmailModal();
@@ -1444,7 +1445,7 @@ function Profile() {
             
             // Обновляем аватар в состоянии
             setAvatar(response.data.avatar_url);
-            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url}));
+            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url})); // Убран - используем AuthContext
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка загрузки аватара');
@@ -1468,7 +1469,7 @@ function Profile() {
             
             // Обновляем аватар в состоянии
             setAvatar(response.data.avatar_url);
-            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url}));
+            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url})); // Убран - используем AuthContext
             setError('');
             setShowAvatarModal(false);
         } catch (err) {
@@ -1491,7 +1492,7 @@ function Profile() {
             
             // Обновляем аватар в состоянии
             setAvatar(response.data.avatar_url);
-            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url}));
+            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url})); // Убран - используем AuthContext
             setError('');
             setShowAvatarModal(false);
         } catch (err) {
