@@ -1529,10 +1529,7 @@ function TournamentDetails() {
             setMessage('🔄 Переформирование команд...');
             
             const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
-                ratingType: 'faceit', // По умолчанию используем FACEIT
-                teamSize: tournament.team_size || 5 // Размер команды из турнира
-            }, {
+            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 

@@ -114,11 +114,8 @@ const TeamGenerator = ({
                 tournamentId: tournament.id
             });
 
-            // Используем правильный эндпоинт для переформирования команд
-            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
-                ratingType: ratingType,
-                teamSize: teamSizeNumber
-            });
+            // Используем эндпоинт для микс-генерации команд (поддерживает переформирование)
+            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {});
 
             if (response.data && response.data.teams) {
                 console.log('✅ Команды успешно переформированы:', response.data.teams);
