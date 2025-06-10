@@ -16,8 +16,8 @@
 
 /* 🆕 СЕЛЕКТОР ВИДА ОТОБРАЖЕНИЯ */
 .display-mode-select-participants-list {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: #ffffff;
+    color: #000000;
     border: none;
     border-radius: 8px;
     padding: 8px 12px;
@@ -587,7 +587,6 @@
     padding: 8px 12px;
     border: 1px solid var(--border-color, #dee2e6);
     border-radius: 6px;
-    background: var(--bg-primary, #ffffff);
     font-size: 13px;
     min-width: 120px;
     cursor: pointer;
