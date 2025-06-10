@@ -890,7 +890,7 @@ const UnifiedParticipantsPanel = ({
                                     </span>
                                     <span className="rating-value-participants-list">
                                         {calculateTeamAverageRating ? calculateTeamAverageRating(team) : '—'}
-                                    </span>
+                                    </span><br>
                                     <span className="rating-suffix-participants-list">ELO</span>
                                 </div>
                             </div>
