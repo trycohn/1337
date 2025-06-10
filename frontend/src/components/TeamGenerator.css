@@ -679,6 +679,7 @@
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  height: 100px;
 }
 
 .team-member-row::before {

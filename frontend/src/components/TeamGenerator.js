@@ -394,7 +394,7 @@ const TeamGenerator = ({
                                                         </div>
                                                         <div className="member-rating">
                                                             🎯 {ratingType === 'faceit' 
-                                                                ? `${member.faceit_elo || 1000} FACEIT ELO`
+                                                                ? `${member.faceit_elo || 1000} ELO`
                                                                 : `${member.cs2_premier_rank || member.premier_rank || 5} Premier`
                                                             }
                                                         </div>
