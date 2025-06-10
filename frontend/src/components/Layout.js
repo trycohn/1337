@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,7 +8,7 @@ import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { ensureHttps } from '../utils/userHelpers';
-import { getSocketInstance, authenticateSocket } from '../services/socketClient_final';
+import { useSocket } from '../hooks/useSocket';
 
 function Layout() {
     const [user, setUser] = useState(null);
@@ -19,7 +19,7 @@ function Layout() {
     const location = useLocation();
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-    const socketRef = useRef(null);
+
 
     // Функция для получения количества непрочитанных сообщений
     const fetchUnreadCount = async () => {
@@ -72,58 +72,44 @@ function Layout() {
         }
     }, [navigate, user, setLoading]);
 
-    // 🔧 ИСПРАВЛЕНО: WebSocket подключение с новым клиентом
+    // 🚀 Socket.IO подключение с новым hook
+    const socket = useSocket();
+
+    // Подключение к Socket.IO при наличии пользователя
     useEffect(() => {
         if (!user) return;
 
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        console.log('🔧 [Layout] Инициализация Socket.IO с новым клиентом...');
-
-        // Получаем singleton instance нашего Socket.IO клиента
-        const socket = getSocketInstance();
+        console.log('🚀 [Layout] Подключение к Socket.IO...');
         
-        // Авторизуем сокет с токеном
-        authenticateSocket(token);
+        // Подключаемся с авторизацией
+        const connected = socket.connect(token);
+        
+        if (connected) {
+            // Подписываемся на события сообщений
+            socket.on('new_message', (message) => {
+                // Увеличиваем счетчик только если сообщение не от текущего пользователя
+                // и мы не находимся в чатах
+                if (message.sender_id !== user.id && location.pathname !== '/messages') {
+                    setUnreadCount(prev => prev + 1);
+                }
+            });
 
-        // События для Layout
-        socket.on('connect', () => {
-            console.log('✅ [Layout] WebSocket соединение установлено:', socket.id);
-            console.log('🎉 [Layout] Используется новый socketClient_final!');
-        });
+            // Обновляем счетчик при изменении статуса прочтения
+            socket.on('read_status', () => {
+                fetchUnreadCount();
+            });
+        }
 
-        socket.on('connect_error', (error) => {
-            console.error('🔥 [Layout] Ошибка подключения Socket.IO:', error);
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.warn('⚠️ [Layout] Socket.IO отключен:', reason);
-        });
-
-        // Обновляем счетчик при получении нового сообщения
-        socket.on('message', (message) => {
-            // Увеличиваем счетчик только если сообщение не от текущего пользователя
-            // и мы не находимся в чатах
-            if (message.sender_id !== user.id && location.pathname !== '/messages') {
-                setUnreadCount(prev => prev + 1);
-            }
-        });
-
-        // Обновляем счетчик при изменении статуса прочтения
-        socket.on('read_status', () => {
-            fetchUnreadCount();
-        });
-
-        socketRef.current = socket;
-
-        // Cleanup не нужен, так как используется singleton
+        // Cleanup выполняется автоматически в useSocket hook
         return () => {
             console.log('🧹 [Layout] Отписываемся от Socket.IO событий');
-            socket.off('message');
+            socket.off('new_message');
             socket.off('read_status');
         };
-    }, [user, location.pathname]);
+    }, [user, location.pathname, socket]);
 
     // Обновляем счетчик при переходе на страницу чатов
     useEffect(() => {

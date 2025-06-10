@@ -15,6 +15,7 @@ import { AuthProvider } from './context/AuthContext'; // Импортируем 
 import { UserProvider } from './context/UserContext'; // Импортируем UserProvider
 import { PrivateRoute } from './utils/PrivateRoute';
 import Messenger from './components/Messenger';
+import SocketTest from './components/SocketTest';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -60,6 +61,7 @@ function App() {
                                 <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
                                 <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
                                 <Route path="/admin" element={<PrivateRoute component={AdminPanel} />} /> {/* Добавляем маршрут для админ панели */}
+                                <Route path="/socket-test" element={<PrivateRoute component={SocketTest} />} /> {/* Тестирование Socket.IO */}
                                 <Route path="/auth-callback" element={<AuthCallback />} />
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
                             </Route>
