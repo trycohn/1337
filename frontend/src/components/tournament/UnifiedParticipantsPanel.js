@@ -1067,7 +1067,7 @@ const UnifiedParticipantsPanel = ({
             icon: '⚽',
             count: mixedTeams?.length || 0,
             render: renderTeams,
-            hidden: tournament?.format !== 'mix' && (!mixedTeams || mixedTeams.length === 0)
+            hidden: tournament?.format === 'mix' || (!mixedTeams || mixedTeams.length === 0)
         },
         {
             id: 'statistics',
