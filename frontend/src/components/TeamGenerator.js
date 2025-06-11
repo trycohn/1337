@@ -710,7 +710,7 @@ const TeamGenerator = ({
                                     className="form-teams-button"
                                     disabled={loading || displayParticipants.length < 2}
                                 >
-                                    {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды из участников'}
+                                    {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды'}
                                 </button>
                             )}
                         
