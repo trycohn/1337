@@ -5629,19 +5629,16 @@ a.participant-name:hover {
 }
 
 .generate-bracket-button:hover {
-    background: linear-gradient(45deg, #45a049, #7cb342);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
 .regenerate-bracket-button {
-    background: linear-gradient(45deg, #ff9800, #ffc107);
     color: white;
     box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
 }
 
 .regenerate-bracket-button:hover {
-    background: linear-gradient(45deg, #f57c00, #ffa000);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
 }
