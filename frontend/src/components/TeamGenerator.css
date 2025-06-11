@@ -1212,6 +1212,8 @@
 .participant-card.in-team {
     position: relative;
     border: 1px solid #ffffff;
+    display: flex;
+    flex-direction: column;
 }
 
 .participant-card.in-team::before {
