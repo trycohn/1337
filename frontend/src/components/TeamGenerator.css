@@ -1189,12 +1189,13 @@
 
 /* Специальные стили для карточек участников в разных группах */
 .participant-card.not-in-team {
-    border: 2px solid #f59e0b;
-    background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+    border: 2px solid #ffffff;
     background-size: 200% 200%;
     animation: warning-glow 3s ease-in-out infinite;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .participant-card.not-in-team::before {

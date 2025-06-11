@@ -572,7 +572,7 @@ const TeamGenerator = ({
                                                 : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
                                             }
                                         </span>
-                                        <span className="participant-status">Не в команде</span>
+                                        <span className="participant-status">Свободен</span>
                                     </div>
                                     {isAdminOrCreator && tournament.participant_type === 'solo' && (
                                         <button 
