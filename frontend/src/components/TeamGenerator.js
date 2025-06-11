@@ -141,29 +141,38 @@ const TeamGenerator = ({
     // 🎯 ОПРЕДЕЛЯЕМ displayParticipants ЗДЕСЬ, чтобы избежать "used before defined"
     const displayParticipants = originalParticipants.length > 0 ? originalParticipants : participants || [];
 
-    // При инициализации устанавливаем размер команды из турнира и загружаем команды
+    // 🆕 СОСТОЯНИЕ ДЛЯ ОТСЛЕЖИВАНИЯ ПРОЦЕССА ПЕРЕФОРМИРОВАНИЯ
+    const [isReforming, setIsReforming] = useState(false);
+
+    // 🎯 УЛУЧШЕННАЯ ЛОГИКА УСТАНОВКИ КОМАНД ИЗ ТУРНИРА
     useEffect(() => {
         if (tournament && tournament.team_size) {
-            setTeamSize(tournament.team_size.toString());
-        }
-        
-        // 🆕 ЗАГРУЖАЕМ СОХРАНЕННЫЙ ratingType ИЗ localStorage
-        if (tournament?.id) {
-            const savedRatingType = localStorage.getItem(`tournament_${tournament.id}_ratingType`);
-            if (savedRatingType && ['faceit', 'premier'].includes(savedRatingType)) {
-                setRatingType(savedRatingType);
-                console.log(`🔍 Загружен сохраненный ratingType: ${savedRatingType}`);
+            const teamSizeNumber = parseInt(tournament.team_size);
+            if (!isNaN(teamSizeNumber)) {
+                setTeamSize(teamSizeNumber);
             }
         }
         
-        // 🎯 ВСЕГДА СОХРАНЯЕМ УЧАСТНИКОВ
-        if (participants && participants.length > 0) {
-            setOriginalParticipants(participants);
+        // 🎯 ВОССТАНАВЛИВАЕМ СОХРАНЕННЫЙ ТИП РЕЙТИНГА ИЗ localStorage
+        if (tournament?.id) {
+            const savedRatingType = localStorage.getItem(`tournament_${tournament.id}_ratingType`);
+            if (savedRatingType) {
+                console.log('🔍 Загружен сохраненный ratingType:', savedRatingType);
+                setRatingType(savedRatingType);
+            }
         }
         
-        // 🎯 ИСПРАВЛЕНИЕ БЕСКОНЕЧНОГО ЦИКЛА: проверяем что команды еще не установлены
-        if (tournament && tournament.teams && tournament.teams.length > 0 && mixedTeams.length === 0) {
-            console.log('🔄 Устанавливаем существующие команды из турнира (один раз)');
+        // 🎯 ИСПРАВЛЕНИЕ: Устанавливаем команды из турнира ТОЛЬКО если:
+        // 1. Команды есть в турнире
+        // 2. Локальные команды пустые
+        // 3. НЕ идет процесс переформирования (иначе перезатрем новые команды)
+        if (tournament && 
+            tournament.teams && 
+            tournament.teams.length > 0 && 
+            mixedTeams.length === 0 && 
+            !isReforming) {
+            
+            console.log('🔄 Устанавливаем существующие команды из турнира (предотвращение перезаписи при переформировании)');
             
             // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ (простая функция без зависимостей)
             const enrichedTeams = tournament.teams.map(team => ({
@@ -203,9 +212,10 @@ const TeamGenerator = ({
             tournamentTeams: tournament?.teams,
             hasTeams: tournament?.teams && tournament.teams.length > 0,
             participantType: tournament?.participant_type,
-            mixedTeamsLength: mixedTeams.length
+            mixedTeamsLength: mixedTeams.length,
+            isReforming: isReforming // 🆕 Добавлена диагностика процесса переформирования
         });
-    }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length, ratingType]); // ДОБАВЛЯЕМ только ПРОСТЫЕ зависимости
+    }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length, ratingType, isReforming]); // 🆕 Добавляем isReforming в зависимости
 
     // 🆕 ЭФФЕКТ ДЛЯ СОХРАНЕНИЯ ratingType В localStorage
     useEffect(() => {
@@ -787,26 +797,10 @@ const TeamGenerator = ({
         );
     };
 
-    // 🆕 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД
+    // 🔧 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД
     const handleReformTeams = async () => {
-        // 🔧 ИСПРАВЛЕНИЕ: НЕ ЗАКРЫВАЕМ МОДАЛЬНОЕ ОКНО ПРИ НЕУДАЧНЫХ ПРОВЕРКАХ
-        if (!canReformTeams()) {
-            console.warn('Переформирование команд недоступно');
-            if (toast) {
-                toast.error('Переформирование команд недоступно для данного турнира');
-            }
-            return; // НЕ закрываем модальное окно
-        }
-        
-        if (displayParticipants.length < 2) {
-            console.warn('Недостаточно участников для переформирования команд');
-            if (toast) {
-                toast.error('Для переформирования команд нужно минимум 2 участника');
-            }
-            return; // НЕ закрываем модальное окно
-        }
-
-        setReformLoading(true);
+        // Устанавливаем флаг переформирования для предотвращения перезаписи
+        setIsReforming(true);
         
         try {
             const teamSizeNumber = parseInt(teamSize);
@@ -834,53 +828,40 @@ const TeamGenerator = ({
                     averageRating: calculateTeamAverageRating(team)
                 }));
                 
+                // 🎯 ОБНОВЛЯЕМ КОМАНДЫ В СОСТОЯНИИ
                 setMixedTeams(enrichedTeams);
                 
-                // 🎯 УВЕДОМЛЯЕМ О ПЕРЕФОРМИРОВАНИИ
+                // 🎯 УВЕДОМЛЯЕМ РОДИТЕЛЬСКИЙ КОМПОНЕНТ О ПЕРЕФОРМИРОВАННЫХ КОМАНДАХ
                 if (onTeamsGenerated) {
                     console.log('✅ Уведомляем родительский компонент о переформированных командах');
                     onTeamsGenerated(enrichedTeams);
                 }
                 
-                if (onTeamsUpdated) {
-                    onTeamsUpdated();
-                }
-                
-                // 🔧 ИСПРАВЛЕНИЕ: Закрываем модальное окно ТОЛЬКО при успешном выполнении
-                setShowReformModal(false);
-                setShowAllNewParticipants(false); // Сброс состояния раскрытия списка
-                
-                // 🆕 ДЕТАЛЬНОЕ УВЕДОМЛЕНИЕ О РЕЗУЛЬТАТАХ
-                if (toast) {
-                    const summary = response.data.summary;
-                    let message = '🔄 Команды успешно переформированы!';
-                    if (summary) {
-                        message += ` Создано ${summary.teamsCreated} команд из ${summary.participantsInTeams} участников`;
-                        if (summary.participantsNotInTeams > 0) {
-                            message += `, ${summary.participantsNotInTeams} остались вне команд`;
-                        }
-                        message += `. Рейтинг: ${summary.ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}.`;
-                    }
-                    toast.success(message);
-                }
+                // 🎯 НЕ ВЫЗЫВАЕМ onTeamsUpdated чтобы избежать перезагрузки турнира
+                // if (onTeamsUpdated) {
+                //     onTeamsUpdated();
+                // }
                 
                 console.log('✅ Команды успешно переформированы с учетом рейтингов');
-                
+                setShowReformModal(false);
+                setShowAllNewParticipants(false); // Сброс состояния раскрытия списка
             } else {
                 console.error('❌ Некорректный ответ сервера при переформировании команд');
-                if (toast) {
-                    toast.error('Ошибка переформирования команд: некорректный ответ сервера');
-                }
             }
         } catch (error) {
             console.error('❌ Ошибка при переформировании команд:', error);
             
-            if (toast) {
-                const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Не удалось переформировать команды';
-                toast.error(errorMessage);
+            // При ошибке также показываем подробности
+            if (error.response?.data?.message) {
+                console.error('Сообщение об ошибке:', error.response.data.message);
             }
+            
+            // Если произошла ошибка, не закрываем модальное окно
+            // чтобы пользователь мог попробовать снова
         } finally {
-            setReformLoading(false);
+            // Снимаем флаг переформирования в любом случае
+            setIsReforming(false);
+            setLoading(false);
         }
     };
 

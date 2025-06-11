@@ -508,7 +508,7 @@
 }
 
 .unified-tab-btn-participants-list.active {
-    color: var(--primary-color, #007bff);
+    color: #ffffff;
     background: var(--bg-tertiary, #f1f3f5);
     border-bottom-color: var(--primary-color, #007bff);
     font-weight: 600;
