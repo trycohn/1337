@@ -2134,87 +2134,170 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`📊 Из них было в командах: ${participants.filter(p => p.in_team).length}`);
         console.log(`📊 Новых участников (не в команде): ${participants.filter(p => !p.in_team).length}`);
         
-        // Проверяем, кратно ли число участников размеру команды
+        // 🆕 НОВАЯ ЛОГИКА: Формируем максимальное количество полных команд
         const totalPlayers = participants.length;
-        const remainder = totalPlayers % teamSize;
-        if (remainder !== 0) {
-            const shortage = teamSize - remainder;
+        const fullTeams = Math.floor(totalPlayers / teamSize); // Количество полных команд
+        const playersInTeams = fullTeams * teamSize; // Участников в командах
+        const remainingPlayers = totalPlayers - playersInTeams; // Лишние участники
+        
+        console.log(`📊 Статистика формирования команд:`);
+        console.log(`   - Всего участников: ${totalPlayers}`);
+        console.log(`   - Размер команды: ${teamSize}`);
+        console.log(`   - Полных команд: ${fullTeams}`);
+        console.log(`   - Участников в командах: ${playersInTeams}`);
+        console.log(`   - Останется вне команд: ${remainingPlayers}`);
+        
+        if (fullTeams === 0) {
+            console.log(`❌ Недостаточно участников: не хватает ${teamSize - totalPlayers} для формирования хотя бы одной команды`);
             return res.status(400).json({ 
-                error: `Не хватает ${shortage} участников для формирования полных команд. Всего участников: ${totalPlayers}, нужно кратно ${teamSize}` 
+                error: `Недостаточно участников для формирования хотя бы одной команды. Нужно минимум ${teamSize} участников, а есть только ${totalPlayers}` 
             });
         }
-        const numTeams = totalPlayers / teamSize;
-
-        // Перемешиваем участников случайным образом для справедливого распределения
-        for (let i = participants.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [participants[i], participants[j]] = [participants[j], participants[i]];
+        
+        // Сортируем игроков по рейтингу (в зависимости от выбранного типа)
+        const sortedParticipants = [...participants].sort((a, b) => {
+            if (ratingType === 'faceit') {
+                return b.faceit_rating - a.faceit_rating;
+            } else if (ratingType === 'premier') {
+                return b.premier_rating - a.premier_rating;
+            } else {
+                return b.faceit_rating - a.faceit_rating;
+            }
+        });
+        
+        // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ: первые попадают в команды, остальные остаются вне команд
+        const participantsForTeams = sortedParticipants.slice(0, playersInTeams);
+        const participantsNotInTeams = sortedParticipants.slice(playersInTeams);
+        
+        console.log(`👥 Участников для команд: ${participantsForTeams.length}`);
+        console.log(`🚫 Участников вне команд: ${participantsNotInTeams.length}`);
+        
+        // Формируем команды с равномерным распределением по рейтингу
+        const teams = [];
+        
+        // Создаем пустые команды
+        for (let i = 0; i < fullTeams; i++) {
+            teams.push({
+                name: `Команда ${i + 1}`,
+                members: []
+            });
         }
         
-        // Сохраняем команды в БД
-        const created = [];
-        const participantIds = []; // Массив для хранения ID участников, которые попали в команды
+        // Распределяем игроков змейкой для баланса команд
+        // Сначала лучшие игроки, затем послабее
+        for (let i = 0; i < teamSize; i++) {
+            // Прямой порядок для четных итераций, обратный для нечетных
+            const teamOrder = i % 2 === 0 
+                ? Array.from({ length: fullTeams }, (_, idx) => idx) 
+                : Array.from({ length: fullTeams }, (_, idx) => fullTeams - 1 - idx);
+            
+            for (let teamIndex of teamOrder) {
+                const playerIndex = i * fullTeams + (i % 2 === 0 ? teamIndex : fullTeams - 1 - teamIndex);
+                if (playerIndex < participantsForTeams.length) {
+                    teams[teamIndex].members.push(participantsForTeams[playerIndex]);
+                }
+            }
+        }
+
+        console.log(`✅ Успешно создано ${teams.length} новых команд для турнира ${id}`);
         
-        for (let idx = 0; idx < participants.length; idx += teamSize) {
-            const group = participants.slice(idx, idx + teamSize);
-            const teamNumber = idx / teamSize + 1;
-            const name = `Команда ${teamNumber}`;
-            console.log(`🏗️ Создаем команду: ${name} с ${group.length} участниками`);
-            
-            const insTeam = await pool.query(
-                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1,$2,$3) RETURNING id',
-                [id, name, created_by]
+        // Удаляем старые команды, если они есть
+        await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
+        await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
+        
+        // Сохраняем новые команды в БД
+        const createdTeams = [];
+        const participantIdsInTeams = []; // Массив для хранения ID участников, которые попали в команды
+        
+        // Сохраняем новые команды в БД
+        for (const team of teams) {
+            // Создаем команду
+            const teamResult = await pool.query(
+                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
+                [id, team.name, tournament.created_by]
             );
-            const teamId = insTeam.rows[0].id;
             
-            for (const member of group) {
+            const teamId = teamResult.rows[0].id;
+            const members = [];
+            
+            // Добавляем участников команды
+            for (const member of team.members) {
                 await pool.query(
                     'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
                     [teamId, member.user_id, member.participant_id]
                 );
+                
                 // Собираем ID участников для пакетного обновления флага
-                participantIds.push(member.participant_id);
+                participantIdsInTeams.push(member.participant_id);
+                
+                members.push({
+                    participant_id: member.participant_id,
+                    user_id: member.user_id,
+                    name: member.name,
+                    faceit_elo: member.faceit_rating || 0,
+                    cs2_premier_rank: member.premier_rating || 0
+                });
             }
             
-            created.push({
+            createdTeams.push({
                 id: teamId,
-                name,
-                members: group.map(m => ({ 
-                    participant_id: m.participant_id, 
-                    user_id: m.user_id, 
-                    name: m.name,
-                    faceit_elo: m.faceit_rating || 0,
-                    cs2_premier_rank: m.premier_rating || 0
-                }))
+                name: team.name,
+                members: members
             });
         }
-
-        // 🆕 ПОМЕЧАЕМ ВСЕХ УЧАСТНИКОВ В КОМАНДАХ КАК in_team = true
-        if (participantIds.length > 0) {
+        
+        // 🆕 ПОМЕЧАЕМ УЧАСТНИКОВ В КОМАНДАХ КАК in_team = true
+        if (participantIdsInTeams.length > 0) {
             await pool.query(
                 `UPDATE tournament_participants 
                  SET in_team = TRUE 
                  WHERE id = ANY($1::int[])`,
-                [participantIds]
+                [participantIdsInTeams]
             );
-            console.log(`✅ Помечено ${participantIds.length} участников как находящихся в командах`);
+            console.log(`✅ Помечено ${participantIdsInTeams.length} участников как находящихся в командах`);
         }
 
-        console.log(`✅ Успешно создано ${created.length} новых команд для турнира ${id}`);
-
-        // Переключаем тип турнира на командный
-        await pool.query('UPDATE tournaments SET participant_type=$1 WHERE id=$2', ['team', id]);
+        // 🆕 ПОМЕЧАЕМ ОСТАВШИХСЯ УЧАСТНИКОВ КАК in_team = false
+        const participantIdsNotInTeams = participantsNotInTeams.map(p => p.participant_id);
+        if (participantIdsNotInTeams.length > 0) {
+            await pool.query(
+                `UPDATE tournament_participants 
+                 SET in_team = FALSE 
+                 WHERE id = ANY($1::int[])`,
+                [participantIdsNotInTeams]
+            );
+            console.log(`✅ Помечено ${participantIdsNotInTeams.length} участников как НЕ находящихся в командах`);
+        }
+        
+        // Обновляем тип участников в турнире на team
+        await pool.query('UPDATE tournaments SET participant_type = $1 WHERE id = $2', ['team', id]);
+        
+        // Формируем сообщение с информацией о распределении
+        let resultMessage = `Сформированы команды для турнира "${tournament.name}". `;
+        resultMessage += `Создано ${createdTeams.length} команд из ${playersInTeams} участников`;
+        if (remainingPlayers > 0) {
+            resultMessage += `, ${remainingPlayers} участников остались вне команд`;
+        }
+        resultMessage += `.`;
         
         // Отправляем объявление в чат турнира о формировании команд
-        const tourNameRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [id]);
-        const tourName = tourNameRes.rows[0]?.name;
         await sendTournamentChatAnnouncement(
-            tourName,
-            `Переформированы команды для турнира "${tourName}". Включены все участники: ${totalPlayers} игроков в ${created.length} командах`,
+            tournament.name,
+            resultMessage,
             id
         );
-
-        res.json({ teams: created });
+        
+        // Возвращаем сформированные команды
+        res.json({ 
+            teams: createdTeams,
+            summary: {
+                totalParticipants: totalPlayers,
+                teamsCreated: fullTeams,
+                participantsInTeams: playersInTeams,
+                participantsNotInTeams: remainingPlayers,
+                message: resultMessage
+            }
+        });
     } catch (err) {
         console.error('❌ Ошибка генерации mix-команд:', err);
         res.status(500).json({ error: err.message });
@@ -2903,13 +2986,24 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
             return res.status(400).json({ error: 'Нет участников для формирования команд' });
         }
         
-        // Проверяем, кратно ли число участников размеру команды
+        // 🆕 НОВАЯ ЛОГИКА: Формируем максимальное количество полных команд
         const totalPlayers = participants.length;
-        const remainder = totalPlayers % teamSize;
-        if (remainder !== 0) {
-            const shortage = teamSize - remainder;
-            console.log(`❌ Недостаточно участников: не хватает ${shortage} для формирования полных команд`);
-            return res.status(400).json({ error: `Не хватает ${shortage} участников для формирования полных команд` });
+        const fullTeams = Math.floor(totalPlayers / teamSize); // Количество полных команд
+        const playersInTeams = fullTeams * teamSize; // Участников в командах  
+        const remainingPlayers = totalPlayers - playersInTeams; // Лишние участники
+        
+        console.log(`📊 Статистика формирования команд:`);
+        console.log(`   - Всего участников: ${totalPlayers}`);
+        console.log(`   - Размер команды: ${teamSize}`);
+        console.log(`   - Полных команд: ${fullTeams}`);
+        console.log(`   - Участников в командах: ${playersInTeams}`);
+        console.log(`   - Останется вне команд: ${remainingPlayers}`);
+        
+        if (fullTeams === 0) {
+            console.log(`❌ Недостаточно участников: не хватает ${teamSize - totalPlayers} для формирования хотя бы одной команды`);
+            return res.status(400).json({ 
+                error: `Недостаточно участников для формирования хотя бы одной команды. Нужно минимум ${teamSize} участников, а есть только ${totalPlayers}` 
+            });
         }
         
         // Сортируем игроков по рейтингу (в зависимости от выбранного типа)
@@ -2923,12 +3017,18 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
             }
         });
         
+        // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ: первые попадают в команды, остальные остаются вне команд
+        const participantsForTeams = sortedParticipants.slice(0, playersInTeams);
+        const participantsNotInTeams = sortedParticipants.slice(playersInTeams);
+        
+        console.log(`👥 Участников для команд: ${participantsForTeams.length}`);
+        console.log(`🚫 Участников вне команд: ${participantsNotInTeams.length}`);
+        
         // Формируем команды с равномерным распределением по рейтингу
         const teams = [];
-        const numTeams = totalPlayers / teamSize;
         
         // Создаем пустые команды
-        for (let i = 0; i < numTeams; i++) {
+        for (let i = 0; i < fullTeams; i++) {
             teams.push({
                 name: `Команда ${i + 1}`,
                 members: []
@@ -2940,13 +3040,13 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
         for (let i = 0; i < teamSize; i++) {
             // Прямой порядок для четных итераций, обратный для нечетных
             const teamOrder = i % 2 === 0 
-                ? Array.from({ length: numTeams }, (_, idx) => idx) 
-                : Array.from({ length: numTeams }, (_, idx) => numTeams - 1 - idx);
+                ? Array.from({ length: fullTeams }, (_, idx) => idx) 
+                : Array.from({ length: fullTeams }, (_, idx) => fullTeams - 1 - idx);
             
             for (let teamIndex of teamOrder) {
-                const playerIndex = i * numTeams + (i % 2 === 0 ? teamIndex : numTeams - 1 - teamIndex);
-                if (playerIndex < sortedParticipants.length) {
-                    teams[teamIndex].members.push(sortedParticipants[playerIndex]);
+                const playerIndex = i * fullTeams + (i % 2 === 0 ? teamIndex : fullTeams - 1 - teamIndex);
+                if (playerIndex < participantsForTeams.length) {
+                    teams[teamIndex].members.push(participantsForTeams[playerIndex]);
                 }
             }
         }
@@ -2957,9 +3057,9 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
         await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
         await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
         
-        // Если есть существующие команды в ответе, то они уже будут на фронте
+        // Сохраняем новые команды в БД
         const createdTeams = [];
-        const participantIds = []; // Массив для хранения ID участников, которые попали в команды
+        const participantIdsInTeams = []; // Массив для хранения ID участников, которые попали в команды
         
         // Сохраняем новые команды в БД
         for (const team of teams) {
@@ -2980,7 +3080,7 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
                 );
                 
                 // Собираем ID участников для пакетного обновления флага
-                participantIds.push(member.participant_id);
+                participantIdsInTeams.push(member.participant_id);
                 
                 members.push({
                     participant_id: member.participant_id,
@@ -2998,15 +3098,27 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
             });
         }
         
-        // 🆕 ПОМЕЧАЕМ ВСЕХ УЧАСТНИКОВ В КОМАНДАХ КАК in_team = true
-        if (participantIds.length > 0) {
+        // 🆕 ПОМЕЧАЕМ УЧАСТНИКОВ В КОМАНДАХ КАК in_team = true
+        if (participantIdsInTeams.length > 0) {
             await pool.query(
                 `UPDATE tournament_participants 
                  SET in_team = TRUE 
                  WHERE id = ANY($1::int[])`,
-                [participantIds]
+                [participantIdsInTeams]
             );
-            console.log(`✅ Помечено ${participantIds.length} участников как находящихся в командах`);
+            console.log(`✅ Помечено ${participantIdsInTeams.length} участников как находящихся в командах`);
+        }
+
+        // 🆕 ПОМЕЧАЕМ ОСТАВШИХСЯ УЧАСТНИКОВ КАК in_team = false
+        const participantIdsNotInTeams = participantsNotInTeams.map(p => p.participant_id);
+        if (participantIdsNotInTeams.length > 0) {
+            await pool.query(
+                `UPDATE tournament_participants 
+                 SET in_team = FALSE 
+                 WHERE id = ANY($1::int[])`,
+                [participantIdsNotInTeams]
+            );
+            console.log(`✅ Помечено ${participantIdsNotInTeams.length} участников как НЕ находящихся в командах`);
         }
         
         // Обновляем тип участников в турнире на team
