@@ -1294,7 +1294,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #ffffff;
 }
 
 .score-value {
