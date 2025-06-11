@@ -871,16 +871,16 @@
     backdrop-filter: blur(4px);
 }
 
-.reform-modal {
-    background: white;
+.reform-modal.modal-content {
+    background: rgb(0, 0, 0);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 520px;
-    width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
     animation: modal-appear 0.3s ease-out;
+    min-width: 600px;
+    max-width: none;
 }
 
 @keyframes modal-appear {
