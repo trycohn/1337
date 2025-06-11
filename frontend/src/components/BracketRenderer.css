@@ -313,6 +313,10 @@
     color: #000000;
 }
 
+.team-name.match-content {
+    color: #000000;
+}
+
 .team-score {
     min-width: 20px;
     text-align: center;
