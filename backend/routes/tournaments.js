@@ -210,7 +210,11 @@ router.get('/:id', async (req, res) => {
             teams = await Promise.all(teamsRes.rows.map(async (team) => {
                 const membersRes = await pool.query(
                     `SELECT tm.team_id, tm.user_id, tm.participant_id, 
-                            tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
+                            tp.name, u.username, u.avatar_url, 
+                            tp.faceit_elo as tp_faceit_elo, tp.cs2_premier_rank as tp_cs2_premier_rank,
+                            u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_cs2_premier_rank,
+                            COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo,
+                            COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
                      FROM tournament_team_members tm
                      LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                      LEFT JOIN users u ON tm.user_id = u.id
@@ -327,7 +331,11 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
             teams = await Promise.all(teamsRes.rows.map(async (team) => {
                 const membersRes = await pool.query(
                     `SELECT tm.team_id, tm.user_id, tm.participant_id, 
-                            tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
+                            tp.name, u.username, u.avatar_url, 
+                            tp.faceit_elo as tp_faceit_elo, tp.cs2_premier_rank as tp_cs2_premier_rank,
+                            u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_cs2_premier_rank,
+                            COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo,
+                            COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
                      FROM tournament_team_members tm
                      LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                      LEFT JOIN users u ON tm.user_id = u.id
@@ -2234,17 +2242,32 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 ratingB = b.faceit_rating;
             }
             
+            // 🆕 УЛУЧШЕННАЯ СОРТИРОВКА: если рейтинги равны, добавляем случайность
+            if (ratingB === ratingA) {
+                return Math.random() - 0.5; // Случайное перемешивание равных рейтингов
+            }
+            
             return ratingB - ratingA; // По убыванию (лучшие первыми)
         });
         
-        // 🆕 ДЕТАЛЬНАЯ ДИАГНОСТИКА СОРТИРОВКИ
+        // 🆕 ДЕТАЛЬНАЯ ДИАГНОСТИКА СОРТИРОВКИ С ПРОВЕРКОЙ ELO НЕЗАРЕГИСТРИРОВАННЫХ
         console.log(`🔽 УЧАСТНИКИ ПОСЛЕ СОРТИРОВКИ ПО ${ratingType.toUpperCase()}:`);
         sortedParticipants.slice(0, Math.min(15, sortedParticipants.length)).forEach((p, index) => {
             const selectedRating = ratingType === 'faceit' ? p.faceit_rating : p.premier_rating;
             const isGuest = !p.user_id;
             const hasCustomRating = p.faceit_elo || p.cs2_premier_rank;
             
-            console.log(`  ${index + 1}. ${p.name} - ${ratingType} рейтинг: ${selectedRating} ${isGuest ? '(гость)' : '(зарег.)'} ${hasCustomRating ? '(кастом)' : '(проф.)'}`);
+            // 🔍 СПЕЦИАЛЬНАЯ ДИАГНОСТИКА ДЛЯ НЕЗАРЕГИСТРИРОВАННЫХ УЧАСТНИКОВ
+            if (isGuest && hasCustomRating) {
+                console.log(`  ${index + 1}. 🔍 ГОСТЬ ${p.name}:`);
+                console.log(`     - Кастомный FACEIT ELO: ${p.faceit_elo}`);
+                console.log(`     - Кастомный Premier: ${p.cs2_premier_rank}`);
+                console.log(`     - Итоговый FACEIT рейтинг: ${p.faceit_rating}`);
+                console.log(`     - Итоговый Premier рейтинг: ${p.premier_rating}`);
+                console.log(`     - ИСПОЛЬЗУЕМЫЙ рейтинг (${ratingType}): ${selectedRating}`);
+            } else {
+                console.log(`  ${index + 1}. ${p.name} - ${ratingType} рейтинг: ${selectedRating} ${isGuest ? '(гость)' : '(зарег.)'} ${hasCustomRating ? '(кастом)' : '(проф.)'}`);
+            }
         });
         if (sortedParticipants.length > 15) {
             console.log(`  ... и еще ${sortedParticipants.length - 15} участников`);
@@ -2262,15 +2285,34 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`   - Средний: ${Math.round(avgRating)}`);
         console.log(`   - Разброс: ${maxRating - minRating}`);
         
-        // 🆕 ПРОВЕРКА НУЛЕВЫХ РЕЙТИНГОВ
+        // 🔍 КРИТИЧЕСКАЯ ПРОВЕРКА НУЛЕВЫХ И БАЗОВЫХ РЕЙТИНГОВ
+        const baseRatingValue = ratingType === 'faceit' ? 1000 : 5;
         const zeroRatings = ratingsUsed.filter(r => r === 0);
+        const baseRatings = ratingsUsed.filter(r => r === baseRatingValue);
+        
         if (zeroRatings.length > 0) {
-            console.log(`⚠️ ВНИМАНИЕ: ${zeroRatings.length} участников с нулевым рейтингом!`);
+            console.log(`🚨 КРИТИЧЕСКАЯ ОШИБКА: ${zeroRatings.length} участников с нулевым рейтингом!`);
             const participantsWithZeroRating = sortedParticipants.filter(p => 
                 (ratingType === 'faceit' ? p.faceit_rating : p.premier_rating) === 0
             );
             participantsWithZeroRating.forEach(p => {
-                console.log(`   - ${p.name}: tp.faceit_elo=${p.faceit_elo}, tp.cs2_premier_rank=${p.cs2_premier_rank}, user.faceit_elo=${p.user_faceit_elo}, user.cs2_premier_rank=${p.user_premier_rank}`);
+                console.log(`   - ❌ ${p.name}: tp.faceit_elo=${p.faceit_elo}, tp.cs2_premier_rank=${p.cs2_premier_rank}, user.faceit_elo=${p.user_faceit_elo}, user.cs2_premier_rank=${p.user_premier_rank}`);
+                console.log(`     Final: faceit_rating=${p.faceit_rating}, premier_rating=${p.premier_rating}`);
+            });
+        }
+        
+        if (baseRatings.length > 0) {
+            console.log(`📊 Участников с базовым рейтингом (${baseRatingValue}): ${baseRatings.length}`);
+        }
+        
+        // 🆕 ПРОВЕРКА НЕЗАРЕГИСТРИРОВАННЫХ УЧАСТНИКОВ С КАСТОМНЫМИ РЕЙТИНГАМИ
+        const guestsWithCustomRatings = sortedParticipants.filter(p => !p.user_id && (p.faceit_elo || p.cs2_premier_rank));
+        if (guestsWithCustomRatings.length > 0) {
+            console.log(`👤 ГОСТИ С КАСТОМНЫМИ РЕЙТИНГАМИ: ${guestsWithCustomRatings.length}`);
+            guestsWithCustomRatings.forEach((p, idx) => {
+                const currentRating = ratingType === 'faceit' ? p.faceit_rating : p.premier_rating;
+                const customValue = ratingType === 'faceit' ? p.faceit_elo : p.cs2_premier_rank;
+                console.log(`   ${idx + 1}. ${p.name}: кастом=${customValue}, итог=${currentRating}, позиция в топе=${sortedParticipants.indexOf(p) + 1}`);
             });
         }
         
@@ -2281,7 +2323,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`👥 Участников для команд: ${participantsForTeams.length}`);
         console.log(`🚫 Участников вне команд: ${participantsNotInTeams.length}`);
         
-        // Формируем команды с равномерным распределением по рейтингу
+        // 🆕 УЛУЧШЕННЫЙ АЛГОРИТМ ФОРМИРОВАНИЯ КОМАНД С ДОПОЛНИТЕЛЬНОЙ СЛУЧАЙНОСТЬЮ
         const teams = [];
         
         // Создаем пустые команды
@@ -2292,24 +2334,56 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             });
         }
         
-        // Распределяем игроков змейкой для баланса команд
-        // Сначала лучшие игроки, затем послабее
-        for (let i = 0; i < teamSize; i++) {
-            // Прямой порядок для четных итераций, обратный для нечетных
-            const teamOrder = i % 2 === 0 
-                ? Array.from({ length: fullTeams }, (_, idx) => idx) 
-                : Array.from({ length: fullTeams }, (_, idx) => fullTeams - 1 - idx);
+        // 🔄 НОВЫЙ АЛГОРИТМ: комбинированное распределение
+        // 1. Группируем игроков по уровням рейтинга для лучшего баланса
+        const ratingGroups = [];
+        const groupSize = fullTeams; // Размер группы равен количеству команд
+        
+        for (let i = 0; i < participantsForTeams.length; i += groupSize) {
+            const group = participantsForTeams.slice(i, i + groupSize);
             
-            for (let teamIndex of teamOrder) {
-                const playerIndex = i * fullTeams + (i % 2 === 0 ? teamIndex : fullTeams - 1 - teamIndex);
-                if (playerIndex < participantsForTeams.length) {
-                    teams[teamIndex].members.push(participantsForTeams[playerIndex]);
+            // 🎲 Добавляем случайность в каждую группу, если у игроков похожие рейтинги
+            const groupRatings = group.map(p => ratingType === 'faceit' ? p.faceit_rating : p.premier_rating);
+            const minGroupRating = Math.min(...groupRatings);
+            const maxGroupRating = Math.max(...groupRatings);
+            const ratingSpread = maxGroupRating - minGroupRating;
+            
+            // Если разброс рейтингов в группе небольшой (менее 200), добавляем случайность
+            if (ratingSpread < 200) {
+                console.log(`🎲 Группа ${Math.floor(i / groupSize) + 1}: разброс рейтингов ${ratingSpread}, добавляем случайность`);
+                // Перемешиваем группу случайным образом
+                for (let j = group.length - 1; j > 0; j--) {
+                    const randomIndex = Math.floor(Math.random() * (j + 1));
+                    [group[j], group[randomIndex]] = [group[randomIndex], group[j]];
                 }
             }
+            
+            ratingGroups.push(group);
         }
-
-        console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
         
+        // 2. Распределяем игроков из каждой группы по командам
+        ratingGroups.forEach((group, groupIndex) => {
+            group.forEach((player, playerIndex) => {
+                const teamIndex = playerIndex % fullTeams;
+                if (teams[teamIndex]) {
+                    teams[teamIndex].members.push(player);
+                    console.log(`👤 Группа ${groupIndex + 1}, игрок ${player.name} (рейтинг: ${ratingType === 'faceit' ? player.faceit_rating : player.premier_rating}) → Команда ${teamIndex + 1}`);
+                }
+            });
+        });
+        
+        // 🔍 ДИАГНОСТИКА СФОРМИРОВАННЫХ КОМАНД
+        console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
+        teams.forEach((team, index) => {
+            const teamRatings = team.members.map(member => 
+                ratingType === 'faceit' ? member.faceit_rating : member.premier_rating
+            );
+            const avgTeamRating = teamRatings.reduce((sum, rating) => sum + rating, 0) / teamRatings.length;
+            const teamMembersList = team.members.map(m => `${m.name}(${ratingType === 'faceit' ? m.faceit_rating : m.premier_rating})`).join(', ');
+            
+            console.log(`🏆 Команда ${index + 1}: средний рейтинг ${Math.round(avgTeamRating)}, участники: ${teamMembersList}`);
+        });
+
         // Сохраняем новые команды в БД
         const createdTeams = [];
         const participantIdsInTeams = []; // Массив для хранения ID участников, которые попали в команды
@@ -2346,6 +2420,19 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                     faceit_rating_used: member.faceit_rating,
                     premier_rating_used: member.premier_rating
                 });
+                
+                // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА СОХРАНЯЕМОГО УЧАСТНИКА
+                if (!member.user_id && (member.faceit_elo || member.cs2_premier_rank)) {
+                    console.log(`🔍 Сохраняем гостя ${member.name} в команду ${team.name}:`);
+                    console.log(`   - Исходный tp.faceit_elo: ${member.faceit_elo}`);
+                    console.log(`   - Исходный tp.cs2_premier_rank: ${member.cs2_premier_rank}`);
+                    console.log(`   - Пользовательский u.faceit_elo: ${member.user_faceit_elo}`);
+                    console.log(`   - Пользовательский u.cs2_premier_rank: ${member.user_premier_rank}`);
+                    console.log(`   - Итоговый faceit_rating: ${member.faceit_rating}`);
+                    console.log(`   - Итоговый premier_rating: ${member.premier_rating}`);
+                    console.log(`   - Сохраняем faceit_elo: ${member.faceit_elo || member.user_faceit_elo || 1000}`);
+                    console.log(`   - Сохраняем cs2_premier_rank: ${member.cs2_premier_rank || member.user_premier_rank || 5}`);
+                }
             }
             
             createdTeams.push({
