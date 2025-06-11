@@ -2478,6 +2478,15 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             
             console.log(`🎯 ПОПАРНЫЙ АЛГОРИТМ ЗАВЕРШЕН: создано ${teamIndex} оптимальных команд`);
         } else {
+            console.log(`❌ НЕ ИСПОЛЬЗУЕМ попарный алгоритм, потому что teamSize=${teamSize} НЕ равен 2`);
+            console.log(`🔍 КРИТИЧЕСКАЯ ДИАГНОСТИКА teamSize:`);
+            console.log(`   - Значение teamSize: ${teamSize}`);
+            console.log(`   - Тип teamSize: ${typeof teamSize}`);
+            console.log(`   - teamSize === 2: ${teamSize === 2}`);
+            console.log(`   - teamSize == '2': ${teamSize == '2'}`);
+            console.log(`   - teamSize == 2: ${teamSize == 2}`);
+            console.log(`   - parseInt(teamSize) === 2: ${parseInt(teamSize) === 2}`);
+        
             console.log(`🎯 ИСПОЛЬЗУЕМ КЛАССИЧЕСКИЙ АЛГОРИТМ "ЗМЕЙКА" для команд из ${teamSize} игроков`);
             
             // 🔄 ИСПРАВЛЕННЫЙ АЛГОРИТМ РАСПРЕДЕЛЕНИЯ: строго контролируем размер команд
