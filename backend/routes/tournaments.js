@@ -2383,6 +2383,189 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             
             console.log(`🏆 Команда ${index + 1}: средний рейтинг ${Math.round(avgTeamRating)}, участники: ${teamMembersList}`);
         });
+        
+        // 🎯 СИСТЕМА КОНТРОЛЯ БАЛАНСА КОМАНД (максимум 20% расхождения)
+        console.log(`⚖️ НАЧИНАЕМ ПРОВЕРКУ БАЛАНСА КОМАНД (макс. расхождение 20%)`);
+        
+        // Функция расчета среднего рейтинга команды
+        const calculateTeamAverage = (team) => {
+            const ratings = team.members.map(member => 
+                ratingType === 'faceit' ? member.faceit_rating : member.premier_rating
+            );
+            return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+        };
+        
+        // Функция проверки баланса команд
+        const checkTeamBalance = (teamsToCheck) => {
+            const teamAverages = teamsToCheck.map(team => calculateTeamAverage(team));
+            const minAvg = Math.min(...teamAverages);
+            const maxAvg = Math.max(...teamAverages);
+            const percentageDiff = ((maxAvg - minAvg) / minAvg) * 100;
+            
+            return {
+                teamAverages,
+                minAvg,
+                maxAvg,
+                percentageDiff,
+                isBalanced: percentageDiff <= 20
+            };
+        };
+        
+        // Первоначальная проверка баланса
+        let balanceCheck = checkTeamBalance(teams);
+        console.log(`📊 Изначальный баланс команд:`);
+        console.log(`   - Минимальный средний рейтинг: ${Math.round(balanceCheck.minAvg)}`);
+        console.log(`   - Максимальный средний рейтинг: ${Math.round(balanceCheck.maxAvg)}`);
+        console.log(`   - Расхождение: ${Math.round(balanceCheck.percentageDiff)}%`);
+        console.log(`   - Сбалансированы: ${balanceCheck.isBalanced ? '✅ ДА' : '❌ НЕТ'}`);
+        
+        // 🔄 АЛГОРИТМ ПЕРЕБАЛАНСИРОВКИ (если расхождение > 20%)
+        let rebalanceAttempts = 0;
+        const maxRebalanceAttempts = 50; // Максимум попыток перебалансировки
+        
+        while (!balanceCheck.isBalanced && rebalanceAttempts < maxRebalanceAttempts) {
+            rebalanceAttempts++;
+            console.log(`🔄 Попытка перебалансировки #${rebalanceAttempts}`);
+            
+            // Находим самую сильную и самую слабую команды
+            const teamAverages = teams.map((team, index) => ({
+                index,
+                average: calculateTeamAverage(team),
+                team
+            }));
+            
+            teamAverages.sort((a, b) => b.average - a.average);
+            const strongestTeam = teamAverages[0];
+            const weakestTeam = teamAverages[teamAverages.length - 1];
+            
+            console.log(`   - Самая сильная команда: ${strongestTeam.team.name} (${Math.round(strongestTeam.average)})`);
+            console.log(`   - Самая слабая команда: ${weakestTeam.team.name} (${Math.round(weakestTeam.average)})`);
+            
+            // Попытка найти оптимальный обмен игроками
+            let swapMade = false;
+            
+            // Перебираем игроков сильной команды (начиная со слабейших в этой команде)
+            const strongTeamMembers = [...strongestTeam.team.members].sort((a, b) => {
+                const ratingA = ratingType === 'faceit' ? a.faceit_rating : a.premier_rating;
+                const ratingB = ratingType === 'faceit' ? b.faceit_rating : b.premier_rating;
+                return ratingA - ratingB; // По возрастанию (слабейшие первыми)
+            });
+            
+            // Перебираем игроков слабой команды (начиная с сильнейших в этой команде)
+            const weakTeamMembers = [...weakestTeam.team.members].sort((a, b) => {
+                const ratingA = ratingType === 'faceit' ? a.faceit_rating : a.premier_rating;
+                const ratingB = ratingType === 'faceit' ? b.faceit_rating : b.premier_rating;
+                return ratingB - ratingA; // По убыванию (сильнейшие первыми)
+            });
+            
+            // Ищем лучший обмен
+            outerLoop: for (const strongMember of strongTeamMembers) {
+                for (const weakMember of weakTeamMembers) {
+                    const strongRating = ratingType === 'faceit' ? strongMember.faceit_rating : strongMember.premier_rating;
+                    const weakRating = ratingType === 'faceit' ? weakMember.faceit_rating : weakMember.premier_rating;
+                    
+                    // Пропускаем если рейтинги слишком близки (обмен не даст эффекта)
+                    if (Math.abs(strongRating - weakRating) < 50) continue;
+                    
+                    // Создаем временные команды для тестирования обмена
+                    const testStrongTeam = {
+                        ...strongestTeam.team,
+                        members: strongestTeam.team.members.map(m => 
+                            m.participant_id === strongMember.participant_id ? weakMember : m
+                        )
+                    };
+                    
+                    const testWeakTeam = {
+                        ...weakestTeam.team,
+                        members: weakestTeam.team.members.map(m => 
+                            m.participant_id === weakMember.participant_id ? strongMember : m
+                        )
+                    };
+                    
+                    // Создаем тестовый массив команд
+                    const testTeams = teams.map((team, index) => {
+                        if (index === strongestTeam.index) return testStrongTeam;
+                        if (index === weakestTeam.index) return testWeakTeam;
+                        return team;
+                    });
+                    
+                    // Проверяем баланс после обмена
+                    const testBalance = checkTeamBalance(testTeams);
+                    
+                    // Если баланс улучшился, применяем обмен
+                    if (testBalance.percentageDiff < balanceCheck.percentageDiff) {
+                        console.log(`   ✅ Выгодный обмен найден: ${strongMember.name} (${strongRating}) ↔ ${weakMember.name} (${weakRating})`);
+                        console.log(`   📊 Расхождение изменилось: ${Math.round(balanceCheck.percentageDiff)}% → ${Math.round(testBalance.percentageDiff)}%`);
+                        
+                        // Применяем обмен
+                        teams[strongestTeam.index] = testStrongTeam;
+                        teams[weakestTeam.index] = testWeakTeam;
+                        
+                        swapMade = true;
+                        break outerLoop;
+                    }
+                }
+            }
+            
+            // Если обмен не найден, пробуем случайную перестановку
+            if (!swapMade && rebalanceAttempts % 10 === 0) {
+                console.log(`   🎲 Случайная перестановка игроков (попытка ${rebalanceAttempts})`);
+                
+                // Случайно выбираем двух игроков из разных команд и меняем местами
+                const team1Index = Math.floor(Math.random() * teams.length);
+                let team2Index = Math.floor(Math.random() * teams.length);
+                while (team2Index === team1Index) {
+                    team2Index = Math.floor(Math.random() * teams.length);
+                }
+                
+                const member1Index = Math.floor(Math.random() * teams[team1Index].members.length);
+                const member2Index = Math.floor(Math.random() * teams[team2Index].members.length);
+                
+                const member1 = teams[team1Index].members[member1Index];
+                const member2 = teams[team2Index].members[member2Index];
+                
+                teams[team1Index].members[member1Index] = member2;
+                teams[team2Index].members[member2Index] = member1;
+                
+                console.log(`   🔄 Случайный обмен: ${member1.name} ↔ ${member2.name}`);
+                swapMade = true;
+            }
+            
+            if (!swapMade) {
+                console.log(`   ⚠️ Не удалось найти выгодный обмен, прерываем перебалансировку`);
+                break;
+            }
+            
+            // Пересчитываем баланс
+            balanceCheck = checkTeamBalance(teams);
+            console.log(`   📊 Новое расхождение: ${Math.round(balanceCheck.percentageDiff)}%`);
+        }
+        
+        // Финальная диагностика баланса
+        const finalBalance = checkTeamBalance(teams);
+        console.log(`⚖️ ФИНАЛЬНЫЙ БАЛАНС КОМАНД:`);
+        console.log(`   - Попыток перебалансировки: ${rebalanceAttempts}`);
+        console.log(`   - Минимальный средний рейтинг: ${Math.round(finalBalance.minAvg)}`);
+        console.log(`   - Максимальный средний рейтинг: ${Math.round(finalBalance.maxAvg)}`);
+        console.log(`   - Итоговое расхождение: ${Math.round(finalBalance.percentageDiff)}%`);
+        console.log(`   - Цель достигнута (≤20%): ${finalBalance.isBalanced ? '✅ ДА' : '❌ НЕТ (крайний случай)'}`);
+        
+        if (!finalBalance.isBalanced) {
+            console.log(`⚠️ ВНИМАНИЕ: Не удалось достичь 20% баланса. Возможные причины:`);
+            console.log(`   - Слишком большой разброс рейтингов участников`);
+            console.log(`   - Малое количество участников для перестановок`);
+            console.log(`   - Особенности распределения рейтингов`);
+        }
+        
+        // Обновляем команды с финальными составами и рейтингами
+        teams.forEach((team, index) => {
+            const avgRating = calculateTeamAverage(team);
+            console.log(`🏆 ФИНАЛ - Команда ${index + 1} "${team.name}": средний рейтинг ${Math.round(avgRating)}`);
+            team.members.forEach((member, memberIndex) => {
+                const memberRating = ratingType === 'faceit' ? member.faceit_rating : member.premier_rating;
+                console.log(`   ${memberIndex + 1}. ${member.name}: ${memberRating} ${ratingType === 'faceit' ? 'ELO' : 'Premier'}`);
+            });
+        });
 
         // Сохраняем новые команды в БД
         const createdTeams = [];
@@ -2513,6 +2696,12 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             total + team.members.filter(member => member.faceit_elo || member.cs2_premier_rank).length, 0
         );
         
+        // 🆕 ДОБАВЛЯЕМ СТАТИСТИКУ БАЛАНСА
+        const finalBalanceForResponse = checkTeamBalance(teams);
+        const balanceQuality = finalBalanceForResponse.percentageDiff <= 10 ? 'Отличный' : 
+                               finalBalanceForResponse.percentageDiff <= 20 ? 'Хороший' : 
+                               finalBalanceForResponse.percentageDiff <= 30 ? 'Удовлетворительный' : 'Плохой';
+        
         // Возвращаем сформированные команды с детальной статистикой
         res.json({ 
             teams: createdTeams,
@@ -2524,14 +2713,19 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 ratingType: ratingType,
                 teamSize: teamSize,
                 message: resultMessage,
-                // 🆕 РАСШИРЕННАЯ СТАТИСТИКА
+                // 🆕 РАСШИРЕННАЯ СТАТИСТИКА БАЛАНСА
                 balanceStats: {
                     overallAverageRating: Math.round(overallAverage),
                     ratingStandardDeviation: Math.round(ratingStandardDeviation * 100) / 100,
                     teamAverageRatings: teamAverageRatings.map(avg => Math.round(avg)),
-                    balanceQuality: ratingStandardDeviation < 100 ? 'Отличный' : 
-                                   ratingStandardDeviation < 200 ? 'Хороший' : 
-                                   ratingStandardDeviation < 300 ? 'Средний' : 'Плохой'
+                    // 🎯 НОВАЯ СТАТИСТИКА БАЛАНСА
+                    balancePercentage: Math.round(finalBalanceForResponse.percentageDiff * 100) / 100,
+                    isBalanced: finalBalanceForResponse.isBalanced,
+                    balanceQuality: balanceQuality,
+                    rebalanceAttempts: rebalanceAttempts,
+                    targetAchieved: finalBalanceForResponse.isBalanced,
+                    minTeamRating: Math.round(finalBalanceForResponse.minAvg),
+                    maxTeamRating: Math.round(finalBalanceForResponse.maxAvg)
                 },
                 participantStats: {
                     guestsInTeams: guestsInTeams,
