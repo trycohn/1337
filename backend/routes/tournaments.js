@@ -2526,8 +2526,8 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             console.log(`   Участники: ${teamMembersList}`);
         });
 
-        // 🎯 СИСТЕМА КОНТРОЛЯ БАЛАНСА КОМАНД (максимум 20% расхождения)
-        console.log(`⚖️ НАЧИНАЕМ ПРОВЕРКУ БАЛАНСА КОМАНД (макс. расхождение 20%)`);
+        // 🎯 СИСТЕМА КОНТРОЛЯ БАЛАНСА КОМАНД - ВАРИАНТ 2: АДАПТИВНЫЙ С ПРИНУДИТЕЛЬНОЙ БАЛАНСИРОВКОЙ (цель ≤15%)
+        console.log(`⚖️ НАЧИНАЕМ ПРОВЕРКУ БАЛАНСА КОМАНД (макс. расхождение 15%)`);
         
         // Функция расчета среднего рейтинга команды
         const calculateTeamAverage = (team) => {
@@ -2549,7 +2549,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 minAvg,
                 maxAvg,
                 percentageDiff,
-                isBalanced: percentageDiff <= 20
+                isBalanced: percentageDiff <= 15
             };
         };
         
@@ -2561,9 +2561,9 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`   - Расхождение: ${Math.round(balanceCheck.percentageDiff)}%`);
         console.log(`   - Сбалансированы: ${balanceCheck.isBalanced ? '✅ ДА' : '❌ НЕТ'}`);
         
-        // 🔄 АЛГОРИТМ ПЕРЕБАЛАНСИРОВКИ (если расхождение > 20%)
+        // 🔄 АЛГОРИТМ ПЕРЕБАЛАНСИРОВКИ (если расхождение > 15%)
         let rebalanceAttempts = 0;
-        const maxRebalanceAttempts = 50; // Максимум попыток перебалансировки
+        const maxRebalanceAttempts = 100; // Увеличено с 50 до 100 для варианта 2
         
         while (!balanceCheck.isBalanced && rebalanceAttempts < maxRebalanceAttempts) {
             rebalanceAttempts++;
@@ -2690,10 +2690,10 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`   - Минимальный средний рейтинг: ${Math.round(finalBalance.minAvg)}`);
         console.log(`   - Максимальный средний рейтинг: ${Math.round(finalBalance.maxAvg)}`);
         console.log(`   - Итоговое расхождение: ${Math.round(finalBalance.percentageDiff)}%`);
-        console.log(`   - Цель достигнута (≤20%): ${finalBalance.isBalanced ? '✅ ДА' : '❌ НЕТ (крайний случай)'}`);
+        console.log(`   - Цель достигнута (≤15%): ${finalBalance.isBalanced ? '✅ ДА' : '❌ НЕТ (крайний случай)'}`);
         
         if (!finalBalance.isBalanced) {
-            console.log(`⚠️ ВНИМАНИЕ: Не удалось достичь 20% баланса. Возможные причины:`);
+            console.log(`⚠️ ВНИМАНИЕ: Не удалось достичь 15% баланса. Возможные причины:`);
             console.log(`   - Слишком большой разброс рейтингов участников`);
             console.log(`   - Малое количество участников для перестановок`);
             console.log(`   - Особенности распределения рейтингов`);
@@ -2840,9 +2840,9 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         // 🆕 ДОБАВЛЯЕМ СТАТИСТИКУ БАЛАНСА
         const finalBalanceForResponse = checkTeamBalance(teams);
-        const balanceQuality = finalBalanceForResponse.percentageDiff <= 10 ? 'Отличный' : 
-                               finalBalanceForResponse.percentageDiff <= 20 ? 'Хороший' : 
-                               finalBalanceForResponse.percentageDiff <= 30 ? 'Удовлетворительный' : 'Плохой';
+        const balanceQuality = finalBalanceForResponse.percentageDiff <= 8 ? 'Отличный' : 
+                               finalBalanceForResponse.percentageDiff <= 15 ? 'Хороший' : 
+                               finalBalanceForResponse.percentageDiff <= 25 ? 'Удовлетворительный' : 'Плохой';
         
         // Возвращаем сформированные команды с детальной статистикой
         res.json({ 
