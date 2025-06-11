@@ -1210,9 +1210,8 @@
 }
 
 .participant-card.in-team {
-    border: 1px solid #10b981;
-    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
     position: relative;
+    border: 1px solid #ffffff;
 }
 
 .participant-card.in-team::before {
@@ -1222,7 +1221,6 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%);
 }
 
 /* Статус участника */

@@ -564,8 +564,8 @@ const TeamGenerator = ({
                                             }}
                                         />
                                     </div>
+                                    <span className="participant-name">{participant.name}</span>
                                     <div className="participant-info">
-                                        <span className="participant-name">{participant.name}</span>
                                         <span className="participant-rating">
                                             {ratingType === 'faceit' 
                                                 ? `FACEIT: ${participant.faceit_elo || 1000}`
@@ -607,8 +607,9 @@ const TeamGenerator = ({
                                             }}
                                         />
                                     </div>
+                                    <span className="participant-name">{participant.name}</span>
                                     <div className="participant-info">
-                                        <span className="participant-name">{participant.name}</span>
+                                        
                                         <span className="participant-rating">
                                             {ratingType === 'faceit' 
                                                 ? `FACEIT: ${participant.faceit_elo || 1000}`
@@ -642,8 +643,9 @@ const TeamGenerator = ({
                                                 }}
                                             />
                                         </div>
+                                        <span className="participant-name">{participant.name}</span>
                                         <div className="participant-info">
-                                            <span className="participant-name">{participant.name}</span>
+                                            
                                             <span className="participant-rating">
                                                 {ratingType === 'faceit' 
                                                     ? `FACEIT: ${participant.faceit_elo || 1000}`
