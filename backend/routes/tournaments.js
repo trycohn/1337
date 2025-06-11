@@ -2110,12 +2110,17 @@ router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (re
 // Генерация команд для микс-турнира и переключение в командный режим
 router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
+    const { ratingType = 'faceit' } = req.body; // 🆕 ДОБАВЛЯЕМ ПОДДЕРЖКУ ratingType
+    
     try {
         // Получаем параметры турнира
-        const tourRes = await pool.query('SELECT team_size, created_by FROM tournaments WHERE id = $1', [id]);
+        const tourRes = await pool.query('SELECT team_size, created_by, name FROM tournaments WHERE id = $1', [id]);
         if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
-        const { team_size: sizeFromDb, created_by } = tourRes.rows[0];
+        const { team_size: sizeFromDb, created_by, name: tournamentName } = tourRes.rows[0];
         const teamSize = parseInt(sizeFromDb, 10) || 1;
+
+        console.log(`🎯 Генерация команд для турнира "${tournamentName}" (ID: ${id})`);
+        console.log(`📊 Параметры: размер команды = ${teamSize}, тип рейтинга = ${ratingType}`);
 
         // 🔧 УДАЛЯЕМ СУЩЕСТВУЮЩИЕ КОМАНДЫ ПЕРЕД СОЗДАНИЕМ НОВЫХ
         console.log(`🗑️ Удаляем существующие команды для турнира ${id} перед переформированием`);
@@ -2140,10 +2145,11 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         console.log(`✅ Удалено ${deleteResult.rowCount} существующих команд, все участники помечены как не в команде`);
 
-        // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ (включая тех, кто был добавлен после формирования команд)
+        // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ С ИСПРАВЛЕННОЙ ЛОГИКОЙ РЕЙТИНГОВ
         const partRes = await pool.query(
             `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
                     tp.faceit_elo, tp.cs2_premier_rank,
+                    u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
                     COALESCE(tp.faceit_elo, u.faceit_elo, 0) as faceit_rating,
                     COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 0) as premier_rating
              FROM tournament_participants tp
@@ -2159,8 +2165,22 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         }
         
         console.log(`📊 Всего участников для формирования команд: ${participants.length}`);
-        console.log(`📊 Из них было в командах: ${participants.filter(p => p.in_team).length}`);
-        console.log(`📊 Новых участников (не в команде): ${participants.filter(p => !p.in_team).length}`);
+        
+        // 🆕 ДИАГНОСТИКА РЕЙТИНГОВ УЧАСТНИКОВ
+        console.log(`🔍 Диагностика рейтингов участников (тип: ${ratingType}):`);
+        participants.forEach((p, index) => {
+            const debugInfo = {
+                name: p.name,
+                tp_faceit_elo: p.faceit_elo,
+                tp_cs2_premier_rank: p.cs2_premier_rank,
+                user_faceit_elo: p.user_faceit_elo,
+                user_premier_rank: p.user_premier_rank,
+                final_faceit_rating: p.faceit_rating,
+                final_premier_rating: p.premier_rating,
+                is_guest: !p.user_id
+            };
+            console.log(`  ${index + 1}. ${JSON.stringify(debugInfo)}`);
+        });
         
         // 🆕 НОВАЯ ЛОГИКА: Формируем максимальное количество полных команд
         const totalPlayers = participants.length;
@@ -2182,16 +2202,33 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             });
         }
         
-        // Сортируем игроков по рейтингу (в зависимости от выбранного типа)
+        // 🆕 СОРТИРУЕМ ИГРОКОВ ПО РЕЙТИНГУ (в зависимости от выбранного типа)
         const sortedParticipants = [...participants].sort((a, b) => {
+            let ratingA, ratingB;
+            
             if (ratingType === 'faceit') {
-                return b.faceit_rating - a.faceit_rating;
+                ratingA = a.faceit_rating;
+                ratingB = b.faceit_rating;
             } else if (ratingType === 'premier') {
-                return b.premier_rating - a.premier_rating;
+                ratingA = a.premier_rating;
+                ratingB = b.premier_rating;
             } else {
-                return b.faceit_rating - a.faceit_rating;
+                ratingA = a.faceit_rating;
+                ratingB = b.faceit_rating;
             }
+            
+            return ratingB - ratingA; // По убыванию (лучшие первыми)
         });
+        
+        // 🆕 ДИАГНОСТИКА СОРТИРОВКИ
+        console.log(`🔽 Участники после сортировки по ${ratingType}:`);
+        sortedParticipants.slice(0, 10).forEach((p, index) => {
+            const rating = ratingType === 'faceit' ? p.faceit_rating : p.premier_rating;
+            console.log(`  ${index + 1}. ${p.name} - ${ratingType} рейтинг: ${rating} ${!p.user_id ? '(гость)' : ''}`);
+        });
+        if (sortedParticipants.length > 10) {
+            console.log(`  ... и еще ${sortedParticipants.length - 10} участников`);
+        }
         
         // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ: первые попадают в команды, остальные остаются вне команд
         const participantsForTeams = sortedParticipants.slice(0, playersInTeams);
@@ -2227,11 +2264,20 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             }
         }
 
+        // 🆕 ДИАГНОСТИКА РАСПРЕДЕЛЕНИЯ ПО КОМАНДАМ
+        console.log(`🏆 Итоговое распределение по командам:`);
+        teams.forEach((team, teamIndex) => {
+            const teamRatings = team.members.map(m => {
+                const rating = ratingType === 'faceit' ? m.faceit_rating : m.premier_rating;
+                return `${m.name}(${rating})`;
+            });
+            const avgRating = team.members.reduce((sum, m) => {
+                return sum + (ratingType === 'faceit' ? m.faceit_rating : m.premier_rating);
+            }, 0) / team.members.length;
+            console.log(`  ${team.name}: [${teamRatings.join(', ')}] Средний: ${Math.round(avgRating)}`);
+        });
+
         console.log(`✅ Успешно создано ${teams.length} новых команд для турнира ${id}`);
-        
-        // Удаляем старые команды, если они есть
-        await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
-        await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
         
         // Сохраняем новые команды в БД
         const createdTeams = [];
@@ -2242,7 +2288,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             // Создаем команду
             const teamResult = await pool.query(
                 'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
-                [id, team.name, tournament.created_by]
+                [id, team.name, created_by]
             );
             
             const teamId = teamResult.rows[0].id;
@@ -2301,16 +2347,16 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         await pool.query('UPDATE tournaments SET participant_type = $1 WHERE id = $2', ['team', id]);
         
         // Формируем сообщение с информацией о распределении
-        let resultMessage = `Сформированы команды для турнира "${tournament.name}". `;
+        let resultMessage = `Сформированы команды для турнира "${tournamentName}". `;
         resultMessage += `Создано ${createdTeams.length} команд из ${playersInTeams} участников`;
         if (remainingPlayers > 0) {
             resultMessage += `, ${remainingPlayers} участников остались вне команд`;
         }
-        resultMessage += `.`;
+        resultMessage += `. Использован рейтинг: ${ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}.`;
         
         // Отправляем объявление в чат турнира о формировании команд
         await sendTournamentChatAnnouncement(
-            tournament.name,
+            tournamentName,
             resultMessage,
             id
         );
@@ -2323,6 +2369,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 teamsCreated: fullTeams,
                 participantsInTeams: playersInTeams,
                 participantsNotInTeams: remainingPlayers,
+                ratingType: ratingType,
                 message: resultMessage
             }
         });

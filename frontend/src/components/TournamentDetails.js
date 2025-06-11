@@ -1541,7 +1541,8 @@ function TournamentDetails() {
             `Текущее состояние:\n` +
             `• Участников: ${tournament.participants?.length || 0}\n` +
             `• Команд: ${mixedTeams.length}\n` +
-            `• Игроков в командах: ${mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}\n\n` +
+            `• Игроков в командах: ${mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}\n` +
+            `• Тип рейтинга: ${ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}\n\n` +
             `Продолжить?`
         );
 
@@ -1551,18 +1552,32 @@ function TournamentDetails() {
             setMessage('🔄 Переформирование команд...');
             
             const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {}, {
+            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {
+                ratingType: ratingType // 🆕 ПЕРЕДАЕМ ТИП РЕЙТИНГА
+            }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.data && response.data.teams) {
                 console.log('✅ Команды успешно переформированы:', response.data.teams);
+                console.log('📊 Сводка:', response.data.summary);
                 
                 // Обновляем состояние команд
                 setMixedTeams(response.data.teams);
                 
-                setMessage('✅ Команды успешно переформированы!');
-                setTimeout(() => setMessage(''), 3000);
+                // Показываем детальную информацию о переформировании
+                const summary = response.data.summary;
+                let successMessage = '✅ Команды успешно переформированы!';
+                if (summary) {
+                    successMessage += `\n📊 Создано ${summary.teamsCreated} команд из ${summary.participantsInTeams} участников`;
+                    if (summary.participantsNotInTeams > 0) {
+                        successMessage += `\n🔍 ${summary.participantsNotInTeams} участников остались вне команд`;
+                    }
+                    successMessage += `\n🎯 Использован рейтинг: ${summary.ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}`;
+                }
+                
+                setMessage(successMessage);
+                setTimeout(() => setMessage(''), 5000);
                 
                 // Перезагружаем данные турнира для обновления всех компонентов
                 reloadTournamentData();

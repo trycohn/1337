@@ -785,11 +785,15 @@ const TeamGenerator = ({
                 tournamentId: tournament.id
             });
 
-            // Используем эндпоинт для микс-генерации команд (поддерживает переформирование)
-            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {});
+            // 🆕 ПЕРЕДАЕМ ПАРАМЕТРЫ ПЕРЕФОРМИРОВАНИЯ
+            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {
+                ratingType: ratingType, // 🆕 ПЕРЕДАЕМ ТИП РЕЙТИНГА
+                teamSize: teamSizeNumber // 🆕 ПЕРЕДАЕМ РАЗМЕР КОМАНДЫ
+            });
 
             if (response.data && response.data.teams) {
                 console.log('✅ Команды успешно переформированы:', response.data.teams);
+                console.log('📊 Сводка переформирования:', response.data.summary);
                 
                 // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
                 const enrichedTeams = response.data.teams.map(team => ({
@@ -812,11 +816,22 @@ const TeamGenerator = ({
                 // Закрываем модальное окно
                 setShowReformModal(false);
                 
-                console.log('✅ Команды успешно переформированы');
-                
+                // 🆕 ДЕТАЛЬНОЕ УВЕДОМЛЕНИЕ О РЕЗУЛЬТАТАХ
                 if (toast) {
-                    toast.success('🔄 Команды успешно переформированы!');
+                    const summary = response.data.summary;
+                    let message = '🔄 Команды успешно переформированы!';
+                    if (summary) {
+                        message += ` Создано ${summary.teamsCreated} команд из ${summary.participantsInTeams} участников`;
+                        if (summary.participantsNotInTeams > 0) {
+                            message += `, ${summary.participantsNotInTeams} остались вне команд`;
+                        }
+                        message += `. Рейтинг: ${summary.ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}.`;
+                    }
+                    toast.success(message);
                 }
+                
+                console.log('✅ Команды успешно переформированы с учетом рейтингов');
+                
             } else {
                 console.error('❌ Некорректный ответ сервера при переформировании команд');
                 if (toast) {
