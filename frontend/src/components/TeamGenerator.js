@@ -54,6 +54,28 @@ const TeamGenerator = ({
         return true;
     };
 
+    // 🎯 ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ИМЕН УЧАСТНИКОВ КОМАНД
+    const formatMemberName = useCallback((memberName) => {
+        if (!memberName) return { displayName: 'Неизвестно', isLongName: false, isTruncated: false };
+        
+        const name = String(memberName);
+        const nameLength = name.length;
+        
+        // Если имя длиннее 13 символов - обрезаем до 13
+        const displayName = nameLength > 13 ? name.substring(0, 13) + '...' : name;
+        
+        // Если имя длиннее 9 символов - применяем уменьшенный шрифт
+        const isLongName = nameLength > 9;
+        const isTruncated = nameLength > 13;
+        
+        return {
+            displayName,
+            isLongName,
+            isTruncated,
+            originalName: name
+        };
+    }, []);
+
     // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
     const calculateTeamAverageRating = useCallback((team) => {
         if (!team.members || team.members.length === 0) return 0;
