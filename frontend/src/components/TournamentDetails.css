@@ -5625,7 +5625,6 @@ a.participant-name:hover {
 }
 
 .generate-bracket-button {
-    background: linear-gradient(45deg, #4caf50, #8bc34a);
     color: white;
     box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
 }
