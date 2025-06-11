@@ -1534,6 +1534,12 @@ function TournamentDetails() {
             return;
         }
 
+        // 🔧 ИСПРАВЛЕНИЕ: Получаем актуальный teamSize из турнира
+        const teamSizeFromTournament = parseInt(tournament.team_size) || 5;
+        
+        // 🔧 ИСПРАВЛЕНИЕ: Для получения актуального ratingType можно использовать localStorage или значение по умолчанию
+        const currentRatingType = localStorage.getItem(`tournament_${tournament.id}_ratingType`) || ratingType || 'faceit';
+
         // Показываем подтверждение
         const confirmed = window.confirm(
             `🔄 Переформировать команды?\n\n` +
@@ -1542,7 +1548,8 @@ function TournamentDetails() {
             `• Участников: ${tournament.participants?.length || 0}\n` +
             `• Команд: ${mixedTeams.length}\n` +
             `• Игроков в командах: ${mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}\n` +
-            `• Тип рейтинга: ${ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}\n\n` +
+            `• Размер команды: ${teamSizeFromTournament} игроков\n` +
+            `• Тип рейтинга: ${currentRatingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}\n\n` +
             `Продолжить?`
         );
 
@@ -1551,16 +1558,25 @@ function TournamentDetails() {
         try {
             setMessage('🔄 Переформирование команд...');
             
+            console.log('🔄 [FloatingPanel] Переформируем команды:', {
+                teamSize: teamSizeFromTournament,
+                ratingType: currentRatingType,
+                tournamentId: tournament.id,
+                participantsCount: tournament.participants?.length,
+                currentTeamsCount: mixedTeams.length
+            });
+            
             const token = localStorage.getItem('token');
             const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {
-                ratingType: ratingType // 🆕 ПЕРЕДАЕМ ТИП РЕЙТИНГА
+                ratingType: currentRatingType, // 🔧 ИСПРАВЛЕНИЕ: Передаем актуальный тип рейтинга
+                teamSize: teamSizeFromTournament // 🔧 ИСПРАВЛЕНИЕ: Передаем размер команды
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.data && response.data.teams) {
-                console.log('✅ Команды успешно переформированы:', response.data.teams);
-                console.log('📊 Сводка:', response.data.summary);
+                console.log('✅ [FloatingPanel] Команды успешно переформированы:', response.data.teams);
+                console.log('📊 [FloatingPanel] Сводка:', response.data.summary);
                 
                 // Обновляем состояние команд
                 setMixedTeams(response.data.teams);
@@ -1574,6 +1590,7 @@ function TournamentDetails() {
                         successMessage += `\n🔍 ${summary.participantsNotInTeams} участников остались вне команд`;
                     }
                     successMessage += `\n🎯 Использован рейтинг: ${summary.ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}`;
+                    successMessage += `\n👥 Размер команд: ${teamSizeFromTournament} игроков`;
                 }
                 
                 setMessage(successMessage);
@@ -1585,7 +1602,7 @@ function TournamentDetails() {
                 throw new Error('Некорректный ответ сервера');
             }
         } catch (error) {
-            console.error('❌ Ошибка переформирования команд:', error);
+            console.error('❌ [FloatingPanel] Ошибка переформирования команд:', error);
             const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Не удалось переформировать команды';
             setMessage(`❌ ${errorMessage}`);
             setTimeout(() => setMessage(''), 3000);

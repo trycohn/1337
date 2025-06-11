@@ -588,7 +588,7 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
                     // Обновляем результат матча
                     await pool.query(`
                         UPDATE matches 
-                        SET winner_id = $1, 
+                        SET winner_team_id = $1, 
                             status = 'completed',
                             updated_at = NOW(),
                             score = $2
@@ -2110,17 +2110,19 @@ router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (re
 // Генерация команд для микс-турнира и переключение в командный режим
 router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
-    const { ratingType = 'faceit' } = req.body; // 🆕 ДОБАВЛЯЕМ ПОДДЕРЖКУ ratingType
+    const { ratingType = 'faceit', teamSize: requestedTeamSize } = req.body; // 🔧 ИСПРАВЛЕНИЕ: получаем teamSize из запроса
     
     try {
         // Получаем параметры турнира
         const tourRes = await pool.query('SELECT team_size, created_by, name FROM tournaments WHERE id = $1', [id]);
         if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
         const { team_size: sizeFromDb, created_by, name: tournamentName } = tourRes.rows[0];
-        const teamSize = parseInt(sizeFromDb, 10) || 1;
+        
+        // 🔧 ИСПРАВЛЕНИЕ: используем teamSize из запроса, если передан, иначе из турнира
+        const teamSize = requestedTeamSize ? parseInt(requestedTeamSize, 10) : (parseInt(sizeFromDb, 10) || 5);
 
         console.log(`🎯 Генерация команд для турнира "${tournamentName}" (ID: ${id})`);
-        console.log(`📊 Параметры: размер команды = ${teamSize}, тип рейтинга = ${ratingType}`);
+        console.log(`📊 Параметры: размер команды = ${teamSize} (из ${requestedTeamSize ? 'запроса' : 'турнира'}), тип рейтинга = ${ratingType}`);
 
         // 🔧 УДАЛЯЕМ СУЩЕСТВУЮЩИЕ КОМАНДЫ ПЕРЕД СОЗДАНИЕМ НОВЫХ
         console.log(`🗑️ Удаляем существующие команды для турнира ${id} перед переформированием`);
@@ -2166,21 +2168,42 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         console.log(`📊 Всего участников для формирования команд: ${participants.length}`);
         
-        // 🆕 ДИАГНОСТИКА РЕЙТИНГОВ УЧАСТНИКОВ
-        console.log(`🔍 Диагностика рейтингов участников (тип: ${ratingType}):`);
+        // 🆕 УЛУЧШЕННАЯ ДИАГНОСТИКА РЕЙТИНГОВ УЧАСТНИКОВ
+        console.log(`🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА РЕЙТИНГОВ (тип: ${ratingType}):`);
         participants.forEach((p, index) => {
             const debugInfo = {
+                index: index + 1,
                 name: p.name,
+                user_id: p.user_id,
+                is_guest: !p.user_id,
                 tp_faceit_elo: p.faceit_elo,
                 tp_cs2_premier_rank: p.cs2_premier_rank,
                 user_faceit_elo: p.user_faceit_elo,
                 user_premier_rank: p.user_premier_rank,
                 final_faceit_rating: p.faceit_rating,
                 final_premier_rating: p.premier_rating,
-                is_guest: !p.user_id
+                selected_rating: ratingType === 'faceit' ? p.faceit_rating : p.premier_rating,
+                in_team: p.in_team
             };
             console.log(`  ${index + 1}. ${JSON.stringify(debugInfo)}`);
         });
+        
+        // 🆕 СТАТИСТИКА ПО ТИПАМ УЧАСТНИКОВ
+        const guestParticipants = participants.filter(p => !p.user_id);
+        const registeredParticipants = participants.filter(p => p.user_id);
+        const participantsWithCustomRatings = participants.filter(p => p.faceit_elo || p.cs2_premier_rank);
+        
+        console.log(`📊 СТАТИСТИКА УЧАСТНИКОВ:`);
+        console.log(`   - Зарегистрированных: ${registeredParticipants.length}`);
+        console.log(`   - Гостей: ${guestParticipants.length}`);
+        console.log(`   - С кастомными рейтингами: ${participantsWithCustomRatings.length}`);
+        
+        if (guestParticipants.length > 0) {
+            console.log(`👥 ГОСТИ С РЕЙТИНГАМИ:`);
+            guestParticipants.forEach(guest => {
+                console.log(`   - ${guest.name}: faceit=${guest.faceit_elo}, premier=${guest.cs2_premier_rank}`);
+            });
+        }
         
         // 🆕 НОВАЯ ЛОГИКА: Формируем максимальное количество полных команд
         const totalPlayers = participants.length;
@@ -2220,883 +2243,42 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             return ratingB - ratingA; // По убыванию (лучшие первыми)
         });
         
-        // 🆕 ДИАГНОСТИКА СОРТИРОВКИ
-        console.log(`🔽 Участники после сортировки по ${ratingType}:`);
-        sortedParticipants.slice(0, 10).forEach((p, index) => {
-            const rating = ratingType === 'faceit' ? p.faceit_rating : p.premier_rating;
-            console.log(`  ${index + 1}. ${p.name} - ${ratingType} рейтинг: ${rating} ${!p.user_id ? '(гость)' : ''}`);
+        // 🆕 ДЕТАЛЬНАЯ ДИАГНОСТИКА СОРТИРОВКИ
+        console.log(`🔽 УЧАСТНИКИ ПОСЛЕ СОРТИРОВКИ ПО ${ratingType.toUpperCase()}:`);
+        sortedParticipants.slice(0, Math.min(15, sortedParticipants.length)).forEach((p, index) => {
+            const selectedRating = ratingType === 'faceit' ? p.faceit_rating : p.premier_rating;
+            const isGuest = !p.user_id;
+            const hasCustomRating = p.faceit_elo || p.cs2_premier_rank;
+            
+            console.log(`  ${index + 1}. ${p.name} - ${ratingType} рейтинг: ${selectedRating} ${isGuest ? '(гость)' : '(зарег.)'} ${hasCustomRating ? '(кастом)' : '(проф.)'}`);
         });
-        if (sortedParticipants.length > 10) {
-            console.log(`  ... и еще ${sortedParticipants.length - 10} участников`);
+        if (sortedParticipants.length > 15) {
+            console.log(`  ... и еще ${sortedParticipants.length - 15} участников`);
         }
         
-        // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ: первые попадают в команды, остальные остаются вне команд
-        const participantsForTeams = sortedParticipants.slice(0, playersInTeams);
-        const participantsNotInTeams = sortedParticipants.slice(playersInTeams);
+        // 🆕 СТАТИСТИКА РЕЙТИНГОВ
+        const ratingsUsed = sortedParticipants.map(p => ratingType === 'faceit' ? p.faceit_rating : p.premier_rating);
+        const minRating = Math.min(...ratingsUsed);
+        const maxRating = Math.max(...ratingsUsed);
+        const avgRating = ratingsUsed.reduce((sum, rating) => sum + rating, 0) / ratingsUsed.length;
         
-        console.log(`👥 Участников для команд: ${participantsForTeams.length}`);
-        console.log(`🚫 Участников вне команд: ${participantsNotInTeams.length}`);
+        console.log(`📊 СТАТИСТИКА РЕЙТИНГОВ (${ratingType}):`);
+        console.log(`   - Минимальный: ${minRating}`);
+        console.log(`   - Максимальный: ${maxRating}`);
+        console.log(`   - Средний: ${Math.round(avgRating)}`);
+        console.log(`   - Разброс: ${maxRating - minRating}`);
         
-        // Формируем команды с равномерным распределением по рейтингу
-        const teams = [];
-        
-        // Создаем пустые команды
-        for (let i = 0; i < fullTeams; i++) {
-            teams.push({
-                name: `Команда ${i + 1}`,
-                members: []
+        // 🆕 ПРОВЕРКА НУЛЕВЫХ РЕЙТИНГОВ
+        const zeroRatings = ratingsUsed.filter(r => r === 0);
+        if (zeroRatings.length > 0) {
+            console.log(`⚠️ ВНИМАНИЕ: ${zeroRatings.length} участников с нулевым рейтингом!`);
+            const participantsWithZeroRating = sortedParticipants.filter(p => 
+                (ratingType === 'faceit' ? p.faceit_rating : p.premier_rating) === 0
+            );
+            participantsWithZeroRating.forEach(p => {
+                console.log(`   - ${p.name}: tp.faceit_elo=${p.faceit_elo}, tp.cs2_premier_rank=${p.cs2_premier_rank}, user.faceit_elo=${p.user_faceit_elo}, user.cs2_premier_rank=${p.user_premier_rank}`);
             });
         }
-        
-        // Распределяем игроков змейкой для баланса команд
-        // Сначала лучшие игроки, затем послабее
-        for (let i = 0; i < teamSize; i++) {
-            // Прямой порядок для четных итераций, обратный для нечетных
-            const teamOrder = i % 2 === 0 
-                ? Array.from({ length: fullTeams }, (_, idx) => idx) 
-                : Array.from({ length: fullTeams }, (_, idx) => fullTeams - 1 - idx);
-            
-            for (let teamIndex of teamOrder) {
-                const playerIndex = i * fullTeams + (i % 2 === 0 ? teamIndex : fullTeams - 1 - teamIndex);
-                if (playerIndex < participantsForTeams.length) {
-                    teams[teamIndex].members.push(participantsForTeams[playerIndex]);
-                }
-            }
-        }
-
-        // 🆕 ДИАГНОСТИКА РАСПРЕДЕЛЕНИЯ ПО КОМАНДАМ
-        console.log(`🏆 Итоговое распределение по командам:`);
-        teams.forEach((team, teamIndex) => {
-            const teamRatings = team.members.map(m => {
-                const rating = ratingType === 'faceit' ? m.faceit_rating : m.premier_rating;
-                return `${m.name}(${rating})`;
-            });
-            const avgRating = team.members.reduce((sum, m) => {
-                return sum + (ratingType === 'faceit' ? m.faceit_rating : m.premier_rating);
-            }, 0) / team.members.length;
-            console.log(`  ${team.name}: [${teamRatings.join(', ')}] Средний: ${Math.round(avgRating)}`);
-        });
-
-        console.log(`✅ Успешно создано ${teams.length} новых команд для турнира ${id}`);
-        
-        // Сохраняем новые команды в БД
-        const createdTeams = [];
-        const participantIdsInTeams = []; // Массив для хранения ID участников, которые попали в команды
-        
-        // Сохраняем новые команды в БД
-        for (const team of teams) {
-            // Создаем команду
-            const teamResult = await pool.query(
-                'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
-                [id, team.name, created_by]
-            );
-            
-            const teamId = teamResult.rows[0].id;
-            const members = [];
-            
-            // Добавляем участников команды
-            for (const member of team.members) {
-                await pool.query(
-                    'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
-                    [teamId, member.user_id, member.participant_id]
-                );
-                
-                // Собираем ID участников для пакетного обновления флага
-                participantIdsInTeams.push(member.participant_id);
-                
-                members.push({
-                    participant_id: member.participant_id,
-                    user_id: member.user_id,
-                    name: member.name,
-                    faceit_elo: member.faceit_rating || 0,
-                    cs2_premier_rank: member.premier_rating || 0
-                });
-            }
-            
-            createdTeams.push({
-                id: teamId,
-                name: team.name,
-                members: members
-            });
-        }
-        
-        // 🆕 ПОМЕЧАЕМ УЧАСТНИКОВ В КОМАНДАХ КАК in_team = true
-        if (participantIdsInTeams.length > 0) {
-            await pool.query(
-                `UPDATE tournament_participants 
-                 SET in_team = TRUE 
-                 WHERE id = ANY($1::int[])`,
-                [participantIdsInTeams]
-            );
-            console.log(`✅ Помечено ${participantIdsInTeams.length} участников как находящихся в командах`);
-        }
-
-        // 🆕 ПОМЕЧАЕМ ОСТАВШИХСЯ УЧАСТНИКОВ КАК in_team = false
-        const participantIdsNotInTeams = participantsNotInTeams.map(p => p.participant_id);
-        if (participantIdsNotInTeams.length > 0) {
-            await pool.query(
-                `UPDATE tournament_participants 
-                 SET in_team = FALSE 
-                 WHERE id = ANY($1::int[])`,
-                [participantIdsNotInTeams]
-            );
-            console.log(`✅ Помечено ${participantIdsNotInTeams.length} участников как НЕ находящихся в командах`);
-        }
-        
-        // Обновляем тип участников в турнире на team
-        await pool.query('UPDATE tournaments SET participant_type = $1 WHERE id = $2', ['team', id]);
-        
-        // Формируем сообщение с информацией о распределении
-        let resultMessage = `Сформированы команды для турнира "${tournamentName}". `;
-        resultMessage += `Создано ${createdTeams.length} команд из ${playersInTeams} участников`;
-        if (remainingPlayers > 0) {
-            resultMessage += `, ${remainingPlayers} участников остались вне команд`;
-        }
-        resultMessage += `. Использован рейтинг: ${ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}.`;
-        
-        // Отправляем объявление в чат турнира о формировании команд
-        await sendTournamentChatAnnouncement(
-            tournamentName,
-            resultMessage,
-            id
-        );
-        
-        // Возвращаем сформированные команды
-        res.json({ 
-            teams: createdTeams,
-            summary: {
-                totalParticipants: totalPlayers,
-                teamsCreated: fullTeams,
-                participantsInTeams: playersInTeams,
-                participantsNotInTeams: remainingPlayers,
-                ratingType: ratingType,
-                message: resultMessage
-            }
-        });
-    } catch (err) {
-        console.error('❌ Ошибка генерации mix-команд:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Получение команд и их участников для командных турниров
-router.get('/:id/teams', async (req, res) => {
-    const { id } = req.params;
-    try {
-        // Проверяем существование турнира
-        const tourCheck = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tourCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-
-        // Получаем все команды турнира
-        const teamsRes = await pool.query(
-            `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
-             FROM tournament_teams tt
-             WHERE tt.tournament_id = $1`,
-            [id]
-        );
-
-        // Для каждой команды получаем участников
-        const teams = await Promise.all(teamsRes.rows.map(async (team) => {
-            const membersRes = await pool.query(
-                `SELECT tm.team_id, tm.user_id, tm.participant_id, 
-                        tp.name, u.username, u.avatar_url, u.faceit_elo, u.cs2_premier_rank
-                 FROM tournament_team_members tm
-                 LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
-                 LEFT JOIN users u ON tm.user_id = u.id
-                 WHERE tm.team_id = $1`,
-                [team.id]
-            );
-
-            return {
-                ...team,
-                members: membersRes.rows
-            };
-        }));
-
-        res.json(teams);
-    } catch (err) {
-        console.error('❌ Ошибка получения команд турнира:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Маршрут для очистки результатов всех матчей в турнире
-router.post('/:id/clear-match-results', authenticateToken, async (req, res) => {
-    const tournamentId = req.params.id;
-
-    try {
-        // Получаем информацию о турнире
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
-        
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        
-        const tournament = tournamentResult.rows[0];
-        
-        // Проверяем, является ли пользователь создателем турнира
-        if (tournament.created_by !== req.user.id) {
-            return res.status(403).json({ error: 'Только создатель турнира может очищать результаты матчей' });
-        }
-        
-        // Сбрасываем результаты всех матчей в турнире
-        await pool.query(`
-            UPDATE matches 
-            SET winner_team_id = NULL, 
-                score1 = 0, 
-                score2 = 0
-            WHERE tournament_id = $1
-        `, [tournamentId]);
-        
-        // Получаем обновленные данные о турнире для отправки на клиент
-        const tournamentData = await getTournamentWithDetails(tournamentId);
-        
-        // Отправляем обновление через Socket.IO
-        if (io) {
-            io.to(`tournament_${tournamentId}`).emit('tournament_update', {
-                tournamentId: tournamentId,
-                data: tournamentData
-            });
-        }
-        
-        res.json({ 
-            message: 'Результаты матчей успешно очищены',
-            tournament: tournamentData
-        });
-    } catch (error) {
-        console.error('Ошибка при очистке результатов матчей:', error);
-        res.status(500).json({ error: 'Ошибка очистки результатов матчей' });
-    }
-});
-
-// Удаление всех матчей турнира
-router.post('/:id/delete-all-matches', authenticateToken, verifyAdminOrCreator, async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    try {
-        // Проверка турнира и прав доступа
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        const tournament = tournamentResult.rows[0];
-
-        // Проверка, что пользователь имеет права (использует verifyAdminOrCreator middleware)
-        console.log(`Удаление всех матчей для турнира ${id} пользователем ${userId}`);
-
-        // Выполняем SQL-запрос для удаления всех матчей этого турнира
-        const deleteResult = await pool.query(
-            'DELETE FROM matches WHERE tournament_id = $1 RETURNING *',
-            [id]
-        );
-
-        console.log(`Удалено ${deleteResult.rowCount} матчей для турнира ${id}`);
-
-        // Отправляем оповещение о обновлении турнира
-        const updatedTournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        const tournamentData = updatedTournamentResult.rows[0];
-        tournamentData.matches = []; // Пустой массив, так как все матчи удалены
-        
-        // Получаем участников
-        let participantsQuery;
-        if (tournament.participant_type === 'solo') {
-            participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
-                FROM tournament_participants tp 
-                LEFT JOIN users u ON tp.user_id = u.id
-                WHERE tp.tournament_id = $1
-            `;
-        } else {
-            participantsQuery = `
-                SELECT tt.*, u.avatar_url, u.username
-                FROM tournament_teams tt
-                LEFT JOIN users u ON tt.creator_id = u.id
-                WHERE tt.tournament_id = $1
-            `;
-        }
-        
-        const participantsResult = await pool.query(participantsQuery, [id]);
-        tournamentData.participants = participantsResult.rows;
-        tournamentData.participant_count = participantsResult.rowCount;
-
-        // Уведомляем всех клиентов, просматривающих этот турнир
-        broadcastTournamentUpdate(id, tournamentData);
-
-        res.status(200).json({ 
-            message: `Успешно удалено ${deleteResult.rowCount} матчей`,
-            tournament: tournamentData
-        });
-    } catch (err) {
-        console.error('❌ Ошибка удаления матчей турнира:', err);
-        res.status(500).json({ error: 'Ошибка очистки результатов матчей: ' + err.message });
-    }
-});
-
-// Очистка результатов матчей (без удаления самих матчей)
-router.post('/:id/clear-match-results', authenticateToken, verifyAdminOrCreator, async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    try {
-        // Проверка турнира и прав доступа
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        const tournament = tournamentResult.rows[0];
-
-        // Проверка, что пользователь имеет права (использует verifyAdminOrCreator middleware)
-        console.log(`Очистка результатов матчей для турнира ${id} пользователем ${userId}`);
-
-        // Выполняем SQL-запрос для сброса результатов матчей
-        const updateResult = await pool.query(
-            'UPDATE matches SET winner_team_id = NULL, score1 = 0, score2 = 0 WHERE tournament_id = $1 RETURNING *',
-            [id]
-        );
-
-        console.log(`Очищены результаты ${updateResult.rowCount} матчей для турнира ${id}`);
-
-        // Получаем обновленные данные турнира
-        const updatedTournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        const tournamentData = updatedTournamentResult.rows[0];
-        
-        // Получаем матчи
-        const matchesResult = await pool.query(
-            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
-            [id]
-        );
-        tournamentData.matches = matchesResult.rows;
-        
-        // Получаем участников
-        let participantsQuery;
-        if (tournament.participant_type === 'solo') {
-            participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
-                FROM tournament_participants tp 
-                LEFT JOIN users u ON tp.user_id = u.id
-                WHERE tp.tournament_id = $1
-            `;
-        } else {
-            participantsQuery = `
-                SELECT tt.*, u.avatar_url, u.username
-                FROM tournament_teams tt
-                LEFT JOIN users u ON tt.creator_id = u.id
-                WHERE tt.tournament_id = $1
-            `;
-        }
-        
-        const participantsResult = await pool.query(participantsQuery, [id]);
-        tournamentData.participants = participantsResult.rows;
-        tournamentData.participant_count = participantsResult.rowCount;
-
-        // Уведомляем всех клиентов, просматривающих этот турнир
-        broadcastTournamentUpdate(id, tournamentData);
-
-        res.status(200).json({ 
-            message: `Успешно очищены результаты ${updateResult.rowCount} матчей`,
-            tournament: tournamentData
-        });
-    } catch (err) {
-        console.error('❌ Ошибка очистки результатов матчей турнира:', err);
-        res.status(500).json({ error: 'Ошибка очистки результатов матчей: ' + err.message });
-    }
-});
-
-// Завершение турнира
-router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res) => {
-    const { id } = req.params;
-    
-    try {
-        // Проверка существования турнира
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        
-        const tournament = tournamentResult.rows[0];
-        
-        // Проверка текущего статуса (можно завершить только активный или идущий турнир)
-        if (tournament.status !== 'active' && tournament.status !== 'in_progress') {
-            return res.status(400).json({ error: 'Можно завершить только активный или идущий турнир' });
-        }
-        
-        // 🎯 ОПРЕДЕЛЯЕМ ПРИЗЕРОВ АВТОМАТИЧЕСКИ
-        const winnersData = await determineTournamentWinners(id);
-        console.log('🏆 Определенные призеры:', winnersData);
-        
-        // Создаем строку для обновления с информацией о призерах
-        let updateQuery = 'UPDATE tournaments SET status = $1, end_date = NOW()';
-        let updateParams = ['completed', id];
-        let paramIndex = 3;
-        
-        if (winnersData.winner) {
-            updateQuery += `, winner_id = $${paramIndex}, winner_name = $${paramIndex + 1}`;
-            updateParams.splice(-1, 0, winnersData.winner.id, winnersData.winner.name);
-            paramIndex += 2;
-        }
-        
-        if (winnersData.secondPlace) {
-            updateQuery += `, second_place_id = $${paramIndex}, second_place_name = $${paramIndex + 1}`;
-            updateParams.splice(-1, 0, winnersData.secondPlace.id, winnersData.secondPlace.name);
-            paramIndex += 2;
-        }
-        
-        if (winnersData.thirdPlace) {
-            updateQuery += `, third_place_id = $${paramIndex}, third_place_name = $${paramIndex + 1}`;
-            updateParams.splice(-1, 0, winnersData.thirdPlace.id, winnersData.thirdPlace.name);
-            paramIndex += 2;
-        }
-        
-        updateQuery += ` WHERE id = $${paramIndex} RETURNING *`;
-        
-        // Устанавливаем дату окончания, меняем статус на 'completed' и сохраняем информацию о призерах
-        const updateResult = await pool.query(updateQuery, updateParams);
-        
-        // Получаем обновленные данные турнира
-        const updatedTournament = updateResult.rows[0];
-        
-        // 🔄 АВТОМАТИЧЕСКИ ПЕРЕСЧИТЫВАЕМ СТАТИСТИКУ для всех участников
-        console.log(`🎯 Турнир завершен, пересчитываем статистику для всех участников...`);
-        try {
-            await recalculateAllParticipantsStats(id, tournament.participant_type);
-            console.log(`✅ Статистика успешно пересчитана для турнира ${tournament.name}`);
-        } catch (statsError) {
-            console.error(`⚠️ Ошибка пересчета статистики для турнира ${tournament.name}:`, statsError.message);
-            // Не прерываем завершение турнира из-за ошибки статистики
-        }
-        
-        // Получаем данные участников
-        let participantsQuery;
-        if (updatedTournament.participant_type === 'solo') {
-            participantsQuery = `
-                SELECT tp.*, tp.faceit_elo, tp.cs2_premier_rank, tp.in_team,
-                       u.avatar_url, u.username, 
-                       COALESCE(tp.faceit_elo, u.faceit_elo) as faceit_elo_combined,
-                       COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank) as cs2_premier_rank_combined
-                FROM tournament_participants tp 
-                LEFT JOIN users u ON tp.user_id = u.id
-                WHERE tp.tournament_id = $1
-                ORDER BY tp.created_at ASC
-            `;
-        } else {
-            participantsQuery = `
-                SELECT tt.*, u.avatar_url, u.username
-                FROM tournament_teams tt
-                LEFT JOIN users u ON tt.creator_id = u.id
-                WHERE tt.tournament_id = $1
-                ORDER BY tt.id ASC
-            `;
-        }
-        
-        const participantsResult = await pool.query(participantsQuery, [id]);
-        
-        // Получаем матчи
-        const matchesResult = await pool.query(
-            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
-            [id]
-        );
-        
-        const responseData = {
-            ...updatedTournament,
-            participants: participantsResult.rows,
-            participant_count: participantsResult.rows.length,
-            matches: matchesResult.rows,
-        };
-        
-        // Отправляем обновление через WebSocket
-        broadcastTournamentUpdate(id, responseData);
-        // Отправляем объявление в чат турнира о завершении
-        await sendTournamentChatAnnouncement(
-            updatedTournament.name,
-            `Турнир "${updatedTournament.name}" завершён${winnersData.winner ? `. Победитель: ${winnersData.winner.name}` : ''}`,
-            id
-        );
-        
-        // Возвращаем успешный ответ
-        res.status(200).json({
-            message: 'Турнир успешно завершен, статистика обновлена для всех участников',
-            tournament: responseData
-        });
-    } catch (err) {
-        console.error('❌ Ошибка при завершении турнира:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 🎯 ФУНКЦИЯ ОПРЕДЕЛЕНИЯ ПРИЗЕРОВ ТУРНИРА
-async function determineTournamentWinners(tournamentId) {
-    try {
-        console.log('🏆 Начинаем определение призеров для турнира:', tournamentId);
-        
-        // Получаем все матчи турнира
-        const matchesResult = await pool.query(
-            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round DESC, match_number',
-            [tournamentId]
-        );
-        
-        const matches = matchesResult.rows;
-        if (matches.length === 0) {
-            console.log('⚠️ Нет матчей для определения призеров');
-            return { winner: null, secondPlace: null, thirdPlace: null };
-        }
-        
-        console.log(`🔍 Найдено ${matches.length} матчей для анализа`);
-        
-        // Получаем информацию о турнире
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
-        const tournament = tournamentResult.rows[0];
-        
-        // Находим матч за третье место
-        const thirdPlaceMatch = matches.find(match => 
-            match.is_third_place_match === true || match.is_third_place === true
-        );
-        
-        // Находим финальный матч (самый высокий раунд, не является матчем за 3-е место, завершен)
-        const completedMatches = matches.filter(match => 
-            (match.winner_team_id || match.winner_id) && 
-            !match.is_third_place_match && 
-            !match.is_third_place
-        );
-        
-        const finalMatch = completedMatches
-            .sort((a, b) => (b.round || 0) - (a.round || 0))[0];
-        
-        console.log('🎯 Финальный матч:', finalMatch?.id);
-        console.log('🎯 Матч за 3-е место:', thirdPlaceMatch?.id);
-        
-        let winner = null;
-        let secondPlace = null;
-        let thirdPlace = null;
-        
-        // Определяем победителя и второе место из финального матча
-        if (finalMatch) {
-            const winnerId = finalMatch.winner_team_id || finalMatch.winner_id;
-            const loserId = winnerId === finalMatch.team1_id ? finalMatch.team2_id : finalMatch.team1_id;
-            
-            console.log(`🏆 Победитель ID: ${winnerId}, Проигравший в финале ID: ${loserId}`);
-            
-            // Получаем информацию об участниках
-            winner = await getParticipantInfo(winnerId, tournament);
-            secondPlace = await getParticipantInfo(loserId, tournament);
-        }
-        
-        // Определяем третье место из матча за 3-е место
-        if (thirdPlaceMatch && (thirdPlaceMatch.winner_team_id || thirdPlaceMatch.winner_id)) {
-            const thirdWinnerId = thirdPlaceMatch.winner_team_id || thirdPlaceMatch.winner_id;
-            console.log(`🥉 Третье место ID: ${thirdWinnerId}`);
-            
-            thirdPlace = await getParticipantInfo(thirdWinnerId, tournament);
-        }
-
-        // 🎯 НОВАЯ ФУНКЦИЯ: Сохраняем всех участников команд как призеров
-        await saveTeamMembersAsWinners(tournamentId, tournament, winner, secondPlace, thirdPlace);
-        
-        const result = { winner, secondPlace, thirdPlace };
-        console.log('🏆 Итоговые призеры:', result);
-        return result;
-        
-    } catch (error) {
-        console.error('❌ Ошибка определения призеров:', error);
-        return { winner: null, secondPlace: null, thirdPlace: null };
-    }
-}
-
-// 🎯 НОВАЯ ФУНКЦИЯ: Сохранение всех участников команд как призеров
-async function saveTeamMembersAsWinners(tournamentId, tournament, winner, secondPlace, thirdPlace) {
-    try {
-        console.log('👥 Сохраняем участников команд как призеров...');
-        
-        // Функция для обработки призеров определенного места
-        const processPrizePlace = async (prizeData, place, position) => {
-            if (!prizeData) return;
-            
-            console.log(`🏆 Обрабатываем ${place} место:`, prizeData.name);
-            
-            if (tournament.participant_type === 'team' || tournament.format === 'mix') {
-                // Для командных турниров - получаем всех участников команды
-                const teamMembersResult = await pool.query(
-                    `SELECT ttm.user_id, ttm.participant_id, tp.name as participant_name, u.username
-                     FROM tournament_team_members ttm
-                     LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
-                     LEFT JOIN users u ON ttm.user_id = u.id
-                     WHERE ttm.team_id = $1`,
-                    [prizeData.id]
-                );
-                
-                const teamMembers = teamMembersResult.rows;
-                console.log(`👥 Найдено ${teamMembers.length} участников в команде ${prizeData.name}`);
-                
-                // Сохраняем каждого участника команды как призера
-                for (const member of teamMembers) {
-                    if (member.user_id) {
-                        await saveIndividualWinner(tournamentId, member.user_id, place, position, prizeData.name, true);
-                        console.log(`✅ Участник ${member.username} записан как ${place} (команда: ${prizeData.name})`);
-                    } else if (member.participant_id) {
-                        // Для незарегистрированных участников (гостей)
-                        await saveGuestWinner(tournamentId, member.participant_id, place, position, prizeData.name);
-                        console.log(`✅ Гость ${member.participant_name} записан как ${place} (команда: ${prizeData.name})`);
-                    }
-                }
-            } else {
-                // Для одиночных турниров - сохраняем одного участника
-                if (prizeData.user_id) {
-                    await saveIndividualWinner(tournamentId, prizeData.user_id, place, position, prizeData.name, false);
-                    console.log(`✅ Игрок ${prizeData.name} записан как ${place}`);
-                }
-            }
-        };
-        
-        // Обрабатываем всех призеров
-        await processPrizePlace(winner, 'Победитель', 1);
-        await processPrizePlace(secondPlace, 'Второе место', 2);
-        await processPrizePlace(thirdPlace, 'Третье место', 3);
-        
-        console.log('✅ Все участники команд успешно записаны как призеры');
-        
-    } catch (error) {
-        console.error('❌ Ошибка сохранения участников команд как призеров:', error);
-    }
-}
-
-// 🎯 ФУНКЦИЯ СОХРАНЕНИЯ ИНДИВИДУАЛЬНОГО ПРИЗЕРА
-async function saveIndividualWinner(tournamentId, userId, place, position, teamName, isTeamMember) {
-    try {
-        // Проверяем, есть ли уже запись для этого пользователя в этом турнире
-        const existingRecord = await pool.query(
-            'SELECT * FROM user_tournament_stats WHERE user_id = $1 AND tournament_id = $2',
-            [userId, tournamentId]
-        );
-        
-        if (existingRecord.rows.length > 0) {
-            // Обновляем существующую запись
-            await pool.query(
-                `UPDATE user_tournament_stats 
-                 SET result = $1, final_position = $2, is_winner = $3, 
-                     team_name = $4, is_team_member = $5, updated_at = NOW()
-                 WHERE user_id = $6 AND tournament_id = $7`,
-                [place, position, position === 1, teamName, isTeamMember, userId, tournamentId]
-            );
-        } else {
-            // Создаем новую запись
-            await pool.query(
-                `INSERT INTO user_tournament_stats 
-                 (user_id, tournament_id, result, final_position, is_winner, team_name, is_team_member, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-                [userId, tournamentId, place, position, position === 1, teamName, isTeamMember]
-            );
-        }
-        
-    } catch (error) {
-        console.error('❌ Ошибка сохранения индивидуального призера:', error);
-    }
-}
-
-// 🎯 ФУНКЦИЯ СОХРАНЕНИЯ ПРИЗЕРА-ГОСТЯ
-async function saveGuestWinner(tournamentId, participantId, place, position, teamName) {
-    try {
-        // Для гостей можем создать отдельную таблицу или расширить существующую
-        // Пока логируем информацию
-        console.log(`📝 Гость (participant_id: ${participantId}) - ${place} в турнире ${tournamentId} (команда: ${teamName})`);
-        
-        // Можно добавить в tournament_logs для истории
-        await pool.query(
-            `INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data, created_at)
-             VALUES ($1, $2, $3, $4, NOW())`,
-            [
-                tournamentId, 
-                1, // системный пользователь
-                'guest_winner',
-                JSON.stringify({
-                    participant_id: participantId,
-                    place: place,
-                    position: position,
-                    team_name: teamName,
-                    tournament_completed: true
-                })
-            ]
-        );
-        
-    } catch (error) {
-        console.error('❌ Ошибка сохранения призера-гостя:', error);
-    }
-}
-
-// 🎯 ФУНКЦИЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ ОБ УЧАСТНИКЕ
-async function getParticipantInfo(participantId, tournament) {
-    if (!participantId) return null;
-    
-    try {
-        if (tournament.participant_type === 'team' || tournament.format === 'mix') {
-            // Для командных турниров
-            const teamResult = await pool.query(
-                'SELECT * FROM tournament_teams WHERE id = $1',
-                [participantId]
-            );
-            
-            if (teamResult.rows.length > 0) {
-                const team = teamResult.rows[0];
-                return {
-                    id: team.id,
-                    name: team.name,
-                    type: 'team'
-                };
-            }
-        } else {
-            // Для одиночных турниров
-            const participantResult = await pool.query(
-                `SELECT tp.*, u.username, u.avatar_url 
-                 FROM tournament_participants tp 
-                 LEFT JOIN users u ON tp.user_id = u.id 
-                 WHERE tp.id = $1`,
-                [participantId]
-            );
-            
-            if (participantResult.rows.length > 0) {
-                const participant = participantResult.rows[0];
-                return {
-                    id: participant.id,
-                    name: participant.name || participant.username,
-                    type: 'solo',
-                    user_id: participant.user_id
-                };
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        console.error('❌ Ошибка получения информации об участнике:', error);
-        return null;
-    }
-}
-
-// Получение сообщений чата турнира
-router.get('/:tournamentId/chat/messages', authenticateToken, async (req, res) => {
-    const { tournamentId } = req.params;
-    try {
-        const result = await pool.query(
-            'SELECT tm.id, tm.tournament_id, tm.sender_id, u.username AS sender_username, u.avatar_url AS sender_avatar, tm.content, tm.created_at FROM tournament_messages tm JOIN users u ON tm.sender_id = u.id WHERE tm.tournament_id = $1 ORDER BY tm.created_at ASC',
-            [tournamentId]
-        );
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Ошибка получения сообщений чата турнира:', err);
-        res.status(500).json({ error: 'Ошибка сервера при получении сообщений чата турнира' });
-    }
-});
-
-// Отправка сообщения в чат турнира
-router.post('/:tournamentId/chat/messages', authenticateToken, async (req, res) => {
-    const { tournamentId } = req.params;
-    const { content } = req.body;
-    const userId = req.user.id;
-    if (!content) return res.status(400).json({ error: 'Сообщение не может быть пустым' });
-    try {
-        const insertRes = await pool.query(
-            'INSERT INTO tournament_messages (tournament_id, sender_id, content) VALUES ($1, $2, $3) RETURNING id, tournament_id, sender_id, content, created_at',
-            [tournamentId, userId, content]
-        );
-        const message = insertRes.rows[0];
-        // Добавляем данные пользователя
-        message.sender_username = req.user.username;
-        message.sender_avatar = req.user.avatar_url;
-        // Эмитим через сокеты
-        const io = req.app.get('io');
-        io.to(`chat_tournament_${tournamentId}`).emit('tournament_message', message);
-        res.status(201).json(message);
-    } catch (err) {
-        console.error('Ошибка отправки сообщения в чат турнира:', err);
-        res.status(500).json({ error: 'Ошибка сервера при отправке сообщения в чат турнира' });
-    }
-});
-
-// Формирование команд из участников для микс-турнира
-router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
-    const { id } = req.params;
-    const { ratingType, teamSize: requestedTeamSize } = req.body;
-    
-    console.log(`🔍 Получен запрос на формирование команд для турнира ${id} с рейтингом ${ratingType}`);
-    
-    try {
-        // Получаем параметры турнира
-        const tourRes = await pool.query('SELECT team_size, format, status, participant_type, created_by FROM tournaments WHERE id = $1', [id]);
-        if (!tourRes.rows.length) {
-            console.log(`❌ Турнир с ID ${id} не найден`);
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        
-        const tournament = tourRes.rows[0];
-        console.log(`🔍 Данные турнира: ${JSON.stringify(tournament)}`);
-        
-        if (tournament.format !== 'mix') {
-            console.log(`❌ Формат турнира ${tournament.format} не является 'mix'`);
-            return res.status(400).json({ error: 'Формирование команд доступно только для микс-турниров' });
-        }
-        
-        if (tournament.participant_type !== 'solo') {
-            console.log(`❌ Тип участников турнира ${tournament.participant_type} не является 'solo'`);
-            return res.status(400).json({ error: 'Формирование команд доступно только для соло-участников' });
-        }
-        
-        // Используем размер команды из запроса, если передан, иначе берем из турнира
-        const teamSize = requestedTeamSize ? parseInt(requestedTeamSize, 10) : parseInt(tournament.team_size, 10) || 5;
-        
-        if (![2, 5].includes(teamSize)) {
-            return res.status(400).json({ error: 'Неверный размер команды. Допустимые значения: 2 или 5' });
-        }
-        
-        // Получаем всех участников-игроков с рейтингами
-        const partRes = await pool.query(
-            `SELECT tp.id AS participant_id, tp.user_id, tp.name,
-                    tp.faceit_elo, tp.cs2_premier_rank,
-                    COALESCE(tp.faceit_elo, u.faceit_elo, 0) as faceit_rating,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 0) as premier_rating
-             FROM tournament_participants tp
-             LEFT JOIN users u ON tp.user_id = u.id
-             WHERE tp.tournament_id = $1`,
-            [id]
-        );
-        
-        const participants = partRes.rows;
-        console.log(`🔍 Найдено ${participants.length} участников для турнира ${id}`);
-        
-        if (!participants.length) {
-            console.log(`❌ Нет участников для формирования команд в турнире ${id}`);
-            return res.status(400).json({ error: 'Нет участников для формирования команд' });
-        }
-        
-        // 🆕 НОВАЯ ЛОГИКА: Формируем максимальное количество полных команд
-        const totalPlayers = participants.length;
-        const fullTeams = Math.floor(totalPlayers / teamSize); // Количество полных команд
-        const playersInTeams = fullTeams * teamSize; // Участников в командах  
-        const remainingPlayers = totalPlayers - playersInTeams; // Лишние участники
-        
-        console.log(`📊 Статистика формирования команд:`);
-        console.log(`   - Всего участников: ${totalPlayers}`);
-        console.log(`   - Размер команды: ${teamSize}`);
-        console.log(`   - Полных команд: ${fullTeams}`);
-        console.log(`   - Участников в командах: ${playersInTeams}`);
-        console.log(`   - Останется вне команд: ${remainingPlayers}`);
-        
-        if (fullTeams === 0) {
-            console.log(`❌ Недостаточно участников: не хватает ${teamSize - totalPlayers} для формирования хотя бы одной команды`);
-            return res.status(400).json({ 
-                error: `Недостаточно участников для формирования хотя бы одной команды. Нужно минимум ${teamSize} участников, а есть только ${totalPlayers}` 
-            });
-        }
-        
-        // Сортируем игроков по рейтингу (в зависимости от выбранного типа)
-        const sortedParticipants = [...participants].sort((a, b) => {
-            if (ratingType === 'faceit') {
-                return b.faceit_rating - a.faceit_rating;
-            } else if (ratingType === 'premier') {
-                return b.premier_rating - a.premier_rating;
-            } else {
-                return b.faceit_rating - a.faceit_rating;
-            }
-        });
         
         // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ: первые попадают в команды, остальные остаются вне команд
         const participantsForTeams = sortedParticipants.slice(0, playersInTeams);
@@ -3167,8 +2349,12 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
                     participant_id: member.participant_id,
                     user_id: member.user_id,
                     name: member.name,
-                    faceit_elo: member.faceit_rating || 0,
-                    cs2_premier_rank: member.premier_rating || 0
+                    // 🔧 ИСПРАВЛЕНИЕ: сохраняем правильные рейтинги
+                    faceit_elo: member.faceit_elo || member.user_faceit_elo || 1000, // Приоритет кастомному, затем профильному, затем базовому
+                    cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank || 5, // Приоритет кастомному, затем профильному, затем базовому
+                    // 🆕 ДОБАВЛЯЕМ ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ДЛЯ ДИАГНОСТИКИ
+                    faceit_rating_used: member.faceit_rating, // рейтинг, используемый для сортировки
+                    premier_rating_used: member.premier_rating // рейтинг, используемый для сортировки
                 });
             }
             
@@ -3205,17 +2391,69 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
         // Обновляем тип участников в турнире на team
         await pool.query('UPDATE tournaments SET participant_type = $1 WHERE id = $2', ['team', id]);
         
+        // Формируем сообщение с информацией о распределении
+        let resultMessage = `Сформированы команды для турнира "${tournamentName}". `;
+        resultMessage += `Создано ${createdTeams.length} команд из ${playersInTeams} участников`;
+        if (remainingPlayers > 0) {
+            resultMessage += `, ${remainingPlayers} участников остались вне команд`;
+        }
+        resultMessage += `. Использован рейтинг: ${ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}.`;
+        
         // Отправляем объявление в чат турнира о формировании команд
-        const tourNameRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [id]);
-        const tourName = tourNameRes.rows[0]?.name;
         await sendTournamentChatAnnouncement(
-            tourName,
-            `Сформированы команды для турнира "${tourName}". Создано ${createdTeams.length} команд из ${totalPlayers} участников`,
+            tournamentName,
+            resultMessage,
             id
         );
         
-        // Возвращаем сформированные команды
-        res.json({ teams: createdTeams });
+        // 🆕 РАСШИРЕННАЯ СТАТИСТИКА ДЛЯ ОТВЕТА
+        const teamAverageRatings = createdTeams.map(team => {
+            const ratings = team.members.map(member => 
+                ratingType === 'faceit' ? member.faceit_rating_used : member.premier_rating_used
+            );
+            return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+        });
+        
+        const overallAverage = teamAverageRatings.reduce((sum, avg) => sum + avg, 0) / teamAverageRatings.length;
+        const ratingStandardDeviation = Math.sqrt(
+            teamAverageRatings.reduce((sum, avg) => sum + Math.pow(avg - overallAverage, 2), 0) / teamAverageRatings.length
+        );
+        
+        const guestsInTeams = createdTeams.reduce((total, team) => 
+            total + team.members.filter(member => !member.user_id).length, 0
+        );
+        
+        const customRatingsInTeams = createdTeams.reduce((total, team) => 
+            total + team.members.filter(member => member.faceit_elo || member.cs2_premier_rank).length, 0
+        );
+        
+        // Возвращаем сформированные команды с детальной статистикой
+        res.json({ 
+            teams: createdTeams,
+            summary: {
+                totalParticipants: totalPlayers,
+                teamsCreated: fullTeams,
+                participantsInTeams: playersInTeams,
+                participantsNotInTeams: remainingPlayers,
+                ratingType: ratingType,
+                teamSize: teamSize,
+                message: resultMessage,
+                // 🆕 РАСШИРЕННАЯ СТАТИСТИКА
+                balanceStats: {
+                    overallAverageRating: Math.round(overallAverage),
+                    ratingStandardDeviation: Math.round(ratingStandardDeviation * 100) / 100,
+                    teamAverageRatings: teamAverageRatings.map(avg => Math.round(avg)),
+                    balanceQuality: ratingStandardDeviation < 100 ? 'Отличный' : 
+                                   ratingStandardDeviation < 200 ? 'Хороший' : 
+                                   ratingStandardDeviation < 300 ? 'Средний' : 'Плохой'
+                },
+                participantStats: {
+                    guestsInTeams: guestsInTeams,
+                    registeredInTeams: playersInTeams - guestsInTeams,
+                    customRatingsUsed: customRatingsInTeams
+                }
+            }
+        });
     } catch (err) {
         console.error('❌ Ошибка формирования команд:', err);
         res.status(500).json({ error: err.message });

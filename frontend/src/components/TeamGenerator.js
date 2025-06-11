@@ -144,6 +144,15 @@ const TeamGenerator = ({
             setTeamSize(tournament.team_size.toString());
         }
         
+        // 🆕 ЗАГРУЖАЕМ СОХРАНЕННЫЙ ratingType ИЗ localStorage
+        if (tournament?.id) {
+            const savedRatingType = localStorage.getItem(`tournament_${tournament.id}_ratingType`);
+            if (savedRatingType && ['faceit', 'premier'].includes(savedRatingType)) {
+                setRatingType(savedRatingType);
+                console.log(`🔍 Загружен сохраненный ratingType: ${savedRatingType}`);
+            }
+        }
+        
         // 🎯 ВСЕГДА СОХРАНЯЕМ УЧАСТНИКОВ
         if (participants && participants.length > 0) {
             setOriginalParticipants(participants);
@@ -194,6 +203,14 @@ const TeamGenerator = ({
             mixedTeamsLength: mixedTeams.length
         });
     }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length, ratingType]); // ДОБАВЛЯЕМ только ПРОСТЫЕ зависимости
+
+    // 🆕 ЭФФЕКТ ДЛЯ СОХРАНЕНИЯ ratingType В localStorage
+    useEffect(() => {
+        if (tournament?.id && ratingType) {
+            localStorage.setItem(`tournament_${tournament.id}_ratingType`, ratingType);
+            console.log(`💾 Сохранен ratingType в localStorage: ${ratingType} для турнира ${tournament.id}`);
+        }
+    }, [tournament?.id, ratingType]);
 
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
@@ -768,9 +785,21 @@ const TeamGenerator = ({
 
     // 🆕 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД
     const handleReformTeams = async () => {
-        if (!canReformTeams() || displayParticipants.length < 2) {
+        // 🔧 ИСПРАВЛЕНИЕ: НЕ ЗАКРЫВАЕМ МОДАЛЬНОЕ ОКНО ПРИ НЕУДАЧНЫХ ПРОВЕРКАХ
+        if (!canReformTeams()) {
             console.warn('Переформирование команд недоступно');
-            return;
+            if (toast) {
+                toast.error('Переформирование команд недоступно для данного турнира');
+            }
+            return; // НЕ закрываем модальное окно
+        }
+        
+        if (displayParticipants.length < 2) {
+            console.warn('Недостаточно участников для переформирования команд');
+            if (toast) {
+                toast.error('Для переформирования команд нужно минимум 2 участника');
+            }
+            return; // НЕ закрываем модальное окно
         }
 
         setReformLoading(true);
@@ -813,7 +842,7 @@ const TeamGenerator = ({
                     onTeamsUpdated();
                 }
                 
-                // Закрываем модальное окно
+                // 🔧 ИСПРАВЛЕНИЕ: Закрываем модальное окно ТОЛЬКО при успешном выполнении
                 setShowReformModal(false);
                 
                 // 🆕 ДЕТАЛЬНОЕ УВЕДОМЛЕНИЕ О РЕЗУЛЬТАТАХ
@@ -835,7 +864,7 @@ const TeamGenerator = ({
             } else {
                 console.error('❌ Некорректный ответ сервера при переформировании команд');
                 if (toast) {
-                    toast.error('Ошибка переформирования команд');
+                    toast.error('Ошибка переформирования команд: некорректный ответ сервера');
                 }
             }
         } catch (error) {
