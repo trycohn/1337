@@ -2118,7 +2118,7 @@ router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (re
 // Генерация команд для микс-турнира и переключение в командный режим
 router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
-    const { ratingType = 'faceit', teamSize: requestedTeamSize } = req.body;
+    const { ratingType = 'faceit' } = req.body; // 🔧 УБИРАЕМ teamSize: requestedTeamSize из запроса
     
     try {
         // Получаем параметры турнира
@@ -2126,11 +2126,11 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
         const { team_size: sizeFromDb, created_by, name: tournamentName } = tourRes.rows[0];
         
-        // 🔧 ИСПРАВЛЕНИЕ: используем teamSize из запроса, если передан, иначе из турнира
-        const teamSize = requestedTeamSize ? parseInt(requestedTeamSize, 10) : (parseInt(sizeFromDb, 10) || 5);
+        // 🔧 ИСПРАВЛЕНИЕ КРИТИЧЕСКОЙ ОШИБКИ: ВСЕГДА используем размер команды из настроек турнира
+        const teamSize = parseInt(sizeFromDb, 10) || 5;
 
         console.log(`🎯 Генерация команд для турнира "${tournamentName}" (ID: ${id})`);
-        console.log(`📊 Параметры: размер команды = ${teamSize} (из ${requestedTeamSize ? 'запроса' : 'турнира'}), тип рейтинга = ${ratingType}`);
+        console.log(`📊 Параметры: размер команды = ${teamSize} (из настроек турнира), тип рейтинга = ${ratingType}`);
 
         // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ СНАЧАЛА ПЕРЕД УДАЛЕНИЕМ КОМАНД
         const partRes = await pool.query(
@@ -2334,51 +2334,58 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             });
         }
         
-        // 🔄 НОВЫЙ АЛГОРИТМ: комбинированное распределение
-        // 1. Группируем игроков по уровням рейтинга для лучшего баланса
-        const ratingGroups = [];
-        // 🔧 ИСПРАВЛЕНИЕ КРИТИЧЕСКОЙ ОШИБКИ: размер группы должен обеспечивать равномерное распределение
-        const groupSize = Math.ceil(participantsForTeams.length / fullTeams); // Равномерное деление участников на группы
+        // 🔄 ИСПРАВЛЕННЫЙ АЛГОРИТМ РАСПРЕДЕЛЕНИЯ: строго контролируем размер команд
+        let participantIndex = 0;
         
-        console.log(`🔧 ИСПРАВЛЕННЫЙ АЛГОРИТМ: participantsForTeams=${participantsForTeams.length}, fullTeams=${fullTeams}, groupSize=${groupSize}`);
-        
-        for (let i = 0; i < participantsForTeams.length; i += groupSize) {
-            const group = participantsForTeams.slice(i, i + groupSize);
+        // 🎯 СБАЛАНСИРОВАННОЕ РАСПРЕДЕЛЕНИЕ "ЗМЕЙКА": обеспечивает баланс + строгий контроль размера
+        for (let round = 0; round < teamSize; round++) {
+            console.log(`🔄 Раунд ${round + 1}/${teamSize} распределения участников`);
             
-            // 🎲 Добавляем случайность в каждую группу, если у игроков похожие рейтинги
-            const groupRatings = group.map(p => ratingType === 'faceit' ? p.faceit_rating : p.premier_rating);
-            const minGroupRating = Math.min(...groupRatings);
-            const maxGroupRating = Math.max(...groupRatings);
-            const ratingSpread = maxGroupRating - minGroupRating;
+            // В четных раундах идем слева направо (0 → 1 → 2 → 3)
+            // В нечетных раундах идем справа налево (3 → 2 → 1 → 0)
+            const isEvenRound = round % 2 === 0;
             
-            // Если разброс рейтингов в группе небольшой (менее 200), добавляем случайность
-            if (ratingSpread < 200) {
-                console.log(`🎲 Группа ${Math.floor(i / groupSize) + 1}: разброс рейтингов ${ratingSpread}, добавляем случайность`);
-                // Перемешиваем группу случайным образом
-                for (let j = group.length - 1; j > 0; j--) {
-                    const randomIndex = Math.floor(Math.random() * (j + 1));
-                    [group[j], group[randomIndex]] = [group[randomIndex], group[j]];
-                }
+            for (let i = 0; i < fullTeams && participantIndex < participantsForTeams.length; i++) {
+                const teamIndex = isEvenRound ? i : (fullTeams - 1 - i);
+                const participant = participantsForTeams[participantIndex];
+                
+                teams[teamIndex].members.push(participant);
+                
+                const participantRating = ratingType === 'faceit' ? participant.faceit_rating : participant.premier_rating;
+                console.log(`👤 Раунд ${round + 1}, игрок ${participant.name} (рейтинг: ${participantRating}) → Команда ${teamIndex + 1} (позиция ${teams[teamIndex].members.length}/${teamSize})`);
+                
+                participantIndex++;
             }
-            
-            ratingGroups.push(group);
         }
         
-        console.log(`🔧 Создано ${ratingGroups.length} групп рейтингов по ~${groupSize} участников каждая`);
-        
-        // 2. Распределяем игроков из каждой группы по командам
-        ratingGroups.forEach((group, groupIndex) => {
-            group.forEach((player, playerIndex) => {
-                const teamIndex = playerIndex % fullTeams;
-                if (teams[teamIndex]) {
-                    teams[teamIndex].members.push(player);
-                    console.log(`👤 Группа ${groupIndex + 1}, игрок ${player.name} (рейтинг: ${ratingType === 'faceit' ? player.faceit_rating : player.premier_rating}) → Команда ${teamIndex + 1}`);
-                }
-            });
+        // 🔍 ФИНАЛЬНАЯ ПРОВЕРКА: убеждаемся что все команды имеют правильный размер
+        let allTeamsValid = true;
+        teams.forEach((team, index) => {
+            console.log(`✅ Команда ${index + 1}: ${team.members.length}/${teamSize} участников`);
+            
+            if (team.members.length !== teamSize) {
+                console.error(`❌ ОШИБКА: Команда ${index + 1} содержит ${team.members.length} участников вместо ${teamSize}!`);
+                allTeamsValid = false;
+            }
         });
+        
+        if (!allTeamsValid) {
+            return res.status(500).json({ 
+                error: `Критическая ошибка формирования команд: не все команды содержат ${teamSize} участников` 
+            });
+        }
+        
+        console.log(`🎯 АЛГОРИТМ "ЗМЕЙКА" ЗАВЕРШЕН: все ${fullTeams} команд содержат ровно ${teamSize} участников`);
         
         // 🔍 ДИАГНОСТИКА СФОРМИРОВАННЫХ КОМАНД
         console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
+        console.log(`📊 ПРИНЦИП РАБОТЫ АЛГОРИТМА "ЗМЕЙКА":`);
+        console.log(`   - Участники отсортированы по рейтингу от сильнейших к слабейшим`);
+        console.log(`   - Раунд 1: сильнейшие игроки распределяются 1→2→3→4 по командам`);
+        console.log(`   - Раунд 2: следующие игроки распределяются 4→3→2→1 (в обратном порядке)`);
+        console.log(`   - Раунд 3: снова 1→2→3→4, и так далее`);
+        console.log(`   - Результат: в каждой команде игроки разного уровня = сбалансированные команды`);
+        
         teams.forEach((team, index) => {
             const teamRatings = team.members.map(member => 
                 ratingType === 'faceit' ? member.faceit_rating : member.premier_rating
@@ -2386,9 +2393,10 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             const avgTeamRating = teamRatings.reduce((sum, rating) => sum + rating, 0) / teamRatings.length;
             const teamMembersList = team.members.map(m => `${m.name}(${ratingType === 'faceit' ? m.faceit_rating : m.premier_rating})`).join(', ');
             
-            console.log(`🏆 Команда ${index + 1}: средний рейтинг ${Math.round(avgTeamRating)}, участники: ${teamMembersList}`);
+            console.log(`🏆 Команда ${index + 1}: ${team.members.length} игроков, средний рейтинг ${Math.round(avgTeamRating)}`);
+            console.log(`   Участники: ${teamMembersList}`);
         });
-        
+
         // 🎯 СИСТЕМА КОНТРОЛЯ БАЛАНСА КОМАНД (максимум 20% расхождения)
         console.log(`⚖️ НАЧИНАЕМ ПРОВЕРКУ БАЛАНСА КОМАНД (макс. расхождение 20%)`);
         
