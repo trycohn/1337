@@ -203,8 +203,23 @@ const TeamGenerator = ({
         try {
             console.log('🔍 Sending request to: /api/tournaments/' + tournament.id + '/original-participants');
             const response = await api.get(`/api/tournaments/${tournament.id}/original-participants`);
-            if (response.data && Array.isArray(response.data)) {
-                setOriginalParticipants(response.data);
+            
+            if (response.data) {
+                // 🆕 НОВАЯ ЛОГИКА: используем группированные данные от сервера
+                console.log('📊 Получены группированные участники:', {
+                    total: response.data.total,
+                    inTeam: response.data.inTeamCount,
+                    notInTeam: response.data.notInTeamCount
+                });
+                
+                // Устанавливаем всех участников (для совместимости)
+                setOriginalParticipants(response.data.all || []);
+                
+                // 🆕 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ для UI
+                // Сохраняем информацию о группах для использования в компоненте
+                if (response.data.notInTeam && response.data.notInTeam.length > 0) {
+                    console.log(`⚠️ Найдено ${response.data.notInTeam.length} участников не в командах`);
+                }
             }
         } catch (error) {
             console.error('Ошибка при загрузке оригинальных участников:', error);
@@ -215,6 +230,20 @@ const TeamGenerator = ({
             setLoadingParticipants(false);
         }
     }, [tournament?.id]); // ИСПРАВЛЕНО: убран toast из зависимостей
+
+    // 🆕 ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ТЕКСТА О СОСТОЯНИИ УЧАСТНИКОВ
+    const getParticipantsStatusText = useCallback(() => {
+        if (!displayParticipants.length) return '';
+        
+        const inTeam = displayParticipants.filter(p => p.in_team);
+        const notInTeam = displayParticipants.filter(p => !p.in_team);
+        
+        if (notInTeam.length > 0) {
+            return ` (${inTeam.length} в командах, ${notInTeam.length} не в команде)`;
+        }
+        
+        return ` (${inTeam.length} в командах)`;
+    }, [displayParticipants]);
 
     // При инициализации устанавливаем размер команды из турнира и загружаем команды
     useEffect(() => {
@@ -372,28 +401,6 @@ const TeamGenerator = ({
         shouldShowTeams: teamsExist || teamsList.length > 0,
         participantsCount: displayParticipants.length
     });
-
-    // 🎯 ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ИМЕН УЧАСТНИКОВ КОМАНД
-    const formatMemberName = (memberName) => {
-        if (!memberName) return { displayName: 'Неизвестно', isLongName: false, isTruncated: false };
-        
-        const name = String(memberName);
-        const nameLength = name.length;
-        
-        // Если имя длиннее 13 символов - обрезаем до 13
-        const displayName = nameLength > 13 ? name.substring(0, 13) + '...' : name;
-        
-        // Если имя длиннее 9 символов - применяем уменьшенный шрифт
-        const isLongName = nameLength > 9;
-        const isTruncated = nameLength > 13;
-        
-        return {
-            displayName,
-            isLongName,
-            isTruncated,
-            originalName: name
-        };
-    };
 
     // Функция рендеринга команд (для микс турниров)
     const renderTeamsList = () => {
@@ -556,112 +563,202 @@ const TeamGenerator = ({
     const renderParticipantsList = () => {
         if (tournament?.format !== 'mix') return null;
 
-    return (
-                    <div className="original-participants-section">
-                <h3>🎮 Зарегистрированные игроки ({displayParticipants?.length || 0})</h3>
-                        <div className="mix-players-list">
-                            {loadingParticipants ? (
-                                <p className="loading-participants">Загрузка участников...</p>
-                            ) : displayParticipants && displayParticipants.length > 0 ? (
-                                <div className="participants-grid">
-                                    {displayParticipants.map((participant) => (
-                                        <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
-                                            <div className="participant-avatar">
-                                                <img 
-                                                    src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                                    alt={`${participant.name} avatar`}
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src = '/default-avatar.png';
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="participant-info">
-                                                <span className="participant-name">{participant.name}</span>
-                                                <span className="participant-rating">
-                                                    {ratingType === 'faceit' 
-                                                        ? `FACEIT: ${participant.faceit_elo || 1000}`
+        // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ НА ГРУППЫ
+        const inTeamParticipants = displayParticipants.filter(p => p.in_team);
+        const notInTeamParticipants = displayParticipants.filter(p => !p.in_team);
+
+        return (
+            <div className="original-participants-section">
+                <h3>
+                    🎮 Зарегистрированные игроки ({displayParticipants?.length || 0})
+                    {getParticipantsStatusText()}
+                </h3>
+                
+                {/* 🆕 УЧАСТНИКИ НЕ В КОМАНДЕ (если есть команды) */}
+                {(mixedTeams.length > 0 || tournament.participant_type === 'team') && notInTeamParticipants.length > 0 && (
+                    <div className="participants-group">
+                        <h4 className="participants-group-title">
+                            ⚠️ Не в команде ({notInTeamParticipants.length})
+                        </h4>
+                        <div className="participants-grid">
+                            {notInTeamParticipants.map((participant) => (
+                                <div key={participant?.id || `participant-${Math.random()}`} className="participant-card not-in-team">
+                                    <div className="participant-avatar">
+                                        <img 
+                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                            alt={`${participant.name} avatar`}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/default-avatar.png';
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="participant-info">
+                                        <span className="participant-name">{participant.name}</span>
+                                        <span className="participant-rating">
+                                            {ratingType === 'faceit' 
+                                                ? `FACEIT: ${participant.faceit_elo || 1000}`
                                                 : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
-                                                    }
-                                                </span>
-                                            </div>
-                                            {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                                <button 
-                                                    className="remove-participant"
-                                                    onClick={() => onRemoveParticipant(participant.id)}
-                                                >
-                                                    ✕
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                                            }
+                                        </span>
+                                        <span className="participant-status">Не в команде</span>
+                                    </div>
+                                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
+                                        <button 
+                                            className="remove-participant"
+                                            onClick={() => onRemoveParticipant(participant.id)}
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
                                 </div>
-                            ) : (
-                                <p className="no-participants">Нет зарегистрированных игроков</p>
-                            )}
+                            ))}
+                        </div>
                     </div>
+                )}
+
+                {/* 🆕 УЧАСТНИКИ В КОМАНДАХ (если есть команды) */}
+                {(mixedTeams.length > 0 || tournament.participant_type === 'team') && inTeamParticipants.length > 0 && (
+                    <div className="participants-group">
+                        <h4 className="participants-group-title">
+                            ✅ В командах ({inTeamParticipants.length})
+                        </h4>
+                        <div className="participants-grid">
+                            {inTeamParticipants.map((participant) => (
+                                <div key={participant?.id || `participant-${Math.random()}`} className="participant-card in-team">
+                                    <div className="participant-avatar">
+                                        <img 
+                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                            alt={`${participant.name} avatar`}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/default-avatar.png';
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="participant-info">
+                                        <span className="participant-name">{participant.name}</span>
+                                        <span className="participant-rating">
+                                            {ratingType === 'faceit' 
+                                                ? `FACEIT: ${participant.faceit_elo || 1000}`
+                                                : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
+                                            }
+                                        </span>
+                                        <span className="participant-status">В команде</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 🆕 ВСЕ УЧАСТНИКИ ЕСЛИ НЕТ КОМАНД (изначальный режим) */}
+                {mixedTeams.length === 0 && tournament.participant_type !== 'team' && (
+                    <div className="mix-players-list">
+                        {loadingParticipants ? (
+                            <p className="loading-participants">Загрузка участников...</p>
+                        ) : displayParticipants && displayParticipants.length > 0 ? (
+                            <div className="participants-grid">
+                                {displayParticipants.map((participant) => (
+                                    <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
+                                        <div className="participant-avatar">
+                                            <img 
+                                                src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                                alt={`${participant.name} avatar`}
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '/default-avatar.png';
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="participant-info">
+                                            <span className="participant-name">{participant.name}</span>
+                                            <span className="participant-rating">
+                                                {ratingType === 'faceit' 
+                                                    ? `FACEIT: ${participant.faceit_elo || 1000}`
+                                                    : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
+                                                }
+                                            </span>
+                                        </div>
+                                        {isAdminOrCreator && tournament.participant_type === 'solo' && (
+                                            <button 
+                                                className="remove-participant"
+                                                onClick={() => onRemoveParticipant(participant.id)}
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="no-participants">Нет зарегистрированных игроков</p>
+                        )}
+                    </div>
+                )}
 
                 {/* 🎯 СЕКЦИЯ УПРАВЛЕНИЯ МИКСОМ */}
-                    {isAdminOrCreator && (
-                        <div className="mix-settings-section">
+                {isAdminOrCreator && (
+                    <div className="mix-settings-section">
                         <h3>⚙️ Настройки микса</h3>
-                            <div className="mix-controls-row">
-                                <div className="mix-form-group">
-                                    <label>Размер команды:</label>
-                                    <select
-                                        value={teamSize}
-                                        onChange={(e) => {
-                                            const newSize = e.target.value;
-                                            setTeamSize(newSize);
-                                            updateTeamSize(newSize);
-                                        }}
+                        <div className="mix-controls-row">
+                            <div className="mix-form-group">
+                                <label>Размер команды:</label>
+                                <select
+                                    value={teamSize}
+                                    onChange={(e) => {
+                                        const newSize = e.target.value;
+                                        setTeamSize(newSize);
+                                        updateTeamSize(newSize);
+                                    }}
                                     disabled={mixedTeams.length > 0 || loading}
-                                    >
-                                        <option value="2">2 игрока</option>
-                                        <option value="5">5 игроков</option>
-                                    </select>
-                                </div>
-                            
-                                <div className="mix-form-group rating-group">
-                                    <label>Миксовать по рейтингу:</label>
-                                    <select
-                                        value={ratingType}
-                                        onChange={(e) => setRatingType(e.target.value)}
-                                    >
-                                        <option value="faceit">FACEit</option>
-                                        <option value="premier">Steam Premier</option>
-                                    </select>
-                                </div>
+                                >
+                                    <option value="2">2 игрока</option>
+                                    <option value="5">5 игроков</option>
+                                </select>
                             </div>
+                        
+                            <div className="mix-form-group rating-group">
+                                <label>Миксовать по рейтингу:</label>
+                                <select
+                                    value={ratingType}
+                                    onChange={(e) => setRatingType(e.target.value)}
+                                >
+                                    <option value="faceit">FACEit</option>
+                                    <option value="premier">Steam Premier</option>
+                                </select>
+                            </div>
+                        </div>
 
-                            <div className="mix-buttons-row">
+                        <div className="mix-buttons-row">
                             {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
-                                    <button 
-                                        onClick={handleFormTeams} 
-                                        className="form-teams-button"
+                                <button 
+                                    onClick={handleFormTeams} 
+                                    className="form-teams-button"
                                     disabled={loading || displayParticipants.length < 2}
-                                    >
+                                >
                                     {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды из участников'}
-                                    </button>
-                                )}
-                            
+                                </button>
+                            )}
+                        
                             {/* 🆕 УЛУЧШЕННАЯ КНОПКА ПЕРЕФОРМИРОВАНИЯ */}
                             {canReformTeams() && (
-                                    <button 
+                                <button 
                                     onClick={() => setShowReformModal(true)} 
                                     className="reform-teams-button"
                                     disabled={reformLoading || displayParticipants.length < 2}
                                 >
                                     🔄 Переформировать команды
-                                    </button>
-                                )}
-                            
+                                    {notInTeamParticipants.length > 0 && ` (включая ${notInTeamParticipants.length} новых)`}
+                                </button>
+                            )}
+                        
                             {displayParticipants.length < 2 && (
                                 <p className="min-participants-notice">
                                     ⚠️ Для создания команд нужно минимум 2 участника
                                 </p>
                             )}
-                            
+                        
                             {/* 🆕 ИНФОРМАЦИЯ О ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ */}
                             {mixedTeams.length > 0 && !canReformTeams() && (
                                 <div className="reform-blocked-notice">
@@ -741,10 +838,54 @@ const TeamGenerator = ({
                                     <div className="current-teams-info">
                                         <p><strong>Текущее состояние:</strong></p>
                                         <ul>
-                                            <li>Участников: {displayParticipants.length}</li>
-                                            <li>Команд: {mixedTeams.length}</li>
-                                            <li>Игроков в командах: {mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}</li>
+                                            <li>Всего участников: {displayParticipants.length}</li>
+                                            <li>В командах: {displayParticipants.filter(p => p.in_team).length}</li>
+                                            {displayParticipants.filter(p => !p.in_team).length > 0 && (
+                                                <li className="new-participants-highlight">
+                                                    🆕 Новых участников (не в команде): {displayParticipants.filter(p => !p.in_team).length}
+                                                </li>
+                                            )}
+                                            <li>Существующих команд: {mixedTeams.length}</li>
+                                            <li>Игроков в существующих командах: {mixedTeams.reduce((total, team) => total + (team.members?.length || 0), 0)}</li>
                                         </ul>
+                                        
+                                        {/* 🆕 ПОКАЗЫВАЕМ НОВЫХ УЧАСТНИКОВ ЕСЛИ ОНИ ЕСТЬ */}
+                                        {displayParticipants.filter(p => !p.in_team).length > 0 && (
+                                            <div className="new-participants-preview">
+                                                <p><strong>🆕 Новые участники будут включены в команды:</strong></p>
+                                                <ul className="new-participants-list">
+                                                    {displayParticipants.filter(p => !p.in_team).slice(0, 5).map(participant => (
+                                                        <li key={participant.id}>
+                                                            {participant.name} 
+                                                            <span className="participant-rating-preview">
+                                                                ({ratingType === 'faceit' 
+                                                                    ? `${participant.faceit_elo || 1000} ELO`
+                                                                    : `${participant.cs2_premier_rank || participant.premier_rank || 5} Ранг`
+                                                                })
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                    {displayParticipants.filter(p => !p.in_team).length > 5 && (
+                                                        <li>... и еще {displayParticipants.filter(p => !p.in_team).length - 5} участников</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        
+                                        {/* 🆕 ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА */}
+                                        <div className="reform-preview">
+                                            <p><strong>📊 После переформирования будет:</strong></p>
+                                            <ul>
+                                                <li>Команд: {Math.floor(displayParticipants.length / parseInt(teamSize))}</li>
+                                                <li>Игроков в каждой команде: {teamSize}</li>
+                                                <li>Общий охват: {Math.floor(displayParticipants.length / parseInt(teamSize)) * parseInt(teamSize)} из {displayParticipants.length} участников</li>
+                                                {displayParticipants.length % parseInt(teamSize) !== 0 && (
+                                                    <li className="warning-remainder">
+                                                        ⚠️ Останется вне команд: {displayParticipants.length % parseInt(teamSize)} участников
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -763,7 +904,7 @@ const TeamGenerator = ({
                                 onClick={handleReformTeams}
                                 disabled={reformLoading}
                             >
-                                {reformLoading ? '⏳ Переформирование...' : '🔄 Да, переформировать'}
+                                {reformLoading ? '⏳ Переформирование...' : '🔄 Да, переформировать команды'}
                             </button>
                         </div>
                     </div>
