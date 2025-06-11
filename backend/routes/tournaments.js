@@ -402,7 +402,20 @@ router.post('/:id/participate', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Вы уже участвуете в этом турнире' });
         }
 
-        if (tournament.participant_type === 'solo') {
+        // 🆕 ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ МИКС ТУРНИРОВ
+        // Для микс турниров ВСЕГДА добавляем в tournament_participants, даже если participant_type = 'team'
+        if (tournament.format === 'mix') {
+            console.log(`🎯 Пользователь ${req.user.username} (ID: ${userId}) участвует в микс турнире ${id}`);
+            
+            // Добавляем участника в tournament_participants с флагом in_team = false
+            await pool.query(
+                'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team) VALUES ($1, $2, $3, $4)',
+                [id, userId, req.user.username, false]
+            );
+            
+            console.log(`✅ Участник ${req.user.username} добавлен в микс турнир как индивидуальный игрок (не в команде)`);
+            
+        } else if (tournament.participant_type === 'solo') {
             await pool.query(
                 'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
                 [id, userId, req.user.username]
@@ -718,14 +731,27 @@ router.post('/:id/add-participant', authenticateToken, async (req, res) => {
             }
         }
 
-        if (tournament.participant_type === 'solo') {
-            // Добавление участника в solo-турнир
+        // 🆕 ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ МИКС ТУРНИРОВ
+        // Для микс турниров ВСЕГДА добавляем в tournament_participants, даже если participant_type = 'team'
+        if (tournament.format === 'mix') {
+            console.log(`🎯 Добавляем участника в микс турнир: ${participantName} (user_id: ${userId || 'гость'})`);
+            
+            // Добавляем участника в tournament_participants с флагом in_team = false
+            await pool.query(
+                'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team) VALUES ($1, $2, $3, $4)',
+                [id, userId || null, participantName, false]
+            );
+            
+            console.log(`✅ Участник ${participantName} добавлен в микс турнир как индивидуальный игрок (не в команде)`);
+            
+        } else if (tournament.participant_type === 'solo') {
+            // Обычные solo турниры
             await pool.query(
                 'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
                 [id, userId || null, participantName]
             );
         } else {
-            // Добавление команды в team-турнир
+            // Обычные командные турниры
             const teamResult = await pool.query(
                 'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING id',
                 [id, participantName, userId || null]
@@ -874,7 +900,19 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
             }
 
             // Добавляем участника
-            if (tournament.participant_type === 'solo') {
+            // 🆕 ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ МИКС ТУРНИРОВ
+            if (tournament.format === 'mix') {
+                console.log(`🎯 Пользователь ${req.user.username} (ID: ${userId}) принимает приглашение в микс турнир ${id}`);
+                
+                // Добавляем участника в tournament_participants с флагом in_team = false
+                await pool.query(
+                    'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team) VALUES ($1, $2, $3, $4)',
+                    [id, userId, req.user.username, false]
+                );
+                
+                console.log(`✅ Участник ${req.user.username} добавлен в микс турнир как индивидуальный игрок (не в команде)`);
+                
+            } else if (tournament.participant_type === 'solo') {
                 await pool.query(
                     'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
                     [id, userId, req.user.username]
