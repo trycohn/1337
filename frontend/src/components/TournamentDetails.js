@@ -392,6 +392,28 @@ function TournamentDetails() {
         return result;
     }, [matches, tournament, mixedTeams]);
 
+    // 🎯 ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ИМЕН УЧАСТНИКОВ КОМАНД (аналогично TeamGenerator)
+    const formatMemberName = useCallback((memberName) => {
+        if (!memberName) return { displayName: 'Неизвестно', isLongName: false, isTruncated: false };
+        
+        const name = String(memberName);
+        const nameLength = name.length;
+        
+        // Если имя длиннее 13 символов - обрезаем до 13
+        const displayName = nameLength > 13 ? name.substring(0, 13) + '...' : name;
+        
+        // Если имя длиннее 9 символов - применяем уменьшенный шрифт
+        const isLongName = nameLength > 9;
+        const isTruncated = nameLength > 13;
+        
+        return {
+            displayName,
+            isLongName,
+            isTruncated,
+            originalName: name
+        };
+    }, []);
+
     // 🎯 МЕМОИЗИРОВАННЫЕ ПРИЗЕРЫ ТУРНИРА
     const tournamentWinners = useMemo(() => {
         return calculateTournamentWinners();
@@ -1819,22 +1841,36 @@ function TournamentDetails() {
                                                                 <div className="team-members">
                                                                     <h5>🏆 Победители (участники команды):</h5>
                                                                     <ul>
-                                                                        {tournamentWinners.winner.members.map((member, idx) => (
-                                                                            <li key={idx} className="team-member winner-member">
-                                                                                <span className="member-medal">🥇</span>
-                                                                                {member.user_id ? (
-                                                                                    <Link to={`/profile/${member.user_id}`} className="member-name winner-name-link">
-                                                                                        {member.name || member.username}
-                                                                                    </Link>
-                                                                                ) : (
-                                                                                    <span className="member-name winner-name-text">{member.name}</span>
-                                                                                )}
-                                                                                {member.faceit_elo && (
-                                                                                    <span className="member-elo">({member.faceit_elo} ELO)</span>
-                                                                                )}
-                                                                                <span className="member-achievement">- Чемпион турнира</span>
-                                                                            </li>
-                                                                        ))}
+                                                                        {tournamentWinners.winner.members.map((member, idx) => {
+                                                                            const memberName = member.name || member.username;
+                                                                            const formattedName = formatMemberName(memberName);
+                                                                            
+                                                                            return (
+                                                                                <li key={idx} className="team-member winner-member">
+                                                                                    <span className="member-medal">🥇</span>
+                                                                                    {member.user_id ? (
+                                                                                        <Link 
+                                                                                            to={`/profile/${member.user_id}`} 
+                                                                                            className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </Link>
+                                                                                    ) : (
+                                                                                        <span 
+                                                                                            className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {member.faceit_elo && (
+                                                                                        <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                                    )}
+                                                                                    <span className="member-achievement">- Чемпион турнира</span>
+                                                                                </li>
+                                                                            );
+                                                                        })}
                                                                     </ul>
                                                                     <div className="team-achievement">
                                                                         <strong>Каждый участник команды получает статус "Победитель турнира"</strong>
@@ -1866,19 +1902,33 @@ function TournamentDetails() {
                                                                     <div className="team-members">
                                                                         <h5>🥈 Серебряные призеры (участники команды):</h5>
                                                                         <ul>
-                                                                            {tournamentWinners.secondPlace.members.map((member, idx) => (
-                                                                                <li key={idx} className="team-member second-place-member">
-                                                                                    <span className="member-medal">🥈</span>
-                                                                                    {member.user_id ? (
-                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name second-place-name-link">
-                                                                                            {member.name || member.username}
-                                                                                        </Link>
-                                                                                    ) : (
-                                                                                        <span className="member-name second-place-name-text">{member.name}</span>
-                                                                                    )}
-                                                                                    <span className="member-achievement">- Серебряный призер</span>
-                                                                                </li>
-                                                                            ))}
+                                                                            {tournamentWinners.secondPlace.members.map((member, idx) => {
+                                                                                const memberName = member.name || member.username;
+                                                                                const formattedName = formatMemberName(memberName);
+                                                                                
+                                                                                return (
+                                                                                    <li key={idx} className="team-member second-place-member">
+                                                                                        <span className="member-medal">🥈</span>
+                                                                                        {member.user_id ? (
+                                                                                            <Link 
+                                                                                                to={`/profile/${member.user_id}`} 
+                                                                                                className={`member-name second-place-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                                title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                            >
+                                                                                                {formattedName.displayName}
+                                                                                            </Link>
+                                                                                        ) : (
+                                                                                            <span 
+                                                                                                className={`member-name second-place-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                                title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                            >
+                                                                                                {formattedName.displayName}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        <span className="member-achievement">- Серебряный призер</span>
+                                                                                    </li>
+                                                                                );
+                                                                            })}
                                                                         </ul>
                                                                         <div className="team-achievement">
                                                                             <strong>Каждый участник команды получает статус "Серебряный призер"</strong>
@@ -1911,19 +1961,33 @@ function TournamentDetails() {
                                                                     <div className="team-members">
                                                                         <h5>🥉 Бронзовые призеры (участники команды):</h5>
                                                                         <ul>
-                                                                            {tournamentWinners.thirdPlace.members.map((member, idx) => (
-                                                                                <li key={idx} className="team-member third-place-member">
-                                                                                    <span className="member-medal">🥉</span>
-                                                                                    {member.user_id ? (
-                                                                                        <Link to={`/profile/${member.user_id}`} className="member-name third-place-name-link">
-                                                                                            {member.name || member.username}
-                                                                                        </Link>
-                                                                                    ) : (
-                                                                                        <span className="member-name third-place-name-text">{member.name}</span>
-                                                                                    )}
-                                                                                    <span className="member-achievement">- Бронзовый призер</span>
-                                                                                </li>
-                                                                            ))}
+                                                                            {tournamentWinners.thirdPlace.members.map((member, idx) => {
+                                                                                const memberName = member.name || member.username;
+                                                                                const formattedName = formatMemberName(memberName);
+                                                                                
+                                                                                return (
+                                                                                    <li key={idx} className="team-member third-place-member">
+                                                                                        <span className="member-medal">🥉</span>
+                                                                                        {member.user_id ? (
+                                                                                            <Link 
+                                                                                                to={`/profile/${member.user_id}`} 
+                                                                                                className={`member-name third-place-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                                title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                            >
+                                                                                                {formattedName.displayName}
+                                                                                            </Link>
+                                                                                        ) : (
+                                                                                            <span 
+                                                                                                className={`member-name third-place-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                                title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                            >
+                                                                                                {formattedName.displayName}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        <span className="member-achievement">- Бронзовый призер</span>
+                                                                                    </li>
+                                                                                );
+                                                                            })}
                                                                         </ul>
                                                                         <div className="team-achievement">
                                                                             <strong>Каждый участник команды получает статус "Бронзовый призер"</strong>
@@ -2309,22 +2373,36 @@ function TournamentDetails() {
                                                             <div className="team-members">
                                                                 <h5>🏆 Победители (участники команды):</h5>
                                                                 <ul>
-                                                                    {tournamentWinners.winner.members.map((member, idx) => (
-                                                                        <li key={idx} className="team-member winner-member">
-                                                                            <span className="member-medal">🥇</span>
-                                                                            {member.user_id ? (
-                                                                                <Link to={`/profile/${member.user_id}`} className="member-name winner-name-link">
-                                                                                    {member.name || member.username}
-                                                                                </Link>
-                                                                            ) : (
-                                                                                <span className="member-name winner-name-text">{member.name}</span>
-                                                                            )}
-                                                                            {member.faceit_elo && (
-                                                                                <span className="member-elo">({member.faceit_elo} ELO)</span>
-                                                                            )}
-                                                                            <span className="member-achievement">- Чемпион турнира</span>
-                                                                        </li>
-                                                                    ))}
+                                                                    {tournamentWinners.winner.members.map((member, idx) => {
+                                                                        const memberName = member.name || member.username;
+                                                                        const formattedName = formatMemberName(memberName);
+                                                                        
+                                                                        return (
+                                                                            <li key={idx} className="team-member winner-member">
+                                                                                <span className="member-medal">🥇</span>
+                                                                                {member.user_id ? (
+                                                                                    <Link 
+                                                                                        to={`/profile/${member.user_id}`} 
+                                                                                        className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                        title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                    >
+                                                                                        {formattedName.displayName}
+                                                                                    </Link>
+                                                                                ) : (
+                                                                                    <span 
+                                                                                        className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                        title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                    >
+                                                                                        {formattedName.displayName}
+                                                                                    </span>
+                                                                                )}
+                                                                                {member.faceit_elo && (
+                                                                                    <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                                )}
+                                                                                <span className="member-achievement">- Чемпион турнира</span>
+                                                                            </li>
+                                                                        );
+                                                                    })}
                                                                 </ul>
                                                                 <div className="team-achievement">
                                                                     <strong>Каждый участник команды получает статус "Победитель турнира"</strong>
@@ -2356,19 +2434,33 @@ function TournamentDetails() {
                                                                 <div className="team-members">
                                                                     <h5>🥈 Серебряные призеры (участники команды):</h5>
                                                                     <ul>
-                                                                        {tournamentWinners.secondPlace.members.map((member, idx) => (
-                                                                            <li key={idx} className="team-member second-place-member">
-                                                                                <span className="member-medal">🥈</span>
-                                                                                {member.user_id ? (
-                                                                                    <Link to={`/profile/${member.user_id}`} className="member-name second-place-name-link">
-                                                                                        {member.name || member.username}
-                                                                                    </Link>
-                                                                                ) : (
-                                                                                    <span className="member-name second-place-name-text">{member.name}</span>
-                                                                                )}
-                                                                                <span className="member-achievement">- Серебряный призер</span>
-                                                                            </li>
-                                                                        ))}
+                                                                        {tournamentWinners.secondPlace.members.map((member, idx) => {
+                                                                            const memberName = member.name || member.username;
+                                                                            const formattedName = formatMemberName(memberName);
+                                                                            
+                                                                            return (
+                                                                                <li key={idx} className="team-member second-place-member">
+                                                                                    <span className="member-medal">🥈</span>
+                                                                                    {member.user_id ? (
+                                                                                        <Link 
+                                                                                            to={`/profile/${member.user_id}`} 
+                                                                                            className={`member-name second-place-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </Link>
+                                                                                    ) : (
+                                                                                        <span 
+                                                                                            className={`member-name second-place-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <span className="member-achievement">- Серебряный призер</span>
+                                                                                </li>
+                                                                            );
+                                                                        })}
                                                                     </ul>
                                                                     <div className="team-achievement">
                                                                         <strong>Каждый участник команды получает статус "Серебряный призер"</strong>
@@ -2401,19 +2493,33 @@ function TournamentDetails() {
                                                                 <div className="team-members">
                                                                     <h5>🥉 Бронзовые призеры (участники команды):</h5>
                                                                     <ul>
-                                                                        {tournamentWinners.thirdPlace.members.map((member, idx) => (
-                                                                            <li key={idx} className="team-member third-place-member">
-                                                                                <span className="member-medal">🥉</span>
-                                                                                {member.user_id ? (
-                                                                                    <Link to={`/profile/${member.user_id}`} className="member-name third-place-name-link">
-                                                                                        {member.name || member.username}
-                                                                                    </Link>
-                                                                                ) : (
-                                                                                    <span className="member-name third-place-name-text">{member.name}</span>
-                                                                                )}
-                                                                                <span className="member-achievement">- Бронзовый призер</span>
-                                                                            </li>
-                                                                        ))}
+                                                                        {tournamentWinners.thirdPlace.members.map((member, idx) => {
+                                                                            const memberName = member.name || member.username;
+                                                                            const formattedName = formatMemberName(memberName);
+                                                                            
+                                                                            return (
+                                                                                <li key={idx} className="team-member third-place-member">
+                                                                                    <span className="member-medal">🥉</span>
+                                                                                    {member.user_id ? (
+                                                                                        <Link 
+                                                                                            to={`/profile/${member.user_id}`} 
+                                                                                            className={`member-name third-place-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </Link>
+                                                                                    ) : (
+                                                                                        <span 
+                                                                                            className={`member-name third-place-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <span className="member-achievement">- Бронзовый призер</span>
+                                                                                </li>
+                                                                            );
+                                                                        })}
                                                                     </ul>
                                                                     <div className="team-achievement">
                                                                         <strong>Каждый участник команды получает статус "Бронзовый призер"</strong>

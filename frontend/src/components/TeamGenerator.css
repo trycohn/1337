@@ -1122,4 +1122,44 @@
         width: 100%;
         justify-content: center;
     }
+}
+
+/* 🎯 СТИЛИ ДЛЯ ИМЕН УЧАСТНИКОВ КОМАНД */
+
+/* Базовый стиль для имен участников */
+.member-name {
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.4;
+    word-break: break-word;
+    hyphens: auto;
+    transition: font-size 0.2s ease;
+}
+
+/* Стиль для длинных имен (больше 9 символов) */
+.member-name-long {
+    font-size: 0.7rem !important;
+}
+
+/* Стиль для ссылок на профили в именах участников */
+.member-profile-link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.member-profile-link:hover {
+    color: #10b981;
+    text-decoration: underline;
+}
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 768px) {
+    .member-name {
+        font-size: 0.75rem;
+    }
+    
+    .member-name-long {
+        font-size: 0.65rem !important;
+    }
 } 

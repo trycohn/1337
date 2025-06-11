@@ -373,6 +373,28 @@ const TeamGenerator = ({
         participantsCount: displayParticipants.length
     });
 
+    // 🎯 ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ИМЕН УЧАСТНИКОВ КОМАНД
+    const formatMemberName = (memberName) => {
+        if (!memberName) return { displayName: 'Неизвестно', isLongName: false, isTruncated: false };
+        
+        const name = String(memberName);
+        const nameLength = name.length;
+        
+        // Если имя длиннее 13 символов - обрезаем до 13
+        const displayName = nameLength > 13 ? name.substring(0, 13) + '...' : name;
+        
+        // Если имя длиннее 9 символов - применяем уменьшенный шрифт
+        const isLongName = nameLength > 9;
+        const isTruncated = nameLength > 13;
+        
+        return {
+            displayName,
+            isLongName,
+            isTruncated,
+            originalName: name
+        };
+    };
+
     // Функция рендеринга команд (для микс турниров)
     const renderTeamsList = () => {
         const teamsExist = mixedTeams && mixedTeams.length > 0;
@@ -464,37 +486,45 @@ const TeamGenerator = ({
                                     <h5>👥 Состав</h5>
                                     {team.members && team.members.length > 0 ? (
                                         <div className="team-members-list">
-                                            {team.members.map((member, memberIndex) => (
-                                                <div key={memberIndex} className="team-member-row">
-                                                    <div className="member-avatar">
-                                                        <img 
-                                                            src={member.avatar_url || '/default-avatar.png'} 
-                                                            alt={member.name}
-                                                            onError={(e) => {
-                                                                e.target.onerror = null;
-                                                                e.target.src = '/default-avatar.png';
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className="member-info">
-                                                        <div className="member-name">
-                                                            {member.user_id ? (
-                                                                <a href={`/profile/${member.user_id}`} className="member-profile-link">
-                                                                    {member.name || member.username}
-                                                                </a>
-                                                            ) : (
-                                                                member.name
-                                                            )}
+                                            {team.members.map((member, memberIndex) => {
+                                                const memberName = member.name || member.username;
+                                                const formattedName = formatMemberName(memberName);
+                                                
+                                                return (
+                                                    <div key={memberIndex} className="team-member-row">
+                                                        <div className="member-avatar">
+                                                            <img 
+                                                                src={member.avatar_url || '/default-avatar.png'} 
+                                                                alt={memberName}
+                                                                onError={(e) => {
+                                                                    e.target.onerror = null;
+                                                                    e.target.src = '/default-avatar.png';
+                                                                }}
+                                                            />
                                                         </div>
-                                                        <div className="member-rating">
-                                                            🎯 {ratingType === 'faceit' 
-                                                                ? `${member.faceit_elo || 1000} ELO`
-                                                                : `${member.cs2_premier_rank || member.premier_rank || 5} Premier`
-                                                            }
+                                                        <div className="member-info">
+                                                            <div 
+                                                                className={`member-name ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                            >
+                                                                {member.user_id ? (
+                                                                    <a href={`/profile/${member.user_id}`} className="member-profile-link">
+                                                                        {formattedName.displayName}
+                                                                    </a>
+                                                                ) : (
+                                                                    formattedName.displayName
+                                                                )}
+                                                            </div>
+                                                            <div className="member-rating">
+                                                                🎯 {ratingType === 'faceit' 
+                                                                    ? `${member.faceit_elo || 1000} ELO`
+                                                                    : `${member.cs2_premier_rank || member.premier_rank || 5} Premier`
+                                                                }
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="no-members">
