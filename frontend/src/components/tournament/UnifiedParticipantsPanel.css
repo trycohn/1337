@@ -2238,6 +2238,7 @@
 .info-card-participants-list {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   color: white;
   padding: 20px;
