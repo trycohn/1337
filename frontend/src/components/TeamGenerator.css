@@ -879,7 +879,6 @@
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    animation: modal-appear 0.3s ease-out;
     min-width: 600px;
     max-width: none;
 }

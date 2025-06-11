@@ -102,9 +102,10 @@ const TeamGenerator = ({
         // Проверка статуса турнира - должен быть 'active', но НЕ 'in_progress'
         if (tournament.status !== 'active') return false;
         
-        // Проверка наличия команд для переформирования
+        // 🔧 ИСПРАВЛЕНИЕ: Для микс турниров проверяем наличие команд в mixedTeams И/ИЛИ что турнир уже переключен в командный режим
         const hasTeams = (mixedTeams && mixedTeams.length > 0) || 
-                         (tournament.teams && tournament.teams.length > 0);
+                         (tournament.teams && tournament.teams.length > 0) ||
+                         (tournament.format === 'mix' && tournament.participant_type === 'team'); // Добавляем условие для переключенных турниров
         if (!hasTeams) return false;
         
         // Проверка что турнир микс-формата
@@ -721,7 +722,8 @@ const TeamGenerator = ({
                         </div>
 
                         <div className="mix-buttons-row">
-                            {tournament.participant_type === 'solo' && mixedTeams.length === 0 && (
+                            {/* 🔧 ИСПРАВЛЕНИЕ: Для микс турниров показываем кнопку формирования если нет команд, независимо от participant_type */}
+                            {tournament?.format === 'mix' && mixedTeams.length === 0 && (
                                 <button 
                                     onClick={handleFormTeams} 
                                     className="form-teams-button"

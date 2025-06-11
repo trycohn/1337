@@ -1574,11 +1574,13 @@ function TournamentDetails() {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
+            console.log('✅ [FloatingPanel] Ответ сервера:', response.data);
+
             if (response.data && response.data.teams) {
                 console.log('✅ [FloatingPanel] Команды успешно переформированы:', response.data.teams);
                 console.log('📊 [FloatingPanel] Сводка:', response.data.summary);
                 
-                // Обновляем состояние команд
+                // 🔧 ИСПРАВЛЕНИЕ: Обновляем состояние команд напрямую
                 setMixedTeams(response.data.teams);
                 
                 // Показываем детальную информацию о переформировании
@@ -1596,16 +1598,50 @@ function TournamentDetails() {
                 setMessage(successMessage);
                 setTimeout(() => setMessage(''), 5000);
                 
-                // Перезагружаем данные турнира для обновления всех компонентов
-                reloadTournamentData();
+                // 🔧 ИСПРАВЛЕНИЕ: Перезагружаем данные турнира с задержкой для обновления всех компонентов
+                setTimeout(() => {
+                    console.log('🔄 [FloatingPanel] Перезагружаем данные турнира...');
+                    reloadTournamentData();
+                }, 500);
+                
             } else {
-                throw new Error('Некорректный ответ сервера');
+                console.error('❌ [FloatingPanel] Некорректный ответ сервера:', response.data);
+                throw new Error('Некорректный ответ сервера - отсутствуют данные команд');
             }
         } catch (error) {
             console.error('❌ [FloatingPanel] Ошибка переформирования команд:', error);
-            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Не удалось переформировать команды';
+            console.error('❌ [FloatingPanel] Детали ошибки:', {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                responseData: error.response?.data,
+                stack: error.stack
+            });
+            
+            // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
+            let errorMessage = 'Не удалось переформировать команды';
+            
+            if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = `Ошибка: ${error.message}`;
+            }
+            
+            // Если это ошибка недостатка участников, показываем специальное сообщение
+            if (errorMessage.includes('Недостаточно участников')) {
+                errorMessage += '\n\n💡 Попробуйте добавить больше участников или изменить размер команды.';
+            }
+            
             setMessage(`❌ ${errorMessage}`);
-            setTimeout(() => setMessage(''), 3000);
+            setTimeout(() => setMessage(''), 5000);
+            
+            // 🔧 ИСПРАВЛЕНИЕ: При ошибке все равно перезагружаем данные для восстановления корректного состояния
+            setTimeout(() => {
+                console.log('🔄 [FloatingPanel] Перезагружаем данные после ошибки для восстановления состояния...');
+                reloadTournamentData();
+            }, 1000);
         }
     };
 

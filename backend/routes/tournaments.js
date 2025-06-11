@@ -2110,7 +2110,7 @@ router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (re
 // Генерация команд для микс-турнира и переключение в командный режим
 router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
-    const { ratingType = 'faceit', teamSize: requestedTeamSize } = req.body; // 🔧 ИСПРАВЛЕНИЕ: получаем teamSize из запроса
+    const { ratingType = 'faceit', teamSize: requestedTeamSize } = req.body;
     
     try {
         // Получаем параметры турнира
@@ -2124,30 +2124,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`🎯 Генерация команд для турнира "${tournamentName}" (ID: ${id})`);
         console.log(`📊 Параметры: размер команды = ${teamSize} (из ${requestedTeamSize ? 'запроса' : 'турнира'}), тип рейтинга = ${ratingType}`);
 
-        // 🔧 УДАЛЯЕМ СУЩЕСТВУЮЩИЕ КОМАНДЫ ПЕРЕД СОЗДАНИЕМ НОВЫХ
-        console.log(`🗑️ Удаляем существующие команды для турнира ${id} перед переформированием`);
-        
-        // Сначала помечаем всех участников как не в команде
-        await pool.query(
-            'UPDATE tournament_participants SET in_team = FALSE WHERE tournament_id = $1',
-            [id]
-        );
-        
-        // Затем удаляем участников команд
-        await pool.query(
-            'DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)',
-            [id]
-        );
-        
-        // Затем удаляем сами команды
-        const deleteResult = await pool.query(
-            'DELETE FROM tournament_teams WHERE tournament_id = $1',
-            [id]
-        );
-        
-        console.log(`✅ Удалено ${deleteResult.rowCount} существующих команд, все участники помечены как не в команде`);
-
-        // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ С ИСПРАВЛЕННОЙ ЛОГИКОЙ РЕЙТИНГОВ
+        // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ СНАЧАЛА ПЕРЕД УДАЛЕНИЕМ КОМАНД
         const partRes = await pool.query(
             `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
                     tp.faceit_elo, tp.cs2_premier_rank,
@@ -2168,6 +2145,43 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         console.log(`📊 Всего участников для формирования команд: ${participants.length}`);
         
+        // 🆕 ПРОВЕРЯЕМ ДОСТАТОЧНОСТЬ УЧАСТНИКОВ ДО УДАЛЕНИЯ КОМАНД
+        const totalPlayers = participants.length;
+        const fullTeams = Math.floor(totalPlayers / teamSize);
+        const playersInTeams = fullTeams * teamSize;
+        const remainingPlayers = totalPlayers - playersInTeams;
+        
+        console.log(`📊 Статистика формирования команд:`);
+        console.log(`   - Всего участников: ${totalPlayers}`);
+        console.log(`   - Размер команды: ${teamSize}`);
+        console.log(`   - Полных команд: ${fullTeams}`);
+        console.log(`   - Участников в командах: ${playersInTeams}`);
+        console.log(`   - Останется вне команд: ${remainingPlayers}`);
+        
+        if (fullTeams === 0) {
+            console.log(`❌ Недостаточно участников: не хватает ${teamSize - totalPlayers} для формирования хотя бы одной команды`);
+            return res.status(400).json({ 
+                error: `Недостаточно участников для формирования хотя бы одной команды. Нужно минимум ${teamSize} участников, а есть только ${totalPlayers}` 
+            });
+        }
+
+        // 🔧 ТЕПЕРЬ БЕЗОПАСНО УДАЛЯЕМ СУЩЕСТВУЮЩИЕ КОМАНДЫ
+        console.log(`🗑️ Удаляем существующие команды для турнира ${id} перед переформированием`);
+        
+        // Удаляем участников команд
+        await pool.query(
+            'DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)',
+            [id]
+        );
+        
+        // Удаляем сами команды
+        const deleteResult = await pool.query(
+            'DELETE FROM tournament_teams WHERE tournament_id = $1',
+            [id]
+        );
+        
+        console.log(`✅ Удалено ${deleteResult.rowCount} существующих команд`);
+
         // 🆕 УЛУЧШЕННАЯ ДИАГНОСТИКА РЕЙТИНГОВ УЧАСТНИКОВ
         console.log(`🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА РЕЙТИНГОВ (тип: ${ratingType}):`);
         participants.forEach((p, index) => {
@@ -2202,26 +2216,6 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             console.log(`👥 ГОСТИ С РЕЙТИНГАМИ:`);
             guestParticipants.forEach(guest => {
                 console.log(`   - ${guest.name}: faceit=${guest.faceit_elo}, premier=${guest.cs2_premier_rank}`);
-            });
-        }
-        
-        // 🆕 НОВАЯ ЛОГИКА: Формируем максимальное количество полных команд
-        const totalPlayers = participants.length;
-        const fullTeams = Math.floor(totalPlayers / teamSize); // Количество полных команд
-        const playersInTeams = fullTeams * teamSize; // Участников в командах
-        const remainingPlayers = totalPlayers - playersInTeams; // Лишние участники
-        
-        console.log(`📊 Статистика формирования команд:`);
-        console.log(`   - Всего участников: ${totalPlayers}`);
-        console.log(`   - Размер команды: ${teamSize}`);
-        console.log(`   - Полных команд: ${fullTeams}`);
-        console.log(`   - Участников в командах: ${playersInTeams}`);
-        console.log(`   - Останется вне команд: ${remainingPlayers}`);
-        
-        if (fullTeams === 0) {
-            console.log(`❌ Недостаточно участников: не хватает ${teamSize - totalPlayers} для формирования хотя бы одной команды`);
-            return res.status(400).json({ 
-                error: `Недостаточно участников для формирования хотя бы одной команды. Нужно минимум ${teamSize} участников, а есть только ${totalPlayers}` 
             });
         }
         
@@ -2316,10 +2310,6 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
 
         console.log(`✅ Успешно сформировано ${teams.length} команд для турнира ${id}`);
         
-        // Удаляем старые команды, если они есть
-        await pool.query('DELETE FROM tournament_team_members WHERE team_id IN (SELECT id FROM tournament_teams WHERE tournament_id = $1)', [id]);
-        await pool.query('DELETE FROM tournament_teams WHERE tournament_id = $1', [id]);
-        
         // Сохраняем новые команды в БД
         const createdTeams = [];
         const participantIdsInTeams = []; // Массив для хранения ID участников, которые попали в команды
@@ -2329,7 +2319,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             // Создаем команду
             const teamResult = await pool.query(
                 'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
-                [id, team.name, tournament.created_by]
+                [id, team.name, created_by]
             );
             
             const teamId = teamResult.rows[0].id;
@@ -2350,11 +2340,11 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                     user_id: member.user_id,
                     name: member.name,
                     // 🔧 ИСПРАВЛЕНИЕ: сохраняем правильные рейтинги
-                    faceit_elo: member.faceit_elo || member.user_faceit_elo || 1000, // Приоритет кастомному, затем профильному, затем базовому
-                    cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank || 5, // Приоритет кастомному, затем профильному, затем базовому
+                    faceit_elo: member.faceit_elo || member.user_faceit_elo || 1000,
+                    cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank || 5,
                     // 🆕 ДОБАВЛЯЕМ ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ДЛЯ ДИАГНОСТИКИ
-                    faceit_rating_used: member.faceit_rating, // рейтинг, используемый для сортировки
-                    premier_rating_used: member.premier_rating // рейтинг, используемый для сортировки
+                    faceit_rating_used: member.faceit_rating,
+                    premier_rating_used: member.premier_rating
                 });
             }
             
@@ -2386,6 +2376,15 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 [participantIdsNotInTeams]
             );
             console.log(`✅ Помечено ${participantIdsNotInTeams.length} участников как НЕ находящихся в командах`);
+        } else {
+            // 🔧 ИСПРАВЛЕНИЕ: Если нет участников вне команд, убеждаемся что все участники помечены как в команде
+            await pool.query(
+                `UPDATE tournament_participants 
+                 SET in_team = TRUE 
+                 WHERE tournament_id = $1`,
+                [id]
+            );
+            console.log(`✅ Все участники помечены как находящиеся в командах`);
         }
         
         // Обновляем тип участников в турнире на team
@@ -2456,6 +2455,12 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         });
     } catch (err) {
         console.error('❌ Ошибка формирования команд:', err);
+        console.error('❌ Подробности ошибки:', {
+            message: err.message,
+            stack: err.stack,
+            tournamentId: id,
+            requestBody: req.body
+        });
         res.status(500).json({ error: err.message });
     }
 });
