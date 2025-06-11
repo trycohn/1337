@@ -6,6 +6,17 @@ const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
 
+// 🔧 ВРЕМЕННАЯ ЗАГЛУШКА ДЛЯ ФУНКЦИЙ ЧАТА
+const sendTournamentChatAnnouncement = async (tourName, message, tournamentId) => {
+    console.log(`📢 [CHAT] Турнир "${tourName}": ${message}`);
+    // TODO: Реализовать отправку в чат турнира
+};
+
+const addUserToTournamentChat = async (tourName, userId, isAdmin = false) => {
+    console.log(`➕ [CHAT] Добавляем пользователя ${userId} в чат турнира "${tourName}"`);
+    // TODO: Реализовать добавление в чат турнира
+};
+
 // Вспомогательная функция для записи событий в журнал турнира
 async function logTournamentEvent(tournamentId, userId, eventType, eventData = {}) {
     try {
