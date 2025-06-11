@@ -2126,8 +2126,28 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         if (!tourRes.rows.length) return res.status(404).json({ error: 'Турнир не найден' });
         const { team_size: sizeFromDb, created_by, name: tournamentName } = tourRes.rows[0];
         
-        // 🔧 ИСПРАВЛЕНИЕ КРИТИЧЕСКОЙ ОШИБКИ: ВСЕГДА используем размер команды из настроек турнира
-        const teamSize = parseInt(sizeFromDb, 10) || 5;
+        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: детальное получение teamSize с диагностикой
+        console.log(`🔍 ДИАГНОСТИКА TEAM_SIZE:`);
+        console.log(`   - Значение из БД (sizeFromDb):`, sizeFromDb);
+        console.log(`   - Тип значения:`, typeof sizeFromDb);
+        console.log(`   - parseInt результат:`, parseInt(sizeFromDb, 10));
+        console.log(`   - isNaN проверка:`, isNaN(parseInt(sizeFromDb, 10)));
+        
+        // 🔧 УЛУЧШЕННАЯ ЛОГИКА: более точная обработка teamSize
+        let teamSize;
+        if (sizeFromDb !== null && sizeFromDb !== undefined) {
+            const parsedSize = parseInt(sizeFromDb, 10);
+            if (!isNaN(parsedSize) && parsedSize > 0) {
+                teamSize = parsedSize;
+                console.log(`✅ Используем размер команды из БД: ${teamSize}`);
+            } else {
+                teamSize = 5; // fallback
+                console.log(`⚠️ Некорректное значение team_size в БД (${sizeFromDb}), используем fallback: ${teamSize}`);
+            }
+        } else {
+            teamSize = 5; // fallback for null/undefined
+            console.log(`⚠️ team_size в БД равно null/undefined, используем fallback: ${teamSize}`);
+        }
 
         console.log(`🎯 Генерация команд для турнира "${tournamentName}" (ID: ${id})`);
         console.log(`📊 Параметры: размер команды = ${teamSize} (из настроек турнира), тип рейтинга = ${ratingType}`);
