@@ -676,7 +676,7 @@ const UnifiedParticipantsPanel = ({
                 {(tournament?.format === 'mix' && mixedTeams?.length > 0) && (
                     <div className="mix-teams-info-participants-list">
                         <div className="info-card-participants-list">
-                            <div className="info-icon-participants-list">⚡</div>
+                            
                             <div className="info-content-participants-list">
                                 <h4>Команды сформированы!</h4>
                                 <p>Все участники разделены на команды. Подробную информацию о командах и составах смотрите в блоке ниже.</p>
