@@ -1227,116 +1227,47 @@ function TournamentDetails() {
     }, []);
 
     const handleMatchClick = useCallback((matchParam) => {
-        // Определяем ID матча - может прийти как число или как объект с полем id
         const matchId = typeof matchParam === 'object' ? matchParam.id : matchParam;
         
-        console.log('🔍 Клик по матчу для просмотра деталей:', matchId);
-        console.log('🔍 Тип параметра:', typeof matchParam, ', значение:', matchParam);
+        console.log('🔍 Клик по матчу (Вариант 3):', matchId);
         
-        // Специальная диагностика для турнира 54
-        if (tournament?.id === 54 || tournament?.id === '54') {
-            console.log('🎯 СПЕЦИАЛЬНАЯ ДИАГНОСТИКА ТУРНИРА 54:');
-            console.log('- ID турнира:', tournament.id);
-            console.log('- Игра турнира:', tournament.game);
-            console.log('- Все матчи:', matches.length, 'шт.');
-            console.log('- Матчи с maps_data:', matches.filter(m => m.maps_data).length, 'шт.');
-            matches.filter(m => m.maps_data).forEach((m, i) => {
-                console.log(`  Матч ${i + 1} (ID ${m.id}): maps_data =`, m.maps_data);
-            });
-            
-            // Дополнительная диагностика поиска матча
-            console.log('🔍 ДИАГНОСТИКА ПОИСКА МАТЧА:');
-            console.log('- Ищем матч с ID:', matchId);
-            console.log('- Все ID матчей в массиве:', matches.map(m => m.id));
-            console.log('- Типы ID в массиве:', matches.map(m => typeof m.id));
-            console.log('- Тип искомого ID:', typeof matchId);
-        }
+        // Ищем полные данные матча
+        let fullMatchData = matches.find(m => 
+            m.id === matchId || String(m.id) === String(matchId) || Number(m.id) === Number(matchId)
+        );
         
-        // Ищем полные данные матча в исходном массиве matches
-        // Пробуем найти как по числовому, так и по строковому ID
-        let fullMatchData = matches.find(m => m.id === matchId);
-        
-        // Если не найден, пробуем преобразовать типы
-        if (!fullMatchData) {
-            fullMatchData = matches.find(m => 
-                String(m.id) === String(matchId) || 
-                Number(m.id) === Number(matchId)
-            );
-        }
-        
-        // Если все еще не найден и у нас есть объект матча, пробуем по другим полям
+        // Fallback поиск по альтернативным полям
         if (!fullMatchData && typeof matchParam === 'object') {
             fullMatchData = matches.find(m => 
                 m.match_number === matchParam.match_number ||
-                m.number === matchParam.match_number ||
                 (m.round === matchParam.round && m.match_number === matchParam.match_number)
             );
         }
         
-        if (fullMatchData) {
-            console.log('✅ НАЙДЕН МАТЧ В МАССИВЕ!');
-            console.log('- Найденный матч ID:', fullMatchData.id);
-            console.log('- maps_data найденного матча:', fullMatchData.maps_data);
-            
-            // Дополнительная диагностика для любого матча
-            console.log('📊 ДИАГНОСТИКА ДАННЫХ МАТЧА:');
-            console.log('- ID матча:', fullMatchData.id);
-            console.log('- maps_data:', fullMatchData.maps_data);
-            console.log('- Тип maps_data:', typeof fullMatchData.maps_data);
-            console.log('- Длина (если массив):', Array.isArray(fullMatchData.maps_data) ? fullMatchData.maps_data.length : 'N/A');
-            console.log('- Содержимое maps_data:', fullMatchData.maps_data);
-            
-            // ДОПОЛНИТЕЛЬНАЯ ДЕТАЛЬНАЯ ДИАГНОСТИКА СТРУКТУРЫ КАРТ
-            if (Array.isArray(fullMatchData.maps_data)) {
-                console.log('🗺️ ДЕТАЛЬНАЯ ДИАГНОСТИКА КАРТ:');
-                fullMatchData.maps_data.forEach((mapData, index) => {
-                    console.log(`Карта ${index + 1}:`, mapData);
-                    console.log(`- Все ключи:`, Object.keys(mapData));
-                    console.log(`- Название (map):`, mapData.map);
-                    console.log(`- Название (name):`, mapData.name);
-                    console.log(`- Счет 1 (score1):`, mapData.score1);
-                    console.log(`- Счет 2 (score2):`, mapData.score2);
-                    console.log(`- Счет команды 1 (team1_score):`, mapData.team1_score);
-                    console.log(`- Счет команды 2 (team2_score):`, mapData.team2_score);
-                    console.log(`- Объект карты (если есть):`, mapData.map && typeof mapData.map === 'object' ? mapData.map : 'N/A');
-                });
-            }
-            
-            // Обогащаем данные матча информацией из game объекта (если был передан объект)
-            const enrichedMatch = {
-                ...fullMatchData,
-                // Добавляем имена команд из переданного объекта, если их нет в полных данных
-                team1_name: fullMatchData.team1_name || 
-                           (typeof matchParam === 'object' && matchParam.participants?.[0] 
-                            ? matchParam.participants[0].name : 'Команда 1'),
-                team2_name: fullMatchData.team2_name || 
-                           (typeof matchParam === 'object' && matchParam.participants?.[1] 
-                            ? matchParam.participants[1].name : 'Команда 2')
-            };
-            
-            console.log('🎯 Устанавливаем selectedMatch:', enrichedMatch);
-            setSelectedMatch(enrichedMatch);
-        } else {
-            console.warn('⚠️ Полные данные матча не найдены в массиве matches');
-            console.log('- Параметр матча:', matchParam);
-            console.log('- Искомый ID:', matchId);
-            console.log('- Доступные ID в matches:', matches.map(m => m.id));
-            
-            // Все равно показываем модальное окно с доступными данными
-            const fallbackMatch = {
-                id: matchId,
-                team1_name: typeof matchParam === 'object' && matchParam.participants?.[0]?.name || 'Команда 1',
-                team2_name: typeof matchParam === 'object' && matchParam.participants?.[1]?.name || 'Команда 2',
-                score1: typeof matchParam === 'object' && matchParam.participants?.[0]?.score || 0,
-                score2: typeof matchParam === 'object' && matchParam.participants?.[1]?.score || 0,
-                winner_team_id: typeof matchParam === 'object' ? matchParam.winner_id : null,
-                maps_data: null // Нет данных карт
-            };
-            
-            console.log('🎯 Используем fallback данные:', fallbackMatch);
-            setSelectedMatch(fallbackMatch);
-        }
-    }, [matches, tournament]);
+        const enrichedMatch = fullMatchData ? {
+            ...fullMatchData,
+            team1_name: fullMatchData.team1_name || 
+                       (typeof matchParam === 'object' && matchParam.participants?.[0] 
+                        ? matchParam.participants[0].name : 'Команда 1'),
+            team2_name: fullMatchData.team2_name || 
+                       (typeof matchParam === 'object' && matchParam.participants?.[1] 
+                        ? matchParam.participants[1].name : 'Команда 2')
+        } : {
+            id: matchId,
+            team1_name: typeof matchParam === 'object' && matchParam.participants?.[0]?.name || 'Команда 1',
+            team2_name: typeof matchParam === 'object' && matchParam.participants?.[1]?.name || 'Команда 2',
+            score1: typeof matchParam === 'object' && matchParam.participants?.[0]?.score || 0,
+            score2: typeof matchParam === 'object' && matchParam.participants?.[1]?.score || 0,
+            winner_team_id: typeof matchParam === 'object' ? matchParam.winner_id : null,
+            maps_data: null
+        };
+        
+        console.log('🎯 Открываем MatchResultModal для матча:', enrichedMatch);
+        
+        // 🔧 ВАРИАНТ 2: Всегда используем MatchResultModal (он сам определит режим просмотра/редактирования)
+        modals.openMatchResultModal(enrichedMatch);
+        
+    }, [matches, modals]);
 
     const handleRemoveParticipant = useCallback(async (participantId) => {
         const participant = tournament.participants?.find(p => p.id === participantId);
@@ -2767,6 +2698,170 @@ function TournamentDetails() {
                                     ✓ Да
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 🎯 МОДАЛЬНОЕ ОКНО ПРОСМОТРА ДЕТАЛЕЙ МАТЧА */}
+                {selectedMatch && (
+                    <div className="modal match-details-modal">
+                        <div className="modal-content match-details-modal-content">
+                            <div className="team-modal-header">
+                                <h3>🔍 Детали матча</h3>
+                                <button 
+                                    className="close-btn"
+                                    onClick={() => setSelectedMatch(null)}
+                                    title="Закрыть"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Информация о командах и общий счет */}
+                            <div className="match-teams">
+                                <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner' : ''}`}>
+                                    <h5>{selectedMatch.team1_name || 'Команда 1'}</h5>
+                                    <span className="team-score">
+                                        {selectedMatch.score1 !== undefined ? selectedMatch.score1 : 
+                                         (selectedMatch.team1_score !== undefined ? selectedMatch.team1_score : 0)}
+                                    </span>
+                                    {selectedMatch.winner_team_id === selectedMatch.team1_id && (
+                                        <span className="winner-badge">🏆 Победитель</span>
+                                    )}
+                                </div>
+                                
+                                <div className="vs-separator">VS</div>
+                                
+                                <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner' : ''}`}>
+                                    <h5>{selectedMatch.team2_name || 'Команда 2'}</h5>
+                                    <span className="team-score">
+                                        {selectedMatch.score2 !== undefined ? selectedMatch.score2 : 
+                                         (selectedMatch.team2_score !== undefined ? selectedMatch.team2_score : 0)}
+                                    </span>
+                                    {selectedMatch.winner_team_id === selectedMatch.team2_id && (
+                                        <span className="winner-badge">🏆 Победитель</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Итоговый счет */}
+                            <div className="final-score">
+                                <div className="score-item">
+                                    <span className="score-label">{selectedMatch.team1_name || 'Команда 1'}</span>
+                                    <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner-score' : ''}`}>
+                                        {selectedMatch.score1 !== undefined ? selectedMatch.score1 : 
+                                         (selectedMatch.team1_score !== undefined ? selectedMatch.team1_score : 0)}
+                                    </span>
+                                </div>
+                                <span className="score-separator">—</span>
+                                <div className="score-item">
+                                    <span className="score-label">{selectedMatch.team2_name || 'Команда 2'}</span>
+                                    <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner-score' : ''}`}>
+                                        {selectedMatch.score2 !== undefined ? selectedMatch.score2 : 
+                                         (selectedMatch.team2_score !== undefined ? selectedMatch.team2_score : 0)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Результаты по картам (для CS2 и других игр с картами) */}
+                            {selectedMatch.maps_data && Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length > 0 && (
+                                <div className="maps-results">
+                                    <h4>🗺️ Результаты по картам</h4>
+                                    
+                                    {/* Статистика карт */}
+                                    <div className="maps-statistics">
+                                        <h5>📊 Общая статистика</h5>
+                                        <div className="maps-stats">
+                                            <div className="stat-item">
+                                                <span className="stat-label">Всего карт сыграно</span>
+                                                <span className="stat-value">{selectedMatch.maps_data.length}</span>
+                                            </div>
+                                            <div className="stat-item">
+                                                <span className="stat-label">Карт выиграно {selectedMatch.team1_name || 'Командой 1'}</span>
+                                                <span className="stat-value">
+                                                    {selectedMatch.maps_data.filter(map => {
+                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                        return Number(score1) > Number(score2);
+                                                    }).length}
+                                                </span>
+                                            </div>
+                                            <div className="stat-item">
+                                                <span className="stat-label">Карт выиграно {selectedMatch.team2_name || 'Командой 2'}</span>
+                                                <span className="stat-value">
+                                                    {selectedMatch.maps_data.filter(map => {
+                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                        return Number(score2) > Number(score1);
+                                                    }).length}
+                                                </span>
+                                            </div>
+                                            <div className="stat-item">
+                                                <span className="stat-label">Общий счет по фрагам</span>
+                                                <span className="stat-value">
+                                                    {selectedMatch.maps_data.reduce((sum, map) => {
+                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                        return sum + (Number(score1) || 0);
+                                                    }, 0)} : {selectedMatch.maps_data.reduce((sum, map) => {
+                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                        return sum + (Number(score2) || 0);
+                                                    }, 0)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Таблица с результатами карт */}
+                                    <table className="maps-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Карта</th>
+                                                <th>{selectedMatch.team1_name || 'Команда 1'}</th>
+                                                <th>{selectedMatch.team2_name || 'Команда 2'}</th>
+                                                <th>Победитель</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedMatch.maps_data.map((map, index) => {
+                                                const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                const team1Won = Number(score1) > Number(score2);
+                                                const team2Won = Number(score2) > Number(score1);
+                                                const isDraw = Number(score1) === Number(score2);
+                                                
+                                                return (
+                                                    <tr key={index}>
+                                                        <td>{map.map || map.name || `Карта ${index + 1}`}</td>
+                                                        <td className={team1Won ? 'map-winner' : ''}>{score1 || 0}</td>
+                                                        <td className={team2Won ? 'map-winner' : ''}>{score2 || 0}</td>
+                                                        <td className={team1Won || team2Won ? 'map-winner' : ''}>
+                                                            {team1Won ? (selectedMatch.team1_name || 'Команда 1') : 
+                                                             team2Won ? (selectedMatch.team2_name || 'Команда 2') : 
+                                                             'Ничья'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* Сообщение если нет данных карт */}
+                            {(!selectedMatch.maps_data || !Array.isArray(selectedMatch.maps_data) || selectedMatch.maps_data.length === 0) && (
+                                <div className="no-maps-info">
+                                    <p><strong>Данные по картам недоступны</strong></p>
+                                    <p>Возможно матч проводился в формате без детализации по картам</p>
+                                </div>
+                            )}
+
+                            {/* Информация о времени */}
+                            {selectedMatch.completed_at && (
+                                <div className="match-summary">
+                                    <h4>📅 Информация о матче</h4>
+                                    <p><strong>Завершен:</strong> {new Date(selectedMatch.completed_at).toLocaleString('ru-RU')}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
