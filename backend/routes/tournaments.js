@@ -158,10 +158,14 @@ router.get('/:id', async (req, res) => {
         let participantsQuery;
         if (tournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
+                SELECT tp.*, tp.faceit_elo, tp.cs2_premier_rank, tp.in_team,
+                       u.avatar_url, u.username, 
+                       COALESCE(tp.faceit_elo, u.faceit_elo) as faceit_elo_combined,
+                       COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank) as cs2_premier_rank_combined
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
+                ORDER BY tp.created_at ASC
             `;
         } else {
             participantsQuery = `
@@ -169,6 +173,7 @@ router.get('/:id', async (req, res) => {
                 FROM tournament_teams tt
                 LEFT JOIN users u ON tt.creator_id = u.id
                 WHERE tt.tournament_id = $1
+                ORDER BY tt.id ASC
             `;
         }
         
@@ -280,10 +285,14 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
         let participantsQuery;
         if (updatedTournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
+                SELECT tp.*, tp.faceit_elo, tp.cs2_premier_rank, tp.in_team,
+                       u.avatar_url, u.username, 
+                       COALESCE(tp.faceit_elo, u.faceit_elo) as faceit_elo_combined,
+                       COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank) as cs2_premier_rank_combined
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
+                ORDER BY tp.created_at ASC
             `;
         } else {
             participantsQuery = `
@@ -291,6 +300,7 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
                 FROM tournament_teams tt
                 LEFT JOIN users u ON tt.creator_id = u.id
                 WHERE tt.tournament_id = $1
+                ORDER BY tt.id ASC
             `;
         }
         
@@ -418,18 +428,26 @@ router.post('/:id/participate', authenticateToken, async (req, res) => {
         if (tournament.format === 'mix') {
             console.log(`🎯 Пользователь ${req.user.username} (ID: ${userId}) участвует в микс турнире ${id}`);
             
-            // Добавляем участника в tournament_participants с флагом in_team = false
+            // 🆕 ПОЛУЧАЕМ РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ ИЗ ПРОФИЛЯ
+            const userResult = await pool.query('SELECT faceit_elo, cs2_premier_rank FROM users WHERE id = $1', [userId]);
+            const userRatings = userResult.rows[0] || {};
+            
+            // Добавляем участника в tournament_participants с флагом in_team = false и рейтингами
             await pool.query(
-                'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team) VALUES ($1, $2, $3, $4)',
-                [id, userId, req.user.username, false]
+                'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team, faceit_elo, cs2_premier_rank) VALUES ($1, $2, $3, $4, $5, $6)',
+                [id, userId, req.user.username, false, userRatings.faceit_elo || null, userRatings.cs2_premier_rank || null]
             );
             
-            console.log(`✅ Участник ${req.user.username} добавлен в микс турнир как индивидуальный игрок (не в команде)`);
+            console.log(`✅ Участник ${req.user.username} добавлен в микс турнир как индивидуальный игрок (не в команде) с рейтингами`);
             
         } else if (tournament.participant_type === 'solo') {
+            // 🆕 ПОЛУЧАЕМ РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ ИЗ ПРОФИЛЯ ДЛЯ SOLO ТУРНИРОВ
+            const userResult = await pool.query('SELECT faceit_elo, cs2_premier_rank FROM users WHERE id = $1', [userId]);
+            const userRatings = userResult.rows[0] || {};
+            
             await pool.query(
-                'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
-                [id, userId, req.user.username]
+                'INSERT INTO tournament_participants (tournament_id, user_id, name, faceit_elo, cs2_premier_rank) VALUES ($1, $2, $3, $4, $5)',
+                [id, userId, req.user.username, userRatings.faceit_elo || null, userRatings.cs2_premier_rank || null]
             );
         } else {
             let selectedTeamId;
@@ -676,7 +694,7 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
 // Ручное добавление участника (для solo и team)
 router.post('/:id/add-participant', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { participantName, userId } = req.body;
+    const { participantName, userId, faceit_elo, cs2_premier_rank } = req.body;
     const currentUserId = req.user.id;
 
     try {
@@ -742,24 +760,26 @@ router.post('/:id/add-participant', authenticateToken, async (req, res) => {
             }
         }
 
-        // 🆕 ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ МИКС ТУРНИРОВ
+        console.log(`🎯 Добавляем участника: ${participantName}, faceit_elo: ${faceit_elo}, cs2_premier_rank: ${cs2_premier_rank}`);
+
+        // 🆕 ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ МИКС ТУРНИРОВ С СОХРАНЕНИЕМ РЕЙТИНГОВ
         // Для микс турниров ВСЕГДА добавляем в tournament_participants, даже если participant_type = 'team'
         if (tournament.format === 'mix') {
             console.log(`🎯 Добавляем участника в микс турнир: ${participantName} (user_id: ${userId || 'гость'})`);
             
-            // Добавляем участника в tournament_participants с флагом in_team = false
+            // Добавляем участника в tournament_participants с флагом in_team = false и рейтингами
             await pool.query(
-                'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team) VALUES ($1, $2, $3, $4)',
-                [id, userId || null, participantName, false]
+                'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team, faceit_elo, cs2_premier_rank) VALUES ($1, $2, $3, $4, $5, $6)',
+                [id, userId || null, participantName, false, faceit_elo || null, cs2_premier_rank || null]
             );
             
-            console.log(`✅ Участник ${participantName} добавлен в микс турнир как индивидуальный игрок (не в команде)`);
+            console.log(`✅ Участник ${participantName} добавлен в микс турнир как индивидуальный игрок (не в команде) с рейтингами`);
             
         } else if (tournament.participant_type === 'solo') {
-            // Обычные solo турниры
+            // Обычные solo турниры с сохранением рейтингов
             await pool.query(
-                'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
-                [id, userId || null, participantName]
+                'INSERT INTO tournament_participants (tournament_id, user_id, name, faceit_elo, cs2_premier_rank) VALUES ($1, $2, $3, $4, $5)',
+                [id, userId || null, participantName, faceit_elo || null, cs2_premier_rank || null]
             );
         } else {
             // Обычные командные турниры
@@ -915,18 +935,26 @@ router.post('/:id/handle-invitation', authenticateToken, async (req, res) => {
             if (tournament.format === 'mix') {
                 console.log(`🎯 Пользователь ${req.user.username} (ID: ${userId}) принимает приглашение в микс турнир ${id}`);
                 
-                // Добавляем участника в tournament_participants с флагом in_team = false
+                // 🆕 ПОЛУЧАЕМ РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ ИЗ ПРОФИЛЯ
+                const userResult = await pool.query('SELECT faceit_elo, cs2_premier_rank FROM users WHERE id = $1', [userId]);
+                const userRatings = userResult.rows[0] || {};
+                
+                // Добавляем участника в tournament_participants с флагом in_team = false и рейтингами
                 await pool.query(
-                    'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team) VALUES ($1, $2, $3, $4)',
-                    [id, userId, req.user.username, false]
+                    'INSERT INTO tournament_participants (tournament_id, user_id, name, in_team, faceit_elo, cs2_premier_rank) VALUES ($1, $2, $3, $4, $5, $6)',
+                    [id, userId, req.user.username, false, userRatings.faceit_elo || null, userRatings.cs2_premier_rank || null]
                 );
                 
-                console.log(`✅ Участник ${req.user.username} добавлен в микс турнир как индивидуальный игрок (не в команде)`);
+                console.log(`✅ Участник ${req.user.username} добавлен в микс турнир как индивидуальный игрок (не в команде) с рейтингами`);
                 
             } else if (tournament.participant_type === 'solo') {
+                // 🆕 ПОЛУЧАЕМ РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ ИЗ ПРОФИЛЯ ДЛЯ SOLO ТУРНИРОВ
+                const userResult = await pool.query('SELECT faceit_elo, cs2_premier_rank FROM users WHERE id = $1', [userId]);
+                const userRatings = userResult.rows[0] || {};
+                
                 await pool.query(
-                    'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3)',
-                    [id, userId, req.user.username]
+                    'INSERT INTO tournament_participants (tournament_id, user_id, name, faceit_elo, cs2_premier_rank) VALUES ($1, $2, $3, $4, $5)',
+                    [id, userId, req.user.username, userRatings.faceit_elo || null, userRatings.cs2_premier_rank || null]
                 );
             } else {
                 const teamResult = await pool.query(
@@ -2114,10 +2142,10 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
 
         // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ (включая тех, кто был добавлен после формирования команд)
         const partRes = await pool.query(
-            `SELECT tp.id AS participant_id, tp.user_id, tp.name,
-                    COALESCE(u.faceit_elo, 0) as faceit_rating,
-                    COALESCE(u.cs2_premier_rank, 0) as premier_rating,
-                    tp.in_team
+            `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
+                    tp.faceit_elo, tp.cs2_premier_rank,
+                    COALESCE(tp.faceit_elo, u.faceit_elo, 0) as faceit_rating,
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 0) as premier_rating
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
@@ -2597,10 +2625,14 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
         let participantsQuery;
         if (updatedTournament.participant_type === 'solo') {
             participantsQuery = `
-                SELECT tp.*, u.avatar_url, u.username, u.faceit_elo 
+                SELECT tp.*, tp.faceit_elo, tp.cs2_premier_rank, tp.in_team,
+                       u.avatar_url, u.username, 
+                       COALESCE(tp.faceit_elo, u.faceit_elo) as faceit_elo_combined,
+                       COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank) as cs2_premier_rank_combined
                 FROM tournament_participants tp 
                 LEFT JOIN users u ON tp.user_id = u.id
                 WHERE tp.tournament_id = $1
+                ORDER BY tp.created_at ASC
             `;
         } else {
             participantsQuery = `
@@ -2608,6 +2640,7 @@ router.post('/:id/end', authenticateToken, verifyAdminOrCreator, async (req, res
                 FROM tournament_teams tt
                 LEFT JOIN users u ON tt.creator_id = u.id
                 WHERE tt.tournament_id = $1
+                ORDER BY tt.id ASC
             `;
         }
         
@@ -2970,8 +3003,9 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, async (r
         // Получаем всех участников-игроков с рейтингами
         const partRes = await pool.query(
             `SELECT tp.id AS participant_id, tp.user_id, tp.name,
-                    COALESCE(u.faceit_elo, 0) as faceit_rating,
-                    COALESCE(u.cs2_premier_rank, 0) as premier_rating
+                    tp.faceit_elo, tp.cs2_premier_rank,
+                    COALESCE(tp.faceit_elo, u.faceit_elo, 0) as faceit_rating,
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 0) as premier_rating
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1`,
@@ -3212,7 +3246,10 @@ router.get('/:id/original-participants', async (req, res) => {
         // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ С ФЛАГОМ in_team ДЛЯ РАЗДЕЛЕНИЯ НА ГРУППЫ
         const participantsRes = await pool.query(
             `SELECT tp.id, tp.user_id, tp.name, tp.tournament_id, tp.in_team,
-                    u.avatar_url, u.username, u.faceit_elo, u.cs2_premier_rank
+                    tp.faceit_elo, tp.cs2_premier_rank,
+                    u.avatar_url, u.username, 
+                    COALESCE(tp.faceit_elo, u.faceit_elo) as faceit_elo_combined,
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank) as cs2_premier_rank_combined
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
