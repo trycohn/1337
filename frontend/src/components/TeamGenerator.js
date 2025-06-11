@@ -36,6 +36,8 @@ const TeamGenerator = ({
     // 🆕 СОСТОЯНИЯ ДЛЯ МОДАЛЬНОГО ОКНА ПЕРЕФОРМИРОВАНИЯ
     const [showReformModal, setShowReformModal] = useState(false);
     const [reformLoading, setReformLoading] = useState(false);
+    // 🆕 СОСТОЯНИЕ ДЛЯ РАСКРЫТИЯ СПИСКА УЧАСТНИКОВ В МОДАЛЬНОМ ОКНЕ
+    const [showAllNewParticipants, setShowAllNewParticipants] = useState(false);
 
     // ⏱️ Debounce механизм для предотвращения частых запросов
     const [lastRequestTime, setLastRequestTime] = useState({});
@@ -846,6 +848,7 @@ const TeamGenerator = ({
                 
                 // 🔧 ИСПРАВЛЕНИЕ: Закрываем модальное окно ТОЛЬКО при успешном выполнении
                 setShowReformModal(false);
+                setShowAllNewParticipants(false); // Сброс состояния раскрытия списка
                 
                 // 🆕 ДЕТАЛЬНОЕ УВЕДОМЛЕНИЕ О РЕЗУЛЬТАТАХ
                 if (toast) {
@@ -897,7 +900,10 @@ const TeamGenerator = ({
                             <h3>🔄 Подтверждение переформирования</h3>
                             <button 
                                 className="close-btn"
-                                onClick={() => setShowReformModal(false)}
+                                onClick={() => {
+                                    setShowReformModal(false);
+                                    setShowAllNewParticipants(false); // Сброс состояния раскрытия списка
+                                }}
                                 disabled={reformLoading}
                             >
                                 ✕
@@ -942,7 +948,10 @@ const TeamGenerator = ({
                                             <div className="new-participants-preview">
                                                 <p><strong>🆕 Новые участники будут включены в команды:</strong></p>
                                                 <ul className="new-participants-list">
-                                                    {displayParticipants.filter(p => !p.in_team).slice(0, 5).map(participant => (
+                                                    {(showAllNewParticipants 
+                                                        ? displayParticipants.filter(p => !p.in_team)
+                                                        : displayParticipants.filter(p => !p.in_team).slice(0, 5)
+                                                    ).map(participant => (
                                                         <li key={participant.id}>
                                                             {participant.name} 
                                                             <span className="participant-rating-preview">
@@ -953,8 +962,36 @@ const TeamGenerator = ({
                                                             </span>
                                                         </li>
                                                     ))}
-                                                    {displayParticipants.filter(p => !p.in_team).length > 5 && (
-                                                        <li>... и еще {displayParticipants.filter(p => !p.in_team).length - 5} участников</li>
+                                                    {displayParticipants.filter(p => !p.in_team).length > 5 && !showAllNewParticipants && (
+                                                        <li 
+                                                            className="show-more-participants"
+                                                            onClick={() => setShowAllNewParticipants(true)}
+                                                            style={{ 
+                                                                cursor: 'pointer', 
+                                                                color: '#007bff', 
+                                                                textDecoration: 'underline',
+                                                                fontWeight: 'bold'
+                                                            }}
+                                                            title="Нажмите чтобы показать всех участников"
+                                                        >
+                                                            ... и еще {displayParticipants.filter(p => !p.in_team).length - 5} участников (нажмите чтобы раскрыть)
+                                                        </li>
+                                                    )}
+                                                    {showAllNewParticipants && displayParticipants.filter(p => !p.in_team).length > 5 && (
+                                                        <li 
+                                                            className="show-less-participants"
+                                                            onClick={() => setShowAllNewParticipants(false)}
+                                                            style={{ 
+                                                                cursor: 'pointer', 
+                                                                color: '#6c757d', 
+                                                                textDecoration: 'underline',
+                                                                fontWeight: 'bold',
+                                                                marginTop: '5px'
+                                                            }}
+                                                            title="Нажмите чтобы свернуть список"
+                                                        >
+                                                            ↑ Свернуть список участников
+                                                        </li>
                                                     )}
                                                 </ul>
                                             </div>
@@ -982,7 +1019,10 @@ const TeamGenerator = ({
                         <div className="modal-footer">
                             <button 
                                 className="btn-cancel"
-                                onClick={() => setShowReformModal(false)}
+                                onClick={() => {
+                                    setShowReformModal(false);
+                                    setShowAllNewParticipants(false); // Сброс состояния раскрытия списка
+                                }}
                                 disabled={reformLoading}
                             >
                                 ❌ Отмена

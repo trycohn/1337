@@ -1396,9 +1396,8 @@
 }
 
 .participant-rating-preview {
-    color: #6b7280;
-    font-size: 0.875rem;
-    font-weight: normal;
+    color: #9ca3af;
+    font-size: 0.8rem;
     margin-left: 8px;
 }
 
@@ -1459,4 +1458,57 @@
     .reform-preview li {
         font-size: 0.875rem;
     }
+}
+
+/* 🆕 СТИЛИ ДЛЯ ИНТЕРАКТИВНЫХ ЭЛЕМЕНТОВ СПИСКА УЧАСТНИКОВ */
+.show-more-participants,
+.show-less-participants {
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 2px 0;
+}
+
+.show-more-participants:hover,
+.show-less-participants:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6 !important;
+    transform: translateX(2px);
+}
+
+.show-less-participants:hover {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #374151 !important;
+}
+
+.show-more-participants:active,
+.show-less-participants:active {
+    transform: scale(0.98);
+}
+
+/* Анимация для раскрытого списка */
+.new-participants-list {
+    transition: max-height 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+/* Дополнительные стили для улучшения UX */
+.show-more-participants::before {
+    content: "👆 ";
+    margin-right: 4px;
+    transition: transform 0.2s ease;
+}
+
+.show-more-participants:hover::before {
+    transform: translateY(-1px);
+}
+
+.show-less-participants::before {
+    content: "👇 ";
+    margin-right: 4px;
+    transition: transform 0.2s ease;
+}
+
+.show-less-participants:hover::before {
+    transform: translateY(1px);
 } 
