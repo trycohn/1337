@@ -2337,7 +2337,10 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         // 🔄 НОВЫЙ АЛГОРИТМ: комбинированное распределение
         // 1. Группируем игроков по уровням рейтинга для лучшего баланса
         const ratingGroups = [];
-        const groupSize = fullTeams; // Размер группы равен количеству команд
+        // 🔧 ИСПРАВЛЕНИЕ КРИТИЧЕСКОЙ ОШИБКИ: размер группы должен обеспечивать равномерное распределение
+        const groupSize = Math.ceil(participantsForTeams.length / fullTeams); // Равномерное деление участников на группы
+        
+        console.log(`🔧 ИСПРАВЛЕННЫЙ АЛГОРИТМ: participantsForTeams=${participantsForTeams.length}, fullTeams=${fullTeams}, groupSize=${groupSize}`);
         
         for (let i = 0; i < participantsForTeams.length; i += groupSize) {
             const group = participantsForTeams.slice(i, i + groupSize);
@@ -2360,6 +2363,8 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             
             ratingGroups.push(group);
         }
+        
+        console.log(`🔧 Создано ${ratingGroups.length} групп рейтингов по ~${groupSize} участников каждая`);
         
         // 2. Распределяем игроков из каждой группы по командам
         ratingGroups.forEach((group, groupIndex) => {
