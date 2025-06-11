@@ -2129,8 +2129,8 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
                     tp.faceit_elo, tp.cs2_premier_rank,
                     u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
-                    COALESCE(tp.faceit_elo, u.faceit_elo, 0) as faceit_rating,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 0) as premier_rating
+                    COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_rating,
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as premier_rating
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
@@ -2538,8 +2538,8 @@ router.get('/:id/original-participants', async (req, res) => {
             `SELECT tp.id, tp.user_id, tp.name, tp.tournament_id, tp.in_team,
                     tp.faceit_elo, tp.cs2_premier_rank,
                     u.avatar_url, u.username, 
-                    COALESCE(tp.faceit_elo, u.faceit_elo) as faceit_elo_combined,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank) as cs2_premier_rank_combined
+                    COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo_combined,
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank_combined
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
