@@ -72,11 +72,9 @@ function Layout() {
             const handleNewMessage = (message) => {
                 console.log('📬 [Layout] Получено новое сообщение:', message);
                 console.log('📬 [Layout] Sender ID:', message.sender_id, 'Current user ID:', user.id);
-                console.log('📬 [Layout] Current path:', location.pathname);
                 
                 // Увеличиваем счетчик только если сообщение не от текущего пользователя
-                // и мы не находимся в чатах
-                if (message.sender_id !== user.id && location.pathname !== '/messages') {
+                if (message.sender_id !== user.id) {
                     console.log('📬 [Layout] Увеличиваем счетчик непрочитанных сообщений');
                     setUnreadCount(prev => {
                         const newCount = prev + 1;
@@ -84,7 +82,7 @@ function Layout() {
                         return newCount;
                     });
                 } else {
-                    console.log('📬 [Layout] Не увеличиваем счетчик (собственное сообщение или в чатах)');
+                    console.log('📬 [Layout] Не увеличиваем счетчик (собственное сообщение)');
                 }
             };
 
@@ -106,16 +104,38 @@ function Layout() {
         }
     }, [user?.id]); // Только user.id в зависимостях
 
-    // Обновляем счетчик при переходе на страницу чатов
+    // Обновляем счетчик при каждом переходе между страницами
     useEffect(() => {
-        if (location.pathname === '/messages' && user) {
-            // Небольшая задержка для обновления счетчика после посещения чатов
-            const timer = setTimeout(() => {
-                fetchUnreadCount();
-            }, 1000);
-            return () => clearTimeout(timer);
+        if (user) {
+            console.log('📊 [Layout] Переход на страницу:', location.pathname);
+            fetchUnreadCount();
         }
     }, [location.pathname, user]);
+
+    // Обновляем счетчик при получении фокуса окна
+    useEffect(() => {
+        if (!user) return;
+
+        const handleFocus = () => {
+            console.log('📊 [Layout] Окно получило фокус, обновляем счетчик');
+            fetchUnreadCount();
+        };
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                console.log('📊 [Layout] Страница стала видимой, обновляем счетчик');
+                fetchUnreadCount();
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [user]);
 
     useEffect(() => {
         setLoading(true);
