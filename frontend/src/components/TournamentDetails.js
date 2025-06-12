@@ -945,9 +945,9 @@ function TournamentDetails() {
                 round: transformedGame.round,
                 bracket_type: transformedGame.bracket_type,
                 state: transformedGame.state,
-                participants: transformedGame.participants.map(p => p.name),
+                participants: (transformedGame.participants || []).map(p => p.name),
                 hasWinner: !!transformedGame.winner_id,
-                scores: transformedGame.participants.map(p => p.score)
+                scores: (transformedGame.participants || []).map(p => p.score)
             });
 
             return transformedGame;
@@ -1064,7 +1064,7 @@ function TournamentDetails() {
                 // Логируем структуру команд для диагностики
                 if (teamsData.length > 0) {
                     console.log('🔍 Структура первой команды:', teamsData[0]);
-                    console.log('🔍 Составы команд:', teamsData.map(team => ({
+                    console.log('🔍 Составы команд:', (teamsData || []).map(team => ({
                         name: team.name,
                         membersCount: team.members?.length || 0,
                         members: team.members?.map(m => m.name || m.username || 'Неизвестно')
@@ -1966,7 +1966,7 @@ function TournamentDetails() {
                     
                     {/* Навигация по вкладкам */}
                 <nav className="tabs-navigation-tournamentdetails">
-                    {visibleTabs.map(tab => (
+                    {(visibleTabs || []).map(tab => (
                         <button
                             key={tab.id}
                             className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
@@ -2100,7 +2100,7 @@ function TournamentDetails() {
                                                 <div className="tournament-description-content">
                                                     {tournament.description && tournament.description.trim() ? (
                                                         <div className="tournament-description">
-                                                            {tournament.description.split('\n').map((line, index) => (
+                                                            {(tournament.description || '').split('\n').map((line, index) => (
                                                                 <p key={index}>{line}</p>
                                                             ))}
                                                         </div>
@@ -2167,7 +2167,7 @@ function TournamentDetails() {
                                             ) : (
                                                         <div className="rules-text">
                                                     {tournament.rules && tournament.rules.trim() ? (
-                                                        tournament.rules.split('\n').map((rule, index) => (
+                                                        (tournament.rules || '').split('\n').map((rule, index) => (
                                                             <div key={index} className="rule-item">
                                                                 {rule}
                                                         </div>
@@ -2528,7 +2528,7 @@ function TournamentDetails() {
                                                                         
                                 return (
                                     <div className="matches-list">
-                                        {completedMatches.map(match => (
+                                        {(completedMatches || []).map(match => (
                                             <div key={match.id} className="match-item">
                                                 <div className="match-info">
                                                     <div className="team-info">

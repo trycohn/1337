@@ -320,9 +320,9 @@ router.get('/:id', async (req, res) => {
         if (tournament.format === 'mix' || tournament.participant_type === 'team') {
             console.log(`🏆 [GET /tournaments/${tournamentId}] Загружаем команды для формата "${tournament.format}"...`);
             
-            // 🔧 ИСПРАВЛЕННЫЙ SQL ЗАПРОС - используем правильную связь через tournament_team_members
+            // 🔧 ИСПРАВЛЕННЫЙ SQL ЗАПРОС - используем таблицу tournament_teams вместо teams
             const teamsQuery = `
-                SELECT t.id, t.name, t.tournament_id, t.created_at,
+                SELECT tt.id, tt.name, tt.tournament_id, tt.created_at,
                     JSON_AGG(
                         JSON_BUILD_OBJECT(
                             'id', tp.id,
@@ -334,13 +334,13 @@ router.get('/:id', async (req, res) => {
                             'avatar_url', u.avatar_url
                         ) ORDER BY tp.created_at
                     ) as members
-                FROM teams t
-                LEFT JOIN tournament_team_members ttm ON t.id = ttm.team_id
+                FROM tournament_teams tt
+                LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
                 LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
                 LEFT JOIN users u ON tp.user_id = u.id
-                WHERE t.tournament_id = $1
-                GROUP BY t.id
-                ORDER BY t.id
+                WHERE tt.tournament_id = $1
+                GROUP BY tt.id
+                ORDER BY tt.id
             `;
             
             try {
