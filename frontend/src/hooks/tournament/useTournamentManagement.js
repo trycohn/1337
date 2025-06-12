@@ -206,16 +206,60 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            const response = await axios.put(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
-                score1: resultData.score1,
-                score2: resultData.score2,
-                maps_data: resultData.maps_data || null
-            }, {
+            // 🔧 ИСПРАВЛЕНО: Используем существующий POST роут /api/tournaments/:id/update-match
+            console.log('🔍 Sending request to saveMatchResult:', {
+                tournamentId,
+                matchId,
+                resultData
+            });
+            
+            const requestData = {
+                matchId: matchId,
+                winner_team_id: null, // Определим ниже
+                score1: resultData.score1 || 0,
+                score2: resultData.score2 || 0,
+                maps: resultData.maps_data && resultData.maps_data.length > 0 ? resultData.maps_data : null
+            };
+            
+            // Определяем победителя
+            if (resultData.winner === 'team1') {
+                // Нужно получить team1_id из матча - попробуем найти в localStorage
+                try {
+                    const tournamentData = localStorage.getItem('currentTournament');
+                    if (tournamentData) {
+                        const tournament = JSON.parse(tournamentData);
+                        const match = tournament.matches?.find(m => m.id === matchId);
+                        if (match) {
+                            requestData.winner_team_id = match.team1_id;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Не удалось определить team1_id из localStorage:', error);
+                }
+            } else if (resultData.winner === 'team2') {
+                try {
+                    const tournamentData = localStorage.getItem('currentTournament');
+                    if (tournamentData) {
+                        const tournament = JSON.parse(tournamentData);
+                        const match = tournament.matches?.find(m => m.id === matchId);
+                        if (match) {
+                            requestData.winner_team_id = match.team2_id;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Не удалось определить team2_id из localStorage:', error);
+                }
+            }
+            
+            console.log('🔍 Отправляем данные на сервер:', requestData);
+            
+            const response = await axios.post(`/api/tournaments/${tournamentId}/update-match`, requestData, {
                 headers: getAuthHeaders()
             });
 
             return { success: true, data: response.data };
         } catch (error) {
+            console.error('❌ Ошибка при сохранении результата матча:', error);
             const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при сохранении результата';
             setError(errorMessage);
             return { success: false, error: errorMessage };

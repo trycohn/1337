@@ -27,24 +27,49 @@ const MatchResultModal = ({
 
     // 🎯 УЛУЧШЕНИЕ: Автоопределение турнира из localStorage или контекста
     const getTournamentGame = useCallback(() => {
+        console.log('🎮 Определяем игру турнира для карт...');
+        
+        // Приоритет 1: Прямо переданный турнир
         if (tournament?.game) {
+            console.log('✅ Игра определена из пропса tournament:', tournament.game);
             return tournament.game;
         }
         
+        // Приоритет 2: Турнир из localStorage
         try {
             const tournamentData = localStorage.getItem('currentTournament');
             if (tournamentData) {
                 const parsedTournament = JSON.parse(tournamentData);
-                return parsedTournament.game;
+                if (parsedTournament.game) {
+                    console.log('✅ Игра определена из localStorage:', parsedTournament.game);
+                    return parsedTournament.game;
+                }
             }
         } catch (error) {
             console.warn('Ошибка получения турнира из localStorage:', error);
         }
         
+        // Приоритет 3: Проверка данных матча
         if (selectedMatch?.maps_data || selectedMatch?.game === 'Counter-Strike 2') {
+            console.log('✅ Игра определена из данных матча: Counter-Strike 2');
             return 'Counter-Strike 2';
         }
         
+        // Приоритет 4: Попробуем определить по URL (если есть турнир ID)
+        try {
+            const pathMatch = window.location.pathname.match(/\/tournaments\/(\d+)/);
+            if (pathMatch) {
+                console.log('🔍 Пытаемся определить игру по контексту URL для турнира:', pathMatch[1]);
+                // Можно добавить логику определения игры по умолчанию
+                // Временно считаем CS2 если не определилось
+                console.log('✅ Принимаем Counter-Strike 2 как игру по умолчанию');
+                return 'Counter-Strike 2';
+            }
+        } catch (error) {
+            console.warn('Ошибка определения игры по URL:', error);
+        }
+        
+        console.log('❌ Не удалось определить игру турнира');
         return null;
     }, [tournament, selectedMatch]);
 
@@ -199,27 +224,25 @@ const MatchResultModal = ({
 
     // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ
     const TeamTooltip = ({ team, composition, show, onClose }) => {
-        if (!show || !composition || !composition.members || composition.members.length === 0) {
-            return null;
-        }
-        
+        if (!show || !composition) return null;
+
         return (
-            <div className="team-tooltip" onMouseLeave={onClose}>
+            <div className="team-tooltip">
                 <div className="tooltip-header">
-                    <h4>{composition.name}</h4>
-                    <span className="members-count">({composition.members.length} игроков)</span>
+                    <h5>{composition.name}</h5>
+                    <button onClick={onClose} className="tooltip-close">✕</button>
                 </div>
-                <div className="tooltip-members">
-                    {composition.members.map((member, index) => (
-                        <div key={index} className="tooltip-member">
-                            <span className="member-name">{member.name}</span>
-                            {member.rating && (
-                                <span className="member-rating">
-                                    {member.rating} {typeof member.rating === 'number' && member.rating > 100 ? 'ELO' : 'Rank'}
-                                </span>
-                            )}
-                        </div>
-                    ))}
+                <div className="tooltip-content">
+                    <ul className="team-members-tooltip">
+                        {composition.members.map((member, index) => (
+                            <li key={index} className="tooltip-member">
+                                <span className="member-name">{member.name}</span>
+                                {member.rating && (
+                                    <span className="member-rating">({member.rating} ELO)</span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             </div>
         );
@@ -329,6 +352,16 @@ const MatchResultModal = ({
     const hasValidationErrors = Object.keys(validationErrors).length > 0;
     const mapStats = getMapStatistics();
 
+    // 🔧 ДОБАВЛЯЕМ ОТЛАДКУ ДЛЯ ДИАГНОСТИКИ ПРОБЛЕМ С КАРТАМИ
+    console.log('🗺️ Диагностика карт в MatchResultModal:', {
+        tournamentGame: getTournamentGame(),
+        isCS2,
+        availableMapsCount: availableMaps.length,
+        currentMapsDataCount: mapsData.length,
+        selectedMatchId: selectedMatch?.id,
+        showModal: isOpen
+    });
+
     return (
         <div className="modal-overlay enhanced-match-result-overlay" onClick={handleClose}>
             <div className="modal-content match-result-modal enhanced-match-result-modal" onClick={(e) => e.stopPropagation()}>
@@ -383,118 +416,91 @@ const MatchResultModal = ({
                         
                         {/* Кнопка сброса выбора победителя */}
                         {selectedWinner && (
-                            <div className="winner-controls">
+                            <div className="winner-reset">
                                 <button 
                                     type="button"
-                                    className="clear-winner-btn"
+                                    className="reset-winner-btn"
                                     onClick={() => setSelectedWinner(null)}
                                     title="Сбросить выбор победителя"
                                 >
-                                    🗑️ Сбросить победителя
+                                    🔄 Сбросить выбор победителя
                                 </button>
                             </div>
                         )}
-                        
-                        {/* Метаинформация о матче */}
-                        <div className="match-meta">
-                            {selectedMatch.round && (
-                                <span className="match-round">Раунд {selectedMatch.round}</span>
-                            )}
-                            {selectedMatch.is_third_place_match && (
-                                <span className="match-type-badge">🥉 Матч за 3-е место</span>
-                            )}
-                            {isCS2 && (
-                                <span className="game-badge">🗺️ Counter-Strike 2</span>
-                            )}
-                        </div>
                     </div>
 
-                    {/* Ошибки валидации */}
-                    {hasValidationErrors && (
-                        <div className="validation-errors">
-                            {Object.entries(validationErrors).map(([key, error]) => (
-                                <div key={key} className="validation-error">
-                                    ⚠️ {error}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Общий счет */}
-                    <div className="total-score-section">
-                        <h4>Общий счет матча</h4>
+                    {/* Основной счет матча */}
+                    <div className="match-scores">
+                        <h4>📊 Счет матча</h4>
                         <div className="score-inputs">
-                            <div className="score-input-group">
-                                <label>{selectedMatch.team1_name || 'Команда 1'}</label>
+                            <div className="score-container">
+                                <label htmlFor="score1">{selectedMatch.team1_name || 'Команда 1'}</label>
                                 <input
+                                    id="score1"
                                     type="number"
-                                    value={matchResultData.score1 || 0}
+                                    value={matchResultData.score1}
                                     onChange={(e) => handleScoreChange(1, e.target.value)}
                                     disabled={isLoading}
                                     className={validationErrors.scores ? 'error' : ''}
                                 />
                             </div>
                             <div className="score-separator">:</div>
-                            <div className="score-input-group">
-                                <label>{selectedMatch.team2_name || 'Команда 2'}</label>
+                            <div className="score-container">
+                                <label htmlFor="score2">{selectedMatch.team2_name || 'Команда 2'}</label>
                                 <input
+                                    id="score2"
                                     type="number"
-                                    value={matchResultData.score2 || 0}
+                                    value={matchResultData.score2}
                                     onChange={(e) => handleScoreChange(2, e.target.value)}
                                     disabled={isLoading}
                                     className={validationErrors.scores ? 'error' : ''}
                                 />
                             </div>
                         </div>
+                        {validationErrors.scores && (
+                            <div className="validation-error">{validationErrors.scores}</div>
+                        )}
                     </div>
 
-                    {/* Карты (для CS2 и подобных игр) */}
+                    {/* 🔧 СЕКЦИЯ КАРТ - УЛУЧШЕНА С ОТЛАДКОЙ */}
                     {isCS2 && (
                         <div className="maps-section">
                             <div className="maps-header">
-                                <h4>
-                                    Результаты по картам
-                                    {mapsData.length > 0 && (
-                                        <span className="maps-count">({mapsData.length})</span>
-                                    )}
-                                </h4>
-                                <button
-                                    type="button"
-                                    className="add-map-btn"
-                                    onClick={addMap}
-                                    disabled={isLoading || mapsData.length >= 7}
-                                    title={mapsData.length >= 7 ? 'Максимум 7 карт' : 'Добавить карту'}
-                                >
-                                    ➕ Добавить карту
-                                </button>
+                                <h4>🗺️ Результаты по картам ({mapsData.length}/7)</h4>
+                                <p className="maps-hint">
+                                    🎯 Укажите результаты на каждой карте для детальной статистики
+                                </p>
+                            </div>
+                            
+                            {/* 🔧 ОТЛАДОЧНАЯ ИНФОРМАЦИЯ (временно) */}
+                            <div className="debug-maps-info" style={{padding: '10px', background: '#f0f0f0', margin: '10px 0', fontSize: '12px'}}>
+                                <details>
+                                    <summary>🔍 Отладка карт (разработка)</summary>
+                                    <ul>
+                                        <li>Игра турнира: {getTournamentGame() || 'не определена'}</li>
+                                        <li>Поддержка CS2: {isCS2 ? 'Да' : 'Нет'}</li>
+                                        <li>Доступно карт: {availableMaps.length}</li>
+                                        <li>Текущих карт: {mapsData.length}</li>
+                                        <li>ID матча: {selectedMatch?.id}</li>
+                                    </ul>
+                                </details>
                             </div>
 
-                            {mapsData.length === 0 && (
-                                <div className="no-maps-message">
-                                    <p>Карты не добавлены</p>
-                                    <span>Нажмите "Добавить карту" для детализации результата</span>
-                                </div>
-                            )}
-
-                            <div className="maps-list">
+                            <div className="maps-container">
                                 {mapsData.map((mapData, index) => (
                                     <div key={index} className="map-entry">
-                                        <div className="map-header">
-                                            <div className="map-select-container">
-                                                <label>Карта {index + 1}:</label>
-                                                <select
-                                                    value={mapData.map || ''}
-                                                    onChange={(e) => handleMapNameChange(index, e.target.value)}
-                                                    disabled={isLoading}
-                                                    className={`map-select ${validationErrors[`map_${index}_name`] ? 'error' : ''}`}
-                                                    required={mapsData.length > 0}
-                                                >
-                                                    <option value="">Выберите карту</option>
-                                                    {availableMaps.map(map => (
-                                                        <option key={map} value={map}>{map}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                        <div className="map-select-container">
+                                            <select
+                                                className="map-select"
+                                                value={mapData.map || ''}
+                                                onChange={(e) => handleMapNameChange(index, e.target.value)}
+                                                disabled={isLoading}
+                                            >
+                                                <option value="">Выберите карту</option>
+                                                {availableMaps.map((map) => (
+                                                    <option key={map} value={map}>{map}</option>
+                                                ))}
+                                            </select>
                                             <button
                                                 type="button"
                                                 className="remove-map-btn"
@@ -529,19 +535,20 @@ const MatchResultModal = ({
                                                 />
                                             </div>
                                         </div>
-                                        
-                                        {/* Победитель карты */}
-                                        {mapData.score1 !== mapData.score2 && (mapData.score1 !== 0 || mapData.score2 !== 0) && (
-                                            <div className="map-winner">
-                                                🏆 Победитель: {
-                                                    (parseInt(mapData.score1) || 0) > (parseInt(mapData.score2) || 0) 
-                                                        ? (selectedMatch.team1_name || 'Команда 1')
-                                                        : (selectedMatch.team2_name || 'Команда 2')
-                                                }
-                                            </div>
+                                        {validationErrors[`map_${index}_scores`] && (
+                                            <div className="validation-error">{validationErrors[`map_${index}_scores`]}</div>
                                         )}
                                     </div>
                                 ))}
+                                
+                                <button 
+                                    type="button"
+                                    className="add-map-btn"
+                                    onClick={addMap}
+                                    disabled={isLoading || mapsData.length >= 7}
+                                >
+                                    ➕ Добавить карту ({mapsData.length}/7)
+                                </button>
                             </div>
 
                             {/* Расширенная статистика по картам */}
@@ -583,19 +590,19 @@ const MatchResultModal = ({
                                             </div>
                                             
                                             <div className="stat-group">
-                                                <h6>📈 Показатели матча</h6>
-                                                <div className="match-indicators">
-                                                    <span className="indicator">
+                                                <h6>📈 Эффективность</h6>
+                                                <div className="performance-stats">
+                                                    <span className="performance-stat">
                                                         Карт сыграно: {mapStats.mapsCount}
                                                     </span>
-                                                    <span className="indicator">
-                                                        Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount)}
+                                                    <span className="performance-stat">
+                                                        Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
+                                                                 mapStats.mapsCount <= 3 ? 'BO3' : 
+                                                                 mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}
                                                     </span>
-                                                    {mapStats.mapsCount >= 3 && (
-                                                        <span className="indicator format-indicator">
-                                                            Формат: BO{mapStats.mapsCount}
-                                                        </span>
-                                                    )}
+                                                    <span className="performance-stat">
+                                                        Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount / 2)}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -605,30 +612,36 @@ const MatchResultModal = ({
                         </div>
                     )}
 
-                    {/* Действия */}
+                    {/* Валидационные ошибки */}
+                    {hasValidationErrors && (
+                        <div className="validation-summary">
+                            <h5>⚠️ Ошибки валидации:</h5>
+                            <ul>
+                                {Object.entries(validationErrors).map(([field, error]) => (
+                                    <li key={field} className="validation-error">
+                                        {error}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Кнопки управления */}
                     <div className="modal-actions">
                         <button 
-                            type="button" 
-                            className="cancel-btn" 
+                            type="button"
+                            className="cancel-btn"
                             onClick={handleClose}
                             disabled={isLoading}
                         >
-                            Отмена
+                            ❌ Отмена
                         </button>
                         <button 
-                            type="submit" 
-                            className="save-btn"
+                            type="submit"
+                            className="confirm-btn"
                             disabled={isLoading || hasValidationErrors}
-                            title={hasValidationErrors ? 'Исправьте ошибки перед сохранением' : 'Сохранить результат'}
                         >
-                            {isLoading ? (
-                                <>
-                                    <span className="loading-spinner">⏳</span>
-                                    Сохранение...
-                                </>
-                            ) : (
-                                '💾 Сохранить результат'
-                            )}
+                            {isLoading ? '⏳ Сохранение...' : '💾 Сохранить результат'}
                         </button>
                     </div>
                 </form>

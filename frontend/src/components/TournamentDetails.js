@@ -1307,7 +1307,24 @@ function TournamentDetails() {
     const handleMatchClick = useCallback((matchParam) => {
         const matchId = typeof matchParam === 'object' ? matchParam.id : matchParam;
         
-        console.log('🔍 Клик по матчу (Улучшенная логика):', matchId);
+        console.log('🔍 Клик по матчу (Улучшенная логика):', {
+            matchParam,
+            extractedMatchId: matchId,
+            matchParamType: typeof matchParam,
+            allMatches: matches.length
+        });
+        
+        // 🔧 КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся что matchId не undefined
+        if (!matchId && matchId !== 0) {
+            console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: ID матча undefined или null!', {
+                matchParam,
+                matchParamType: typeof matchParam,
+                objectKeys: typeof matchParam === 'object' ? Object.keys(matchParam) : 'не объект'
+            });
+            setMessage('❌ Ошибка: не удалось определить ID матча');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
         
         // Ищем полные данные матча
         let fullMatchData = matches.find(m => 
@@ -1322,21 +1339,47 @@ function TournamentDetails() {
             );
         }
         
+        // 🔧 ОБОГАЩАЕМ ДАННЫЕ МАТЧА, ГАРАНТИРУЯ НАЛИЧИЕ ID
         const enrichedMatch = fullMatchData ? {
             ...fullMatchData,
+            // 🔧 КРИТИЧЕСКИ ВАЖНО: Убеждаемся что ID всегда присутствует
+            id: fullMatchData.id || matchId,
             team1_name: fullMatchData.team1_name || 
                        (typeof matchParam === 'object' && matchParam.participants?.[0]?.name) || 'Команда 1',
             team2_name: fullMatchData.team2_name || 
                        (typeof matchParam === 'object' && matchParam.participants?.[1]?.name) || 'Команда 2'
         } : {
+            // 🔧 КРИТИЧЕСКИ ВАЖНО: Fallback с обязательным ID
             id: matchId,
             team1_name: (typeof matchParam === 'object' && matchParam.participants?.[0]?.name) || 'Команда 1',
             team2_name: (typeof matchParam === 'object' && matchParam.participants?.[1]?.name) || 'Команда 2',
             score1: (typeof matchParam === 'object' && matchParam.participants?.[0]?.score) || 0,
             score2: (typeof matchParam === 'object' && matchParam.participants?.[1]?.score) || 0,
             winner_team_id: typeof matchParam === 'object' ? matchParam.winner_id : null,
-            maps_data: null
+            maps_data: null,
+            // 🔧 ДОБАВЛЯЕМ ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ДЛЯ СОВМЕСТИМОСТИ
+            team1_id: typeof matchParam === 'object' ? matchParam.participants?.[0]?.id : null,
+            team2_id: typeof matchParam === 'object' ? matchParam.participants?.[1]?.id : null
         };
+        
+        // 🔧 ФИНАЛЬНАЯ ПРОВЕРКА ID
+        if (!enrichedMatch.id && enrichedMatch.id !== 0) {
+            console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: enrichedMatch.id по-прежнему undefined!', {
+                enrichedMatch,
+                originalMatchId: matchId,
+                fullMatchData
+            });
+            setMessage('❌ Критическая ошибка: не удалось определить ID матча для обработки');
+            setTimeout(() => setMessage(''), 5000);
+            return;
+        }
+        
+        console.log('✅ Данные матча подготовлены для обработки:', {
+            id: enrichedMatch.id,
+            team1_name: enrichedMatch.team1_name,
+            team2_name: enrichedMatch.team2_name,
+            hasResults: !!(enrichedMatch.winner_team_id || enrichedMatch.score1 > 0 || enrichedMatch.score2 > 0)
+        });
         
         // 🚀 РАСШИРЕННАЯ ЛОГИКА АНАЛИЗА МАТЧА
         const hasResults = enrichedMatch.winner_team_id || 
@@ -1375,6 +1418,7 @@ function TournamentDetails() {
                 team2_composition: team2Composition
             };
             
+            console.log('🔧 Передаем в модальное окно матч с ID:', matchWithCompositions.id);
             modals.openMatchResultModal(matchWithCompositions);
             return;
         }
@@ -1390,6 +1434,7 @@ function TournamentDetails() {
                     team2_composition: team2Composition
                 };
                 
+                console.log('🔧 Передаем в модальное окно матч с ID:', matchWithCompositions.id);
                 modals.openMatchResultModal(matchWithCompositions);
             } else {
                 console.log('👁️ Сценарий: Администратор просматривает матч (редактирование недоступно)');
