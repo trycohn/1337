@@ -267,7 +267,7 @@ router.get('/:id', async (req, res) => {
             SELECT 
                 tp.id,
                 tp.user_id,
-                tp.team_name,
+                tp.name,
                 tp.created_at as registered_at,
                 u.username,
                 u.avatar_url,
@@ -309,7 +309,7 @@ router.get('/:id', async (req, res) => {
                             'id', tp.id,
                             'user_id', tp.user_id,
                             'username', u.username,
-                            'name', COALESCE(tp.team_name, u.username),
+                            'name', COALESCE(tp.name, u.username),
                             'faceit_elo', u.faceit_elo,
                             'cs2_premier_rank', u.cs2_premier_rank,
                             'avatar_url', u.avatar_url
