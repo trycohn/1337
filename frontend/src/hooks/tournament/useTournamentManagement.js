@@ -300,6 +300,170 @@ const useTournamentManagement = (tournamentId) => {
         return isCreator || isAdmin;
     }, [user]);
 
+    // 🆕 ПРИГЛАШЕНИЕ АДМИНИСТРАТОРА
+    const inviteAdmin = useCallback(async (userId) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('👑 Отправка приглашения администратора:', {
+                tournamentId,
+                userId
+            });
+
+            const response = await axios.post(`/api/tournaments/${tournamentId}/invite-admin`, {
+                user_id: userId
+            });
+
+            console.log('👑 Ответ сервера на приглашение администратора:', response.data);
+
+            if (response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'Приглашение отправлено',
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Ошибка при отправке приглашения'
+                };
+            }
+        } catch (error) {
+            console.error('👑 Ошибка при приглашении администратора:', error);
+            const errorMessage = error.response?.data?.message || 'Ошибка при отправке приглашения';
+            setError(errorMessage);
+            
+            return {
+                success: false,
+                message: errorMessage
+            };
+        } finally {
+            setIsLoading(false);
+        }
+    }, [tournamentId]);
+
+    // 🆕 УДАЛЕНИЕ АДМИНИСТРАТОРА
+    const removeAdmin = useCallback(async (userId) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('🗑️ Удаление администратора:', {
+                tournamentId,
+                userId
+            });
+
+            const response = await axios.delete(`/api/tournaments/${tournamentId}/admins/${userId}`);
+
+            console.log('🗑️ Ответ сервера на удаление администратора:', response.data);
+
+            if (response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'Администратор удален',
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Ошибка при удалении администратора'
+                };
+            }
+        } catch (error) {
+            console.error('🗑️ Ошибка при удалении администратора:', error);
+            const errorMessage = error.response?.data?.message || 'Ошибка при удалении администратора';
+            setError(errorMessage);
+            
+            return {
+                success: false,
+                message: errorMessage
+            };
+        } finally {
+            setIsLoading(false);
+        }
+    }, [tournamentId]);
+
+    // 🆕 ПРИНЯТИЕ ПРИГЛАШЕНИЯ АДМИНИСТРАТОРА (для системы чата)
+    const acceptAdminInvitation = useCallback(async (invitationId) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('✅ Принятие приглашения администратора:', {
+                invitationId
+            });
+
+            const response = await axios.post(`/api/admin-invitations/${invitationId}/accept`);
+
+            console.log('✅ Ответ сервера на принятие приглашения:', response.data);
+
+            if (response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'Приглашение принято',
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Ошибка при принятии приглашения'
+                };
+            }
+        } catch (error) {
+            console.error('✅ Ошибка при принятии приглашения:', error);
+            const errorMessage = error.response?.data?.message || 'Ошибка при принятии приглашения';
+            setError(errorMessage);
+            
+            return {
+                success: false,
+                message: errorMessage
+            };
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // 🆕 ОТКЛОНЕНИЕ ПРИГЛАШЕНИЯ АДМИНИСТРАТОРА (для системы чата)
+    const declineAdminInvitation = useCallback(async (invitationId) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('❌ Отклонение приглашения администратора:', {
+                invitationId
+            });
+
+            const response = await axios.post(`/api/admin-invitations/${invitationId}/decline`);
+
+            console.log('❌ Ответ сервера на отклонение приглашения:', response.data);
+
+            if (response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'Приглашение отклонено',
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Ошибка при отклонении приглашения'
+                };
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при отклонении приглашения:', error);
+            const errorMessage = error.response?.data?.message || 'Ошибка при отклонении приглашения';
+            setError(errorMessage);
+            
+            return {
+                success: false,
+                message: errorMessage
+            };
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     return {
         // Состояние
         isLoading,
@@ -317,7 +481,13 @@ const useTournamentManagement = (tournamentId) => {
         
         // Утилиты
         checkAccess,
-        clearError
+        clearError,
+        
+        // 🆕 НОВЫЕ МЕТОДЫ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
+        inviteAdmin,
+        removeAdmin,
+        acceptAdminInvitation,
+        declineAdminInvitation
     };
 };
 

@@ -12,7 +12,10 @@ const ParticipantSearchModal = ({
     isSearching,
     onSearchUsers,
     onAddParticipant,
-    existingParticipants = []
+    existingParticipants = [],
+    mode = 'participant', // 'participant' | 'admin'
+    onInviteAdmin,
+    existingAdmins = []
 }) => {
     const [debounceTimer, setDebounceTimer] = useState(null);
 
@@ -28,7 +31,7 @@ const ParticipantSearchModal = ({
             return;
         }
 
-        console.log('🔍 Настраиваем поиск для:', searchQuery);
+        console.log('🔍 Настраиваем поиск для:', searchQuery, 'режим:', mode);
         
         // Устанавливаем новый таймер
         const timer = setTimeout(() => {
@@ -44,7 +47,7 @@ const ParticipantSearchModal = ({
                 clearTimeout(timer);
             }
         };
-    }, [searchQuery, onSearchUsers]); // Убираем debounceTimer из зависимостей
+    }, [searchQuery, onSearchUsers, mode]); // Добавляем mode в зависимости
 
     const handleInputChange = (e) => {
         const value = e.target.value;
@@ -53,29 +56,59 @@ const ParticipantSearchModal = ({
     };
 
     const handleAddUser = (userId) => {
-        console.log('🔍 Добавление пользователя:', userId);
-        onAddParticipant(userId);
+        console.log('🔍 Добавление пользователя:', userId, 'режим:', mode);
+        if (mode === 'admin') {
+            onInviteAdmin(userId);
+        } else {
+            onAddParticipant(userId);
+        }
     };
 
-    const isUserAlreadyParticipant = (userId) => {
-        return existingParticipants.some(p => p.user_id === userId || p.id === userId);
+    // 🆕 ПРОВЕРКА СУЩЕСТВУЮЩИХ УЧАСТНИКОВ/АДМИНОВ
+    const isUserAlreadyInList = (userId) => {
+        if (mode === 'admin') {
+            return existingAdmins.some(admin => admin.user_id === userId || admin.id === userId);
+        } else {
+            return existingParticipants.some(p => p.user_id === userId || p.id === userId);
+        }
     };
 
     if (!isOpen) return null;
 
+    // 🆕 КОНФИГУРАЦИЯ ДЛЯ РАЗНЫХ РЕЖИМОВ
+    const config = {
+        participant: {
+            title: '🔍 Поиск и добавление участников',
+            placeholder: 'Введите имя пользователя (минимум 2 символа)',
+            addButtonText: '➕ Добавить',
+            alreadyInText: '✅ Уже участвует',
+            searchHint: 'Начните вводить имя пользователя для поиска'
+        },
+        admin: {
+            title: '🔍 Поиск и приглашение администраторов',
+            placeholder: 'Введите имя пользователя для приглашения в админы',
+            addButtonText: '👑 Пригласить админом',
+            alreadyInText: '✅ Уже администратор',
+            searchHint: 'Найдите пользователя для приглашения в администраторы'
+        }
+    };
+
+    const currentConfig = config[mode];
+
     console.log('🔍 Рендер ParticipantSearchModal:', {
         isOpen,
+        mode,
         searchQuery,
         searchResultsCount: searchResults.length,
         isSearching,
-        existingParticipantsCount: existingParticipants.length
+        existingCount: mode === 'admin' ? existingAdmins.length : existingParticipants.length
     });
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content participant-search-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h3>🔍 Поиск и добавление участников</h3>
+                    <h3>{currentConfig.title}</h3>
                     <button className="close-btn" onClick={onClose}>✕</button>
                 </div>
 
@@ -85,7 +118,7 @@ const ParticipantSearchModal = ({
                             type="text"
                             value={searchQuery}
                             onChange={handleInputChange}
-                            placeholder="Введите имя пользователя (минимум 2 символа)"
+                            placeholder={currentConfig.placeholder}
                             className="search-input"
                             autoFocus
                         />
@@ -99,7 +132,7 @@ const ParticipantSearchModal = ({
                     <div className="search-results-container">
                         {searchQuery.length === 0 && (
                             <div className="search-placeholder">
-                                <p>Начните вводить имя пользователя для поиска</p>
+                                <p>{currentConfig.searchHint}</p>
                             </div>
                         )}
 
@@ -153,16 +186,16 @@ const ParticipantSearchModal = ({
                                             >
                                                 👁️ Профиль
                                             </Link>
-                                            {isUserAlreadyParticipant(user.id) ? (
+                                            {isUserAlreadyInList(user.id) ? (
                                                 <button className="already-participant-btn" disabled>
-                                                    ✅ Уже участвует
+                                                    {currentConfig.alreadyInText}
                                                 </button>
                                             ) : (
                                                 <button 
-                                                    className="add-participant-btn"
+                                                    className={`add-participant-btn ${mode === 'admin' ? 'admin-invite-btn' : ''}`}
                                                     onClick={() => handleAddUser(user.id)}
                                                 >
-                                                    ➕ Добавить
+                                                    {currentConfig.addButtonText}
                                                 </button>
                                             )}
                                         </div>
@@ -171,6 +204,12 @@ const ParticipantSearchModal = ({
                             </div>
                         )}
                     </div>
+                </div>
+
+                <div className="modal-footer">
+                    <button className="close-modal-btn" onClick={onClose}>
+                        Закрыть
+                    </button>
                 </div>
             </div>
         </div>

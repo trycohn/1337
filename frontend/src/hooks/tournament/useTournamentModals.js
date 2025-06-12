@@ -5,6 +5,8 @@ const useTournamentModals = () => {
     const [showAddParticipantModal, setShowAddParticipantModal] = useState(false);
     const [showParticipantSearchModal, setShowParticipantSearchModal] = useState(false);
     const [showMatchResultModal, setShowMatchResultModal] = useState(false);
+    // 🆕 НОВОЕ СОСТОЯНИЕ ДЛЯ АДМИНСКОГО ПОИСКА
+    const [showAdminSearchModal, setShowAdminSearchModal] = useState(false);
     
     // Данные для модальных окон
     const [newParticipantData, setNewParticipantData] = useState({
@@ -24,6 +26,11 @@ const useTournamentModals = () => {
         score2: 0,
         maps_data: []
     });
+
+    // 🆕 СОСТОЯНИЯ ДЛЯ АДМИНСКОГО РЕЖИМА
+    const [adminSearchQuery, setAdminSearchQuery] = useState('');
+    const [adminSearchResults, setAdminSearchResults] = useState([]);
+    const [isAdminSearching, setIsAdminSearching] = useState(false);
 
     // Управление модальным окном добавления участника
     const openAddParticipantModal = useCallback(() => {
@@ -61,88 +68,53 @@ const useTournamentModals = () => {
         setIsSearching(false);
     }, []);
 
-    // Управление поиском
-    const updateSearchResults = useCallback((results) => {
-        setSearchResults(results);
-        setIsSearching(false);
+    // 🆕 УПРАВЛЕНИЕ МОДАЛЬНЫМ ОКНОМ ПОИСКА АДМИНИСТРАТОРОВ
+    const openAdminSearchModal = useCallback(() => {
+        setAdminSearchQuery('');
+        setAdminSearchResults([]);
+        setIsAdminSearching(false);
+        setShowAdminSearchModal(true);
     }, []);
 
-    const setSearchLoading = useCallback((loading) => {
-        setIsSearching(loading);
+    const closeAdminSearchModal = useCallback(() => {
+        setShowAdminSearchModal(false);
+        setAdminSearchQuery('');
+        setAdminSearchResults([]);
+        setIsAdminSearching(false);
     }, []);
 
     // Управление модальным окном результатов матча
     const openMatchResultModal = useCallback((match) => {
-        console.log('🔍 [useTournamentModals] openMatchResultModal вызван с параметрами:');
-        console.log('🔍 [useTournamentModals] - match:', match);
-        console.log('🔍 [useTournamentModals] - тип match:', typeof match);
-        console.log('🔍 [useTournamentModals] - match является числом:', typeof match === 'number');
-        console.log('🔍 [useTournamentModals] - match является объектом:', typeof match === 'object' && match !== null);
-        
-        if (typeof match === 'object' && match !== null) {
-            console.log('🔍 [useTournamentModals] - ключи объекта match:', Object.keys(match));
-            console.log('🔍 [useTournamentModals] - match.id:', match?.id);
-        }
-        
-        // 🔧 TRACE СТЕКА ДЛЯ ОТЛАДКИ
-        console.log('🔍 [useTournamentModals] Stack trace:');
-        console.trace();
+        console.log('🔍 [useTournamentModals] openMatchResultModal вызван с параметрами:', {
+            match: match,
+            matchId: match?.id,
+            matchType: typeof match,
+            hasId: !!match?.id,
+            matchKeys: match ? Object.keys(match) : 'нет объекта'
+        });
 
-        if (!match && match !== 0) {
+        if (!match) {
             console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: match не передан в openMatchResultModal!');
             return;
         }
 
-        // 🔧 УНИВЕРСАЛЬНАЯ ОБРАБОТКА MATCH
-        let matchData = null;
-        let matchId = null;
-        
-        if (typeof match === 'number') {
-            console.log('🔧 [useTournamentModals] Получен ID матча как число:', match);
-            matchId = match;
-            // Создаем минимальный объект матча
-            matchData = {
-                id: match,
-                team1_name: 'Команда 1',
-                team2_name: 'Команда 2',
-                score1: 0,
-                score2: 0,
-                maps_data: []
-            };
-        } else if (typeof match === 'object' && match !== null) {
-            console.log('🔧 [useTournamentModals] Получен объект матча:', match);
-            matchData = match;
-            matchId = match.id;
-        } else {
-            console.error('❌ [useTournamentModals] Неподдерживаемый тип match:', typeof match, match);
-            return;
-        }
-
-        if (!matchId && matchId !== 0) {
-            console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: не удалось определить ID матча!', {
+        if (!match.id && match.id !== 0) {
+            console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: match.id отсутствует или равен undefined/null!', {
                 match,
-                matchData,
-                matchId
+                id: match.id,
+                hasId: !!match.id
             });
             return;
         }
 
-        console.log('✅ [useTournamentModals] Устанавливаем selectedMatch:', matchData);
-        setSelectedMatch(matchData);
+        console.log('✅ [useTournamentModals] Все проверки пройдены, открываем модальное окно');
+        setSelectedMatch(match);
         setMatchResultData({
-            score1: matchData.score1 || 0,
-            score2: matchData.score2 || 0,
-            maps_data: matchData.maps_data || []
+            score1: match.score1 || 0,
+            score2: match.score2 || 0,
+            maps_data: match.maps_data || []
         });
         setShowMatchResultModal(true);
-        
-        console.log('✅ [useTournamentModals] Модальное окно результатов настроено:', {
-            selectedMatchId: matchData?.id,
-            showModal: true,
-            score1: matchData.score1 || 0,
-            score2: matchData.score2 || 0,
-            mapsCount: matchData.maps_data?.length || 0
-        });
     }, []);
 
     const closeMatchResultModal = useCallback(() => {
@@ -155,29 +127,52 @@ const useTournamentModals = () => {
         });
     }, []);
 
-    // Сброс всех модальных окон
+    // Закрытие всех модальных окон
     const closeAllModals = useCallback(() => {
         setShowAddParticipantModal(false);
         setShowParticipantSearchModal(false);
         setShowMatchResultModal(false);
+        setShowAdminSearchModal(false); // 🆕 Добавляем админское модальное окно
         
+        // Сброс всех данных
         setNewParticipantData({
             display_name: '',
             email: '',
             faceit_elo: '',
             cs2_premier_rank: ''
         });
-        
         setSearchQuery('');
         setSearchResults([]);
         setIsSearching(false);
-        
         setSelectedMatch(null);
         setMatchResultData({
             score1: 0,
             score2: 0,
             maps_data: []
         });
+        
+        // 🆕 Сброс админских данных
+        setAdminSearchQuery('');
+        setAdminSearchResults([]);
+        setIsAdminSearching(false);
+    }, []);
+
+    // Утилиты для поиска
+    const updateSearchResults = useCallback((results) => {
+        setSearchResults(results);
+    }, []);
+
+    const setSearchLoading = useCallback((loading) => {
+        setIsSearching(loading);
+    }, []);
+
+    // 🆕 УТИЛИТЫ ДЛЯ АДМИНСКОГО ПОИСКА
+    const updateAdminSearchResults = useCallback((results) => {
+        setAdminSearchResults(results);
+    }, []);
+
+    const setAdminSearchLoading = useCallback((loading) => {
+        setIsAdminSearching(loading);
     }, []);
 
     return {
@@ -185,16 +180,23 @@ const useTournamentModals = () => {
         showAddParticipantModal,
         showParticipantSearchModal,
         showMatchResultModal,
+        showAdminSearchModal, // 🆕 Новое состояние
         
         // Данные для добавления участника
         newParticipantData,
         setNewParticipantData,
         
-        // Данные для поиска
+        // Данные для поиска участников
         searchQuery,
         setSearchQuery,
         searchResults,
         isSearching,
+        
+        // 🆕 ДАННЫЕ ДЛЯ ПОИСКА АДМИНИСТРАТОРОВ
+        adminSearchQuery,
+        setAdminSearchQuery,
+        adminSearchResults,
+        isAdminSearching,
         
         // Данные для результатов матча
         selectedMatch,
@@ -206,13 +208,19 @@ const useTournamentModals = () => {
         closeAddParticipantModal,
         openParticipantSearchModal,
         closeParticipantSearchModal,
+        openAdminSearchModal, // 🆕 Новый метод
+        closeAdminSearchModal, // 🆕 Новый метод
         openMatchResultModal,
         closeMatchResultModal,
         closeAllModals,
         
-        // Методы управления поиском
+        // Методы управления поиском участников
         updateSearchResults,
-        setSearchLoading
+        setSearchLoading,
+        
+        // 🆕 МЕТОДЫ УПРАВЛЕНИЯ ПОИСКОМ АДМИНИСТРАТОРОВ
+        updateAdminSearchResults,
+        setAdminSearchLoading
     };
 };
 

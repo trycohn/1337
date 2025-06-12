@@ -252,6 +252,23 @@
     color: #ffffff;
 }
 
+/* 🆕 СТИЛИ ДЛЯ КНОПКИ ПРИГЛАШЕНИЯ АДМИНИСТРАТОРА */
+.add-participant-btn.admin-invite-btn {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #ffffff;
+    border-color: #ff6b35;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+}
+
+.add-participant-btn.admin-invite-btn:hover {
+    background: linear-gradient(135deg, #f7931e, #e6750a);
+    border-color: #f7931e;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.4);
+}
+
 .already-participant-btn {
     background-color: #4caf50;
     color: #ffffff;

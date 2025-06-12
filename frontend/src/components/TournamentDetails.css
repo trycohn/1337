@@ -6764,3 +6764,243 @@ a.participant-name:hover {
         padding: 14px 20px;
     }
 }
+
+/* =================================================
+   СТИЛИ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
+   ================================================= */
+
+/* Список текущих администраторов */
+.current-admins-list {
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0 20px 0;
+}
+
+.current-admins-list h5 {
+    margin: 0 0 15px 0;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 8px;
+}
+
+/* Элемент администратора */
+.admin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin: 8px 0;
+    background-color: #2a2a2a;
+    border: 1px solid #444444;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.admin-item:hover {
+    background-color: #333333;
+    border-color: #555555;
+    transform: translateY(-1px);
+}
+
+.admin-item.creator {
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    border-color: #ffd700;
+    color: #333333;
+}
+
+.admin-item.creator:hover {
+    background: linear-gradient(135deg, #ffed4a, #ffd700);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.admin-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.admin-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.admin-item.creator .admin-name {
+    color: #333333;
+    font-weight: 700;
+}
+
+.admin-role {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #cccccc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-item.creator .admin-role {
+    color: #666666;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.remove-admin-btn {
+    background: none;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.remove-admin-btn:hover {
+    background-color: #dc3545;
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+/* Сообщение об отсутствии дополнительных администраторов */
+.no-additional-admins {
+    text-align: center;
+    padding: 20px;
+    color: #888888;
+    font-style: italic;
+    background-color: #0f0f0f;
+    border: 1px dashed #333333;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.no-additional-admins p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Кнопка приглашения администратора */
+.management-btn.invite-admin {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #ffffff;
+    border: 2px solid #ff6b35;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);
+}
+
+.management-btn.invite-admin:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f7931e, #e6750a);
+    border-color: #f7931e;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(255, 107, 53, 0.4);
+}
+
+.management-btn.invite-admin .btn-icon {
+    font-size: 1.2em;
+}
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 768px) {
+    .current-admins-list {
+        padding: 15px;
+    }
+    
+    .admin-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .admin-info {
+        width: 100%;
+    }
+    
+    .admin-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .remove-admin-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .current-admins-list h5 {
+        font-size: 0.9rem;
+    }
+    
+    .admin-name {
+        font-size: 0.9rem;
+    }
+    
+    .admin-role {
+        font-size: 0.7rem;
+    }
+    
+    .management-btn.invite-admin {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 20px;
+    }
+}
+
+/* Анимация для появления новых администраторов */
+.admin-item {
+    animation: adminSlideIn 0.3s ease-out;
+}
+
+@keyframes adminSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Специальные эффекты для создателя */
+.admin-item.creator {
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-item.creator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+}
+
+.admin-item.creator:hover::before {
+    left: 100%;
+}
+
+/* =================================================
+   КОНЕЦ СТИЛЕЙ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
+   ================================================= */
