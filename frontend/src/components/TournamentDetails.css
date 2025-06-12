@@ -7012,6 +7012,7 @@ a.participant-name:hover {
     gap: 20px;
     max-width: 1400px;
     margin: 0 auto;
+    flex-direction: column;
 }
 
 .tournament-details-tournamentdetails .tournament-content-tournamentdetails {
