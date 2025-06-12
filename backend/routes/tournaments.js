@@ -148,11 +148,41 @@ router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        // 🔧 ИСПРАВЛЕННЫЙ ЗАПРОС: добавляем JOIN с таблицей users для получения данных создателя
+        const tournamentResult = await pool.query(`
+            SELECT t.*, 
+                   u.username as creator_username, 
+                   u.avatar_url as creator_avatar_url,
+                   u.id as creator_user_id
+            FROM tournaments t
+            LEFT JOIN users u ON t.created_by = u.id
+            WHERE t.id = $1
+        `, [id]);
+        
         if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ message: 'Турнир не найден' });
         }
+        
         const tournament = tournamentResult.rows[0];
+
+        // 🆕 ПОЛУЧАЕМ ДАННЫЕ АДМИНИСТРАТОРОВ ТУРНИРА
+        const adminsResult = await pool.query(`
+            SELECT ta.id, ta.user_id, ta.permissions, ta.created_at,
+                   u.username, u.avatar_url
+            FROM tournament_admins ta
+            JOIN users u ON ta.user_id = u.id
+            WHERE ta.tournament_id = $1
+            ORDER BY ta.created_at ASC
+        `, [id]);
+
+        console.log('🔍 DEBUG: Данные турнира с создателем:', {
+            tournament_id: tournament.id,
+            tournament_name: tournament.name,
+            created_by: tournament.created_by,
+            creator_username: tournament.creator_username,
+            creator_avatar_url: tournament.creator_avatar_url,
+            admins_count: adminsResult.rows.length
+        });
 
         // Получаем данные участников в зависимости от типа турнира, добавляя информацию о аватарке
         let participantsQuery;
@@ -235,7 +265,8 @@ router.get('/:id', async (req, res) => {
             participant_count: participantsResult.rows.length,
             matches: matchesResult.rows,
             teams: teams, // Команды теперь загружаются и для микс турниров
-            mixed_teams: teams // Добавляем поле mixed_teams для обратной совместимости
+            mixed_teams: teams, // Добавляем поле mixed_teams для обратной совместимости
+            admins: adminsResult.rows // 🆕 Добавляем список администраторов
         };
         console.log('🔍 Tournament details fetched:', {
             name: responseData.name,
@@ -243,7 +274,9 @@ router.get('/:id', async (req, res) => {
             participant_type: responseData.participant_type,
             participants: responseData.participants.length,
             matches: responseData.matches.length,
-            teams: responseData.teams.length
+            teams: responseData.teams.length,
+            creator: responseData.creator_username,
+            admins: responseData.admins.length
         });
         res.json(responseData);
     } catch (err) {
@@ -356,7 +389,8 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
             participant_count: participantsResult.rows.length,
             matches: matchesResult2.rows,
             teams: teams, // Добавляем команды в ответ
-            mixed_teams: teams // Добавляем поле mixed_teams для обратной совместимости
+            mixed_teams: teams, // Добавляем поле mixed_teams для обратной совместимости
+            admins: adminsResult.rows // 🆕 Добавляем список администраторов
         };
         
         // Отправляем обновление через WebSocket
@@ -3163,6 +3197,454 @@ router.delete('/:id/participants/:participantId', authenticateToken, verifyAdmin
     } catch (err) {
         console.error('❌ Ошибка удаления участника:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ===== УПРАВЛЕНИЕ АДМИНИСТРАТОРАМИ ТУРНИРОВ =====
+
+// Приглашение администратора турнира
+router.post('/:id/invite-admin', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const { user_id } = req.body;
+    const inviterId = req.user.id;
+
+    try {
+        console.log('👑 Получен запрос на приглашение администратора:', {
+            tournamentId: id,
+            inviterId,
+            targetUserId: user_id
+        });
+
+        // Проверяем существование турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Турнир не найден' 
+            });
+        }
+
+        const tournament = tournamentResult.rows[0];
+
+        // Проверяем существование пользователя
+        const userResult = await pool.query('SELECT id, username FROM users WHERE id = $1', [user_id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Пользователь не найден' 
+            });
+        }
+
+        const targetUser = userResult.rows[0];
+
+        // Проверяем, не является ли пользователь уже администратором
+        const adminCheckResult = await pool.query(
+            'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+            [id, user_id]
+        );
+
+        if (adminCheckResult.rows.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Пользователь уже является администратором этого турнира' 
+            });
+        }
+
+        // Проверяем, не является ли пользователь создателем турнира
+        if (tournament.created_by === user_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Создатель турнира уже имеет все права администратора' 
+            });
+        }
+
+        // Проверяем, нет ли уже активного приглашения
+        const existingInvitationResult = await pool.query(
+            `SELECT * FROM admin_invitations 
+             WHERE tournament_id = $1 AND invitee_id = $2 AND status = 'pending' 
+             AND expires_at > NOW()`,
+            [id, user_id]
+        );
+
+        if (existingInvitationResult.rows.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Пользователю уже отправлено активное приглашение' 
+            });
+        }
+
+        // Создаем приглашение (срок действия 7 дней)
+        const invitationResult = await pool.query(
+            `INSERT INTO admin_invitations (tournament_id, inviter_id, invitee_id, status, expires_at)
+             VALUES ($1, $2, $3, 'pending', NOW() + INTERVAL '7 days')
+             RETURNING *`,
+            [id, inviterId, user_id]
+        );
+
+        const invitation = invitationResult.rows[0];
+
+        // Получаем информацию о системном пользователе
+        let systemUserId = null;
+        try {
+            const systemUserResult = await pool.query(
+                "SELECT id FROM users WHERE username = '1337community' AND is_system_user = true"
+            );
+            if (systemUserResult.rows.length > 0) {
+                systemUserId = systemUserResult.rows[0].id;
+            }
+        } catch (error) {
+            console.warn('⚠️ Не удалось найти системного пользователя для отправки сообщения:', error.message);
+        }
+
+        // Отправляем сообщение в чат турнира от системного пользователя
+        if (systemUserId) {
+            try {
+                // Находим чат турнира
+                const chatResult = await pool.query(
+                    'SELECT id FROM chats WHERE name = $1 AND type = $2',
+                    [tournament.name, 'group']
+                );
+
+                if (chatResult.rows.length > 0) {
+                    const chatId = chatResult.rows[0].id;
+
+                    // Создаем сообщение с кнопками для принятия/отклонения
+                    const messageText = `🤝 ${req.user.username} приглашает вас стать администратором турнира "${tournament.name}"!\n\nВы получите права на:\n• Управление участниками\n• Редактирование результатов матчей\n• Приглашение других администраторов\n\nВыберите действие:`;
+
+                    const messageResult = await pool.query(
+                        `INSERT INTO messages (chat_id, sender_id, content, message_type, metadata)
+                         VALUES ($1, $2, $3, 'admin_invitation', $4)
+                         RETURNING *`,
+                        [
+                            chatId, 
+                            systemUserId, 
+                            messageText,
+                            JSON.stringify({
+                                invitation_id: invitation.id,
+                                tournament_id: id,
+                                inviter_id: inviterId,
+                                invitee_id: user_id,
+                                actions: [
+                                    {
+                                        type: 'accept_admin_invitation',
+                                        label: '✅ Принять',
+                                        invitation_id: invitation.id
+                                    },
+                                    {
+                                        type: 'decline_admin_invitation', 
+                                        label: '❌ Отклонить',
+                                        invitation_id: invitation.id
+                                    }
+                                ]
+                            })
+                        ]
+                    );
+
+                    console.log('✅ Сообщение с приглашением отправлено в чат турнира');
+                } else {
+                    console.warn('⚠️ Чат турнира не найден, сообщение не отправлено');
+                }
+            } catch (error) {
+                console.error('❌ Ошибка при отправке сообщения в чат:', error.message);
+            }
+        }
+
+        // Логируем событие
+        await logTournamentEvent(id, inviterId, 'admin_invited', {
+            invitedUser: {
+                id: user_id,
+                username: targetUser.username
+            },
+            inviter: req.user.username
+        });
+
+        console.log('✅ Приглашение администратора создано успешно');
+
+        res.status(200).json({
+            success: true,
+            message: `Приглашение отправлено пользователю ${targetUser.username}`,
+            data: {
+                invitation_id: invitation.id,
+                expires_at: invitation.expires_at
+            }
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка при приглашении администратора:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Внутренняя ошибка сервера' 
+        });
+    }
+});
+
+// Удаление администратора турнира
+router.delete('/:id/admins/:userId', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id, userId } = req.params;
+    const removerId = req.user.id;
+
+    try {
+        console.log('🗑️ Получен запрос на удаление администратора:', {
+            tournamentId: id,
+            removerId,
+            targetUserId: userId
+        });
+
+        // Проверяем существование турнира
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Турнир не найден' 
+            });
+        }
+
+        const tournament = tournamentResult.rows[0];
+
+        // Проверяем, что пользователь не пытается удалить создателя турнира
+        if (tournament.created_by === parseInt(userId)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Нельзя удалить создателя турнира' 
+            });
+        }
+
+        // Проверяем, является ли пользователь администратором
+        const adminResult = await pool.query(
+            'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+            [id, userId]
+        );
+
+        if (adminResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Пользователь не является администратором этого турнира' 
+            });
+        }
+
+        // Получаем информацию о удаляемом пользователе
+        const userResult = await pool.query('SELECT username FROM users WHERE id = $1', [userId]);
+        const targetUsername = userResult.rows[0]?.username || `User #${userId}`;
+
+        // Удаляем администратора
+        const deleteResult = await pool.query(
+            'DELETE FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2 RETURNING *',
+            [id, userId]
+        );
+
+        if (deleteResult.rowCount === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Не удалось удалить администратора' 
+            });
+        }
+
+        // Логируем событие
+        await logTournamentEvent(id, removerId, 'admin_removed', {
+            removedAdmin: {
+                id: userId,
+                username: targetUsername
+            },
+            remover: req.user.username
+        });
+
+        // Отправляем уведомление удаленному администратору
+        try {
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [
+                    userId, 
+                    `Вы были исключены из администраторов турнира "${tournament.name}"`, 
+                    'admin_removed', 
+                    id
+                ]
+            );
+        } catch (error) {
+            console.warn('⚠️ Не удалось отправить уведомление удаленному администратору:', error.message);
+        }
+
+        console.log('✅ Администратор успешно удален');
+
+        res.status(200).json({
+            success: true,
+            message: `Администратор ${targetUsername} успешно удален`,
+            data: {
+                removed_admin_id: userId
+            }
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка при удалении администратора:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Внутренняя ошибка сервера' 
+        });
+    }
+});
+
+// Принятие приглашения администратора
+router.post('/admin-invitations/:invitationId/accept', authenticateToken, async (req, res) => {
+    const { invitationId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        console.log('✅ Получен запрос на принятие приглашения:', {
+            invitationId,
+            userId
+        });
+
+        // Проверяем существование и валидность приглашения
+        const invitationResult = await pool.query(
+            `SELECT ai.*, t.name as tournament_name, u.username as inviter_username
+             FROM admin_invitations ai
+             JOIN tournaments t ON ai.tournament_id = t.id
+             JOIN users u ON ai.inviter_id = u.id
+             WHERE ai.id = $1 AND ai.invitee_id = $2 AND ai.status = 'pending' 
+             AND ai.expires_at > NOW()`,
+            [invitationId, userId]
+        );
+
+        if (invitationResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Приглашение не найдено или истекло' 
+            });
+        }
+
+        const invitation = invitationResult.rows[0];
+
+        // Проверяем, не является ли пользователь уже администратором
+        const adminCheckResult = await pool.query(
+            'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+            [invitation.tournament_id, userId]
+        );
+
+        if (adminCheckResult.rows.length > 0) {
+            // Обновляем статус приглашения на accepted даже если уже администратор
+            await pool.query(
+                'UPDATE admin_invitations SET status = $1, responded_at = NOW() WHERE id = $2',
+                ['accepted', invitationId]
+            );
+
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Вы уже являетесь администратором этого турнира' 
+            });
+        }
+
+        // Добавляем пользователя в администраторы
+        await pool.query(
+            `INSERT INTO tournament_admins (tournament_id, user_id, permissions)
+             VALUES ($1, $2, $3)`,
+            [
+                invitation.tournament_id, 
+                userId, 
+                JSON.stringify({
+                    can_edit_matches: true,
+                    can_manage_participants: true,
+                    can_invite_admins: true
+                })
+            ]
+        );
+
+        // Обновляем статус приглашения
+        await pool.query(
+            'UPDATE admin_invitations SET status = $1, responded_at = NOW() WHERE id = $2',
+            ['accepted', invitationId]
+        );
+
+        // Логируем событие
+        await logTournamentEvent(invitation.tournament_id, userId, 'admin_assigned', {
+            newAdmin: {
+                id: userId,
+                username: req.user.username
+            },
+            inviter: invitation.inviter_username,
+            via: 'invitation_accepted'
+        });
+
+        console.log('✅ Приглашение принято, пользователь добавлен в администраторы');
+
+        res.status(200).json({
+            success: true,
+            message: `Вы успешно стали администратором турнира "${invitation.tournament_name}"`,
+            data: {
+                tournament_id: invitation.tournament_id,
+                tournament_name: invitation.tournament_name
+            }
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка при принятии приглашения:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Внутренняя ошибка сервера' 
+        });
+    }
+});
+
+// Отклонение приглашения администратора
+router.post('/admin-invitations/:invitationId/decline', authenticateToken, async (req, res) => {
+    const { invitationId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        console.log('❌ Получен запрос на отклонение приглашения:', {
+            invitationId,
+            userId
+        });
+
+        // Проверяем существование и валидность приглашения
+        const invitationResult = await pool.query(
+            `SELECT ai.*, t.name as tournament_name, u.username as inviter_username
+             FROM admin_invitations ai
+             JOIN tournaments t ON ai.tournament_id = t.id
+             JOIN users u ON ai.inviter_id = u.id
+             WHERE ai.id = $1 AND ai.invitee_id = $2 AND ai.status = 'pending'`,
+            [invitationId, userId]
+        );
+
+        if (invitationResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Приглашение не найдено' 
+            });
+        }
+
+        const invitation = invitationResult.rows[0];
+
+        // Обновляем статус приглашения
+        await pool.query(
+            'UPDATE admin_invitations SET status = $1, responded_at = NOW() WHERE id = $2',
+            ['declined', invitationId]
+        );
+
+        // Логируем событие
+        await logTournamentEvent(invitation.tournament_id, userId, 'admin_invitation_declined', {
+            declinedBy: {
+                id: userId,
+                username: req.user.username
+            },
+            inviter: invitation.inviter_username
+        });
+
+        console.log('❌ Приглашение отклонено');
+
+        res.status(200).json({
+            success: true,
+            message: `Приглашение в администраторы турнира "${invitation.tournament_name}" отклонено`,
+            data: {
+                tournament_id: invitation.tournament_id,
+                tournament_name: invitation.tournament_name
+            }
+        });
+
+    } catch (err) {
+        console.error('❌ Ошибка при отклонении приглашения:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Внутренняя ошибка сервера' 
+        });
     }
 });
 

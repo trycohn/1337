@@ -1,215 +1,325 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ensureHttps } from '../../../utils/userHelpers';
 import './ParticipantSearchModal.css';
 
+/**
+ * ParticipantSearchModal v3.0 - Универсальное модальное окно для поиска пользователей
+ * 
+ * @version 3.0 (Переработанный интерфейс и исправление перезагрузки)
+ * @updated 2025-01-22
+ * @author 1337 Community Development Team
+ * @purpose Поиск пользователей для добавления в участники или администраторы
+ * @features Два режима работы, улучшенный UI, предотвращение перезагрузки
+ */
 const ParticipantSearchModal = ({
     isOpen,
     onClose,
+    onInvite,
+    onInviteAdmin, // 🆕 Функция для приглашения в администраторы
     searchQuery,
     setSearchQuery,
     searchResults,
     isSearching,
-    onSearchUsers,
-    onAddParticipant,
-    existingParticipants = [],
-    mode = 'participant', // 'participant' | 'admin'
-    onInviteAdmin,
-    existingAdmins = []
+    onSearch,
+    mode = 'participant', // 🆕 Режим: 'participant' или 'admin'
+    existingParticipants = [], // Существующие участники для фильтрации
+    existingAdmins = [] // 🆕 Существующие администраторы для фильтрации
 }) => {
-    const [debounceTimer, setDebounceTimer] = useState(null);
+    // Локальное состояние для предотвращения перезагрузки
+    const [localQuery, setLocalQuery] = useState('');
+    const [debounceTimeout, setDebounceTimeout] = useState(null);
 
-    // Исправленный дебаунс для поиска
+    // Мемоизированные заголовки и настройки для разных режимов
+    const modalConfig = useMemo(() => {
+        switch (mode) {
+            case 'admin':
+                return {
+                    title: '👑 Пригласить администратора',
+                    placeholder: 'Введите имя пользователя для поиска...',
+                    emptyStateIcon: '👑',
+                    emptyStateTitle: 'Поиск администраторов',
+                    emptyStateText: 'Введите имя пользователя, чтобы найти кандидатов в администраторы турнира',
+                    noResultsIcon: '🔍',
+                    noResultsTitle: 'Пользователи не найдены',
+                    noResultsText: 'Попробуйте изменить поисковый запрос',
+                    cssClass: 'admin-mode'
+                };
+            case 'participant':
+            default:
+                return {
+                    title: '👥 Добавить участника',
+                    placeholder: 'Введите имя пользователя для поиска...',
+                    emptyStateIcon: '👥',
+                    emptyStateTitle: 'Поиск участников',
+                    emptyStateText: 'Введите имя пользователя, чтобы найти участников для турнира',
+                    noResultsIcon: '🔍',
+                    noResultsTitle: 'Пользователи не найдены',
+                    noResultsText: 'Попробуйте изменить поисковый запрос',
+                    cssClass: 'participant-mode'
+                };
+        }
+    }, [mode]);
+
+    // Фильтрованные результаты с исключением уже добавленных пользователей
+    const filteredResults = useMemo(() => {
+        if (!searchResults || !Array.isArray(searchResults)) return [];
+
+        const existingIds = mode === 'admin' 
+            ? existingAdmins.map(admin => admin.id || admin.user_id)
+            : existingParticipants.map(participant => participant.user_id || participant.id);
+
+        return searchResults.filter(user => !existingIds.includes(user.id));
+    }, [searchResults, existingParticipants, existingAdmins, mode]);
+
+    // Сброс локального состояния при открытии/закрытии модального окна
     useEffect(() => {
-        // Очищаем предыдущий таймер
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
+        if (isOpen) {
+            setLocalQuery(searchQuery || '');
+        } else {
+            setLocalQuery('');
+            if (debounceTimeout) {
+                clearTimeout(debounceTimeout);
+                setDebounceTimeout(null);
+            }
+        }
+    }, [isOpen, searchQuery]);
+
+    // Обработка изменения поискового запроса с дебаунсом
+    const handleSearchChange = useCallback((e) => {
+        const value = e.target.value;
+        setLocalQuery(value);
+
+        // Очищаем предыдущий таймаут
+        if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
         }
 
-        // Если запрос слишком короткий, очищаем результаты
-        if (!searchQuery || searchQuery.length < 2) {
-            return;
-        }
+        // Обновляем глобальное состояние и выполняем поиск с задержкой
+        const newTimeout = setTimeout(() => {
+            setSearchQuery(value);
+            if (onSearch) {
+                onSearch(value);
+            }
+        }, 300); // 300ms задержка
 
-        console.log('🔍 Настраиваем поиск для:', searchQuery, 'режим:', mode);
-        
-        // Устанавливаем новый таймер
-        const timer = setTimeout(() => {
-            console.log('🔍 Выполняем поиск для:', searchQuery);
-            onSearchUsers(searchQuery);
-        }, 300);
-        
-        setDebounceTimer(timer);
+        setDebounceTimeout(newTimeout);
+    }, [debounceTimeout, setSearchQuery, onSearch]);
 
-        // Cleanup функция
+    // Очистка таймаута при размонтировании
+    useEffect(() => {
         return () => {
-            if (timer) {
-                clearTimeout(timer);
+            if (debounceTimeout) {
+                clearTimeout(debounceTimeout);
             }
         };
-    }, [searchQuery, onSearchUsers, mode]); // Добавляем mode в зависимости
+    }, [debounceTimeout]);
 
-    const handleInputChange = (e) => {
-        const value = e.target.value;
-        console.log('🔍 Изменение поискового запроса:', value);
-        setSearchQuery(value);
-    };
-
-    const handleAddUser = (userId) => {
-        console.log('🔍 Добавление пользователя:', userId, 'режим:', mode);
+    // Функция проверки, является ли пользователь уже участником/администратором
+    const isUserAlreadyAdded = useCallback((userId) => {
         if (mode === 'admin') {
-            onInviteAdmin(userId);
+            return existingAdmins.some(admin => 
+                (admin.id || admin.user_id) === userId
+            );
         } else {
-            onAddParticipant(userId);
+            return existingParticipants.some(participant => 
+                (participant.user_id || participant.id) === userId
+            );
         }
-    };
+    }, [existingParticipants, existingAdmins, mode]);
 
-    // 🆕 ПРОВЕРКА СУЩЕСТВУЮЩИХ УЧАСТНИКОВ/АДМИНОВ
-    const isUserAlreadyInList = (userId) => {
-        if (mode === 'admin') {
-            return existingAdmins.some(admin => admin.user_id === userId || admin.id === userId);
-        } else {
-            return existingParticipants.some(p => p.user_id === userId || p.id === userId);
+    // Обработка приглашения пользователя
+    const handleInvite = useCallback(async (userId, userName) => {
+        try {
+            if (mode === 'admin' && onInviteAdmin) {
+                await onInviteAdmin(userId, userName);
+            } else if (mode === 'participant' && onInvite) {
+                await onInvite(userId, userName);
+            }
+        } catch (error) {
+            console.error('Ошибка при приглашении пользователя:', error);
         }
-    };
+    }, [mode, onInvite, onInviteAdmin]);
+
+    // Закрытие модального окна
+    const handleClose = useCallback(() => {
+        if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
+            setDebounceTimeout(null);
+        }
+        setLocalQuery('');
+        onClose();
+    }, [debounceTimeout, onClose]);
+
+    // Обработка нажатия Escape
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape' && isOpen) {
+                handleClose();
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscapeKey);
+            return () => document.removeEventListener('keydown', handleEscapeKey);
+        }
+    }, [isOpen, handleClose]);
+
+    // Обработка клика по overlay
+    const handleOverlayClick = useCallback((e) => {
+        if (e.target === e.currentTarget) {
+            handleClose();
+        }
+    }, [handleClose]);
 
     if (!isOpen) return null;
 
-    // 🆕 КОНФИГУРАЦИЯ ДЛЯ РАЗНЫХ РЕЖИМОВ
-    const config = {
-        participant: {
-            title: '🔍 Поиск и добавление участников',
-            placeholder: 'Введите имя пользователя (минимум 2 символа)',
-            addButtonText: '➕ Добавить',
-            alreadyInText: '✅ Уже участвует',
-            searchHint: 'Начните вводить имя пользователя для поиска'
-        },
-        admin: {
-            title: '🔍 Поиск и приглашение администраторов',
-            placeholder: 'Введите имя пользователя для приглашения в админы',
-            addButtonText: '👑 Пригласить админом',
-            alreadyInText: '✅ Уже администратор',
-            searchHint: 'Найдите пользователя для приглашения в администраторы'
-        }
-    };
-
-    const currentConfig = config[mode];
-
-    console.log('🔍 Рендер ParticipantSearchModal:', {
-        isOpen,
-        mode,
-        searchQuery,
-        searchResultsCount: searchResults.length,
-        isSearching,
-        existingCount: mode === 'admin' ? existingAdmins.length : existingParticipants.length
-    });
-
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content participant-search-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h3>{currentConfig.title}</h3>
-                    <button className="close-btn" onClick={onClose}>✕</button>
+        <div className="search-modal-overlay" onClick={handleOverlayClick}>
+            <div className={`search-modal-content ${modalConfig.cssClass}`} onClick={(e) => e.stopPropagation()}>
+                {/* Заголовок модального окна */}
+                <div className="search-modal-header">
+                    <h3>{modalConfig.title}</h3>
+                    <button 
+                        className="close-search-modal"
+                        onClick={handleClose}
+                        aria-label="Закрыть"
+                    >
+                        ✕
+                    </button>
                 </div>
 
-                <div className="search-container">
-                    <div className="search-input-container">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={handleInputChange}
-                            placeholder={currentConfig.placeholder}
-                            className="search-input"
-                            autoFocus
-                        />
-                        {isSearching && (
-                            <div className="search-loading-indicator">
-                                <div className="loading-spinner"></div>
-                            </div>
-                        )}
-                    </div>
+                {/* Поле поиска */}
+                <div className="search-input-container">
+                    <input
+                        type="text"
+                        className="search-input-field"
+                        placeholder={modalConfig.placeholder}
+                        value={localQuery}
+                        onChange={handleSearchChange}
+                        autoFocus
+                    />
+                </div>
 
-                    <div className="search-results-container">
-                        {searchQuery.length === 0 && (
-                            <div className="search-placeholder">
-                                <p>{currentConfig.searchHint}</p>
-                            </div>
-                        )}
+                {/* Контейнер результатов */}
+                <div className="search-results-container">
+                    {/* Состояние загрузки */}
+                    {isSearching && (
+                        <div className="search-loading">
+                            <div className="search-loading-icon">⏳</div>
+                            <h4>Поиск пользователей...</h4>
+                            <p>Пожалуйста, подождите</p>
+                        </div>
+                    )}
 
-                        {searchQuery.length > 0 && searchQuery.length < 2 && (
-                            <div className="search-placeholder">
-                                <p>Введите минимум 2 символа для поиска</p>
-                            </div>
-                        )}
+                    {/* Пустое состояние (нет запроса) */}
+                    {!isSearching && !localQuery && (
+                        <div className="search-placeholder">
+                            <div className="search-placeholder-icon">{modalConfig.emptyStateIcon}</div>
+                            <h4>{modalConfig.emptyStateTitle}</h4>
+                            <p>{modalConfig.emptyStateText}</p>
+                        </div>
+                    )}
 
-                        {searchQuery.length >= 2 && !isSearching && searchResults.length === 0 && (
-                            <div className="no-results">
-                                <p>Пользователи не найдены</p>
-                                <span>Попробуйте изменить запрос</span>
-                            </div>
-                        )}
+                    {/* Нет результатов */}
+                    {!isSearching && localQuery && localQuery.length >= 2 && filteredResults.length === 0 && (
+                        <div className="search-no-results">
+                            <div className="search-no-results-icon">{modalConfig.noResultsIcon}</div>
+                            <h4>{modalConfig.noResultsTitle}</h4>
+                            <p>{modalConfig.noResultsText}</p>
+                            {localQuery.length < 3 && (
+                                <p><small>Минимальная длина запроса: 2 символа</small></p>
+                            )}
+                        </div>
+                    )}
 
-                        {searchResults.length > 0 && (
-                            <div className="search-results-list">
-                                {searchResults.map(user => (
+                    {/* Список результатов */}
+                    {!isSearching && filteredResults.length > 0 && (
+                        <div className="search-results-list">
+                            {filteredResults.map((user) => {
+                                const isAlreadyAdded = isUserAlreadyAdded(user.id);
+                                
+                                return (
                                     <div key={user.id} className="search-result-item">
                                         <div className="user-info">
+                                            {/* Аватар пользователя */}
                                             <div className="user-avatar">
                                                 {user.avatar_url ? (
                                                     <img 
                                                         src={ensureHttps(user.avatar_url)} 
-                                                        alt={user.username}
-                                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        alt={user.username || 'Пользователь'}
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                        }}
                                                     />
-                                                ) : (
-                                                    <div className="avatar-placeholder">
-                                                        {user.username.charAt(0).toUpperCase()}
+                                                ) : null}
+                                                <div 
+                                                    className="avatar-placeholder"
+                                                    style={{
+                                                        display: user.avatar_url ? 'none' : 'flex'
+                                                    }}
+                                                >
+                                                    {(user.username || 'U').charAt(0).toUpperCase()}
+                                                </div>
+                                            </div>
+
+                                            {/* Информация о пользователе */}
+                                            <div className="user-details">
+                                                <div className="user-name">
+                                                    {user.username || `User #${user.id}`}
+                                                </div>
+                                                {(user.faceit_elo || user.cs2_premier_rank) && (
+                                                    <div className="user-rating">
+                                                        {user.faceit_elo && `${user.faceit_elo} ELO`}
+                                                        {user.faceit_elo && user.cs2_premier_rank && ' • '}
+                                                        {user.cs2_premier_rank && `Premier ${user.cs2_premier_rank}`}
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="user-details">
-                                                <div className="user-name">{user.username}</div>
-                                                {user.faceit_elo && (
-                                                    <div className="user-rating">FACEIT: {user.faceit_elo}</div>
-                                                )}
-                                                {user.cs2_premier_rank && (
-                                                    <div className="user-rating">CS2: {user.cs2_premier_rank}</div>
-                                                )}
-                                            </div>
                                         </div>
+
+                                        {/* Действия */}
                                         <div className="user-actions">
+                                            {/* Кнопка просмотра профиля */}
                                             <Link 
-                                                to={`/profile/${user.id}`} 
-                                                className="view-profile-btn"
+                                                to={`/profile/${user.id}`}
+                                                className="action-button view-profile-btn"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                             >
-                                                👁️ Профиль
+                                                👤 Профиль
                                             </Link>
-                                            {isUserAlreadyInList(user.id) ? (
-                                                <button className="already-participant-btn" disabled>
-                                                    {currentConfig.alreadyInText}
+
+                                            {/* Кнопка приглашения */}
+                                            {isAlreadyAdded ? (
+                                                <button 
+                                                    className="action-button already-participant-btn"
+                                                    disabled
+                                                >
+                                                    {mode === 'admin' ? '👑 Уже администратор' : '✅ Уже участвует'}
                                                 </button>
                                             ) : (
                                                 <button 
-                                                    className={`add-participant-btn ${mode === 'admin' ? 'admin-invite-btn' : ''}`}
-                                                    onClick={() => handleAddUser(user.id)}
+                                                    className={`action-button ${mode === 'admin' ? 'admin-invite-btn' : 'add-participant-btn'}`}
+                                                    onClick={() => handleInvite(user.id, user.username)}
                                                 >
-                                                    {currentConfig.addButtonText}
+                                                    {mode === 'admin' ? '👑 Пригласить админом' : '➕ Добавить участником'}
                                                 </button>
                                             )}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
-                <div className="modal-footer">
-                    <button className="close-modal-btn" onClick={onClose}>
-                        Закрыть
-                    </button>
+                    {/* Слишком много результатов (лимит) */}
+                    {!isSearching && filteredResults.length >= 50 && (
+                        <div className="search-too-many-results">
+                            <p>Показаны первые 50 результатов. Уточните поисковый запрос для более точного поиска.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -296,47 +296,37 @@ const TournamentAdminPanel = ({
 
                     <div className="current-admins-list">
                         {/* Создатель турнира */}
-                        {(tournament?.creator_name || tournament?.creator_username || tournament?.creator_id) && (
-                            <div className="admin-item creator">
-                                <div className="admin-info">
-                                    <div className="admin-name">
-                                        {tournament.creator_name || tournament.creator_username || `ID: ${tournament.creator_id}`}
-                                    </div>
-                                    <div className="admin-role">Создатель турнира</div>
+                        <div className="admin-item creator">
+                            <div className="admin-info">
+                                <div className="admin-name">
+                                    {tournament?.creator_username || 
+                                     (tournament?.created_by ? `User ID: ${tournament.created_by}` : 'Неизвестный создатель')}
                                 </div>
-                                <div className="admin-actions">
-                                    <span className="creator-badge">👑</span>
-                                </div>
+                                <div className="admin-role">Создатель турнира</div>
                             </div>
-                        )}
+                            <div className="admin-actions">
+                                <span className="creator-badge">👑 Создатель</span>
+                            </div>
+                        </div>
 
                         {/* Дополнительные администраторы */}
-                        {tournament?.admins && tournament.admins.length > 0 ? (
-                            tournament.admins.map((admin, index) => (
-                                <div key={admin.id || admin.user_id || index} className="admin-item">
-                                    <div className="admin-info">
-                                        <div className="admin-name">
-                                            {admin.name || admin.username || admin.display_name || 'Администратор'}
-                                        </div>
-                                        <div className="admin-role">Администратор</div>
-                                    </div>
-                                    <div className="admin-actions">
-                                        <button
-                                            className="remove-admin-btn"
-                                            onClick={() => onRemoveAdmin && onRemoveAdmin(admin.user_id || admin.id)}
-                                            disabled={isLoading}
-                                            title="Удалить администратора"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
+                        {tournament?.admins && tournament.admins.length > 0 && tournament.admins.map(admin => (
+                            <div key={admin.id} className="admin-item">
+                                <div className="admin-info">
+                                    <div className="admin-name">{admin.username}</div>
+                                    <div className="admin-role">Администратор</div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="no-additional-admins">
-                                <p>Дополнительных администраторов пока нет</p>
+                                <div className="admin-actions">
+                                    <button
+                                        className="remove-admin-btn"
+                                        onClick={() => onRemoveAdmin(admin.user_id)}
+                                        title="Удалить администратора"
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
 
