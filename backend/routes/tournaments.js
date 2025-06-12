@@ -322,7 +322,7 @@ router.get('/:id', async (req, res) => {
             
             // 🔧 ИСПРАВЛЕННЫЙ SQL ЗАПРОС - используем таблицу tournament_teams вместо teams
             const teamsQuery = `
-                SELECT tt.id, tt.name, tt.tournament_id, tt.created_at,
+                SELECT tt.id, tt.name, tt.tournament_id,
                     JSON_AGG(
                         JSON_BUILD_OBJECT(
                             'id', tp.id,
@@ -332,7 +332,7 @@ router.get('/:id', async (req, res) => {
                             'faceit_elo', u.faceit_elo,
                             'cs2_premier_rank', u.cs2_premier_rank,
                             'avatar_url', u.avatar_url
-                        ) ORDER BY tp.created_at
+                        ) ORDER BY tp.id
                     ) as members
                 FROM tournament_teams tt
                 LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id

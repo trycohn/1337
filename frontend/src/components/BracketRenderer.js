@@ -98,25 +98,33 @@ const BracketRenderer = ({
             const placementMatch = validGames.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
             const grandFinalMatch = validGames.find((m) => m.bracket_type === 'grand_final');
 
-            // Создаем группы раундов с проверкой на пустые массивы
+            // 🔧 ДЕТАЛЬНАЯ ОТЛАДКА ГРУППИРОВКИ
+            console.log('🔍 Детальная диагностика группировки матчей:', {
+                totalValidGames: validGames.length,
+                winnerMatchesCount: winnerMatches.length,
+                loserMatchesCount: loserMatches.length,
+                sampleWinnerMatch: winnerMatches[0] || null,
+                allBracketTypes: validGames.map(m => m.bracket_type),
+                allRounds: validGames.map(m => m.round),
+                winnerRounds: winnerMatches.map(m => ({ id: m.id, round: m.round, bracket_type: m.bracket_type }))
+            });
+
+            // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА: учитываем отрицательные раунды
             const winnerRounds = {};
-            const maxWinnerRound = (winnerMatches && winnerMatches.length > 0) ? 
-                Math.max(...winnerMatches.map(m => Number(m.round)).filter(r => r >= 0)) : 0;
             
-            for (let round = 0; round <= maxWinnerRound; round++) {
+            // Сначала находим все уникальные раунды в winner матчах
+            const allWinnerRounds = [...new Set(winnerMatches.map(m => Number(m.round)))];
+            console.log('🔍 Все раунды в winner матчах:', allWinnerRounds);
+            
+            // Группируем по всем найденным раундам
+            allWinnerRounds.forEach(round => {
                 const roundMatches = winnerMatches.filter(m => Number(m.round) === round);
                 if (roundMatches && roundMatches.length > 0) {
                     roundMatches.sort((a, b) => Number(a.match_number || 0) - Number(b.match_number || 0));
                     winnerRounds[round] = roundMatches;
+                    console.log(`✅ Раунд ${round}: добавлено ${roundMatches.length} матчей`);
                 }
-            }
-
-            // Предварительные матчи (round = -1)
-            const prelimMatches = winnerMatches.filter(m => Number(m.round) === -1);
-            if (prelimMatches && prelimMatches.length > 0) {
-                prelimMatches.sort((a, b) => Number(a.match_number || 0) - Number(b.match_number || 0));
-                winnerRounds[-1] = prelimMatches;
-            }
+            });
 
             // Группируем loser rounds с проверкой на пустые массивы
             const loserRounds = {};
@@ -519,16 +527,19 @@ const BracketRenderer = ({
         return <div className="empty-bracket-message">Нет доступных матчей для отображения.</div>;
     }
 
-    const { winnerRounds, loserRounds, placementMatch, grandFinalMatch } = groupedMatches;
+    const { winnerRounds, loserRounds, placementMatch, grandFinalMatch } = groupedMatches || {};
     console.log('BracketRenderer: группировка матчей завершена', { 
-        winnerRoundsKeys: Object.keys(winnerRounds), 
-        loserRoundsKeys: Object.keys(loserRounds),  
+        winnerRoundsKeys: winnerRounds ? Object.keys(winnerRounds) : [], 
+        loserRoundsKeys: loserRounds ? Object.keys(loserRounds) : [],  
         hasPlacementMatch: !!placementMatch, 
         hasGrandFinalMatch: !!grandFinalMatch 
     });
     
-    const winnerRoundKeys = Object.keys(winnerRounds);
-    const hasWinnerMatches = winnerRoundKeys.length > 0 || Object.keys(loserRounds).length > 0 || placementMatch || grandFinalMatch;
+    const winnerRoundKeys = winnerRounds ? Object.keys(winnerRounds) : [];
+    const hasWinnerMatches = winnerRoundKeys.length > 0 || 
+                            (loserRounds && Object.keys(loserRounds).length > 0) || 
+                            placementMatch || 
+                            grandFinalMatch;
 
     if (!hasWinnerMatches) {
         console.log('BracketRenderer: нет матчей для отображения после группировки');
@@ -564,8 +575,8 @@ const BracketRenderer = ({
                 <div className="bracket winners-bracket">
                     <h2 className="bracket-title">Основная сетка</h2>
                     <div className="bracket-grid">
-                        {winnerRoundKeys.sort((a, b) => Number(a) - Number(b)).map((round) => {
-                            const roundMatches = winnerRounds[round];
+                        {(winnerRoundKeys || []).sort((a, b) => Number(a) - Number(b)).map((round) => {
+                            const roundMatches = winnerRounds && winnerRounds[round] ? winnerRounds[round] : [];
                             if (!roundMatches || roundMatches.length === 0) return null;
 
                             return (
