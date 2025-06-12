@@ -15,13 +15,13 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
             console.log('🔧 [useWebSocket] Отложена инициализация: нет пользователя или ID турнира');
             return;
         }
-
+        
         const token = localStorage.getItem('token');
         if (!token) {
             console.log('🔧 [useWebSocket] Отсутствует токен для подключения');
             return;
         }
-
+        
         console.log('🚀 [useWebSocket] Подключение к турниру', tournamentId);
         
         // Подключаемся к Socket.IO
@@ -54,7 +54,7 @@ export const useWebSocket = (tournamentId, user, onTournamentUpdate, onChatMessa
                 onChatMessage(message);
             }
         };
-
+        
         // Подписываемся на события
         socket.on('tournament_updated', handleTournamentUpdate);
         socket.on('tournament_message', handleTournamentMessage);

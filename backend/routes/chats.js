@@ -537,15 +537,26 @@ router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
 // Получение общего количества непрочитанных сообщений пользователя
 router.get('/unread-count', authenticateToken, async (req, res) => {
     try {
+        // Получаем информацию о пользователе включая last_notifications_seen
+        const userResult = await pool.query(`
+            SELECT last_notifications_seen FROM users WHERE id = $1
+        `, [req.user.id]);
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        const lastNotificationsSeen = userResult.rows[0].last_notifications_seen;
+        
+        // Считаем сообщения после последнего просмотра уведомлений
         const result = await pool.query(`
             SELECT COUNT(*) as total_unread
             FROM messages m
-            LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $1
             JOIN chat_participants cp ON m.chat_id = cp.chat_id
             WHERE cp.user_id = $1 
               AND m.sender_id != $1
-              AND (ms.is_read IS NULL OR ms.is_read = FALSE)
-        `, [req.user.id]);
+              AND m.created_at > $2
+        `, [req.user.id, lastNotificationsSeen]);
         
         const totalUnread = parseInt(result.rows[0].total_unread) || 0;
         
@@ -556,68 +567,32 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
     }
 });
 
-// Пометка всех сообщений пользователя как увиденных
+// Пометка времени последнего просмотра уведомлений (НЕ помечает сообщения как прочитанные)
 router.post('/mark-all-seen', authenticateToken, async (req, res) => {
     try {
-        console.log(`👁️ [API] Пометка всех сообщений как увиденных для пользователя ${req.user.id}`);
+        console.log(`👁️ [API] Обновление времени последнего просмотра уведомлений для пользователя ${req.user.id}`);
         
-        // Находим все непрочитанные сообщения пользователя
-        const unreadMessages = await pool.query(`
-            SELECT m.id 
-            FROM messages m
-            LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $1
-            JOIN chat_participants cp ON m.chat_id = cp.chat_id
-            WHERE cp.user_id = $1 
-              AND m.sender_id != $1
-              AND (ms.is_read IS NULL OR ms.is_read = FALSE)
+        // Обновляем время последнего просмотра уведомлений
+        const result = await pool.query(`
+            UPDATE users 
+            SET last_notifications_seen = CURRENT_TIMESTAMP 
+            WHERE id = $1
+            RETURNING last_notifications_seen
         `, [req.user.id]);
         
-        if (unreadMessages.rows.length > 0) {
-            const messageIds = unreadMessages.rows.map(row => row.id);
-            console.log(`👁️ [API] Найдено ${messageIds.length} непрочитанных сообщений`);
-            
-            const client = await pool.connect();
-            
-            try {
-                await client.query('BEGIN');
-                
-                for (const messageId of messageIds) {
-                    // Пытаемся обновить существующую запись
-                    const updateResult = await client.query(`
-                        UPDATE message_status 
-                        SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
-                        WHERE message_id = $1 AND user_id = $2
-                        RETURNING id
-                    `, [messageId, req.user.id]);
-                    
-                    // Если записи не существует, создаем новую
-                    if (updateResult.rows.length === 0) {
-                        await client.query(`
-                            INSERT INTO message_status (message_id, user_id, is_read, read_at)
-                            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
-                        `, [messageId, req.user.id]);
-                    }
-                }
-                
-                await client.query('COMMIT');
-                console.log(`✅ [API] Все ${messageIds.length} сообщений помечены как прочитанные`);
-            } catch (err) {
-                await client.query('ROLLBACK');
-                throw err;
-            } finally {
-                client.release();
-            }
-        } else {
-            console.log(`👁️ [API] Непрочитанных сообщений не найдено`);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
         }
+        
+        console.log(`✅ [API] Время последнего просмотра уведомлений обновлено: ${result.rows[0].last_notifications_seen}`);
         
         res.json({ 
             success: true, 
-            message: 'Все сообщения помечены как увиденные',
-            marked_count: unreadMessages.rows.length
+            message: 'Время последнего просмотра уведомлений обновлено',
+            last_notifications_seen: result.rows[0].last_notifications_seen
         });
     } catch (err) {
-        console.error('Ошибка при пометке всех сообщений как увиденных:', err);
+        console.error('Ошибка при обновлении времени просмотра уведомлений:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
