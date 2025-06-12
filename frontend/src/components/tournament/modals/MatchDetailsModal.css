@@ -591,6 +591,10 @@
     font-weight: 600;
 }
 
+.custom-seed .team-score {
+    color: #ffffff;
+}
+
 .team-score .score {
     font-size: 24px;
     font-weight: bold;
