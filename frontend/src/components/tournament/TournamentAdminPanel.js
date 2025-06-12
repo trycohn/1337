@@ -27,7 +27,11 @@ const TournamentAdminPanel = ({
     onRemoveParticipant,
     onEditMatchResult,
     onGenerateBracket,
-    onClearResults
+    onClearResults,
+    // 🆕 НОВЫЕ ПРОПСЫ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
+    onInviteAdmin,
+    onRemoveAdmin,
+    onShowAdminSearchModal
 }) => {
     if (!isCreatorOrAdmin) {
         return null;
@@ -273,6 +277,68 @@ const TournamentAdminPanel = ({
                         </div>
                     </div>
                 )}
+
+                {/* 🆕 УПРАВЛЕНИЕ АДМИНИСТРАТОРАМИ ТУРНИРА */}
+                <div className="admins-section-v2">
+                    <div className="section-header">
+                        <h4>👑 Администраторы турнира</h4>
+                        <div className="section-controls">
+                            <button 
+                                className="add-btn-compact invite-admin-btn"
+                                onClick={onShowAdminSearchModal}
+                                disabled={isLoading}
+                                title="Пригласить администратора"
+                            >
+                                ➕ Пригласить
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="current-admins-list">
+                        {/* Создатель турнира */}
+                        {(tournament?.creator_name || tournament?.creator_username || tournament?.creator_id) && (
+                            <div className="admin-item creator">
+                                <div className="admin-info">
+                                    <div className="admin-name">
+                                        {tournament.creator_name || tournament.creator_username || `ID: ${tournament.creator_id}`}
+                                    </div>
+                                    <div className="admin-role">Создатель турнира</div>
+                                </div>
+                                <div className="admin-actions">
+                                    <span className="creator-badge">👑</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Дополнительные администраторы */}
+                        {tournament?.admins && tournament.admins.length > 0 ? (
+                            tournament.admins.map((admin, index) => (
+                                <div key={admin.id || admin.user_id || index} className="admin-item">
+                                    <div className="admin-info">
+                                        <div className="admin-name">
+                                            {admin.name || admin.username || admin.display_name || 'Администратор'}
+                                        </div>
+                                        <div className="admin-role">Администратор</div>
+                                    </div>
+                                    <div className="admin-actions">
+                                        <button
+                                            className="remove-admin-btn"
+                                            onClick={() => onRemoveAdmin && onRemoveAdmin(admin.user_id || admin.id)}
+                                            disabled={isLoading}
+                                            title="Удалить администратора"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="no-additional-admins">
+                                <p>Дополнительных администраторов пока нет</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* 🎯 УПРАВЛЕНИЕ ТУРНИРНОЙ СЕТКОЙ */}
                 <div className="bracket-section-v2">
