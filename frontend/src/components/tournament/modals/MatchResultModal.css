@@ -172,6 +172,11 @@
     position: relative;
 }
 
+.team-display .team-name {
+    margin: auto;
+    padding: 0;
+}
+
 .team-name {
     font-size: 16px;
     font-weight: 600;
