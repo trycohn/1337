@@ -556,6 +556,72 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
     }
 });
 
+// Пометка всех сообщений пользователя как увиденных
+router.post('/mark-all-seen', authenticateToken, async (req, res) => {
+    try {
+        console.log(`👁️ [API] Пометка всех сообщений как увиденных для пользователя ${req.user.id}`);
+        
+        // Находим все непрочитанные сообщения пользователя
+        const unreadMessages = await pool.query(`
+            SELECT m.id 
+            FROM messages m
+            LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $1
+            JOIN chat_participants cp ON m.chat_id = cp.chat_id
+            WHERE cp.user_id = $1 
+              AND m.sender_id != $1
+              AND (ms.is_read IS NULL OR ms.is_read = FALSE)
+        `, [req.user.id]);
+        
+        if (unreadMessages.rows.length > 0) {
+            const messageIds = unreadMessages.rows.map(row => row.id);
+            console.log(`👁️ [API] Найдено ${messageIds.length} непрочитанных сообщений`);
+            
+            const client = await pool.connect();
+            
+            try {
+                await client.query('BEGIN');
+                
+                for (const messageId of messageIds) {
+                    // Пытаемся обновить существующую запись
+                    const updateResult = await client.query(`
+                        UPDATE message_status 
+                        SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+                        WHERE message_id = $1 AND user_id = $2
+                        RETURNING id
+                    `, [messageId, req.user.id]);
+                    
+                    // Если записи не существует, создаем новую
+                    if (updateResult.rows.length === 0) {
+                        await client.query(`
+                            INSERT INTO message_status (message_id, user_id, is_read, read_at)
+                            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                        `, [messageId, req.user.id]);
+                    }
+                }
+                
+                await client.query('COMMIT');
+                console.log(`✅ [API] Все ${messageIds.length} сообщений помечены как прочитанные`);
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
+            }
+        } else {
+            console.log(`👁️ [API] Непрочитанных сообщений не найдено`);
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Все сообщения помечены как увиденные',
+            marked_count: unreadMessages.rows.length
+        });
+    } catch (err) {
+        console.error('Ошибка при пометке всех сообщений как увиденных:', err);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 // Вспомогательная функция для получения информации о чате
 async function getChatInfo(chatId, userId) {
     const result = await pool.query(`
