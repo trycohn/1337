@@ -564,24 +564,35 @@
 }
 
 .map-select {
-    flex: 1;
-    max-width: 200px;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-    border: 1px solid #444444;
-    border-radius: 6px;
-    color: #ffffff;
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 0;
+    border: 1px solid #333333;
     font-size: 14px;
+    background-color: #000000;
+    color: #ffffff;
+    cursor: pointer;
 }
 
 .map-select:focus {
-    border-color: #007acc;
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+    border-color: #555555;
+    background-color: #111111;
 }
 
-.map-select.error {
-    border-color: #dc3545;
+/* Стили для опций в выпадающем списке */
+.map-select option {
+    background-color: #000000;
+    color: #ffffff;
+    padding: 8px;
+    border: none;
+}
+
+.map-select option:hover,
+.map-select option:checked,
+.map-select option:focus {
+    background-color: #333333;
+    color: #ffffff;
 }
 
 .remove-map-btn {
