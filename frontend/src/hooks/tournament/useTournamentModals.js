@@ -73,6 +73,31 @@ const useTournamentModals = () => {
 
     // Управление модальным окном результатов матча
     const openMatchResultModal = useCallback((match) => {
+        console.log('🔍 [useTournamentModals] openMatchResultModal вызван с параметрами:', {
+            match: match,
+            matchId: match?.id,
+            matchType: typeof match,
+            hasId: !!match?.id,
+            matchKeys: match ? Object.keys(match) : 'нет объекта'
+        });
+
+        if (!match) {
+            console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: match не передан в openMatchResultModal!');
+            return;
+        }
+
+        if (!match.id && match.id !== 0) {
+            console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: match.id отсутствует или равен undefined/null!', {
+                match,
+                id: match.id,
+                possibleIdFields: {
+                    id: match.id,
+                    match_id: match.match_id,
+                    matchId: match.matchId
+                }
+            });
+        }
+
         setSelectedMatch(match);
         setMatchResultData({
             score1: match.score1 || 0,
@@ -80,6 +105,14 @@ const useTournamentModals = () => {
             maps_data: match.maps_data || []
         });
         setShowMatchResultModal(true);
+        
+        console.log('✅ [useTournamentModals] Модальное окно результатов настроено:', {
+            selectedMatchId: match?.id,
+            showModal: true,
+            score1: match.score1 || 0,
+            score2: match.score2 || 0,
+            mapsCount: match.maps_data?.length || 0
+        });
     }, []);
 
     const closeMatchResultModal = useCallback(() => {

@@ -206,48 +206,66 @@ const useTournamentManagement = (tournamentId) => {
         setError(null);
 
         try {
-            // 🔧 ИСПРАВЛЕНО: Используем существующий POST роут /api/tournaments/:id/update-match
+            // 🔧 КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся что matchId валиден
+            if (!matchId && matchId !== 0) {
+                console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: matchId не передан или равен undefined/null!', {
+                    matchId,
+                    resultData,
+                    typeOfMatchId: typeof matchId
+                });
+                throw new Error('ID матча не указан');
+            }
+
+            // Конвертируем в число
+            const validMatchId = parseInt(matchId);
+            if (isNaN(validMatchId)) {
+                console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: matchId не является числом!', {
+                    matchId,
+                    validMatchId,
+                    resultData
+                });
+                throw new Error('Некорректный ID матча');
+            }
+
             console.log('🔍 Sending request to saveMatchResult:', {
                 tournamentId,
-                matchId,
+                matchId: validMatchId,
                 resultData
             });
             
             const requestData = {
-                matchId: matchId,
+                matchId: validMatchId,
                 winner_team_id: null, // Определим ниже
-                score1: resultData.score1 || 0,
-                score2: resultData.score2 || 0,
+                score1: parseInt(resultData.score1) || 0,
+                score2: parseInt(resultData.score2) || 0,
                 maps: resultData.maps_data && resultData.maps_data.length > 0 ? resultData.maps_data : null
             };
             
-            // Определяем победителя
-            if (resultData.winner === 'team1') {
-                // Нужно получить team1_id из матча - попробуем найти в localStorage
+            // 🔧 УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ WINNER_TEAM_ID
+            if (resultData.winner) {
                 try {
+                    // Пытаемся найти матч в кэше турнира
                     const tournamentData = localStorage.getItem('currentTournament');
                     if (tournamentData) {
                         const tournament = JSON.parse(tournamentData);
-                        const match = tournament.matches?.find(m => m.id === matchId);
+                        const match = tournament.matches?.find(m => parseInt(m.id) === validMatchId);
+                        
                         if (match) {
-                            requestData.winner_team_id = match.team1_id;
+                            if (resultData.winner === 'team1') {
+                                requestData.winner_team_id = parseInt(match.team1_id);
+                                console.log('✅ Определен winner_team_id для team1:', requestData.winner_team_id);
+                            } else if (resultData.winner === 'team2') {
+                                requestData.winner_team_id = parseInt(match.team2_id);
+                                console.log('✅ Определен winner_team_id для team2:', requestData.winner_team_id);
+                            }
+                        } else {
+                            console.warn('⚠️ Матч не найден в кэше турнира, winner_team_id останется null');
                         }
+                    } else {
+                        console.warn('⚠️ Данные турнира не найдены в localStorage, winner_team_id останется null');
                     }
                 } catch (error) {
-                    console.warn('Не удалось определить team1_id из localStorage:', error);
-                }
-            } else if (resultData.winner === 'team2') {
-                try {
-                    const tournamentData = localStorage.getItem('currentTournament');
-                    if (tournamentData) {
-                        const tournament = JSON.parse(tournamentData);
-                        const match = tournament.matches?.find(m => m.id === matchId);
-                        if (match) {
-                            requestData.winner_team_id = match.team2_id;
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Не удалось определить team2_id из localStorage:', error);
+                    console.warn('⚠️ Ошибка при определении winner_team_id:', error);
                 }
             }
             
@@ -257,10 +275,11 @@ const useTournamentManagement = (tournamentId) => {
                 headers: getAuthHeaders()
             });
 
+            console.log('✅ Результат матча успешно сохранен:', response.data);
             return { success: true, data: response.data };
         } catch (error) {
             console.error('❌ Ошибка при сохранении результата матча:', error);
-            const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при сохранении результата';
+            const errorMessage = error.response?.data?.error || error.message || 'Неизвестная ошибка';
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {

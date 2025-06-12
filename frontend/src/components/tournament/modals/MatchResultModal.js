@@ -330,6 +330,24 @@ const MatchResultModal = ({
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        // 🔧 КРИТИЧЕСКАЯ ОТЛАДКА: проверяем все данные перед отправкой
+        console.log('🎯 handleSubmit: начало обработки:', {
+            selectedMatch: selectedMatch,
+            selectedMatchId: selectedMatch?.id,
+            matchResultData: matchResultData,
+            selectedWinner: selectedWinner
+        });
+
+        if (!selectedMatch || !selectedMatch.id) {
+            console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: selectedMatch или selectedMatch.id отсутствует!', {
+                selectedMatch,
+                hasSelectedMatch: !!selectedMatch,
+                matchId: selectedMatch?.id
+            });
+            alert('Ошибка: данные матча не найдены. Попробуйте закрыть и открыть модальное окно снова.');
+            return;
+        }
+        
         const errors = validateResults();
         if (Object.keys(errors).length > 0) {
             console.warn('🚫 Валидация не прошла:', errors);
@@ -342,8 +360,17 @@ const MatchResultModal = ({
             winner: selectedWinner
         };
         
-        console.log('💾 Сохраняем результат матча:', submitData);
-        onSave(submitData);
+        console.log('💾 Сохраняем результат матча:', {
+            matchId: selectedMatch.id,
+            submitData: submitData,
+            hasOnSave: typeof onSave === 'function'
+        });
+        
+        if (typeof onSave === 'function') {
+            onSave(submitData);
+        } else {
+            console.error('❌ onSave не является функцией:', onSave);
+        }
     };
 
     const handleClose = () => {

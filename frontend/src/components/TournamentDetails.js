@@ -624,13 +624,26 @@ function TournamentDetails() {
     }, [tournamentManagement, modals, reloadTournamentData]);
 
     // 🎯 СОХРАНЕНИЕ РЕЗУЛЬТАТА МАТЧА
-    const saveMatchResult = useCallback(async () => {
-        if (!modals.selectedMatch) return;
+    const saveMatchResult = useCallback(async (resultData) => {
+        if (!modals.selectedMatch || !modals.selectedMatch.id) {
+            console.error('❌ Не найден ID матча для сохранения:', {
+                selectedMatch: modals.selectedMatch,
+                matchId: modals.selectedMatch?.id
+            });
+            setMessage('❌ Ошибка: ID матча не найден');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
 
         try {
+            console.log('💾 Сохраняем результат матча:', {
+                matchId: modals.selectedMatch.id,
+                resultData: resultData
+            });
+
             const result = await tournamentManagement.saveMatchResult(
                 modals.selectedMatch.id,
-                modals.matchResultData
+                resultData
             );
             
             if (result.success) {
