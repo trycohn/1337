@@ -93,18 +93,19 @@ const BracketRenderer = ({
             // Группируем матчи
             const winnerMatches = validGames.filter(
                 (m) => (m.bracket_type === 'winner' || m.bracket_type === 'prelim' || !m.bracket_type) && !m.is_third_place_match
-            );
-            const loserMatches = validGames.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match);
+            ) || [];
+            const loserMatches = validGames.filter((m) => m.bracket_type === 'loser' && !m.is_third_place_match) || [];
             const placementMatch = validGames.find((m) => m.bracket_type === 'placement' || m.is_third_place_match);
             const grandFinalMatch = validGames.find((m) => m.bracket_type === 'grand_final');
 
-            // Создаем группы раундов
+            // Создаем группы раундов с проверкой на пустые массивы
             const winnerRounds = {};
-            const maxWinnerRound = winnerMatches.length > 0 ? Math.max(...winnerMatches.map(m => Number(m.round)).filter(r => r >= 0)) : 0;
+            const maxWinnerRound = (winnerMatches && winnerMatches.length > 0) ? 
+                Math.max(...winnerMatches.map(m => Number(m.round)).filter(r => r >= 0)) : 0;
             
             for (let round = 0; round <= maxWinnerRound; round++) {
                 const roundMatches = winnerMatches.filter(m => Number(m.round) === round);
-                if (roundMatches.length > 0) {
+                if (roundMatches && roundMatches.length > 0) {
                     roundMatches.sort((a, b) => Number(a.match_number || 0) - Number(b.match_number || 0));
                     winnerRounds[round] = roundMatches;
                 }
@@ -112,18 +113,19 @@ const BracketRenderer = ({
 
             // Предварительные матчи (round = -1)
             const prelimMatches = winnerMatches.filter(m => Number(m.round) === -1);
-            if (prelimMatches.length > 0) {
+            if (prelimMatches && prelimMatches.length > 0) {
                 prelimMatches.sort((a, b) => Number(a.match_number || 0) - Number(b.match_number || 0));
                 winnerRounds[-1] = prelimMatches;
             }
 
-            // Группируем loser rounds
+            // Группируем loser rounds с проверкой на пустые массивы
             const loserRounds = {};
-            const maxLoserRound = loserMatches.length > 0 ? Math.max(...loserMatches.map(m => Number(m.round))) : 0;
+            const maxLoserRound = (loserMatches && loserMatches.length > 0) ? 
+                Math.max(...loserMatches.map(m => Number(m.round))) : 0;
             
             for (let round = 1; round <= maxLoserRound; round++) {
                 const roundMatches = loserMatches.filter(m => Number(m.round) === round);
-                if (roundMatches.length > 0) {
+                if (roundMatches && roundMatches.length > 0) {
                     roundMatches.sort((a, b) => Number(a.match_number || 0) - Number(b.match_number || 0));
                     loserRounds[round] = roundMatches;
                 }

@@ -136,7 +136,7 @@ function TournamentDetails() {
     
     // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
     const calculateTeamAverageRating = useCallback((team) => {
-        if (!team.members || team.members.length === 0) return '—';
+        if (!team || !team.members || !Array.isArray(team.members) || team.members.length === 0) return '—';
         
         const ratings = team.members.map(member => {
             if (ratingType === 'faceit') {
@@ -1337,11 +1337,11 @@ function TournamentDetails() {
         
         return {
             name: team.name || teamName,
-            members: team.members.map(member => ({
+            members: (team.members && Array.isArray(team.members)) ? team.members.map(member => ({
                 name: member.name || member.username || 'Неизвестно',
                 rating: member.faceit_elo || member.cs2_premier_rank || null,
                 user_id: member.user_id
-            }))
+            })) : []
         };
     }, [mixedTeams, tournament?.teams]);
 
