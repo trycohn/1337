@@ -304,8 +304,8 @@ router.get('/:id', async (req, res) => {
                 u1.avatar_url as team1_avatar,
                 u2.avatar_url as team2_avatar
             FROM matches m
-            LEFT JOIN tournament_participants t1 ON m.team1_id = t1.id
-            LEFT JOIN tournament_participants t2 ON m.team2_id = t2.id
+            LEFT JOIN tournament_participants t1 ON m.participant1_id = t1.id OR m.team1_id = t1.id
+            LEFT JOIN tournament_participants t2 ON m.participant2_id = t2.id OR m.team2_id = t2.id
             LEFT JOIN users u1 ON t1.user_id = u1.id
             LEFT JOIN users u2 ON t2.user_id = u2.id
             WHERE m.tournament_id = $1
@@ -720,14 +720,14 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
             console.log(`⚠️ Турнир в процессе: назначаем поражения в несыгранных матчах для участника ${userId}`);
             
             if (tournament.participant_type === 'solo') {
-                // Найти все несыгранные матчи участника
+                // 🔧 ИСПРАВЛЕННЫЙ SQL ЗАПРОС - правильная связь для одиночных турниров
                 const unfinishedMatches = await pool.query(`
                     SELECT m.*, 
                            tp1.name as participant1_name, tp1.user_id as participant1_user_id,
                            tp2.name as participant2_name, tp2.user_id as participant2_user_id
                     FROM matches m
-                    LEFT JOIN tournament_participants tp1 ON m.team1_id = tp1.id
-                    LEFT JOIN tournament_participants tp2 ON m.team2_id = tp2.id
+                    LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id OR m.team1_id = tp1.id
+                    LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id OR m.team2_id = tp2.id
                     WHERE m.tournament_id = $1 
                     AND (tp1.user_id = $2 OR tp2.user_id = $2)
                     AND m.status = 'pending'
