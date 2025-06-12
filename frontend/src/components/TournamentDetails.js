@@ -134,22 +134,55 @@ function TournamentDetails() {
         maps_data: []
     });
     
-    // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
+    // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ С УЛУЧШЕННОЙ ДИАГНОСТИКОЙ
     const calculateTeamAverageRating = useCallback((team) => {
-        if (!team || !team.members || !Array.isArray(team.members) || team.members.length === 0) return '—';
+        console.log('🔢 calculateTeamAverageRating вызван с team:', {
+            team: team,
+            hasTeam: !!team,
+            teamType: typeof team,
+            hasMembers: !!(team && team.members),
+            membersType: team && typeof team.members,
+            isArray: team && Array.isArray(team.members),
+            membersLength: team && team.members ? team.members.length : 'N/A'
+        });
         
-        const ratings = team.members.map(member => {
-            if (ratingType === 'faceit') {
-                return parseInt(member.faceit_elo) || 1000; // Базовый рейтинг FACEIT
-            } else {
-                return parseInt(member.cs2_premier_rank) || 0; // Базовый ранг CS2
-            }
-        }).filter(rating => rating > 0);
+        if (!team) {
+            console.log('🔢 calculateTeamAverageRating: team не определена');
+            return '—';
+        }
         
-        if (ratings.length === 0) return '—';
+        if (!team.members) {
+            console.log('🔢 calculateTeamAverageRating: team.members не определена');
+            return '—';
+        }
         
-        const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
-        return Math.round(average);
+        if (!Array.isArray(team.members)) {
+            console.log('🔢 calculateTeamAverageRating: team.members не является массивом:', typeof team.members);
+            return '—';
+        }
+        
+        if (team.members.length === 0) {
+            console.log('🔢 calculateTeamAverageRating: team.members пустой массив');
+            return '—';
+        }
+        
+        try {
+            const ratings = team.members.map(member => {
+                if (ratingType === 'faceit') {
+                    return parseInt(member.faceit_elo) || 1000; // Базовый рейтинг FACEIT
+                } else {
+                    return parseInt(member.cs2_premier_rank) || 0; // Базовый ранг CS2
+                }
+            }).filter(rating => rating > 0);
+            
+            if (ratings.length === 0) return '—';
+            
+            const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+            return Math.round(average);
+        } catch (error) {
+            console.error('🔢 calculateTeamAverageRating: Ошибка при расчете рейтинга:', error, { team });
+            return '—';
+        }
     }, [ratingType]);
 
     // 🎯 ФУНКЦИЯ ДИНАМИЧЕСКОГО ОПРЕДЕЛЕНИЯ ПРИЗЕРОВ ТУРНИРА
@@ -1966,17 +1999,21 @@ function TournamentDetails() {
                     
                     {/* Навигация по вкладкам */}
                 <nav className="tabs-navigation-tournamentdetails">
-                    {(visibleTabs || []).map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
-                            onClick={() => setActiveTab(tab.id)}
-                        >
+                    {(visibleTabs || []).map(tab => {
+                        if (!tab) return null;
+                        
+                        return (
+                            <button
+                                key={tab.id}
+                                className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
+                                onClick={() => setActiveTab(tab.id)}
+                            >
                                 <span className="tab-label-tournamentdetails">
                                     {tab.icon} {tab.label}
                                 </span>
-                        </button>
-                    ))}
+                            </button>
+                        );
+                    })}
                 </nav>
                 </div>
 
@@ -2100,9 +2137,28 @@ function TournamentDetails() {
                                                 <div className="tournament-description-content">
                                                     {tournament.description && tournament.description.trim() ? (
                                                         <div className="tournament-description">
-                                                            {(tournament.description || '').split('\n').map((line, index) => (
-                                                                <p key={index}>{line}</p>
-                                                            ))}
+                                                            {(() => {
+                                                                try {
+                                                                    console.log('📝 [Description] Обрабатываем описание:', {
+                                                                        description: tournament.description,
+                                                                        type: typeof tournament.description,
+                                                                        length: tournament.description ? tournament.description.length : 0
+                                                                    });
+                                                                    
+                                                                    const lines = (tournament.description || '').split('\n');
+                                                                    if (!Array.isArray(lines)) {
+                                                                        console.error('📝 [Description] Split не вернул массив:', lines);
+                                                                        return <p>{tournament.description}</p>;
+                                                                    }
+                                                                    
+                                                                    return lines.map((line, index) => (
+                                                                        <p key={index}>{line || '\u00A0'}</p>
+                                                                    ));
+                                                                } catch (error) {
+                                                                    console.error('📝 [Description] Ошибка при обработке описания:', error);
+                                                                    return <p>{tournament.description}</p>;
+                                                                }
+                                                            })()}
                                                         </div>
                                                     ) : (
                                                         <div className={userPermissions.isAdminOrCreator ? "no-description" : "no-description-readonly"}>
@@ -2167,11 +2223,30 @@ function TournamentDetails() {
                                             ) : (
                                                         <div className="rules-text">
                                                     {tournament.rules && tournament.rules.trim() ? (
-                                                        (tournament.rules || '').split('\n').map((rule, index) => (
-                                                            <div key={index} className="rule-item">
-                                                                {rule}
-                                                        </div>
-                                                        ))
+                                                        (() => {
+                                                            try {
+                                                                console.log('📜 [Rules] Обрабатываем правила:', {
+                                                                    rules: tournament.rules,
+                                                                    type: typeof tournament.rules,
+                                                                    length: tournament.rules ? tournament.rules.length : 0
+                                                                });
+                                                                
+                                                                const rules = (tournament.rules || '').split('\n');
+                                                                if (!Array.isArray(rules)) {
+                                                                    console.error('📜 [Rules] Split не вернул массив:', rules);
+                                                                    return <p>{tournament.rules}</p>;
+                                                                }
+                                                                
+                                                                return rules.map((rule, index) => (
+                                                                    <div key={index} className="rule-item">
+                                                                        {rule || '\u00A0'}
+                                                                    </div>
+                                                                ));
+                                                            } catch (error) {
+                                                                console.error('📜 [Rules] Ошибка при обработке правил:', error);
+                                                                return <p>{tournament.rules}</p>;
+                                                            }
+                                                        })()
                                                     ) : (
                                                         userPermissions.isAdminOrCreator ? (
                                                             <div 
@@ -2286,35 +2361,63 @@ function TournamentDetails() {
                                                                 <div className="team-members">
                                                                     <h5>🏆 Участники команды-победителя:</h5>
                                                                     <ul>
-                                                                        {(tournamentWinners.winner.members || []).map((member, idx) => {
-                                                                            const memberName = member.name || member.username;
-                                                                            const formattedName = formatMemberName(memberName);
-                                                                            
-                                                                            return (
-                                                                                <li key={idx} className="team-member winner-member">
-                                                                                    <span className="member-medal">🥇</span>
-                                                                                    {member.user_id ? (
-                                                                                        <Link 
-                                                                                            to={`/profile/${member.user_id}`} 
-                                                                                            className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                        >
-                                                                                            {formattedName.displayName}
-                                                                                        </Link>
-                                                                                    ) : (
-                                                                                        <span 
-                                                                                            className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                        >
-                                                                                            {formattedName.displayName}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    {member.faceit_elo && (
-                                                                                        <span className="member-elo">({member.faceit_elo} ELO)</span>
-                                                                                    )}
-                                                                                </li>
-                                                                            );
-                                                                        })}
+                                                                        {(() => {
+                                                                            try {
+                                                                                console.log('🏆 [TournamentDetails] Обрабатываем участников команды-победителя:', {
+                                                                                    members: tournamentWinners.winner.members,
+                                                                                    type: typeof tournamentWinners.winner.members,
+                                                                                    isArray: Array.isArray(tournamentWinners.winner.members),
+                                                                                    length: tournamentWinners.winner.members ? tournamentWinners.winner.members.length : 0
+                                                                                });
+                                                                                
+                                                                                if (!tournamentWinners.winner.members || !Array.isArray(tournamentWinners.winner.members)) {
+                                                                                    console.error('🏆 [TournamentDetails] Участники команды-победителя не являются массивом:', tournamentWinners.winner.members);
+                                                                                    return <li>Ошибка: участники не найдены</li>;
+                                                                                }
+                                                                                
+                                                                                return (tournamentWinners.winner.members || []).map((member, idx) => {
+                                                                                    if (!member) {
+                                                                                        console.warn('🏆 [TournamentDetails] Пустой участник в команде-победителе:', idx);
+                                                                                        return <li key={idx}>Участник не найден</li>;
+                                                                                    }
+                                                                                    
+                                                                                    const memberName = member.name || member.username;
+                                                                                    const formattedName = formatMemberName(memberName);
+                                                                                    
+                                                                                    return (
+                                                                                        <li key={idx} className="team-member winner-member">
+                                                                                            <span className="member-medal">🥇</span>
+                                                                                            {member.user_id ? (
+                                                                                                <Link 
+                                                                                                    to={`/profile/${member.user_id}`} 
+                                                                                                    className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                                    title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                                >
+                                                                                                    {formattedName.displayName}
+                                                                                                </Link>
+                                                                                            ) : (
+                                                                                                <span 
+                                                                                                    className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                                    title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                                >
+                                                                                                    {formattedName.displayName}
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {member.faceit_elo && (
+                                                                                                <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                                            )}
+                                                                                        </li>
+                                                                                    );
+                                                                                });
+                                                                            } catch (error) {
+                                                                                console.error('🏆 [TournamentDetails] Критическая ошибка при обработке участников команды-победителя:', error, {
+                                                                                    tournamentWinners: tournamentWinners,
+                                                                                    winner: tournamentWinners?.winner,
+                                                                                    members: tournamentWinners?.winner?.members
+                                                                                });
+                                                                                return <li>Ошибка при загрузке участников</li>;
+                                                                            }
+                                                                        })()}
                                                                     </ul>
                                                                 </div>
                                                             )}
@@ -2528,23 +2631,52 @@ function TournamentDetails() {
                                                                         
                                 return (
                                     <div className="matches-list">
-                                        {(completedMatches || []).map(match => (
-                                            <div key={match.id} className="match-item">
-                                                <div className="match-info">
-                                                    <div className="team-info">
-                                                        <div className="team-name">{match.team1_name || 'Команда 1'}</div>
-                                                        <div className="team-name">{match.team2_name || 'Команда 2'}</div>
-                                                    </div>
-                                                    <div className="score-info">
-                                                        <div className="score">{match.score1 || 0}</div>
-                                                        <div className="score">{match.score2 || 0}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="match-actions">
-                                                    <button onClick={() => handleMatchClick(match)}>Подробнее</button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                        {(() => {
+                                            try {
+                                                console.log('🏆 [Results] Рендеринг завершенных матчей:', {
+                                                    completedMatches: completedMatches,
+                                                    type: typeof completedMatches,
+                                                    isArray: Array.isArray(completedMatches),
+                                                    length: completedMatches ? completedMatches.length : 0
+                                                });
+                                                
+                                                if (!completedMatches || !Array.isArray(completedMatches)) {
+                                                    console.error('🏆 [Results] Завершенные матчи не являются массивом:', completedMatches);
+                                                    return <div>Ошибка: матчи не найдены</div>;
+                                                }
+                                                
+                                                return (completedMatches || []).map(match => {
+                                                    if (!match) {
+                                                        console.warn('🏆 [Results] Пустой матч в завершенных:', match);
+                                                        return null;
+                                                    }
+                                                    
+                                                    return (
+                                                        <div key={match.id} className="match-item">
+                                                            <div className="match-info">
+                                                                <div className="team-info">
+                                                                    <div className="team-name">{match.team1_name || 'Команда 1'}</div>
+                                                                    <div className="team-name">{match.team2_name || 'Команда 2'}</div>
+                                                                </div>
+                                                                <div className="score-info">
+                                                                    <div className="score">{match.score1 || 0}</div>
+                                                                    <div className="score">{match.score2 || 0}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="match-actions">
+                                                                <button onClick={() => handleMatchClick(match)}>Подробнее</button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                });
+                                            } catch (error) {
+                                                console.error('🏆 [Results] Критическая ошибка при рендеринге завершенных матчей:', error, {
+                                                    matches: matches,
+                                                    completedMatches: completedMatches
+                                                });
+                                                return <div>Ошибка при загрузке результатов</div>;
+                                            }
+                                        })()}
                                     </div>
                                 );
                             })()}
