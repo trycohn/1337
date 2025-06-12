@@ -1829,8 +1829,8 @@ function TournamentDetails() {
         }
     };
 
-    // 🆕 НОВЫЕ ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
-    const searchUsersForAdmin = useCallback(async (query) => {
+    // 🆕 НОВЫЕ ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ (переиспользуют хуки)
+    const searchUsersForAdmin = async (query) => {
         console.log('🔍 НАЧАЛО ПОИСКА ПОЛЬЗОВАТЕЛЕЙ ДЛЯ АДМИНИСТРИРОВАНИЯ');
         
         if (!query || query.length < 2) {
@@ -1883,9 +1883,9 @@ function TournamentDetails() {
         } finally {
             modals.setAdminSearchLoading(false);
         }
-    }, [tournament, tournamentManagement.searchUsers, modals]);
+    };
 
-    const inviteAdmin = useCallback(async (userId) => {
+    const inviteAdmin = async (userId) => {
         try {
             console.log('👑 Отправка приглашения администратора пользователю:', userId);
             
@@ -1910,13 +1910,13 @@ function TournamentDetails() {
             setMessage('Ошибка при отправке приглашения');
             setTimeout(() => setMessage(''), 3000);
         }
-    }, [tournamentManagement.inviteAdmin, modals]);
+    };
 
     // 🆕 УДАЛЕНИЕ АДМИНИСТРАТОРА
-    const removeAdmin = useCallback(async (userId) => {
+    const removeAdmin = async (userId) => {
         // Подтверждение удаления
         const confirmDelete = window.confirm(
-            '⚠️ Вы уверены, что хотите удалить этого администратора?\n\n' +
+            '⚠️ Вы уверены, что хотите удалить этого администратора?\\n\\n' +
             'Пользователь потеряет все админские права в этом турнире.'
         );
         
@@ -1935,219 +1935,595 @@ function TournamentDetails() {
                 setTimeout(() => setMessage(''), 3000);
                 
                 // Обновляем данные турнира
-                loadTournamentData();
+                reloadTournamentData();
             } else {
-                                    return (
-                                        <div className="empty-state">
-                                            <p>📊 Результатов пока нет</p>
-                                            <p>Результаты появятся после завершения матчей</p>
-                                            {matches && matches.length > 0 && (
-                                                <div className="matches-debug-info">
-                                                    <details>
-                                                        <summary>🔍 Диагностика матчей ({matches.length} всего)</summary>
-                                                        <ul>
-                                                            {matches.slice(0, 5).map(match => (
-                                                                <li key={match.id}>
-                                                                    Матч {match.id}: статус="{match.status}", state="{match.state}", 
-                                                                    winner_id={match.winner_team_id || match.winner_id || 'нет'}, 
-                                                                    счет={match.score1 || match.team1_score || 0}:{match.score2 || match.team2_score || 0}
-                                                                </li>
-                                                            ))}
-                                                            {matches.length > 5 && <li>... и еще {matches.length - 5} матчей</li>}
-                                                        </ul>
-                                                    </details>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                }
-                            })()}
+                setMessage(result.message || 'Ошибка при удалении администратора');
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении администратора:', error);
+            setMessage('Ошибка при удалении администратора');
+            setTimeout(() => setMessage(''), 3000);
+        }
+    };
 
-                            {/* ПОБЕДИТЕЛИ */}
-                            {tournament.status === 'completed' && tournamentWinners.winner && (
-                                <div className="winners-section">
-                                    <h3>🏆 Призёры турнира</h3>
-                                    <div className="winners-podium">
-                                        {/* Первое место */}
-                                        <div className="winner-card place-1">
-                                            <div className="medal-icon gold-medal">🥇</div>
-                                            <div className="winner-info">
-                                                {tournamentWinners.winner.type === 'team' ? (
-                                                    <div className="team-winner">
-                                                        <h4>{tournamentWinners.winner.name}</h4>
-                                                        {tournamentWinners.winner.members && (
-                                                            <div className="team-members">
-                                                                <h5>🏆 Победители (участники команды):</h5>
-                                                                <ul>
-                                                                    {tournamentWinners.winner.members.map((member, idx) => {
-                                                                        const memberName = member.name || member.username;
-                                                                        const formattedName = formatMemberName(memberName);
-                                                                        
-                                                                        return (
-                                                                        <li key={idx} className="team-member winner-member">
-                                                                            <span className="member-medal">🥇</span>
-                                                                            {member.user_id ? (
-                                                                                    <Link 
-                                                                                        to={`/profile/${member.user_id}`} 
-                                                                                        className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                        title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                    >
-                                                                                        {formattedName.displayName}
-                                                                                </Link>
-                                                                            ) : (
-                                                                                    <span 
-                                                                                        className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                        title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                    >
-                                                                                        {formattedName.displayName}
-                                                                                    </span>
-                                                                            )}
-                                                                            {member.faceit_elo && (
-                                                                                <span className="member-elo">({member.faceit_elo} ELO)</span>
-                                                                            )}
-                                                                            <span className="member-achievement">- Чемпион турнира</span>
-                                                                        </li>
-                                                                        );
-                                                                    })}
-                                                                </ul>
-                                                                <div className="team-achievement">
-                                                                    <strong>Каждый участник команды получает статус "Победитель турнира"</strong>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
+    // 🎯 РЕНДЕРИНГ КОМПОНЕНТА
+    return (
+        <TournamentErrorBoundary>
+            <section className="tournament-details-tournamentdetails">
+                {/* 🎯 ЗАГОЛОВОК ТУРНИРА */}
+                <div className="tournament-header-tournamentdetails">
+                    <h2>{tournament.name}</h2>
+                    
+                    {/* Навигация по вкладкам */}
+                    <nav className="tabs-navigation-tournamentdetails">
+                        {visibleTabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
+                                onClick={() => setActiveTab(tab.id)}
+                            >
+                                <span className="tab-label-tournamentdetails">
+                                    {tab.icon} {tab.label}
+                                </span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                {/* 🎯 КОНТЕНТ ВКЛАДОК */}
+                <div className="tournament-content-tournamentdetails">
+                    {/* ВКЛАДКА: ИНФОРМАЦИЯ */}
+                    {activeTab === 'info' && (
+                        <div className="tab-content-tournamentdetails tab-info-tournamentdetails">
+                            <div className="tournament-info-horizontal-grid">
+                                {/* Основная информация */}
+                                <div className="info-main-tournamentdetails">
+                                    <div className="info-block-tournamentdetails main-info-block">
+                                        <h3>📋 Основная информация</h3>
+                                        <div className="tournament-meta-info-tournamentdetails">
+                                            <div className="meta-item-tournamentdetails">
+                                                <strong>📊 Статус</strong>
+                                                <span>{tournament.status === 'active' ? 'Открыт для регистрации' : 
+                                                      tournament.status === 'in_progress' ? 'В процессе' :
+                                                      tournament.status === 'completed' ? 'Завершен' : 'Создан'}</span>
+                                            </div>
+                                            <div className="meta-item-tournamentdetails">
+                                                <strong>🎮 Игра</strong>
+                                                <span>{tournament.game || 'Не указана'}</span>
+                                            </div>
+                                            <div className="meta-item-tournamentdetails">
+                                                <strong>📅 Дата создания</strong>
+                                                <span>{new Date(tournament.created_at).toLocaleDateString('ru-RU')}</span>
+                                            </div>
+                                            <div className="meta-item-tournamentdetails">
+                                                <strong>🏆 Формат</strong>
+                                                <span>{tournament.format === 'single_elimination' ? 'На выбывание' : 
+                                                      tournament.format === 'double_elimination' ? 'Двойное выбывание' : 
+                                                      tournament.format === 'mix' ? 'Микс турнир' : tournament.format}</span>
+                                            </div>
+                                            <div className="meta-item-tournamentdetails">
+                                                <strong>👥 Участники</strong>
+                                                <span>{tournament.participants?.length || 0} человек</span>
+                                            </div>
+                                            <div className="meta-item-tournamentdetails">
+                                                <strong>🕘 Обновлен</strong>
+                                                <span>{new Date(tournament.updated_at).toLocaleDateString('ru-RU')}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Информация о создателе */}
+                                        <div className="creator-info-tournamentdetails">
+                                            <strong>👤 Создатель турнира</strong>
+                                            <div className="creator-display">
+                                                <div className="creator-avatar">
+                                                    {tournament.creator_avatar_url ? (
+                                                        <img 
+                                                            src={ensureHttps(tournament.creator_avatar_url)} 
+                                                            alt={tournament.creator_name}
+                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                        />
+                                                    ) : (
+                                                        <div className="avatar-placeholder">
+                                                            {(tournament.creator_name || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {tournament.creator_id ? (
+                                                    <Link to={`/profile/${tournament.creator_id}`} className="creator-link">
+                                                        <span className="creator-name">{tournament.creator_name || 'Неизвестно'}</span>
+                                                    </Link>
                                                 ) : (
-                                                    <div className="solo-winner">
-                                                        <Link to={`/profile/${tournamentWinners.winner.user_id}`} className="winner-name">
-                                                            <span className="winner-medal">🥇</span>
-                                                            {tournamentWinners.winner.name}
-                                                        </Link>
-                                                        <div className="winner-achievement">Чемпион турнира</div>
-                                                    </div>
+                                                    <span className="creator-name">{tournament.creator_name || 'Неизвестно'}</span>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* Второе место */}
-                                        {tournamentWinners.secondPlace && (
-                                            <div className="winner-card place-2">
-                                                <div className="medal-icon silver-medal">🥈</div>
-                                                <div className="winner-info">
-                                                    {tournamentWinners.secondPlace.type === 'team' ? (
-                                                        <div className="team-winner">
-                                                            <h4>{tournamentWinners.secondPlace.name}</h4>
-                                                            {tournamentWinners.secondPlace.members && (
-                                                                <div className="team-members">
-                                                                    <h5>🥈 Серебряные призеры (участники команды):</h5>
-                                                                    <ul>
-                                                                        {tournamentWinners.secondPlace.members.map((member, idx) => {
-                                                                            const memberName = member.name || member.username;
-                                                                            const formattedName = formatMemberName(memberName);
-                                                                            
-                                                                            return (
-                                                                            <li key={idx} className="team-member second-place-member">
-                                                                                <span className="member-medal">🥈</span>
-                                                                                {member.user_id ? (
-                                                                                        <Link 
-                                                                                            to={`/profile/${member.user_id}`} 
-                                                                                            className={`member-name second-place-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                        >
-                                                                                            {formattedName.displayName}
-                                                                                    </Link>
-                                                                                ) : (
-                                                                                        <span 
-                                                                                            className={`member-name second-place-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                        >
-                                                                                            {formattedName.displayName}
-                                                                                        </span>
-                                                                                )}
-                                                                                <span className="member-achievement">- Серебряный призер</span>
-                                                                            </li>
-                                                                            );
-                                                                        })}
-                                                                    </ul>
-                                                                    <div className="team-achievement">
-                                                                        <strong>Каждый участник команды получает статус "Серебряный призер"</strong>
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                        {/* Описание турнира */}
+                                        <div className="tournament-description-section description-block">
+                                            <div className="block-header">
+                                                <h4>📝 Описание турнира</h4>
+                                                {userPermissions.isAdminOrCreator && !isEditingDescription && (
+                                                    <div className="edit-controls">
+                                                        <button 
+                                                            className="edit-btn"
+                                                            onClick={startEditingDescription}
+                                                            disabled={saveLoading}
+                                                        >
+                                                            ✏️ Редактировать
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {isEditingDescription ? (
+                                                <div className="edit-field">
+                                                    <textarea
+                                                        className="description-editor"
+                                                        value={editedDescription}
+                                                        onChange={(e) => setEditedDescription(e.target.value)}
+                                                        placeholder="Введите описание турнира..."
+                                                        rows={5}
+                                                        disabled={saveLoading}
+                                                    />
+                                                    <div className="edit-actions">
+                                                        <button 
+                                                            className="save-btn"
+                                                            onClick={saveDescription}
+                                                            disabled={saveLoading}
+                                                        >
+                                                            {saveLoading ? '⏳ Сохранение...' : '💾 Сохранить'}
+                                                        </button>
+                                                        <button 
+                                                            className="cancel-btn"
+                                                            onClick={cancelEditingDescription}
+                                                            disabled={saveLoading}
+                                                        >
+                                                            ❌ Отмена
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="tournament-description-content">
+                                                    {tournament.description ? (
+                                                        <div className="tournament-description">
+                                                            {tournament.description.split('\n').map((line, index) => (
+                                                                <p key={index}>{line}</p>
+                                                            ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="solo-winner">
-                                                            <Link to={`/profile/${tournamentWinners.secondPlace.user_id}`} className="winner-name">
-                                                                <span className="winner-medal">🥈</span>
-                                                                {tournamentWinners.secondPlace.name}
-                                                            </Link>
-                                                            <div className="winner-achievement">Серебряный призер</div>
+                                                        <div className={userPermissions.isAdminOrCreator ? "no-description" : "no-description-readonly"}>
+                                                            {userPermissions.isAdminOrCreator ? 
+                                                                "📝 Нажмите 'Редактировать' чтобы добавить описание турнира" :
+                                                                "📝 Описание не добавлено"
+                                                            }
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        {/* Третье место */}
-                                        {tournamentWinners.thirdPlace && (
-                                            <div className="winner-card place-3">
-                                                <div className="medal-icon bronze-medal">🥉</div>
-                                                <div className="winner-info">
-                                                    {tournamentWinners.thirdPlace.type === 'team' ? (
-                                                        <div className="team-winner">
-                                                            <h4>{tournamentWinners.thirdPlace.name}</h4>
-                                                            {tournamentWinners.thirdPlace.members && (
-                                                                <div className="team-members">
-                                                                    <h5>🥉 Бронзовые призеры (участники команды):</h5>
-                                                                    <ul>
-                                                                        {tournamentWinners.thirdPlace.members.map((member, idx) => {
-                                                                            const memberName = member.name || member.username;
-                                                                            const formattedName = formatMemberName(memberName);
-                                                                            
-                                                                            return (
-                                                                            <li key={idx} className="team-member third-place-member">
-                                                                                <span className="member-medal">🥉</span>
-                                                                                {member.user_id ? (
-                                                                                        <Link 
-                                                                                            to={`/profile/${member.user_id}`} 
-                                                                                            className={`member-name third-place-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                        >
-                                                                                            {formattedName.displayName}
-                                                                                    </Link>
-                                                                                ) : (
-                                                                                        <span 
-                                                                                            className={`member-name third-place-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
-                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                                                        >
-                                                                                            {formattedName.displayName}
-                                                                                        </span>
-                                                                                )}
-                                                                                <span className="member-achievement">- Бронзовый призер</span>
-                                                                            </li>
-                                                                            );
-                                                                        })}
-                                                                    </ul>
-                                                                    <div className="team-achievement">
-                                                                        <strong>Каждый участник команды получает статус "Бронзовый призер"</strong>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                {/* Правила турнира */}
+                                <div className="info-rules-tournamentdetails">
+                                    <div className="info-block-tournamentdetails rules-block">
+                                        <div className="block-header">
+                                            <h3>📜 Правила турнира</h3>
+                                            {userPermissions.isAdminOrCreator && !isEditingRules && (
+                                                <div className="edit-controls">
+                                                    <button 
+                                                        className="edit-btn"
+                                                        onClick={startEditingRules}
+                                                        disabled={saveLoading}
+                                                    >
+                                                        ✏️ Редактировать
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="tournament-rules-content">
+                                            {isEditingRules ? (
+                                                <div className="edit-field">
+                                                    <textarea
+                                                        className="rules-editor"
+                                                        value={editedRules}
+                                                        onChange={(e) => setEditedRules(e.target.value)}
+                                                        placeholder="Введите правила турнира..."
+                                                        rows={10}
+                                                        disabled={saveLoading}
+                                                    />
+                                                    <div className="edit-actions">
+                                                        <button 
+                                                            className="save-btn"
+                                                            onClick={saveRules}
+                                                            disabled={saveLoading}
+                                                        >
+                                                            {saveLoading ? '⏳ Сохранение...' : '💾 Сохранить'}
+                                                        </button>
+                                                        <button 
+                                                            className="cancel-btn"
+                                                            onClick={cancelEditingRules}
+                                                            disabled={saveLoading}
+                                                        >
+                                                            ❌ Отмена
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="rules-text">
+                                                    {tournament.rules ? (
+                                                        tournament.rules.split('\n').map((rule, index) => (
+                                                            <div key={index} className="rule-item">
+                                                                {rule}
+                                                            </div>
+                                                        ))
                                                     ) : (
-                                                        <div className="solo-winner">
-                                                            <Link to={`/profile/${tournamentWinners.thirdPlace.user_id}`} className="winner-name">
-                                                                <span className="winner-medal">🥉</span>
-                                                                {tournamentWinners.thirdPlace.name}
-                                                            </Link>
-                                                            <div className="winner-achievement">Бронзовый призер</div>
-                                                        </div>
+                                                        userPermissions.isAdminOrCreator ? (
+                                                            <div 
+                                                                className="no-rules-admin"
+                                                                onClick={startEditingRules}
+                                                            >
+                                                                📜 Нажмите здесь чтобы добавить правила турнира
+                                                            </div>
+                                                        ) : (
+                                                            <div className="default-rules">
+                                                                <div className="rule-section">
+                                                                    <h4>🎮 Общие правила</h4>
+                                                                    <ul>
+                                                                        <li>Участники должны соблюдать честную игру</li>
+                                                                        <li>Запрещено использование читов и сторонних программ</li>
+                                                                        <li>Уважительное отношение к соперникам обязательно</li>
+                                                                    </ul>
+                                                                </div>
+                                                                <div className="rule-section">
+                                                                    <h4>⏰ Расписание</h4>
+                                                                    <ul>
+                                                                        <li>Матчи проводятся согласно турнирной сетке</li>
+                                                                        <li>В случае неявки засчитывается техническое поражение</li>
+                                                                        <li>Время ожидания соперника - 15 минут</li>
+                                                                    </ul>
+                                                                </div>
+                                                                <div className="rule-section">
+                                                                    <h4>🏆 Результаты</h4>
+                                                                    <ul>
+                                                                        <li>Результаты матчей вводят администраторы</li>
+                                                                        <li>Спорные ситуации решаются администрацией</li>
+                                                                        <li>Финальные результаты не подлежат изменению</li>
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        )
                                                     )}
                                                 </div>
-                                            </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Секция с турнирной сеткой */}
+                            <div className="info-bracket-section">
+                                <div className="info-bracket-header">
+                                    <h3>🏆 Турнирная сетка</h3>
+                                    <div className="bracket-stats">
+                                        <span className={`bracket-stat ${tournament.status === 'in_progress' ? 'status-active' : 
+                                                        tournament.status === 'completed' ? 'status-completed' : 'status-pending'}`}>
+                                            {tournament.status === 'active' && '⏳ Ожидание старта'}
+                                            {tournament.status === 'in_progress' && '🔥 В процессе'}
+                                            {tournament.status === 'completed' && '✅ Завершен'}
+                                        </span>
+                                        {matches && matches.length > 0 && (
+                                            <span className="bracket-stat">
+                                                📊 {matches.length} матчей
+                                            </span>
+                                        )}
+                                        {tournament.participants && tournament.participants.length > 0 && (
+                                            <span className="bracket-stat">
+                                                👥 {tournament.participants.length} участников
+                                            </span>
                                         )}
                                     </div>
                                 </div>
+                                
+                                {/* Турнирная сетка или пустое состояние */}
+                                {bracketGames && bracketGames.length > 0 ? (
+                                    <BracketRenderer
+                                        games={bracketGames}
+                                        canEditMatches={userPermissions.canEdit && tournament.status !== 'completed'}
+                                        selectedMatch={selectedMatch}
+                                        setSelectedMatch={setSelectedMatch}
+                                        handleTeamClick={handleTeamClick}
+                                        format={tournament.format}
+                                        onMatchClick={handleMatchClick}
+                                    />
+                                ) : (
+                                    <div className="empty-bracket-content">
+                                        <div className="empty-bracket-icon">🏆</div>
+                                        <h4>Турнирная сетка не создана</h4>
+                                        <p>Сетка появится после регистрации участников и её генерации</p>
+                                        {userPermissions.isAdminOrCreator && tournament.participants?.length >= 2 && (
+                                            <button 
+                                                className="generate-bracket-button"
+                                                onClick={handleGenerateBracket}
+                                            >
+                                                🎯 Создать турнирную сетку
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Секция с победителями на вкладке информации */}
+                            {tournament.status === 'completed' && tournamentWinners.winner && (
+                                <div className="info-winners-section">
+                                    {/* Тот же код что и в результатах, но в другом стиле */}
+                                    <div className="winners-section">
+                                        <h3>🏆 Призёры турнира</h3>
+                                        <div className="winners-podium">
+                                            {/* Первое место */}
+                                            <div className="winner-card place-1">
+                                                <div className="medal-icon gold-medal">🥇</div>
+                                                <div className="winner-info">
+                                                    {tournamentWinners.winner.type === 'team' ? (
+                                                        <div className="team-winner">
+                                                            <h4>{tournamentWinners.winner.name}</h4>
+                                                            {tournamentWinners.winner.members && (
+                                                                <div className="team-members">
+                                                                    <h5>🏆 Участники команды-победителя:</h5>
+                                                                    <ul>
+                                                                        {tournamentWinners.winner.members.map((member, idx) => {
+                                                                            const memberName = member.name || member.username;
+                                                                            const formattedName = formatMemberName(memberName);
+                                                                            
+                                                                            return (
+                                                                            <li key={idx} className="team-member winner-member">
+                                                                                <span className="member-medal">🥇</span>
+                                                                                {member.user_id ? (
+                                                                                        <Link 
+                                                                                            to={`/profile/${member.user_id}`} 
+                                                                                            className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                    </Link>
+                                                                                ) : (
+                                                                                        <span 
+                                                                                            className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                                            title={formattedName.isTruncated ? formattedName.originalName : undefined}
+                                                                                        >
+                                                                                            {formattedName.displayName}
+                                                                                        </span>
+                                                                                )}
+                                                                                {member.faceit_elo && (
+                                                                                    <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                                )}
+                                                                            </li>
+                                                                            );
+                                                                        })}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="solo-winner">
+                                                            <Link to={`/profile/${tournamentWinners.winner.user_id}`} className="winner-name">
+                                                                <span className="winner-medal">🥇</span>
+                                                                {tournamentWinners.winner.name}
+                                                            </Link>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Второе и третье место аналогично */}
+                                            {tournamentWinners.secondPlace && (
+                                                <div className="winner-card place-2">
+                                                    <div className="medal-icon silver-medal">🥈</div>
+                                                    <div className="winner-info">
+                                                        {tournamentWinners.secondPlace.type === 'team' ? (
+                                                            <div className="team-winner">
+                                                                <h4>{tournamentWinners.secondPlace.name}</h4>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="solo-winner">
+                                                                <Link to={`/profile/${tournamentWinners.secondPlace.user_id}`} className="winner-name">
+                                                                    <span className="winner-medal">🥈</span>
+                                                                    {tournamentWinners.secondPlace.name}
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tournamentWinners.thirdPlace && (
+                                                <div className="winner-card place-3">
+                                                    <div className="medal-icon bronze-medal">🥉</div>
+                                                    <div className="winner-info">
+                                                        {tournamentWinners.thirdPlace.type === 'team' ? (
+                                                            <div className="team-winner">
+                                                                <h4>{tournamentWinners.thirdPlace.name}</h4>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="solo-winner">
+                                                                <Link to={`/profile/${tournamentWinners.thirdPlace.user_id}`} className="winner-name">
+                                                                    <span className="winner-medal">🥉</span>
+                                                                    {tournamentWinners.thirdPlace.name}
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* ВКЛАДКА: УЧАСТНИКИ */}
+                    {activeTab === 'participants' && (
+                        <div className="tab-content-tournamentdetails">
+                            {/* УЧАСТИЕ В ТУРНИРЕ */}
+                            {!userPermissions.isParticipating && tournament.status === 'active' && user && (
+                                <div className="participation-controls">
+                                    <button onClick={handleParticipate} className="participate-btn">
+                                        ➕ Участвовать в турнире
+                                    </button>
+                                </div>
+                            )}
+
+                            {userPermissions.isParticipating && tournament.status === 'active' && (
+                                <div className="participation-controls">
+                                    <button onClick={handleWithdraw} className="withdraw-btn">
+                                        ❌ Отказаться от участия
+                                    </button>
+                                </div>
+                            )}
+
+                            {tournament.status === 'in_progress' && (
+                                <div className="bracket-generated-notice">
+                                    <p className="info-message">
+                                        ℹ️ Турнир уже начался - регистрация и изменение участников недоступны
+                                    </p>
+                                </div>
+                            )}
+
+                            {tournament.status === 'completed' && (
+                                <div className="bracket-generated-notice">
+                                    <p className="info-message">
+                                        ✅ Турнир завершен
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* УНИФИЦИРОВАННАЯ ПАНЕЛЬ УЧАСТНИКОВ */}
+                            <UnifiedParticipantsPanel
+                                tournament={tournament}
+                                participants={tournament.participants || []}
+                                mixedTeams={mixedTeams}
+                                isCreatorOrAdmin={userPermissions.isAdminOrCreator}
+                                onAddParticipant={() => modals.openParticipantSearchModal()}
+                                onAddUnregistered={() => modals.openAddParticipantModal()}
+                                onRemoveParticipant={handleRemoveParticipant}
+                                onGenerateTeams={handleTeamsGenerated}
+                                onUpdateTeams={handleTeamsUpdated}
+                                ratingType={ratingType}
+                                setRatingType={setRatingType}
+                                displayMode={displayMode}
+                                showDisplayModeSelector={true}
+                                onDisplayModeChange={handleDisplayModeChange}
+                            />
+                        </div>
+                    )}
+
+                    {/* ВКЛАДКА: СЕТКА */}
+                    {activeTab === 'bracket' && (
+                        <div className="tab-content-tournamentdetails">
+                            <div className="bracket-tab-header">
+                                <h3>🏆 Турнирная сетка</h3>
+                                {userPermissions.isAdminOrCreator && (
+                                    <div className="bracket-controls">
+                                        {(!matches || matches.length === 0) && tournament.participants?.length >= 2 && (
+                                            <button 
+                                                className="generate-bracket-button"
+                                                onClick={handleGenerateBracket}
+                                            >
+                                                🎯 Создать турнирную сетку
+                                            </button>
+                                        )}
+                                        {matches && matches.length > 0 && tournament.status === 'active' && (
+                                            <button 
+                                                className="regenerate-bracket-button"
+                                                onClick={confirmGenerateBracket}
+                                            >
+                                                🔄 Перегенерировать сетку
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {bracketGames && bracketGames.length > 0 ? (
+                                <BracketRenderer
+                                    games={bracketGames}
+                                    canEditMatches={userPermissions.canEdit && tournament.status !== 'completed'}
+                                    selectedMatch={selectedMatch}
+                                    setSelectedMatch={setSelectedMatch}
+                                    handleTeamClick={handleTeamClick}
+                                    format={tournament.format}
+                                    onMatchClick={handleMatchClick}
+                                />
+                            ) : (
+                                <div className="empty-state">
+                                    <p>🏆 Турнирная сетка еще не создана</p>
+                                    {userPermissions.isAdminOrCreator ? (
+                                        tournament.participants?.length >= 2 ? (
+                                            <>
+                                                <p className="text-muted">Нажмите кнопку выше для создания сетки</p>
+                                                <button 
+                                                    className="generate-bracket-button"
+                                                    onClick={handleGenerateBracket}
+                                                >
+                                                    🎯 Создать турнирную сетку
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <p className="text-muted">Для создания сетки нужно минимум 2 участника</p>
+                                        )
+                                    ) : (
+                                        <p className="text-muted">Сетка будет создана администраторами</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ВКЛАДКА: РЕЗУЛЬТАТЫ */}
+                    {activeTab === 'results' && (
+                        <div className="tab-content-tournamentdetails">
+                            {(() => {
+                                // Фильтруем завершенные матчи с результатами
+                                const completedMatches = matches.filter(match => 
+                                    match.status === 'completed' || match.status === 'DONE' || match.state === 'DONE' ||
+                                    match.winner_team_id || match.winner_id ||
+                                    (match.score1 !== undefined && match.score2 !== undefined && (match.score1 > 0 || match.score2 > 0))
+                                );
+
+                                if (completedMatches.length === 0) {
+                                    return (
+                                        <div className="empty-state">
+                                            <p>🏆 Турнир еще не завершен</p>
+                                            <p>Результаты появятся после завершения всех матчей</p>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="matches-list">
+                                        {completedMatches.map(match => (
+                                            <div key={match.id} className="match-item">
+                                                <div className="match-info">
+                                                    <div className="team-info">
+                                                        <div className="team-name">{match.team1_name || 'Команда 1'}</div>
+                                                        <div className="team-name">{match.team2_name || 'Команда 2'}</div>
+                                                    </div>
+                                                    <div className="score-info">
+                                                        <div className="score">{match.score1 || 0}</div>
+                                                        <div className="score">{match.score2 || 0}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="match-actions">
+                                                    <button onClick={() => handleMatchClick(match)}>Подробнее</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
 
