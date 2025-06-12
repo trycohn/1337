@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { isCounterStrike2, getGameMaps } from '../../../utils/mapHelpers';
+import { isCounterStrike2, getDefaultCS2Maps } from '../../../utils/mapHelpers';
 import './MatchResultModal.css';
 
 /**
@@ -25,7 +25,7 @@ const MatchResultModal = ({
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
 
-    // 🎯 УЛУЧШЕНИЕ: Автоопределение турнира из localStorage или контекста
+    // 🎯 УЛУЧШЕННОЕ: Определение игры турнира
     const getTournamentGame = useCallback(() => {
         console.log('🎮 Определяем игру турнира для карт...');
         
@@ -55,13 +55,12 @@ const MatchResultModal = ({
             return 'Counter-Strike 2';
         }
         
-        // Приоритет 4: Попробуем определить по URL (если есть турнир ID)
+        // Приоритет 4: Проверка URL
         try {
             const pathMatch = window.location.pathname.match(/\/tournaments\/(\d+)/);
             if (pathMatch) {
-                console.log('🔍 Пытаемся определить игру по контексту URL для турнира:', pathMatch[1]);
-                // Можно добавить логику определения игры по умолчанию
-                // Временно считаем CS2 если не определилось
+                console.log('🔍 Определяем игру по URL для турнира:', pathMatch[1]);
+                // Для демонстрации считаем CS2 по умолчанию
                 console.log('✅ Принимаем Counter-Strike 2 как игру по умолчанию');
                 return 'Counter-Strike 2';
             }
@@ -100,13 +99,23 @@ const MatchResultModal = ({
         }
     }, [selectedMatch, matchResultData]);
 
-    // 🎯 ЗАГРУЗКА ДОСТУПНЫХ КАРТ
+    // 🎯 ИСПРАВЛЕННАЯ ЗАГРУЗКА ДОСТУПНЫХ КАРТ
     useEffect(() => {
         const gameType = getTournamentGame();
-        if (gameType) {
-            const maps = getGameMaps(gameType);
+        console.log('🗺️ Загружаем карты для игры:', gameType);
+        
+        if (gameType && isCounterStrike2(gameType)) {
+            // Получаем карты через хелпер или стандартные карты
+            const maps = getDefaultCS2Maps();
             setAvailableMaps(maps);
-            console.log('🗺️ Загружены карты для игры:', gameType, '- карт:', maps.length);
+            console.log('🗺️ Загружены карты для игры:', gameType, '- карт:', maps.length, 'список:', maps);
+        } else if (gameType) {
+            // Для других игр - попробуем получить с сервера или используем пустой массив
+            console.log('🗺️ Игра', gameType, 'пока не поддерживается, устанавливаем пустой массив карт');
+            setAvailableMaps([]);
+        } else {
+            console.log('🗺️ Игра не определена, карты недоступны');
+            setAvailableMaps([]);
         }
     }, [getTournamentGame]);
 
@@ -352,14 +361,16 @@ const MatchResultModal = ({
     const hasValidationErrors = Object.keys(validationErrors).length > 0;
     const mapStats = getMapStatistics();
 
-    // 🔧 ДОБАВЛЯЕМ ОТЛАДКУ ДЛЯ ДИАГНОСТИКИ ПРОБЛЕМ С КАРТАМИ
+    // 🔧 УЛУЧШЕННАЯ ОТЛАДКА ДЛЯ ДИАГНОСТИКИ ПРОБЛЕМ С КАРТАМИ
     console.log('🗺️ Диагностика карт в MatchResultModal:', {
         tournamentGame: getTournamentGame(),
         isCS2,
         availableMapsCount: availableMaps.length,
+        availableMaps: availableMaps.slice(0, 3), // показываем первые 3 карты
         currentMapsDataCount: mapsData.length,
         selectedMatchId: selectedMatch?.id,
-        showModal: isOpen
+        showModal: isOpen,
+        shouldShowMapsSection: isCS2 && availableMaps.length > 0
     });
 
     return (
@@ -462,8 +473,8 @@ const MatchResultModal = ({
                         )}
                     </div>
 
-                    {/* 🔧 СЕКЦИЯ КАРТ - УЛУЧШЕНА С ОТЛАДКОЙ */}
-                    {isCS2 && (
+                    {/* 🔧 ИСПРАВЛЕННАЯ СЕКЦИЯ КАРТ */}
+                    {isCS2 && availableMaps.length > 0 && (
                         <div className="maps-section">
                             <div className="maps-header">
                                 <h4>🗺️ Результаты по картам ({mapsData.length}/7)</h4>
@@ -472,7 +483,7 @@ const MatchResultModal = ({
                                 </p>
                             </div>
                             
-                            {/* 🔧 ОТЛАДОЧНАЯ ИНФОРМАЦИЯ (временно) */}
+                            {/* 🔧 УЛУЧШЕННАЯ ОТЛАДОЧНАЯ ИНФОРМАЦИЯ */}
                             <div className="debug-maps-info" style={{padding: '10px', background: '#f0f0f0', margin: '10px 0', fontSize: '12px'}}>
                                 <details>
                                     <summary>🔍 Отладка карт (разработка)</summary>
@@ -480,8 +491,10 @@ const MatchResultModal = ({
                                         <li>Игра турнира: {getTournamentGame() || 'не определена'}</li>
                                         <li>Поддержка CS2: {isCS2 ? 'Да' : 'Нет'}</li>
                                         <li>Доступно карт: {availableMaps.length}</li>
-                                        <li>Текущих карт: {mapsData.length}</li>
+                                        <li>Названия карт: {availableMaps.join(', ')}</li>
+                                        <li>Текущих карт в матче: {mapsData.length}</li>
                                         <li>ID матча: {selectedMatch?.id}</li>
+                                        <li>Секция карт показана: {isCS2 && availableMaps.length > 0 ? 'Да' : 'Нет'}</li>
                                     </ul>
                                 </details>
                             </div>
@@ -497,8 +510,8 @@ const MatchResultModal = ({
                                                 disabled={isLoading}
                                             >
                                                 <option value="">Выберите карту</option>
-                                                {availableMaps.map((map) => (
-                                                    <option key={map} value={map}>{map}</option>
+                                                {availableMaps.map((mapName) => (
+                                                    <option key={mapName} value={mapName}>{mapName}</option>
                                                 ))}
                                             </select>
                                             <button
@@ -609,6 +622,20 @@ const MatchResultModal = ({
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Сообщение если карты не поддерживаются */}
+                    {!isCS2 && (
+                        <div className="no-maps-section">
+                            <p>ℹ️ Игра "{getTournamentGame() || 'неизвестна'}" не поддерживает выбор карт</p>
+                        </div>
+                    )}
+
+                    {/* Сообщение если CS2 но нет доступных карт */}
+                    {isCS2 && availableMaps.length === 0 && (
+                        <div className="no-maps-section">
+                            <p>⚠️ Карты для Counter-Strike 2 не загружены</p>
                         </div>
                     )}
 
