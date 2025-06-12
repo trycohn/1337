@@ -648,9 +648,9 @@ const BracketRenderer = ({
                                                         <button 
                                                             className="edit-match-btn"
                                                             onClick={() => onMatchClick(match)}
-                                                            title="Редактировать результат"
+                                                            title="Просмотреть/редактировать результат"
                                                         >
-                                                            ✏️
+                                                            🔍
                                                         </button>
                                                     </div>
                                                 )}
@@ -750,9 +750,9 @@ const BracketRenderer = ({
                                                                 <button 
                                                                     className="edit-match-btn"
                                                                     onClick={() => onMatchClick(match)}
-                                                                    title="Редактировать результат"
+                                                                    title="Просмотреть/редактировать результат"
                                                                 >
-                                                                    ✏️
+                                                                    🔍
                                                                 </button>
                                                             </div>
                                                         )}
@@ -848,9 +848,9 @@ const BracketRenderer = ({
                                                     <button 
                                                         className="edit-match-btn"
                                                         onClick={() => onMatchClick(grandFinalMatch)}
-                                                        title="Редактировать результат"
+                                                        title="Просмотреть/редактировать результат"
                                                     >
-                                                        ✏️
+                                                        🔍
                                                     </button>
                                                 </div>
                                             )}
@@ -931,9 +931,9 @@ const BracketRenderer = ({
                                                     <button 
                                                         className="edit-match-btn"
                                                         onClick={() => onMatchClick(placementMatch)}
-                                                        title="Редактировать результат"
+                                                        title="Просмотреть/редактировать результат"
                                                     >
-                                                        ✏️
+                                                        🔍
                                                     </button>
                                                 </div>
                                             )}

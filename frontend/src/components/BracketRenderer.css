@@ -200,6 +200,7 @@
     align-items: stretch;
     margin: 0px;
     margin-bottom: 10px;
+    gap: 2px;
 }
 
 .match-content {
@@ -209,64 +210,82 @@
     gap: 5px;
 }
 
-.match-view-block {
-    width: 40px;
-    background-color: #1f2937;
-    border-radius: 0 4px 4px 0;
+/* 🔧 ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ КНОПКИ РЕДАКТИРОВАНИЯ МАТЧА */
+.edit-match-btn-container {
+    width: 35px;
+    background: linear-gradient(135deg, #374151, #4b5563);
+    border-radius: 0 6px 6px 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer !important;
-    opacity: 0.5;
+    opacity: 0.7;
     transition: all 0.3s ease;
-    color: white;
-    
-    font-size: 16px;
     position: relative;
-    margin-left: 5px;
+    pointer-events: auto;
+    border: 1px solid #6b7280;
+    border-left: none;
+}
+
+.edit-match-btn {
+    background: none;
+    border: none;
+    color: #e5e7eb;
+    cursor: pointer;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.3s ease;
     pointer-events: auto;
 }
 
-.match-container.completed:hover .match-view-block {
+.edit-match-btn:hover {
+    background: none;
+    color: #ffffff;
+    transform: scale(1.1);
+}
+
+/* Эффекты при наведении на контейнер */
+.match-container.completed:hover .edit-match-btn-container {
     opacity: 1;
+    background: linear-gradient(135deg, #4b5563, #6b7280);
+    border-color: #9ca3af;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.match-view-block:hover {
-    background-color: #1f2937;
+.edit-match-btn-container:hover {
+    background: linear-gradient(135deg, #6b7280, #9ca3af) !important;
+    border-color: #d1d5db !important;
+    transform: translateX(2px);
 }
 
-/* Всплывающая подсказка для блока */
-.match-view-block-tooltip {
-    position: absolute;
-    right: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: #333;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    z-index: 20;
-    margin-right: 8px;
+.edit-match-btn-container:hover .edit-match-btn {
+    color: #ffffff !important;
 }
 
-.match-view-block-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    transform: translateY(-50%);
-    border: 5px solid transparent;
-    border-left-color: #333;
+/* Анимация появления кнопки */
+.match-container.completed .edit-match-btn-container {
+    animation: slideInFromRight 0.3s ease-out;
 }
 
-.match-view-block:hover .match-view-block-tooltip {
-    opacity: 1;
-    visibility: visible;
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 0.7;
+        transform: translateX(0);
+    }
+}
+
+/* Убираем старые стили match-view-block так как они больше не используются */
+.match-view-block {
+    display: none;
 }
 
 /* Стили для завершенных матчей */
@@ -309,8 +328,6 @@
     margin-right: 10px;
     color: #000000;
 }
-
-
 
 .custom-seed .team-name {
     color: #000000;
