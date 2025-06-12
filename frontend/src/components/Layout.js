@@ -20,6 +20,7 @@ function Layout() {
     const location = useLocation();
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [prevPathname, setPrevPathname] = useState(location.pathname);
 
 
     // Функция для получения количества непрочитанных сообщений
@@ -114,15 +115,23 @@ function Layout() {
     // Обновляем счетчик при каждом переходе между страницами
     useEffect(() => {
         if (user) {
-            console.log('📊 [Layout] Переход на страницу:', location.pathname);
+            console.log('📊 [Layout] Переход на страницу:', location.pathname, 'с предыдущей:', prevPathname);
             
             // Если переходим на страницу чатов, обнуляем счетчик сразу
             if (location.pathname === '/messages') {
                 console.log('📊 [Layout] Переход на страницу чатов, обнуляем счетчик');
                 setUnreadCount(0);
+                // Не вызываем fetchUnreadCount для страницы чатов
+            } else {
+                // Если уходим со страницы чатов, обновляем счетчик
+                if (prevPathname === '/messages') {
+                    console.log('📊 [Layout] Уход со страницы чатов, обновляем счетчик');
+                }
+                fetchUnreadCount();
             }
             
-            fetchUnreadCount();
+            // Сохраняем текущий путь как предыдущий для следующего раза
+            setPrevPathname(location.pathname);
         }
     }, [location.pathname, user]);
 
