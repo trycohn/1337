@@ -195,6 +195,17 @@ function createSocketServer(httpServer) {
       console.log(`🔄 [Socket.IO] Обновление турнира ${tournamentId} отправлено`);
     });
 
+    // 📖 Статус прочтения сообщений
+    socket.on('messages_read', (data) => {
+      console.log(`📖 [Socket.IO] Получено событие messages_read от ${socket.user.username}:`, data);
+      
+      // Отправляем обновление счетчика в персональную комнату пользователя
+      const userRoomName = `user_${socket.userId}`;
+      
+      io.to(userRoomName).emit('messages_read', data);
+      console.log(`📖 [Socket.IO] Событие messages_read переотправлено в комнату ${userRoomName}`);
+    });
+
     // 🚪 Отключение
     socket.on('disconnect', (reason) => {
       console.log(`🚪 [Socket.IO] Пользователь отключен: ${socket.user.username} (${reason})`);

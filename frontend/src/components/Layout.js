@@ -91,15 +91,22 @@ function Layout() {
                 fetchUnreadCount();
             };
 
+            const handleMessagesRead = (data) => {
+                console.log('📖 [Layout] Получено событие messages_read для чата:', data.chat_id);
+                fetchUnreadCount();
+            };
+
             // Подписываемся на события сообщений
             socket.on('new_message', handleNewMessage);
             socket.on('read_status', handleReadStatus);
+            socket.on('messages_read', handleMessagesRead);
 
             // Cleanup
             return () => {
                 console.log('🧹 [Layout] Отписываемся от Socket.IO событий');
                 socket.off('new_message', handleNewMessage);
                 socket.off('read_status', handleReadStatus);
+                socket.off('messages_read', handleMessagesRead);
             };
         }
     }, [user?.id]); // Только user.id в зависимостях

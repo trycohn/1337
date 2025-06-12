@@ -304,6 +304,15 @@ function Messenger() {
                 ...prevCounts,
                 [chatId]: 0
             }));
+
+            // Отправляем событие через Socket.IO для обновления счетчика в Layout.js
+            if (socketHook.connected) {
+                const socket = socketHook.getSocket();
+                if (socket) {
+                    socket.emit('messages_read', { chat_id: chatId });
+                    console.log('📖 [Messenger] Отправлено событие messages_read для чата:', chatId);
+                }
+            }
             
         } catch (err) {
             console.error('Ошибка при пометке чата как прочитанного:', err);
