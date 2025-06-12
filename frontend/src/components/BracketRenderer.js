@@ -584,7 +584,7 @@ const BracketRenderer = ({
                                                         onClick={(e) => {
                                                             // Если есть функция просмотра деталей матча и матч завершен
                                                             if (onMatchClick && match.state === 'DONE') {
-                                                                onMatchClick(match.id);
+                                                                onMatchClick(match);
                                                             }
                                                             // Иначе обычное поведение для выбора победителя
                                                             else if (canEditMatches && match.state !== 'DONE') {
@@ -615,7 +615,7 @@ const BracketRenderer = ({
                                                         onClick={(e) => {
                                                             // Если есть функция просмотра деталей матча и матч завершен
                                                             if (onMatchClick && match.state === 'DONE') {
-                                                                onMatchClick(match.id);
+                                                                onMatchClick(match);
                                                             }
                                                             // Иначе обычное поведение для выбора победителя
                                                             else if (canEditMatches && match.state !== 'DONE') {
@@ -644,17 +644,14 @@ const BracketRenderer = ({
                                                 </div>
                                                 {/* Блок просмотра результатов для завершенных матчей */}
                                                 {isCompleted && onMatchClick && (
-                                                    <div 
-                                                        className="match-view-block"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onMatchClick(match.id);
-                                                        }}
-                                                    >
-                                                        🔍
-                                                        <div className="match-view-block-tooltip">
-                                                            Показать результат матча
-                                                        </div>
+                                                    <div className="edit-match-btn-container">
+                                                        <button 
+                                                            className="edit-match-btn"
+                                                            onClick={() => onMatchClick(match)}
+                                                            title="Редактировать результат"
+                                                        >
+                                                            ✏️
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
@@ -689,7 +686,7 @@ const BracketRenderer = ({
                                                                 onClick={(e) => {
                                                                     // Если есть функция просмотра деталей матча и матч завершен
                                                                     if (onMatchClick && match.state === 'DONE') {
-                                                                        onMatchClick(match.id);
+                                                                        onMatchClick(match);
                                                                     }
                                                                     // Иначе обычное поведение для выбора победителя
                                                                     else if (canEditMatches && match.state !== 'DONE') {
@@ -720,7 +717,7 @@ const BracketRenderer = ({
                                                                 onClick={(e) => {
                                                                     // Если есть функция просмотра деталей матча и матч завершен
                                                                     if (onMatchClick && match.state === 'DONE') {
-                                                                        onMatchClick(match.id);
+                                                                        onMatchClick(match);
                                                                     }
                                                                     // Иначе обычное поведение для выбора победителя
                                                                     else if (canEditMatches && match.state !== 'DONE') {
@@ -749,17 +746,14 @@ const BracketRenderer = ({
                                                         </div>
                                                         {/* Блок просмотра результатов для завершенных матчей */}
                                                         {isCompleted && onMatchClick && (
-                                                            <div 
-                                                                className="match-view-block"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    onMatchClick(match.id);
-                                                                }}
-                                                            >
-                                                                🔍
-                                                                <div className="match-view-block-tooltip">
-                                                                    Показать результат матча
-                                                                </div>
+                                                            <div className="edit-match-btn-container">
+                                                                <button 
+                                                                    className="edit-match-btn"
+                                                                    onClick={() => onMatchClick(match)}
+                                                                    title="Редактировать результат"
+                                                                >
+                                                                    ✏️
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>
@@ -790,7 +784,7 @@ const BracketRenderer = ({
                                                     onClick={(e) => {
                                                         // Если есть функция просмотра деталей матча и матч завершен
                                                         if (onMatchClick && grandFinalMatch.state === 'DONE') {
-                                                            onMatchClick(grandFinalMatch.id);
+                                                            onMatchClick(grandFinalMatch);
                                                         }
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
@@ -821,7 +815,7 @@ const BracketRenderer = ({
                                                     onClick={(e) => {
                                                         // Если есть функция просмотра деталей матча и матч завершен
                                                         if (onMatchClick && grandFinalMatch.state === 'DONE') {
-                                                            onMatchClick(grandFinalMatch.id);
+                                                            onMatchClick(grandFinalMatch);
                                                         }
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
@@ -850,17 +844,14 @@ const BracketRenderer = ({
                                             </div>
                                             {/* Блок просмотра результатов для завершенного гранд-финала */}
                                             {grandFinalMatch.state === 'DONE' && onMatchClick && (
-                                                <div 
-                                                    className="match-view-block"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onMatchClick(grandFinalMatch.id);
-                                                    }}
-                                                >
-                                                    🔍
-                                                    <div className="match-view-block-tooltip">
-                                                        Показать результат матча
-                                                    </div>
+                                                <div className="edit-match-btn-container">
+                                                    <button 
+                                                        className="edit-match-btn"
+                                                        onClick={() => onMatchClick(grandFinalMatch)}
+                                                        title="Редактировать результат"
+                                                    >
+                                                        ✏️
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -876,7 +867,7 @@ const BracketRenderer = ({
                                                     onClick={(e) => {
                                                         // Если есть функция просмотра деталей матча и матч завершен
                                                         if (onMatchClick && placementMatch.state === 'DONE') {
-                                                            onMatchClick(placementMatch.id);
+                                                            onMatchClick(placementMatch);
                                                         }
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && placementMatch.state !== 'DONE') {
@@ -907,7 +898,7 @@ const BracketRenderer = ({
                                                     onClick={(e) => {
                                                         // Если есть функция просмотра деталей матча и матч завершен
                                                         if (onMatchClick && placementMatch.state === 'DONE') {
-                                                            onMatchClick(placementMatch.id);
+                                                            onMatchClick(placementMatch);
                                                         }
                                                         // Иначе обычное поведение для выбора победителя
                                                         else if (canEditMatches && placementMatch.state !== 'DONE') {
@@ -936,17 +927,14 @@ const BracketRenderer = ({
                                             </div>
                                             {/* Блок просмотра результатов для завершенного матча за 3-е место */}
                                             {placementMatch.state === 'DONE' && onMatchClick && (
-                                                <div 
-                                                    className="match-view-block"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onMatchClick(placementMatch.id);
-                                                    }}
-                                                >
-                                                    🔍
-                                                    <div className="match-view-block-tooltip">
-                                                        Показать результат матча
-                                                    </div>
+                                                <div className="edit-match-btn-container">
+                                                    <button 
+                                                        className="edit-match-btn"
+                                                        onClick={() => onMatchClick(placementMatch)}
+                                                        title="Редактировать результат"
+                                                    >
+                                                        ✏️
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>

@@ -333,20 +333,43 @@ const MatchResultModal = ({
         // 🔧 КРИТИЧЕСКАЯ ОТЛАДКА: проверяем все данные перед отправкой
         console.log('🎯 handleSubmit: начало обработки:', {
             selectedMatch: selectedMatch,
+            selectedMatchType: typeof selectedMatch,
             selectedMatchId: selectedMatch?.id,
+            isNumber: typeof selectedMatch === 'number',
             matchResultData: matchResultData,
             selectedWinner: selectedWinner
         });
 
-        if (!selectedMatch || !selectedMatch.id) {
-            console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: selectedMatch или selectedMatch.id отсутствует!', {
+        // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ID МАТЧА
+        let matchId = null;
+        
+        if (typeof selectedMatch === 'number') {
+            // Если selectedMatch является числом, то это и есть ID матча
+            matchId = selectedMatch;
+            console.log('✅ selectedMatch является числом (ID матча):', matchId);
+        } else if (selectedMatch && typeof selectedMatch === 'object') {
+            // Если selectedMatch является объектом, извлекаем ID
+            matchId = selectedMatch.id;
+            console.log('✅ selectedMatch является объектом, извлекаем ID:', matchId);
+        } else {
+            console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: selectedMatch имеет неподдерживаемый тип!', {
                 selectedMatch,
-                hasSelectedMatch: !!selectedMatch,
-                matchId: selectedMatch?.id
+                type: typeof selectedMatch
             });
-            alert('Ошибка: данные матча не найдены. Попробуйте закрыть и открыть модальное окно снова.');
+        }
+
+        // 🔧 ПРОВЕРЯЕМ ВАЛИДНОСТЬ ID МАТЧА
+        if (!matchId && matchId !== 0) {
+            console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: не удалось определить ID матча!', {
+                selectedMatch,
+                matchId,
+                selectedMatchType: typeof selectedMatch
+            });
+            alert('Ошибка: не удалось определить ID матча. Попробуйте закрыть и открыть модальное окно снова.');
             return;
         }
+        
+        console.log('✅ ID матча успешно определен:', matchId);
         
         const errors = validateResults();
         if (Object.keys(errors).length > 0) {
@@ -361,7 +384,7 @@ const MatchResultModal = ({
         };
         
         console.log('💾 Сохраняем результат матча:', {
-            matchId: selectedMatch.id,
+            matchId: matchId,
             submitData: submitData,
             hasOnSave: typeof onSave === 'function'
         });

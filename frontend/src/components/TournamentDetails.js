@@ -625,10 +625,29 @@ function TournamentDetails() {
 
     // 🎯 СОХРАНЕНИЕ РЕЗУЛЬТАТА МАТЧА
     const saveMatchResult = useCallback(async (resultData) => {
-        if (!modals.selectedMatch || !modals.selectedMatch.id) {
-            console.error('❌ Не найден ID матча для сохранения:', {
+        // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ID МАТЧА
+        let matchId = null;
+        
+        if (typeof modals.selectedMatch === 'number') {
+            // Если selectedMatch является числом, то это и есть ID матча
+            matchId = modals.selectedMatch;
+            console.log('✅ [saveMatchResult] selectedMatch является числом (ID матча):', matchId);
+        } else if (modals.selectedMatch && typeof modals.selectedMatch === 'object') {
+            // Если selectedMatch является объектом, извлекаем ID
+            matchId = modals.selectedMatch.id;
+            console.log('✅ [saveMatchResult] selectedMatch является объектом, извлекаем ID:', matchId);
+        } else {
+            console.error('❌ [saveMatchResult] КРИТИЧЕСКАЯ ОШИБКА: selectedMatch имеет неподдерживаемый тип!', {
                 selectedMatch: modals.selectedMatch,
-                matchId: modals.selectedMatch?.id
+                type: typeof modals.selectedMatch
+            });
+        }
+
+        if (!matchId && matchId !== 0) {
+            console.error('❌ [saveMatchResult] Не найден ID матча для сохранения:', {
+                selectedMatch: modals.selectedMatch,
+                matchId: matchId,
+                selectedMatchType: typeof modals.selectedMatch
             });
             setMessage('❌ Ошибка: ID матча не найден');
             setTimeout(() => setMessage(''), 3000);
@@ -637,12 +656,12 @@ function TournamentDetails() {
 
         try {
             console.log('💾 Сохраняем результат матча:', {
-                matchId: modals.selectedMatch.id,
+                matchId: matchId,
                 resultData: resultData
             });
 
             const result = await tournamentManagement.saveMatchResult(
-                modals.selectedMatch.id,
+                matchId,
                 resultData
             );
             

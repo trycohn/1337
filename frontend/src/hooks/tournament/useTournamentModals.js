@@ -73,45 +73,75 @@ const useTournamentModals = () => {
 
     // Управление модальным окном результатов матча
     const openMatchResultModal = useCallback((match) => {
-        console.log('🔍 [useTournamentModals] openMatchResultModal вызван с параметрами:', {
-            match: match,
-            matchId: match?.id,
-            matchType: typeof match,
-            hasId: !!match?.id,
-            matchKeys: match ? Object.keys(match) : 'нет объекта'
-        });
+        console.log('🔍 [useTournamentModals] openMatchResultModal вызван с параметрами:');
+        console.log('🔍 [useTournamentModals] - match:', match);
+        console.log('🔍 [useTournamentModals] - тип match:', typeof match);
+        console.log('🔍 [useTournamentModals] - match является числом:', typeof match === 'number');
+        console.log('🔍 [useTournamentModals] - match является объектом:', typeof match === 'object' && match !== null);
+        
+        if (typeof match === 'object' && match !== null) {
+            console.log('🔍 [useTournamentModals] - ключи объекта match:', Object.keys(match));
+            console.log('🔍 [useTournamentModals] - match.id:', match?.id);
+        }
+        
+        // 🔧 TRACE СТЕКА ДЛЯ ОТЛАДКИ
+        console.log('🔍 [useTournamentModals] Stack trace:');
+        console.trace();
 
-        if (!match) {
+        if (!match && match !== 0) {
             console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: match не передан в openMatchResultModal!');
             return;
         }
 
-        if (!match.id && match.id !== 0) {
-            console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: match.id отсутствует или равен undefined/null!', {
-                match,
-                id: match.id,
-                possibleIdFields: {
-                    id: match.id,
-                    match_id: match.match_id,
-                    matchId: match.matchId
-                }
-            });
+        // 🔧 УНИВЕРСАЛЬНАЯ ОБРАБОТКА MATCH
+        let matchData = null;
+        let matchId = null;
+        
+        if (typeof match === 'number') {
+            console.log('🔧 [useTournamentModals] Получен ID матча как число:', match);
+            matchId = match;
+            // Создаем минимальный объект матча
+            matchData = {
+                id: match,
+                team1_name: 'Команда 1',
+                team2_name: 'Команда 2',
+                score1: 0,
+                score2: 0,
+                maps_data: []
+            };
+        } else if (typeof match === 'object' && match !== null) {
+            console.log('🔧 [useTournamentModals] Получен объект матча:', match);
+            matchData = match;
+            matchId = match.id;
+        } else {
+            console.error('❌ [useTournamentModals] Неподдерживаемый тип match:', typeof match, match);
+            return;
         }
 
-        setSelectedMatch(match);
+        if (!matchId && matchId !== 0) {
+            console.error('❌ [useTournamentModals] КРИТИЧЕСКАЯ ОШИБКА: не удалось определить ID матча!', {
+                match,
+                matchData,
+                matchId
+            });
+            return;
+        }
+
+        console.log('✅ [useTournamentModals] Устанавливаем selectedMatch:', matchData);
+        setSelectedMatch(matchData);
         setMatchResultData({
-            score1: match.score1 || 0,
-            score2: match.score2 || 0,
-            maps_data: match.maps_data || []
+            score1: matchData.score1 || 0,
+            score2: matchData.score2 || 0,
+            maps_data: matchData.maps_data || []
         });
         setShowMatchResultModal(true);
         
         console.log('✅ [useTournamentModals] Модальное окно результатов настроено:', {
-            selectedMatchId: match?.id,
+            selectedMatchId: matchData?.id,
             showModal: true,
-            score1: match.score1 || 0,
-            score2: match.score2 || 0,
-            mapsCount: match.maps_data?.length || 0
+            score1: matchData.score1 || 0,
+            score2: matchData.score2 || 0,
+            mapsCount: matchData.maps_data?.length || 0
         });
     }, []);
 
