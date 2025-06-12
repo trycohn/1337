@@ -211,13 +211,19 @@ router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
 
 // Получение деталей турнира
 router.get('/:id', async (req, res) => {
+    const startTime = Date.now();
+    const tournamentId = parseInt(req.params.id);
+    
+    console.log(`🔍 [GET /tournaments/${tournamentId}] Начало обработки запроса`);
+    
     try {
-        const tournamentId = parseInt(req.params.id);
-        
         if (isNaN(tournamentId)) {
+            console.log(`❌ [GET /tournaments/${req.params.id}] Некорректный ID турнира`);
             return res.status(400).json({ message: 'Некорректный ID турнира' });
         }
 
+        console.log(`📊 [GET /tournaments/${tournamentId}] Выполняем основной запрос турнира...`);
+        
         // Основной запрос турнира с создателем
         const tournamentQuery = `
             SELECT 
@@ -230,38 +236,43 @@ router.get('/:id', async (req, res) => {
         `;
         
         const tournamentResult = await pool.query(tournamentQuery, [tournamentId]);
+        console.log(`✅ [GET /tournaments/${tournamentId}] Основной запрос выполнен, найдено записей: ${tournamentResult.rows.length}`);
         
         if (tournamentResult.rows.length === 0) {
+            console.log(`❌ [GET /tournaments/${tournamentId}] Турнир не найден`);
             return res.status(404).json({ message: 'Турнир не найден' });
         }
 
-        let tournament = tournamentResult.rows[0];
+        const tournament = tournamentResult.rows[0];
+        console.log(`📊 [GET /tournaments/${tournamentId}] Турнир найден: "${tournament.name}", статус: ${tournament.status}`);
 
-        // Получаем администраторов турнира из существующей таблицы
-        const adminsQuery = `
-            SELECT 
-                ta.id,
-                ta.user_id,
-                ta.permissions,
-                ta.assigned_at,
-                ta.assigned_by,
-                u.username,
-                u.avatar_url
-            FROM tournament_admins ta
-            LEFT JOIN users u ON ta.user_id = u.id
-            WHERE ta.tournament_id = $1
-            ORDER BY ta.assigned_at ASC
-        `;
-        
+        // Получаем администраторов турнира
+        let admins = [];
         try {
+            console.log(`👥 [GET /tournaments/${tournamentId}] Загружаем администраторов...`);
+            const adminsQuery = `
+                SELECT 
+                    ta.id,
+                    ta.user_id,
+                    ta.permissions,
+                    ta.assigned_at,
+                    u.username,
+                    u.avatar_url
+                FROM tournament_admins ta
+                LEFT JOIN users u ON ta.user_id = u.id
+                WHERE ta.tournament_id = $1
+                ORDER BY ta.assigned_at ASC
+            `;
             const adminsResult = await pool.query(adminsQuery, [tournamentId]);
-            tournament.admins = adminsResult.rows;
-            console.log(`✅ Загружено ${adminsResult.rows.length} администраторов для турнира ${tournamentId}`);
+            admins = adminsResult.rows;
+            console.log(`✅ [GET /tournaments/${tournamentId}] Администраторы загружены: ${admins.length} шт.`);
         } catch (adminsError) {
-            console.warn('⚠️ Ошибка загрузки администраторов:', adminsError.message);
-            tournament.admins = [];
+            console.warn(`⚠️ [GET /tournaments/${tournamentId}] Ошибка загрузки администраторов:`, adminsError.message);
+            admins = [];
         }
 
+        console.log(`👤 [GET /tournaments/${tournamentId}] Загружаем участников...`);
+        
         // Получаем участников
         const participantsQuery = `
             SELECT 
@@ -280,27 +291,35 @@ router.get('/:id', async (req, res) => {
         `;
         
         const participantsResult = await pool.query(participantsQuery, [tournamentId]);
+        console.log(`✅ [GET /tournaments/${tournamentId}] Участники загружены: ${participantsResult.rows.length} шт.`);
 
-        // Получаем матчи турнира
+        console.log(`⚔️ [GET /tournaments/${tournamentId}] Загружаем матчи...`);
+        
+        // Получаем матчи турнира с аватарами участников
         const matchesQuery = `
             SELECT 
                 m.*,
                 t1.name as team1_name,
                 t2.name as team2_name,
-                t1.avatar_url as team1_avatar,
-                t2.avatar_url as team2_avatar
+                u1.avatar_url as team1_avatar,
+                u2.avatar_url as team2_avatar
             FROM matches m
             LEFT JOIN tournament_participants t1 ON m.team1_id = t1.id
             LEFT JOIN tournament_participants t2 ON m.team2_id = t2.id
+            LEFT JOIN users u1 ON t1.user_id = u1.id
+            LEFT JOIN users u2 ON t2.user_id = u2.id
             WHERE m.tournament_id = $1
             ORDER BY m.round ASC, m.match_number ASC
         `;
         
         const matchesResult2 = await pool.query(matchesQuery, [tournamentId]);
+        console.log(`✅ [GET /tournaments/${tournamentId}] Матчи загружены: ${matchesResult2.rows.length} шт.`);
 
         // Получаем команды для микс турниров
         let teams = [];
         if (tournament.format === 'mix' || tournament.participant_type === 'team') {
+            console.log(`🏆 [GET /tournaments/${tournamentId}] Загружаем команды для формата "${tournament.format}"...`);
+            
             const teamsQuery = `
                 SELECT 
                     t.*,
@@ -329,12 +348,17 @@ router.get('/:id', async (req, res) => {
                     ...team,
                     members: team.members.filter(member => member.id !== null)
                 }));
+                console.log(`✅ [GET /tournaments/${tournamentId}] Команды загружены: ${teams.length} шт.`);
             } catch (teamsError) {
-                console.warn('⚠️ Ошибка загрузки команд:', teamsError.message);
+                console.warn(`⚠️ [GET /tournaments/${tournamentId}] Ошибка загрузки команд:`, teamsError.message);
                 teams = [];
             }
+        } else {
+            console.log(`📊 [GET /tournaments/${tournamentId}] Пропускаем загрузку команд для формата "${tournament.format}"`);
         }
 
+        console.log(`📦 [GET /tournaments/${tournamentId}] Формируем ответ...`);
+        
         // Подготавливаем обновленный объект турнира
         const updatedTournament = {
             ...tournament,
@@ -349,16 +373,31 @@ router.get('/:id', async (req, res) => {
             matches: matchesResult2.rows,
             teams: teams,
             mixed_teams: teams,
-            admins: tournament.admins || []
+            admins: admins
         };
+
+        const endTime = Date.now();
+        console.log(`✅ [GET /tournaments/${tournamentId}] Запрос успешно обработан за ${endTime - startTime}ms`);
+        console.log(`📊 [GET /tournaments/${tournamentId}] Итоговые данные: участников=${participantsResult.rows.length}, матчей=${matchesResult2.rows.length}, команд=${teams.length}, админов=${admins.length}`);
 
         res.json(responseData);
 
     } catch (error) {
-        console.error('❌ Ошибка получения турнира:', error);
+        const endTime = Date.now();
+        console.error(`❌ [GET /tournaments/${tournamentId}] Критическая ошибка получения турнира за ${endTime - startTime}ms:`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] Тип ошибки: ${error.name}`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] Сообщение: ${error.message}`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] SQL код: ${error.code || 'не определен'}`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] SQL позиция: ${error.position || 'не определена'}`);
+        if (error.stack) {
+            console.error(`❌ [GET /tournaments/${tournamentId}] Stack trace:`, error.stack);
+        }
+        
         res.status(500).json({ 
             message: 'Ошибка сервера при получении турнира',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            tournamentId: tournamentId,
+            timestamp: new Date().toISOString()
         });
     }
 });
