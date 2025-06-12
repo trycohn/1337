@@ -77,9 +77,27 @@ export const getGameMaps = (game, availableMaps = {}) => {
 
 /**
  * Возвращает список стандартных карт CS2
- * @returns {Array} - массив стандартных карт CS2
+ * @returns {Array} - массив стандартных карт CS2 (строки)
  */
 export const getDefaultCS2Maps = () => {
+    // 🔧 ИСПРАВЛЕНО: возвращаем массив строк для совместимости с MatchResultModal
+    return [
+        'Dust II',
+        'Mirage', 
+        'Inferno',
+        'Nuke',
+        'Overpass',
+        'Ancient',
+        'Vertigo',
+        'Anubis'
+    ];
+};
+
+/**
+ * Возвращает список стандартных карт CS2 с дополнительной информацией
+ * @returns {Array} - массив объектов карт CS2
+ */
+export const getDefaultCS2MapsDetailed = () => {
     return [
         { name: 'de_dust2', displayName: 'Dust II' },
         { name: 'de_mirage', displayName: 'Mirage' },
@@ -99,21 +117,17 @@ export const getDefaultCS2Maps = () => {
  * @returns {string} - название карты по умолчанию
  */
 export const getDefaultMap = (game, availableMaps = {}) => {
-    if (!game) return 'de_dust2'; // Значение по умолчанию
+    if (!game) return 'Dust II'; // Значение по умолчанию
     
     const maps = getGameMaps(game, availableMaps);
     if (maps && maps.length > 0) {
-        // Проверка формата данных карт
-        if (typeof maps[0] === 'string') {
-            return maps[0];
-        } else if (maps[0] && maps[0].name) {
-            return maps[0].name;
-        }
+        // 🔧 ИСПРАВЛЕНО: теперь maps - это массив строк
+        return maps[0];
     }
     
     // Если никаких карт не найдено, используем стандартные для известных игр
     if (isCounterStrike2(game)) {
-        return 'de_dust2';
+        return 'Dust II';
     }
     
     return '';

@@ -77,6 +77,7 @@ function TournamentDetails() {
     const [message, setMessage] = useState('');
     const [wsConnected, setWsConnected] = useState(false);
     const [selectedMatch, setSelectedMatch] = useState(null);
+    const [activeMatchTab, setActiveMatchTab] = useState('overview'); // 🚀 НОВОЕ ДЛЯ ВАРИАНТА 3
     const [mixedTeams, setMixedTeams] = useState([]);
     const [ratingType, setRatingType] = useState('faceit');
     const [dataLoadingStates, setDataLoadingStates] = useState({
@@ -943,6 +944,13 @@ function TournamentDetails() {
             
             setTournament(tournamentData);
 
+            // 🔧 ДОБАВЛЕНО: Кэшируем турнир в localStorage для использования в модальных окнах
+            try {
+                localStorage.setItem('currentTournament', JSON.stringify(tournamentData));
+            } catch (error) {
+                console.warn('Не удалось сохранить турнир в localStorage:', error);
+            }
+
             // Загружаем матчи с несколькими источниками
             let matchesData = [];
             
@@ -1045,6 +1053,17 @@ function TournamentDetails() {
             loadTournamentData();
         }
     }, [id]); // УБИРАЕМ loadTournamentData из зависимостей для предотвращения цикла
+
+    // 🔧 ДОБАВЛЕНО: Очистка кэша турнира при размонтировании компонента
+    useEffect(() => {
+        return () => {
+            try {
+                localStorage.removeItem('currentTournament');
+            } catch (error) {
+                console.warn('Не удалось очистить кэш турнира:', error);
+            }
+        };
+    }, []);
 
     // Socket.IO подключение к турниру (только один раз)
     useEffect(() => {
@@ -1247,27 +1266,55 @@ function TournamentDetails() {
         const enrichedMatch = fullMatchData ? {
             ...fullMatchData,
             team1_name: fullMatchData.team1_name || 
-                       (typeof matchParam === 'object' && matchParam.participants?.[0] 
-                        ? matchParam.participants[0].name : 'Команда 1'),
+                       (typeof matchParam === 'object' && matchParam.participants?.[0]?.name) || 'Команда 1',
             team2_name: fullMatchData.team2_name || 
-                       (typeof matchParam === 'object' && matchParam.participants?.[1] 
-                        ? matchParam.participants[1].name : 'Команда 2')
+                       (typeof matchParam === 'object' && matchParam.participants?.[1]?.name) || 'Команда 2'
         } : {
             id: matchId,
-            team1_name: typeof matchParam === 'object' && matchParam.participants?.[0]?.name || 'Команда 1',
-            team2_name: typeof matchParam === 'object' && matchParam.participants?.[1]?.name || 'Команда 2',
-            score1: typeof matchParam === 'object' && matchParam.participants?.[0]?.score || 0,
-            score2: typeof matchParam === 'object' && matchParam.participants?.[1]?.score || 0,
+            team1_name: (typeof matchParam === 'object' && matchParam.participants?.[0]?.name) || 'Команда 1',
+            team2_name: (typeof matchParam === 'object' && matchParam.participants?.[1]?.name) || 'Команда 2',
+            score1: (typeof matchParam === 'object' && matchParam.participants?.[0]?.score) || 0,
+            score2: (typeof matchParam === 'object' && matchParam.participants?.[1]?.score) || 0,
             winner_team_id: typeof matchParam === 'object' ? matchParam.winner_id : null,
             maps_data: null
         };
         
-        console.log('🎯 Открываем MatchResultModal для матча:', enrichedMatch);
+        // 🚀 ВАРИАНТ 3: Расширенная логика с валидацией и улучшенным UX
+        const hasResults = enrichedMatch.winner_team_id || 
+                          (enrichedMatch.score1 > 0 || enrichedMatch.score2 > 0) ||
+                          (enrichedMatch.maps_data && enrichedMatch.maps_data.length > 0);
         
-        // 🔧 ВАРИАНТ 2: Всегда используем MatchResultModal (он сам определит режим просмотра/редактирования)
-        modals.openMatchResultModal(enrichedMatch);
+        const canEdit = userPermissions.canEdit && tournament.status !== 'completed';
+        const hasMapData = enrichedMatch.maps_data && Array.isArray(enrichedMatch.maps_data) && enrichedMatch.maps_data.length > 0;
         
-    }, [matches, modals]);
+        console.log('🎯 Анализ матча:', {
+            hasResults,
+            canEdit,
+            hasMapData,
+            gameSupportsCards: tournament.game === 'Counter-Strike 2' || tournament.game === 'CS2'
+        });
+        
+        // Показываем соответствующее уведомление пользователю
+        if (!hasResults && !canEdit) {
+            setMessage('ℹ️ Этот матч еще не сыгран');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+        
+        if (canEdit) {
+            // Для админов - всегда окно редактирования
+            console.log('🔧 Открываем окно редактирования для админа');
+            modals.openMatchResultModal(enrichedMatch);
+        } else if (hasResults) {
+            // Для пользователей - окно просмотра только если есть результаты
+            console.log('👁️ Открываем окно просмотра результатов');
+            setSelectedMatch(enrichedMatch);
+        } else {
+            // Нет результатов и нет прав редактирования
+            setMessage('❌ Результаты матча недоступны');
+            setTimeout(() => setMessage(''), 3000);
+        }
+    }, [matches, modals, userPermissions, tournament]);
 
     const handleRemoveParticipant = useCallback(async (participantId) => {
         const participant = tournament.participants?.find(p => p.id === participantId);
@@ -2658,7 +2705,8 @@ function TournamentDetails() {
                 <MatchResultModal
                     isOpen={modals.showMatchResultModal}
                     onClose={modals.closeMatchResultModal}
-                    selectedMatch={modals.selectedMatch}
+                    selectedMatch={modals.selectedMatch}  // 🔧 ИСПРАВЛЕНО: было match, теперь selectedMatch
+                    tournament={tournament}              // 🔧 ДОБАВЛЕНО: передаем турнир для определения игры
                     matchResultData={modals.matchResultData}
                     setMatchResultData={modals.setMatchResultData}
                     onSave={saveMatchResult}
@@ -2704,10 +2752,48 @@ function TournamentDetails() {
 
                 {/* 🎯 МОДАЛЬНОЕ ОКНО ПРОСМОТРА ДЕТАЛЕЙ МАТЧА */}
                 {selectedMatch && (
-                    <div className="modal match-details-modal">
-                        <div className="modal-content match-details-modal-content">
+                    <div 
+                        className="modal enhanced-match-modal"
+                        onClick={(e) => {
+                            // Закрываем при клике вне модального окна
+                            if (e.target === e.currentTarget) {
+                                setSelectedMatch(null);
+                            }
+                        }}
+                    >
+                        <div className="modal-content enhanced-match-content">
+                            {/* Статус-бар матча */}
+                            <div className="match-status-bar">
+                                <div className="match-status-indicator">
+                                    <div className={`status-dot ${selectedMatch.winner_team_id ? 'completed' : 'pending'}`}></div>
+                                    <span>
+                                        {selectedMatch.winner_team_id ? 'Матч завершен' : 'Матч не завершен'}
+                                    </span>
+                                </div>
+                                <div className="match-meta-info">
+                                    {selectedMatch.round && (
+                                        <span>Раунд {selectedMatch.round}</span>
+                                    )}
+                                    {selectedMatch.match_number && (
+                                        <span>Матч #{selectedMatch.match_number}</span>
+                                    )}
+                                    {(tournament?.game === 'Counter-Strike 2' || tournament?.game === 'CS2') && (
+                                        <span className="game-indicator">🗺️ CS2</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Заголовок с кнопкой закрытия */}
                             <div className="team-modal-header">
-                                <h3>🔍 Детали матча</h3>
+                                <h3>
+                                    🔍 Детали матча
+                                    {selectedMatch.is_third_place_match && (
+                                        <span className="match-type-badge">🥉 За 3-е место</span>
+                                    )}
+                                    {selectedMatch.bracket_type === 'grand_final' && (
+                                        <span className="match-type-badge">👑 Финал</span>
+                                    )}
+                                </h3>
                                 <button 
                                     className="close-btn"
                                     onClick={() => setSelectedMatch(null)}
@@ -2717,111 +2803,116 @@ function TournamentDetails() {
                                 </button>
                             </div>
 
-                            {/* Информация о командах и общий счет */}
-                            <div className="match-teams">
-                                <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner' : ''}`}>
-                                    <h5>{selectedMatch.team1_name || 'Команда 1'}</h5>
-                                    <span className="team-score">
-                                        {selectedMatch.score1 !== undefined ? selectedMatch.score1 : 
-                                         (selectedMatch.team1_score !== undefined ? selectedMatch.team1_score : 0)}
-                                    </span>
-                                    {selectedMatch.winner_team_id === selectedMatch.team1_id && (
-                                        <span className="winner-badge">🏆 Победитель</span>
-                                    )}
-                                </div>
-                                
-                                <div className="vs-separator">VS</div>
-                                
-                                <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner' : ''}`}>
-                                    <h5>{selectedMatch.team2_name || 'Команда 2'}</h5>
-                                    <span className="team-score">
-                                        {selectedMatch.score2 !== undefined ? selectedMatch.score2 : 
-                                         (selectedMatch.team2_score !== undefined ? selectedMatch.team2_score : 0)}
-                                    </span>
-                                    {selectedMatch.winner_team_id === selectedMatch.team2_id && (
-                                        <span className="winner-badge">🏆 Победитель</span>
-                                    )}
-                                </div>
+                            {/* Навигация по вкладкам */}
+                            <div className="match-modal-tabs">
+                                <button 
+                                    className={`match-tab ${activeMatchTab === 'overview' ? 'active' : ''}`}
+                                    onClick={() => setActiveMatchTab('overview')}
+                                >
+                                    📊 Обзор
+                                </button>
+                                {selectedMatch.maps_data && Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length > 0 && (
+                                    <button 
+                                        className={`match-tab ${activeMatchTab === 'maps' ? 'active' : ''}`}
+                                        onClick={() => setActiveMatchTab('maps')}
+                                    >
+                                        🗺️ Карты ({selectedMatch.maps_data.length})
+                                    </button>
+                                )}
+                                <button 
+                                    className={`match-tab ${activeMatchTab === 'details' ? 'active' : ''}`}
+                                    onClick={() => setActiveMatchTab('details')}
+                                >
+                                    ℹ️ Детали
+                                </button>
                             </div>
 
-                            {/* Итоговый счет */}
-                            <div className="final-score">
-                                <div className="score-item">
-                                    <span className="score-label">{selectedMatch.team1_name || 'Команда 1'}</span>
-                                    <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner-score' : ''}`}>
-                                        {selectedMatch.score1 !== undefined ? selectedMatch.score1 : 
-                                         (selectedMatch.team1_score !== undefined ? selectedMatch.team1_score : 0)}
-                                    </span>
-                                </div>
-                                <span className="score-separator">—</span>
-                                <div className="score-item">
-                                    <span className="score-label">{selectedMatch.team2_name || 'Команда 2'}</span>
-                                    <span className={`score-value ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner-score' : ''}`}>
-                                        {selectedMatch.score2 !== undefined ? selectedMatch.score2 : 
-                                         (selectedMatch.team2_score !== undefined ? selectedMatch.team2_score : 0)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Результаты по картам (для CS2 и других игр с картами) */}
-                            {selectedMatch.maps_data && Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length > 0 && (
-                                <div className="maps-results">
-                                    <h4>🗺️ Результаты по картам</h4>
-                                    
-                                    {/* Статистика карт */}
-                                    <div className="maps-statistics">
-                                        <h5>📊 Общая статистика</h5>
-                                        <div className="maps-stats">
-                                            <div className="stat-item">
-                                                <span className="stat-label">Всего карт сыграно</span>
-                                                <span className="stat-value">{selectedMatch.maps_data.length}</span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">Карт выиграно {selectedMatch.team1_name || 'Командой 1'}</span>
-                                                <span className="stat-value">
-                                                    {selectedMatch.maps_data.filter(map => {
-                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
-                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
-                                                        return Number(score1) > Number(score2);
-                                                    }).length}
+                            {/* Контент вкладок */}
+                            <div className="match-tab-content">
+                                {/* Вкладка: Обзор */}
+                                {activeMatchTab === 'overview' && (
+                                    <div className="match-overview">
+                                        {/* Информация о командах и общий счет */}
+                                        <div className="match-teams enhanced-team-info">
+                                            <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team1_id ? 'winner' : ''}`}>
+                                                <h5>{selectedMatch.team1_name || 'Команда 1'}</h5>
+                                                <span className="team-score">
+                                                    {selectedMatch.score1 !== undefined ? selectedMatch.score1 : 
+                                                     (selectedMatch.team1_score !== undefined ? selectedMatch.team1_score : 0)}
                                                 </span>
+                                                {selectedMatch.winner_team_id === selectedMatch.team1_id && (
+                                                    <span className="winner-badge">🏆 Победитель</span>
+                                                )}
                                             </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">Карт выиграно {selectedMatch.team2_name || 'Командой 2'}</span>
-                                                <span className="stat-value">
-                                                    {selectedMatch.maps_data.filter(map => {
-                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
-                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
-                                                        return Number(score2) > Number(score1);
-                                                    }).length}
+                                            
+                                            <div className="vs-separator">VS</div>
+                                            
+                                            <div className={`team-info ${selectedMatch.winner_team_id === selectedMatch.team2_id ? 'winner' : ''}`}>
+                                                <h5>{selectedMatch.team2_name || 'Команда 2'}</h5>
+                                                <span className="team-score">
+                                                    {selectedMatch.score2 !== undefined ? selectedMatch.score2 : 
+                                                     (selectedMatch.team2_score !== undefined ? selectedMatch.team2_score : 0)}
                                                 </span>
-                                            </div>
-                                            <div className="stat-item">
-                                                <span className="stat-label">Общий счет по фрагам</span>
-                                                <span className="stat-value">
-                                                    {selectedMatch.maps_data.reduce((sum, map) => {
-                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
-                                                        return sum + (Number(score1) || 0);
-                                                    }, 0)} : {selectedMatch.maps_data.reduce((sum, map) => {
-                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
-                                                        return sum + (Number(score2) || 0);
-                                                    }, 0)}
-                                                </span>
+                                                {selectedMatch.winner_team_id === selectedMatch.team2_id && (
+                                                    <span className="winner-badge">🏆 Победитель</span>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Таблица с результатами карт */}
-                                    <table className="maps-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Карта</th>
-                                                <th>{selectedMatch.team1_name || 'Команда 1'}</th>
-                                                <th>{selectedMatch.team2_name || 'Команда 2'}</th>
-                                                <th>Победитель</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                        {/* Краткая статистика */}
+                                        {selectedMatch.maps_data && Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length > 0 && (
+                                            <div className="match-summary-stats animated-stats">
+                                                <h4>📈 Краткая статистика</h4>
+                                                <div className="summary-stats-grid">
+                                                    <div className="stat-item">
+                                                        <span className="stat-label">Карт сыграно</span>
+                                                        <span className="stat-value">{selectedMatch.maps_data.length}</span>
+                                                    </div>
+                                                    <div className="stat-item">
+                                                        <span className="stat-label">Выиграно {selectedMatch.team1_name || 'Командой 1'}</span>
+                                                        <span className="stat-value">
+                                                            {selectedMatch.maps_data.filter(map => {
+                                                                const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                                const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                                return Number(score1) > Number(score2);
+                                                            }).length}
+                                                        </span>
+                                                    </div>
+                                                    <div className="stat-item">
+                                                        <span className="stat-label">Выиграно {selectedMatch.team2_name || 'Командой 2'}</span>
+                                                        <span className="stat-value">
+                                                            {selectedMatch.maps_data.filter(map => {
+                                                                const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                                const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                                return Number(score2) > Number(score1);
+                                                            }).length}
+                                                        </span>
+                                                    </div>
+                                                    <div className="stat-item">
+                                                        <span className="stat-label">Общий счет по фрагам</span>
+                                                        <span className="stat-value">
+                                                            {selectedMatch.maps_data.reduce((sum, map) => {
+                                                                const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                                return sum + (Number(score1) || 0);
+                                                            }, 0)} : {selectedMatch.maps_data.reduce((sum, map) => {
+                                                                const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                                return sum + (Number(score2) || 0);
+                                                            }, 0)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Вкладка: Карты */}
+                                {activeMatchTab === 'maps' && selectedMatch.maps_data && Array.isArray(selectedMatch.maps_data) && selectedMatch.maps_data.length > 0 && (
+                                    <div className="match-maps">
+                                        <h4>🗺️ Подробные результаты по картам</h4>
+                                        
+                                        {/* Список карт с подробной информацией */}
+                                        <div className="maps-detailed-list">
                                             {selectedMatch.maps_data.map((map, index) => {
                                                 const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
                                                 const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
@@ -2830,38 +2921,212 @@ function TournamentDetails() {
                                                 const isDraw = Number(score1) === Number(score2);
                                                 
                                                 return (
-                                                    <tr key={index}>
-                                                        <td>{map.map || map.name || `Карта ${index + 1}`}</td>
-                                                        <td className={team1Won ? 'map-winner' : ''}>{score1 || 0}</td>
-                                                        <td className={team2Won ? 'map-winner' : ''}>{score2 || 0}</td>
-                                                        <td className={team1Won || team2Won ? 'map-winner' : ''}>
-                                                            {team1Won ? (selectedMatch.team1_name || 'Команда 1') : 
-                                                             team2Won ? (selectedMatch.team2_name || 'Команда 2') : 
-                                                             'Ничья'}
-                                                        </td>
-                                                    </tr>
+                                                    <div key={index} className={`map-result-card ${team1Won ? 'team1-won' : team2Won ? 'team2-won' : 'draw'}`}>
+                                                        <div className="map-header">
+                                                            <h5>
+                                                                🗺️ {map.map || map.name || `Карта ${index + 1}`}
+                                                                <span className="map-number">#{index + 1}</span>
+                                                            </h5>
+                                                            <div className="map-winner-badge">
+                                                                {team1Won ? `🏆 ${selectedMatch.team1_name || 'Команда 1'}` : 
+                                                                 team2Won ? `🏆 ${selectedMatch.team2_name || 'Команда 2'}` : 
+                                                                 '🤝 Ничья'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="map-scores">
+                                                            <div className={`team-score-display ${team1Won ? 'winner' : ''}`}>
+                                                                <span className="team-name">{selectedMatch.team1_name || 'Команда 1'}</span>
+                                                                <span className="score-big">{score1 || 0}</span>
+                                                            </div>
+                                                            <div className="score-separator">:</div>
+                                                            <div className={`team-score-display ${team2Won ? 'winner' : ''}`}>
+                                                                <span className="team-name">{selectedMatch.team2_name || 'Команда 2'}</span>
+                                                                <span className="score-big">{score2 || 0}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 );
                                             })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                                        </div>
 
-                            {/* Сообщение если нет данных карт */}
-                            {(!selectedMatch.maps_data || !Array.isArray(selectedMatch.maps_data) || selectedMatch.maps_data.length === 0) && (
-                                <div className="no-maps-info">
-                                    <p><strong>Данные по картам недоступны</strong></p>
-                                    <p>Возможно матч проводился в формате без детализации по картам</p>
-                                </div>
-                            )}
+                                        {/* Общая таблица карт */}
+                                        <div className="maps-table-container">
+                                            <h5>📋 Сводная таблица</h5>
+                                            <table className="maps-table enhanced-maps-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Карта</th>
+                                                        <th>{selectedMatch.team1_name || 'Команда 1'}</th>
+                                                        <th>{selectedMatch.team2_name || 'Команда 2'}</th>
+                                                        <th>Победитель</th>
+                                                        <th>Разность</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {selectedMatch.maps_data.map((map, index) => {
+                                                        const score1 = map.score1 !== undefined ? map.score1 : map.team1_score;
+                                                        const score2 = map.score2 !== undefined ? map.score2 : map.team2_score;
+                                                        const team1Won = Number(score1) > Number(score2);
+                                                        const team2Won = Number(score2) > Number(score1);
+                                                        const scoreDiff = Math.abs(Number(score1) - Number(score2));
+                                                        
+                                                        return (
+                                                            <tr key={index} className={team1Won || team2Won ? 'has-winner' : 'draw'}>
+                                                                <td>{index + 1}</td>
+                                                                <td>
+                                                                    <strong>{map.map || map.name || `Карта ${index + 1}`}</strong>
+                                                                </td>
+                                                                <td className={team1Won ? 'map-winner' : ''}>{score1 || 0}</td>
+                                                                <td className={team2Won ? 'map-winner' : ''}>{score2 || 0}</td>
+                                                                <td className={team1Won || team2Won ? 'map-winner' : ''}>
+                                                                    {team1Won ? (selectedMatch.team1_name || 'Команда 1') : 
+                                                                     team2Won ? (selectedMatch.team2_name || 'Команда 2') : 
+                                                                     'Ничья'}
+                                                                </td>
+                                                                <td>{scoreDiff > 0 ? `+${scoreDiff}` : '0'}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* Информация о времени */}
-                            {selectedMatch.completed_at && (
-                                <div className="match-summary">
-                                    <h4>📅 Информация о матче</h4>
-                                    <p><strong>Завершен:</strong> {new Date(selectedMatch.completed_at).toLocaleString('ru-RU')}</p>
-                                </div>
-                            )}
+                                {/* Вкладка: Детали */}
+                                {activeMatchTab === 'details' && (
+                                    <div className="match-details">
+                                        <h4>ℹ️ Подробная информация о матче</h4>
+                                        
+                                        <div className="details-grid">
+                                            <div className="detail-section">
+                                                <h5>📊 Основные данные</h5>
+                                                <div className="detail-list">
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">ID матча:</span>
+                                                        <span className="detail-value">{selectedMatch.id}</span>
+                                                    </div>
+                                                    {selectedMatch.round && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Раунд:</span>
+                                                            <span className="detail-value">{selectedMatch.round}</span>
+                                                        </div>
+                                                    )}
+                                                    {selectedMatch.match_number && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Номер матча:</span>
+                                                            <span className="detail-value">#{selectedMatch.match_number}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="detail-item">
+                                                        <span className="detail-label">Статус:</span>
+                                                        <span className="detail-value">
+                                                            {selectedMatch.winner_team_id ? 
+                                                                <span className="status-completed">✅ Завершен</span> : 
+                                                                <span className="status-pending">⏳ Ожидание</span>
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    {selectedMatch.bracket_type && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Тип:</span>
+                                                            <span className="detail-value">{selectedMatch.bracket_type}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="detail-section">
+                                                <h5>🕐 Временные метки</h5>
+                                                <div className="detail-list">
+                                                    {selectedMatch.created_at && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Создан:</span>
+                                                            <span className="detail-value">
+                                                                {new Date(selectedMatch.created_at).toLocaleString('ru-RU')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {selectedMatch.started_at && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Начат:</span>
+                                                            <span className="detail-value">
+                                                                {new Date(selectedMatch.started_at).toLocaleString('ru-RU')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {selectedMatch.completed_at && (
+                                                        <div className="detail-item">
+                                                            <span className="detail-label">Завершен:</span>
+                                                            <span className="detail-value">
+                                                                {new Date(selectedMatch.completed_at).toLocaleString('ru-RU')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Системная информация для отладки (только для админов) */}
+                                        {userPermissions.isAdminOrCreator && (
+                                            <div className="detail-section debug-section">
+                                                <h5>🔧 Отладочная информация</h5>
+                                                <details>
+                                                    <summary>Показать системные данные</summary>
+                                                    <pre className="debug-data">
+                                                        {JSON.stringify(selectedMatch, null, 2)}
+                                                    </pre>
+                                                </details>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Сообщение если нет данных карт во вкладке "Карты" */}
+                                {activeMatchTab === 'maps' && (!selectedMatch.maps_data || !Array.isArray(selectedMatch.maps_data) || selectedMatch.maps_data.length === 0) && (
+                                    <div className="no-maps-info">
+                                        <div className="no-data-icon">🗺️</div>
+                                        <h4>Данные по картам недоступны</h4>
+                                        <p>Этот матч не содержит информации о картах.</p>
+                                        <p>Возможно, игра не поддерживает детализацию по картам или результаты не были записаны с такой детализацией.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Быстрые действия */}
+                            <div className="quick-actions">
+                                {userPermissions.canEdit && tournament.status !== 'completed' && (
+                                    <button 
+                                        className="quick-action-btn edit-btn"
+                                        onClick={() => {
+                                            setSelectedMatch(null);
+                                            modals.openMatchResultModal(selectedMatch);
+                                        }}
+                                        title="Редактировать результат матча"
+                                    >
+                                        ✏️ Редактировать
+                                    </button>
+                                )}
+                                <button 
+                                    className="quick-action-btn share-btn"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(window.location.href + '#match-' + selectedMatch.id);
+                                        setMessage('🔗 Ссылка на матч скопирована');
+                                        setTimeout(() => setMessage(''), 3000);
+                                    }}
+                                    title="Скопировать ссылку на матч"
+                                >
+                                    🔗 Поделиться
+                                </button>
+                                <button 
+                                    className="quick-action-btn close-btn-action"
+                                    onClick={() => setSelectedMatch(null)}
+                                    title="Закрыть окно"
+                                >
+                                    ❌ Закрыть
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
