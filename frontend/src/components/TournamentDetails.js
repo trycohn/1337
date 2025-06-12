@@ -28,7 +28,6 @@ import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
 import MatchResultModal from './tournament/modals/MatchResultModal';
 import MatchDetailsModal from './tournament/modals/MatchDetailsModal';  // 🔧 ДОБАВЛЕНО: Новое модальное окно просмотра
-import TournamentChat from './TournamentChat';  // 🔧 ДОБАВЛЕНО: Чат турнира
 import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
 import useTournamentModals from '../hooks/tournament/useTournamentModals';
 
@@ -2709,15 +2708,6 @@ function TournamentDetails() {
                         </div>
                     )}
                 </div>
-
-                {/* 🎯 ЧАТ ТУРНИРА */}
-                {user && userPermissions.isParticipating && (
-                    <TournamentChat
-                        tournamentId={id}
-                        user={user}
-                        isVisible={true}
-                    />
-                )}
 
                 {/* 🎯 СООБЩЕНИЯ */}
                 {message && (
