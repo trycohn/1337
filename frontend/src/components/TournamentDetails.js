@@ -972,7 +972,15 @@ function TournamentDetails() {
                 name: tournamentData.name,
                 status: tournamentData.status,
                 participantsCount: tournamentData.participants?.length,
-                hasMatches: !!tournamentData.matches
+                hasMatches: !!tournamentData.matches,
+                // 🔧 ОТЛАДКА: Информация о создателе
+                creatorId: tournamentData.creator_id,
+                creatorName: tournamentData.creator_name,
+                creatorAvatar: tournamentData.creator_avatar_url,
+                createdBy: tournamentData.created_by,
+                // 🔧 ОТЛАДКА: Администраторы
+                admins: tournamentData.admins?.length || 0,
+                adminsList: tournamentData.admins
             });
             
             setTournament(tournamentData);
@@ -2020,21 +2028,25 @@ function TournamentDetails() {
                                                     {tournament.creator_avatar_url ? (
                                                         <img 
                                                             src={ensureHttps(tournament.creator_avatar_url)} 
-                                                            alt={tournament.creator_name}
+                                                            alt={tournament.creator_name || tournament.creator_username || 'Создатель'}
                                                             onError={(e) => {e.target.src = '/default-avatar.png'}}
                                                         />
                                                     ) : (
                                                         <div className="avatar-placeholder">
-                                                            {(tournament.creator_name || 'U').charAt(0).toUpperCase()}
+                                                            {(tournament.creator_name || tournament.creator_username || 'У').charAt(0).toUpperCase()}
                                                         </div>
                                                     )}
                                                 </div>
                                                 {tournament.creator_id ? (
                                                     <Link to={`/profile/${tournament.creator_id}`} className="creator-link">
-                                                        <span className="creator-name">{tournament.creator_name || 'Неизвестно'}</span>
+                                                        <span className="creator-name">
+                                                            {tournament.creator_name || tournament.creator_username || `ID: ${tournament.creator_id}`}
+                                                        </span>
                                                     </Link>
                                                 ) : (
-                                                    <span className="creator-name">{tournament.creator_name || 'Неизвестно'}</span>
+                                                    <span className="creator-name">
+                                                        {tournament.creator_name || tournament.creator_username || 'Неизвестный создатель'}
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
@@ -2545,6 +2557,10 @@ function TournamentDetails() {
                                 onEditMatchResult={openMatchResultModal}
                                 onGenerateBracket={confirmGenerateBracket}
                                 onClearResults={handleClearResults}
+                                // 🆕 НОВЫЕ ПРОПСЫ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
+                                onInviteAdmin={inviteAdmin}
+                                onRemoveAdmin={removeAdmin}
+                                onShowAdminSearchModal={() => modals.openAdminSearchModal()}
                             />
                         </div>
                     )}

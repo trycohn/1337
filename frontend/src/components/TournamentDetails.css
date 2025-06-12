@@ -4727,9 +4727,6 @@ a.participant-name:hover {
 
 /* Информационные уведомления */
 .bracket-generated-notice {
-    background-color: #e3f2fd;
-    border: 1px solid #90caf9;
-    border-radius: 8px;
     padding: 12px 16px;
     margin: 12px 0;
     text-align: center;
