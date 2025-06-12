@@ -310,8 +310,13 @@
     color: #000000;
 }
 
+
+
 .custom-seed .team-name {
     color: #000000;
+    border: none;
+    font-size: 12px;
+    padding: 4px 4px;
 }
 
 .team-score {
