@@ -6,16 +6,91 @@ const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
 
-// 🔧 ВРЕМЕННАЯ ЗАГЛУШКА ДЛЯ ФУНКЦИЙ ЧАТА
-const sendTournamentChatAnnouncement = async (tourName, message, tournamentId) => {
-    console.log(`📢 [CHAT] Турнир "${tourName}": ${message}`);
-    // TODO: Реализовать отправку в чат турнира
-};
+// 🔧 ФУНКЦИИ ЧАТА ТУРНИРА - ПЕРЕРАБОТАННЫЕ ДЛЯ ОСНОВНОЙ СИСТЕМЫ ЧАТОВ
+async function getTournamentChatId(tournamentId) {
+    const res = await pool.query(
+        "SELECT chat_id FROM tournaments WHERE id = $1",
+        [tournamentId]
+    );
+    return res.rows[0]?.chat_id;
+}
 
-const addUserToTournamentChat = async (tourName, userId, isAdmin = false) => {
-    console.log(`➕ [CHAT] Добавляем пользователя ${userId} в чат турнира "${tourName}"`);
-    // TODO: Реализовать добавление в чат турнира
-};
+async function createTournamentChat(tournamentName, tournamentId, creatorId) {
+    try {
+        // Создаем групповой чат
+        const chatRes = await pool.query(
+            'INSERT INTO chats (name, type) VALUES ($1, $2) RETURNING id',
+            [`Турнир: ${tournamentName}`, 'group']
+        );
+        const chatId = chatRes.rows[0].id;
+        
+        // Привязываем чат к турниру
+        await pool.query(
+            'UPDATE tournaments SET chat_id = $1 WHERE id = $2',
+            [chatId, tournamentId]
+        );
+        
+        // Добавляем создателя как администратора
+        await pool.query(
+            'INSERT INTO chat_participants (chat_id, user_id, is_admin) VALUES ($1, $2, $3)',
+            [chatId, creatorId, true]
+        );
+        
+        console.log(`✅ Создан групповой чат ${chatId} для турнира "${tournamentName}"`);
+        return chatId;
+    } catch (err) {
+        console.error('❌ Ошибка создания группового чата турнира:', err);
+        throw err;
+    }
+}
+
+async function addUserToTournamentChat(tournamentId, userId, isAdmin = false) {
+    try {
+        const chatId = await getTournamentChatId(tournamentId);
+        if (!chatId) {
+            console.log(`⚠️ Чат для турнира ${tournamentId} не найден`);
+            return;
+        }
+        
+        await pool.query(
+            'INSERT INTO chat_participants (chat_id, user_id, is_admin) VALUES ($1, $2, $3) ON CONFLICT (chat_id, user_id) DO NOTHING',
+            [chatId, userId, isAdmin]
+        );
+        
+        console.log(`✅ Пользователь ${userId} добавлен в чат турнира ${tournamentId}`);
+    } catch (err) {
+        console.error('❌ Ошибка добавления пользователя в чат турнира:', err);
+    }
+}
+
+async function sendTournamentChatAnnouncement(tournamentId, announcement) {
+    try {
+        const chatId = await getTournamentChatId(tournamentId);
+        if (!chatId) {
+            console.log(`⚠️ Чат для турнира ${tournamentId} не найден`);
+            return;
+        }
+        
+        const contentMeta = { tournament_id: tournamentId };
+        const msgRes = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
+            [chatId, announcement, 'announcement', contentMeta]
+        );
+        
+        // Отправляем через WebSocket
+        const app = global.app;
+        if (app) {
+            const io = app.get('io');
+            if (io) {
+                io.to(`chat_${chatId}`).emit('message', msgRes.rows[0]);
+            }
+        }
+        
+        console.log(`✅ Объявление отправлено в чат турнира ${tournamentId}`);
+    } catch (err) {
+        console.error('❌ Ошибка отправки объявления в чат турнира:', err);
+    }
+}
 
 // Вспомогательная функция для записи событий в журнал турнира
 async function logTournamentEvent(tournamentId, userId, eventType, eventData = {}) {
@@ -121,19 +196,9 @@ router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
             format: tournament.format
         });
         
-        // Создаем групповой чат для турнира с названием турнира
+        // Создаем групповой чат для турнира
         try {
-            const chatRes = await pool.query(
-                'INSERT INTO chats (name, type) VALUES ($1, $2) RETURNING id',
-                [tournament.name, 'group']
-            );
-            const tournamentChatId = chatRes.rows[0].id;
-            // Добавляем создателя турнира как администратора чата
-            await pool.query(
-                'INSERT INTO chat_participants (chat_id, user_id, is_admin) VALUES ($1, $2, $3)',
-                [tournamentChatId, req.user.id, true]
-            );
-            console.log(`Создан групповой чат ${tournamentChatId} для турнира ${tournament.name}`);
+            await createTournamentChat(tournament.name, tournament.id, req.user.id);
         } catch (err) {
             console.error('❌ Ошибка при создании группового чата турнира:', err);
         }
@@ -403,9 +468,8 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
         
         // Отправляем объявление в чат турнира о начале
         await sendTournamentChatAnnouncement(
-            updatedTournament.name,
-            `Турнир "${updatedTournament.name}" начат`,
-            id
+            id,
+            `Турнир "${updatedTournament.name}" начат`
         );
         
         // Возвращаем успешный ответ
@@ -542,11 +606,10 @@ router.post('/:id/participate', authenticateToken, async (req, res) => {
         });
 
         // Добавляем пользователя в чат турнира и отправляем объявление
-        await addUserToTournamentChat(tournament.name, req.user.id, false);
+        await addUserToTournamentChat(id, req.user.id, false);
         await sendTournamentChatAnnouncement(
-            tournament.name,
-            `Пользователь ${req.user.username} зарегистрировался в турнире "${tournament.name}"`,
-            id
+            id,
+            `Пользователь ${req.user.username} зарегистрировался в турнире "${tournament.name}"`
         );
 
         res.status(200).json({ message: 'Вы успешно зарегистрированы в турнире' });
@@ -1688,7 +1751,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             }
             const winName = winner_team_id ? (winner_team_id === match.team1_id ? team1Name : team2Name) : '';
             const announcement = `Матч ${match.match_number} ${team1Name} vs ${team2Name} завершен со счетом ${score1}:${score2}${winName ? `, победил ${winName}` : ''}. Ссылка на сетку: /tournaments/${id}`;
-            await sendTournamentChatAnnouncement(tournament.name, announcement, id);
+            await sendTournamentChatAnnouncement(id, announcement);
         }
         console.log('🔍 Match updated for tournament:', tournamentData);
         res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
@@ -2875,9 +2938,8 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         // Отправляем объявление в чат турнира о формировании команд
         await sendTournamentChatAnnouncement(
-            tournamentName,
-            resultMessage,
-            id
+            id,
+            resultMessage
         );
         
         // 🆕 РАСШИРЕННАЯ СТАТИСТИКА ДЛЯ ОТВЕТА
@@ -3179,9 +3241,8 @@ router.delete('/:id/participants/:participantId', authenticateToken, verifyAdmin
         
         // Отправляем объявление в чат турнира
         await sendTournamentChatAnnouncement(
-            tournament.name,
-            `Участник "${participantInfo.name || participantInfo.username}" был удален из турнира "${tournament.name}"`,
-            id
+            id,
+            `Участник "${participantInfo.name || participantInfo.username}" был удален из турнира "${tournament.name}"`
         );
         
         console.log(`✅ Участник ${participantId} успешно удален из турнира ${id}`);
@@ -3645,6 +3706,168 @@ router.post('/admin-invitations/:invitationId/decline', authenticateToken, async
             success: false, 
             message: 'Внутренняя ошибка сервера' 
         });
+    }
+});
+
+// Получение сообщений чата турнира
+router.get('/:id/chat/messages', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { limit = 50, offset = 0 } = req.query;
+    
+    try {
+        // Проверяем участие пользователя в турнире
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        const chatId = tournament.chat_id;
+        
+        if (!chatId) {
+            return res.status(404).json({ error: 'Чат турнира не найден' });
+        }
+        
+        // Проверяем, является ли пользователь участником чата
+        const participantCheck = await pool.query(
+            'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+            [chatId, req.user.id]
+        );
+        
+        if (participantCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Вы не являетесь участником чата турнира' });
+        }
+        
+        // Получаем сообщения чата
+        const result = await pool.query(`
+            SELECT m.id, m.chat_id, m.sender_id, m.content, m.message_type, 
+                   m.content_meta, m.is_pinned, m.created_at,
+                   u.username AS sender_username, u.avatar_url AS sender_avatar
+            FROM messages m 
+            LEFT JOIN users u ON m.sender_id = u.id
+            WHERE m.chat_id = $1 
+            ORDER BY m.created_at DESC
+            LIMIT $2 OFFSET $3
+        `, [chatId, limit, offset]);
+        
+        // Возвращаем сообщения в правильном порядке (старые сначала)
+        const messages = result.rows.reverse();
+        
+        res.json(messages);
+    } catch (err) {
+        console.error('Ошибка получения сообщений чата турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении сообщений чата турнира' });
+    }
+});
+
+// Отправка сообщения в чат турнира
+router.post('/:id/chat/messages', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { content } = req.body;
+    
+    if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: 'Сообщение не может быть пустым' });
+    }
+    
+    try {
+        // Проверяем турнир
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        const chatId = tournament.chat_id;
+        
+        if (!chatId) {
+            return res.status(404).json({ error: 'Чат турнира не найден' });
+        }
+        
+        // Проверяем, является ли пользователь участником чата
+        const participantCheck = await pool.query(
+            'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+            [chatId, req.user.id]
+        );
+        
+        if (participantCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Вы не являетесь участником чата турнира' });
+        }
+        
+        // Добавляем сообщение
+        const insertRes = await pool.query(`
+            INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) 
+            VALUES ($1, $2, $3, $4, $5) 
+            RETURNING id, chat_id, sender_id, content, message_type, content_meta, is_pinned, created_at
+        `, [chatId, req.user.id, content.trim(), 'text', { tournament_id: parseInt(id) }]);
+        
+        const message = insertRes.rows[0];
+        
+        // Добавляем данные пользователя
+        message.sender_username = req.user.username;
+        message.sender_avatar = req.user.avatar_url;
+        
+        // Отправляем через WebSocket
+        const app = global.app;
+        if (app) {
+            const io = app.get('io');
+            if (io) {
+                io.to(`chat_${chatId}`).emit('message', message);
+            }
+        }
+        
+        res.status(201).json(message);
+    } catch (err) {
+        console.error('Ошибка отправки сообщения в чат турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при отправке сообщения в чат турнира' });
+    }
+});
+
+// Получение информации о чате турнира
+router.get('/:id/chat/info', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        // Проверяем турнир
+        const tournamentResult = await pool.query('SELECT name, chat_id FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        const chatId = tournament.chat_id;
+        
+        if (!chatId) {
+            return res.status(404).json({ error: 'Чат турнира не найден' });
+        }
+        
+        // Получаем информацию о чате и участниках
+        const chatInfo = await pool.query(`
+            SELECT c.id, c.name, c.type, c.created_at,
+                   COUNT(cp.user_id) as participant_count
+            FROM chats c
+            LEFT JOIN chat_participants cp ON c.id = cp.chat_id
+            WHERE c.id = $1
+            GROUP BY c.id, c.name, c.type, c.created_at
+        `, [chatId]);
+        
+        // Проверяем, является ли пользователь участником
+        const isParticipant = await pool.query(
+            'SELECT is_admin FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+            [chatId, req.user.id]
+        );
+        
+        const result = {
+            ...chatInfo.rows[0],
+            isParticipant: isParticipant.rows.length > 0,
+            isAdmin: isParticipant.rows[0]?.is_admin || false,
+            tournament_id: parseInt(id),
+            tournament_name: tournament.name
+        };
+        
+        res.json(result);
+    } catch (err) {
+        console.error('Ошибка получения информации о чате турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении информации о чате турнира' });
     }
 });
 

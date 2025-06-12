@@ -16,12 +16,52 @@
     padding: 10px 15px;
     background-color: #f5f5f5;
     border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .tournament-chat-panel .chat-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+}
+
+.tournament-chat-panel .chat-participants {
+    font-size: 12px;
+    color: #666;
+}
+
+.tournament-chat-panel .connection-status {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.tournament-chat-panel .connection-status.disconnected {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.tournament-chat-panel .chat-loading,
+.tournament-chat-panel .chat-error {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+}
+
+.tournament-chat-panel .chat-error {
+    color: #dc3545;
+}
+
+.tournament-chat-panel .empty-chat {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+    font-style: italic;
 }
 
 .tournament-chat-panel .chat-messages {
@@ -47,6 +87,38 @@
 
 .tournament-chat-panel .chat-message.own-message .message-content {
     align-items: flex-end;
+}
+
+.tournament-chat-panel .chat-message.system-message {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    padding: 8px 12px;
+    margin: 5px 0;
+    border-radius: 6px;
+}
+
+.tournament-chat-panel .system-message-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.tournament-chat-panel .system-icon {
+    font-size: 16px;
+}
+
+.tournament-chat-panel .system-text {
+    flex: 1;
+    font-size: 13px;
+    color: #495057;
+    font-weight: 500;
+}
+
+.tournament-chat-panel .system-time {
+    font-size: 11px;
+    color: #6c757d;
+    margin-left: auto;
 }
 
 .tournament-chat-panel .message-avatar {
@@ -124,19 +196,30 @@
     font-size: 14px;
 }
 
-.tournament-chat-panel .chat-input button {
-    margin-left: 8px;
-    padding: 0px 5px;
-    background-color: #ffffff;
-    color: rgb(0, 0, 0);
-    border: none;
-    border-radius: 0px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+.tournament-chat-panel .chat-input input:disabled {
+    background-color: #f8f9fa;
+    color: #6c757d;
 }
 
-.tournament-chat-panel .chat-input button:hover {
+.tournament-chat-panel .chat-input button {
+    margin-left: 8px;
+    padding: 8px 16px;
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.tournament-chat-panel .chat-input button:hover:not(:disabled) {
     background-color: #0b5ed7;
+}
+
+.tournament-chat-panel .chat-input button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
@@ -144,5 +227,11 @@
         max-width: 100%;
         margin-left: 0;
         margin-top: 20px;
+    }
+    
+    .tournament-chat-panel .chat-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
 } 

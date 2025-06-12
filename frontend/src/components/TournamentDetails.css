@@ -7001,3 +7001,177 @@ a.participant-name:hover {
 /* =================================================
    КОНЕЦ СТИЛЕЙ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
    ================================================= */
+
+/* =================================================
+   СТИЛИ ИНТЕГРАЦИИ ЧАТА ТУРНИРА
+   ================================================= */
+
+/* Основная структура турнира с чатом */
+.tournament-details-tournamentdetails {
+    display: flex;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.tournament-details-tournamentdetails .tournament-content-tournamentdetails {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Адаптация чата турнира для темной темы */
+.tournament-details-tournamentdetails .tournament-chat-panel {
+    width: 300px;
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-header {
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #333333;
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-participants {
+    color: #888888;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-messages {
+    background-color: #111111;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-message {
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-message.own-message {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .message-text {
+    background-color: #2a2a2a;
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .own-message .message-text {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-input {
+    background-color: #1a1a1a;
+    border-top: 1px solid #333333;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-input input {
+    background-color: #2a2a2a;
+    border: 1px solid #333333;
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-input input::placeholder {
+    color: #888888;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-input input:focus {
+    border-color: #555555;
+    background-color: #3a3a3a;
+    outline: none;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-input button {
+    background-color: #0d6efd;
+    color: #ffffff;
+    border: none;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-input button:hover:not(:disabled) {
+    background-color: #0b5ed7;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-message.system-message {
+    background-color: #1a2a1a;
+    border: 1px solid #2d4d2d;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .system-text {
+    color: #4caf50;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .system-icon {
+    color: #4caf50;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .system-time {
+    color: #888888;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .message-username {
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .message-time {
+    color: #888888;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-loading,
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-error {
+    color: #ffffff;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .chat-error {
+    color: #ff6b6b;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .empty-chat {
+    color: #888888;
+}
+
+.tournament-details-tournamentdetails .tournament-chat-panel .connection-status.disconnected {
+    background-color: #2a1a1a;
+    color: #ff6b6b;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .tournament-details-tournamentdetails {
+        flex-direction: column;
+    }
+    
+    .tournament-details-tournamentdetails .tournament-chat-panel {
+        width: 100%;
+        position: static;
+        max-height: 400px;
+        order: 2;
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .tournament-details-tournamentdetails .tournament-chat-panel {
+        max-height: 300px;
+    }
+    
+    .tournament-details-tournamentdetails .tournament-chat-panel .chat-header {
+        padding: 8px 12px;
+    }
+    
+    .tournament-details-tournamentdetails .tournament-chat-panel .chat-messages {
+        padding: 8px;
+    }
+    
+    .tournament-details-tournamentdetails .tournament-chat-panel .chat-input {
+        padding: 8px;
+    }
+}
+
+/* =================================================
+   КОНЕЦ СТИЛЕЙ ИНТЕГРАЦИИ ЧАТА ТУРНИРА
+   ================================================= */
