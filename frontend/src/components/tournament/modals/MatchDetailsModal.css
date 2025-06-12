@@ -29,8 +29,9 @@
     background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
     border: 2px solid #007acc;
     border-radius: 16px;
-    width: 90vw;
     max-width: 900px;
+    min-width: 700px;
+    overflow: hidden;
     max-height: 85vh;
     overflow-y: auto;
     animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -137,9 +138,9 @@
 .match-teams {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 24px;
-    gap: 20px;
+    justify-content: center;
+    padding: 12px;
+    gap: 10px;
     background: linear-gradient(135deg, #2a2a2a, #1f1f1f);
     margin: 0;
 }
@@ -155,6 +156,8 @@
     cursor: pointer;
 }
 
+
+
 .team-card:hover {
     border-color: #007acc;
     transform: translateY(-2px);
@@ -163,9 +166,12 @@
 
 .team-card.winner {
     border-color: #28a745;
-    background: linear-gradient(135deg, #28a745, #34ce57);
-    color: white;
+    color: #000000;
     box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+
+.match-details-modal .team-card {
+    padding: 0;
 }
 
 .team-card.has-tooltip {
@@ -187,15 +193,23 @@
     color: #ffffff;
 }
 
+.team-card .team-info {
+    background: none;
+}
+
 .team-score {
     font-size: 36px;
     font-weight: bold;
-    color: #007acc;
+    color: #ffffff;
     margin-bottom: 8px;
 }
 
 .team-card.winner .team-score {
     color: #ffffff;
+}
+
+.match-details-modal .team-score {
+    background: none;
 }
 
 .winner-crown {
@@ -219,7 +233,6 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    margin: 0 16px;
 }
 
 .vs-text {
@@ -677,8 +690,7 @@
 }
 
 .close-action-btn {
-    background: linear-gradient(135deg, #6c757d, #5a6268);
-    color: white;
+    color: rgb(0, 0, 0);
 }
 
 .close-action-btn:hover {
@@ -687,25 +699,21 @@
 }
 
 .edit-action-btn {
-    background: linear-gradient(135deg, #007acc, #0099ff);
-    color: white;
+    color: #000000;
 }
 
 .edit-action-btn:hover {
-    background: linear-gradient(135deg, #0056b3, #007acc);
+    background: linear-gradient(135deg, #5a6268, #495057);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 122, 204, 0.3);
 }
 
 .share-btn {
-    background: linear-gradient(135deg, #28a745, #34ce57);
-    color: white;
+    color: rgb(0, 0, 0);
 }
 
 .share-btn:hover {
-    background: linear-gradient(135deg, #218838, #28a745);
+    background: linear-gradient(135deg, #5a6268, #495057);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
 }
 
 /* =================================================
