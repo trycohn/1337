@@ -211,6 +211,8 @@ const TournamentFloatingActionPanel = ({
 
     // Определяем цвет индикатора статуса
     const getStatusIndicatorColor = () => {
+        if (!tournament || !tournament.status) return '#2196F3'; // Дефолтный цвет для null/undefined
+        
         switch (tournament.status) {
             case 'active': return '#4CAF50';
             case 'in_progress': return '#FF9800';
@@ -221,6 +223,8 @@ const TournamentFloatingActionPanel = ({
 
     // Текст статуса турнира на русском
     const getStatusText = () => {
+        if (!tournament || !tournament.status) return 'Загрузка...'; // Дефолтный текст для null/undefined
+        
         switch (tournament.status) {
             case 'active': return 'Активный';
             case 'in_progress': return 'Идет';

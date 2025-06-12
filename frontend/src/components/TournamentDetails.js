@@ -1273,7 +1273,7 @@ function TournamentDetails() {
         });
         
         return !hasSubsequentMatches;
-    }, [userPermissions.canEdit, tournament.status, matches]);
+    }, [userPermissions.canEdit, tournament?.status, matches]);
 
     // 🎯 ФУНКЦИЯ ПОЛУЧЕНИЯ СОСТАВА КОМАНДЫ ДЛЯ ТУЛТИПА
     const getTeamComposition = useCallback((teamId, teamName) => {
@@ -1757,13 +1757,13 @@ function TournamentDetails() {
             <section className="tournament-details-tournamentdetails">
                 {/* 🎯 ЗАГОЛОВОК ТУРНИРА */}
                 <div className="tournament-header-tournamentdetails">
-                    <h2>{tournament.name}</h2>
+                    <h2>{tournament?.name || 'Загрузка турнира...'}</h2>
                     <div className="tournament-meta">
-                        <span className={`status-badge ${tournament.status?.toLowerCase()}`}>
-                            {tournament.status === 'registration' && '📋 Регистрация'}
-                            {tournament.status === 'active' && '🎮 Активный'}
-                            {tournament.status === 'in_progress' && '⚔️ В процессе'}
-                            {tournament.status === 'completed' && '🏆 Завершен'}
+                        <span className={`status-badge ${tournament?.status?.toLowerCase()}`}>
+                            {tournament?.status === 'registration' && '📋 Регистрация'}
+                            {tournament?.status === 'active' && '🎮 Активный'}
+                            {tournament?.status === 'in_progress' && '⚔️ В процессе'}
+                            {tournament?.status === 'completed' && '🏆 Завершен'}
                         </span>
                         {wsConnected && (
                             <span className="websocket-indicator connected" title="Обновления в реальном времени">
@@ -2000,7 +2000,7 @@ function TournamentDetails() {
                             </div>
 
                             {/* Блок с подиумом победителей (только для завершенных турниров) */}
-                            {tournament.status === 'completed' && tournamentWinners.winner && (
+                            {tournament?.status === 'completed' && tournamentWinners.winner && (
                                 <div className="info-winners-section">
                                     <div className="winners-section">
                                         <h3>🏆 Призёры турнира</h3>
@@ -2204,11 +2204,11 @@ function TournamentDetails() {
                                                     m.winner_team_id
                                                 ).length}
                                             </span>
-                                            {tournament.status === 'active' || tournament.status === 'in_progress' ? (
+                                            {tournament?.status === 'active' || tournament?.status === 'in_progress' ? (
                                                 <span className="bracket-stat status-active">
                                                     ⚔️ В процессе
                                                 </span>
-                                            ) : tournament.status === 'completed' ? (
+                                            ) : tournament?.status === 'completed' ? (
                                                 <span className="bracket-stat status-completed">
                                                     🏁 Завершен
                                                 </span>
@@ -2239,7 +2239,7 @@ function TournamentDetails() {
                                             <div className="empty-bracket-icon">🏆</div>
                                             <h4>Сетка турнира еще не создана</h4>
                                             <p>Турнирная сетка будет доступна после создания администратором</p>
-                                            {userPermissions.isAdminOrCreator && tournament.status === 'registration' && (
+                                            {userPermissions.isAdminOrCreator && tournament?.status === 'registration' && (
                                                 <button 
                                                     className="btn btn-primary generate-bracket-button"
                                                     onClick={handleGenerateBracket}
