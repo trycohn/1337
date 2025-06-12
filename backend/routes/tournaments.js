@@ -302,17 +302,15 @@ router.get('/:id', async (req, res) => {
                 tp.id,
                 tp.user_id,
                 tp.team_name,
-                tp.registration_type,
-                tp.registered_at,
+                tp.created_at as registered_at,
                 u.username,
                 u.avatar_url,
-                u.elo_rating,
-                u.csgo_elo,
-                u.cs2_elo
+                u.faceit_elo,
+                u.cs2_premier_rank
             FROM tournament_participants tp
             LEFT JOIN users u ON tp.user_id = u.id
             WHERE tp.tournament_id = $1
-            ORDER BY tp.registered_at ASC
+            ORDER BY tp.created_at ASC
         `;
         
         const participantsResult = await pool.query(participantsQuery, [tournamentId]);
@@ -321,16 +319,16 @@ router.get('/:id', async (req, res) => {
         // Получаем матчи турнира
         const matchesQuery = `
             SELECT 
-                g.*,
+                m.*,
                 t1.name as team1_name,
                 t2.name as team2_name,
                 t1.avatar_url as team1_avatar,
                 t2.avatar_url as team2_avatar
-            FROM games g
-            LEFT JOIN tournament_participants t1 ON g.team1_id = t1.id
-            LEFT JOIN tournament_participants t2 ON g.team2_id = t2.id
-            WHERE g.tournament_id = $1
-            ORDER BY g.round ASC, g.match_number ASC
+            FROM matches m
+            LEFT JOIN tournament_participants t1 ON m.team1_id = t1.id
+            LEFT JOIN tournament_participants t2 ON m.team2_id = t2.id
+            WHERE m.tournament_id = $1
+            ORDER BY m.round ASC, m.match_number ASC
         `;
         
         const matchesResult = await pool.query(matchesQuery, [tournamentId]);
@@ -681,8 +679,8 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
                            tp1.name as participant1_name, tp1.user_id as participant1_user_id,
                            tp2.name as participant2_name, tp2.user_id as participant2_user_id
                     FROM matches m
-                    LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id
-                    LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id
+                    LEFT JOIN tournament_participants tp1 ON m.team1_id = tp1.id
+                    LEFT JOIN tournament_participants tp2 ON m.team2_id = tp2.id
                     WHERE m.tournament_id = $1 
                     AND (tp1.user_id = $2 OR tp2.user_id = $2)
                     AND m.status = 'pending'
