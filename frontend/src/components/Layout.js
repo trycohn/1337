@@ -115,6 +115,13 @@ function Layout() {
     useEffect(() => {
         if (user) {
             console.log('📊 [Layout] Переход на страницу:', location.pathname);
+            
+            // Если переходим на страницу чатов, обнуляем счетчик сразу
+            if (location.pathname === '/messages') {
+                console.log('📊 [Layout] Переход на страницу чатов, обнуляем счетчик');
+                setUnreadCount(0);
+            }
+            
             fetchUnreadCount();
         }
     }, [location.pathname, user]);
@@ -171,6 +178,12 @@ function Layout() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Обработчик клика на иконку сообщений
+    const handleMessagesIconClick = () => {
+        console.log('📊 [Layout] Клик на иконку сообщений, обнуляем счетчик');
+        setUnreadCount(0);
+    };
+
     return (
         <div className="home-container">
             {loading && <Loader />}
@@ -216,7 +229,7 @@ function Layout() {
                                 <Link to="/profile" className="username-link">
                                     {user.username}
                                 </Link>
-                                <Link to="/messages" className="messages-link">
+                                <Link to="/messages" className="messages-link" onClick={handleMessagesIconClick}>
                                     <div className="messages-icon-container">
                                         <FontAwesomeIcon
                                             icon={faEnvelope}
