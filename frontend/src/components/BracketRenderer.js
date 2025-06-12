@@ -577,7 +577,12 @@ const BracketRenderer = ({
                     <div className="bracket-grid">
                         {(winnerRoundKeys || []).sort((a, b) => Number(a) - Number(b)).map((round) => {
                             const roundMatches = winnerRounds && winnerRounds[round] ? winnerRounds[round] : [];
-                            if (!roundMatches || roundMatches.length === 0) return null;
+                            if (!roundMatches || roundMatches.length === 0) {
+                                console.log(`BracketRenderer: 🚫 Раунд ${round} пуст, пропускаем рендеринг`);
+                                return null;
+                            }
+
+                            console.log(`BracketRenderer: ✅ Рендерим раунд ${round} с ${roundMatches.length} матчами`);
 
                             return (
                                 <div key={`w-${round}`} className="round-column">
@@ -586,7 +591,7 @@ const BracketRenderer = ({
                                             ? 'Предварительный'
                                             : `Раунд ${round}`}
                                     </h3>
-                                    {roundMatches.map((match) => {
+                                    {(roundMatches || []).map((match) => {
                                         const isSelected = selectedMatch === safeParseBracketId(match.id);
                                         const isCompleted = match.state === 'DONE';
                                         return (
@@ -677,7 +682,7 @@ const BracketRenderer = ({
                 </div>
 
                 {/* Разделительная граница и нижняя сетка (только для Double Elimination) */}
-                {format === 'double_elimination' && Object.keys(loserRounds).length > 0 && (
+                {format === 'double_elimination' && loserRounds && Object.keys(loserRounds).length > 0 && (
                     <>
                         <hr className="bracket-divider" />
                         <div className="bracket losers-bracket">

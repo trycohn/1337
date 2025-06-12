@@ -2286,7 +2286,7 @@ function TournamentDetails() {
                                                                 <div className="team-members">
                                                                     <h5>🏆 Участники команды-победителя:</h5>
                                                                     <ul>
-                                                                        {tournamentWinners.winner.members.map((member, idx) => {
+                                                                        {(tournamentWinners.winner.members || []).map((member, idx) => {
                                                                             const memberName = member.name || member.username;
                                                                             const formattedName = formatMemberName(memberName);
                                                                             
