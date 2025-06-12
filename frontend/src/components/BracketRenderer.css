@@ -160,7 +160,7 @@
     background-color: #fff;
     border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 8px 12px;
+    padding: 4px 6px;
     width: 200px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
@@ -317,6 +317,7 @@
     border: none;
     font-size: 12px;
     padding: 4px 4px;
+    font-weight: 700;
 }
 
 .team-score {
@@ -327,6 +328,10 @@
     border-radius: 3px;
     color: #000000;
     margin-left: auto;
+}
+
+.custom-seed .team-score {
+    font-size: 1em;
 }
 
 /* Стили для плейсхолдера TBD */
