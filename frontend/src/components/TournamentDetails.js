@@ -1134,7 +1134,7 @@ function TournamentDetails() {
                     setTimeout(() => setMessage(''), 3000);
                 }
             };
-
+            
             // Подписываемся на обновления турнира
             socketHook.on('tournament_updated', handleTournamentUpdate);
             
@@ -1965,19 +1965,19 @@ function TournamentDetails() {
                     <h2>{tournament.name}</h2>
                     
                     {/* Навигация по вкладкам */}
-                    <nav className="tabs-navigation-tournamentdetails">
-                        {visibleTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
-                                onClick={() => setActiveTab(tab.id)}
-                            >
+                <nav className="tabs-navigation-tournamentdetails">
+                    {visibleTabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            className={`tab-button-tournamentdetails ${activeTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                        >
                                 <span className="tab-label-tournamentdetails">
                                     {tab.icon} {tab.label}
                                 </span>
-                            </button>
-                        ))}
-                    </nav>
+                        </button>
+                    ))}
+                </nav>
                 </div>
 
                 {/* 🎯 КОНТЕНТ ВКЛАДОК */}
@@ -2054,10 +2054,10 @@ function TournamentDetails() {
 
                                         {/* Описание турнира */}
                                         <div className="tournament-description-section description-block">
-                                            <div className="block-header">
+                                        <div className="block-header">
                                                 <h4>📝 Описание турнира</h4>
                                                 {userPermissions.isAdminOrCreator && !isEditingDescription && (
-                                                    <div className="edit-controls">
+                                                <div className="edit-controls">
                                                         <button 
                                                             className="edit-btn"
                                                             onClick={startEditingDescription}
@@ -2079,22 +2079,22 @@ function TournamentDetails() {
                                                         rows={5}
                                                         disabled={saveLoading}
                                                     />
-                                                    <div className="edit-actions">
-                                                        <button 
-                                                            className="save-btn"
-                                                            onClick={saveDescription}
-                                                            disabled={saveLoading}
-                                                        >
+                                                        <div className="edit-actions">
+                                                            <button 
+                                                                className="save-btn"
+                                                                onClick={saveDescription}
+                                                                disabled={saveLoading}
+                                                            >
                                                             {saveLoading ? '⏳ Сохранение...' : '💾 Сохранить'}
-                                                        </button>
-                                                        <button 
-                                                            className="cancel-btn"
-                                                            onClick={cancelEditingDescription}
-                                                            disabled={saveLoading}
-                                                        >
-                                                            ❌ Отмена
-                                                        </button>
-                                                    </div>
+                                                            </button>
+                                                            <button 
+                                                                className="cancel-btn"
+                                                                onClick={cancelEditingDescription}
+                                                                disabled={saveLoading}
+                                                            >
+                                                                ❌ Отмена
+                                                            </button>
+                                                        </div>
                                                 </div>
                                             ) : (
                                                 <div className="tournament-description-content">
@@ -2110,8 +2110,8 @@ function TournamentDetails() {
                                                                 "📝 Нажмите 'Редактировать' чтобы добавить описание турнира" :
                                                                 "📝 Описание не добавлено"
                                                             }
-                                                        </div>
-                                                    )}
+                                                </div>
+                                            )}
                                                 </div>
                                             )}
                                         </div>
@@ -2125,13 +2125,13 @@ function TournamentDetails() {
                                             <h3>📜 Правила турнира</h3>
                                             {userPermissions.isAdminOrCreator && !isEditingRules && (
                                                 <div className="edit-controls">
-                                                    <button 
-                                                        className="edit-btn"
-                                                        onClick={startEditingRules}
+                                                        <button 
+                                                            className="edit-btn"
+                                                            onClick={startEditingRules}
                                                         disabled={saveLoading}
-                                                    >
-                                                        ✏️ Редактировать
-                                                    </button>
+                                                        >
+                                                            ✏️ Редактировать
+                                                        </button>
                                                 </div>
                                             )}
                                         </div>
@@ -2147,30 +2147,30 @@ function TournamentDetails() {
                                                         rows={10}
                                                         disabled={saveLoading}
                                                     />
-                                                    <div className="edit-actions">
-                                                        <button 
-                                                            className="save-btn"
-                                                            onClick={saveRules}
-                                                            disabled={saveLoading}
-                                                        >
+                                                        <div className="edit-actions">
+                                                            <button 
+                                                                className="save-btn"
+                                                                onClick={saveRules}
+                                                                disabled={saveLoading}
+                                                            >
                                                             {saveLoading ? '⏳ Сохранение...' : '💾 Сохранить'}
-                                                        </button>
-                                                        <button 
-                                                            className="cancel-btn"
-                                                            onClick={cancelEditingRules}
-                                                            disabled={saveLoading}
-                                                        >
-                                                            ❌ Отмена
-                                                        </button>
-                                                    </div>
+                                                            </button>
+                                                            <button 
+                                                                className="cancel-btn"
+                                                                onClick={cancelEditingRules}
+                                                                disabled={saveLoading}
+                                                            >
+                                                                ❌ Отмена
+                                                            </button>
+                                                        </div>
                                                 </div>
                                             ) : (
-                                                <div className="rules-text">
+                                                        <div className="rules-text">
                                                     {tournament.rules ? (
                                                         tournament.rules.split('\n').map((rule, index) => (
                                                             <div key={index} className="rule-item">
                                                                 {rule}
-                                                            </div>
+                                                        </div>
                                                         ))
                                                     ) : (
                                                         userPermissions.isAdminOrCreator ? (
@@ -2182,35 +2182,35 @@ function TournamentDetails() {
                                                             </div>
                                                         ) : (
                                                             <div className="default-rules">
-                                                                <div className="rule-section">
+                                                                    <div className="rule-section">
                                                                     <h4>🎮 Общие правила</h4>
                                                                     <ul>
                                                                         <li>Участники должны соблюдать честную игру</li>
                                                                         <li>Запрещено использование читов и сторонних программ</li>
                                                                         <li>Уважительное отношение к соперникам обязательно</li>
-                                                                    </ul>
-                                                                </div>
-                                                                <div className="rule-section">
+                                                                        </ul>
+                                                                    </div>
+                                                                    <div className="rule-section">
                                                                     <h4>⏰ Расписание</h4>
-                                                                    <ul>
+                                                                        <ul>
                                                                         <li>Матчи проводятся согласно турнирной сетке</li>
                                                                         <li>В случае неявки засчитывается техническое поражение</li>
                                                                         <li>Время ожидания соперника - 15 минут</li>
-                                                                    </ul>
-                                                                </div>
-                                                                <div className="rule-section">
+                                                                        </ul>
+                                                                    </div>
+                                                                    <div className="rule-section">
                                                                     <h4>🏆 Результаты</h4>
                                                                     <ul>
                                                                         <li>Результаты матчей вводят администраторы</li>
                                                                         <li>Спорные ситуации решаются администрацией</li>
                                                                         <li>Финальные результаты не подлежат изменению</li>
-                                                                    </ul>
-                                                                </div>
+                                                                        </ul>
+                                                                    </div>
                                                             </div>
                                                         )
+                                                            )}
+                                                        </div>
                                                     )}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -2236,9 +2236,9 @@ function TournamentDetails() {
                                             <span className="bracket-stat">
                                                 👥 {tournament.participants.length} участников
                                             </span>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
                                 
                                 {/* Турнирная сетка или пустое состояние */}
                                 {bracketGames && bracketGames.length > 0 ? (
@@ -2264,7 +2264,7 @@ function TournamentDetails() {
                                                 🎯 Создать турнирную сетку
                                             </button>
                                         )}
-                                    </div>
+                                </div>
                                 )}
                             </div>
 
@@ -2291,28 +2291,28 @@ function TournamentDetails() {
                                                                             const formattedName = formatMemberName(memberName);
                                                                             
                                                                             return (
-                                                                            <li key={idx} className="team-member winner-member">
-                                                                                <span className="member-medal">🥇</span>
-                                                                                {member.user_id ? (
+                                                                                <li key={idx} className="team-member winner-member">
+                                                                                    <span className="member-medal">🥇</span>
+                                                                                    {member.user_id ? (
                                                                                         <Link 
                                                                                             to={`/profile/${member.user_id}`} 
                                                                                             className={`member-name winner-name-link ${formattedName.isLongName ? 'member-name-long' : ''}`}
                                                                                             title={formattedName.isTruncated ? formattedName.originalName : undefined}
                                                                                         >
                                                                                             {formattedName.displayName}
-                                                                                    </Link>
-                                                                                ) : (
+                                                                                        </Link>
+                                                                                    ) : (
                                                                                         <span 
                                                                                             className={`member-name winner-name-text ${formattedName.isLongName ? 'member-name-long' : ''}`}
                                                                                             title={formattedName.isTruncated ? formattedName.originalName : undefined}
                                                                                         >
                                                                                             {formattedName.displayName}
                                                                                         </span>
-                                                                                )}
-                                                                                {member.faceit_elo && (
-                                                                                    <span className="member-elo">({member.faceit_elo} ELO)</span>
-                                                                                )}
-                                                                            </li>
+                                                                                    )}
+                                                                                    {member.faceit_elo && (
+                                                                                        <span className="member-elo">({member.faceit_elo} ELO)</span>
+                                                                                    )}
+                                                                                </li>
                                                                             );
                                                                         })}
                                                                     </ul>
@@ -2373,9 +2373,9 @@ function TournamentDetails() {
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                            )}
+                                        </div>
+                                    )}
 
                     {/* ВКЛАДКА: УЧАСТНИКИ */}
                     {activeTab === 'participants' && (
@@ -2385,15 +2385,15 @@ function TournamentDetails() {
                                 <div className="participation-controls">
                                     <button onClick={handleParticipate} className="participate-btn">
                                         ➕ Участвовать в турнире
-                                    </button>
-                                </div>
-                            )}
+                                                </button>
+                                    </div>
+                                )}
 
                             {userPermissions.isParticipating && tournament.status === 'active' && (
                                 <div className="participation-controls">
                                     <button onClick={handleWithdraw} className="withdraw-btn">
                                         ❌ Отказаться от участия
-                                    </button>
+                                                </button>
                                 </div>
                             )}
 
@@ -2401,17 +2401,17 @@ function TournamentDetails() {
                                 <div className="bracket-generated-notice">
                                     <p className="info-message">
                                         ℹ️ Турнир уже начался - регистрация и изменение участников недоступны
-                                    </p>
-                                </div>
-                            )}
+                                            </p>
+                                        </div>
+                                    )}
 
                             {tournament.status === 'completed' && (
                                 <div className="bracket-generated-notice">
                                     <p className="info-message">
                                         ✅ Турнир завершен
                                     </p>
-                                </div>
-                            )}
+                        </div>
+                    )}
 
                             {/* УНИФИЦИРОВАННАЯ ПАНЕЛЬ УЧАСТНИКОВ */}
                             <UnifiedParticipantsPanel
@@ -2459,17 +2459,17 @@ function TournamentDetails() {
                                     </div>
                                 )}
                             </div>
-
+                            
                             {bracketGames && bracketGames.length > 0 ? (
-                                <BracketRenderer
-                                    games={bracketGames}
+                                    <BracketRenderer 
+                                        games={bracketGames}
                                     canEditMatches={userPermissions.canEdit && tournament.status !== 'completed'}
-                                    selectedMatch={selectedMatch}
-                                    setSelectedMatch={setSelectedMatch}
-                                    handleTeamClick={handleTeamClick}
-                                    format={tournament.format}
-                                    onMatchClick={handleMatchClick}
-                                />
+                                        selectedMatch={selectedMatch}
+                                        setSelectedMatch={setSelectedMatch}
+                                        handleTeamClick={handleTeamClick}
+                                        format={tournament.format}
+                                        onMatchClick={handleMatchClick}
+                                    />
                             ) : (
                                 <div className="empty-state">
                                     <p>🏆 Турнирная сетка еще не создана</p>
@@ -2477,15 +2477,15 @@ function TournamentDetails() {
                                         tournament.participants?.length >= 2 ? (
                                             <>
                                                 <p className="text-muted">Нажмите кнопку выше для создания сетки</p>
-                                                <button 
+                                        <button 
                                                     className="generate-bracket-button"
-                                                    onClick={handleGenerateBracket}
-                                                >
+                                            onClick={handleGenerateBracket}
+                                        >
                                                     🎯 Создать турнирную сетку
-                                                </button>
+                                        </button>
                                             </>
                                         ) : (
-                                            <p className="text-muted">Для создания сетки нужно минимум 2 участника</p>
+                                        <p className="text-muted">Для создания сетки нужно минимум 2 участника</p>
                                         )
                                     ) : (
                                         <p className="text-muted">Сетка будет создана администраторами</p>
@@ -2514,8 +2514,8 @@ function TournamentDetails() {
                                         </div>
                                     );
                                 }
-
-                                return (
+                                                                        
+                                                                        return (
                                     <div className="matches-list">
                                         {completedMatches.map(match => (
                                             <div key={match.id} className="match-item">
@@ -2523,18 +2523,18 @@ function TournamentDetails() {
                                                     <div className="team-info">
                                                         <div className="team-name">{match.team1_name || 'Команда 1'}</div>
                                                         <div className="team-name">{match.team2_name || 'Команда 2'}</div>
-                                                    </div>
+                                                                </div>
                                                     <div className="score-info">
                                                         <div className="score">{match.score1 || 0}</div>
                                                         <div className="score">{match.score2 || 0}</div>
+                                                            </div>
                                                     </div>
-                                                </div>
                                                 <div className="match-actions">
                                                     <button onClick={() => handleMatchClick(match)}>Подробнее</button>
-                                                </div>
+                                                    </div>
                                             </div>
                                         ))}
-                                    </div>
+                                        </div>
                                 );
                             })()}
                         </div>

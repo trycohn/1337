@@ -211,13 +211,19 @@ router.post('/', authenticateToken, verifyEmailRequired, async (req, res) => {
 
 // Получение деталей турнира
 router.get('/:id', async (req, res) => {
+    const startTime = Date.now();
+    const tournamentId = parseInt(req.params.id);
+    
+    console.log(`🔍 [GET /tournaments/${tournamentId}] Начало обработки запроса`);
+    
     try {
-        const tournamentId = parseInt(req.params.id);
-        
         if (isNaN(tournamentId)) {
+            console.log(`❌ [GET /tournaments/${req.params.id}] Некорректный ID турнира`);
             return res.status(400).json({ message: 'Некорректный ID турнира' });
         }
 
+        console.log(`📊 [GET /tournaments/${tournamentId}] Выполняем основной запрос турнира...`);
+        
         // Основной запрос турнира с создателем
         const tournamentQuery = `
             SELECT 
@@ -230,78 +236,49 @@ router.get('/:id', async (req, res) => {
         `;
         
         const tournamentResult = await pool.query(tournamentQuery, [tournamentId]);
+        console.log(`✅ [GET /tournaments/${tournamentId}] Основной запрос выполнен, найдено записей: ${tournamentResult.rows.length}`);
         
         if (tournamentResult.rows.length === 0) {
+            console.log(`❌ [GET /tournaments/${tournamentId}] Турнир не найден`);
             return res.status(404).json({ message: 'Турнир не найден' });
         }
 
         const tournament = tournamentResult.rows[0];
+        console.log(`📊 [GET /tournaments/${tournamentId}] Турнир найден: "${tournament.name}", статус: ${tournament.status}`);
 
-        // Проверяем существование таблицы tournament_admins
+        // Получаем администраторов турнира
         let admins = [];
         try {
-            const checkTableQuery = `
-                SELECT EXISTS (
-                    SELECT 1 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'tournament_admins'
-                );
+            console.log(`👥 [GET /tournaments/${tournamentId}] Загружаем администраторов...`);
+            const adminsQuery = `
+                SELECT 
+                    ta.id,
+                    ta.user_id,
+                    ta.permissions,
+                    ta.assigned_at,
+                    u.username,
+                    u.avatar_url
+                FROM tournament_admins ta
+                LEFT JOIN users u ON ta.user_id = u.id
+                WHERE ta.tournament_id = $1
+                ORDER BY ta.assigned_at ASC
             `;
-            const tableCheckResult = await pool.query(checkTableQuery);
-            const tableExists = tableCheckResult.rows[0].exists;
-
-            if (tableExists) {
-                // Проверяем существование колонки permissions
-                const checkColumnQuery = `
-                    SELECT EXISTS (
-                        SELECT 1 
-                        FROM information_schema.columns 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'tournament_admins'
-                        AND column_name = 'permissions'
-                    );
-                `;
-                const columnCheckResult = await pool.query(checkColumnQuery);
-                const columnExists = columnCheckResult.rows[0].exists;
-
-                if (columnExists) {
-                    // Запрос с колонкой permissions
-                    const adminsQuery = `
-                        SELECT u.id, u.username, u.avatar_url, ta.permissions, ta.assigned_at
-                        FROM tournament_admins ta
-                        JOIN users u ON ta.user_id = u.id
-                        WHERE ta.tournament_id = $1
-                    `;
-                    const adminsResult = await pool.query(adminsQuery, [tournamentId]);
-                    admins = adminsResult.rows;
-                } else {
-                    // Запрос без колонки permissions
-                    const adminsQuery = `
-                        SELECT u.id, u.username, u.avatar_url, ta.assigned_at,
-                               '{"manage_matches": true, "manage_participants": true}'::jsonb as permissions
-                        FROM tournament_admins ta
-                        JOIN users u ON ta.user_id = u.id
-                        WHERE ta.tournament_id = $1
-                    `;
-                    const adminsResult = await pool.query(adminsQuery, [tournamentId]);
-                    admins = adminsResult.rows;
-                }
-            } else {
-                console.log('⚠️ Таблица tournament_admins не существует, возвращаем пустой список администраторов');
-                admins = [];
-            }
-        } catch (adminError) {
-            console.error('⚠️ Ошибка при получении администраторов турнира:', adminError);
-            admins = []; // Возвращаем пустой массив при ошибке
+            const adminsResult = await pool.query(adminsQuery, [tournamentId]);
+            admins = adminsResult.rows;
+            console.log(`✅ [GET /tournaments/${tournamentId}] Администраторы загружены: ${admins.length} шт.`);
+        } catch (adminsError) {
+            console.warn(`⚠️ [GET /tournaments/${tournamentId}] Ошибка загрузки администраторов:`, adminsError.message);
+            admins = [];
         }
 
-        // Получаем участников турнира
+        console.log(`👤 [GET /tournaments/${tournamentId}] Загружаем участников...`);
+        
+        // Получаем участников
         const participantsQuery = `
             SELECT 
                 tp.id,
                 tp.user_id,
-                tp.team_name,
+                tp.name,
                 tp.created_at as registered_at,
                 u.username,
                 u.avatar_url,
@@ -314,44 +291,113 @@ router.get('/:id', async (req, res) => {
         `;
         
         const participantsResult = await pool.query(participantsQuery, [tournamentId]);
-        const participants = participantsResult.rows;
+        console.log(`✅ [GET /tournaments/${tournamentId}] Участники загружены: ${participantsResult.rows.length} шт.`);
 
-        // Получаем матчи турнира
+        console.log(`⚔️ [GET /tournaments/${tournamentId}] Загружаем матчи...`);
+        
+        // Получаем матчи турнира с аватарами участников
         const matchesQuery = `
             SELECT 
                 m.*,
                 t1.name as team1_name,
                 t2.name as team2_name,
-                t1.avatar_url as team1_avatar,
-                t2.avatar_url as team2_avatar
+                u1.avatar_url as team1_avatar,
+                u2.avatar_url as team2_avatar
             FROM matches m
             LEFT JOIN tournament_participants t1 ON m.team1_id = t1.id
             LEFT JOIN tournament_participants t2 ON m.team2_id = t2.id
+            LEFT JOIN users u1 ON t1.user_id = u1.id
+            LEFT JOIN users u2 ON t2.user_id = u2.id
             WHERE m.tournament_id = $1
             ORDER BY m.round ASC, m.match_number ASC
         `;
         
-        const matchesResult = await pool.query(matchesQuery, [tournamentId]);
-        const matches = matchesResult.rows;
+        const matchesResult2 = await pool.query(matchesQuery, [tournamentId]);
+        console.log(`✅ [GET /tournaments/${tournamentId}] Матчи загружены: ${matchesResult2.rows.length} шт.`);
 
-        // Добавляем информацию об администраторах к объекту турнира
-        tournament.admins = admins;
-        tournament.participants = participants;
-        tournament.matches = matches;
+        // Получаем команды для микс турниров
+        let teams = [];
+        if (tournament.format === 'mix' || tournament.participant_type === 'team') {
+            console.log(`🏆 [GET /tournaments/${tournamentId}] Загружаем команды для формата "${tournament.format}"...`);
+            
+            const teamsQuery = `
+                SELECT 
+                    t.*,
+                    array_agg(
+                        json_build_object(
+                            'id', tp.id,
+                            'user_id', tp.user_id,
+                            'username', u.username,
+                            'name', COALESCE(tp.name, u.username),
+                            'faceit_elo', u.faceit_elo,
+                            'cs2_premier_rank', u.cs2_premier_rank,
+                            'avatar_url', u.avatar_url
+                        ) ORDER BY tp.created_at
+                    ) as members
+                FROM teams t
+                LEFT JOIN tournament_participants tp ON t.id = tp.team_id
+                LEFT JOIN users u ON tp.user_id = u.id
+                WHERE t.tournament_id = $1
+                GROUP BY t.id
+                ORDER BY t.id
+            `;
+            
+            try {
+                const teamsResult = await pool.query(teamsQuery, [tournamentId]);
+                teams = teamsResult.rows.map(team => ({
+                    ...team,
+                    members: team.members.filter(member => member.id !== null)
+                }));
+                console.log(`✅ [GET /tournaments/${tournamentId}] Команды загружены: ${teams.length} шт.`);
+            } catch (teamsError) {
+                console.warn(`⚠️ [GET /tournaments/${tournamentId}] Ошибка загрузки команд:`, teamsError.message);
+                teams = [];
+            }
+        } else {
+            console.log(`📊 [GET /tournaments/${tournamentId}] Пропускаем загрузку команд для формата "${tournament.format}"`);
+        }
 
-        await logTournamentEvent(
-            tournamentId,
-            req.user?.id || null,
-            'tournament_viewed',
-            { ip: req.ip }
-        );
+        console.log(`📦 [GET /tournaments/${tournamentId}] Формируем ответ...`);
+        
+        // Подготавливаем обновленный объект турнира
+        const updatedTournament = {
+            ...tournament,
+            creator_name: tournament.creator_username,
+            creator_avatar_url: tournament.creator_avatar_url
+        };
 
-        res.json(tournament);
+        const responseData = {
+            ...updatedTournament,
+            participants: participantsResult.rows,
+            participant_count: participantsResult.rows.length,
+            matches: matchesResult2.rows,
+            teams: teams,
+            mixed_teams: teams,
+            admins: admins
+        };
+
+        const endTime = Date.now();
+        console.log(`✅ [GET /tournaments/${tournamentId}] Запрос успешно обработан за ${endTime - startTime}ms`);
+        console.log(`📊 [GET /tournaments/${tournamentId}] Итоговые данные: участников=${participantsResult.rows.length}, матчей=${matchesResult2.rows.length}, команд=${teams.length}, админов=${admins.length}`);
+
+        res.json(responseData);
+
     } catch (error) {
-        console.error('Ошибка при получении турнира:', error);
+        const endTime = Date.now();
+        console.error(`❌ [GET /tournaments/${tournamentId}] Критическая ошибка получения турнира за ${endTime - startTime}ms:`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] Тип ошибки: ${error.name}`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] Сообщение: ${error.message}`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] SQL код: ${error.code || 'не определен'}`);
+        console.error(`❌ [GET /tournaments/${tournamentId}] SQL позиция: ${error.position || 'не определена'}`);
+        if (error.stack) {
+            console.error(`❌ [GET /tournaments/${tournamentId}] Stack trace:`, error.stack);
+        }
+        
         res.status(500).json({ 
             message: 'Ошибка сервера при получении турнира',
-            error: error.message 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            tournamentId: tournamentId,
+            timestamp: new Date().toISOString()
         });
     }
 });
@@ -3279,32 +3325,9 @@ router.post('/:id/invite-admin', authenticateToken, async (req, res) => {
             return res.status(400).json({ message: 'Некорректные параметры запроса' });
         }
 
-        // Проверяем существование таблиц
-        const checkTablesQuery = `
-            SELECT 
-                EXISTS (
-                    SELECT 1 FROM information_schema.tables 
-                    WHERE table_schema = 'public' AND table_name = 'tournament_admins'
-                ) as admin_table_exists,
-                EXISTS (
-                    SELECT 1 FROM information_schema.tables 
-                    WHERE table_schema = 'public' AND table_name = 'admin_invitations'
-                ) as invitation_table_exists
-        `;
-        
-        const tablesCheckResult = await pool.query(checkTablesQuery);
-        const { admin_table_exists, invitation_table_exists } = tablesCheckResult.rows[0];
-
-        if (!admin_table_exists || !invitation_table_exists) {
-            return res.status(503).json({ 
-                message: 'Функция управления администраторами временно недоступна',
-                reason: 'Система находится в процессе обновления. Пожалуйста, попробуйте позже.'
-            });
-        }
-
         // Проверяем, является ли пользователь создателем турнира
         const tournamentResult = await pool.query(
-            'SELECT created_by FROM tournaments WHERE id = $1',
+            'SELECT created_by, name FROM tournaments WHERE id = $1',
             [tournamentId]
         );
 
@@ -3312,7 +3335,9 @@ router.post('/:id/invite-admin', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'Турнир не найден' });
         }
 
-        if (tournamentResult.rows[0].created_by !== req.user.id) {
+        const tournament = tournamentResult.rows[0];
+
+        if (tournament.created_by !== req.user.id) {
             return res.status(403).json({ message: 'Только создатель турнира может приглашать администраторов' });
         }
 
@@ -3389,24 +3414,6 @@ router.delete('/:id/admins/:userId', authenticateToken, async (req, res) => {
             return res.status(400).json({ message: 'Некорректные параметры запроса' });
         }
 
-        // Проверяем существование таблицы tournament_admins
-        const checkTableQuery = `
-            SELECT EXISTS (
-                SELECT 1 FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name = 'tournament_admins'
-            ) as table_exists
-        `;
-        
-        const tableCheckResult = await pool.query(checkTableQuery);
-        const { table_exists } = tableCheckResult.rows[0];
-
-        if (!table_exists) {
-            return res.status(503).json({ 
-                message: 'Функция управления администраторами временно недоступна',
-                reason: 'Система находится в процессе обновления. Пожалуйста, попробуйте позже.'
-            });
-        }
-
         // Проверяем, является ли пользователь создателем турнира
         const tournamentResult = await pool.query(
             'SELECT created_by FROM tournaments WHERE id = $1',
@@ -3464,29 +3471,6 @@ router.post('/admin-invitations/:invitationId/accept', authenticateToken, async 
             return res.status(400).json({ message: 'Некорректный ID приглашения' });
         }
 
-        // Проверяем существование таблиц
-        const checkTablesQuery = `
-            SELECT 
-                EXISTS (
-                    SELECT 1 FROM information_schema.tables 
-                    WHERE table_schema = 'public' AND table_name = 'tournament_admins'
-                ) as admin_table_exists,
-                EXISTS (
-                    SELECT 1 FROM information_schema.tables 
-                    WHERE table_schema = 'public' AND table_name = 'admin_invitations'
-                ) as invitation_table_exists
-        `;
-        
-        const tablesCheckResult = await pool.query(checkTablesQuery);
-        const { admin_table_exists, invitation_table_exists } = tablesCheckResult.rows[0];
-
-        if (!admin_table_exists || !invitation_table_exists) {
-            return res.status(503).json({ 
-                message: 'Функция управления администраторами временно недоступна',
-                reason: 'Система находится в процессе обновления. Пожалуйста, попробуйте позже.'
-            });
-        }
-
         // Используем функцию для принятия приглашения
         const result = await pool.query(
             'SELECT accept_admin_invitation($1, $2) as result',
@@ -3522,24 +3506,6 @@ router.post('/admin-invitations/:invitationId/decline', authenticateToken, async
             return res.status(400).json({ message: 'Некорректный ID приглашения' });
         }
 
-        // Проверяем существование таблицы admin_invitations
-        const checkTableQuery = `
-            SELECT EXISTS (
-                SELECT 1 FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name = 'admin_invitations'
-            ) as table_exists
-        `;
-        
-        const tableCheckResult = await pool.query(checkTableQuery);
-        const { table_exists } = tableCheckResult.rows[0];
-
-        if (!table_exists) {
-            return res.status(503).json({ 
-                message: 'Функция управления администраторами временно недоступна',
-                reason: 'Система находится в процессе обновления. Пожалуйста, попробуйте позже.'
-            });
-        }
-
         // Используем функцию для отклонения приглашения
         const result = await pool.query(
             'SELECT decline_admin_invitation($1, $2) as result',
@@ -3570,122 +3536,10 @@ router.post('/admin-invitations/:invitationId/decline', authenticateToken, async
 router.get('/:id/chat/messages', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { limit = 50, offset = 0 } = req.query;
-    
-    try {
-        // Проверяем участие пользователя в турнире
-        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        
-        const tournament = tournamentResult.rows[0];
-        const chatId = tournament.chat_id;
-        
-        if (!chatId) {
-            return res.status(404).json({ error: 'Чат турнира не найден' });
-        }
-        
-        // Проверяем, является ли пользователь участником чата
-        const participantCheck = await pool.query(
-            'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
-            [chatId, req.user.id]
-        );
-        
-        if (participantCheck.rows.length === 0) {
-            return res.status(403).json({ error: 'Вы не являетесь участником чата турнира' });
-        }
-        
-        // Получаем сообщения чата
-        const result = await pool.query(`
-            SELECT m.id, m.chat_id, m.sender_id, m.content, m.message_type, 
-                   m.content_meta, m.is_pinned, m.created_at,
-                   u.username AS sender_username, u.avatar_url AS sender_avatar
-            FROM messages m 
-            LEFT JOIN users u ON m.sender_id = u.id
-            WHERE m.chat_id = $1 
-            ORDER BY m.created_at DESC
-            LIMIT $2 OFFSET $3
-        `, [chatId, limit, offset]);
-        
-        // Возвращаем сообщения в правильном порядке (старые сначала)
-        const messages = result.rows.reverse();
-        
-        res.json(messages);
-    } catch (err) {
-        console.error('Ошибка получения сообщений чата турнира:', err);
-        res.status(500).json({ error: 'Ошибка сервера при получении сообщений чата турнира' });
-    }
-});
 
-// Отправка сообщения в чат турнира
-router.post('/:id/chat/messages', authenticateToken, async (req, res) => {
-    const { id } = req.params;
-    const { content } = req.body;
-    
-    if (!content || content.trim().length === 0) {
-        return res.status(400).json({ error: 'Сообщение не может быть пустым' });
-    }
-    
     try {
         // Проверяем турнир
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
-        if (tournamentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Турнир не найден' });
-        }
-        
-        const tournament = tournamentResult.rows[0];
-        const chatId = tournament.chat_id;
-        
-        if (!chatId) {
-            return res.status(404).json({ error: 'Чат турнира не найден' });
-        }
-        
-        // Проверяем, является ли пользователь участником чата
-        const participantCheck = await pool.query(
-            'SELECT * FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
-            [chatId, req.user.id]
-        );
-        
-        if (participantCheck.rows.length === 0) {
-            return res.status(403).json({ error: 'Вы не являетесь участником чата турнира' });
-        }
-        
-        // Добавляем сообщение
-        const insertRes = await pool.query(`
-            INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) 
-            VALUES ($1, $2, $3, $4, $5) 
-            RETURNING id, chat_id, sender_id, content, message_type, content_meta, is_pinned, created_at
-        `, [chatId, req.user.id, content.trim(), 'text', { tournament_id: parseInt(id) }]);
-        
-        const message = insertRes.rows[0];
-        
-        // Добавляем данные пользователя
-        message.sender_username = req.user.username;
-        message.sender_avatar = req.user.avatar_url;
-        
-        // Отправляем через WebSocket
-        const app = global.app;
-        if (app) {
-            const io = app.get('io');
-            if (io) {
-                io.to(`chat_${chatId}`).emit('message', message);
-            }
-        }
-        
-        res.status(201).json(message);
-    } catch (err) {
-        console.error('Ошибка отправки сообщения в чат турнира:', err);
-        res.status(500).json({ error: 'Ошибка сервера при отправке сообщения в чат турнира' });
-    }
-});
-
-// Получение информации о чате турнира
-router.get('/:id/chat/info', authenticateToken, async (req, res) => {
-    const { id } = req.params;
-    
-    try {
-        // Проверяем турнир
-        const tournamentResult = await pool.query('SELECT name, chat_id FROM tournaments WHERE id = $1', [id]);
         if (tournamentResult.rows.length === 0) {
             return res.status(404).json({ error: 'Турнир не найден' });
         }
