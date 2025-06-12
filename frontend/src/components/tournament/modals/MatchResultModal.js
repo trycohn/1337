@@ -3,33 +3,34 @@ import { isCounterStrike2, getGameMaps } from '../../../utils/mapHelpers';
 import './MatchResultModal.css';
 
 /**
- * MatchResultModal v3.0 - Улучшенное модальное окно редактирования результатов
+ * MatchResultModal v4.0 - Комплексное управление результатами матчей
  * 
- * @version 3.0 (Вариант 3 с расширенной валидацией и UX)
- * @features Валидация, анимации, обработка ошибок, поддержка карт CS2
+ * @version 4.0 (Полная реализация с выбором победителя и тултипами)
+ * @features Выбор победителя, тултипы команд, расширенная статистика, валидация
  */
 const MatchResultModal = ({
     isOpen,
     onClose,
-    selectedMatch,        // 🔧 ИСПРАВЛЕНО: было match, теперь selectedMatch
-    matchResultData,      // 🔧 ИСПРАВЛЕНО: используется из modals hook
-    setMatchResultData,   // 🔧 ИСПРАВЛЕНО: используется из modals hook
+    selectedMatch,        
+    matchResultData,      
+    setMatchResultData,   
     onSave,
     isLoading = false,
-    tournament = null     // 🔧 ИСПРАВЛЕНО: добавлено для совместимости
+    tournament = null     
 }) => {
     const [availableMaps, setAvailableMaps] = useState([]);
     const [validationErrors, setValidationErrors] = useState({});
     const [hasChanges, setHasChanges] = useState(false);
+    const [selectedWinner, setSelectedWinner] = useState(null); // null, 'team1', 'team2'
+    const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
+    const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
 
-    // 🎯 УЛУЧШЕНИЕ ВАРИАНТА 3: Автоопределение турнира из localStorage или контекста
+    // 🎯 УЛУЧШЕНИЕ: Автоопределение турнира из localStorage или контекста
     const getTournamentGame = useCallback(() => {
-        // Сначала пытаемся получить из пропса tournament
         if (tournament?.game) {
             return tournament.game;
         }
         
-        // Затем из localStorage (кэш турнира)
         try {
             const tournamentData = localStorage.getItem('currentTournament');
             if (tournamentData) {
@@ -40,13 +41,39 @@ const MatchResultModal = ({
             console.warn('Ошибка получения турнира из localStorage:', error);
         }
         
-        // Fallback: предполагаем CS2 если selectedMatch содержит указание на карты
         if (selectedMatch?.maps_data || selectedMatch?.game === 'Counter-Strike 2') {
             return 'Counter-Strike 2';
         }
         
         return null;
     }, [tournament, selectedMatch]);
+
+    // 🎯 ИНИЦИАЛИЗАЦИЯ WINNER ИЗ ДАННЫХ МАТЧА
+    useEffect(() => {
+        if (selectedMatch && matchResultData) {
+            const winnerId = selectedMatch.winner_team_id || selectedMatch.winner_id;
+            if (winnerId) {
+                if (winnerId === selectedMatch.team1_id) {
+                    setSelectedWinner('team1');
+                } else if (winnerId === selectedMatch.team2_id) {
+                    setSelectedWinner('team2');
+                } else {
+                    setSelectedWinner(null);
+                }
+            } else {
+                // Автоопределение победителя по счету
+                const score1 = parseInt(matchResultData.score1) || 0;
+                const score2 = parseInt(matchResultData.score2) || 0;
+                if (score1 > score2) {
+                    setSelectedWinner('team1');
+                } else if (score2 > score1) {
+                    setSelectedWinner('team2');
+                } else {
+                    setSelectedWinner(null);
+                }
+            }
+        }
+    }, [selectedMatch, matchResultData]);
 
     // 🎯 ЗАГРУЗКА ДОСТУПНЫХ КАРТ
     useEffect(() => {
@@ -69,11 +96,13 @@ const MatchResultModal = ({
                 JSON.stringify(matchResultData.maps_data || []) !== 
                 JSON.stringify(selectedMatch.maps_data || []);
             
-            setHasChanges(hasScoreChanges || hasMapsChanges);
+            const hasWinnerChanges = selectedWinner !== null;
+            
+            setHasChanges(hasScoreChanges || hasMapsChanges || hasWinnerChanges);
         }
-    }, [matchResultData, selectedMatch]);
+    }, [matchResultData, selectedMatch, selectedWinner]);
 
-    // 🎯 ВАЛИДАЦИЯ РЕЗУЛЬТАТОВ (ВАРИАНТ 3)
+    // 🎯 УЛУЧШЕННАЯ ВАЛИДАЦИЯ (разрешены отрицательные счета)
     const validateResults = useCallback(() => {
         const errors = {};
         
@@ -82,16 +111,12 @@ const MatchResultModal = ({
             return errors;
         }
 
-        // Валидация общего счета
         const score1 = parseInt(matchResultData.score1) || 0;
         const score2 = parseInt(matchResultData.score2) || 0;
         
-        if (score1 < 0 || score2 < 0) {
-            errors.scores = 'Счет не может быть отрицательным';
-        }
-        
-        if (score1 === 0 && score2 === 0) {
-            errors.scores = 'Счет не может быть 0:0';
+        // Убираем ограничение на отрицательные счета
+        if (score1 === 0 && score2 === 0 && !selectedWinner) {
+            errors.scores = 'Укажите счет матча или выберите победителя';
         }
 
         // Валидация карт для CS2
@@ -101,36 +126,11 @@ const MatchResultModal = ({
                 if (!mapData.map || mapData.map.trim() === '') {
                     errors[`map_${index}_name`] = `Выберите название для карты ${index + 1}`;
                 }
-                
-                const mapScore1 = parseInt(mapData.score1) || 0;
-                const mapScore2 = parseInt(mapData.score2) || 0;
-                
-                if (mapScore1 < 0 || mapScore2 < 0) {
-                    errors[`map_${index}_scores`] = `Счет карты ${index + 1} не может быть отрицательным`;
-                }
-                
-                // Проверка логичности счета для CS2 (обычно до 16 раундов)
-                if (mapScore1 > 50 || mapScore2 > 50) {
-                    errors[`map_${index}_scores`] = `Счет карты ${index + 1} слишком большой (макс. 50)`;
-                }
             });
-            
-            // Проверка соответствия общего счета картам
-            const mapsWonByTeam1 = matchResultData.maps_data.filter(map => 
-                (parseInt(map.score1) || 0) > (parseInt(map.score2) || 0)
-            ).length;
-            
-            const mapsWonByTeam2 = matchResultData.maps_data.filter(map => 
-                (parseInt(map.score2) || 0) > (parseInt(map.score1) || 0)
-            ).length;
-            
-            if (mapsWonByTeam1 !== score1 || mapsWonByTeam2 !== score2) {
-                errors.consistency = `Общий счет (${score1}:${score2}) не соответствует результатам по картам (${mapsWonByTeam1}:${mapsWonByTeam2})`;
-            }
         }
 
         return errors;
-    }, [matchResultData, getTournamentGame]);
+    }, [matchResultData, selectedWinner, getTournamentGame]);
 
     // 🎯 ОБНОВЛЕНИЕ ВАЛИДАЦИИ
     useEffect(() => {
@@ -140,19 +140,114 @@ const MatchResultModal = ({
         }
     }, [matchResultData, validateResults]);
 
+    // 🎯 ФУНКЦИЯ ВЫБОРА ПОБЕДИТЕЛЯ
+    const selectWinner = useCallback((team) => {
+        console.log('🏆 Выбран победитель:', team);
+        setSelectedWinner(team);
+        
+        // Автоматически обновляем счет, если нужно
+        if (team === 'team1' && parseInt(matchResultData.score1 || 0) <= parseInt(matchResultData.score2 || 0)) {
+            setMatchResultData(prev => ({
+                ...prev,
+                score1: Math.max(1, parseInt(prev.score2 || 0) + 1)
+            }));
+        } else if (team === 'team2' && parseInt(matchResultData.score2 || 0) <= parseInt(matchResultData.score1 || 0)) {
+            setMatchResultData(prev => ({
+                ...prev,
+                score2: Math.max(1, parseInt(prev.score1 || 0) + 1)
+            }));
+        }
+    }, [matchResultData, setMatchResultData]);
+
+    // 🎯 РАСЧЕТ СТАТИСТИКИ ПО КАРТАМ
+    const getMapStatistics = useCallback(() => {
+        const mapsData = matchResultData.maps_data || [];
+        if (mapsData.length === 0) return null;
+        
+        let team1Wins = 0;
+        let team2Wins = 0;
+        let team1TotalScore = 0;
+        let team2TotalScore = 0;
+        let draws = 0;
+        
+        mapsData.forEach(map => {
+            const score1 = parseInt(map.score1) || 0;
+            const score2 = parseInt(map.score2) || 0;
+            
+            team1TotalScore += score1;
+            team2TotalScore += score2;
+            
+            if (score1 > score2) {
+                team1Wins++;
+            } else if (score2 > score1) {
+                team2Wins++;
+            } else {
+                draws++;
+            }
+        });
+        
+        return {
+            mapsCount: mapsData.length,
+            team1Wins,
+            team2Wins,
+            draws,
+            team1TotalScore,
+            team2TotalScore,
+            scoreDifference: Math.abs(team1TotalScore - team2TotalScore)
+        };
+    }, [matchResultData.maps_data]);
+
+    // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ
+    const TeamTooltip = ({ team, composition, show, onClose }) => {
+        if (!show || !composition || !composition.members || composition.members.length === 0) {
+            return null;
+        }
+        
+        return (
+            <div className="team-tooltip" onMouseLeave={onClose}>
+                <div className="tooltip-header">
+                    <h4>{composition.name}</h4>
+                    <span className="members-count">({composition.members.length} игроков)</span>
+                </div>
+                <div className="tooltip-members">
+                    {composition.members.map((member, index) => (
+                        <div key={index} className="tooltip-member">
+                            <span className="member-name">{member.name}</span>
+                            {member.rating && (
+                                <span className="member-rating">
+                                    {member.rating} {typeof member.rating === 'number' && member.rating > 100 ? 'ELO' : 'Rank'}
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     if (!isOpen || !selectedMatch) return null;
 
     // 🎯 ОБРАБОТЧИКИ СОБЫТИЙ
     const handleScoreChange = (team, value) => {
-        const score = Math.max(0, parseInt(value) || 0);
+        const score = parseInt(value) || 0; // Убираем ограничение Math.max(0, ...)
         setMatchResultData(prev => ({
             ...prev,
             [team === 1 ? 'score1' : 'score2']: score
         }));
+        
+        // Автоопределение победителя
+        const otherScore = team === 1 ? parseInt(matchResultData.score2) || 0 : parseInt(matchResultData.score1) || 0;
+        if (score > otherScore) {
+            setSelectedWinner(team === 1 ? 'team1' : 'team2');
+        } else if (score < otherScore) {
+            setSelectedWinner(team === 1 ? 'team2' : 'team1');
+        } else {
+            setSelectedWinner(null);
+        }
     };
 
     const handleMapScoreChange = (mapIndex, team, value) => {
-        const score = Math.max(0, Math.min(50, parseInt(value) || 0)); // Ограничиваем 0-50
+        const score = parseInt(value) || 0; // Разрешаем отрицательные значения
         setMatchResultData(prev => {
             const newMapsData = [...(prev.maps_data || [])];
             if (!newMapsData[mapIndex]) {
@@ -182,9 +277,7 @@ const MatchResultModal = ({
 
     const addMap = () => {
         const mapsCount = (matchResultData.maps_data || []).length;
-        if (mapsCount >= 7) { // Максимум 7 карт (BO7)
-            return;
-        }
+        if (mapsCount >= 7) return;
         
         setMatchResultData(prev => ({
             ...prev,
@@ -211,10 +304,16 @@ const MatchResultModal = ({
             return;
         }
         
-        onSave();
+        // Добавляем информацию о победителе
+        const submitData = {
+            ...matchResultData,
+            winner: selectedWinner
+        };
+        
+        console.log('💾 Сохраняем результат матча:', submitData);
+        onSave(submitData);
     };
 
-    // 🎯 ЗАКРЫТИЕ С ПОДТВЕРЖДЕНИЕМ ПРИ НАЛИЧИИ ИЗМЕНЕНИЙ
     const handleClose = () => {
         if (hasChanges && !isLoading) {
             const confirmed = window.confirm(
@@ -228,6 +327,7 @@ const MatchResultModal = ({
     const isCS2 = isCounterStrike2(getTournamentGame());
     const mapsData = matchResultData.maps_data || [];
     const hasValidationErrors = Object.keys(validationErrors).length > 0;
+    const mapStats = getMapStatistics();
 
     return (
         <div className="modal-overlay enhanced-match-result-overlay" onClick={handleClose}>
@@ -241,17 +341,59 @@ const MatchResultModal = ({
                 </div>
 
                 <form onSubmit={handleSubmit} className="match-result-form">
-                    {/* Информация о матче */}
+                    {/* Информация о матче с выбором победителя */}
                     <div className="match-info">
                         <div className="teams-display">
-                            <div className="team-display">
+                            <div 
+                                className={`team-display ${selectedWinner === 'team1' ? 'winner-selected' : ''} ${selectedMatch.team1_composition ? 'has-tooltip' : ''}`}
+                                onClick={() => selectWinner('team1')}
+                                onMouseEnter={() => setShowTeam1Tooltip(true)}
+                                onMouseLeave={() => setShowTeam1Tooltip(false)}
+                                title={selectedMatch.team1_composition ? 'Нажмите для выбора победителя' : 'Выбрать победителем'}
+                            >
                                 <span className="team-name">{selectedMatch.team1_name || 'Команда 1'}</span>
+                                {selectedWinner === 'team1' && <span className="winner-crown">👑</span>}
+                                
+                                <TeamTooltip 
+                                    team="team1"
+                                    composition={selectedMatch.team1_composition}
+                                    show={showTeam1Tooltip}
+                                    onClose={() => setShowTeam1Tooltip(false)}
+                                />
                             </div>
                             <div className="vs-separator">VS</div>
-                            <div className="team-display">
+                            <div 
+                                className={`team-display ${selectedWinner === 'team2' ? 'winner-selected' : ''} ${selectedMatch.team2_composition ? 'has-tooltip' : ''}`}
+                                onClick={() => selectWinner('team2')}
+                                onMouseEnter={() => setShowTeam2Tooltip(true)}
+                                onMouseLeave={() => setShowTeam2Tooltip(false)}
+                                title={selectedMatch.team2_composition ? 'Нажмите для выбора победителя' : 'Выбрать победителем'}
+                            >
                                 <span className="team-name">{selectedMatch.team2_name || 'Команда 2'}</span>
+                                {selectedWinner === 'team2' && <span className="winner-crown">👑</span>}
+                                
+                                <TeamTooltip 
+                                    team="team2"
+                                    composition={selectedMatch.team2_composition}
+                                    show={showTeam2Tooltip}
+                                    onClose={() => setShowTeam2Tooltip(false)}
+                                />
                             </div>
                         </div>
+                        
+                        {/* Кнопка сброса выбора победителя */}
+                        {selectedWinner && (
+                            <div className="winner-controls">
+                                <button 
+                                    type="button"
+                                    className="clear-winner-btn"
+                                    onClick={() => setSelectedWinner(null)}
+                                    title="Сбросить выбор победителя"
+                                >
+                                    🗑️ Сбросить победителя
+                                </button>
+                            </div>
+                        )}
                         
                         {/* Метаинформация о матче */}
                         <div className="match-meta">
@@ -288,8 +430,6 @@ const MatchResultModal = ({
                                     type="number"
                                     value={matchResultData.score1 || 0}
                                     onChange={(e) => handleScoreChange(1, e.target.value)}
-                                    min="0"
-                                    max="999"
                                     disabled={isLoading}
                                     className={validationErrors.scores ? 'error' : ''}
                                 />
@@ -301,8 +441,6 @@ const MatchResultModal = ({
                                     type="number"
                                     value={matchResultData.score2 || 0}
                                     onChange={(e) => handleScoreChange(2, e.target.value)}
-                                    min="0"
-                                    max="999"
                                     disabled={isLoading}
                                     className={validationErrors.scores ? 'error' : ''}
                                 />
@@ -375,8 +513,6 @@ const MatchResultModal = ({
                                                     type="number"
                                                     value={mapData.score1 || 0}
                                                     onChange={(e) => handleMapScoreChange(index, 1, e.target.value)}
-                                                    min="0"
-                                                    max="50"
                                                     disabled={isLoading}
                                                     className={validationErrors[`map_${index}_scores`] ? 'error' : ''}
                                                 />
@@ -388,8 +524,6 @@ const MatchResultModal = ({
                                                     type="number"
                                                     value={mapData.score2 || 0}
                                                     onChange={(e) => handleMapScoreChange(index, 2, e.target.value)}
-                                                    min="0"
-                                                    max="50"
                                                     disabled={isLoading}
                                                     className={validationErrors[`map_${index}_scores`] ? 'error' : ''}
                                                 />
@@ -397,7 +531,7 @@ const MatchResultModal = ({
                                         </div>
                                         
                                         {/* Победитель карты */}
-                                        {mapData.score1 !== mapData.score2 && (mapData.score1 > 0 || mapData.score2 > 0) && (
+                                        {mapData.score1 !== mapData.score2 && (mapData.score1 !== 0 || mapData.score2 !== 0) && (
                                             <div className="map-winner">
                                                 🏆 Победитель: {
                                                     (parseInt(mapData.score1) || 0) > (parseInt(mapData.score2) || 0) 
@@ -410,33 +544,61 @@ const MatchResultModal = ({
                                 ))}
                             </div>
 
-                            {/* Автосчет результата по картам */}
-                            {mapsData.length > 0 && (
-                                <div className="maps-summary">
-                                    <h5>📊 Сводка по картам</h5>
+                            {/* Расширенная статистика по картам */}
+                            {mapStats && (
+                                <div className="maps-summary enhanced-stats">
+                                    <h5>📊 Расширенная статистика</h5>
                                     <div className="maps-summary-content">
-                                        <div className="maps-won">
-                                            <span className="team-maps-won">
-                                                {selectedMatch.team1_name || 'Команда 1'}: {
-                                                    mapsData.filter(map => 
-                                                        (parseInt(map.score1) || 0) > (parseInt(map.score2) || 0)
-                                                    ).length
-                                                } карт
-                                            </span>
-                                            <span className="team-maps-won">
-                                                {selectedMatch.team2_name || 'Команда 2'}: {
-                                                    mapsData.filter(map => 
-                                                        (parseInt(map.score2) || 0) > (parseInt(map.score1) || 0)
-                                                    ).length
-                                                } карт
-                                            </span>
-                                        </div>
-                                        
-                                        {validationErrors.consistency && (
-                                            <div className="consistency-warning">
-                                                ⚠️ {validationErrors.consistency}
+                                        <div className="stats-grid">
+                                            <div className="stat-group">
+                                                <h6>🏆 Победы по картам</h6>
+                                                <div className="maps-won">
+                                                    <span className="team-maps-won">
+                                                        {selectedMatch.team1_name}: {mapStats.team1Wins}
+                                                    </span>
+                                                    <span className="team-maps-won">
+                                                        {selectedMatch.team2_name}: {mapStats.team2Wins}
+                                                    </span>
+                                                    {mapStats.draws > 0 && (
+                                                        <span className="team-maps-won draws">
+                                                            Ничьи: {mapStats.draws}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
+                                            
+                                            <div className="stat-group">
+                                                <h6>🎯 Общий счет по очкам</h6>
+                                                <div className="total-scores">
+                                                    <span className="total-score">
+                                                        {selectedMatch.team1_name}: {mapStats.team1TotalScore}
+                                                    </span>
+                                                    <span className="total-score">
+                                                        {selectedMatch.team2_name}: {mapStats.team2TotalScore}
+                                                    </span>
+                                                    <span className="score-difference">
+                                                        Разность: ±{mapStats.scoreDifference}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="stat-group">
+                                                <h6>📈 Показатели матча</h6>
+                                                <div className="match-indicators">
+                                                    <span className="indicator">
+                                                        Карт сыграно: {mapStats.mapsCount}
+                                                    </span>
+                                                    <span className="indicator">
+                                                        Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount)}
+                                                    </span>
+                                                    {mapStats.mapsCount >= 3 && (
+                                                        <span className="indicator format-indicator">
+                                                            Формат: BO{mapStats.mapsCount}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -465,7 +627,7 @@ const MatchResultModal = ({
                                     Сохранение...
                                 </>
                             ) : (
-                                '💾 Сохранить'
+                                '💾 Сохранить результат'
                             )}
                         </button>
                     </div>
