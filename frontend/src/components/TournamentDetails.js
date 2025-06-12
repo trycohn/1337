@@ -2098,7 +2098,7 @@ function TournamentDetails() {
                                                 </div>
                                             ) : (
                                                 <div className="tournament-description-content">
-                                                    {tournament.description ? (
+                                                    {tournament.description && tournament.description.trim() ? (
                                                         <div className="tournament-description">
                                                             {tournament.description.split('\n').map((line, index) => (
                                                                 <p key={index}>{line}</p>
@@ -2166,7 +2166,7 @@ function TournamentDetails() {
                                                 </div>
                                             ) : (
                                                         <div className="rules-text">
-                                                    {tournament.rules ? (
+                                                    {tournament.rules && tournament.rules.trim() ? (
                                                         tournament.rules.split('\n').map((rule, index) => (
                                                             <div key={index} className="rule-item">
                                                                 {rule}
@@ -2282,7 +2282,7 @@ function TournamentDetails() {
                                                     {tournamentWinners.winner.type === 'team' ? (
                                                         <div className="team-winner">
                                                             <h4>{tournamentWinners.winner.name}</h4>
-                                                            {tournamentWinners.winner.members && (
+                                                            {tournamentWinners.winner.members && Array.isArray(tournamentWinners.winner.members) && tournamentWinners.winner.members.length > 0 && (
                                                                 <div className="team-members">
                                                                     <h5>🏆 Участники команды-победителя:</h5>
                                                                     <ul>
@@ -2500,10 +2500,21 @@ function TournamentDetails() {
                         <div className="tab-content-tournamentdetails">
                             {(() => {
                                 // Фильтруем завершенные матчи с результатами
+                                if (!matches || !Array.isArray(matches) || matches.length === 0) {
+                                    return (
+                                        <div className="empty-state">
+                                            <p>🏆 Турнир еще не завершен</p>
+                                            <p>Результаты появятся после завершения всех матчей</p>
+                                        </div>
+                                    );
+                                }
+                                
                                 const completedMatches = matches.filter(match => 
-                                    match.status === 'completed' || match.status === 'DONE' || match.state === 'DONE' ||
-                                    match.winner_team_id || match.winner_id ||
-                                    (match.score1 !== undefined && match.score2 !== undefined && (match.score1 > 0 || match.score2 > 0))
+                                    match && (
+                                        match.status === 'completed' || match.status === 'DONE' || match.state === 'DONE' ||
+                                        match.winner_team_id || match.winner_id ||
+                                        (match.score1 !== undefined && match.score2 !== undefined && (match.score1 > 0 || match.score2 > 0))
+                                    )
                                 );
 
                                 if (completedMatches.length === 0) {
@@ -2515,7 +2526,7 @@ function TournamentDetails() {
                                     );
                                 }
                                                                         
-                                                                        return (
+                                return (
                                     <div className="matches-list">
                                         {completedMatches.map(match => (
                                             <div key={match.id} className="match-item">
@@ -2523,18 +2534,18 @@ function TournamentDetails() {
                                                     <div className="team-info">
                                                         <div className="team-name">{match.team1_name || 'Команда 1'}</div>
                                                         <div className="team-name">{match.team2_name || 'Команда 2'}</div>
-                                                                </div>
+                                                    </div>
                                                     <div className="score-info">
                                                         <div className="score">{match.score1 || 0}</div>
                                                         <div className="score">{match.score2 || 0}</div>
-                                                            </div>
                                                     </div>
+                                                </div>
                                                 <div className="match-actions">
                                                     <button onClick={() => handleMatchClick(match)}>Подробнее</button>
-                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
-                                        </div>
+                                    </div>
                                 );
                             })()}
                         </div>
