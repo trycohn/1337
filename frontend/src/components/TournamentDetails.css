@@ -7007,12 +7007,12 @@ a.participant-name:hover {
    ================================================= */
 
 /* Основная структура турнира с чатом */
-.tournament-details-tournamentdetails {
+.tournament-details-tournamentdetails .tournament-layout {
     display: flex;
     gap: 20px;
     max-width: 1400px;
     margin: 0 auto;
-    flex-direction: column;
+    align-items: flex-start;
 }
 
 .tournament-details-tournamentdetails .tournament-content-tournamentdetails {
@@ -7142,7 +7142,7 @@ a.participant-name:hover {
 
 /* Адаптивность */
 @media (max-width: 1200px) {
-    .tournament-details-tournamentdetails {
+    .tournament-details-tournamentdetails .tournament-layout {
         flex-direction: column;
     }
     

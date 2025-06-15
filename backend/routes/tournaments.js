@@ -3552,34 +3552,100 @@ router.get('/:id/chat/messages', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Чат турнира не найден' });
         }
         
-        // Получаем информацию о чате и участниках
-        const chatInfo = await pool.query(`
-            SELECT c.id, c.name, c.type, c.created_at,
-                   COUNT(cp.user_id) as participant_count
-            FROM chats c
-            LEFT JOIN chat_participants cp ON c.id = cp.chat_id
-            WHERE c.id = $1
-            GROUP BY c.id, c.name, c.type, c.created_at
-        `, [chatId]);
-        
         // Проверяем, является ли пользователь участником
         const isParticipant = await pool.query(
             'SELECT is_admin FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
             [chatId, req.user.id]
         );
         
-        const result = {
-            ...chatInfo.rows[0],
-            isParticipant: isParticipant.rows.length > 0,
-            isAdmin: isParticipant.rows[0]?.is_admin || false,
-            tournament_id: parseInt(id),
-            tournament_name: tournament.name
-        };
+        if (isParticipant.rows.length === 0) {
+            return res.status(403).json({ error: 'У вас нет доступа к этому чату' });
+        }
         
-        res.json(result);
+        // Получаем сообщения чата
+        const messagesResult = await pool.query(`
+            SELECT 
+                m.id, 
+                m.chat_id, 
+                m.sender_id, 
+                m.content, 
+                m.message_type, 
+                m.content_meta, 
+                m.created_at,
+                u.username AS sender_username,
+                u.avatar_url AS sender_avatar
+            FROM messages m
+            LEFT JOIN users u ON m.sender_id = u.id
+            WHERE m.chat_id = $1
+            ORDER BY m.created_at ASC
+            LIMIT $2 OFFSET $3
+        `, [chatId, limit, offset]);
+        
+        res.json(messagesResult.rows);
     } catch (err) {
-        console.error('Ошибка получения информации о чате турнира:', err);
-        res.status(500).json({ error: 'Ошибка сервера при получении информации о чате турнира' });
+        console.error('Ошибка получения сообщений чата турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении сообщений чата турнира' });
+    }
+});
+
+// Получение участников чата турнира
+router.get('/:id/chat/participants', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Проверяем турнир
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        const chatId = tournament.chat_id;
+        
+        if (!chatId) {
+            return res.status(404).json({ error: 'Чат турнира не найден' });
+        }
+        
+        // Проверяем, является ли пользователь участником чата
+        const isParticipant = await pool.query(
+            'SELECT 1 FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+            [chatId, req.user.id]
+        );
+        
+        if (isParticipant.rows.length === 0) {
+            return res.status(403).json({ error: 'У вас нет доступа к этому чату' });
+        }
+        
+        // Получаем всех участников чата с их данными
+        const participants = await pool.query(`
+            SELECT 
+                cp.user_id,
+                cp.is_admin,
+                cp.joined_at,
+                u.username,
+                u.avatar_url,
+                CASE 
+                    WHEN u.id = $2 THEN true
+                    ELSE false
+                END as is_creator
+            FROM chat_participants cp
+            JOIN users u ON cp.user_id = u.id
+            WHERE cp.chat_id = $1
+            ORDER BY 
+                CASE WHEN u.id = $2 THEN 0 ELSE 1 END,
+                cp.is_admin DESC,
+                u.username ASC
+        `, [chatId, tournament.created_by]);
+        
+        res.json({
+            participants: participants.rows,
+            total_count: participants.rows.length,
+            chat_name: tournament.name,
+            tournament_creator: tournament.created_by
+        });
+    } catch (err) {
+        console.error('Ошибка получения участников чата турнира:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении участников чата турнира' });
     }
 });
 

@@ -552,8 +552,9 @@ const getDefaultMap = useCallback((game) => {
             }
         });
         
-        socket.on('tournament_message', (message) => {
-            if (message.tournamentId === parseInt(id)) {
+        socket.on('new_message', (message) => {
+            // Получаем chat_id турнира и проверяем, относится ли сообщение к нему
+            if (tournament?.chat_id && message.chat_id === tournament.chat_id) {
                 setChatMessages(prev => [...prev, message]);
                 if (chatEndRef.current) {
                     chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -674,9 +675,16 @@ const getDefaultMap = useCallback((game) => {
         });
 
         // Обработка новых сообщений чата турнира
-        socket.on('tournament_message', (message) => {
-            setChatMessages(prev => [...prev, message]);
+        socket.on('new_message', (message) => {
+            if (tournament?.chat_id && message.chat_id === tournament.chat_id) {
+                setChatMessages(prev => [...prev, message]);
+            }
         });
+
+        // Присоединяемся к комнате чата турнира
+        if (tournament?.chat_id) {
+            socket.emit('join_chat', tournament.chat_id);
+        }
 
         wsRef.current = socket;
     }, [id]);
@@ -713,11 +721,20 @@ const getDefaultMap = useCallback((game) => {
     const handleChatInputChange = (e) => {
         setNewChatMessage(e.target.value);
     };
-    const handleChatSubmit = (e) => {
+    const handleChatSubmit = async (e) => {
         e.preventDefault();
-        if (!newChatMessage.trim() || !wsRef.current) return;
-        wsRef.current.emit('tournament_message', { tournamentId: id, content: newChatMessage });
-        setNewChatMessage('');
+        if (!newChatMessage.trim()) return;
+        
+        const chatId = tournament?.chat_id;
+        if (chatId && wsRef.current) {
+            wsRef.current.emit('send_message', { 
+                chatId: chatId, 
+                content: newChatMessage.trim() 
+            });
+            setNewChatMessage('');
+        } else {
+            console.error('Chat ID не найден для турнира');
+        }
     };
     const handleChatKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -2185,12 +2202,13 @@ const getDefaultMap = useCallback((game) => {
     };
 
     return (
-        <section className="tournament-details">
+        <section className="tournament-details tournament-details-tournamentdetails">
             <div className="tournament-layout">
-                <div className="tournament-main">
-                    <h2>
-                        {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
-                    </h2>
+                <div className="tournament-content-tournamentdetails">
+                    <div className="tournament-main">
+                        <h2>
+                            {tournament.name} ({tournament.status === 'active' ? 'Активен' : 'Завершён'})
+                        </h2>
                     
                     <div className="tournament-info-section">
                         <div className="info-block">
@@ -2850,6 +2868,19 @@ const getDefaultMap = useCallback((game) => {
                         </button>
                     )}
                 </div>
+                </div>
+                
+                {/* Компонент чата турнира */}
+                <TournamentChat
+                    messages={chatMessages}
+                    newMessage={newChatMessage}
+                    onInputChange={handleChatInputChange}
+                    onSubmit={handleChatSubmit}
+                    onKeyPress={handleChatKeyPress}
+                    chatEndRef={chatEndRef}
+                    user={user}
+                    tournamentId={id}
+                />
             </div>
             
             {/* Модальное окно подтверждения завершения турнира */}
