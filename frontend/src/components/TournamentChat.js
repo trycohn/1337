@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './TournamentChat.css';
 import { ensureHttps } from '../utils/userHelpers';
-import api from '../services/api';
+import api from '../utils/api';
 
 function TournamentChat({ messages, newMessage, onInputChange, onSubmit, onKeyPress, chatEndRef, user, tournamentId }) {
     const [showParticipantsModal, setShowParticipantsModal] = useState(false);
