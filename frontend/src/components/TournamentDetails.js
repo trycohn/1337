@@ -10,6 +10,10 @@ import { ensureHttps } from '../utils/userHelpers';
 import { isCounterStrike2, gameHasMaps, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
 
 // Импорт уведомлений и тостов
+// Импорт модулярной системы V4.2.1
+import useTournamentModals from '../hooks/tournament/useTournamentModals';
+import MatchResultModal from './tournament/modals/MatchResultModal';
+import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
 
 // eslint-disable-next-line no-unused-vars
 import { useUser } from '../context/UserContext';
@@ -202,6 +206,9 @@ function TournamentDetails() {
     
     // Проверяем, соединились ли с вебсокетом
     const [wsConnected, setWsConnected] = useState(false);
+    
+    // 🆕 ИНТЕГРАЦИЯ МОДУЛЬНОЙ СИСТЕМЫ V4.2.1
+    const tournamentModals = useTournamentModals();
     
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
@@ -1347,43 +1354,21 @@ const getDefaultMap = useCallback((game) => {
     // Функция для просмотра деталей завершенного матча
     const viewMatchDetails = (matchId) => {
         try {
+            console.log('🔍 [TournamentDetails] viewMatchDetails вызван с matchId:', matchId);
+            
             const matchData = matches.find(m => m.id === parseInt(matchId));
             if (!matchData) {
-                console.error(`Матч с ID ${matchId} не найден`);
-            return;
-        }
-
-            // Если матч не завершен, не показываем детали
-            if (!matchData.winner_team_id) {
-            return;
-        }
-
-            const match = {
-                id: matchData.id,
-                team1: tournament.participants.find(p => p.id === matchData.team1_id)?.name || 'Участник 1',
-                team2: tournament.participants.find(p => p.id === matchData.team2_id)?.name || 'Участник 2',
-                score1: matchData.score1,
-                score2: matchData.score2,
-                winner_id: matchData.winner_team_id,
-                maps: []
-            };
-
-            // Если есть данные о картах и это CS2, парсим их
-            if (matchData.maps_data && gameHasMaps(tournament.game)) {
-                try {
-                    const parsedMapsData = JSON.parse(matchData.maps_data);
-                    if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
-                        match.maps = parsedMapsData;
-                    }
-                } catch (e) {
-                    console.error('Ошибка при разборе данных карт:', e);
-                }
+                console.error(`❌ [TournamentDetails] Матч с ID ${matchId} не найден`);
+                return;
             }
 
-            setMatchDetails(match);
-            setViewingMatchDetails(true);
+            console.log('✅ [TournamentDetails] Найден матч:', matchData);
+            
+            // 🆕 ИСПОЛЬЗУЕМ МОДУЛЬНУЮ СИСТЕМУ V4.2.1
+            tournamentModals.openMatchResultModal(matchData);
+            
         } catch (error) {
-            console.error('Ошибка при просмотре деталей матча:', error);
+            console.error('❌ [TournamentDetails] Ошибка при просмотре деталей матча:', error);
         }
     };
 
@@ -2769,6 +2754,22 @@ const getDefaultMap = useCallback((game) => {
                     </div>
                 </div>
             )}
+            
+            {/* 🆕 МОДУЛЬНЫЕ КОМПОНЕНТЫ V4.2.1 */}
+            <MatchResultModal
+                tournament={tournament}
+                matches={matches}
+                onUpdateMatch={fetchTournamentData}
+                tournamentModals={tournamentModals}
+                canEditMatches={canEditMatches}
+                getGameMaps={getGameMaps}
+            />
+            
+            <MatchDetailsModal
+                tournament={tournament}
+                matches={matches}
+                tournamentModals={tournamentModals}
+            />
         </section>
     );
 }
