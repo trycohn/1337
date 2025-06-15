@@ -1,28 +1,64 @@
 // Импорты React и связанные
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../services/api';
-import io from 'socket.io-client';
-import BracketRenderer from './BracketRenderer';
-import TournamentChat from './TournamentChat';
-import TeamGenerator from './TeamGenerator';
-import toast from 'react-hot-toast';
+import React, { useState, useRef, useEffect, Suspense, useCallback, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { io } from 'socket.io-client';
+import api from '../utils/api';
 import './TournamentDetails.css';
-
-// 🆕 МОДУЛЬНЫЕ ИМПОРТЫ V4.2.1
-import useTournamentModals from '../hooks/tournament/useTournamentModals';
-import MatchResultModal from './tournament/modals/MatchResultModal';
-import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
-
+import TeamGenerator from './TeamGenerator';
+import { ensureHttps } from '../utils/userHelpers';
 // Импортируем вспомогательные функции для работы с картами
 import { isCounterStrike2, gameHasMaps, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
-import { ensureHttps } from '../utils/userHelpers';
 
 // Импорт уведомлений и тостов
-import { useToast } from './Notifications/ToastContext';
 
 // eslint-disable-next-line no-unused-vars
+import TournamentChat from './TournamentChat';
+// eslint-disable-next-line no-unused-vars
 import { useUser } from '../context/UserContext';
+
+// Используем React.lazy для асинхронной загрузки тяжелого компонента
+const LazyBracketRenderer = React.lazy(() => 
+    import('./BracketRenderer').catch(err => {
+        console.error('Ошибка при загрузке BracketRenderer:', err);
+        // Возвращаем fallback компонент в случае ошибки
+        return { 
+            default: () => (
+                <div className="bracket-error">
+                    Не удалось загрузить турнирную сетку. Пожалуйста, обновите страницу.
+                </div>
+            ) 
+        };
+    })
+);
+
+// Компонент для случаев ошибок при рендеринге сетки
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error('Ошибка в BracketRenderer:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="bracket-error">
+                    Произошла ошибка при отображении турнирной сетки. 
+                    Пожалуйста, обновите страницу или попробуйте позже.
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
 
 // Глобальные константы
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
@@ -44,17 +80,6 @@ const GAME_CONFIGS = {
 };
 
 // Функция для проверки, поддерживает ли игра карты
-const gameHasMaps = (game) => {
-    if (isCounterStrike2(game)) {
-        return true;
-    }
-    
-    // Добавлять проверки для других игр по мере необходимости
-    // if (isValorant(game)) return true;
-    
-    return false;
-};
-
 // Компонент для отображения оригинального списка участников
 const OriginalParticipantsList = ({ participants, tournament }) => {
   if (!participants || participants.length === 0) {
@@ -109,8 +134,6 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
 
 function TournamentDetails() {
     const { id } = useParams();
-    const toast = useToast(); // Получаем функции для отображения toast-уведомлений
-    const navigate = useNavigate();
     
     // eslint-disable-next-line no-unused-vars
     const [tournament, setTournament] = useState(null);
@@ -174,9 +197,6 @@ function TournamentDetails() {
     
     // Проверяем, соединились ли с вебсокетом
     const [wsConnected, setWsConnected] = useState(false);
-    
-    // 🆕 ИНТЕГРАЦИЯ МОДУЛЬНОЙ СИСТЕМЫ V4.2.1
-    const modals = useTournamentModals();
     
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
@@ -581,6 +601,8 @@ const getDefaultMap = useCallback((game) => {
         }
     }, [user, tournament, id]);
     
+
+
         // Настройка Socket.IO для получения обновлений турнира
     const setupWebSocket = useCallback(() => {
         const token = localStorage.getItem('token');
@@ -1053,18 +1075,18 @@ const getDefaultMap = useCallback((game) => {
 
         if (!canGenerateBracket) {
             setMessage('У вас нет прав для генерации сетки или сетка уже сгенерирована');
-            toast.warning('У вас нет прав для генерации сетки или сетка уже сгенерирована');
+            console.logwarning('У вас нет прав для генерации сетки или сетка уже сгенерирована');
             return;
         }
 
         try {
             setMessage('Генерация сетки...');
-            toast.info('Начинаем генерацию сетки...');
+            console.loginfo('Начинаем генерацию сетки...');
             
             // Проверка количества участников
             if (!tournament.participants || tournament.participants.length < 2) {
                 setMessage('Недостаточно участников для генерации сетки. Минимум 2 участника.');
-                toast.error('Недостаточно участников для генерации сетки. Минимум 2 участника.');
+                console.logerror('Недостаточно участников для генерации сетки. Минимум 2 участника.');
                 return;
             }
             
@@ -1103,7 +1125,7 @@ const getDefaultMap = useCallback((game) => {
             }
             
             setMessage('Сетка успешно сгенерирована');
-            toast.success('Сетка успешно сгенерирована!');
+            console.logsuccess('Сетка успешно сгенерирована!');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
             
@@ -1128,7 +1150,7 @@ const getDefaultMap = useCallback((game) => {
             }
             
             setMessage(errorMessage);
-            toast.error(errorMessage);
+            console.logerror(errorMessage);
             
             // Пытаемся синхронизировать данные с сервера
             try {
@@ -1455,41 +1477,44 @@ const getDefaultMap = useCallback((game) => {
 
     // Функция для просмотра деталей завершенного матча
     const viewMatchDetails = (matchId) => {
-        console.log('🔍 [viewMatchDetails] Клик по матчу:', { matchId, matches, tournament });
-        
         try {
             const matchData = matches.find(m => m.id === parseInt(matchId));
-            console.log('🔍 [viewMatchDetails] Найденный матч:', matchData);
-            
             if (!matchData) {
                 console.error(`Матч с ID ${matchId} не найден`);
-                setMessage(`Матч с ID ${matchId} не найден`);
-                return;
+            return;
+        }
+
+            // Если матч не завершен, не показываем детали
+            if (!matchData.winner_team_id) {
+            return;
+        }
+
+            const match = {
+                id: matchData.id,
+                team1: tournament.participants.find(p => p.id === matchData.team1_id)?.name || 'Участник 1',
+                team2: tournament.participants.find(p => p.id === matchData.team2_id)?.name || 'Участник 2',
+                score1: matchData.score1,
+                score2: matchData.score2,
+                winner_id: matchData.winner_team_id,
+                maps: []
+            };
+
+            // Если есть данные о картах и это CS2, парсим их
+            if (matchData.maps_data && gameHasMaps(tournament.game)) {
+                try {
+                    const parsedMapsData = JSON.parse(matchData.maps_data);
+                    if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
+                        match.maps = parsedMapsData;
+                    }
+                } catch (e) {
+                    console.error('Ошибка при разборе данных карт:', e);
+                }
             }
 
-            // 🆕 ИСПОЛЬЗУЕМ МОДУЛЬНУЮ СИСТЕМУ
-            // Проверяем права и статус матча для определения типа модального окна
-            const canEdit = isAdminOrCreator && tournament?.status !== 'completed';
-            const hasResults = matchData.winner_team_id;
-            
-            if (canEdit && !hasResults) {
-                // Матч не завершен, админ может редактировать результат
-                console.log('🔧 [viewMatchDetails] Открываем окно редактирования результата');
-                modals.openMatchResultModal(matchData);
-            } else if (hasResults) {
-                // Матч завершен, показываем детали
-                console.log('📋 [viewMatchDetails] Открываем окно просмотра деталей');
-                modals.openMatchDetailsModal(matchData);
-            } else {
-                // Не можем ни редактировать, ни просматривать
-                console.log('❌ [viewMatchDetails] Нет прав для действий с матчем');
-                setMessage('Матч еще не начался или у вас нет прав для его редактирования');
-                setTimeout(() => setMessage(''), 3000);
-            }
+            setMatchDetails(match);
+            setViewingMatchDetails(true);
         } catch (error) {
-            console.error('❌ [viewMatchDetails] Ошибка при обработке клика по матчу:', error);
-            setMessage('Произошла ошибка при открытии информации о матче');
-            setTimeout(() => setMessage(''), 3000);
+            console.error('Ошибка при просмотре деталей матча:', error);
         }
     };
 
@@ -1574,12 +1599,12 @@ const getDefaultMap = useCallback((game) => {
             
             console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
             // Используем наше toast-уведомление
-            toast.success(`Кэш приглашения для пользователя #${userId} очищен`);
+            console.logsuccess(`Кэш приглашения для пользователя #${userId} очищен`);
             setMessage(`Кэш приглашения для пользователя #${userId} очищен`);
         } catch (error) {
             console.error('Ошибка при очистке кэша приглашения:', error);
             // Используем наше toast-уведомление
-            toast.error('Ошибка при очистке кэша приглашения');
+            console.logerror('Ошибка при очистке кэша приглашения');
             setMessage('Ошибка при очистке кэша приглашения');
         }
     };
@@ -1595,12 +1620,12 @@ const getDefaultMap = useCallback((game) => {
             
             console.log('Кэш приглашений полностью очищен');
             // Используем наше toast-уведомление
-            toast.success('Весь кэш приглашений очищен');
+            console.logsuccess('Весь кэш приглашений очищен');
             setMessage('Весь кэш приглашений очищен');
         } catch (error) {
             console.error('Ошибка при очистке всего кэша приглашений:', error);
             // Используем наше toast-уведомление
-            toast.error('Ошибка при очистке кэша приглашений');
+            console.logerror('Ошибка при очистке кэша приглашений');
             setMessage('Ошибка при очистке кэша приглашений');
         }
     };
@@ -1613,7 +1638,7 @@ const getDefaultMap = useCallback((game) => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    toast.error('Необходима авторизация для удаления участника');
+                    console.logerror('Необходима авторизация для удаления участника');
                     return;
                 }
                 
@@ -1623,9 +1648,9 @@ const getDefaultMap = useCallback((game) => {
                 
                 // Обновляем список участников
                 await fetchTournamentData();
-                toast.success('Участник успешно удален');
+                console.logsuccess('Участник успешно удален');
             } catch (error) {
-                toast.error(error.response?.data?.error || 'Ошибка при удалении участника');
+                console.logerror(error.response?.data?.error || 'Ошибка при удалении участника');
                 console.error('Ошибка при удалении участника:', error);
             } finally {
                 setUserIdToRemove('');
@@ -1637,7 +1662,7 @@ const getDefaultMap = useCallback((game) => {
         } else {
             setUserIdToRemove('');
         }
-    }, [userIdToRemove, id, toast, fetchTournamentData]);
+    }, [userIdToRemove, id, fetchTournamentData]);
 
     if (!tournament) return <p>Загрузка...</p>;
 
@@ -1862,7 +1887,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения короткого описания турнира
     const handleSaveDescription = async () => {
         if (!descriptionRef.current.trim()) {
-            toast.error('Описание не может быть пустым');
+            console.logerror('Описание не может быть пустым');
             return;
         }
         
@@ -1891,11 +1916,11 @@ const getDefaultMap = useCallback((game) => {
                 description: descriptionRef.current
             }));
             
-            toast.success('Описание успешно обновлено');
+            console.logsuccess('Описание успешно обновлено');
             setIsEditingDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении описания:', error);
-            toast.error(error.message || 'Не удалось обновить описание');
+            console.logerror(error.message || 'Не удалось обновить описание');
         } finally {
             setLoading(false);
         }
@@ -1904,7 +1929,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения призового фонда
     const handleSavePrizePool = async () => {
         if (!prizePoolRef.current.trim()) {
-            toast.error('Информация о призовом фонде не может быть пустой');
+            console.logerror('Информация о призовом фонде не может быть пустой');
             return;
         }
         
@@ -1933,11 +1958,11 @@ const getDefaultMap = useCallback((game) => {
                 prize_pool: prizePoolRef.current
             }));
             
-            toast.success('Призовой фонд успешно обновлен');
+            console.logsuccess('Призовой фонд успешно обновлен');
             setIsEditingPrizePool(false);
         } catch (error) {
             console.error('Ошибка при обновлении призового фонда:', error);
-            toast.error(error.message || 'Не удалось обновить призовой фонд');
+            console.logerror(error.message || 'Не удалось обновить призовой фонд');
         } finally {
             setLoading(false);
         }
@@ -1946,7 +1971,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения полного описания турнира
     const handleSaveFullDescription = async () => {
         if (!fullDescriptionRef.current.trim()) {
-            toast.error('Полное описание не может быть пустым');
+            console.logerror('Полное описание не может быть пустым');
             return;
         }
         
@@ -1975,11 +2000,11 @@ const getDefaultMap = useCallback((game) => {
                 full_description: fullDescriptionRef.current
             }));
             
-            toast.success('Полное описание успешно обновлено');
+            console.logsuccess('Полное описание успешно обновлено');
             setIsEditingFullDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении полного описания:', error);
-            toast.error(error.message || 'Не удалось обновить полное описание');
+            console.logerror(error.message || 'Не удалось обновить полное описание');
         } finally {
             setLoading(false);
         }
@@ -1988,7 +2013,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения правил турнира
     const handleSaveRules = async () => {
         if (!rulesRef.current.trim()) {
-            toast.error('Правила не могут быть пустыми');
+            console.logerror('Правила не могут быть пустыми');
             return;
         }
         
@@ -2017,11 +2042,11 @@ const getDefaultMap = useCallback((game) => {
                 rules: rulesRef.current
             }));
             
-            toast.success('Правила успешно обновлены');
+            console.logsuccess('Правила успешно обновлены');
             setIsEditingRules(false);
         } catch (error) {
             console.error('Ошибка при обновлении правил:', error);
-            toast.error(error.message || 'Не удалось обновить правила');
+            console.logerror(error.message || 'Не удалось обновить правила');
         } finally {
             setLoading(false);
         }
@@ -2089,11 +2114,11 @@ const getDefaultMap = useCallback((game) => {
                     localStorage.setItem(cacheKey, JSON.stringify(invitedUsers));
                 }
                 
-                toast.success('Приглашение успешно отправлено');
+                console.logsuccess('Приглашение успешно отправлено');
             }
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
-            toast.error(error.response?.data?.error || 'Не удалось отправить приглашение');
+            console.logerror(error.response?.data?.error || 'Не удалось отправить приглашение');
         } finally {
             setLoading(false);
         }
@@ -2122,10 +2147,10 @@ const getDefaultMap = useCallback((game) => {
             
             // Обновляем данные турнира
             fetchTournamentData();
-            toast.success('Турнир успешно запущен');
+            console.logsuccess('Турнир успешно запущен');
         } catch (error) {
             console.error('Ошибка при запуске турнира:', error);
-            toast.error(error.message || 'Не удалось запустить турнир');
+            console.logerror(error.message || 'Не удалось запустить турнир');
         } finally {
             setLoading(false);
         }
@@ -2133,7 +2158,7 @@ const getDefaultMap = useCallback((game) => {
 
     // Функция для пересоздания сетки турнира
     const handleRegenerateBracket = () => {
-        toast.info("Функция пересоздания сетки отключена");
+        console.loginfo("Функция пересоздания сетки отключена");
     };
     
     // Функция для завершения турнира
@@ -2157,7 +2182,7 @@ const getDefaultMap = useCallback((game) => {
     
     // Функция для сброса результатов матчей
     const handleClearMatchResults = () => {
-        toast.info("Функция сброса результатов отключена");
+        console.loginfo("Функция сброса результатов отключена");
     };
 
     return (
@@ -2449,7 +2474,6 @@ const getDefaultMap = useCallback((game) => {
                             onTeamsUpdated={fetchTournamentData}
                             onRemoveParticipant={setUserIdToRemove}
                             isAdminOrCreator={isAdminOrCreator}
-                            toast={toast}
                         />
                     )}
 
@@ -2488,7 +2512,7 @@ const getDefaultMap = useCallback((game) => {
                                                         console.log('Попытка рендеринга сетки с количеством матчей:', games.length);
                                                         // Безопасный рендеринг сетки
                                                         return (
-                                        <BracketRenderer
+                                        <LazyBracketRenderer
                                             games={games}
                                             canEditMatches={canEditMatches}
                                             selectedMatch={selectedMatch}
@@ -2909,22 +2933,6 @@ const getDefaultMap = useCallback((game) => {
                     </div>
                 </div>
             )}
-            
-            {/* 🆕 МОДУЛЬНЫЕ МОДАЛЬНЫЕ ОКНА V4.2.1 */}
-            <MatchResultModal
-                isOpen={modals.isMatchResultModalOpen}
-                onClose={modals.closeMatchResultModal}
-                selectedMatch={modals.selectedMatch}
-                onSubmit={handleUpdateMatch}
-                tournament={tournament}
-                availableMaps={availableMaps}
-            />
-            
-            <MatchDetailsModal
-                isOpen={modals.isMatchDetailsModalOpen}
-                onClose={modals.closeMatchDetailsModal}
-                selectedMatch={modals.selectedMatch}
-            />
         </section>
     );
 }
