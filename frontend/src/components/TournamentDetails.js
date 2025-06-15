@@ -1074,18 +1074,18 @@ const getDefaultMap = useCallback((game) => {
 
         if (!canGenerateBracket) {
             setMessage('У вас нет прав для генерации сетки или сетка уже сгенерирована');
-            toast.warning('У вас нет прав для генерации сетки или сетка уже сгенерирована');
+            console.log('У вас нет прав для генерации сетки или сетка уже сгенерирована');
             return;
         }
 
         try {
             setMessage('Генерация сетки...');
-            toast.info('Начинаем генерацию сетки...');
+            console.log('Начинаем генерацию сетки...');
             
             // Проверка количества участников
             if (!tournament.participants || tournament.participants.length < 2) {
                 setMessage('Недостаточно участников для генерации сетки. Минимум 2 участника.');
-                toast.error('Недостаточно участников для генерации сетки. Минимум 2 участника.');
+                console.log('Недостаточно участников для генерации сетки. Минимум 2 участника.');
                 return;
             }
             
@@ -1124,7 +1124,7 @@ const getDefaultMap = useCallback((game) => {
             }
             
             setMessage('Сетка успешно сгенерирована');
-            toast.success('Сетка успешно сгенерирована!');
+            console.log('Сетка успешно сгенерирована!');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
             
@@ -1149,7 +1149,7 @@ const getDefaultMap = useCallback((game) => {
             }
             
             setMessage(errorMessage);
-            toast.error(errorMessage);
+            console.error(errorMessage);
             
             // Пытаемся синхронизировать данные с сервера
             try {
@@ -1598,12 +1598,12 @@ const getDefaultMap = useCallback((game) => {
             
             console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
             // Используем наше toast-уведомление
-            toast.success(`Кэш приглашения для пользователя #${userId} очищен`);
+            console.log(`Кэш приглашения для пользователя #${userId} очищен`);
             setMessage(`Кэш приглашения для пользователя #${userId} очищен`);
         } catch (error) {
             console.error('Ошибка при очистке кэша приглашения:', error);
             // Используем наше toast-уведомление
-            toast.error('Ошибка при очистке кэша приглашения');
+            console.error('Ошибка при очистке кэша приглашения');
             setMessage('Ошибка при очистке кэша приглашения');
         }
     };
@@ -1619,12 +1619,12 @@ const getDefaultMap = useCallback((game) => {
             
             console.log('Кэш приглашений полностью очищен');
             // Используем наше toast-уведомление
-            toast.success('Весь кэш приглашений очищен');
+            console.log('Весь кэш приглашений очищен');
             setMessage('Весь кэш приглашений очищен');
         } catch (error) {
             console.error('Ошибка при очистке всего кэша приглашений:', error);
             // Используем наше toast-уведомление
-            toast.error('Ошибка при очистке кэша приглашений');
+            console.error('Ошибка при очистке кэша приглашений');
             setMessage('Ошибка при очистке кэша приглашений');
         }
     };
@@ -1637,7 +1637,7 @@ const getDefaultMap = useCallback((game) => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    toast.error('Необходима авторизация для удаления участника');
+                    console.error('Необходима авторизация для удаления участника');
                     return;
                 }
                 
@@ -1647,9 +1647,9 @@ const getDefaultMap = useCallback((game) => {
                 
                 // Обновляем список участников
                 await fetchTournamentData();
-                toast.success('Участник успешно удален');
+                console.log('Участник успешно удален');
             } catch (error) {
-                toast.error(error.response?.data?.error || 'Ошибка при удалении участника');
+                console.error(error.response?.data?.error || 'Ошибка при удалении участника');
                 console.error('Ошибка при удалении участника:', error);
             } finally {
                 setUserIdToRemove('');
@@ -1661,7 +1661,7 @@ const getDefaultMap = useCallback((game) => {
         } else {
             setUserIdToRemove('');
         }
-    }, [userIdToRemove, id, toast, fetchTournamentData]);
+    }, [userIdToRemove, id, fetchTournamentData]);
 
     if (!tournament) return <p>Загрузка...</p>;
 
@@ -1886,7 +1886,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения короткого описания турнира
     const handleSaveDescription = async () => {
         if (!descriptionRef.current.trim()) {
-            toast.error('Описание не может быть пустым');
+            console.error('Описание не может быть пустым');
             return;
         }
         
@@ -1915,11 +1915,11 @@ const getDefaultMap = useCallback((game) => {
                 description: descriptionRef.current
             }));
             
-            toast.success('Описание успешно обновлено');
+            console.log('Описание успешно обновлено');
             setIsEditingDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении описания:', error);
-            toast.error(error.message || 'Не удалось обновить описание');
+            console.error(error.message || 'Не удалось обновить описание');
         } finally {
             setLoading(false);
         }
@@ -1928,7 +1928,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения призового фонда
     const handleSavePrizePool = async () => {
         if (!prizePoolRef.current.trim()) {
-            toast.error('Информация о призовом фонде не может быть пустой');
+            console.error('Информация о призовом фонде не может быть пустой');
             return;
         }
         
@@ -1957,11 +1957,11 @@ const getDefaultMap = useCallback((game) => {
                 prize_pool: prizePoolRef.current
             }));
             
-            toast.success('Призовой фонд успешно обновлен');
+            console.log('Призовой фонд успешно обновлен');
             setIsEditingPrizePool(false);
         } catch (error) {
             console.error('Ошибка при обновлении призового фонда:', error);
-            toast.error(error.message || 'Не удалось обновить призовой фонд');
+            console.error(error.message || 'Не удалось обновить призовой фонд');
         } finally {
             setLoading(false);
         }
@@ -1970,7 +1970,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения полного описания турнира
     const handleSaveFullDescription = async () => {
         if (!fullDescriptionRef.current.trim()) {
-            toast.error('Полное описание не может быть пустым');
+            console.error('Полное описание не может быть пустым');
             return;
         }
         
@@ -1999,11 +1999,11 @@ const getDefaultMap = useCallback((game) => {
                 full_description: fullDescriptionRef.current
             }));
             
-            toast.success('Полное описание успешно обновлено');
+            console.log('Полное описание успешно обновлено');
             setIsEditingFullDescription(false);
         } catch (error) {
             console.error('Ошибка при обновлении полного описания:', error);
-            toast.error(error.message || 'Не удалось обновить полное описание');
+            console.error(error.message || 'Не удалось обновить полное описание');
         } finally {
             setLoading(false);
         }
@@ -2012,7 +2012,7 @@ const getDefaultMap = useCallback((game) => {
     // Функция сохранения правил турнира
     const handleSaveRules = async () => {
         if (!rulesRef.current.trim()) {
-            toast.error('Правила не могут быть пустыми');
+            console.error('Правила не могут быть пустыми');
             return;
         }
         
@@ -2041,11 +2041,11 @@ const getDefaultMap = useCallback((game) => {
                 rules: rulesRef.current
             }));
             
-            toast.success('Правила успешно обновлены');
+            console.log('Правила успешно обновлены');
             setIsEditingRules(false);
         } catch (error) {
             console.error('Ошибка при обновлении правил:', error);
-            toast.error(error.message || 'Не удалось обновить правила');
+            console.error(error.message || 'Не удалось обновить правила');
         } finally {
             setLoading(false);
         }
@@ -2113,11 +2113,11 @@ const getDefaultMap = useCallback((game) => {
                     localStorage.setItem(cacheKey, JSON.stringify(invitedUsers));
                 }
                 
-                toast.success('Приглашение успешно отправлено');
+                console.log('Приглашение успешно отправлено');
             }
         } catch (error) {
             console.error('Ошибка при отправке приглашения:', error);
-            toast.error(error.response?.data?.error || 'Не удалось отправить приглашение');
+            console.error(error.response?.data?.error || 'Не удалось отправить приглашение');
         } finally {
             setLoading(false);
         }
@@ -2146,10 +2146,10 @@ const getDefaultMap = useCallback((game) => {
             
             // Обновляем данные турнира
             fetchTournamentData();
-            toast.success('Турнир успешно запущен');
+            console.log('Турнир успешно запущен');
         } catch (error) {
             console.error('Ошибка при запуске турнира:', error);
-            toast.error(error.message || 'Не удалось запустить турнир');
+            console.error(error.message || 'Не удалось запустить турнир');
         } finally {
             setLoading(false);
         }
@@ -2157,7 +2157,7 @@ const getDefaultMap = useCallback((game) => {
 
     // Функция для пересоздания сетки турнира
     const handleRegenerateBracket = () => {
-        toast.info("Функция пересоздания сетки отключена");
+        console.log("Функция пересоздания сетки отключена");
     };
     
     // Функция для завершения турнира
@@ -2181,7 +2181,7 @@ const getDefaultMap = useCallback((game) => {
     
     // Функция для сброса результатов матчей
     const handleClearMatchResults = () => {
-        toast.info("Функция сброса результатов отключена");
+        console.log("Функция сброса результатов отключена");
     };
 
     return (
@@ -2473,7 +2473,6 @@ const getDefaultMap = useCallback((game) => {
                             onTeamsUpdated={fetchTournamentData}
                             onRemoveParticipant={setUserIdToRemove}
                             isAdminOrCreator={isAdminOrCreator}
-                            toast={toast}
                         />
                     )}
 
