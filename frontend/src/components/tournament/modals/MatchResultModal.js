@@ -330,7 +330,7 @@ const MatchResultModal = ({
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // 🔧 КРИТИЧЕСКАЯ ОТЛАДКА: проверяем все данные перед отправкой
+        // 🎯 ПРОВЕРЯЕМ ДАННЫЕ ПЕРЕД ОТПРАВКОЙ
         console.log('🎯 handleSubmit: начало обработки:', {
             selectedMatch: selectedMatch,
             selectedMatchType: typeof selectedMatch,
@@ -340,7 +340,7 @@ const MatchResultModal = ({
             selectedWinner: selectedWinner
         });
 
-        // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ID МАТЧА
+        // 🔧 ОБРАБОТКА ID МАТЧА (ИСПРАВЛЕНО: теперь всегда получаем объект)
         let matchId = null;
         
         if (typeof selectedMatch === 'number') {

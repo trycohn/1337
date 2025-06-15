@@ -77,7 +77,9 @@ function TournamentDetails() {
     // 🎯 UI СОСТОЯНИЯ
     const [message, setMessage] = useState('');
     const [wsConnected, setWsConnected] = useState(false);
-    const [selectedMatch, setSelectedMatch] = useState(null);
+    // 🔧 ИСПРАВЛЕНО: Разделяем selectedMatch на два состояния
+    const [selectedMatchId, setSelectedMatchId] = useState(null); // Для выделения в BracketRenderer (число)
+    const [selectedMatchData, setSelectedMatchData] = useState(null); // Для MatchDetailsModal (объект)
     const [activeMatchTab, setActiveMatchTab] = useState('overview'); // 🚀 НОВОЕ ДЛЯ ВАРИАНТА 3
     const [mixedTeams, setMixedTeams] = useState([]);
     const [ratingType, setRatingType] = useState('faceit');
@@ -1524,7 +1526,8 @@ function TournamentDetails() {
                     editBlockReason: 'Победитель уже участвует в следующих матчах'
                 };
                 
-                setSelectedMatch(matchWithCompositions);
+                // 🔧 ИСПРАВЛЕНО: Устанавливаем полный объект матча
+                setSelectedMatchData(matchWithCompositions);
             }
             return;
         }
@@ -1549,7 +1552,8 @@ function TournamentDetails() {
                 team2_composition: team2Composition
             };
             
-            setSelectedMatch(matchWithCompositions);
+            // 🔧 ИСПРАВЛЕНО: Устанавливаем полный объект матча
+            setSelectedMatchData(matchWithCompositions);
             return;
         }
         
@@ -2319,8 +2323,8 @@ function TournamentDetails() {
                                     <BracketRenderer
                                         games={bracketGames}
                                         canEditMatches={userPermissions.canEdit && tournament.status !== 'completed'}
-                                        selectedMatch={selectedMatch}
-                                        setSelectedMatch={setSelectedMatch}
+                                        selectedMatch={selectedMatchId}  // 🔧 ИСПРАВЛЕНО: Передаем ID для выделения
+                                        setSelectedMatch={setSelectedMatchId}  // 🔧 ИСПРАВЛЕНО: Функция для установки ID
                                         handleTeamClick={handleTeamClick}
                                         format={tournament.format}
                                         onMatchClick={handleMatchClick}
@@ -2566,8 +2570,8 @@ function TournamentDetails() {
                                     <BracketRenderer 
                                         games={bracketGames}
                                     canEditMatches={userPermissions.canEdit && tournament.status !== 'completed'}
-                                        selectedMatch={selectedMatch}
-                                        setSelectedMatch={setSelectedMatch}
+                                        selectedMatch={selectedMatchId}  // 🔧 ИСПРАВЛЕНО: Используем selectedMatchId
+                                        setSelectedMatch={setSelectedMatchId}  // 🔧 ИСПРАВЛЕНО: Используем setSelectedMatchId
                                         handleTeamClick={handleTeamClick}
                                         format={tournament.format}
                                         onMatchClick={handleMatchClick}
@@ -2847,13 +2851,20 @@ function TournamentDetails() {
 
                 {/* 🎯 МОДАЛЬНОЕ ОКНО ПРОСМОТРА ДЕТАЛЕЙ МАТЧА */}
                 <MatchDetailsModal
-                    isOpen={!!selectedMatch}
-                    onClose={() => setSelectedMatch(null)}
-                    selectedMatch={selectedMatch}
+                    isOpen={!!selectedMatchData}  // 🔧 ИСПРАВЛЕНО: Используем selectedMatchData
+                    onClose={() => setSelectedMatchData(null)}  // 🔧 ИСПРАВЛЕНО: Сбрасываем selectedMatchData
+                    selectedMatch={selectedMatchData}  // 🔧 ИСПРАВЛЕНО: Передаем полный объект матча
                     canEdit={userPermissions.canEdit && tournament?.status !== 'completed'}
                     onEdit={(match) => {
-                        setSelectedMatch(null);
-                        modals.openMatchResultModal(match);
+                        // 🔧 ИСПРАВЛЕНО: match уже является полным объектом матча, не ID
+                        console.log('🔧 MatchDetailsModal onEdit вызван с объектом матча:', {
+                            match: match,
+                            matchId: match?.id,
+                            hasId: !!match?.id,
+                            matchType: typeof match
+                        });
+                        setSelectedMatchData(null);  // 🔧 ИСПРАВЛЕНО: Закрываем MatchDetailsModal
+                        modals.openMatchResultModal(match);  // 🔧 ИСПРАВЛЕНО: Передаем полный объект
                     }}
                     tournament={tournament}
                 />
