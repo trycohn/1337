@@ -70,6 +70,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .participants-modal .modal-content::-webkit-scrollbar {
@@ -90,10 +92,11 @@
 }
 
 .participants-count {
-    margin: 16px 20px 8px 20px;
+    margin: 16px 0 8px 0;
     color: #888888;
     font-size: 14px;
     font-weight: 400;
+    text-align: center;
 }
 
 .participants-list {
@@ -101,20 +104,17 @@
     flex-direction: column;
     gap: 2px;
     width: 100%;
-    padding: 0 0 16px 0;
+    padding: 0 16px 16px;
 }
 
 .participant-item {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px 20px;
-    margin: 0;
+    gap: 12px;
+    padding: 12px 0;
     border-radius: 8px;
     transition: all 0.2s ease;
     cursor: pointer;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 .participant-item:hover {
