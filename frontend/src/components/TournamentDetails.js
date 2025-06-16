@@ -248,58 +248,91 @@ function TournamentDetails() {
         const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
         const cacheValidityPeriod = 2 * 60 * 1000; // 2 минуты в миллисекундах
         
-        // Если есть валидный кеш (не старше 2 минут), используем его
+        // Валидация кешированных данных
+        let useCache = false;
         if (cachedTournament && cacheTimestamp) {
-            const now = new Date().getTime();
-            const cacheAge = now - parseInt(cacheTimestamp);
-            
-            if (cacheAge < cacheValidityPeriod) {
-                console.log('📦 Используем кешированные данные турнира');
+            try {
+                const now = new Date().getTime();
+                const cacheAge = now - parseInt(cacheTimestamp);
                 const parsedTournament = JSON.parse(cachedTournament);
-                setTournament(parsedTournament);
-                setMatches(parsedTournament.matches || []);
-                setLoading(false);
-                return;
-            } else {
-                console.log('⏰ Кеш устарел, очищаем его');
+                
+                // Проверяем валидность кешированных данных
+                const isValidCache = cacheAge < cacheValidityPeriod && 
+                                   parsedTournament && 
+                                   parsedTournament.id && 
+                                   parsedTournament.name;
+                
+                if (isValidCache) {
+                    console.log('📦 Используем кешированные данные турнира');
+                    console.log('🏆 Кешированный турнир:', parsedTournament.name);
+                    console.log('👥 Кешированные участники:', parsedTournament.participants?.length || 0);
+                    console.log('🎯 Кешированные матчи:', parsedTournament.matches?.length || 0);
+                    console.log('🏅 Кешированные команды:', parsedTournament.teams?.length || 0);
+                    
+                    setTournament(parsedTournament);
+                    setMatches(parsedTournament.matches || []);
+                    
+                    // Сохраняем исходный список участников для отладки
+                    if (parsedTournament.participants) {
+                        setOriginalParticipants(parsedTournament.participants);
+                    }
+                    
+                    setLoading(false);
+                    useCache = true;
+                } else {
+                    console.log('⏰ Кеш устарел или поврежден, очищаем его');
+                    localStorage.removeItem(cacheKey);
+                    localStorage.removeItem(cacheTimestampKey);
+                }
+            } catch (parseError) {
+                console.error('❌ Ошибка парсинга кешированных данных:', parseError);
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
             }
         }
         
-        try {
-            console.log('🌐 Загружаем данные турнира', id, 'с сервера...');
-            const response = await api.get(`/tournaments/${id}`);
-            const tournamentData = response.data;
-            
-            console.log('✅ Данные турнира получены с сервера');
-            console.log('🏆 Турнир:', tournamentData.name);
-            console.log('👥 Участники:', tournamentData.participants?.length || 0);
-            console.log('🎯 Матчи:', tournamentData.matches?.length || 0);
-            console.log('🏅 Команды:', tournamentData.teams?.length || 0);
-            console.log('📋 Список участников:', tournamentData.participants);
-            console.log('🏆 Список команд:', tournamentData.teams);
-            
-            // Сохраняем исходный список участников для отладки
-            if (tournamentData.participants) {
-                console.log('💾 Сохраняем исходный список участников:', tournamentData.participants.length);
-                setOriginalParticipants(tournamentData.participants);
+        // Если кеш не используется, загружаем с сервера
+        if (!useCache) {
+            try {
+                console.log('🌐 Загружаем данные турнира', id, 'с сервера...');
+                const response = await api.get(`/tournaments/${id}`);
+                const tournamentData = response.data;
+                
+                console.log('✅ Данные турнира получены с сервера');
+                console.log('🏆 Турнир:', tournamentData.name);
+                console.log('👥 Участники:', tournamentData.participants?.length || 0);
+                console.log('🎯 Матчи:', tournamentData.matches?.length || 0);
+                console.log('🏅 Команды:', tournamentData.teams?.length || 0);
+                console.log('📋 Список участников:', tournamentData.participants);
+                console.log('🏆 Список команд:', tournamentData.teams);
+                
+                // Сохраняем исходный список участников для отладки
+                if (tournamentData.participants) {
+                    console.log('💾 Сохраняем исходный список участников:', tournamentData.participants.length);
+                    setOriginalParticipants(tournamentData.participants);
+                }
+                
+                setTournament(tournamentData);
+                setMatches(tournamentData.matches || []);
+                
+                // Сохраняем в кеш только валидные данные
+                if (tournamentData && tournamentData.id && tournamentData.name) {
+                    localStorage.setItem(cacheKey, JSON.stringify(tournamentData));
+                    localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+                }
+                
+                console.log('🏁 Загрузка данных турнира завершена');
+            } catch (error) {
+                console.error('❌ Ошибка загрузки турнира:', error);
+                setError('Ошибка загрузки турнира');
+                
+                // Очищаем поврежденный кеш при ошибке
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
             }
-            
-            setTournament(tournamentData);
-            setMatches(tournamentData.matches || []);
-            
-            // Сохраняем в кеш
-            localStorage.setItem(cacheKey, JSON.stringify(tournamentData));
-            localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
-            
-            console.log('🏁 Загрузка данных турнира завершена');
-        } catch (error) {
-            console.error('❌ Ошибка загрузки турнира:', error);
-            setError('Ошибка загрузки турнира');
-        } finally {
-            setLoading(false);
         }
+        
+        setLoading(false);
     }, [id]);
     
     // Функция для загрузки карт из БД
@@ -2209,6 +2242,26 @@ const getDefaultMap = useCallback((game) => {
         console.log("Функция сброса результатов отключена");
     };
 
+    // Функция для принудительной очистки кеша и перезагрузки
+    const forceClearCacheAndReload = async () => {
+        console.log('🧹 Принудительная очистка кеша турнира', id);
+        
+        // Очищаем все кеши связанные с турниром
+        const cacheKey = `tournament_cache_${id}`;
+        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+        localStorage.removeItem(cacheKey);
+        localStorage.removeItem(cacheTimestampKey);
+        
+        // Очищаем состояние
+        setTournament(null);
+        setMatches([]);
+        setOriginalParticipants([]);
+        setError(null);
+        
+        // Принудительно загружаем данные с сервера
+        await fetchTournamentData();
+    };
+
     return (
         <section className="tournament-details tournament-details-tournamentdetails">
             <div className="tournament-layout">
@@ -2506,23 +2559,32 @@ const getDefaultMap = useCallback((game) => {
                     {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
                         <div className="tournament-controls">
                             {isAdminOrCreator && (
-                                            <button 
+                                <button 
                                     className="start-tournament"
                                     onClick={handleStartTournament}
-                                            >
+                                >
                                     Начать турнир
-                                            </button>
-                                        )}
+                                </button>
+                            )}
                             {isAdminOrCreator && (
-                                            <button 
+                                <button 
                                     className="regenerate-bracket"
                                     onClick={handleRegenerateBracket}
-                                            >
+                                >
                                     Пересоздать сетку
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
+                                </button>
+                            )}
+                            {isAdminOrCreator && (
+                                <button 
+                                    className="clear-cache-button"
+                                    onClick={forceClearCacheAndReload}
+                                    title="Очистить кеш и перезагрузить данные турнира"
+                                >
+                                    🧹 Очистить кеш
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {Array.isArray(matches) && matches.length > 0 ? (
                         <>
                             {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
@@ -2585,6 +2647,13 @@ const getDefaultMap = useCallback((game) => {
                                         className="reload-button"
                                     >
                                         Обновить страницу
+                                    </button>
+                                    <button 
+                                        onClick={forceClearCacheAndReload} 
+                                        className="clear-cache-button"
+                                        title="Очистить кеш и перезагрузить данные"
+                                    >
+                                        🧹 Очистить кеш
                                     </button>
                                     {isAdminOrCreator && (
                                         <button 
