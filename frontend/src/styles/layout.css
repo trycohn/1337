@@ -34,9 +34,8 @@ main {
   color: #ffffff;
   padding: var(--spacing-md) 0;
   box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 10; /* меньше, чтобы не перекрывать модалки/контент */
+  position: relative;
+  z-index: 10;
 }
 
 .header-container {
@@ -76,7 +75,6 @@ main {
   display: flex;
   gap: var(--spacing-md);
   transition: all var(--transition-normal);
-  z-index: 20;
 }
 
 .navigation a, 
@@ -427,32 +425,44 @@ main {
   
   .hamburger {
     display: block;
-    z-index: 2000;
+    z-index: 1001;
   }
   
   .navigation {
     position: fixed;
     top: 0;
-    right: -300px;
-    width: 300px;
+    left: 0;
+    width: 100vw;
     height: 100vh;
-    background-color: var(--background-color);
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
     flex-direction: column;
-    padding: 60px var(--spacing-md) var(--spacing-md);
-    box-shadow: var(--shadow-md);
-    transition: right var(--transition-normal);
-    align-items: flex-start;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-xl);
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
   }
   
   .navigation.open {
-    right: 0;
+    transform: translateX(0);
   }
   
   .navigation a, 
   .navigation button {
-    width: 100%;
-    justify-content: flex-start;
-    padding: var(--spacing-md);
+    color: #ffffff;
+    font-size: 1.5rem;
+    padding: var(--spacing-lg);
+    width: auto;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .navigation a:hover, 
+  .navigation button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
   
   .col-md-1 { flex: 0 0 8.333333%; max-width: 8.333333%; }
@@ -502,10 +512,32 @@ main {
 
 /* на десктопах меню не фиксируется */
 @media (min-width: 769px) {
-  .navigation {
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    flex-direction: row !important;
+  .header {
+    position: sticky;
+    top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  main {
+    padding-top: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .header-logo img {
+    height: 30px;
+  }
+  
+  .header-logo-text {
+    font-size: var(--font-size-medium);
+  }
+  
+  .auth-block {
+    gap: var(--spacing-sm);
   }
 } 

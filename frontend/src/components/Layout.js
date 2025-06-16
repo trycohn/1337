@@ -210,8 +210,7 @@ function Layout() {
     return (
         <div className="home-container">
             {loading && <Loader />}
-            {!(isMobile && location.pathname === '/messages') && (
-                <header className="header">
+            <header className="header">
                     <div className="nav-container">
                         <button className="hamburger" onClick={toggleMenu}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -220,7 +219,15 @@ function Layout() {
                                 <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
                             </svg>
                         </button>
-                        <nav className={`navigation ${isMenuOpen ? 'open' : ''}`}>
+                        <nav 
+                            className={`navigation ${isMenuOpen ? 'open' : ''}`}
+                            onClick={(e) => {
+                                // Закрываем меню при клике по фону (не по ссылкам)
+                                if (e.target === e.currentTarget) {
+                                    setIsMenuOpen(false);
+                                }
+                            }}
+                        >
                             <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
                             <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                             {user && (
@@ -275,7 +282,6 @@ function Layout() {
                         )}
                     </div>
                 </header>
-            )}
 
             <main className={isMobile && location.pathname === '/messages' ? 'messenger-page' : ''}>
                 <Outlet />
