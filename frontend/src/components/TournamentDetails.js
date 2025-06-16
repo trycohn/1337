@@ -251,102 +251,54 @@ function TournamentDetails() {
         // Если есть валидный кеш (не старше 2 минут), используем его
         if (cachedTournament && cacheTimestamp) {
             const now = new Date().getTime();
-            const timestamp = parseInt(cacheTimestamp, 10);
+            const cacheAge = now - parseInt(cacheTimestamp);
             
-            if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
-                try {
-                    const parsedTournament = JSON.parse(cachedTournament);
-                    if (parsedTournament && parsedTournament.id) {
-                        console.log(`📦 Используем кешированные данные турнира ${id}`);
-                        console.log('👥 Участники из кеша:', parsedTournament.participants?.length || 0);
-                        console.log('🎯 Матчи из кеша:', parsedTournament.matches?.length || 0);
-                        
-                        setTournament(parsedTournament);
-                        setMatches(parsedTournament.matches || []);
-                        
-                        // Сохраняем исходный список участников при загрузке турнира
-                        if (parsedTournament.participants && parsedTournament.participants.length > 0) {
-                            console.log('💾 Сохраняем исходный список участников:', parsedTournament.participants.length);
-                            setOriginalParticipants(parsedTournament.participants);
-                        }
-                        
-                        setLoading(false);
-                        return;
-                    }
-                } catch (parseError) {
-                    console.error('❌ Ошибка при разборе кешированных данных турнира:', parseError);
-                    // Если произошла ошибка при разборе, очищаем кеш
-                    localStorage.removeItem(cacheKey);
-                    localStorage.removeItem(cacheTimestampKey);
-                }
+            if (cacheAge < cacheValidityPeriod) {
+                console.log('📦 Используем кешированные данные турнира');
+                const parsedTournament = JSON.parse(cachedTournament);
+                setTournament(parsedTournament);
+                setMatches(parsedTournament.matches || []);
+                setLoading(false);
+                return;
             } else {
                 console.log('⏰ Кеш устарел, очищаем его');
-                // Кеш устарел, очищаем его
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
             }
         }
         
-        // Если нет валидного кеша, делаем запрос к API
-        console.log(`🌐 Загружаем данные турнира ${id} с сервера...`);
-        
         try {
-            const response = await api.get(`/api/tournaments/${id}`);
+            console.log('🌐 Загружаем данные турнира', id, 'с сервера...');
+            const response = await api.get(`/tournaments/${id}`);
+            const tournamentData = response.data;
             
             console.log('✅ Данные турнира получены с сервера');
-            console.log('🏆 Турнир:', response.data.name);
-            console.log('👥 Участники:', response.data.participants?.length || 0);
-            console.log('🎯 Матчи:', response.data.matches?.length || 0);
+            console.log('🏆 Турнир:', tournamentData.name);
+            console.log('👥 Участники:', tournamentData.participants?.length || 0);
+            console.log('🎯 Матчи:', tournamentData.matches?.length || 0);
+            console.log('🏅 Команды:', tournamentData.teams?.length || 0);
+            console.log('📋 Список участников:', tournamentData.participants);
+            console.log('🏆 Список команд:', tournamentData.teams);
             
-            if (response.data.participants) {
-                console.log('📋 Список участников:', response.data.participants.map(p => ({
-                    id: p.id,
-                    name: p.name || p.username,
-                    user_id: p.user_id
-                })));
+            // Сохраняем исходный список участников для отладки
+            if (tournamentData.participants) {
+                console.log('💾 Сохраняем исходный список участников:', tournamentData.participants.length);
+                setOriginalParticipants(tournamentData.participants);
             }
             
-            // Кешируем результаты в localStorage
-            localStorage.setItem(cacheKey, JSON.stringify(response.data));
+            setTournament(tournamentData);
+            setMatches(tournamentData.matches || []);
+            
+            // Сохраняем в кеш
+            localStorage.setItem(cacheKey, JSON.stringify(tournamentData));
             localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
             
-            setTournament(response.data);
-            setMatches(response.data.matches || []);
-            
-            // Сохраняем исходный список участников при загрузке турнира
-            if (response.data.participants && response.data.participants.length > 0) {
-                console.log('💾 Сохраняем исходный список участников:', response.data.participants.length);
-                setOriginalParticipants(response.data.participants);
-            }
+            console.log('🏁 Загрузка данных турнира завершена');
         } catch (error) {
             console.error('❌ Ошибка загрузки турнира:', error);
-            setError('Ошибка загрузки данных турнира');
-            
-            // Пробуем использовать данные из кеша, даже если они устаревшие
-            try {
-                const oldCache = localStorage.getItem(cacheKey);
-                if (oldCache) {
-                    const parsedOldCache = JSON.parse(oldCache);
-                    if (parsedOldCache && parsedOldCache.id) {
-                        console.log(`🔄 Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
-                        console.log('👥 Участники из старого кеша:', parsedOldCache.participants?.length || 0);
-                        
-                        setTournament(parsedOldCache);
-                        setMatches(parsedOldCache.matches || []);
-                        
-                        if (parsedOldCache.participants && parsedOldCache.participants.length > 0) {
-                            setOriginalParticipants(parsedOldCache.participants);
-                        }
-                        
-                        setError('Использованы кешированные данные. Некоторая информация может быть устаревшей.');
-                    }
-                }
-            } catch (cacheError) {
-                console.error('❌ Ошибка при попытке использовать устаревший кеш:', cacheError);
-            }
+            setError('Ошибка загрузки турнира');
         } finally {
             setLoading(false);
-            console.log('🏁 Загрузка данных турнира завершена');
         }
     }, [id]);
     
@@ -789,6 +741,7 @@ const getDefaultMap = useCallback((game) => {
         console.log('🎮 Генерация данных для BracketRenderer с', matches.length, 'матчами');
         console.log('🏆 Турнир:', tournament?.name, 'ID:', tournament?.id);
         console.log('👥 Участники турнира:', tournament?.participants?.length || 0);
+        console.log('🏅 Команды турнира:', tournament?.teams?.length || 0);
         
         // Создаем карту участников для быстрого доступа
         const participantsMap = {};
@@ -801,9 +754,20 @@ const getDefaultMap = useCallback((game) => {
             });
         }
         
+        // 🆕 Создаем карту команд для микс-турниров
+        const teamsMap = {};
+        if (tournament && tournament.teams) {
+            tournament.teams.forEach(team => {
+                if (team && team.id) {
+                    teamsMap[team.id] = team;
+                    console.log(`🏅 Команда ${team.id}: ${team.name} (участников: ${team.members?.length || 0})`);
+                }
+            });
+        }
+        
         // Проверяем, есть ли у нас все участники
-        if (Object.keys(participantsMap).length === 0 && matches.some(m => m.team1_id || m.team2_id)) {
-            console.warn('⚠️ Список участников пуст, но у матчей есть участники. Данные могут отображаться неправильно.');
+        if (Object.keys(participantsMap).length === 0 && Object.keys(teamsMap).length === 0 && matches.some(m => m.team1_id || m.team2_id)) {
+            console.warn('⚠️ Списки участников и команд пусты, но у матчей есть участники. Данные могут отображаться неправильно.');
             console.log('🔍 Матчи с участниками:', matches.filter(m => m.team1_id || m.team2_id).map(m => ({
                 id: m.id,
                 team1_id: m.team1_id,
@@ -817,25 +781,50 @@ const getDefaultMap = useCallback((game) => {
             return String(value);
         };
         
+        // Функция для получения информации об участнике/команде
+        const getParticipantInfo = (teamId) => {
+            if (!teamId) return null;
+            
+            // Сначала ищем в командах (для микс-турниров)
+            if (teamsMap[teamId]) {
+                const team = teamsMap[teamId];
+                return {
+                    id: teamId,
+                    name: team.name,
+                    avatar_url: team.members?.[0]?.avatar_url || null,
+                    members: team.members || []
+                };
+            }
+            
+            // Затем ищем в участниках (для обычных турниров)
+            if (participantsMap[teamId]) {
+                const participant = participantsMap[teamId];
+                return {
+                    id: teamId,
+                    name: participant.name || participant.username,
+                    avatar_url: participant.avatar_url,
+                    members: []
+                };
+            }
+            
+            console.warn(`⚠️ Участник/команда с ID ${teamId} не найден(а) ни в списке участников, ни в списке команд`);
+            return null;
+        };
+        
         // Безопасное создание результата участника
-        const createSafeParticipant = (teamId, name, resultText, isWinner, status = 'PLAYED') => {
-            // Получаем информацию об участнике из карты, если она доступна
-            const participantInfo = teamId ? participantsMap[teamId] : null;
+        const createSafeParticipant = (teamId, resultText, isWinner, status = 'PLAYED') => {
+            const participantInfo = getParticipantInfo(teamId);
             
             const participant = {
                 id: teamId ? safeToString(teamId) : 'tbd',
                 resultText: resultText !== null ? safeToString(resultText) : null,
                 isWinner: Boolean(isWinner),
                 status: status || 'NO_SHOW',
-                name: name || 'TBD',
+                name: participantInfo?.name || 'TBD',
                 score: resultText,
                 // Добавляем аватар участника, если он доступен
                 avatarUrl: participantInfo?.avatar_url ? ensureHttps(participantInfo.avatar_url) : null
             };
-            
-            if (teamId && !participantInfo) {
-                console.warn(`⚠️ Участник с ID ${teamId} не найден в списке участников турнира`);
-            }
             
             return participant;
         };
@@ -851,8 +840,8 @@ const getDefaultMap = useCallback((game) => {
                 winner_team_id: m.winner_team_id,
                 round: m.round,
                 bracket_type: m.bracket_type || 'winner',
-                team1_name: m.team1_id ? participantsMap[m.team1_id]?.name : 'TBD',
-                team2_name: m.team2_id ? participantsMap[m.team2_id]?.name : 'TBD'
+                team1_info: getParticipantInfo(m.team1_id),
+                team2_info: getParticipantInfo(m.team2_id)
             }))
         );
         
@@ -867,9 +856,9 @@ const getDefaultMap = useCallback((game) => {
                 status = 'READY';
             }
             
-            // Получаем имена участников
-            const team1 = match.team1_id ? participantsMap[match.team1_id]?.name : null;
-            const team2 = match.team2_id ? participantsMap[match.team2_id]?.name : null;
+            // Получаем информацию об участниках
+            const team1Info = getParticipantInfo(match.team1_id);
+            const team2Info = getParticipantInfo(match.team2_id);
             
             // Определяем результаты (счет, если есть)
             const team1Result = match.score1 !== null ? match.score1 : null;
@@ -889,22 +878,20 @@ const getDefaultMap = useCallback((game) => {
                 participants: [
                     createSafeParticipant(
                         match.team1_id, 
-                        team1,
                         team1Result,
-                        match.winner_team_id === match.team1_id, // Используем winner_team_id вместо winner_id
+                        match.winner_team_id === match.team1_id,
                         match.team1_id ? 'PLAYED' : 'NO_SHOW'
                     ),
                     createSafeParticipant(
                         match.team2_id,
-                        team2,
                         team2Result,
-                        match.winner_team_id === match.team2_id, // Используем winner_team_id вместо winner_id
+                        match.winner_team_id === match.team2_id,
                         match.team2_id ? 'PLAYED' : 'NO_SHOW'
                     )
                 ]
             };
             
-            console.log(`🎯 Матч ${match.id}: ${team1 || 'TBD'} vs ${team2 || 'TBD'} (статус: ${status})`);
+            console.log(`🎯 Матч ${match.id}: ${team1Info?.name || 'TBD'} vs ${team2Info?.name || 'TBD'} (статус: ${status})`);
             safeGames.push(safeGame);
         }
         
