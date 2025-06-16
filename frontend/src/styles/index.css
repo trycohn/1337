@@ -1,12 +1,63 @@
-/* Главный файл стилей */
+/* ===== ГЛАВНЫЙ ФАЙЛ СТИЛЕЙ 1337 COMMUNITY ===== */
 
-/* Импорты основных стилей */
+/* Порядок импорта важен для каскада CSS */
+
+/* 1. Переменные - должны быть первыми */
 @import './variables.css';
+
+/* 2. Базовые стили - сброс и основные элементы */
 @import './base.css';
-@import './components.css';
-@import './utilities.css';
+
+/* 3. Адаптивные утилиты - новая система responsive */
+@import './responsive.css';
+
+/* 4. Макет - структура страницы */
 @import './layout.css';
+
+/* 5. Анимации - эффекты и переходы */
 @import './animations.css';
+
+/* 6. Компоненты - переиспользуемые элементы */
+@import './components.css';
+
+/* 7. Адаптивные мобильные компоненты */
+@import './mobile-components.css';
+
+/* 8. Утилиты - хелперы и модификаторы */
+@import './utilities.css';
+
+/* 9. Компоненты из папки components */
+@import './components/Auth.css';
+@import './components/Home.css';
+@import './components/Profile.css';
+@import './components/Loader.css';
+
+/* ===== ГЛОБАЛЬНЫЕ ПЕРЕОПРЕДЕЛЕНИЯ ===== */
+
+/* Улучшения для производительности */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Оптимизация рендеринга на мобильных */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Улучшение читаемости на маленьких экранах */
+@media (max-width: 575.98px) {
+  body {
+    font-size: var(--font-size-normal);
+    line-height: var(--line-height-relaxed);
+  }
+}
 
 /* HTML страницы на русском языке */
 html {
