@@ -4,5 +4,5 @@
 @import './styles/ChatMessages.module.css';
 @import './styles/ChatInput.module.css';
 @import './styles/AttachmentMenu.module.css';
-@import './styles/ParticipantsModal.module.css';
+@import './styles/ParticipantsModal.css';
 @import './styles/Responsive.module.css'; 
