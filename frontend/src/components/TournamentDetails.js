@@ -237,6 +237,7 @@ function TournamentDetails() {
     
     // Функция для проверки участия пользователя в турнире
     const fetchTournamentData = useCallback(async () => {
+        console.log('🔄 Начинаем загрузку данных турнира', id);
         setLoading(true);
         setError(null);
         
@@ -256,12 +257,16 @@ function TournamentDetails() {
                 try {
                     const parsedTournament = JSON.parse(cachedTournament);
                     if (parsedTournament && parsedTournament.id) {
-                        console.log(`Используем кешированные данные турнира ${id}`);
+                        console.log(`📦 Используем кешированные данные турнира ${id}`);
+                        console.log('👥 Участники из кеша:', parsedTournament.participants?.length || 0);
+                        console.log('🎯 Матчи из кеша:', parsedTournament.matches?.length || 0);
+                        
                         setTournament(parsedTournament);
                         setMatches(parsedTournament.matches || []);
                         
                         // Сохраняем исходный список участников при загрузке турнира
                         if (parsedTournament.participants && parsedTournament.participants.length > 0) {
+                            console.log('💾 Сохраняем исходный список участников:', parsedTournament.participants.length);
                             setOriginalParticipants(parsedTournament.participants);
                         }
                         
@@ -269,12 +274,13 @@ function TournamentDetails() {
                         return;
                     }
                 } catch (parseError) {
-                    console.error('Ошибка при разборе кешированных данных турнира:', parseError);
+                    console.error('❌ Ошибка при разборе кешированных данных турнира:', parseError);
                     // Если произошла ошибка при разборе, очищаем кеш
                     localStorage.removeItem(cacheKey);
                     localStorage.removeItem(cacheTimestampKey);
                 }
             } else {
+                console.log('⏰ Кеш устарел, очищаем его');
                 // Кеш устарел, очищаем его
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
@@ -282,10 +288,23 @@ function TournamentDetails() {
         }
         
         // Если нет валидного кеша, делаем запрос к API
-        console.log(`Загружаем данные турнира ${id} с сервера...`);
+        console.log(`🌐 Загружаем данные турнира ${id} с сервера...`);
         
         try {
             const response = await api.get(`/api/tournaments/${id}`);
+            
+            console.log('✅ Данные турнира получены с сервера');
+            console.log('🏆 Турнир:', response.data.name);
+            console.log('👥 Участники:', response.data.participants?.length || 0);
+            console.log('🎯 Матчи:', response.data.matches?.length || 0);
+            
+            if (response.data.participants) {
+                console.log('📋 Список участников:', response.data.participants.map(p => ({
+                    id: p.id,
+                    name: p.name || p.username,
+                    user_id: p.user_id
+                })));
+            }
             
             // Кешируем результаты в localStorage
             localStorage.setItem(cacheKey, JSON.stringify(response.data));
@@ -296,10 +315,11 @@ function TournamentDetails() {
             
             // Сохраняем исходный список участников при загрузке турнира
             if (response.data.participants && response.data.participants.length > 0) {
+                console.log('💾 Сохраняем исходный список участников:', response.data.participants.length);
                 setOriginalParticipants(response.data.participants);
             }
         } catch (error) {
-            console.error('Ошибка загрузки турнира:', error);
+            console.error('❌ Ошибка загрузки турнира:', error);
             setError('Ошибка загрузки данных турнира');
             
             // Пробуем использовать данные из кеша, даже если они устаревшие
@@ -308,7 +328,9 @@ function TournamentDetails() {
                 if (oldCache) {
                     const parsedOldCache = JSON.parse(oldCache);
                     if (parsedOldCache && parsedOldCache.id) {
-                        console.log(`Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
+                        console.log(`🔄 Используем устаревшие кешированные данные турнира ${id} из-за ошибки API`);
+                        console.log('👥 Участники из старого кеша:', parsedOldCache.participants?.length || 0);
+                        
                         setTournament(parsedOldCache);
                         setMatches(parsedOldCache.matches || []);
                         
@@ -320,10 +342,11 @@ function TournamentDetails() {
                     }
                 }
             } catch (cacheError) {
-                console.error('Ошибка при попытке использовать устаревший кеш:', cacheError);
+                console.error('❌ Ошибка при попытке использовать устаревший кеш:', cacheError);
             }
         } finally {
             setLoading(false);
+            console.log('🏁 Загрузка данных турнира завершена');
         }
     }, [id]);
     
@@ -514,7 +537,7 @@ const getDefaultMap = useCallback((game) => {
             console.log('Отсутствует токен для WebSocket подключения');
             return;
         }
-        
+
         // Если уже есть соединение, закрываем его перед созданием нового
         if (wsRef.current) {
             console.log('Закрываем существующее WebSocket соединение');
@@ -669,8 +692,8 @@ const getDefaultMap = useCallback((game) => {
                 if (tournamentData.message) {
                     setMessage(tournamentData.message);
                     // Очищаем сообщение через 3 секунды
-                    setTimeout(() => setMessage(''), 3000);
-                }
+                setTimeout(() => setMessage(''), 3000);
+            }
             }
         });
 
@@ -705,10 +728,10 @@ const getDefaultMap = useCallback((game) => {
 
     // Загрузка истории сообщений чата турнира
     useEffect(() => {
-        const token = localStorage.getItem('token');
+                    const token = localStorage.getItem('token');
         if (!token) return;
         api.get(`/api/tournaments/${id}/chat/messages`, {
-            headers: { Authorization: `Bearer ${token}` }
+                        headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => setChatMessages(res.data))
         .catch(err => console.error('Ошибка загрузки сообщений чата турнира:', err));
@@ -758,9 +781,14 @@ const getDefaultMap = useCallback((game) => {
 
     // Подготовка данных для отображения сетки
     const games = useMemo(() => {
-        if (!matches || matches.length === 0) return [];
+        if (!matches || matches.length === 0) {
+            console.log('🚫 Games: нет матчей для отображения');
+            return [];
+        }
         
-        console.log('Генерация данных для BracketRenderer с', matches.length, 'матчами');
+        console.log('🎮 Генерация данных для BracketRenderer с', matches.length, 'матчами');
+        console.log('🏆 Турнир:', tournament?.name, 'ID:', tournament?.id);
+        console.log('👥 Участники турнира:', tournament?.participants?.length || 0);
         
         // Создаем карту участников для быстрого доступа
         const participantsMap = {};
@@ -768,13 +796,19 @@ const getDefaultMap = useCallback((game) => {
             tournament.participants.forEach(participant => {
                 if (participant && participant.id) {
                     participantsMap[participant.id] = participant;
+                    console.log(`👤 Участник ${participant.id}: ${participant.name || participant.username}`);
                 }
             });
         }
         
         // Проверяем, есть ли у нас все участники
         if (Object.keys(participantsMap).length === 0 && matches.some(m => m.team1_id || m.team2_id)) {
-            console.warn('Список участников пуст, но у матчей есть участники. Данные могут отображаться неправильно.');
+            console.warn('⚠️ Список участников пуст, но у матчей есть участники. Данные могут отображаться неправильно.');
+            console.log('🔍 Матчи с участниками:', matches.filter(m => m.team1_id || m.team2_id).map(m => ({
+                id: m.id,
+                team1_id: m.team1_id,
+                team2_id: m.team2_id
+            })));
         }
         
         // Вспомогательная функция для безопасного преобразования в строку
@@ -788,7 +822,7 @@ const getDefaultMap = useCallback((game) => {
             // Получаем информацию об участнике из карты, если она доступна
             const participantInfo = teamId ? participantsMap[teamId] : null;
             
-            return {
+            const participant = {
                 id: teamId ? safeToString(teamId) : 'tbd',
                 resultText: resultText !== null ? safeToString(resultText) : null,
                 isWinner: Boolean(isWinner),
@@ -798,25 +832,33 @@ const getDefaultMap = useCallback((game) => {
                 // Добавляем аватар участника, если он доступен
                 avatarUrl: participantInfo?.avatar_url ? ensureHttps(participantInfo.avatar_url) : null
             };
+            
+            if (teamId && !participantInfo) {
+                console.warn(`⚠️ Участник с ID ${teamId} не найден в списке участников турнира`);
+            }
+            
+            return participant;
         };
         
         // Формируем массив игр с безопасным преобразованием всех значений
         const safeGames = [];
         
-        console.log('Подробный анализ матчей перед трансформацией:', 
+        console.log('🔍 Подробный анализ матчей перед трансформацией:', 
             matches.map(m => ({
                 id: m.id,
                 team1_id: m.team1_id,
                 team2_id: m.team2_id,
                 winner_team_id: m.winner_team_id,
                 round: m.round,
-                bracket_type: m.bracket_type || 'winner'
+                bracket_type: m.bracket_type || 'winner',
+                team1_name: m.team1_id ? participantsMap[m.team1_id]?.name : 'TBD',
+                team2_name: m.team2_id ? participantsMap[m.team2_id]?.name : 'TBD'
             }))
         );
         
         for (let i = 0; i < matches.length; i++) {
             const match = matches[i];
-            
+
             // Определяем статус матча
             let status = 'SCHEDULED';
             if (match.winner_team_id) {
@@ -862,11 +904,12 @@ const getDefaultMap = useCallback((game) => {
                 ]
             };
             
+            console.log(`🎯 Матч ${match.id}: ${team1 || 'TBD'} vs ${team2 || 'TBD'} (статус: ${status})`);
             safeGames.push(safeGame);
         }
         
-        console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
-        console.log('Games для визуализации сетки:', safeGames);
+        console.log('✅ Безопасные игры для BracketRenderer созданы:', safeGames.length);
+        console.log('🎮 Games для визуализации сетки:', safeGames);
         return safeGames;
     }, [matches, tournament]);
 
@@ -930,7 +973,7 @@ const getDefaultMap = useCallback((game) => {
             setMatches(updatedTournament.data.matches || []);
             setIsParticipating(true);
             setNewTeamName('');
-        } catch (error) {
+            } catch (error) {
             setMessage(error.response?.data?.error || 'Ошибка при регистрации');
         }
     };
@@ -1058,7 +1101,7 @@ const getDefaultMap = useCallback((game) => {
             setAddParticipantName('');
             setSelectedUser(null);
             setUserSearchResults([]);
-        } catch (error) {
+            } catch (error) {
             setMessage(error.response?.data?.error || 'Ошибка при добавлении участника');
         }
     };
@@ -1102,8 +1145,8 @@ const getDefaultMap = useCallback((game) => {
                 console.log('Недостаточно участников для генерации сетки. Минимум 2 участника.');
                 return;
             }
-            
-            const token = localStorage.getItem('token');
+
+        const token = localStorage.getItem('token');
             if (!token) {
                 setMessage('Необходима авторизация для генерации сетки');
                 return;
@@ -1203,9 +1246,9 @@ const getDefaultMap = useCallback((game) => {
             if (!selectedGame) {
                 console.error(`Матч с ID ${safeMatchId} не найден`);
                 setMessage(`Матч не найден`);
-                return;
-            }
-            
+            return;
+        }
+
             // Получаем id команд (с проверками)
             const team1Id = selectedGame.participants?.[0]?.id ? 
                             (typeof selectedGame.participants[0].id === 'string' ? 
@@ -1495,42 +1538,56 @@ const getDefaultMap = useCallback((game) => {
     };
 
     // Функция для просмотра деталей завершенного матча
-    const viewMatchDetails = (matchId) => {
+    const viewMatchDetails = (matchData) => {
         try {
-            const matchData = matches.find(m => m.id === parseInt(matchId));
-            if (!matchData) {
-                console.error(`Матч с ID ${matchId} не найден`);
-            return;
-        }
-
+            // Если передан ID, ищем матч по ID
+            let match;
+            if (typeof matchData === 'number' || typeof matchData === 'string') {
+                match = matches.find(m => m.id === parseInt(matchData));
+                if (!match) {
+                    console.error(`Матч с ID ${matchData} не найден`);
+                    return;
+                }
+            } else if (typeof matchData === 'object' && matchData.id) {
+                // Если передан объект матча, используем его
+                match = matches.find(m => m.id === parseInt(matchData.id));
+                if (!match) {
+                    console.error(`Матч с ID ${matchData.id} не найден`);
+                    return;
+                }
+            } else {
+                console.error('Неверный формат данных матча:', matchData);
+                return;
+            }
+        
             // Если матч не завершен, не показываем детали
-            if (!matchData.winner_team_id) {
-            return;
-        }
-
-            const match = {
-                id: matchData.id,
-                team1: tournament.participants.find(p => p.id === matchData.team1_id)?.name || 'Участник 1',
-                team2: tournament.participants.find(p => p.id === matchData.team2_id)?.name || 'Участник 2',
-                score1: matchData.score1,
-                score2: matchData.score2,
-                winner_id: matchData.winner_team_id,
+            if (!match.winner_team_id) {
+                return;
+            }
+        
+            const matchDetails = {
+                id: match.id,
+                team1: tournament.participants.find(p => p.id === match.team1_id)?.name || 'Участник 1',
+                team2: tournament.participants.find(p => p.id === match.team2_id)?.name || 'Участник 2',
+                score1: match.score1,
+                score2: match.score2,
+                winner_id: match.winner_team_id,
                 maps: []
             };
 
             // Если есть данные о картах и это CS2, парсим их
-            if (matchData.maps_data && gameHasMaps(tournament.game)) {
+            if (match.maps_data && gameHasMaps(tournament.game)) {
                 try {
-                    const parsedMapsData = JSON.parse(matchData.maps_data);
+                    const parsedMapsData = JSON.parse(match.maps_data);
                     if (Array.isArray(parsedMapsData) && parsedMapsData.length > 0) {
-                        match.maps = parsedMapsData;
+                        matchDetails.maps = parsedMapsData;
                     }
                 } catch (e) {
                     console.error('Ошибка при разборе данных карт:', e);
                 }
             }
 
-            setMatchDetails(match);
+            setMatchDetails(matchDetails);
             setViewingMatchDetails(true);
         } catch (error) {
             console.error('Ошибка при просмотре деталей матча:', error);
@@ -1648,23 +1705,23 @@ const getDefaultMap = useCallback((game) => {
         if (userIdToRemove) {
             const removeParticipant = async () => {
                 try {
-                    const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token');
                     if (!token) {
                         console.error('Необходима авторизация для удаления участника');
                         return;
                     }
-                    
+            
                     await api.delete(`/api/tournaments/${id}/participants/${userIdToRemove}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
                     // Обновляем список участников
                     await fetchTournamentData();
                     console.log('Участник успешно удален');
-                } catch (error) {
+        } catch (error) {
                     console.error(error.response?.data?.error || 'Ошибка при удалении участника');
                     console.error('Ошибка при удалении участника:', error);
-                } finally {
+        } finally {
                     setUserIdToRemove(null);
                 }
             };
@@ -2021,7 +2078,7 @@ const getDefaultMap = useCallback((game) => {
             console.error('Правила не могут быть пустыми');
             return;
         }
-        
+
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -2124,8 +2181,8 @@ const getDefaultMap = useCallback((game) => {
             if (!response.ok) {
                 throw new Error(data.message || 'Не удалось запустить турнир');
             }
-            
-            // Обновляем данные турнира
+                
+                // Обновляем данные турнира
             fetchTournamentData();
             console.log('Турнир успешно запущен');
         } catch (error) {
@@ -2187,22 +2244,22 @@ const getDefaultMap = useCallback((game) => {
                                     />
                                     <button onClick={handleSaveDescription}>Сохранить</button>
                                     <button onClick={() => setIsEditingDescription(false)}>Отмена</button>
-                                </div>
+                                                        </div>
                             ) : (
                                 <div className="info-content">
                                     <p>{tournament.description || 'Нет описания'}</p>
                                     {isAdminOrCreator && (
                                         <button onClick={() => setIsEditingDescription(true)}>Редактировать</button>
                                     )}
-                                </div>
-                            )}
-                        </div>
-
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
                         <div className="info-block">
                             <h3>Призовой фонд</h3>
                             {isEditingPrizePool ? (
-                                <div className="edit-field">
-                                    <textarea
+                                                <div className="edit-field">
+                                                    <textarea
                                         value={editedPrizePool}
                                         onChange={(e) => setEditedPrizePool(e.target.value)}
                                         placeholder="Призовой фонд"
@@ -2210,16 +2267,16 @@ const getDefaultMap = useCallback((game) => {
                                     />
                                     <button onClick={handleSavePrizePool}>Сохранить</button>
                                     <button onClick={() => setIsEditingPrizePool(false)}>Отмена</button>
-                                </div>
-                            ) : (
+                                                </div>
+                                            ) : (
                                 <div className="info-content">
                                     <p>{tournament.prize_pool || 'Не указан'}</p>
                                     {isAdminOrCreator && (
                                         <button onClick={() => setIsEditingPrizePool(true)}>Редактировать</button>
-                                    )}
+                                            )}
+                                                </div>
+                                            )}
                                 </div>
-                            )}
-                        </div>
 
                         {(isAdminOrCreator || showFullDescription) && (
                         <div className="info-block">
@@ -2248,41 +2305,41 @@ const getDefaultMap = useCallback((game) => {
                                                 />
                                                 <button onClick={handleSaveFullDescription}>Сохранить</button>
                                                 <button onClick={() => setIsEditingFullDescription(false)}>Отмена</button>
-                                            </div>
+                                                </div>
                                         ) : (
                                             <div>
                                                 <p>{tournament.full_description || 'Нет полного описания'}</p>
                                                 {isAdminOrCreator && (
                                                     <button onClick={() => setIsEditingFullDescription(true)}>Редактировать</button>
-                                                )}
-                                            </div>
+                                            )}
+                                        </div>
                                         )}
                                         <h4>Регламент</h4>
-                                        {isEditingRules ? (
-                                            <div className="edit-field">
-                                                <textarea
-                                                    value={editedRules}
-                                                    onChange={(e) => setEditedRules(e.target.value)}
+                                            {isEditingRules ? (
+                                                <div className="edit-field">
+                                                    <textarea
+                                                        value={editedRules}
+                                                        onChange={(e) => setEditedRules(e.target.value)}
                                                     placeholder="Регламент турнира"
                                                     rows="4"
                                                 />
                                                 <button onClick={handleSaveRules}>Сохранить</button>
                                                 <button onClick={() => setIsEditingRules(false)}>Отмена</button>
-                                            </div>
-                                        ) : (
+                                                </div>
+                                            ) : (
                                             <div>
                                                 <p>{tournament.rules || 'Регламент не указан'}</p>
                                                 {isAdminOrCreator && (
                                                     <button onClick={() => setIsEditingRules(true)}>Редактировать</button>
                                                 )}
-                                            </div>
-                                        )}
+                                                                    </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
                         )}
-                    </div>
+                            </div>
 
                     <p>
                         <strong>Формат:</strong> {tournament.format}
@@ -2338,9 +2395,9 @@ const getDefaultMap = useCallback((game) => {
                                                     value={newTeamName}
                                                     onChange={(e) => setNewTeamName(e.target.value)}
                                                 />
-                                            )}
-                                        </div>
-                                    )}
+                                        )}
+                                </div>
+                                )}
                                     <button onClick={handleParticipate}>Участвовать в турнире</button>
                                 </>
                             ) : (
@@ -2380,14 +2437,14 @@ const getDefaultMap = useCallback((game) => {
                                                                     alt={user.username}
                                                                     className="user-avatar"
                                                                 />
-                                                            </div>
+                                                        </div>
                                                             <div className="search-result-info">
                                                                 <span className="search-result-name">{user.username}</span>
                                                                 <span className={`search-result-status ${user.online ? 'online' : 'offline'}`}>
                                                                     {user.online ? 'Онлайн' : `Был онлайн: ${formatLastOnline(user.last_online)}`}
                                                                 </span>
-                                                            </div>
                                                         </div>
+                                                </div>
                                                         <div className="search-result-actions">
                                                             <div className="action-links">
                                                                 {isUserParticipant(user.id) ? (
@@ -2415,8 +2472,8 @@ const getDefaultMap = useCallback((game) => {
                                                                 >
                                                                     профиль
                                                                 </a>
-                                                            </div>
-                                                        </div>
+                                                    </div>
+                                                </div>
                                                     </li>
                                                 ))}
                                                 {searchResults.length > 10 && (
@@ -2425,8 +2482,8 @@ const getDefaultMap = useCallback((game) => {
                                                     </li>
                                                 )}
                                             </ul>
-                                        )}
-                                    </div>
+                                                        )}
+                                                    </div>
                                     <div className="add-unregistered-participant">
                                         <input className="add-participant-placeholder"
                                             type="text"
@@ -2437,20 +2494,20 @@ const getDefaultMap = useCallback((game) => {
                                         <button className="add-participant-button" onClick={handleAddParticipant}>Добавить незарегистрированного участника</button>
                                     </div>
                                 </div>
-                            )}
+                                            )}
                             {!isAdminOrCreator && tournament?.status === 'active' && (
                                 <button onClick={handleRequestAdmin} className="request-admin-btn">
                                     Запросить права администратора
-                                </button>
+                                                </button>
                             )}
-                        </div>
-                    )}
-                    
+                                </div>
+                            )}
+
                     {/* Заменяем секцию микс-турнира на компонент TeamGenerator */}
                     {tournament?.format === 'mix' && (
                         <TeamGenerator
-                            tournament={tournament}
-                            participants={tournament.participants || []}
+                                tournament={tournament}
+                                participants={tournament.participants || []}
                             onTeamsGenerated={handleTeamsGenerated}
                             onTeamsUpdated={fetchTournamentData}
                             onRemoveParticipant={setUserIdToRemove}
@@ -2462,23 +2519,23 @@ const getDefaultMap = useCallback((game) => {
                     {matches.length > 0 && (tournament?.status === 'pending' || tournament?.status === 'active') && (
                         <div className="tournament-controls">
                             {isAdminOrCreator && (
-                                <button 
+                                            <button 
                                     className="start-tournament"
                                     onClick={handleStartTournament}
-                                >
+                                            >
                                     Начать турнир
-                                </button>
-                            )}
+                                            </button>
+                                        )}
                             {isAdminOrCreator && (
-                                <button 
+                                            <button 
                                     className="regenerate-bracket"
                                     onClick={handleRegenerateBracket}
-                                >
+                                            >
                                     Пересоздать сетку
-                                </button>
-                            )}
-                        </div>
-                    )}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                     {Array.isArray(matches) && matches.length > 0 ? (
                         <>
                             {console.log('Рендеринг сетки. Количество матчей:', matches.length)}
@@ -2496,10 +2553,10 @@ const getDefaultMap = useCallback((game) => {
                                         <LazyBracketRenderer
                                             games={games}
                                             canEditMatches={canEditMatches}
-                                            selectedMatch={selectedMatch}
-                                            setSelectedMatch={setSelectedMatch}
-                                            handleTeamClick={handleTeamClick}
-                                            format={tournament.format}
+                                        selectedMatch={selectedMatch}
+                                        setSelectedMatch={setSelectedMatch}
+                                        handleTeamClick={handleTeamClick}
+                                        format={tournament.format}
                                             key={`bracket-${matches.length}-${selectedMatch}`}
                                             onMatchClick={viewMatchDetails}
                                         />
@@ -2511,12 +2568,12 @@ const getDefaultMap = useCallback((game) => {
                                                                 Ошибка при отображении турнирной сетки. 
                                                                 Пожалуйста, обновите страницу или попробуйте позже.
                                                                 <br />
-                                                                <button 
+                                        <button 
                                                                     onClick={() => window.location.reload()} 
                                                                     className="reload-button"
-                                                                >
+                                        >
                                                                     Обновить страницу
-                                                                </button>
+                                        </button>
                                                                 {isAdminOrCreator && (
                                                                     <button 
                                                                         onClick={handleRegenerateBracket} 
@@ -2569,8 +2626,8 @@ const getDefaultMap = useCallback((game) => {
                                     <button className="generate-bracket-button" onClick={handleGenerateBracket}>
                                         Сгенерировать сетку
                                     </button>
-                                </div>
-                            )}
+                        </div>
+                    )}
                         </>
                     )}
                     {showConfirmModal && selectedMatch && (
@@ -2610,7 +2667,7 @@ const getDefaultMap = useCallback((game) => {
                                                             ✖
                                                         </button>
                                                     )}
-                                                </div>
+                                        </div>
                                                 <div className="map-scores">
                                                     <div className="score-container">
                                                         <span className="participant-name">
@@ -2623,7 +2680,7 @@ const getDefaultMap = useCallback((game) => {
                                                             className="score-input"
                                                             min="0"
                                                         />
-                                                    </div>
+                                        </div>
                                                     <div className="score-container">
                                                         <span className="participant-name">
                                                             {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}
@@ -2635,9 +2692,9 @@ const getDefaultMap = useCallback((game) => {
                                                             className="score-input"
                                                             min="0"
                                                         />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                                </div>
+                                                                </div>
+                                                            </div>
                                         ))}
                                         
                                         {maps.length < 7 && (
@@ -2661,7 +2718,7 @@ const getDefaultMap = useCallback((game) => {
                                                         <span className="score-value">
                                                             {maps.filter(m => parseInt(m.score1) > parseInt(m.score2)).length}
                                                         </span>
-                                                    </div>
+                                                            </div>
                                                     <div className="team-score">
                                                         <span className="team-name">
                                                             {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name || 'Участник 2'}:
@@ -2669,10 +2726,10 @@ const getDefaultMap = useCallback((game) => {
                                                         <span className="score-value">
                                                             {maps.filter(m => parseInt(m.score2) > parseInt(m.score1)).length}
                                                         </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                                        </div>
+                                    </div>
+                        </div>
+                    )}
                                     </div>
                                 ) : (
                                 <div className="score-inputs">
@@ -2687,8 +2744,8 @@ const getDefaultMap = useCallback((game) => {
                                             onChange={(e) => setMatchScores({ ...matchScores, team1: Number(e.target.value) })}
                                             className="score-input"
                                             min="0"
-                                        />
-                                    </div>
+                            />
+                        </div>
                                     <div className="score-container">
                                         <span className="participant-name">
                                             {games?.find((m) => m.id === selectedMatch.toString())?.participants[1]?.name ||
@@ -2701,15 +2758,15 @@ const getDefaultMap = useCallback((game) => {
                                             className="score-input"
                                             min="0"
                                         />
-                                    </div>
-                                </div>
-                                )}
-                                
+                </div>
+                    </div>
+                )}
+
                                 <div className="modal-actions">
                                     <button className="cancel-btn" onClick={handleCloseModal}>
                                         Отмена
                                     </button>
-                                    <button 
+                                <button 
                                         className="confirm-winner"
                                         onClick={() => {
                                             const matchInfo = games.find((m) => m.id === selectedMatch.toString());
@@ -2732,8 +2789,8 @@ const getDefaultMap = useCallback((game) => {
                                         }}
                                     >
                                         Подтвердить победителя
-                                    </button>
-                                </div>
+                                </button>
+                            </div>
                             </div>
                         </div>
                     )}
@@ -2755,9 +2812,9 @@ const getDefaultMap = useCallback((game) => {
                                     <div className={`team-info ${matchDetails.winner_id === matchDetails.team2_id ? 'winner' : ''}`}>
                                         <span className="team-name">{matchDetails.team2}</span>
                                         {matchDetails.winner_id === matchDetails.team2_id && <span className="winner-badge">Победитель</span>}
-                                    </div>
                                 </div>
-                                
+                            </div>
+                            
                                 {matchDetails.maps && matchDetails.maps.length > 0 && (
                                     <div className="maps-results">
                                         <h4>Результаты по картам</h4>
@@ -2805,35 +2862,35 @@ const getDefaultMap = useCallback((game) => {
                                 <button 
                                 className="end-tournament"
                                 onClick={handleEndTournament}
-                            >
+                                >
                                 Завершить турнир
-                            </button>
+                                </button>
                         </div>
                     )}
                     {isAdminOrCreator && matches.length > 0 && (
                         <div className="tournament-admin-controls">
                             {tournament?.status === 'in_progress' && (
-                            <button 
+                                <button 
                                     className="clear-results-button"
                                     onClick={handleClearMatchResults}
                                     title="Очистить все результаты матчей"
-                            >
+                                >
                                     Очистить результаты матчей
-                            </button>
+                                </button>
                             )}
-                        </div>
-                    )}
+                    </div>
+                )}
                     {tournament?.status === "completed" && isAdminOrCreator && (
-                        <button 
+                                <button 
                             className="end-tournament-button"
                             onClick={handleEndTournament}
-                        >
+                                >
                             Завершить турнир
-                        </button>
+                                </button>
                     )}
                 </div>
-                </div>
-                
+                            </div>
+                            
                 {/* Компонент чата турнира */}
                 <TournamentChat
                     messages={chatMessages}
@@ -2845,8 +2902,8 @@ const getDefaultMap = useCallback((game) => {
                     user={user}
                     tournamentId={id}
                 />
-            </div>
-            
+                            </div>
+                            
             {/* Модальное окно подтверждения завершения турнира */}
             {showEndTournamentModal && (
                 <div className="modal" onClick={() => setShowEndTournamentModal(false)}>
@@ -2856,19 +2913,19 @@ const getDefaultMap = useCallback((game) => {
                         <p>После завершения турнир перейдет в статус "Завершен" и изменение результатов матчей будет недоступно.</p>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowEndTournamentModal(false)}>
-                                Отмена
-                            </button>
-                            <button 
+                                    Отмена
+                                </button>
+                                <button 
                                 className="confirm-winner"
                                 onClick={confirmEndTournament}
-                            >
+                                >
                                 Завершить турнир
-                            </button>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-            
+                )}
+
             {viewingMatchDetails && matchDetails && (
                 <div className="modal" onClick={() => setViewingMatchDetails(false)}>
                     <div className="modal-content match-details-modal" onClick={(e) => e.stopPropagation()}>
@@ -2927,7 +2984,7 @@ const getDefaultMap = useCallback((game) => {
                     </div>
                 </div>
             )}
-        </section>
+            </section>
     );
 }
 
