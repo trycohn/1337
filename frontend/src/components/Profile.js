@@ -79,6 +79,17 @@ function Profile() {
     // Email required modal state
     const [showEmailRequiredModal, setShowEmailRequiredModal] = useState(false);
 
+    // Password change states
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
     // Friends states
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
@@ -1414,6 +1425,88 @@ function Profile() {
         }, 300);
     };
 
+    // Функции для смены пароля
+    const openChangePasswordModal = () => {
+        setShowChangePasswordModal(true);
+        setPasswordError('');
+        setPasswordSuccess('');
+        setPasswordData({
+            oldPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        });
+    };
+
+    const closeChangePasswordModal = () => {
+        setIsClosingModal(true);
+        
+        setTimeout(() => {
+            setShowChangePasswordModal(false);
+            setIsClosingModal(false);
+            setPasswordError('');
+            setPasswordSuccess('');
+            setPasswordData({
+                oldPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+        }, 300);
+    };
+
+    const handlePasswordChange = (field, value) => {
+        setPasswordData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+        
+        // Сброс ошибок при изменении полей
+        if (passwordError) {
+            setPasswordError('');
+        }
+    };
+
+    const changePassword = async () => {
+        const { oldPassword, newPassword, confirmPassword } = passwordData;
+        
+        // Валидация на frontend
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            setPasswordError('Все поля обязательны для заполнения');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            setPasswordError('Новые пароли не совпадают');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            setPasswordError('Новый пароль должен содержать минимум 6 символов');
+            return;
+        }
+        
+        setIsChangingPassword(true);
+        setPasswordError('');
+        
+        try {
+            const token = localStorage.getItem('token');
+            await api.post('/api/users/change-password', passwordData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setPasswordSuccess('Пароль успешно изменен');
+            
+            // Автоматически закрываем модальное окно через 2 секунды
+            setTimeout(() => {
+                closeChangePasswordModal();
+            }, 2000);
+            
+        } catch (err) {
+            setPasswordError(err.response?.data?.message || 'Ошибка при смене пароля');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
     // Функция для загрузки аватара
     const handleAvatarUpload = async (event) => {
         const file = event.target.files[0];
@@ -2311,6 +2404,16 @@ function Profile() {
                                                         Подтвердить email
                                                     </button>
                                                 )}
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Пароль</label>
+                                            <div className="card-content">
+                                                <p>••••••••</p>
+                                                <button className="btn btn-sm" onClick={openChangePasswordModal}>
+                                                    Сменить пароль
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -3814,6 +3917,66 @@ function Profile() {
                         <button onClick={closeMatchHistoryModal} className="close-modal-btn">
                             Закрыть
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal for changing password */}
+            {showChangePasswordModal && (
+                <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeChangePasswordModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Смена пароля</h3>
+                        
+                        <div className="password-form">
+                            <div className="form-group">
+                                <label className="form-label">Старый пароль</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.oldPassword}
+                                    onChange={(e) => handlePasswordChange('oldPassword', e.target.value)}
+                                    placeholder="Введите текущий пароль"
+                                    className="form-input"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label className="form-label">Новый пароль</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.newPassword}
+                                    onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                                    placeholder="Введите новый пароль (минимум 6 символов)"
+                                    className="form-input"
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label className="form-label">Подтвердите новый пароль</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.confirmPassword}
+                                    onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                                    placeholder="Повторите новый пароль"
+                                    className="form-input"
+                                />
+                            </div>
+                            
+                            {passwordError && <p className="error">{passwordError}</p>}
+                            {passwordSuccess && <p className="success">{passwordSuccess}</p>}
+                            
+                            <div className="modal-buttons">
+                                <button 
+                                    onClick={changePassword} 
+                                    className="btn btn-primary"
+                                    disabled={isChangingPassword || !passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                                >
+                                    {isChangingPassword ? 'Сохранение...' : 'Сменить пароль'}
+                                </button>
+                                <button onClick={closeChangePasswordModal} className="btn btn-secondary">
+                                    Отмена
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

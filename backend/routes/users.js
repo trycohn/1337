@@ -324,6 +324,53 @@ router.post('/update-email', authenticateToken, async (req, res) => {
     }
 });
 
+// Смена пароля пользователя
+router.post('/change-password', authenticateToken, async (req, res) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: 'Все поля обязательны для заполнения' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: 'Новые пароли не совпадают' });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'Новый пароль должен содержать минимум 6 символов' });
+    }
+
+    try {
+        // Получаем текущего пользователя
+        const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Пользователь не найден' });
+        }
+        const user = userResult.rows[0];
+
+        // Проверяем старый пароль
+        if (!user.password_hash) {
+            return res.status(400).json({ message: 'У пользователя не установлен пароль. Обратитесь к администратору.' });
+        }
+
+        const validOldPassword = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!validOldPassword) {
+            return res.status(400).json({ message: 'Неверный старый пароль' });
+        }
+
+        // Хешируем новый пароль
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        // Обновляем пароль в базе данных
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedNewPassword, req.user.id]);
+
+        res.json({ message: 'Пароль успешно изменен' });
+    } catch (err) {
+        console.error('Ошибка смены пароля:', err);
+        res.status(500).json({ error: 'Не удалось изменить пароль' });
+    }
+});
+
 // Получение никнейма Steam
 router.get('/steam-nickname', authenticateToken, async (req, res) => {
     try {
