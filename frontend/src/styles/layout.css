@@ -76,6 +76,7 @@ main {
   display: flex;
   gap: var(--spacing-md);
   transition: all var(--transition-normal);
+  z-index: 20;
 }
 
 .navigation a, 
@@ -481,4 +482,30 @@ main {
   .col-sm-10 { flex: 0 0 83.333333%; max-width: 83.333333%; }
   .col-sm-11 { flex: 0 0 91.666667%; max-width: 91.666667%; }
   .col-sm-12 { flex: 0 0 100%; max-width: 100%; }
+}
+
+/* overlay – затемнение фона при открытом меню */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+  z-index: 15;          /* выше header (10), ниже меню (20) */
+}
+
+.menu-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* на десктопах меню не фиксируется */
+@media (min-width: 769px) {
+  .navigation {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    flex-direction: row !important;
+  }
 } 
