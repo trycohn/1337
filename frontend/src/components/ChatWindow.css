@@ -419,11 +419,6 @@
         font-size: 16px;
     }
     
-    .attachment-options {
-        width: 120px;
-        right: -10px;
-    }
-    
     .empty-chat .select-chat-message {
         font-size: 14px;
         padding: 24px 16px;
@@ -461,14 +456,14 @@
     margin-left: 8px;
 }
 
-/* Модальное окно с участниками */
+/* Модальное окно с участниками - черно-белый минималистичный стиль */
 .participants-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.75);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -476,80 +471,88 @@
 }
 
 .participants-modal {
-    background: white;
-    border-radius: 12px;
-    max-width: 500px;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    max-width: 400px;
     width: 90%;
-    max-height: 80vh;
+    max-height: 70vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .participants-modal .modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e5e5;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #fafafa;
 }
 
 .participants-modal .modal-header h3 {
     margin: 0;
-    color: #333;
-    font-size: 18px;
+    color: #000000;
+    font-size: 16px;
+    font-weight: 500;
 }
 
 .participants-modal .close-button {
     background: none;
     border: none;
-    font-size: 24px;
-    color: #666;
+    font-size: 18px;
+    color: #666666;
     cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
 }
 
 .participants-modal .close-button:hover {
-    background-color: #f0f0f0;
-    color: #333;
+    color: #000000;
 }
 
 .participants-modal .modal-content {
-    padding: 20px;
+    padding: 16px 20px 20px;
     overflow-y: auto;
     flex: 1;
+    background: #ffffff;
 }
 
 .participants-count {
-    margin-bottom: 15px;
-    color: #666;
-    font-size: 14px;
+    margin-bottom: 12px;
+    color: #666666;
+    font-size: 13px;
+    font-weight: 400;
 }
 
 .participants-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 1px;
 }
 
 .participant-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    transition: none;
+}
+
+.participant-item:last-child {
+    border-bottom: none;
 }
 
 .participant-item:hover {
-    background-color: #f8f9fa;
+    background: none;
 }
 
 .participant-avatar {
@@ -557,22 +560,25 @@
 }
 
 .participant-avatar img {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
+    border: 1px solid #e5e5e5;
+    filter: grayscale(100%);
 }
 
 .participant-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .participant-name {
-    font-weight: 500;
-    color: #333;
+    font-weight: 400;
+    color: #000000;
+    font-size: 14px;
 }
 
 .participant-badges {
@@ -581,44 +587,53 @@
 }
 
 .badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 500;
+    padding: 1px 6px;
+    border: 1px solid #cccccc;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 400;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .creator-badge {
-    background-color: #ffd700;
-    color: #b8860b;
+    background-color: #000000;
+    color: #ffffff;
+    border-color: #000000;
 }
 
 .admin-badge {
-    background-color: #e3f2fd;
-    color: #1976d2;
+    background-color: #ffffff;
+    color: #666666;
+    border-color: #cccccc;
 }
 
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
     .participants-modal {
         width: 95%;
-        max-height: 90vh;
+        max-height: 80vh;
+        max-width: 350px;
     }
     
     .participants-modal .modal-header {
-        padding: 15px;
+        padding: 14px 16px;
     }
     
     .participants-modal .modal-content {
-        padding: 15px;
+        padding: 14px 16px 16px;
     }
     
     .participant-item {
-        padding: 8px;
+        padding: 6px 0;
     }
     
     .participant-avatar img {
-        width: 35px;
-        height: 35px;
+        width: 28px;
+        height: 28px;
+    }
+    
+    .participant-name {
+        font-size: 13px;
     }
 } 
