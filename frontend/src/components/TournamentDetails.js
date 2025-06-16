@@ -1,18 +1,29 @@
 // Импорты React и связанные
-import React, { useState, useRef, useEffect, Suspense, useCallback, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import axios from 'axios';
 import api from '../utils/api';
-import './TournamentDetails.css';
+import BracketRenderer from './BracketRenderer';
+import TournamentChat from './TournamentChat';
 import TeamGenerator from './TeamGenerator';
 import { ensureHttps } from '../utils/userHelpers';
-// Импортируем вспомогательные функции для работы с картами
-import { isCounterStrike2, gameHasMaps, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
+import { gameHasMaps, getGameMaps, isCounterStrike2, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
+import './TournamentDetails.css';
+import TournamentInfoSection from './TournamentInfoSection';
+import MatchResultModal from './tournament/modals/MatchResultModal';
+import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
+import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
+import AddParticipantModal from './tournament/modals/AddParticipantModal';
+import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
+import TournamentContextualControls from './tournament/TournamentContextualControls';
+import UnifiedParticipantsPanel from './tournament/UnifiedParticipantsPanel';
+import TournamentAdminPanel from './tournament/TournamentAdminPanel';
+import AchievementsPanel from './achievements/AchievementsPanel';
+import useAchievements from './achievements/useAchievements';
 
 // Импорт уведомлений и тостов
 
-// eslint-disable-next-line no-unused-vars
-import TournamentChat from './TournamentChat';
 // eslint-disable-next-line no-unused-vars
 import { useUser } from '../context/UserContext';
 
@@ -333,6 +344,15 @@ function TournamentDetails() {
         }
         
         setLoading(false);
+    }, [id]);
+    
+    // Функция для автоматической очистки кэша при изменениях
+    const clearCacheOnChangeOld = useCallback(() => {
+        const cacheKey = `tournament_cache_${id}`;
+        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+        localStorage.removeItem(cacheKey);
+        localStorage.removeItem(cacheTimestampKey);
+        console.log('🧹 Автоматическая очистка кэша турнира', id);
     }, [id]);
     
     // Функция для загрузки карт из БД
@@ -1098,7 +1118,7 @@ const getDefaultMap = useCallback((game) => {
         });
     };
 
-    const handleAddParticipant = async () => {
+    const handleAddParticipantOld = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
             setMessage('Пожалуйста, войдите, чтобы добавить участника');
@@ -1149,97 +1169,43 @@ const getDefaultMap = useCallback((game) => {
 
     // Функция для генерации сетки турнира
     const handleGenerateBracket = async () => {
-        if (!canGenerateBracket) {
-            setMessage('У вас нет прав для генерации сетки или сетка уже сгенерирована');
-            console.log('У вас нет прав для генерации сетки или сетка уже сгенерирована');
-            return;
-        }
-
         try {
-            setMessage('Генерация сетки...');
-            console.log('Начинаем генерацию сетки...');
+            // Автоматически очищаем кэш при генерации сетки
+            clearCacheOnChangeOld();
             
-            // Проверка количества участников
-            if (!tournament.participants || tournament.participants.length < 2) {
-                setMessage('Недостаточно участников для генерации сетки. Минимум 2 участника.');
-                console.log('Недостаточно участников для генерации сетки. Минимум 2 участника.');
-                return;
-            }
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`/api/tournaments/${id}/generate-bracket`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
-        const token = localStorage.getItem('token');
-            if (!token) {
-                setMessage('Необходима авторизация для генерации сетки');
-                return;
+            if (response.status === 200) {
+                console.log('Сетка турнира сгенерирована');
+                // Перезагружаем данные турнира
+                await fetchTournamentData();
             }
-            
-            const generateBracketResponse = await api.post(
-                `/api/tournaments/${id}/generate-bracket`,
-                { thirdPlaceMatch: tournament.format === 'double_elimination' ? true : thirdPlaceMatch },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
-            console.log('Ответ от сервера:', generateBracketResponse.data);
-            
-            // Обновления турнира должны прийти через WebSocket,
-            // но дополнительно обновляем данные из ответа
-            if (generateBracketResponse.data.tournament) {
-                const tournamentData = generateBracketResponse.data.tournament;
-                
-                if (!Array.isArray(tournamentData.matches) || tournamentData.matches.length === 0) {
-                    // Если matches пустой, запрашиваем данные заново
-                    await fetchTournamentData();
-                } else {
-                    // Проверяем данные на корректность
-                    console.log('Проверка данных турнира:', {
-                        participants: tournamentData.participants?.length || 0,
-                        matches: tournamentData.matches.length
-                    });
-                    
-                    // Обновляем состояние с полученными данными
-                    setTournament(tournamentData);
-                    setMatches(tournamentData.matches);
-                    
-                    // Добавляем таймер для гарантированного обновления
-                    setTimeout(async () => {
-                        await fetchTournamentData();
-                    }, 500);
-                }
-            }
-            
-            setMessage('Сетка успешно сгенерирована');
-            console.log('Сетка успешно сгенерирована!');
         } catch (error) {
             console.error('Ошибка при генерации сетки:', error);
+        }
+    };
+
+    // Функция для добавления участника
+    const handleAddParticipant = async (participantData) => {
+        try {
+            // Автоматически очищаем кэш при добавлении участника
+            clearCacheOnChangeOld();
             
-            // Проверяем тип ошибки для информативного сообщения
-            let errorMessage = 'Ошибка при генерации сетки';
-            
-            if (error.response) {
-                // Структурированное сообщение об ошибке от сервера
-                if (error.response.status === 400) {
-                    errorMessage = error.response.data.error || 'Неверные параметры для генерации сетки';
-                } else if (error.response.status === 401) {
-                    errorMessage = 'Необходима авторизация';
-                } else if (error.response.status === 403) {
-                    errorMessage = 'У вас нет прав на выполнение этого действия';
-                } else if (error.response.status === 404) {
-                    errorMessage = 'API маршрут не найден. Возможно, требуется обновление сервера.';
-                } else if (error.response.status === 500) {
-                    errorMessage = 'Ошибка сервера при генерации сетки. Попробуйте позже.';
-                } else {
-                    errorMessage = error.response.data.error || 'Ошибка при генерации сетки';
-                }
-            }
-            
-            setMessage(errorMessage);
-            console.error(errorMessage);
-            
-            // Пытаемся синхронизировать данные с сервера
-            try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`/api/tournaments/${id}/participants`, participantData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.status === 200 || response.status === 201) {
+                console.log('Участник добавлен');
+                // Перезагружаем данные турнира
                 await fetchTournamentData();
-            } catch (fetchError) {
-                console.error('Ошибка при синхронизации данных:', fetchError);
             }
+        } catch (error) {
+            console.error('Ошибка при добавлении участника:', error);
         }
     };
 
@@ -1614,47 +1580,7 @@ const getDefaultMap = useCallback((game) => {
         }
     };
 
-    // Функция для проверки и валидации кэша приглашений
-    const validateInvitationCache = useCallback(() => {
-        if (!tournament) return; // Добавляем проверку, чтобы избежать ошибок
-        
-        try {
-            // Проверяем кэш приглашенных пользователей
-            const cachedInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
-            
-            // Если кэш не пуст, проверяем, есть ли какие-то изменения в составе участников
-            if (cachedInvited.length > 0 && tournament && tournament.participants) {
-                // Фильтруем кэш, исключая пользователей, которые уже стали участниками
-                const filteredCache = cachedInvited.filter(userId => {
-                    return !tournament.participants.some(participant => 
-                        participant.user_id === userId || participant.creator_id === userId
-                    );
-                });
-                
-                // Если были изменения, обновляем кэш
-                if (filteredCache.length !== cachedInvited.length) {
-                    localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(filteredCache));
-                    setInvitedUsers(filteredCache);
-                } else {
-                    setInvitedUsers(cachedInvited);
-                }
-            } else {
-                setInvitedUsers(cachedInvited);
-            }
-        } catch (error) {
-            console.error('Ошибка при валидации кэша приглашений:', error);
-            // При ошибке очищаем кэш для безопасности
-            localStorage.removeItem(`tournament_${id}_invited_users`);
-            setInvitedUsers([]);
-        }
-    }, [id, tournament]);
-
     // Проверяем актуальность кэша при загрузке турнира
-    useEffect(() => {
-        validateInvitationCache();
-    }, [validateInvitationCache]);
-
-    // Проверка кэша приглашений при загрузке турнира
     useEffect(() => {
         if (!tournament || !tournament.id) return;
         try {
@@ -2134,9 +2060,6 @@ const getDefaultMap = useCallback((game) => {
         }
     };
     
-    // Проверка кэша приглашений при загрузке турнира
-    
-    
     // Обработчик приглашения конкретного пользователя
     const handleInviteUser = async (userId, username) => {
         if (!tournament || !tournament.id || !userId || !username) return;
@@ -2242,9 +2165,18 @@ const getDefaultMap = useCallback((game) => {
         console.log("Функция сброса результатов отключена");
     };
 
-    // Функция для принудительной очистки кеша и перезагрузки
+    // Функция для автоматической очистки кэша при изменениях
+    const clearCacheOnChangeOld = useCallback(() => {
+        const cacheKey = `tournament_cache_${id}`;
+        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+        localStorage.removeItem(cacheKey);
+        localStorage.removeItem(cacheTimestampKey);
+        console.log('🧹 Автоматическая очистка кэша турнира', id);
+    }, [id]);
+    
+    // Функция для принудительной очистки кэша и перезагрузки
     const forceClearCacheAndReload = async () => {
-        console.log('🧹 Принудительная очистка кеша турнира', id);
+        console.log('🧹 Принудительная очистка кэша турнира', id);
         
         // Очищаем все кеши связанные с турниром
         const cacheKey = `tournament_cache_${id}`;
@@ -2260,6 +2192,37 @@ const getDefaultMap = useCallback((game) => {
         
         // Принудительно загружаем данные с сервера
         await fetchTournamentData();
+    };
+
+    // Функция для обновления результатов матча
+    const handleMatchUpdate = async (matchId, team1Score, team2Score, winnerId, mapResults) => {
+        try {
+            // Автоматически очищаем кэш при обновлении матча
+            clearCacheOnChangeOld();
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('Токен не найден');
+                return;
+            }
+
+            const response = await axios.put(`/api/tournaments/${id}/matches/${matchId}`, {
+                team1_score: team1Score,
+                team2_score: team2Score,
+                winner_id: winnerId,
+                map_results: mapResults
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.status === 200) {
+                console.log('Результат матча обновлен');
+                // Перезагружаем данные турнира
+                await fetchTournamentData();
+            }
+        } catch (error) {
+            console.error('Ошибка при обновлении результата матча:', error);
+        }
     };
 
     return (
@@ -2531,7 +2494,7 @@ const getDefaultMap = useCallback((game) => {
                                             onChange={(e) => setAddParticipantName(e.target.value)}
                                             placeholder="Имя участника"
                                         />
-                                        <button className="add-participant-button" onClick={handleAddParticipant}>Добавить незарегистрированного участника</button>
+                                        <button className="add-participant-button" onClick={handleAddParticipantOld}>Добавить незарегистрированного участника</button>
                                     </div>
                                 </div>
                                             )}
