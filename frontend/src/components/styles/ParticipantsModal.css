@@ -80,15 +80,20 @@
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .participants-count {
-    padding: 16px 20px 8px;
+    padding: 16px 20px 8px 20px;
     color: #b9bbbe;
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+    margin: 0;
+    background: transparent;
 }
 
 .participants-list {
