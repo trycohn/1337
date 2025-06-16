@@ -197,10 +197,42 @@ function TournamentDetails() {
     // Проверяем, соединились ли с вебсокетом
     const [wsConnected, setWsConnected] = useState(false);
     
+    // ПЕРЕМЕЩАЕМ ФУНКЦИИ В НАЧАЛО ДЛЯ ПРАВИЛЬНОГО ПОРЯДКА ИНИЦИАЛИЗАЦИИ
+    
+    // Проверка, является ли пользователь участником турнира
+    const isUserParticipant = useCallback((userId) => {
+        if (!tournament || !tournament.participants) return false;
+        return tournament.participants.some(participant => participant.id === userId);
+    }, [tournament]);
+    
+    // Проверка, было ли отправлено приглашение пользователю
+    const isInvitationSent = useCallback((userId) => {
+        if (!tournament || !tournament.id) return false;
+        
+        try {
+            const cacheKey = `invitedUsers_${tournament.id}`;
+            const cachedInvitedUsers = localStorage.getItem(cacheKey);
+            
+            if (cachedInvitedUsers) {
+                const invitedUsers = JSON.parse(cachedInvitedUsers);
+                return invitedUsers.includes(userId);
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке статуса приглашения:', error);
+        }
+        
+        return false;
+    }, [tournament]);
+    
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
         // ... implementation ...
     }, [tournament, user]);
+    
+    // ОПРЕДЕЛЯЕМ ПЕРЕМЕННЫЕ ДОСТУПА В НАЧАЛЕ
+    const canRequestAdmin = user && !isCreator && !adminRequestStatus;
+    const canGenerateBracket = user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
+    const canEditMatches = user && (isCreator || adminRequestStatus === 'accepted');
     
     const addMap = () => {
         const defaultMap = getDefaultMapHelper(tournament?.game);
@@ -1682,10 +1714,6 @@ const getDefaultMap = useCallback((game) => {
 
     if (!tournament) return <p>Загрузка...</p>;
 
-    const canRequestAdmin = user && !isCreator && !adminRequestStatus;
-    const canGenerateBracket = user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
-    const canEditMatches = user && (isCreator || adminRequestStatus === 'accepted');
-
     // Получение победителей турнира
     const getTournamentWinners = () => {
         if (!matches || matches.length === 0 || tournament.status !== 'completed') {
@@ -2070,31 +2098,6 @@ const getDefaultMap = useCallback((game) => {
     
     // Проверка кэша приглашений при загрузке турнира
     
-    
-    // Проверка, является ли пользователь участником турнира
-    const isUserParticipant = (userId) => {
-        if (!tournament || !tournament.participants) return false;
-        return tournament.participants.some(participant => participant.id === userId);
-    };
-    
-    // Проверка, было ли отправлено приглашение пользователю
-    const isInvitationSent = (userId) => {
-        if (!tournament || !tournament.id) return false;
-        
-        try {
-            const cacheKey = `invitedUsers_${tournament.id}`;
-            const cachedInvitedUsers = localStorage.getItem(cacheKey);
-            
-            if (cachedInvitedUsers) {
-                const invitedUsers = JSON.parse(cachedInvitedUsers);
-                return invitedUsers.includes(userId);
-            }
-        } catch (error) {
-            console.error('Ошибка при проверке статуса приглашения:', error);
-        }
-        
-        return false;
-    };
     
     // Обработчик приглашения конкретного пользователя
     const handleInviteUser = async (userId, username) => {
