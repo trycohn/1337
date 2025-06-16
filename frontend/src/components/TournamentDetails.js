@@ -2164,15 +2164,6 @@ const getDefaultMap = useCallback((game) => {
     const handleClearMatchResults = () => {
         console.log("Функция сброса результатов отключена");
     };
-
-    // Функция для автоматической очистки кэша при изменениях
-    const clearCacheOnChangeOld = useCallback(() => {
-        const cacheKey = `tournament_cache_${id}`;
-        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-        localStorage.removeItem(cacheKey);
-        localStorage.removeItem(cacheTimestampKey);
-        console.log('🧹 Автоматическая очистка кэша турнира', id);
-    }, [id]);
     
     // Функция для принудительной очистки кэша и перезагрузки
     const forceClearCacheAndReload = async () => {
