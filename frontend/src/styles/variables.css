@@ -1,5 +1,5 @@
 :root {
-  /* ===== ЦВЕТОВАЯ СХЕМА ===== */
+  /* Цвета */
   --background-color: #000;
   --card-background: #141414;
   --primary-color: #ff0000;
@@ -16,151 +16,39 @@
   --warning-color: #ffc107;
   --info-color: #17a2b8;
   
-  /* ===== BREAKPOINTS ===== */
-  --breakpoint-xs: 320px;
-  --breakpoint-sm: 576px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 992px;
-  --breakpoint-xl: 1200px;
-  --breakpoint-xxl: 1400px;
-  
-  /* ===== АДАПТИВНАЯ ТИПОГРАФИКА ===== */
+  /* Шрифты */
   --font-family: 'Play', Arial, sans-serif;
   --mono-font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-size-normal: 20px;
+  --font-size-small: 16px;
+  --font-size-medium: 18px;
+  --font-size-large: 24px;
+  --font-size-xlarge: 32px;
   
-  /* Базовые размеры шрифтов с использованием clamp() для плавной адаптивности */
-  --font-size-xs: clamp(0.75rem, 0.8vw, 0.875rem);      /* 12-14px */
-  --font-size-sm: clamp(0.875rem, 1vw, 1rem);           /* 14-16px */
-  --font-size-normal: clamp(1rem, 1.25vw, 1.25rem);     /* 16-20px */
-  --font-size-md: clamp(1.125rem, 1.5vw, 1.375rem);     /* 18-22px */
-  --font-size-lg: clamp(1.25rem, 2vw, 1.5rem);          /* 20-24px */
-  --font-size-xl: clamp(1.5rem, 2.5vw, 2rem);           /* 24-32px */
-  --font-size-xxl: clamp(2rem, 4vw, 3rem);              /* 32-48px */
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
   
-  /* Высота строк */
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
+  /* Границы */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
   
-  /* ===== АДАПТИВНЫЕ ОТСТУПЫ ===== */
-  /* Микро отступы */
-  --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);          /* 4-8px */
-  --spacing-sm: clamp(0.5rem, 1vw, 0.75rem);            /* 8-12px */
-  --spacing-md: clamp(0.75rem, 1.5vw, 1rem);            /* 12-16px */
-  --spacing-lg: clamp(1rem, 2vw, 1.5rem);               /* 16-24px */
-  --spacing-xl: clamp(1.5rem, 3vw, 2rem);               /* 24-32px */
-  --spacing-xxl: clamp(2rem, 4vw, 3rem);                /* 32-48px */
-  --spacing-huge: clamp(3rem, 6vw, 4rem);               /* 48-64px */
-  
-  /* Контейнерные отступы */
-  --container-padding-xs: var(--spacing-md);
-  --container-padding-sm: var(--spacing-lg);
-  --container-padding-md: var(--spacing-xl);
-  --container-padding-lg: var(--spacing-xxl);
-  
-  /* ===== АДАПТИВНЫЕ РАЗМЕРЫ КОМПОНЕНТОВ ===== */
-  /* Кнопки */
-  --btn-height-sm: clamp(2rem, 4vw, 2.25rem);           /* 32-36px */
-  --btn-height-md: clamp(2.25rem, 4.5vw, 2.75rem);      /* 36-44px */
-  --btn-height-lg: clamp(2.75rem, 5vw, 3.25rem);        /* 44-52px */
-  
-  /* Поля ввода */
-  --input-height: clamp(2.5rem, 5vw, 3rem);             /* 40-48px */
-  --input-padding-x: clamp(0.75rem, 2vw, 1rem);         /* 12-16px */
-  --input-padding-y: clamp(0.5rem, 1.5vw, 0.75rem);     /* 8-12px */
-  
-  /* Аватары */
-  --avatar-xs: clamp(1.5rem, 3vw, 2rem);                /* 24-32px */
-  --avatar-sm: clamp(2rem, 4vw, 2.5rem);                /* 32-40px */
-  --avatar-md: clamp(2.5rem, 5vw, 3rem);                /* 40-48px */
-  --avatar-lg: clamp(4rem, 8vw, 5rem);                  /* 64-80px */
-  --avatar-xl: clamp(5rem, 10vw, 7.5rem);               /* 80-120px */
-  
-  /* ===== ГРАНИЦЫ И РАДИУСЫ ===== */
-  --border-radius-sm: 0.25rem;                          /* 4px */
-  --border-radius-md: 0.5rem;                           /* 8px */
-  --border-radius-lg: 0.75rem;                          /* 12px */
-  --border-radius-xl: 1rem;                             /* 16px */
-  --border-radius-full: 50%;
-  
-  --border-width: 1px;
-  --border-width-thick: 2px;
-  
-  /* ===== ТЕНИ ===== */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  /* Тени */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.7);
   
-  /* ===== АНИМАЦИИ ===== */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.3s ease;
-  --transition-slow: 0.5s ease;
-  --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* Анимации */
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
   
-  /* ===== МАКЕТ ===== */
-  /* Адаптивные размеры макета */
-  --header-height: clamp(3.5rem, 8vw, 4rem);            /* 56-64px */
-  --footer-height: clamp(3rem, 6vw, 3.75rem);           /* 48-60px */
-  --sidebar-width: clamp(15rem, 20vw, 18.75rem);        /* 240-300px */
-  
-  /* Максимальные ширины контейнеров */
-  --container-xs: 100%;
-  --container-sm: 540px;
-  --container-md: 720px;
-  --container-lg: 960px;
-  --container-xl: 1140px;
-  --container-xxl: 1320px;
-  
-  /* ===== Z-INDEX СЛОИ ===== */
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
-  --z-toast: 1080;
-  
-  /* ===== АДАПТИВНЫЕ GRID СИСТЕМЫ ===== */
-  --grid-columns: 12;
-  --grid-gap: var(--spacing-md);
-  --grid-gap-sm: var(--spacing-sm);
-  --grid-gap-lg: var(--spacing-lg);
-}
-
-/* ===== МЕДИА-ЗАПРОСЫ ДЛЯ ПЕРЕМЕННЫХ ===== */
-/* Для очень маленьких экранов увеличиваем некоторые размеры для лучшего UX */
-@media (max-width: 375px) {
-  :root {
-    --btn-height-sm: 2.5rem;                            /* 40px минимум для touch */
-    --btn-height-md: 3rem;                              /* 48px минимум для touch */
-    --input-height: 3rem;                               /* 48px минимум для touch */
-    --spacing-md: 1rem;                                 /* Увеличиваем отступы */
-  }
-}
-
-/* Для больших экранов */
-@media (min-width: 1400px) {
-  :root {
-    --container-padding-lg: 3rem;                       /* Больше отступов на больших экранах */
-    --spacing-huge: 5rem;                               /* Еще больше отступов */
-  }
-}
-
-/* ===== ВЫСОКО-КОНТРАСТНЫЕ ПЕРЕМЕННЫЕ ===== */
-@media (prefers-contrast: high) {
-  :root {
-    --light-gray: #555555;
-    --secondary-text: #cccccc;
-    --border-width: 2px;
-  }
-}
-
-/* ===== ПЕРЕМЕННЫЕ ДЛЯ ТЕМНОЙ ТЕМЫ ===== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Переменные уже настроены для темной темы */
-  }
+  /* Макет */
+  --header-height: 60px;
+  --footer-height: 60px;
+  --sidebar-width: 250px;
 } 
