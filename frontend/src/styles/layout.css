@@ -1,6 +1,21 @@
 /* Импорт переменных */
 @import './variables.css';
 
+:root {
+  --header-height: 72px; /* базовая высота хедера */
+}
+
+/* Глобальный отступ, чтобы контент не прятался под шапку */
+main {
+  padding-top: var(--header-height);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --header-height: 56px; /* компактнее на мобильных */
+  }
+}
+
 /* Макет */
 .app {
   display: flex;
@@ -21,7 +36,7 @@
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 10; /* меньше, чтобы не перекрывать модалки/контент */
 }
 
 .header-container {
