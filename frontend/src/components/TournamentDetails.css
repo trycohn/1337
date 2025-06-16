@@ -7255,3 +7255,47 @@ a.participant-name:hover {
 /* =================================================
    КОНЕЦ СТИЛЕЙ ДЛЯ ОШИБКИ АУТЕНТИФИКАЦИИ
    ================================================= */
+
+/* =================================================
+   СТИЛИ ДЛЯ ЭКРАНА ЗАГРУЗКИ ТУРНИРА
+   ================================================= */
+
+.tournament-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 20px;
+    background-color: #000000;
+}
+
+.loading-content {
+    text-align: center;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+    padding: 40px;
+    max-width: 500px;
+    width: 100%;
+    color: #ffffff;
+}
+
+.loading-content h2 {
+    color: #ffffff;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.loading-content p {
+    color: #cccccc;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.loading-content .error-message {
+    color: #ff6b6b;
+    font-weight: 500;
+}

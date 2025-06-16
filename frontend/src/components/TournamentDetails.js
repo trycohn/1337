@@ -284,41 +284,36 @@ function TournamentDetails() {
         // Валидация кешированных данных
         let useCache = false;
         if (cachedTournament && cacheTimestamp) {
-            try {
-                const now = new Date().getTime();
-                const cacheAge = now - parseInt(cacheTimestamp);
-                const parsedTournament = JSON.parse(cachedTournament);
-                
-                // Проверяем валидность кешированных данных
-                const isValidCache = cacheAge < cacheValidityPeriod && 
-                                   parsedTournament && 
-                                   parsedTournament.id && 
-                                   parsedTournament.name;
-                
-                if (isValidCache) {
-                    console.log('📦 Используем кешированные данные турнира');
-                    console.log('🏆 Кешированный турнир:', parsedTournament.name);
-                    console.log('👥 Кешированные участники:', parsedTournament.participants?.length || 0);
-                    console.log('🎯 Кешированные матчи:', parsedTournament.matches?.length || 0);
-                    console.log('🏅 Кешированные команды:', parsedTournament.teams?.length || 0);
-                    
-                    setTournament(parsedTournament);
-                    setMatches(parsedTournament.matches || []);
-                    
-                    // Сохраняем исходный список участников для отладки
-                    if (parsedTournament.participants) {
-                        setOriginalParticipants(parsedTournament.participants);
+            const now = new Date().getTime();
+            const timestamp = parseInt(cacheTimestamp, 10);
+            
+            if (!isNaN(timestamp) && (now - timestamp) < cacheValidityPeriod) {
+                try {
+                    const parsedTournament = JSON.parse(cachedTournament);
+                    if (parsedTournament && parsedTournament.id && parsedTournament.name) {
+                        console.log('✅ Используем валидные кешированные данные турнира');
+                        console.log('🔍 Кешированные данные:', parsedTournament);
+                        setTournament(parsedTournament);
+                        setMatches(parsedTournament.matches || []);
+                        
+                        if (parsedTournament.participants) {
+                            setOriginalParticipants(parsedTournament.participants);
+                        }
+                        
+                        useCache = true;
+                        console.log('🏁 Загрузка данных турнира завершена (из кеша)');
+                    } else {
+                        console.warn('⚠️ Кешированные данные турнира невалидны, загружаем с сервера');
+                        localStorage.removeItem(cacheKey);
+                        localStorage.removeItem(cacheTimestampKey);
                     }
-                    
-                    setLoading(false);
-                    useCache = true;
-                } else {
-                    console.log('⏰ Кеш устарел или поврежден, очищаем его');
+                } catch (parseError) {
+                    console.error('❌ Ошибка при разборе кешированных данных турнира:', parseError);
                     localStorage.removeItem(cacheKey);
                     localStorage.removeItem(cacheTimestampKey);
                 }
-            } catch (parseError) {
-                console.error('❌ Ошибка парсинга кешированных данных:', parseError);
+            } else {
+                console.log('⏰ Кеш турнира устарел, загружаем с сервера');
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
             }
@@ -328,16 +323,18 @@ function TournamentDetails() {
         if (!useCache) {
             try {
                 console.log('🌐 Загружаем данные турнира', id, 'с сервера...');
-                const response = await api.get(`/tournaments/${id}`);
+                const response = await api.get(`/api/tournaments/${id}`);
                 const tournamentData = response.data;
                 
                 console.log('✅ Данные турнира получены с сервера');
-                console.log('🏆 Турнир:', tournamentData.name);
-                console.log('👥 Участники:', tournamentData.participants?.length || 0);
-                console.log('🎯 Матчи:', tournamentData.matches?.length || 0);
-                console.log('🏅 Команды:', tournamentData.teams?.length || 0);
-                console.log('📋 Список участников:', tournamentData.participants);
-                console.log('🏆 Список команд:', tournamentData.teams);
+                console.log('🔍 Полный ответ сервера:', response);
+                console.log('🔍 Данные турнира (response.data):', tournamentData);
+                console.log('🏆 Турнир:', tournamentData?.name);
+                console.log('👥 Участники:', tournamentData?.participants?.length || 0);
+                console.log('🎯 Матчи:', tournamentData?.matches?.length || 0);
+                console.log('🏅 Команды:', tournamentData?.teams?.length || 0);
+                console.log('📋 Список участников:', tournamentData?.participants);
+                console.log('🏆 Список команд:', tournamentData?.teams);
                 
                 // Сохраняем исходный список участников для отладки
                 if (tournamentData.participants) {
@@ -345,13 +342,24 @@ function TournamentDetails() {
                     setOriginalParticipants(tournamentData.participants);
                 }
                 
+                // Проверяем валидность данных перед сохранением
+                if (!tournamentData || !tournamentData.id) {
+                    console.error('❌ Получены невалидные данные турнира:', tournamentData);
+                    setError('Получены некорректные данные турнира');
+                    return;
+                }
+                
+                console.log('✅ Данные турнира валидны, сохраняем в состояние');
                 setTournament(tournamentData);
                 setMatches(tournamentData.matches || []);
                 
                 // Сохраняем в кеш только валидные данные
                 if (tournamentData && tournamentData.id && tournamentData.name) {
+                    console.log('💾 Сохраняем данные турнира в кеш');
                     localStorage.setItem(cacheKey, JSON.stringify(tournamentData));
                     localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
+                } else {
+                    console.warn('⚠️ Данные турнира не сохранены в кеш - отсутствуют обязательные поля');
                 }
                 
                 console.log('🏁 Загрузка данных турнира завершена');
@@ -1716,8 +1724,6 @@ const getDefaultMap = useCallback((game) => {
         }
     }, [userIdToRemove, id, fetchTournamentData]);
 
-    if (!tournament) return <p>Загрузка...</p>;
-
     // Если есть ошибка аутентификации, показываем сообщение
     if (error && error.includes('Сессия истекла')) {
         return (
@@ -1729,6 +1735,19 @@ const getDefaultMap = useCallback((game) => {
                     <button onClick={() => window.location.href = '/'} className="auth-error-button">
                         Перейти на главную
                     </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Если турнир не загружен, показываем загрузку
+    if (!tournament) {
+        return (
+            <div className="tournament-loading">
+                <div className="loading-content">
+                    <h2>Загрузка турнира...</h2>
+                    {loading && <p>Получение данных с сервера...</p>}
+                    {error && <p className="error-message">Ошибка: {error}</p>}
                 </div>
             </div>
         );
