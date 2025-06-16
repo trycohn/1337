@@ -147,6 +147,11 @@ function AuthPage() {
                 required
               />
             </div>
+            <div className="forgot-password-link">
+              <a href="/forgot-password" style={{ color: '#666', fontSize: '14px', textDecoration: 'none' }}>
+                Забыли пароль?
+              </a>
+            </div>
             <button type="submit" className="auth-button">Войти</button>
             <div className="social-login-buttons">
               <button 

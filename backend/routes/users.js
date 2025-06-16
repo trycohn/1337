@@ -2044,4 +2044,149 @@ router.get('/organization-request-status', authenticateToken, async (req, res) =
     }
 });
 
+// Запрос на восстановление пароля
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Email обязателен' });
+    }
+
+    try {
+        // Проверяем, существует ли пользователь с таким email
+        const userResult = await pool.query('SELECT id, username, email FROM users WHERE email = $1', [email]);
+        
+        if (userResult.rows.length === 0) {
+            // Не сообщаем, что email не найден из соображений безопасности
+            return res.json({ message: 'Если аккаунт с таким email существует, на него будет отправлено письмо с инструкциями по восстановлению пароля' });
+        }
+
+        const user = userResult.rows[0];
+        
+        // Генерируем токен для сброса пароля
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        
+        // Сохраняем токен в базе данных со временем истечения (1 час)
+        await pool.query(
+            'UPDATE users SET password_reset_token = $1, password_reset_expires = NOW() + INTERVAL \'1 hour\' WHERE id = $2',
+            [resetToken, user.id]
+        );
+        
+        // Формируем ссылку для сброса пароля
+        const baseUrl = process.env.NODE_ENV === 'production'
+            ? process.env.CLIENT_URL || 'https://1337community.com'
+            : 'http://localhost:3001';
+        const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+        
+        // Отправляем письмо с ссылкой для сброса пароля
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: 'Восстановление пароля - 1337 Community',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Восстановление пароля</h2>
+                    <p>Здравствуйте, ${user.username}!</p>
+                    <p>Вы запросили восстановление пароля для вашего аккаунта на 1337 Community.</p>
+                    <p>Для установки нового пароля перейдите по ссылке ниже:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${resetUrl}" 
+                           style="display: inline-block; background-color: #000000; color: #ffffff; padding: 12px 30px; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">
+                            Восстановить пароль
+                        </a>
+                    </div>
+                    <p>Ссылка действительна в течение 1 часа.</p>
+                    <p>Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.</p>
+                    <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                        <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
+                        <p style="margin: 0; color: #999999; font-size: 11px;">
+                            ${new Date().toLocaleString('ru-RU')}
+                        </p>
+                    </div>
+                </div>
+            `
+        };
+        
+        await transporter.sendMail(mailOptions);
+        
+        res.json({ message: 'Если аккаунт с таким email существует, на него будет отправлено письмо с инструкциями по восстановлению пароля' });
+        
+    } catch (err) {
+        console.error('Ошибка запроса восстановления пароля:', err);
+        res.status(500).json({ error: 'Не удалось отправить письмо для восстановления пароля' });
+    }
+});
+
+// Сброс пароля по токену
+router.post('/reset-password', async (req, res) => {
+    const { token, password, confirmPassword } = req.body;
+
+    if (!token || !password || !confirmPassword) {
+        return res.status(400).json({ message: 'Все поля обязательны для заполнения' });
+    }
+
+    if (password !== confirmPassword) {
+        return res.status(400).json({ message: 'Пароли не совпадают' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Пароль должен содержать минимум 6 символов' });
+    }
+
+    try {
+        // Ищем пользователя по токену и проверяем срок действия
+        const userResult = await pool.query(
+            'SELECT id, username, email FROM users WHERE password_reset_token = $1 AND password_reset_expires > NOW()',
+            [token]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(400).json({ message: 'Недействительный или истекший токен' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Хешируем новый пароль
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Обновляем пароль и очищаем токен сброса
+        await pool.query(
+            'UPDATE users SET password_hash = $1, password_reset_token = NULL, password_reset_expires = NULL WHERE id = $2',
+            [hashedPassword, user.id]
+        );
+
+        // Отправляем уведомление об успешном изменении пароля
+        const successMailOptions = {
+            from: process.env.SMTP_FROM,
+            to: user.email,
+            subject: 'Пароль успешно изменен - 1337 Community',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Пароль изменен</h2>
+                    <p>Здравствуйте, ${user.username}!</p>
+                    <p>Ваш пароль был успешно изменен.</p>
+                    <p>Если это были не вы, немедленно обратитесь к администрации сайта.</p>
+                    <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #4682b4;">
+                        <p style="margin: 0;">Теперь вы можете войти в аккаунт с новым паролем.</p>
+                    </div>
+                    <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                        <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
+                        <p style="margin: 0; color: #999999; font-size: 11px;">
+                            ${new Date().toLocaleString('ru-RU')}
+                        </p>
+                    </div>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(successMailOptions);
+
+        res.json({ message: 'Пароль успешно изменен' });
+
+    } catch (err) {
+        console.error('Ошибка сброса пароля:', err);
+        res.status(500).json({ error: 'Не удалось изменить пароль' });
+    }
+});
+
 module.exports = router;

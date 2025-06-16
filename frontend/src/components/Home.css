@@ -837,8 +837,8 @@ header.header {
 }
 
 .form-group input:focus {
-  border-color: #007bff;
   outline: none;
+  border-color: #4a76a8;
 }
 
 .auth-button {
@@ -1286,4 +1286,21 @@ header.header {
   .tournaments-list th .sort-icon {
     font-size: 11px;
   }
+}
+
+.forgot-password-link {
+  text-align: right;
+  margin-bottom: 15px;
+}
+
+.forgot-password-link a {
+  color: #666;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link a:hover {
+  color: #333;
+  text-decoration: underline;
 }

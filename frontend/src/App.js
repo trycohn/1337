@@ -10,6 +10,8 @@ import OrganizerProfile from './components/OrganizerProfile'; // Импорти�
 import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
 import AdminPanel from './components/AdminPanel'; // Импортируем компонент AdminPanel
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
+import ForgotPasswordPage from './pages/ForgotPasswordPage'; // Импорт страницы восстановления пароля
+import ResetPasswordPage from './pages/ResetPasswordPage'; // Импорт страницы сброса пароля
 import { LoaderProvider } from './context/LoaderContext';
 import { AuthProvider } from './context/AuthContext'; // Импортируем AuthProvider
 import { UserProvider } from './context/UserContext'; // Импортируем UserProvider
@@ -54,7 +56,10 @@ function App() {
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
                                 <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
+                                <Route path="/login" element={<AuthPage />} /> {/* Добавляем маршрут для входа */}
                                 <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
+                                <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* Маршрут для восстановления пароля */}
+                                <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* Маршрут для сброса пароля */}
                                 <Route path="/profile" element={<PrivateRoute component={Profile} />} /> {/* Маршрут для своего профиля */}
                                 <Route path="/user/:userId" element={<PrivateRoute component={UserProfile} />} /> {/* Маршрут для просмотра профиля по ID */}
                                 <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
