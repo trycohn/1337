@@ -1898,9 +1898,7 @@ router.post('/create-organization-request', authenticateToken, upload.single('lo
             });
 
             // Определяем базовый URL для админ панели
-            const baseUrl = process.env.NODE_ENV === 'production'
-                ? process.env.CLIENT_URL || 'https://1337community.com'
-                : 'http://localhost:3001';
+            const baseUrl = process.env.CLIENT_URL || 'https://1337community.com';
 
             // HTML шаблон письма для администраторов
             const adminMailOptions = {
@@ -2073,9 +2071,7 @@ router.post('/forgot-password', async (req, res) => {
         );
         
         // Формируем ссылку для сброса пароля
-        const baseUrl = process.env.NODE_ENV === 'production'
-            ? process.env.CLIENT_URL || 'https://1337community.com'
-            : 'http://localhost:3001';
+        const baseUrl = process.env.CLIENT_URL || 'https://1337community.com';
         const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
         
         // Отправляем письмо с ссылкой для сброса пароля
