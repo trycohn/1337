@@ -129,6 +129,28 @@ const OriginalParticipantsList = ({ participants, tournament }) => {
 function TournamentDetails() {
     const { id } = useParams();
     
+    // Утилитарная функция для обработки ошибок аутентификации
+    const handleAuthError = useCallback((error, context = '') => {
+        if (error.response && error.response.status === 403) {
+            console.log(`🔐 Ошибка аутентификации${context ? ` при ${context}` : ''}, очищаем токен`);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Очищаем все кеши
+            Object.keys(localStorage).forEach(key => {
+                if (key.includes('tournament_cache_') || key.includes('invitedUsers_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            setError('Сессия истекла. Пожалуйста, войдите в систему заново.');
+            // Перенаправляем на главную страницу
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+            return true;
+        }
+        return false;
+    }, []);
+    
     // eslint-disable-next-line no-unused-vars
     const [tournament, setTournament] = useState(null);
     // eslint-disable-next-line no-unused-vars
@@ -335,6 +357,12 @@ function TournamentDetails() {
                 console.log('🏁 Загрузка данных турнира завершена');
             } catch (error) {
                 console.error('❌ Ошибка загрузки турнира:', error);
+                
+                // Проверяем, является ли это ошибкой аутентификации
+                if (handleAuthError(error, 'загрузке турнира')) {
+                    return;
+                }
+                
                 setError('Ошибка загрузки турнира');
                 
                 // Очищаем поврежденный кеш при ошибке
@@ -344,7 +372,7 @@ function TournamentDetails() {
         }
         
         setLoading(false);
-    }, [id]);
+    }, [id, handleAuthError]);
     
     // Функция для автоматической очистки кэша при изменениях
     const clearCacheOnChangeOld = useCallback(() => {
@@ -506,14 +534,22 @@ const getDefaultMap = useCallback((game) => {
                     api
                         .get(`/api/teams?userId=${userResponse.data.id}`, { headers: { Authorization: `Bearer ${token}` } })
                         .then((res) => setTeams(res.data || []))
-                        .catch((error) => console.error('Ошибка загрузки команд:', error));
+                        .catch((error) => {
+                            console.error('Ошибка загрузки команд:', error);
+                            // Проверяем ошибку аутентификации для команд
+                            handleAuthError(error, 'загрузке команд');
+                        });
                 })
-                .catch((error) => console.error('Ошибка загрузки пользователя:', error));
+                .catch((error) => {
+                    console.error('Ошибка загрузки пользователя:', error);
+                    // Проверяем ошибку аутентификации
+                    handleAuthError(error, 'загрузке пользователя');
+                });
         } else {
             setUser(null);
             setTeams([]);
         }
-    }, []);
+    }, [handleAuthError]);
     
     // Загружаем данные турнира
     useEffect(() => {
@@ -733,14 +769,18 @@ const getDefaultMap = useCallback((game) => {
 
     // Загрузка истории сообщений чата турнира
     useEffect(() => {
-                    const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token');
         if (!token) return;
         api.get(`/api/tournaments/${id}/chat/messages`, {
-                        headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => setChatMessages(res.data))
-        .catch(err => console.error('Ошибка загрузки сообщений чата турнира:', err));
-    }, [id]);
+        .catch(err => {
+            console.error('Ошибка загрузки сообщений чата турнира:', err);
+            // Проверяем ошибку аутентификации
+            handleAuthError(err, 'загрузке чата');
+        });
+    }, [id, handleAuthError]);
 
     // Прокрутка чата вниз при новом сообщении
     useEffect(() => {
@@ -1677,6 +1717,22 @@ const getDefaultMap = useCallback((game) => {
     }, [userIdToRemove, id, fetchTournamentData]);
 
     if (!tournament) return <p>Загрузка...</p>;
+
+    // Если есть ошибка аутентификации, показываем сообщение
+    if (error && error.includes('Сессия истекла')) {
+        return (
+            <div className="auth-error-container">
+                <div className="auth-error-message">
+                    <h2>🔐 Сессия истекла</h2>
+                    <p>{error}</p>
+                    <p>Перенаправление на главную страницу...</p>
+                    <button onClick={() => window.location.href = '/'} className="auth-error-button">
+                        Перейти на главную
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Получение победителей турнира
     const getTournamentWinners = () => {

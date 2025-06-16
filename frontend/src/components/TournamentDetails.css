@@ -7176,3 +7176,82 @@ a.participant-name:hover {
 /* =================================================
    КОНЕЦ СТИЛЕЙ ИНТЕГРАЦИИ ЧАТА ТУРНИРА
    ================================================= */
+
+/* =================================================
+   СТИЛИ ДЛЯ ОШИБКИ АУТЕНТИФИКАЦИИ
+   ================================================= */
+
+/* Стили для ошибки аутентификации */
+.auth-error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 20px;
+    background-color: #000000;
+}
+
+.auth-error-message {
+    text-align: center;
+    background: #111111;
+    border: 2px solid #ff6b6b;
+    border-radius: 0;
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.1);
+    max-width: 500px;
+    width: 100%;
+    color: #ffffff;
+}
+
+.auth-error-message h2 {
+    color: #ff6b6b;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.auth-error-message p {
+    color: #cccccc;
+    margin-bottom: 15px;
+    line-height: 1.5;
+    font-weight: 300;
+}
+
+.auth-error-button {
+    background: #ff6b6b;
+    color: #ffffff;
+    border: 1px solid #ff6b6b;
+    padding: 12px 24px;
+    border-radius: 0;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.auth-error-button:hover {
+    background: #000000;
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .auth-error-message {
+        padding: 30px 20px;
+        margin: 0 10px;
+    }
+    
+    .auth-error-message h2 {
+        font-size: 20px;
+    }
+}
+
+/* =================================================
+   КОНЕЦ СТИЛЕЙ ДЛЯ ОШИБКИ АУТЕНТИФИКАЦИИ
+   ================================================= */
