@@ -433,4 +433,110 @@
     .message-image img {
         max-height: 200px;
     }
+}
+
+/* Стили для турнирных чатов */
+.tournament-container {
+    margin-bottom: 20px;
+}
+
+.tournament-container .message-container {
+    margin-bottom: 5px;
+}
+
+.message-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-left: 8px;
+}
+
+.message-user-avatar {
+    flex-shrink: 0;
+}
+
+.message-user-avatar img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e0e0e0;
+}
+
+.message-user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.message-username {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.message-time-header {
+    font-size: 11px;
+    color: #666;
+}
+
+.tournament-message {
+    border-radius: 8px;
+    padding: 10px 12px;
+    max-width: 70%;
+    word-wrap: break-word;
+    margin-left: 42px; /* Отступ для аватарки */
+}
+
+.tournament-container.own-container .tournament-message {
+    margin-left: 0;
+    margin-right: 42px;
+}
+
+.tournament-container.own-container .message-user-info {
+    flex-direction: row-reverse;
+    padding-right: 8px;
+    padding-left: 0;
+}
+
+.tournament-container.own-container .message-user-details {
+    align-items: flex-end;
+}
+
+/* Специальные стили для системных сообщений в турнирах */
+.tournament-container .announcement-wrapper {
+    margin-left: 42px;
+    margin-right: 0;
+}
+
+.tournament-container.own-container .announcement-wrapper {
+    margin-left: 0;
+    margin-right: 42px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .tournament-message {
+        max-width: 85%;
+        margin-left: 35px;
+    }
+    
+    .tournament-container.own-container .tournament-message {
+        margin-left: 0;
+        margin-right: 35px;
+    }
+    
+    .message-user-avatar img {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .message-username {
+        font-size: 13px;
+    }
+    
+    .message-time-header {
+        font-size: 10px;
+    }
 } 

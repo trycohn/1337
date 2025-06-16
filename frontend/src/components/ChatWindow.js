@@ -16,10 +16,82 @@ function ChatWindow({
     messagesEndRef,
     onDeleteMessage,
     onBackToChats,
-    isMobile
+    isMobile,
+    onHideChat
 }) {
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
+    const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+    const [participants, setParticipants] = useState([]);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
+    const [chatInfo, setChatInfo] = useState(null);
     const fileInputRef = useRef(null);
+    
+    // Определяем является ли чат турнирным
+    const isTournamentChat = () => {
+        return activeChat?.type === 'group' && 
+               activeChat?.name && 
+               activeChat.name.startsWith('Турнир: ');
+    };
+    
+    // Получаем ID турнира из имени чата
+    const getTournamentIdFromChat = () => {
+        if (!isTournamentChat()) return null;
+        
+        // Можно попробовать найти турнир по имени
+        // Пока возвращаем null, нужно будет добавить поле tournament_id в чаты или найти другой способ
+        return null;
+    };
+    
+    // Обработчик клика на заголовок чата (для турнирных чатов)
+    const handleHeaderClick = async () => {
+        if (!isTournamentChat()) return;
+        
+        if (showParticipantsModal) {
+            setShowParticipantsModal(false);
+            return;
+        }
+
+        setLoadingParticipants(true);
+        try {
+            const token = localStorage.getItem('token');
+            
+            // Нужно найти турнир по названию чата или добавить tournament_id в чаты
+            // Пока попробуем найти по названию
+            const tournamentName = activeChat.name.replace('Турнир: ', '');
+            
+            // Получаем список турниров и ищем нужный
+            const tournamentsResponse = await api.get('/api/tournaments', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const tournament = tournamentsResponse.data.find(t => t.name === tournamentName);
+            
+            if (!tournament) {
+                console.error('Турнир не найден');
+                return;
+            }
+            
+            const response = await api.get(`/api/tournaments/${tournament.id}/chat/participants`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            setParticipants(response.data.participants);
+            setChatInfo({
+                name: response.data.chat_name,
+                creator: response.data.tournament_creator,
+                totalCount: response.data.total_count
+            });
+            setShowParticipantsModal(true);
+        } catch (error) {
+            console.error('Ошибка загрузки участников чата:', error);
+        } finally {
+            setLoadingParticipants(false);
+        }
+    };
+
+    const closeParticipantsModal = () => {
+        setShowParticipantsModal(false);
+    };
     
     // Если нет активного чата, показываем заглушку
     if (!activeChat) {
@@ -131,15 +203,73 @@ function ChatWindow({
                         className="chat-avatar"
                     />
                 </div>
-                <div className="chat-header-info">
+                <div 
+                    className="chat-header-info" 
+                    onClick={isTournamentChat() ? handleHeaderClick : undefined}
+                    style={{ cursor: isTournamentChat() ? 'pointer' : 'default' }}
+                >
                     <h2>{activeChat.name}</h2>
-                    {activeChat.online_status && (
+                    {loadingParticipants && <span className="loading-indicator">...</span>}
+                    {activeChat.online_status && !isTournamentChat() && (
                         <div className={`online-status ${getOnlineStatusClass()}`}>
                             {activeChat.online_status}
                         </div>
                     )}
+                    {isTournamentChat() && (
+                        <div className="tournament-chat-status">
+                            Групповой чат турнира
+                        </div>
+                    )}
                 </div>
+                
+                {/* Крестик для скрытия чата */}
+                {onHideChat && (
+                    <button className="hide-chat-btn" onClick={() => onHideChat(activeChat.id)} title="Скрыть чат">
+                        ✕
+                    </button>
+                )}
             </div>
+            
+            {/* Модальное окно с участниками турнирного чата */}
+            {showParticipantsModal && isTournamentChat() && (
+                <div className="participants-modal-overlay" onClick={closeParticipantsModal}>
+                    <div className="participants-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Участники: {chatInfo?.name}</h3>
+                            <button className="close-button" onClick={closeParticipantsModal}>×</button>
+                        </div>
+                        <div className="modal-content">
+                            <div className="participants-count">
+                                Участников: {chatInfo?.totalCount}
+                            </div>
+                            <div className="participants-list">
+                                {participants.map((participant) => (
+                                    <div key={participant.user_id} className="participant-item">
+                                        <div className="participant-avatar">
+                                            <img 
+                                                src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                                alt={participant.username}
+                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                            />
+                                        </div>
+                                        <div className="participant-info">
+                                            <span className="participant-name">{participant.username}</span>
+                                            <div className="participant-badges">
+                                                {participant.is_creator && (
+                                                    <span className="badge creator-badge">Создатель</span>
+                                                )}
+                                                {participant.is_admin && !participant.is_creator && (
+                                                    <span className="badge admin-badge">Админ</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             <div className="chat-messages">
                 {messageGroups.map((group, groupIndex) => (
@@ -157,6 +287,7 @@ function ChatWindow({
                                     return payload ? message.sender_id === payload.id : false;
                                 })()}
                                 onDeleteMessage={onDeleteMessage}
+                                showUserInfo={isTournamentChat()} // Для турнирных чатов показываем аватарки и ники
                             />
                         ))}
                     </div>

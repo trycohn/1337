@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import axios from 'axios';
 import api from '../utils/api';
 import BracketRenderer from './BracketRenderer';
-import TournamentChat from './TournamentChat';
+
 import TeamGenerator from './TeamGenerator';
 import { ensureHttps } from '../utils/userHelpers';
 import { gameHasMaps, getGameMaps, isCounterStrike2, getGameMaps as getGameMapsHelper, getDefaultMap as getDefaultMapHelper, getDefaultCS2Maps } from '../utils/mapHelpers';
@@ -169,8 +169,7 @@ function TournamentDetails() {
     const [availableMaps, setAvailableMaps] = useState({});
     const [userIdToRemove, setUserIdToRemove] = useState(null);
     const [originalParticipants, setOriginalParticipants] = useState([]);
-    const [chatMessages, setChatMessages] = useState([]);
-    const [newChatMessage, setNewChatMessage] = useState('');
+
     const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
     const [userSearchResults, setUserSearchResults] = useState([]);
     const [invitedUsers, setInvitedUsers] = useState([]);
@@ -201,7 +200,7 @@ function TournamentDetails() {
     const [editedRules, setEditedRules] = useState('');
     
     // Рефы для работы с DOM
-    const chatEndRef = useRef(null);
+
     const wsRef = useRef(null);
     const searchContainerRef = useRef(null);
     const descriptionRef = useRef('');
@@ -628,15 +627,7 @@ const getDefaultMap = useCallback((game) => {
             }
         });
         
-        socket.on('new_message', (message) => {
-            // Получаем chat_id турнира и проверяем, относится ли сообщение к нему
-            if (tournament?.chat_id && message.chat_id === tournament.chat_id) {
-                setChatMessages(prev => [...prev, message]);
-                if (chatEndRef.current) {
-                    chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
-            }
-        });
+
         
         wsRef.current = socket;
         
@@ -647,7 +638,7 @@ const getDefaultMap = useCallback((game) => {
                 socket.disconnect();
             }
         };
-    }, [id, user, tournament?.id, tournament?.chat_id, fetchTournamentData]);
+    }, [id, user, tournament?.id, fetchTournamentData]);
     
     // Проверка участия пользователя и прав администратора
     useEffect(() => {
@@ -687,8 +678,7 @@ const getDefaultMap = useCallback((game) => {
         socket.on('connect', () => {
             console.log('Socket.IO соединение установлено в компоненте TournamentDetails');
             socket.emit('watch_tournament', id);
-            // Присоединяемся к чату турнира
-            socket.emit('join_tournament_chat', id);
+
         });
 
         socket.on('tournament_update', (tournamentData) => {
@@ -750,20 +740,12 @@ const getDefaultMap = useCallback((game) => {
             console.log('Socket.IO соединение закрыто в компоненте TournamentDetails:', reason);
         });
 
-        // Обработка новых сообщений чата турнира
-        socket.on('new_message', (message) => {
-            if (tournament?.chat_id && message.chat_id === tournament.chat_id) {
-                setChatMessages(prev => [...prev, message]);
-            }
-        });
 
-        // Присоединяемся к комнате чата турнира
-        if (tournament?.chat_id) {
-            socket.emit('join_chat', tournament.chat_id);
-        }
+
+
 
         wsRef.current = socket;
-    }, [id, tournament?.chat_id]);
+    }, [id]);
 
     useEffect(() => {
         setupWebSocket();
@@ -775,52 +757,9 @@ const getDefaultMap = useCallback((game) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    // Загрузка истории сообщений чата турнира
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        api.get(`/api/tournaments/${id}/chat/messages`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        .then(res => setChatMessages(res.data))
-        .catch(err => {
-            console.error('Ошибка загрузки сообщений чата турнира:', err);
-            // Проверяем ошибку аутентификации
-            handleAuthError(err, 'загрузке чата');
-        });
-    }, [id, handleAuthError]);
 
-    // Прокрутка чата вниз при новом сообщении
-    useEffect(() => {
-        if (chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [chatMessages]);
 
-    // Обработчики ввода и отправки сообщений
-    const handleChatInputChange = (e) => {
-        setNewChatMessage(e.target.value);
-    };
-    const handleChatSubmit = async (e) => {
-        e.preventDefault();
-        if (!newChatMessage.trim()) return;
-        
-        const chatId = tournament?.chat_id;
-        if (chatId && wsRef.current) {
-            wsRef.current.emit('send_message', { 
-                chatId: chatId, 
-                content: newChatMessage.trim() 
-            });
-            setNewChatMessage('');
-        } else {
-            console.error('Chat ID не найден для турнира');
-        }
-    };
-    const handleChatKeyPress = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            handleChatSubmit(e);
-        }
-    };
+
 
     const getRoundName = (round, totalRounds) => {
         if (round === -1) return 'Предварительный раунд';
@@ -2976,17 +2915,7 @@ const getDefaultMap = useCallback((game) => {
                 </div>
                             </div>
                             
-                {/* Компонент чата турнира */}
-                <TournamentChat
-                    messages={chatMessages}
-                    newMessage={newChatMessage}
-                    onInputChange={handleChatInputChange}
-                    onSubmit={handleChatSubmit}
-                    onKeyPress={handleChatKeyPress}
-                    chatEndRef={chatEndRef}
-                    user={user}
-                    tournamentId={id}
-                />
+
                             </div>
                             
             {/* Модальное окно подтверждения завершения турнира */}

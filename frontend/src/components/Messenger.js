@@ -483,6 +483,25 @@ function Messenger() {
         }
     };
 
+    // Функция для скрытия чата
+    const hideChat = async (chatId) => {
+        try {
+            // Убираем чат из списка локально
+            setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+            
+            // Если скрытый чат был активным, сбрасываем активный чат
+            if (activeChat?.id === chatId) {
+                setActiveChat(null);
+            }
+            
+            // В будущем можно добавить API для скрытия чата на сервере
+            console.log('Чат скрыт:', chatId);
+            
+        } catch (err) {
+            setError('Ошибка при скрытии чата');
+        }
+    };
+
     // Обработка обновления уведомления в системном чате
     const handleNotificationUpdate = (data) => {
         if (!data || !data.id) return;
@@ -498,8 +517,8 @@ function Messenger() {
                         ...msg,
                         content_meta: {
                             ...msg.content_meta,
-                            processed: true,
-                            action: data.action
+                            action: data.action,
+                            processed: true
                         }
                     };
                 }
@@ -531,6 +550,7 @@ function Messenger() {
                     onDeleteMessage={deleteMessage}
                     onBackToChats={handleBackToChats}
                     isMobile={isMobile}
+                    onHideChat={hideChat}
                 />
             </div>
             

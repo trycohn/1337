@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './Message.css';
 import { formatDate } from '../utils/dateHelpers';
+import { ensureHttps } from '../utils/userHelpers';
 import axios from 'axios';
 
-function Message({ message, isOwn, onDeleteMessage }) {
+function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
     const [showContextMenu, setShowContextMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const contextMenuRef = useRef(null);
@@ -21,6 +22,11 @@ function Message({ message, isOwn, onDeleteMessage }) {
             baseClass = 'message announcement-wrapper';
         } else if (message.message_type === 'image') {
             baseClass += ' image-message';
+        }
+        
+        // Для турнирных чатов добавляем специальный класс
+        if (showUserInfo) {
+            baseClass += ' tournament-message';
         }
         
         return baseClass;
@@ -279,7 +285,25 @@ function Message({ message, isOwn, onDeleteMessage }) {
     };
 
     return (
-        <div className={`message-container ${isOwn ? 'own-container' : ''}`}>
+        <div className={`message-container ${isOwn ? 'own-container' : ''} ${showUserInfo ? 'tournament-container' : ''}`}>
+            {showUserInfo && (
+                <div className="message-user-info">
+                    <div className="message-user-avatar">
+                        <img 
+                            src={ensureHttps(message.sender_avatar || message.avatar_url) || '/default-avatar.png'} 
+                            alt={message.sender_username || message.username} 
+                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                        />
+                    </div>
+                    <div className="message-user-details">
+                        <span className="message-username">{message.sender_username || message.username || 'Система'}</span>
+                        <span className="message-time-header">
+                            {formatDate(message.created_at)}
+                        </span>
+                    </div>
+                </div>
+            )}
+            
             <div className={messageClass()} onContextMenu={handleContextMenu}>
                 {renderMessageContent()}
                 
@@ -299,10 +323,13 @@ function Message({ message, isOwn, onDeleteMessage }) {
                     </div>
                 )}
             </div>
-            <div className="message-meta">
-                <span className="message-time">{formatDate(message.created_at)}</span>
-                {renderMessageStatus()}
-            </div>
+            
+            {!showUserInfo && (
+                <div className="message-meta">
+                    <span className="message-time">{formatDate(message.created_at)}</span>
+                    {renderMessageStatus()}
+                </div>
+            )}
         </div>
     );
 }
