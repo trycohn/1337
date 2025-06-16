@@ -1,0 +1,173 @@
+/* Медиа-запросы для мобильной адаптации */
+@media (max-width: 768px) {
+    .chat-window {
+        min-width: auto;
+        width: 100%;
+        border-left: none;
+    }
+    
+    .chat-header {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    /* Кнопка возврата к списку чатов */
+    .back-to-chats {
+        display: flex;
+        align-items: center;
+        background: none;
+        border: none;
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 8px;
+        margin-right: 8px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .back-to-chats:hover {
+        background-color: #1a1a1a;
+    }
+    
+    .back-to-chats:before {
+        content: '←';
+        margin-right: 6px;
+        font-size: 18px;
+    }
+    
+    .chat-header-avatar {
+        width: 35px;
+        height: 35px;
+        margin-right: 12px;
+    }
+    
+    .chat-header-info h2 {
+        font-size: 16px;
+    }
+    
+    .chat-messages {
+        padding: 16px;
+        max-height: calc(100vh - 160px);
+    }
+    
+    .chat-input-area {
+        padding: 16px;
+    }
+    
+    .chat-input-area form {
+        gap: 10px;
+    }
+    
+    .chat-input-area form input {
+        font-size: 14px;
+        padding: 10px 14px;
+    }
+    
+    .attachment-button {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .chat-input-area button {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .attachment-options {
+        width: 140px;
+        bottom: 45px;
+    }
+    
+    /* Модальные окна */
+    .participants-modal {
+        width: 95%;
+        max-height: 80vh;
+        max-width: 350px;
+    }
+    
+    .participants-modal .modal-header {
+        padding: 14px 16px;
+    }
+    
+    .participants-modal .modal-content {
+        padding: 14px 16px 16px;
+    }
+    
+    .participant-item {
+        padding: 6px 0;
+    }
+    
+    .participant-avatar img {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .participant-name {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 600px) {
+    .chat-header {
+        padding: 12px;
+    }
+    
+    .chat-header-info h2 {
+        font-size: 15px;
+    }
+    
+    .chat-header-avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .online-status {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+    
+    .chat-messages {
+        padding: 12px;
+        max-height: 50vh;
+    }
+    
+    .message-date-separator {
+        margin: 16px 0;
+    }
+    
+    .message-date-separator span {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .chat-input-area {
+        padding: 12px;
+    }
+    
+    .chat-input-area form input {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    
+    .chat-input-area button {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .attachment-button {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .attachment-icon {
+        font-size: 16px;
+    }
+    
+    .empty-chat .select-chat-message {
+        font-size: 14px;
+        padding: 24px 16px;
+    }
+} 

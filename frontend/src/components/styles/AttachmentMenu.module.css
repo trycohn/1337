@@ -1,0 +1,65 @@
+/* Стили меню вложений */
+.attachment-button {
+    position: relative;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    background-color: #222222;
+    border: 1px solid #333333;
+}
+
+.attachment-button:hover {
+    background-color: #333333;
+    border-color: #555555;
+    transform: translateY(-1px);
+}
+
+.attachment-icon {
+    font-style: normal;
+    font-size: 1.2rem;
+    color: #ffffff;
+}
+
+.attachment-options {
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    width: 150px;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.attachment-option {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #ffffff;
+    font-size: 14px;
+    border-bottom: 1px solid #222222;
+}
+
+.attachment-option:last-child {
+    border-bottom: none;
+}
+
+.attachment-option:hover {
+    background-color: #1a1a1a;
+}
+
+.attachment-option i {
+    margin-right: 10px;
+    font-style: normal;
+    width: 16px;
+    text-align: center;
+} 

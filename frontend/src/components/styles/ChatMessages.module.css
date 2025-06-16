@@ -1,0 +1,29 @@
+/* Стили области сообщений */
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background-color: #000000;
+}
+
+.message-date-separator {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    position: relative;
+}
+
+.message-date-separator span {
+    background-color: #222222;
+    border: 1px solid #333333;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #888888;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+} 
