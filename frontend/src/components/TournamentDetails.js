@@ -63,22 +63,6 @@ class ErrorBoundary extends React.Component {
 // Глобальные константы
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
-// Конфигурация для игр с картами
-const GAME_CONFIGS = {
-    COUNTER_STRIKE_2: {
-        id: 21,
-        name: 'Counter-Strike 2',
-        hasMaps: true
-    },
-    // Здесь можно добавить другие игры в будущем
-    // Например:
-    // VALORANT: {
-    //     id: 3,
-    //     name: 'Valorant',
-    //     hasMaps: true
-    // },
-};
-
 // Компонент для отображения оригинального списка участников
 const OriginalParticipantsList = ({ participants, tournament }) => {
   if (!participants || participants.length === 0) {
@@ -147,55 +131,50 @@ function TournamentDetails() {
     const [adminRequestStatus, setAdminRequestStatus] = useState(null);
     const [matches, setMatches] = useState([]);
     const [selectedMatch, setSelectedMatch] = useState(null);
-    const [selectedWinnerId, setSelectedWinnerId] = useState(null);
-    const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
-    const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
-    const [selectedUser, setSelectedUser] = useState(null);
-    const wsRef = useRef(null);
-    const [loading, setLoading] = useState(true);
+    const [selectedWinnerId, setSelectedWinnerId] = useState('');
+    const [maps, setMaps] = useState([]);
+    const [availableMaps, setAvailableMaps] = useState({});
+    const [userIdToRemove, setUserIdToRemove] = useState(null);
+    const [originalParticipants, setOriginalParticipants] = useState([]);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newChatMessage, setNewChatMessage] = useState('');
+    const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
+    const [userSearchResults, setUserSearchResults] = useState([]);
+    const [invitedUsers, setInvitedUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showMapSelection, setShowMapSelection] = useState(false);
+    const [matchScores, setMatchScores] = useState({ team1: 0, team2: 0 });
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [viewingMatchDetails, setViewingMatchDetails] = useState(false);
+    const [matchDetails, setMatchDetails] = useState(null);
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
-    const [userSearchResults, setUserSearchResults] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isEditingDescription, setIsEditingDescription] = useState(false);
-    const [editedDescription, setEditedDescription] = useState('');
-    const [showFullDescription, setShowFullDescription] = useState(false);
-    const [isEditingPrizePool, setIsEditingPrizePool] = useState(false);
-    const [editedPrizePool, setEditedPrizePool] = useState('');
-    const [isEditingFullDescription, setIsEditingFullDescription] = useState(false);
-    const [isEditingRules, setIsEditingRules] = useState(false);
-    const [editedFullDescription, setEditedFullDescription] = useState('');
-    const [editedRules, setEditedRules] = useState('');
-    const [mixedTeams, setMixedTeams] = useState([]);
     const [searchTimeout, setSearchTimeout] = useState(null);
     const [searchResults, setSearchResults] = useState([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
-    const searchContainerRef = useRef(null);
-    const [invitedUsers, setInvitedUsers] = useState([]);
-    const [userIdToRemove, setUserIdToRemove] = useState('');
-    const [viewingMatchDetails, setViewingMatchDetails] = useState(false);
-    const [matchDetails, setMatchDetails] = useState(null);
-    const [maps, setMaps] = useState([{ map: 'de_dust2', score1: 0, score2: 0 }]);
-    const [showMapSelection, setShowMapSelection] = useState(false);
-    const descriptionRef = useRef("");
-    const prizePoolRef = useRef("");
-    const fullDescriptionRef = useRef("");
-    const rulesRef = useRef("");
-    const [chatMessages, setChatMessages] = useState([]);
-    const [newChatMessage, setNewChatMessage] = useState('');
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [editedDescription, setEditedDescription] = useState('');
+    const [isEditingPrizePool, setIsEditingPrizePool] = useState(false);
+    const [editedPrizePool, setEditedPrizePool] = useState('');
+    const [showFullDescription, setShowFullDescription] = useState(false);
+    const [isEditingFullDescription, setIsEditingFullDescription] = useState(false);
+    const [editedFullDescription, setEditedFullDescription] = useState('');
+    const [isEditingRules, setIsEditingRules] = useState(false);
+    const [editedRules, setEditedRules] = useState('');
+    
+    // Рефы для работы с DOM
     const chatEndRef = useRef(null);
-    const [showEndTournamentModal, setShowEndTournamentModal] = useState(false);
-    const [originalParticipants, setOriginalParticipants] = useState([]);
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [sentInvitations, setSentInvitations] = useState([]);
-    
-    // Добавляем новое состояние для хранения карт для разных игр
-    const [availableMaps, setAvailableMaps] = useState({});
-    
-    // Проверяем, соединились ли с вебсокетом
-    const [wsConnected, setWsConnected] = useState(false);
+    const wsRef = useRef(null);
+    const searchContainerRef = useRef(null);
+    const descriptionRef = useRef('');
+    const prizePoolRef = useRef('');
+    const fullDescriptionRef = useRef('');
+    const rulesRef = useRef('');
     
     // ПЕРЕМЕЩАЕМ ФУНКЦИИ В НАЧАЛО ДЛЯ ПРАВИЛЬНОГО ПОРЯДКА ИНИЦИАЛИЗАЦИИ
     
@@ -227,10 +206,9 @@ function TournamentDetails() {
     // eslint-disable-next-line no-unused-vars
     const checkParticipation = useCallback(() => {
         // ... implementation ...
-    }, [tournament, user]);
+    }, []);
     
     // ОПРЕДЕЛЯЕМ ПЕРЕМЕННЫЕ ДОСТУПА В НАЧАЛЕ
-    const canRequestAdmin = user && !isCreator && !adminRequestStatus;
     const canGenerateBracket = user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
     const canEditMatches = user && (isCreator || adminRequestStatus === 'accepted');
     
@@ -487,7 +465,7 @@ const getDefaultMap = useCallback((game) => {
             availableMapsForGame: tournament?.game ? (availableMaps[tournament.game] || []) : [],
             isMapLoading: tournament?.game ? !!availableMaps[`${tournament.game}_loading`] : false
         };
-    }, [tournament?.game, availableMaps, gameHasMaps]);
+    }, [tournament?.game, availableMaps]);
     
     // Загружаем данные пользователя
     useEffect(() => {
@@ -514,19 +492,13 @@ const getDefaultMap = useCallback((game) => {
         fetchTournamentData();
     }, [id, fetchTournamentData]);
     
-    // Загружаем карты для турнира
+    // Эффект для загрузки карт при изменении игры турнира
     useEffect(() => {
-        const { tournamentGame, availableMapsForGame, isMapLoading } = memoizedGameData;
-        
-        // Загружаем карты только если:
-        // 1. Есть игра
-        // 2. У нас нет карт для этой игры
-        // 3. Мы еще не начали загрузку карт
-        if (tournamentGame && availableMapsForGame.length === 0 && !isMapLoading) {
-            console.log(`Инициирую загрузку карт для ${tournamentGame}`);
-            fetchMapsForGame(tournamentGame);
+        if (tournament?.game && gameHasMaps(tournament.game)) {
+            console.log(`Загружаем карты для игры: ${tournament.game}`);
+            fetchMapsForGame(tournament.game);
         }
-    }, [memoizedGameData, fetchMapsForGame]);
+    }, [tournament?.game, fetchMapsForGame]);
     
     // Настройка Socket.IO для получения обновлений турнира
     useEffect(() => {
@@ -603,7 +575,7 @@ const getDefaultMap = useCallback((game) => {
                 socket.disconnect();
             }
         };
-    }, [id, user, tournament, fetchTournamentData, API_URL]);
+    }, [id, user, tournament?.id, tournament?.chat_id, fetchTournamentData]);
     
     // Проверка участия пользователя и прав администратора
     useEffect(() => {
@@ -719,7 +691,7 @@ const getDefaultMap = useCallback((game) => {
         }
 
         wsRef.current = socket;
-    }, [id]);
+    }, [id, tournament?.chat_id]);
 
     useEffect(() => {
         setupWebSocket();
@@ -896,7 +868,7 @@ const getDefaultMap = useCallback((game) => {
         console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
         console.log('Games для визуализации сетки:', safeGames);
         return safeGames;
-    }, [matches, tournament, ensureHttps]);
+    }, [matches, tournament]);
 
     // После каждого обновления matches или tournament, форсируем обновление компонента BracketRenderer
     useEffect(() => {
@@ -922,12 +894,11 @@ const getDefaultMap = useCallback((game) => {
             
             return () => clearTimeout(timer);
         }
-    }, [games, tournament]); // Добавил tournament в зависимости
+    }, [games]);
 
     // Обработчик успешной генерации команд в TeamGenerator
     const handleTeamsGenerated = (teams) => {
         if (teams && Array.isArray(teams)) {
-            setMixedTeams(teams);
             
             // Сохраняем текущий список участников до формирования команд
             if (tournament && tournament.participants && tournament.participants.length > 0) {
@@ -1115,12 +1086,6 @@ const getDefaultMap = useCallback((game) => {
 
     // Функция для генерации сетки турнира
     const handleGenerateBracket = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setMessage('Пожалуйста, войдите, чтобы сгенерировать сетку');
-            return;
-        }
-
         if (!canGenerateBracket) {
             setMessage('У вас нет прав для генерации сетки или сетка уже сгенерирована');
             console.log('У вас нет прав для генерации сетки или сетка уже сгенерирована');
@@ -1135,6 +1100,12 @@ const getDefaultMap = useCallback((game) => {
             if (!tournament.participants || tournament.participants.length < 2) {
                 setMessage('Недостаточно участников для генерации сетки. Минимум 2 участника.');
                 console.log('Недостаточно участников для генерации сетки. Минимум 2 участника.');
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setMessage('Необходима авторизация для генерации сетки');
                 return;
             }
             
@@ -1631,21 +1602,15 @@ const getDefaultMap = useCallback((game) => {
         }
     }, [tournament]);
 
-    // Функция для очистки кэша приглашений для конкретного пользователя
-    const clearInvitationCache = (userId) => {
+    // Функция для очистки кэша приглашения конкретного пользователя
+    const clearInvitationCache = async (userId) => {
         try {
-            // Получаем текущий список приглашенных пользователей
-            const currentInvited = JSON.parse(localStorage.getItem(`tournament_${id}_invited_users`) || '[]');
-            console.log(`Очистка кэша для пользователя ${userId}. Текущий кэш:`, currentInvited);
+            const token = localStorage.getItem('token');
+            await api.post(`/api/tournaments/${id}/clear-invitation-cache`, 
+                { userId }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             
-            // Фильтруем списки, исключая указанный userId
-            const updatedInvited = currentInvited.filter(id => id !== userId);
-            
-            // Обновляем localStorage и состояние
-            localStorage.setItem(`tournament_${id}_invited_users`, JSON.stringify(updatedInvited));
-            setInvitedUsers(updatedInvited);
-            
-            console.log(`Кэш обновлен. Новый кэш:`, updatedInvited);
             // Используем наше toast-уведомление
             console.log(`Кэш приглашения для пользователя #${userId} очищен`);
             setMessage(`Кэш приглашения для пользователя #${userId} очищен`);
@@ -1657,14 +1622,14 @@ const getDefaultMap = useCallback((game) => {
         }
     };
 
-    // Функция для полной очистки кэша приглашений
-    const clearAllInvitationsCache = () => {
+    // Функция для очистки всего кэша приглашений
+    const clearAllInvitationsCache = async () => {
         try {
-            console.log('Очистка всего кэша приглашений');
-            
-            // Очищаем localStorage и состояние
-            localStorage.removeItem(`tournament_${id}_invited_users`);
-            setInvitedUsers([]);
+            const token = localStorage.getItem('token');
+            await api.post(`/api/tournaments/${id}/clear-all-invitations-cache`, 
+                {}, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             
             console.log('Кэш приглашений полностью очищен');
             // Используем наше toast-уведомление
@@ -1680,35 +1645,31 @@ const getDefaultMap = useCallback((game) => {
 
     // Удаление участника турнира
     useEffect(() => {
-        if (!userIdToRemove) return;
-        
-        const removeParticipant = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    console.error('Необходима авторизация для удаления участника');
-                    return;
+        if (userIdToRemove) {
+            const removeParticipant = async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        console.error('Необходима авторизация для удаления участника');
+                        return;
+                    }
+                    
+                    await api.delete(`/api/tournaments/${id}/participants/${userIdToRemove}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    // Обновляем список участников
+                    await fetchTournamentData();
+                    console.log('Участник успешно удален');
+                } catch (error) {
+                    console.error(error.response?.data?.error || 'Ошибка при удалении участника');
+                    console.error('Ошибка при удалении участника:', error);
+                } finally {
+                    setUserIdToRemove(null);
                 }
-                
-                await api.delete(`/api/tournaments/${id}/participants/${userIdToRemove}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                
-                // Обновляем список участников
-                await fetchTournamentData();
-                console.log('Участник успешно удален');
-            } catch (error) {
-                console.error(error.response?.data?.error || 'Ошибка при удалении участника');
-                console.error('Ошибка при удалении участника:', error);
-            } finally {
-                setUserIdToRemove('');
-            }
-        };
-        
-        if (window.confirm('Вы уверены, что хотите удалить этого участника?')) {
+            };
+            
             removeParticipant();
-        } else {
-            setUserIdToRemove('');
         }
     }, [userIdToRemove, id, fetchTournamentData]);
 
