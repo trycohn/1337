@@ -159,7 +159,77 @@
     font-weight: 500;
 }
 
-/* Статус-бадж */
+/* 🆕 Администраторы турнира */
+.meta-item.admins-meta {
+    grid-column: span 1;
+}
+
+.admins-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid #1a1a1a;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.admin-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #333333;
+}
+
+.admin-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+    flex-shrink: 0;
+}
+
+.admin-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-placeholder {
+    font-size: 0.875rem;
+    background: #444444;
+}
+
+.admin-link {
+    color: #e0e0e0;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.admin-link:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.more-admins {
+    color: #888888;
+    font-size: 0.75rem;
+    font-style: italic;
+    text-align: center;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.01);
+    border-radius: 4px;
+}
+
+/* 🆕 Обновленные статус-бадж */
 .status-badge {
     padding: 4px 12px;
     border-radius: 16px;
@@ -167,6 +237,13 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    display: inline-block;
+}
+
+.status-badge.status-active {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .status-badge.status-upcoming {
@@ -180,6 +257,7 @@
     background: rgba(34, 197, 94, 0.1);
     color: #22c55e;
     border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: pulse-green 2s infinite;
 }
 
 .status-badge.status-completed {
@@ -192,6 +270,28 @@
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
     border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge.status-paused {
+    background: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.status-badge.status-unknown {
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* 🆕 Анимация для активных статусов */
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+    }
 }
 
 /* 🆕 Блоки контента */
@@ -823,6 +923,12 @@
     .tournament-info-section {
         padding: 24px 16px;
         margin-bottom: 16px;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "section-header"
+            "tournament-meta-grid"
+            "description-block"
+            "rules-block";
     }
     
     .section-header {
@@ -837,6 +943,16 @@
     
     .meta-row {
         grid-template-columns: 1fr;
+    }
+    
+    .admins-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .admin-item {
+        flex: 1;
+        min-width: 120px;
     }
     
     .participants-list {

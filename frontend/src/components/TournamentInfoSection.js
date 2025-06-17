@@ -54,6 +54,21 @@ const TournamentInfoSection = ({ tournament, user, isCreator, isAdminOrCreator }
         return typeNames[type] || type || 'Не указан';
     };
 
+    // 🆕 Функция для получения читаемого статуса турнира
+    const getStatusDisplayName = (status) => {
+        const statusConfig = {
+            'active': { label: '🟢 Активный', class: 'status-active' },
+            'upcoming': { label: '🔜 Предстоящий', class: 'status-upcoming' },
+            'ongoing': { label: '🟢 Идет', class: 'status-ongoing' },
+            'in-progress': { label: '🟢 В процессе', class: 'status-in-progress' },
+            'completed': { label: '✅ Завершен', class: 'status-completed' },
+            'cancelled': { label: '❌ Отменен', class: 'status-cancelled' },
+            'paused': { label: '⏸️ Приостановлен', class: 'status-paused' }
+        };
+        
+        return statusConfig[status] || { label: '❓ Неизвестно', class: 'status-unknown' };
+    };
+
     // Функция для форматирования даты
     const formatDate = (dateString) => {
         if (!dateString) return 'Не указана';
@@ -125,6 +140,30 @@ const TournamentInfoSection = ({ tournament, user, isCreator, isAdminOrCreator }
         }
     };
 
+    // 🆕 Получение информации о создателе турнира
+    const getCreatorInfo = () => {
+        if (tournament?.creator_username) {
+            return {
+                id: tournament.created_by,
+                username: tournament.creator_username,
+                avatar_url: tournament.creator_avatar_url
+            };
+        }
+        return null;
+    };
+
+    // 🆕 Получение списка администраторов
+    const getAdmins = () => {
+        if (Array.isArray(tournament?.admins)) {
+            return tournament.admins;
+        }
+        return [];
+    };
+
+    const creatorInfo = getCreatorInfo();
+    const adminsList = getAdmins();
+    const statusInfo = getStatusDisplayName(tournament?.status);
+
     return (
         <div className="tournament-info-section">
             <div className="section-header">
@@ -175,13 +214,8 @@ const TournamentInfoSection = ({ tournament, user, isCreator, isAdminOrCreator }
                 <div className="meta-row">
                     <div className="meta-item">
                         <strong>⚡ Статус:</strong>
-                        <span className={`status-badge status-${tournament?.status}`}>
-                            {tournament?.status === 'upcoming' && '🔜 Предстоящий'}
-                            {tournament?.status === 'ongoing' && '🟢 Идет'}
-                            {tournament?.status === 'in-progress' && '🟢 Идет'}
-                            {tournament?.status === 'completed' && '✅ Завершен'}
-                            {tournament?.status === 'cancelled' && '❌ Отменен'}
-                            {!tournament?.status && '❓ Неизвестно'}
+                        <span className={`status-badge ${statusInfo.class}`}>
+                            {statusInfo.label}
                         </span>
                     </div>
 
@@ -193,32 +227,33 @@ const TournamentInfoSection = ({ tournament, user, isCreator, isAdminOrCreator }
                     )}
                 </div>
 
+                {/* 🆕 Блок с создателем и администраторами */}
                 <div className="meta-row">
                     <div className="meta-item creator-meta">
                         <strong>👤 Создатель турнира:</strong>
                         <div className="creator-display">
                             <div className="creator-avatar">
-                                {tournament?.creator?.avatar_url ? (
+                                {creatorInfo?.avatar_url ? (
                                     <img 
-                                        src={ensureHttps(tournament.creator.avatar_url)} 
-                                        alt={tournament.creator.username || tournament.creator.name}
+                                        src={ensureHttps(creatorInfo.avatar_url)} 
+                                        alt={creatorInfo.username}
                                         onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                     />
                                 ) : (
                                     <div className="avatar-placeholder">
-                                        {(tournament?.creator?.username || tournament?.creator?.name || 'U')[0].toUpperCase()}
+                                        {(creatorInfo?.username || 'U')[0].toUpperCase()}
                                     </div>
                                 )}
                             </div>
                             <div className="creator-info">
-                                {tournament?.creator ? (
+                                {creatorInfo ? (
                                     <a 
-                                        href={`/profile/${tournament.creator.id}`} 
+                                        href={`/profile/${creatorInfo.id}`} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
                                         className="creator-link"
                                     >
-                                        {tournament.creator.username || tournament.creator.name || 'Неизвестный'}
+                                        {creatorInfo.username}
                                     </a>
                                 ) : (
                                     <span className="creator-name">Неизвестный создатель</span>
@@ -226,6 +261,48 @@ const TournamentInfoSection = ({ tournament, user, isCreator, isAdminOrCreator }
                             </div>
                         </div>
                     </div>
+
+                    {/* 🆕 Администраторы турнира */}
+                    {adminsList.length > 0 && (
+                        <div className="meta-item admins-meta">
+                            <strong>👑 Администраторы ({adminsList.length}):</strong>
+                            <div className="admins-list">
+                                {adminsList.slice(0, 3).map((admin, index) => (
+                                    <div key={admin.id || index} className="admin-item">
+                                        <div className="admin-avatar">
+                                            {admin.avatar_url ? (
+                                                <img 
+                                                    src={ensureHttps(admin.avatar_url)} 
+                                                    alt={admin.username}
+                                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                                />
+                                            ) : (
+                                                <div className="avatar-placeholder admin-placeholder">
+                                                    {(admin.username || 'A')[0].toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="admin-info">
+                                            <a 
+                                                href={`/profile/${admin.user_id || admin.id}`}
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="admin-link"
+                                                title={`Администратор с ${formatDate(admin.assigned_at)}`}
+                                            >
+                                                {admin.username}
+                                            </a>
+                                        </div>
+                                    </div>
+                                ))}
+                                {adminsList.length > 3 && (
+                                    <div className="more-admins">
+                                        +{adminsList.length - 3} еще
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
