@@ -208,16 +208,30 @@
     transform: translateX(-50%);
     background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
     color: #ffffff;
-    border: 2px solid #007acc;
+    border: 2px solid #ffffff;
     border-radius: 12px;
-    padding: 16px;
-    min-width: 280px;
-    max-width: 400px;
+    padding: 162x;
+    min-width: 120px;
+    max-width: 240px;
+    font-size: 24px;
     z-index: 1000;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
     animation: tooltipSlideDown 0.3s ease-out;
     margin-top: 8px;
 }
+
+.tooltip-close {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 0;
+    right: 0;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+
 @keyframes tooltipSlideDown {
     from {
         opacity: 0;
