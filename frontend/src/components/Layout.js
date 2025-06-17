@@ -3,7 +3,6 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-regular-svg-icons';
-import { faBars, faTimes, faHome, faTrophy, faPlus, faUser, faComments, faCog } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Layout.css';
 import Loader from './Loader';
@@ -216,7 +215,9 @@ function Layout() {
                         {isMobile ? (
                             <>
                                 <button className="mobile-menu-trigger" onClick={toggleMenu}>
-                                    <FontAwesomeIcon icon={faBars} />
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/>
+                                    </svg>
                                 </button>
                                 <div className="logo">1337 Community</div>
                             </>
@@ -250,33 +251,35 @@ function Layout() {
                                 <div className="mobile-menu-header">
                                     <div className="mobile-menu-title">Меню</div>
                                     <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>
-                                        <FontAwesomeIcon icon={faTimes} />
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                        </svg>
                                     </button>
                                 </div>
                                 <nav className="mobile-menu-nav">
                                     <Link to="/" onClick={() => setIsMenuOpen(false)}>
-                                        <FontAwesomeIcon icon={faHome} /> Главная
+                                        <span className="menu-icon">🏠</span> Главная
                                     </Link>
                                     <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>
-                                        <FontAwesomeIcon icon={faTrophy} /> Турниры
+                                        <span className="menu-icon">🏆</span> Турниры
                                     </Link>
                                     {user && (
                                         <>
                                             <Link to="/create" onClick={() => setIsMenuOpen(false)}>
-                                                <FontAwesomeIcon icon={faPlus} /> Создать турнир
+                                                <span className="menu-icon">➕</span> Создать турнир
                                             </Link>
                                             <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
-                                                <FontAwesomeIcon icon={faUser} /> Мой профиль
+                                                <span className="menu-icon">👤</span> Мой профиль
                                             </Link>
                                             <Link to="/messages" onClick={() => setIsMenuOpen(false)}>
-                                                <FontAwesomeIcon icon={faComments} /> Чаты
+                                                <span className="menu-icon">💬</span> Чаты
                                                 {unreadCount > 0 && (
                                                     <span className="mobile-menu-badge">{unreadCount}</span>
                                                 )}
                                             </Link>
                                             {user.role === 'admin' && (
                                                 <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
-                                                    <FontAwesomeIcon icon={faCog} /> Админ панель
+                                                    <span className="menu-icon">⚙️</span> Админ панель
                                                 </Link>
                                             )}
                                         </>
