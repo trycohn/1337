@@ -638,7 +638,7 @@ function TournamentDetails() {
             console.log('📡 Отправляем данные на сервер:', submitData);
 
             // Отправка запроса на сервер
-            const response = await api.put(`/api/tournaments/${id}/matches/${matchId}/result`, submitData, {
+            const response = await api.post(`/api/tournaments/matches/${matchId}/result`, submitData, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
