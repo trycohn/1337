@@ -212,82 +212,40 @@ function Layout() {
             {loading && <Loader />}
             <header className="header">
                     <div className="nav-container">
-                        {isMobile ? (
-                            <>
-                                <button className="mobile-menu-trigger" onClick={toggleMenu}>
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/>
-                                    </svg>
-                                </button>
-                                <div className="logo">1337 Community</div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="logo">1337 Community</div>
-                                <nav className="desktop-menu">
-                                    <Link to="/">Главная</Link>
-                                    <Link to="/tournaments">Турниры</Link>
-                                    {user && (
-                                        <>
-                                            <Link to="/create">Создать турнир</Link>
-                                            <Link to="/profile">Мой профиль</Link>
-                                            <Link to="/messages">Чаты</Link>
-                                            {user.role === 'admin' && (
-                                                <Link to="/admin" className="admin-link">
-                                                    Админ панель
-                                                </Link>
-                                            )}
-                                        </>
+                        <button className="hamburger" onClick={toggleMenu}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
+                                <path d="M3 11H21V13H3V11Z" fill="#ffffff"/>
+                                <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
+                            </svg>
+                        </button>
+                        <nav 
+                            className={`navigation ${isMenuOpen ? 'open' : ''}`}
+                            onClick={(e) => {
+                                // Закрываем меню при клике по фону (не по ссылкам)
+                                if (e.target === e.currentTarget) {
+                                    setIsMenuOpen(false);
+                                }
+                            }}
+                        >
+                            <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
+                            <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
+                            {user && (
+                                <>
+                                    <Link to="/create" onClick={() => setIsMenuOpen(false)}>
+                                        Создать турнир
+                                    </Link>
+                                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
+                                    <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
+                                    {user.role === 'admin' && (
+                                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
+                                            Админ панель
+                                        </Link>
                                     )}
-                                </nav>
-                            </>
-                        )}
+                                </>
+                            )}
+                        </nav>
                     </div>
-                    
-                    {/* Мобильное меню */}
-                    {isMobile && (
-                        <div className={`mobile-menu-overlay ${isMenuOpen ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-                            <div className={`mobile-menu ${isMenuOpen ? 'active' : ''}`} onClick={(e) => e.stopPropagation()}>
-                                <div className="mobile-menu-header">
-                                    <div className="mobile-menu-title">Меню</div>
-                                    <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <nav className="mobile-menu-nav">
-                                    <Link to="/" onClick={() => setIsMenuOpen(false)}>
-                                        <span className="menu-icon">🏠</span> Главная
-                                    </Link>
-                                    <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>
-                                        <span className="menu-icon">🏆</span> Турниры
-                                    </Link>
-                                    {user && (
-                                        <>
-                                            <Link to="/create" onClick={() => setIsMenuOpen(false)}>
-                                                <span className="menu-icon">➕</span> Создать турнир
-                                            </Link>
-                                            <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
-                                                <span className="menu-icon">👤</span> Мой профиль
-                                            </Link>
-                                            <Link to="/messages" onClick={() => setIsMenuOpen(false)}>
-                                                <span className="menu-icon">💬</span> Чаты
-                                                {unreadCount > 0 && (
-                                                    <span className="mobile-menu-badge">{unreadCount}</span>
-                                                )}
-                                            </Link>
-                                            {user.role === 'admin' && (
-                                                <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
-                                                    <span className="menu-icon">⚙️</span> Админ панель
-                                                </Link>
-                                            )}
-                                        </>
-                                    )}
-                                </nav>
-                            </div>
-                        </div>
-                    )}
                     <div className="auth-block">
                         {user ? (
                             <div className="user-info">
