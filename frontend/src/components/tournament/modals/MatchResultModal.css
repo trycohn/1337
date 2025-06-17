@@ -211,13 +211,16 @@
     border: 2px solid #ffffff;
     border-radius: 12px;
     padding: 162x;
-    min-width: 120px;
-    max-width: 240px;
+    min-width: 220px;
+    max-width: 340px;
     font-size: 24px;
     z-index: 1000;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
     animation: tooltipSlideDown 0.3s ease-out;
     margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
 }
 
 .tooltip-close {
