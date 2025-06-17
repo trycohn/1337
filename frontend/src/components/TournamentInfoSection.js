@@ -154,71 +154,77 @@ const TournamentInfoSection = ({ tournament, onSave, currentUser, onRemovePartic
                 )}
             </form>
 
-            <div className="participants-section">
-                <h3>Участники турнира</h3>
-                <div className="participants-list">
-                    {tournament?.participants?.map(participant => (
-                        <div 
-                            key={participant.id} 
-                            className="participant-item"
-                            onClick={() => handleParticipantClick(participant)}
-                        >
-                            <img 
-                                src={participant.avatar || '/default-avatar.png'} 
-                                alt={participant.username || participant.name || 'Участник'}
-                                className="participant-avatar"
-                            />
-                            <span className="participant-name">{participant.username || participant.name}</span>
-                        </div>
-                    ))}
-                </div>
-
-                {showActions && selectedParticipant && (
-                    <div className="participant-actions-modal">
-                        <div className="actions-content">
-                            <h4>Действия с участником</h4>
-                            <button 
-                                className="action-button profile-button"
-                                onClick={handleOpenProfile}
+            {/* Участники турнира - скрываем для микс-турниров с сформированными командами */}
+            {!(tournament?.participant_type === 'mix' && tournament?.teams && tournament?.teams.length > 0) && (
+                <div className="participants-section">
+                    <h3>Участники турнира</h3>
+                    <div className="participants-list">
+                        {tournament?.participants?.map(participant => (
+                            <div 
+                                key={participant.id} 
+                                className="participant-item"
+                                onClick={() => handleParticipantClick(participant)}
                             >
-                                Открыть профиль
-                            </button>
-                            {canEdit && (
+                                <img 
+                                    src={participant.avatar || '/default-avatar.png'} 
+                                    alt={participant.username || participant.name || 'Участник'}
+                                    className="participant-avatar"
+                                />
+                                <span className="participant-name">{participant.username || participant.name}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {showActions && selectedParticipant && (
+                        <div className="participant-actions-modal">
+                            <div className="actions-content">
+                                <h4>Действия с участником</h4>
                                 <button 
-                                    className="action-button remove-button"
-                                    onClick={handleRemoveParticipant}
+                                    className="action-button profile-button"
+                                    onClick={handleOpenProfile}
                                 >
-                                    Удалить из турнира
+                                    Открыть профиль
                                 </button>
-                            )}
-                            <button 
-                                className="action-button cancel-button"
-                                onClick={() => setShowActions(false)}
-                            >
-                                Отмена
-                            </button>
+                                {canEdit && (
+                                    <button 
+                                        className="action-button remove-button"
+                                        onClick={handleRemoveParticipant}
+                                    >
+                                        Удалить из турнира
+                                    </button>
+                                )}
+                                <button 
+                                    className="action-button cancel-button"
+                                    onClick={() => setShowActions(false)}
+                                >
+                                    Отмена
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Настройки микса - скрываем для турниров с уже сформированными командами */}
+            {tournament?.participant_type === 'mix' && !(tournament?.teams && tournament?.teams.length > 0) && (
+                <div className="mix-settings">
+                    <h3>Настройки микса</h3>
+                    <div className="mix-options">
+                        <div className="form-group">
+                            <label>
+                                <input type="checkbox" />
+                                Случайное распределение
+                            </label>
+                        </div>
+                        <div className="form-group">
+                            <label>
+                                <input type="checkbox" />
+                                Учитывать рейтинг
+                            </label>
                         </div>
                     </div>
-                )}
-            </div>
-
-            <div className="mix-settings">
-                <h3>Настройки микса</h3>
-                <div className="mix-options">
-                    <div className="form-group">
-                        <label>
-                            <input type="checkbox" />
-                            Случайное распределение
-                        </label>
-                    </div>
-                    <div className="form-group">
-                        <label>
-                            <input type="checkbox" />
-                            Учитывать рейтинг
-                        </label>
-                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
