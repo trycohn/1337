@@ -2102,11 +2102,12 @@ a.participant-name:hover {
 .tab-button-tournamentdetails.active {
     background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
     border-image: linear-gradient(45deg, #ffffff, #cccccc) 1;
-
+}
 /* Эффект пульсации для активной вкладки */
 .tab-button-tournamentdetails.active::before {
     animation: pulse 2s infinite;
 }
+
 @keyframes pulse {
     0%, 100% { 
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
