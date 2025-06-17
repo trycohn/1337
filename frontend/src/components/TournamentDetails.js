@@ -1,10 +1,8 @@
-// 🔧 QA REFACTORED VERSION - TournamentDetails.js v4.2.4
-// ✅ Исправлены дублированные объявления функций
-// ✅ Оптимизированы импорты
-// ✅ Улучшена обработка ошибок
-// ✅ Добавлена валидация данных
-// ✅ Повышена тестируемость
-// ✅ Устранены циклические зависимости
+// 🔧 QA REFACTORED VERSION - TournamentDetails.js v4.2.5
+// ✅ Реорганизация страницы турнира с табовой структурой
+// ✅ Убран блок достижений
+// ✅ Скрыт список участников микс-турнира после формирования команд
+// ✅ Добавлена система вкладок
 
 // Импорты React и связанные
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
@@ -35,7 +33,6 @@ import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
 import UnifiedParticipantsPanel from './tournament/UnifiedParticipantsPanel';
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
-import AchievementsPanel from './achievements/AchievementsPanel';
 
 // Контекст
 import { useUser } from '../context/UserContext';
@@ -118,76 +115,47 @@ const validateParticipantData = (participant) => {
     return participant.id && (participant.name || participant.username);
 };
 
-// Компонент для отображения оригинального списка участников
-const OriginalParticipantsList = React.memo(({ participants, tournament }) => {
-    // Валидация пропсов
-    if (!Array.isArray(participants)) {
-        console.warn('⚠️ OriginalParticipantsList: participants не является массивом');
-        return (
-            <div className="original-participants-list-wrapper" data-testid="participants-invalid">
-                <h3>Зарегистрированные игроки (0)</h3>
-                <p className="no-participants">Ошибка загрузки участников</p>
-            </div>
-        );
+// Компонент призеров турнира
+const TournamentWinners = React.memo(({ tournament }) => {
+    if (tournament.status !== 'completed' || !tournament.winners) {
+        return null;
     }
 
-    if (participants.length === 0) {
-        return (
-            <div className="original-participants-list-wrapper" data-testid="participants-empty">
-                <h3>Зарегистрированные игроки (0)</h3>
-                <p className="no-participants">Нет зарегистрированных игроков</p>
-            </div>
-        );
+    const winners = Array.isArray(tournament.winners) ? tournament.winners : [];
+    
+    if (winners.length === 0) {
+        return null;
     }
-
-    // Фильтруем только валидных участников
-    const validParticipants = participants.filter(validateParticipantData);
 
     return (
-        <div className="original-participants-list-wrapper" data-testid="participants-list">
-            <h3>Зарегистрированные игроки ({validParticipants.length})</h3>
-            <div className="original-participants-grid">
-                {validParticipants.map((participant) => (
-                    <div 
-                        key={participant.id || `participant-${Math.random()}`} 
-                        className="participant-card"
-                        data-testid={`participant-${participant.id}`}
-                    >
-                        <div className="participant-info">
-                            <div className="participant-avatar">
-                                {participant.avatar_url ? (
-                                    <img 
-                                        src={ensureHttps(participant.avatar_url)} 
-                                        alt={`Аватар ${participant.name || participant.username || 'участника'}`}
-                                        onError={(e) => {
-                                            e.target.src = '/default-avatar.png';
-                                        }}
-                                        loading="lazy"
-                                    />
+        <div className="winners-section">
+            <h3>🏆 Призеры турнира</h3>
+            <div className="winners-podium">
+                {winners.slice(0, 3).map((winner, index) => (
+                    <div key={winner.id || index} className={`winner-card place-${index + 1}`}>
+                        <div className="medal-icon">
+                            {index === 0 && <span className="gold-medal">🥇</span>}
+                            {index === 1 && <span className="silver-medal">🥈</span>}
+                            {index === 2 && <span className="bronze-medal">🥉</span>}
+                        </div>
+                        <div className="winner-info">
+                            {winner.avatar_url && (
+                                <img 
+                                    src={ensureHttps(winner.avatar_url)} 
+                                    alt={`Призер ${index + 1}`}
+                                    className="winner-avatar"
+                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                />
+                            )}
+                            <div className="winner-name">
+                                {winner.user_id ? (
+                                    <Link to={`/user/${winner.user_id}`} target="_blank" rel="noopener noreferrer">
+                                        {winner.name || winner.username || 'Участник'}
+                                    </Link>
                                 ) : (
-                                    <div className="avatar-placeholder">
-                                        {(participant.name || participant.username || '?').charAt(0).toUpperCase()}
-                                    </div>
+                                    <span>{winner.name || winner.username || 'Участник'}</span>
                                 )}
                             </div>
-                            {participant.user_id ? (
-                                <Link 
-                                    to={`/user/${participant.user_id}`} 
-                                    className="participant-name"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    data-testid={`participant-link-${participant.id}`}
-                                >
-                                    {participant.name || participant.username || 'Участник'}
-                                </Link>
-                            ) : (
-                                <span className="participant-name">
-                                    {participant.name || participant.username || 'Участник'}
-                                </span>
-                            )}
-                            <span className="participant-rating">
-                                FACEIT: {participant.faceit_elo || 1000}
-                            </span>
                         </div>
                     </div>
                 ))}
@@ -217,6 +185,9 @@ function TournamentDetails() {
     const [error, setError] = useState(null);
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
+
+    // 🆕 Состояние активной вкладки
+    const [activeTab, setActiveTab] = useState('info');
 
     // Состояния для модальных окон (упрощенная версия без хука)
     const [modals, setModals] = useState({
@@ -616,6 +587,311 @@ function TournamentDetails() {
         }
     }, [tournament?.participants]);
 
+    // 🆕 Функция переключения вкладок
+    const switchTab = useCallback((tabName) => {
+        setActiveTab(tabName);
+        console.log('🔄 Переключение на вкладку:', tabName);
+    }, []);
+
+    // 🆕 Рендеринг контента вкладок
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'info':
+                return (
+                    <div className="tab-content-info">
+                        {/* Информационная секция */}
+                        <TournamentInfoSection 
+                            tournament={tournament}
+                            user={user}
+                            isCreator={isCreator}
+                            isAdminOrCreator={isAdminOrCreator}
+                        />
+
+                        {/* Турнирная сетка */}
+                        {games.length > 0 && (
+                            <div className="bracket-section">
+                                <h3>🏆 Турнирная сетка</h3>
+                                <TournamentErrorBoundary>
+                                    <Suspense fallback={
+                                        <div className="bracket-loading" data-testid="bracket-loading">
+                                            🔄 Загрузка турнирной сетки...
+                                        </div>
+                                    }>
+                                        <LazyBracketRenderer
+                                            games={games}
+                                            canEditMatches={canEditMatches}
+                                            selectedMatch={selectedMatch}
+                                            setSelectedMatch={setSelectedMatch}
+                                            handleTeamClick={() => {}}
+                                            format={tournament.format}
+                                            onMatchClick={(match) => {
+                                                setSelectedMatchForDetails(match);
+                                                openModal('matchDetails');
+                                            }}
+                                        />
+                                    </Suspense>
+                                </TournamentErrorBoundary>
+                            </div>
+                        )}
+
+                        {/* Призеры турнира */}
+                        <TournamentWinners tournament={tournament} />
+                    </div>
+                );
+
+            case 'participants':
+                return (
+                    <div className="tab-content-participants">
+                        <h3>👥 Участники турнира</h3>
+                        
+                        {/* Панель участников */}
+                        <UnifiedParticipantsPanel
+                            tournament={tournament}
+                            participants={tournament.participants || []}
+                            matches={matches}
+                            mixedTeams={tournament.teams || []}
+                            isCreatorOrAdmin={isAdminOrCreator}
+                            user={user}
+                            onRemoveParticipant={() => {}}
+                            onShowAddParticipantModal={() => openModal('addParticipant')}
+                            onShowParticipantSearchModal={() => openModal('participantSearch')}
+                            onTeamsGenerated={handleTeamsGenerated}
+                            onTeamsUpdated={() => {}}
+                            calculateTeamAverageRating={() => 0}
+                            setRatingType={() => {}}
+                            userPermissions={{}}
+                            handleParticipate={() => {}}
+                            setMessage={setMessage}
+                        />
+
+                        {/* Генератор команд для микс-турниров (скрываем список участников если команды сформированы) */}
+                        {tournament.participant_type === 'mix' && (
+                            <TeamGenerator
+                                tournament={tournament}
+                                participants={tournament.teams && tournament.teams.length > 0 ? [] : originalParticipants}
+                                onTeamsGenerated={handleTeamsGenerated}
+                                onTeamsUpdated={() => {}}
+                                onRemoveParticipant={() => {}}
+                                isAdminOrCreator={isAdminOrCreator}
+                            />
+                        )}
+                    </div>
+                );
+
+            case 'bracket':
+                return (
+                    <div className="tab-content-bracket">
+                        <div className="bracket-tab-header">
+                            <h3>🏆 Турнирная сетка</h3>
+                            <div className="bracket-controls">
+                                {canGenerateBracket && (
+                                    <button 
+                                        className="generate-bracket-button"
+                                        onClick={() => {}}
+                                    >
+                                        🎯 Сгенерировать сетку
+                                    </button>
+                                )}
+                                {canEditMatches && games.length > 0 && (
+                                    <button 
+                                        className="regenerate-bracket-button"
+                                        onClick={() => {}}
+                                    >
+                                        🔄 Перегенерировать сетку
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {games.length > 0 ? (
+                            <TournamentErrorBoundary>
+                                <Suspense fallback={
+                                    <div className="bracket-loading" data-testid="bracket-loading">
+                                        🔄 Загрузка турнирной сетки...
+                                    </div>
+                                }>
+                                    <LazyBracketRenderer
+                                        games={games}
+                                        canEditMatches={canEditMatches}
+                                        selectedMatch={selectedMatch}
+                                        setSelectedMatch={setSelectedMatch}
+                                        handleTeamClick={() => {}}
+                                        format={tournament.format}
+                                        onMatchClick={(match) => {
+                                            setSelectedMatchForDetails(match);
+                                            openModal('matchDetails');
+                                        }}
+                                    />
+                                </Suspense>
+                            </TournamentErrorBoundary>
+                        ) : (
+                            <div className="empty-state">
+                                <p>🏗️ Турнирная сетка не сгенерирована</p>
+                                <p className="text-muted">
+                                    {canGenerateBracket 
+                                        ? 'Для генерации сетки нужно минимум 2 участника' 
+                                        : 'Дождитесь генерации сетки организатором турнира'
+                                    }
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'results':
+                return (
+                    <div className="tab-content-results">
+                        <h3>📊 Результаты матчей</h3>
+                        
+                        {matches.length > 0 ? (
+                            <div className="results-compact-list">
+                                {matches
+                                    .filter(match => match.winner_team_id || (match.score1 !== null && match.score2 !== null))
+                                    .sort((a, b) => new Date(b.updated_at || b.completed_at) - new Date(a.updated_at || a.completed_at))
+                                    .map((match) => {
+                                        const team1Info = tournament.teams?.find(t => t.id === match.team1_id) || 
+                                                         tournament.participants?.find(p => p.id === match.team1_id);
+                                        const team2Info = tournament.teams?.find(t => t.id === match.team2_id) || 
+                                                         tournament.participants?.find(p => p.id === match.team2_id);
+
+                                        return (
+                                            <div key={match.id} className="result-compact-item">
+                                                <div className="result-compact-content">
+                                                    <div className="result-compact-round">
+                                                        {match.is_third_place_match && (
+                                                            <span className="third-place-indicator">🥉 За 3-е место</span>
+                                                        )}
+                                                        {match.round === Math.max(...matches.map(m => m.round)) && !match.is_third_place_match && (
+                                                            <span className="grand-final-indicator">🏆 Финал</span>
+                                                        )}
+                                                        {!match.is_third_place_match && match.round !== Math.max(...matches.map(m => m.round)) && (
+                                                            <span>Раунд {match.round}</span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="result-compact-match">
+                                                        <button 
+                                                            className={`team-name-btn ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}
+                                                            onClick={() => {
+                                                                if (team1Info) {
+                                                                    // Показать состав команды
+                                                                }
+                                                            }}
+                                                        >
+                                                            {team1Info?.name || team1Info?.username || 'Команда 1'}
+                                                        </button>
+                                                        
+                                                        <div className="match-score">
+                                                            <span className={match.winner_team_id === match.team1_id ? 'winner-score' : ''}>{match.score1 || 0}</span>
+                                                            <span className="score-separator">:</span>
+                                                            <span className={match.winner_team_id === match.team2_id ? 'winner-score' : ''}>{match.score2 || 0}</span>
+                                                        </div>
+                                                        
+                                                        <button 
+                                                            className={`team-name-btn ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}
+                                                            onClick={() => {
+                                                                if (team2Info) {
+                                                                    // Показать состав команды
+                                                                }
+                                                            }}
+                                                        >
+                                                            {team2Info?.name || team2Info?.username || 'Команда 2'}
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="result-compact-actions">
+                                                        <button 
+                                                            className="details-btn"
+                                                            onClick={() => {
+                                                                setSelectedMatchForDetails(match);
+                                                                openModal('matchDetails');
+                                                            }}
+                                                        >
+                                                            📋 Детали
+                                                        </button>
+                                                        
+                                                        {canEditMatches && (
+                                                            <button 
+                                                                className="edit-compact-btn"
+                                                                onClick={() => {
+                                                                    setSelectedMatch(match);
+                                                                    setMatchResultData({
+                                                                        score1: match.score1 || 0,
+                                                                        score2: match.score2 || 0,
+                                                                        maps_data: match.maps_data || []
+                                                                    });
+                                                                    openModal('matchResult');
+                                                                }}
+                                                            >
+                                                                ✏️ Изменить
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {match.completed_at && (
+                                                        <div className="match-completed-time">
+                                                            Завершен: {new Date(match.completed_at).toLocaleString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        ) : (
+                            <div className="empty-state">
+                                <p>📋 Результаты матчей пока отсутствуют</p>
+                                <p className="text-muted">Результаты появятся после проведения матчей</p>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'management':
+                return (
+                    <div className="tab-content-management">
+                        {isAdminOrCreator ? (
+                            <TournamentAdminPanel
+                                tournament={tournament}
+                                participants={tournament.participants || []}
+                                matches={matches}
+                                isCreatorOrAdmin={isAdminOrCreator}
+                                isLoading={loading}
+                                onStartTournament={() => {}}
+                                onEndTournament={() => {}}
+                                onRegenerateBracket={() => {}}
+                                onShowAddParticipantModal={() => openModal('addParticipant')}
+                                onShowParticipantSearchModal={() => openModal('participantSearch')}
+                                onRemoveParticipant={() => {}}
+                                onEditMatchResult={(match) => {
+                                    setSelectedMatch(match);
+                                    setMatchResultData({
+                                        score1: match.score1 || 0,
+                                        score2: match.score2 || 0,
+                                        maps_data: match.maps_data || []
+                                    });
+                                    openModal('matchResult');
+                                }}
+                                onGenerateBracket={() => {}}
+                                onClearResults={() => {}}
+                                onInviteAdmin={() => {}}
+                                onRemoveAdmin={() => {}}
+                                onShowAdminSearchModal={() => {}}
+                            />
+                        ) : (
+                            <div className="access-denied">
+                                <h3>🔒 Доступ ограничен</h3>
+                                <p>Эта секция доступна только администраторам и создателю турнира.</p>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            default:
+                return <div>Неизвестная вкладка</div>;
+        }
+    };
+
     // Загрузка данных пользователя
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -787,7 +1063,7 @@ function TournamentDetails() {
         );
     }
 
-    // Основной рендер
+    // 🆕 Основной рендер с системой вкладок
     return (
         <TournamentErrorBoundary>
             <div className="tournament-details-tournamentdetails" data-testid="tournament-details">
@@ -798,87 +1074,50 @@ function TournamentDetails() {
                             <h2 data-testid="tournament-title">{tournament.name}</h2>
                         </div>
 
-                        {/* Навигация по табам */}
+                        {/* 🆕 Навигация по вкладкам */}
                         <div className="tabs-navigation-tournamentdetails">
-                            <button className="tab-button-tournamentdetails active">
-                                <span className="tab-label-tournamentdetails">📋 Информация</span>
+                            <button 
+                                className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
+                                onClick={() => switchTab('info')}
+                            >
+                                <span className="tab-label-tournamentdetails">📋 Главная</span>
                             </button>
+                            
+                            <button 
+                                className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
+                                onClick={() => switchTab('participants')}
+                            >
+                                <span className="tab-label-tournamentdetails">👥 Участники</span>
+                            </button>
+                            
+                            <button 
+                                className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
+                                onClick={() => switchTab('bracket')}
+                            >
+                                <span className="tab-label-tournamentdetails">🏆 Сетка</span>
+                            </button>
+                            
+                            <button 
+                                className={`tab-button-tournamentdetails ${activeTab === 'results' ? 'active' : ''}`}
+                                onClick={() => switchTab('results')}
+                            >
+                                <span className="tab-label-tournamentdetails">📊 Результаты</span>
+                            </button>
+                            
+                            {isAdminOrCreator && (
+                                <button 
+                                    className={`tab-button-tournamentdetails ${activeTab === 'management' ? 'active' : ''}`}
+                                    onClick={() => switchTab('management')}
+                                >
+                                    <span className="tab-label-tournamentdetails">⚙️ Управление</span>
+                                </button>
+                            )}
                         </div>
 
-                        {/* Контент турнира */}
+                        {/* 🆕 Контент вкладок */}
                         <div className="tournament-content-tournamentdetails">
                             <div className="tab-content-tournamentdetails">
-                                {/* Информационная секция */}
-                                <TournamentInfoSection 
-                                    tournament={tournament}
-                                    user={user}
-                                    isCreator={isCreator}
-                                    isAdminOrCreator={isAdminOrCreator}
-                                />
-
-                                {/* Панель участников */}
-                                <UnifiedParticipantsPanel
-                                    tournament={tournament}
-                                    participants={tournament.participants || []}
-                                    matches={matches}
-                                    mixedTeams={tournament.teams || []}
-                                    isCreatorOrAdmin={isAdminOrCreator}
-                                    user={user}
-                                    onRemoveParticipant={() => {}}
-                                    onShowAddParticipantModal={() => openModal('addParticipant')}
-                                    onShowParticipantSearchModal={() => openModal('participantSearch')}
-                                    onTeamsGenerated={handleTeamsGenerated}
-                                    onTeamsUpdated={() => {}}
-                                    calculateTeamAverageRating={() => 0}
-                                    setRatingType={() => {}}
-                                    userPermissions={{}}
-                                    handleParticipate={() => {}}
-                                    setMessage={setMessage}
-                                />
-
-                                {/* Турнирная сетка */}
-                                {games.length > 0 && (
-                                    <div className="bracket-section">
-                                        <h3>🏆 Турнирная сетка</h3>
-                                        <TournamentErrorBoundary>
-                                            <Suspense fallback={
-                                                <div className="bracket-loading" data-testid="bracket-loading">
-                                                    🔄 Загрузка турнирной сетки...
-                                                </div>
-                                            }>
-                                                <LazyBracketRenderer
-                                                    games={games}
-                                                    canEditMatches={canEditMatches}
-                                                    selectedMatch={selectedMatch}
-                                                    setSelectedMatch={setSelectedMatch}
-                                                    handleTeamClick={() => {}}
-                                                    format={tournament.format}
-                                                    onMatchClick={(match) => {
-                                                        setSelectedMatchForDetails(match);
-                                                        openModal('matchDetails');
-                                                    }}
-                                                />
-                                            </Suspense>
-                                        </TournamentErrorBoundary>
-                                    </div>
-                                )}
-
-                                {/* Генератор команд для микс-турниров */}
-                                {tournament.participant_type === 'mix' && (
-                                    <TeamGenerator
-                                        tournament={tournament}
-                                        participants={originalParticipants}
-                                        onTeamsGenerated={handleTeamsGenerated}
-                                        onTeamsUpdated={() => {}}
-                                        onRemoveParticipant={() => {}}
-                                        isAdminOrCreator={isAdminOrCreator}
-                                    />
-                                )}
-
-                                {/* Панель достижений */}
-                                {user && (
-                                    <AchievementsPanel userId={user.id} />
-                                )}
+                                {renderTabContent()}
                             </div>
                         </div>
                     </div>
