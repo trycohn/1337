@@ -14,8 +14,7 @@
      grid-template-rows: auto;
      grid-template-areas:
        "section-header section-header section-header"
-       "tournament-meta-grid description-block rules-block"
-       "footer footer footer";
+       "tournament-meta-grid description-block rules-block";
 }
 
 .tournament-info-section:hover {
