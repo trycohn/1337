@@ -21,7 +21,297 @@
     color: #ff8e8e !important;
     text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
 } 
+
+/* =============================================================================
+   МЕДИА-ЗАПРОСЫ ДЛЯ LAYOUT
+============================================================================= */
+
+/* Мобильные устройства */
+@media screen and (max-width: 767px) {
+    /* Header адаптация */
+    .ant-layout-header {
+        padding: 0 16px !important;
+        height: 56px !important;
+        line-height: 56px !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    
+    /* Мобильное меню */
+    .mobile-menu-trigger {
+        display: block !important;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    
+    .desktop-menu {
+        display: none !important;
+    }
+    
+    /* Аватар в хедере на мобильных */
+    .header-avatar-link .profile-avatar {
+        width: 28px;
+        height: 28px;
+    }
+    
+    /* Логотип */
+    .logo {
+        font-size: 18px !important;
+        flex: 1;
+        font-weight: 600;
+        color: #fff;
+    }
+    
+    /* Мобильное меню (drawer) */
+    .ant-drawer-body {
+        padding: 0 !important;
+    }
+    
+    .ant-menu-inline {
+        border: none !important;
+    }
+    
+    .ant-menu-item {
+        margin: 0 !important;
+        padding: 16px 24px !important;
+        height: auto !important;
+        line-height: 1.5 !important;
+    }
+    
+    /* Content адаптация */
+    .ant-layout-content {
+        min-height: calc(100vh - 56px) !important;
+        padding: 16px !important;
+    }
+    
+    /* Footer адаптация */
+    .ant-layout-footer {
+        padding: 16px !important;
+        text-align: center;
+        font-size: 12px;
+    }
+}
+
+/* Планшеты */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+    .ant-layout-header {
+        padding: 0 24px !important;
+    }
+    
+    .ant-layout-content {
+        padding: 24px !important;
+    }
+    
+    /* Меню на планшетах */
+    .ant-menu-horizontal > .ant-menu-item {
+        padding: 0 16px;
+    }
+}
+
+/* Маленькие экраны (iPhone SE и подобные) */
+@media screen and (max-width: 374px) {
+    .logo {
+        font-size: 16px !important;
+    }
+    
+    .header-avatar-link .profile-avatar {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .admin-link::before {
+        display: none; /* Скрываем эмодзи на очень маленьких экранах */
+    }
+    
+    .ant-layout-content {
+        padding: 12px !important;
+    }
+}
+
+/* Ландшафтная ориентация на мобильных */
+@media screen and (max-width: 896px) and (orientation: landscape) {
+    .ant-layout-header {
+        height: 48px !important;
+        line-height: 48px !important;
+    }
+    
+    .ant-layout-content {
+        min-height: calc(100vh - 48px) !important;
+        padding: 12px !important;
+    }
+}
+
+/* iPhone X и новее (поддержка safe area) */
+@supports (padding-top: env(safe-area-inset-top)) {
+    @media screen and (max-width: 767px) {
+        .ant-layout-header {
+            padding-top: env(safe-area-inset-top) !important;
+            height: calc(56px + env(safe-area-inset-top)) !important;
+        }
+        
+        .ant-layout-content {
+            padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+        
+        .ant-layout-footer {
+            padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+        }
+    }
+}
 /* Медиа-запросы удалены */
-/* Дополнительные стили для мобильного меню */
+/* =============================================================================
+   МОБИЛЬНОЕ МЕНЮ
+============================================================================= */
+
+/* Overlay для мобильного меню */
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1100;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-menu-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Само мобильное меню */
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background: #fff;
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1101;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-menu.active {
+    transform: translateX(0);
+}
+
+/* Header мобильного меню */
+.mobile-menu-header {
+    padding: 20px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mobile-menu-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.mobile-menu-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    color: #666;
+}
+
+.mobile-menu-close:active {
+    background-color: #f0f0f0;
+}
+
+/* Навигация мобильного меню */
+.mobile-menu-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.mobile-menu-nav a {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    color: #1a1a1a;
+    text-decoration: none;
+    font-size: 16px;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.mobile-menu-nav a:active {
+    background-color: #f5f5f5;
+}
+
+.mobile-menu-nav a svg {
+    width: 20px;
+    height: 20px;
+    color: #666;
+}
+
+.mobile-menu-nav a.admin-link {
+    color: #ff6b6b;
+}
+
+.mobile-menu-nav a.admin-link svg {
+    color: #ff6b6b;
+}
+
+/* Badge в мобильном меню */
+.mobile-menu-badge {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ff4757;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Кнопка триггер мобильного меню */
+.mobile-menu-trigger {
+    display: none;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+@media screen and (max-width: 767px) {
+    .mobile-menu-overlay.active {
+        display: block;
+    }
+    
+    .mobile-menu-trigger {
+        display: flex;
+    }
+}
+
 /* Дополнительные стили для страницы мессенджера на мобильных устройствах */
  

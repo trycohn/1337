@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope } from '@fortawesome/free-regular-svg-icons';
+import { faBars, faTimes, faHome, faTrophy, faPlus, faUser, faComments, faCog } from '@fortawesome/free-solid-svg-icons';
 import './Home.css';
 import './Layout.css';
 import Loader from './Loader';
@@ -212,40 +213,78 @@ function Layout() {
             {loading && <Loader />}
             <header className="header">
                     <div className="nav-container">
-                        <button className="hamburger" onClick={toggleMenu}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
-                                <path d="M3 11H21V13H3V11Z" fill="#ffffff"/>
-                                <path d="M3 16H21V18H3V16Z" fill="#ffffff"/>
-                            </svg>
-                        </button>
-                        <nav 
-                            className={`navigation ${isMenuOpen ? 'open' : ''}`}
-                            onClick={(e) => {
-                                // Закрываем меню при клике по фону (не по ссылкам)
-                                if (e.target === e.currentTarget) {
-                                    setIsMenuOpen(false);
-                                }
-                            }}
-                        >
-                            <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
-                            <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
-                            {user && (
-                                <>
-                                    <Link to="/create" onClick={() => setIsMenuOpen(false)}>
-                                        Создать турнир
-                                    </Link>
-                                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
-                                    <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
-                                    {user.role === 'admin' && (
-                                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
-                                            Админ панель
-                                        </Link>
+                        {isMobile ? (
+                            <>
+                                <button className="mobile-menu-trigger" onClick={toggleMenu}>
+                                    <FontAwesomeIcon icon={faBars} />
+                                </button>
+                                <div className="logo">1337 Community</div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="logo">1337 Community</div>
+                                <nav className="desktop-menu">
+                                    <Link to="/">Главная</Link>
+                                    <Link to="/tournaments">Турниры</Link>
+                                    {user && (
+                                        <>
+                                            <Link to="/create">Создать турнир</Link>
+                                            <Link to="/profile">Мой профиль</Link>
+                                            <Link to="/messages">Чаты</Link>
+                                            {user.role === 'admin' && (
+                                                <Link to="/admin" className="admin-link">
+                                                    Админ панель
+                                                </Link>
+                                            )}
+                                        </>
                                     )}
-                                </>
-                            )}
-                        </nav>
+                                </nav>
+                            </>
+                        )}
                     </div>
+                    
+                    {/* Мобильное меню */}
+                    {isMobile && (
+                        <div className={`mobile-menu-overlay ${isMenuOpen ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+                            <div className={`mobile-menu ${isMenuOpen ? 'active' : ''}`} onClick={(e) => e.stopPropagation()}>
+                                <div className="mobile-menu-header">
+                                    <div className="mobile-menu-title">Меню</div>
+                                    <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>
+                                        <FontAwesomeIcon icon={faTimes} />
+                                    </button>
+                                </div>
+                                <nav className="mobile-menu-nav">
+                                    <Link to="/" onClick={() => setIsMenuOpen(false)}>
+                                        <FontAwesomeIcon icon={faHome} /> Главная
+                                    </Link>
+                                    <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>
+                                        <FontAwesomeIcon icon={faTrophy} /> Турниры
+                                    </Link>
+                                    {user && (
+                                        <>
+                                            <Link to="/create" onClick={() => setIsMenuOpen(false)}>
+                                                <FontAwesomeIcon icon={faPlus} /> Создать турнир
+                                            </Link>
+                                            <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                                                <FontAwesomeIcon icon={faUser} /> Мой профиль
+                                            </Link>
+                                            <Link to="/messages" onClick={() => setIsMenuOpen(false)}>
+                                                <FontAwesomeIcon icon={faComments} /> Чаты
+                                                {unreadCount > 0 && (
+                                                    <span className="mobile-menu-badge">{unreadCount}</span>
+                                                )}
+                                            </Link>
+                                            {user.role === 'admin' && (
+                                                <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
+                                                    <FontAwesomeIcon icon={faCog} /> Админ панель
+                                                </Link>
+                                            )}
+                                        </>
+                                    )}
+                                </nav>
+                            </div>
+                        </div>
+                    )}
                     <div className="auth-block">
                         {user ? (
                             <div className="user-info">

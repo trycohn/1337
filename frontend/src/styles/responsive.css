@@ -1,0 +1,564 @@
+/* =============================================================================
+   RESPONSIVE DESIGN SYSTEM
+   Брейкпоинты оптимизированные для iPhone и Android устройств
+============================================================================= */
+
+/* Импорт модулей адаптивных стилей */
+@import './modules/messenger-responsive.css';
+@import './modules/tournament-responsive.css';
+@import './modules/profile-responsive.css';
+
+/* Основные брейкпоинты */
+:root {
+  /* Mobile First подход */
+  --mobile-xs: 320px;  /* iPhone SE, маленькие Android */
+  --mobile-sm: 375px;  /* iPhone 12/13/14/15 */
+  --mobile-md: 390px;  /* iPhone 14 Pro/15 Pro */
+  --mobile-lg: 428px;  /* iPhone 14 Plus/Pro Max */
+  --tablet: 768px;     /* iPad, планшеты */
+  --laptop: 1024px;    /* Маленькие ноутбуки */
+  --desktop: 1280px;   /* Десктопы */
+  --wide: 1536px;      /* Широкие экраны */
+  
+  /* Отступы для разных экранов */
+  --padding-mobile: 16px;
+  --padding-tablet: 24px;
+  --padding-desktop: 32px;
+  
+  /* Размеры шрифтов */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-base: 16px;
+  --font-lg: 18px;
+  --font-xl: 20px;
+  --font-2xl: 24px;
+  --font-3xl: 30px;
+}
+
+/* =============================================================================
+   ОБЩИЕ АДАПТИВНЫЕ СТИЛИ
+============================================================================= */
+
+/* Базовые стили для мобильных устройств (Mobile First) */
+@media screen and (max-width: 767px) {
+  /* Скрываем скроллбар на мобильных */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Контейнеры и обертки */
+  .container,
+  .wrapper,
+  .content-wrapper {
+    width: 100%;
+    padding: var(--padding-mobile);
+    max-width: 100%;
+  }
+  
+  /* Адаптивная типографика */
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  h4 { font-size: 16px; }
+  p, body { font-size: 14px; }
+  
+  /* Кнопки и интерактивные элементы */
+  button,
+  .btn,
+  .button {
+    min-height: 44px; /* Минимальный размер для тач-элементов iOS */
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Предотвращает зум на iOS */
+  }
+  
+  /* Формы */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Предотвращает зум на iOS */
+    padding: 12px;
+    width: 100%;
+  }
+  
+  /* Модальные окна */
+  .modal,
+  .dialog {
+    width: calc(100% - 32px);
+    max-width: calc(100% - 32px);
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+  }
+  
+  /* Карточки и панели */
+  .card,
+  .panel {
+    margin: 8px;
+    padding: 16px;
+  }
+  
+  /* Сетки */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Flex контейнеры */
+  .flex-row {
+    flex-direction: column;
+  }
+  
+  /* Изображения */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Таблицы */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* =============================================================================
+   СПЕЦИФИЧНЫЕ СТИЛИ ДЛЯ КОМПОНЕНТОВ
+============================================================================= */
+
+/* Layout и Header */
+@media screen and (max-width: 767px) {
+  /* Header */
+  .header,
+  .navbar {
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .header-avatar-link .profile-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  /* Навигация */
+  nav ul {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  nav li {
+    width: 100%;
+    text-align: center;
+    padding: 12px 0;
+  }
+  
+  /* Мобильное меню */
+  .mobile-menu-toggle {
+    display: block;
+  }
+  
+  .desktop-menu {
+    display: none;
+  }
+  
+  .mobile-menu {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .mobile-menu.active {
+    transform: translateY(0);
+  }
+}
+
+/* Home страница */
+@media screen and (max-width: 767px) {
+  .home-container {
+    padding: 16px;
+  }
+  
+  .hero-section {
+    min-height: 400px;
+    padding: 32px 16px;
+  }
+  
+  .hero-title {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+  
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .feature-card {
+    padding: 20px;
+  }
+}
+
+/* Profile страница */
+@media screen and (max-width: 767px) {
+  .profile-container {
+    flex-direction: column;
+  }
+  
+  .profile-sidebar {
+    width: 100%;
+    margin-bottom: 24px;
+  }
+  
+  .profile-main {
+    width: 100%;
+  }
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .profile-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .profile-tab {
+    min-width: 100px;
+    white-space: nowrap;
+  }
+}
+
+/* Tournaments страница */
+@media screen and (max-width: 767px) {
+  .tournaments-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .tournament-card {
+    padding: 16px;
+  }
+  
+  .tournament-details {
+    flex-direction: column;
+  }
+  
+  .tournament-bracket {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
+  }
+  
+  .bracket-round {
+    min-width: 280px;
+  }
+  
+  .match-card {
+    min-width: 240px;
+    font-size: 14px;
+  }
+  
+  .participants-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Chat и Messenger */
+@media screen and (max-width: 767px) {
+  .messenger-container {
+    flex-direction: column;
+    height: calc(100vh - 60px);
+  }
+  
+  .chat-list {
+    width: 100%;
+    max-height: 30vh;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .chat-window {
+    width: 100%;
+    height: calc(70vh - 60px);
+  }
+  
+  .message-item {
+    max-width: 85%;
+    font-size: 14px;
+  }
+  
+  .chat-input-container {
+    padding: 12px;
+  }
+  
+  .chat-input {
+    font-size: 16px; /* Предотвращает зум на iOS */
+  }
+  
+  /* Показываем/скрываем чат лист на мобильных */
+  .chat-list.mobile-hidden {
+    display: none;
+  }
+  
+  .chat-window.mobile-full {
+    height: calc(100vh - 60px);
+  }
+  
+  .back-to-chats-btn {
+    display: block;
+    padding: 8px;
+    background: #f0f0f0;
+  }
+}
+
+/* Admin Panel */
+@media screen and (max-width: 767px) {
+  .admin-panel {
+    padding: 16px;
+  }
+  
+  .admin-sidebar {
+    width: 100%;
+    margin-bottom: 24px;
+  }
+  
+  .admin-content {
+    width: 100%;
+  }
+  
+  .admin-table {
+    font-size: 12px;
+  }
+  
+  .admin-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* CreateTournament форма */
+@media screen and (max-width: 767px) {
+  .create-tournament-form {
+    padding: 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .date-time-inputs {
+    flex-direction: column;
+  }
+  
+  .rules-editor {
+    min-height: 150px;
+  }
+}
+
+/* Dota Stats */
+@media screen and (max-width: 767px) {
+  .dota-stats-container {
+    padding: 16px;
+  }
+  
+  .stats-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .hero-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  .hero-card {
+    padding: 8px;
+  }
+  
+  .hero-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .match-history-item {
+    padding: 12px;
+    font-size: 12px;
+  }
+}
+
+/* Team Generator */
+@media screen and (max-width: 767px) {
+  .team-generator {
+    padding: 16px;
+  }
+  
+  .players-pool {
+    grid-template-columns: 1fr;
+  }
+  
+  .team-card {
+    padding: 16px;
+  }
+  
+  .player-card {
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  .balance-indicator {
+    font-size: 12px;
+  }
+}
+
+/* =============================================================================
+   ПЛАНШЕТЫ (iPad, Android планшеты)
+============================================================================= */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .container {
+    padding: var(--padding-tablet);
+  }
+  
+  /* Сетки для планшетов */
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  
+  .tournaments-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .profile-container {
+    flex-direction: row;
+  }
+  
+  .profile-sidebar {
+    width: 300px;
+  }
+  
+  .messenger-container {
+    flex-direction: row;
+  }
+  
+  .chat-list {
+    width: 350px;
+  }
+}
+
+/* =============================================================================
+   СПЕЦИАЛЬНЫЕ СЛУЧАИ ДЛЯ КОНКРЕТНЫХ УСТРОЙСТВ
+============================================================================= */
+
+/* iPhone X и новее (с вырезом) */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .header,
+  .navbar {
+    padding-top: calc(12px + env(safe-area-inset-top));
+  }
+  
+  .tab-bar,
+  .bottom-navigation {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Ландшафтная ориентация на мобильных */
+@media screen and (max-width: 896px) and (orientation: landscape) {
+  .header {
+    padding: 8px 16px;
+  }
+  
+  .chat-window {
+    height: calc(100vh - 50px);
+  }
+  
+  .modal {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+/* Высокая плотность пикселей (Retina) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Тонкие границы для Retina дисплеев */
+  .border {
+    border-width: 0.5px;
+  }
+}
+
+/* =============================================================================
+   УТИЛИТЫ ДЛЯ АДАПТИВНОСТИ
+============================================================================= */
+
+/* Показать только на мобильных */
+.mobile-only {
+  display: none;
+}
+
+@media screen and (max-width: 767px) {
+  .mobile-only {
+    display: block;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Показать только на планшетах */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .tablet-only {
+    display: block;
+  }
+  
+  .tablet-hidden {
+    display: none;
+  }
+}
+
+/* Текстовые утилиты */
+@media screen and (max-width: 767px) {
+  .text-mobile-center {
+    text-align: center;
+  }
+  
+  .text-mobile-small {
+    font-size: 14px;
+  }
+}
+
+/* Отступы */
+@media screen and (max-width: 767px) {
+  .p-mobile-0 { padding: 0; }
+  .p-mobile-1 { padding: 8px; }
+  .p-mobile-2 { padding: 16px; }
+  .p-mobile-3 { padding: 24px; }
+  
+  .m-mobile-0 { margin: 0; }
+  .m-mobile-1 { margin: 8px; }
+  .m-mobile-2 { margin: 16px; }
+} 
