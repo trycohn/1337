@@ -597,16 +597,20 @@ function TournamentDetails() {
     const shouldShowParticipantsTab = useMemo(() => {
         if (!tournament) return false;
         
-        // Скрываем для турниров в статусах "in-progress" и "completed"
-        if (tournament.status === 'in-progress' || tournament.status === 'completed') {
-            return false;
+        // Для микс-турниров применяем специальную логику
+        if (tournament.participant_type === 'mix') {
+            // Скрываем для микс-турниров в статусах "in-progress" и "completed"
+            if (tournament.status === 'in-progress' || tournament.status === 'completed') {
+                return false;
+            }
+            
+            // Скрываем если команды уже сформированы
+            if (tournament.teams && tournament.teams.length > 0) {
+                return false;
+            }
         }
         
-        // Для микс-турниров: скрываем если команды уже сформированы
-        if (tournament.participant_type === 'mix' && tournament.teams && tournament.teams.length > 0) {
-            return false;
-        }
-        
+        // Для всех остальных типов турниров (solo, team) всегда показываем участников
         return true;
     }, [tournament]);
 

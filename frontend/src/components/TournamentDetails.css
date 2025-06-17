@@ -2365,18 +2365,16 @@ a.participant-name:hover {
 /* Навигация по вкладкам в более стильном дизайне */
 .tabs-navigation-tournamentdetails {
     display: flex;
-    gap: 2px;
-    justify-content: center;
-    padding: 8px;
-    position: relative;
-    margin-bottom: 0;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 16px 24px 0;
     overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE и Edge */
 }
 
 .tabs-navigation-tournamentdetails::-webkit-scrollbar {
-    display: none;
+    display: none; /* WebKit browsers (Chrome, Safari, etc.) */
 }
 
 .tab-button-tournamentdetails {
