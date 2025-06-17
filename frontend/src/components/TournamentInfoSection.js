@@ -155,7 +155,7 @@ const TournamentInfoSection = ({ tournament, onSave, currentUser, onRemovePartic
             </form>
 
             {/* Участники турнира - скрываем для микс-турниров с сформированными командами */}
-            {!(tournament?.participant_type === 'mix' && tournament?.teams && tournament?.teams.length > 0) && (
+            {!(tournament?.format === 'mix' && tournament?.teams && tournament?.teams.length > 0) && (
                 <div className="participants-section">
                     <h3>Участники турнира</h3>
                     <div className="participants-list">
@@ -206,7 +206,7 @@ const TournamentInfoSection = ({ tournament, onSave, currentUser, onRemovePartic
             )}
 
             {/* Настройки микса - скрываем для турниров с уже сформированными командами */}
-            {tournament?.participant_type === 'mix' && !(tournament?.teams && tournament?.teams.length > 0) && (
+            {tournament?.format === 'mix' && !(tournament?.teams && tournament?.teams.length > 0) && (
                 <div className="mix-settings">
                     <h3>Настройки микса</h3>
                     <div className="mix-options">

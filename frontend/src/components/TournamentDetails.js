@@ -598,7 +598,7 @@ function TournamentDetails() {
         if (!tournament) return false;
         
         // Для микс-турниров применяем специальную логику
-        if (tournament.participant_type === 'mix') {
+        if (tournament.format === 'mix') {
             // Скрываем для микс-турниров в статусах "in-progress" и "completed"
             if (tournament.status === 'in-progress' || tournament.status === 'completed') {
                 return false;
@@ -675,7 +675,7 @@ function TournamentDetails() {
                         <h3>👥 Участники турнира</h3>
                         
                         {/* Панель участников - скрываем для микс-турниров с сформированными командами */}
-                        {!(tournament.participant_type === 'mix' && tournament.teams && tournament.teams.length > 0) && (
+                        {!(tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) && (
                             <UnifiedParticipantsPanel
                                 tournament={tournament}
                                 participants={tournament.participants || []}
@@ -697,7 +697,7 @@ function TournamentDetails() {
                         )}
 
                         {/* Генератор команд для микс-турниров */}
-                        {tournament.participant_type === 'mix' && (
+                        {tournament.format === 'mix' && (
                             <TeamGenerator
                                 tournament={tournament}
                                 participants={tournament.teams && tournament.teams.length > 0 ? [] : originalParticipants}
@@ -709,7 +709,7 @@ function TournamentDetails() {
                         )}
 
                         {/* Сообщение для микс-турниров с сформированными командами */}
-                        {tournament.participant_type === 'mix' && tournament.teams && tournament.teams.length > 0 && (
+                        {tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0 && (
                             <div className="teams-formed-notice">
                                 <div className="notice-content">
                                     <h4>✅ Команды сформированы</h4>
