@@ -9,6 +9,13 @@
     position: relative;
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+     grid-template-rows: auto;
+     grid-template-areas:
+       "section-header section-header section-header"
+       "tournament-meta-grid description-block rules-block"
+       "footer footer footer";
 }
 
 .tournament-info-section:hover {
