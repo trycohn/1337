@@ -24,6 +24,7 @@ const MatchResultModal = ({
     const [selectedWinner, setSelectedWinner] = useState(null); // null, 'team1', 'team2'
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
+    const [autoCalculateScore, setAutoCalculateScore] = useState(true); // 🆕 Автоматический расчет
 
     // 🎯 УЛУЧШЕННОЕ: Определение игры турнира
     const getTournamentGame = useCallback(() => {
@@ -231,6 +232,67 @@ const MatchResultModal = ({
         };
     }, [matchResultData.maps_data]);
 
+    // 🎯 АВТОМАТИЧЕСКИЙ РАСЧЕТ ОБЩЕГО СЧЕТА ПО КАРТАМ
+    const calculateOverallScoreFromMaps = useCallback(() => {
+        const mapsData = matchResultData.maps_data || [];
+        if (mapsData.length === 0) return;
+        
+        let team1Wins = 0;
+        let team2Wins = 0;
+        
+        mapsData.forEach(map => {
+            const score1 = parseInt(map.score1) || 0;
+            const score2 = parseInt(map.score2) || 0;
+            
+            if (score1 > score2) {
+                team1Wins++;
+            } else if (score2 > score1) {
+                team2Wins++;
+            }
+            // Ничьи не засчитываются в общий счет
+        });
+        
+        // Обновляем общий счет матча
+        setMatchResultData(prev => ({
+            ...prev,
+            score1: team1Wins,
+            score2: team2Wins
+        }));
+        
+        // Автоматически определяем победителя
+        if (team1Wins > team2Wins) {
+            setSelectedWinner('team1');
+        } else if (team2Wins > team1Wins) {
+            setSelectedWinner('team2');
+        } else {
+            setSelectedWinner(null);
+        }
+        
+        console.log('📊 Автоматический расчет счета:', {
+            mapsPlayed: mapsData.length,
+            team1Wins,
+            team2Wins,
+            winner: team1Wins > team2Wins ? 'team1' : team2Wins > team1Wins ? 'team2' : 'draw'
+        });
+    }, [matchResultData.maps_data, setMatchResultData]);
+
+    // 🎯 ОТСЛЕЖИВАНИЕ ИЗМЕНЕНИЙ РЕЗУЛЬТАТОВ ПО КАРТАМ
+    useEffect(() => {
+        // Автоматически пересчитываем общий счет когда изменяются результаты по картам
+        if (!autoCalculateScore) return; // Пропускаем если автоматический расчет отключен
+        
+        const mapsData = matchResultData.maps_data || [];
+        
+        // Проверяем, есть ли карты с результатами
+        const hasMapResults = mapsData.some(map => 
+            (parseInt(map.score1) || 0) !== 0 || (parseInt(map.score2) || 0) !== 0
+        );
+        
+        if (hasMapResults && mapsData.length > 0) {
+            calculateOverallScoreFromMaps();
+        }
+    }, [matchResultData.maps_data, calculateOverallScoreFromMaps, autoCalculateScore]);
+
     // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ
     const TeamTooltip = ({ team, composition, show, onClose }) => {
         if (!show || !composition) return null;
@@ -278,8 +340,9 @@ const MatchResultModal = ({
         }
     };
 
+    // 🎯 ОБНОВЛЕННАЯ ФУНКЦИЯ ИЗМЕНЕНИЯ СЧЕТА КАРТЫ
     const handleMapScoreChange = (mapIndex, team, value) => {
-        const score = parseInt(value) || 0; // Разрешаем отрицательные значения
+        const score = parseInt(value) || 0;
         setMatchResultData(prev => {
             const newMapsData = [...(prev.maps_data || [])];
             if (!newMapsData[mapIndex]) {
@@ -289,8 +352,12 @@ const MatchResultModal = ({
                 ...newMapsData[mapIndex],
                 [team === 1 ? 'score1' : 'score2']: score
             };
+            
+            // Возвращаем обновленные данные
             return { ...prev, maps_data: newMapsData };
         });
+        
+        console.log(`🗺️ Изменен счет карты ${mapIndex + 1}, команда ${team}: ${score}`);
     };
 
     const handleMapNameChange = (mapIndex, mapName) => {
@@ -493,33 +560,104 @@ const MatchResultModal = ({
                     {/* Основной счет матча */}
                     <div className="match-scores">
                         <h4>📊 Счет матча</h4>
+                        
+                        {/* 🆕 Настройки автоматического расчета */}
+                        {isCS2 && availableMaps.length > 0 && (
+                            <div className="auto-calculate-section">
+                                <label className="auto-calculate-checkbox">
+                                    <input
+                                        type="checkbox"
+                                        checked={autoCalculateScore}
+                                        onChange={(e) => setAutoCalculateScore(e.target.checked)}
+                                        disabled={isLoading}
+                                    />
+                                    <span className="checkmark"></span>
+                                    🔄 Автоматически рассчитывать общий счет по картам
+                                </label>
+                                {autoCalculateScore && mapsData.length > 0 && (
+                                    <div className="auto-calculate-indicator">
+                                        <span className="indicator-icon">⚡</span>
+                                        <span className="indicator-text">Счет обновляется автоматически на основе побед на картах</span>
+                                        <button
+                                            type="button"
+                                            className="recalculate-btn"
+                                            onClick={calculateOverallScoreFromMaps}
+                                            title="Пересчитать счет сейчас"
+                                            disabled={isLoading}
+                                        >
+                                            🔄
+                                        </button>
+                                    </div>
+                                )}
+                                {!autoCalculateScore && mapsData.length > 0 && (
+                                    <div className="manual-calculate-section">
+                                        <p className="manual-hint">
+                                            💡 Автоматический расчет отключен. Вы можете пересчитать общий счет вручную:
+                                        </p>
+                                        <button
+                                            type="button"
+                                            className="manual-recalculate-btn"
+                                            onClick={calculateOverallScoreFromMaps}
+                                            disabled={isLoading}
+                                        >
+                                            🧮 Рассчитать счет по картам
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
                         <div className="score-inputs">
                             <div className="score-container">
                                 <label htmlFor="score1">{selectedMatch.team1_name || 'Команда 1'}</label>
-                                <input
-                                    id="score1"
-                                    type="number"
-                                    value={matchResultData.score1}
-                                    onChange={(e) => handleScoreChange(1, e.target.value)}
-                                    disabled={isLoading}
-                                    className={validationErrors.scores ? 'error' : ''}
-                                />
+                                <div className="score-input-wrapper">
+                                    <input
+                                        id="score1"
+                                        type="number"
+                                        value={matchResultData.score1}
+                                        onChange={(e) => handleScoreChange(1, e.target.value)}
+                                        disabled={isLoading || (autoCalculateScore && mapsData.length > 0)}
+                                        className={`${validationErrors.scores ? 'error' : ''} ${autoCalculateScore && mapsData.length > 0 ? 'auto-calculated' : ''}`}
+                                        title={autoCalculateScore && mapsData.length > 0 ? 'Счет рассчитывается автоматически на основе побед на картах' : ''}
+                                    />
+                                    {autoCalculateScore && mapsData.length > 0 && (
+                                        <div className="auto-calculated-badge">🤖</div>
+                                    )}
+                                </div>
                             </div>
                             <div className="score-separator">:</div>
                             <div className="score-container">
                                 <label htmlFor="score2">{selectedMatch.team2_name || 'Команда 2'}</label>
-                                <input
-                                    id="score2"
-                                    type="number"
-                                    value={matchResultData.score2}
-                                    onChange={(e) => handleScoreChange(2, e.target.value)}
-                                    disabled={isLoading}
-                                    className={validationErrors.scores ? 'error' : ''}
-                                />
+                                <div className="score-input-wrapper">
+                                    <input
+                                        id="score2"
+                                        type="number"
+                                        value={matchResultData.score2}
+                                        onChange={(e) => handleScoreChange(2, e.target.value)}
+                                        disabled={isLoading || (autoCalculateScore && mapsData.length > 0)}
+                                        className={`${validationErrors.scores ? 'error' : ''} ${autoCalculateScore && mapsData.length > 0 ? 'auto-calculated' : ''}`}
+                                        title={autoCalculateScore && mapsData.length > 0 ? 'Счет рассчитывается автоматически на основе побед на картах' : ''}
+                                    />
+                                    {autoCalculateScore && mapsData.length > 0 && (
+                                        <div className="auto-calculated-badge">🤖</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         {validationErrors.scores && (
                             <div className="validation-error">{validationErrors.scores}</div>
+                        )}
+                        
+                        {/* Подсказка для автоматического расчета */}
+                        {autoCalculateScore && mapsData.length > 0 && (
+                            <div className="auto-calculate-help">
+                                <p>💡 <strong>Как работает автоматический расчет:</strong></p>
+                                <ul>
+                                    <li>Каждая выигранная карта = +1 к общему счету команды</li>
+                                    <li>Ничьи на картах не засчитываются в общий счет</li>
+                                    <li>Победитель определяется автоматически по большему количеству выигранных карт</li>
+                                </ul>
+                            </div>
                         )}
                     </div>
 
