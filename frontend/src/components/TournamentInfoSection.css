@@ -30,6 +30,7 @@
     margin-bottom: 32px;
     padding-bottom: 16px;
     border-bottom: 1px solid #1a1a1a;
+    grid-area: section-header;
 }
 
 .tournament-info-section h2 {
@@ -59,6 +60,7 @@
     background: #111111;
     border: 1px solid #1a1a1a;
     border-radius: 8px;
+    grid-area: tournament-meta-grid;
 }
 
 .meta-row {
@@ -199,6 +201,14 @@
     background: #111111;
     border: 1px solid #1a1a1a;
     border-radius: 8px;
+}
+
+.description-block {
+    grid-area: description-block;
+}
+
+.rules-block {
+    grid-area: rules-block;
 }
 
 /* Заголовки блоков с кнопками редактирования */
