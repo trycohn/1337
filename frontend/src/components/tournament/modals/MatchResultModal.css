@@ -111,7 +111,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
     position: relative;
 }
 .team-display {
@@ -155,9 +155,8 @@
     padding: 0;
 }
 .team-name {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
-    margin-bottom: 4px;
 }
 .winner-crown {
     font-size: 20px;
@@ -219,9 +218,9 @@
     animation: tooltipSlideDown 0.3s ease-out;
     margin-top: 8px;
     display: flex;
-    flex-direction: row;
-    justify-content: center;
-}
+    flex-direction: column;
+    align-items: center;
+}   
 
 .tooltip-close {
     position: absolute;
@@ -261,15 +260,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #444444;
 }
 .tooltip-header h4 {
     margin: 0;
-    color: #007acc;
-    font-size: 16px;
-    font-weight: 600;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 400;
 }
 .members-count {
     color: #cccccc;
@@ -285,10 +281,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
-    transition: background 0.2s ease;
+    padding: 2px 2px;
+    font-size: 12px;
 }
 .tooltip-member:hover {
     background: rgba(0, 122, 204, 0.1);
