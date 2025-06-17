@@ -15,6 +15,7 @@
      grid-template-areas:
        "section-header section-header section-header"
        "tournament-meta-grid description-block rules-block";
+    justify-items: center;
 }
 
 .tournament-info-section:hover {
