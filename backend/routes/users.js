@@ -1550,15 +1550,43 @@ router.get('/profile/:userId', async (req, res) => {
             user.online_status = `был ${days} ${getDaysWord(days)} назад`;
         }
         
-        // Если у пользователя привязан Steam, получаем его никнейм
+        // Если у пользователя привязан Steam, получаем его никнейм (с кэшированием)
         if (user.steam_id) {
             try {
-                const apiKey = process.env.STEAM_API_KEY;
-                const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${user.steam_id}`);
-                user.steam_nickname = steamUserResponse.data.response.players[0].personaname;
+                // Проверяем кэш никнейма в базе данных (если он был обновлен недавно)
+                const steamCacheResult = await pool.query(
+                    'SELECT steam_nickname, steam_nickname_updated FROM users WHERE id = $1 AND steam_nickname_updated > NOW() - INTERVAL \'1 hour\'',
+                    [userId]
+                );
+                
+                if (steamCacheResult.rows.length > 0 && steamCacheResult.rows[0].steam_nickname) {
+                    // Используем кэшированный никнейм
+                    user.steam_nickname = steamCacheResult.rows[0].steam_nickname;
+                } else {
+                    // Кэш устарел или отсутствует, запрашиваем у Steam API
+                    const apiKey = process.env.STEAM_API_KEY;
+                    const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${user.steam_id}`, {
+                        timeout: 5000 // Таймаут 5 секунд
+                    });
+                    
+                    if (steamUserResponse.data.response.players.length > 0) {
+                        const steamNickname = steamUserResponse.data.response.players[0].personaname;
+                        user.steam_nickname = steamNickname;
+                        
+                        // Сохраняем в кэш
+                        await pool.query(
+                            'UPDATE users SET steam_nickname = $1, steam_nickname_updated = NOW() WHERE id = $2',
+                            [steamNickname, userId]
+                        );
+                    }
+                }
             } catch (steamErr) {
-                console.error('Ошибка получения никнейма Steam:', steamErr);
-                // Если не удалось получить никнейм, оставляем только Steam ID
+                console.error('Ошибка получения никнейма Steam:', steamErr.message);
+                // Если не удалось получить никнейм, используем кэшированный или оставляем пустым
+                const fallbackResult = await pool.query('SELECT steam_nickname FROM users WHERE id = $1', [userId]);
+                if (fallbackResult.rows.length > 0 && fallbackResult.rows[0].steam_nickname) {
+                    user.steam_nickname = fallbackResult.rows[0].steam_nickname;
+                }
             }
         }
         

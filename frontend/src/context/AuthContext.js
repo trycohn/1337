@@ -6,6 +6,7 @@ const AuthContext = createContext({
   isAuthenticated: false,
   login: () => {},
   logout: () => {},
+  updateUser: () => {},
   loading: false
 });
 
@@ -77,6 +78,11 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Функция обновления данных пользователя
+  const updateUser = (updatedData) => {
+    setUser(prevUser => prevUser ? { ...prevUser, ...updatedData } : null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -84,6 +90,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         login,
         logout,
+        updateUser,
         loading
       }}
     >

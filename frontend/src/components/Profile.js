@@ -44,7 +44,7 @@ ChartJS.register(
 );
 
 function Profile() {
-    const { user, loading: authLoading } = useAuth(); // Получаем пользователя из AuthContext
+    const { user, loading: authLoading, updateUser } = useAuth(); // Получаем пользователя из AuthContext
     const [stats, setStats] = useState(null);
     const [cs2Stats, setCs2Stats] = useState(null);
     const [isLoadingCs2Stats, setIsLoadingCs2Stats] = useState(false);
@@ -58,7 +58,6 @@ function Profile() {
     const [premierRank, setPremierRank] = useState(0);
     
     // Avatar states
-    const [avatar, setAvatar] = useState(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const fileInputRef = useRef(null);
@@ -681,11 +680,6 @@ function Profile() {
             });
             // setUser(response.data); // Убран - используем AuthContext
             setNewUsername(response.data.username);
-            
-            // Устанавливаем аватар, если он есть
-            if (response.data.avatar_url) {
-                setAvatar(response.data.avatar_url);
-            }
             
             // Извлекаем ранг Premier из данных пользователя
             if (response.data.cs2_premier_rank) {
@@ -1536,9 +1530,8 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            // Обновляем аватар в состоянии
-            setAvatar(response.data.avatar_url);
-            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url})); // Убран - используем AuthContext
+            // Обновляем аватар в AuthContext
+            updateUser({ avatar_url: response.data.avatar_url });
             setError('');
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка загрузки аватара');
@@ -1560,9 +1553,8 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            // Обновляем аватар в состоянии
-            setAvatar(response.data.avatar_url);
-            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url})); // Убран - используем AuthContext
+            // Обновляем аватар в AuthContext
+            updateUser({ avatar_url: response.data.avatar_url });
             setError('');
             setShowAvatarModal(false);
         } catch (err) {
@@ -1583,9 +1575,8 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            // Обновляем аватар в состоянии
-            setAvatar(response.data.avatar_url);
-            setUser(prevUser => ({...prevUser, avatar_url: response.data.avatar_url})); // Убран - используем AuthContext
+            // Обновляем аватар в AuthContext
+            updateUser({ avatar_url: response.data.avatar_url });
             setError('');
             setShowAvatarModal(false);
         } catch (err) {
@@ -2186,7 +2177,7 @@ function Profile() {
                 <div className="profile-header-content">
                     <div className="profile-avatar-section">
                         <img 
-                            src={ensureHttps(avatar) || '/default-avatar.png'} 
+                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
                             alt="Аватар пользователя" 
                             className="profile-avatar"
                             onClick={openAvatarModal}
@@ -3826,7 +3817,7 @@ function Profile() {
                         
                         <div className="avatar-preview">
                             <img 
-                                src={ensureHttps(avatar) || '/default-avatar.png'} 
+                                src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
                                 alt="Текущий аватар" 
                                 className="current-avatar"
                             />
