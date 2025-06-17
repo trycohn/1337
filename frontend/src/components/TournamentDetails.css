@@ -5389,6 +5389,8 @@ a.participant-name:hover {
     overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
+    justify-content: center;
+
 }
 .tabs-navigation-tournamentdetails::-webkit-scrollbar {
     height: 4px;
