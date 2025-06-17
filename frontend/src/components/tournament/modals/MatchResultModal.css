@@ -55,7 +55,7 @@
     margin: 0;
     color: #ffffff;
     font-weight: 300;
-    font-size: 1.2em;
+    font-size: 0.7em;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: flex;
@@ -284,9 +284,7 @@
     padding: 2px 2px;
     font-size: 12px;
 }
-.tooltip-member:hover {
-    background: rgba(0, 122, 204, 0.1);
-}
+
 .member-name {
     font-weight: 500;
     color: #ffffff;
