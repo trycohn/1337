@@ -5184,122 +5184,99 @@ a.participant-name:hover {
 }
 /* Адаптация чата турнира для темной темы */
 .tournament-details-tournamentdetails .tournament-chat-panel {
-    width: 320px;
+    width: 300px;
     position: sticky;
     top: 20px;
     height: fit-content;
     max-height: calc(100vh - 40px);
     overflow: hidden;
-    background-color: #181818;
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-header {
-    background-color: #1f1f1f;
-    border-bottom: 1px solid #2a2a2a;
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #333333;
     color: #ffffff;
 }
-.tournament-details-tournamentdetails .tournament-chat-panel .chat-header:hover {
-    background-color: #262626;
-}
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-participants {
-    color: #6b7280;
+    color: #888888;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-messages {
-    background-color: #0f0f0f;
+    background-color: #111111;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-message {
     color: #ffffff;
-    background: none;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-message.own-message {
-    background: none;
+    background-color: rgba(255, 255, 255, 0.05);
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .message-text {
-    background-color: #2b2b2b;
+    background-color: #2a2a2a;
     color: #ffffff;
-    padding: 6px 12px 8px;
-    border-radius: 18px;
-    font-size: 15px;
-    line-height: 1.45;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .own-message .message-text {
     background-color: #0d6efd;
     color: #ffffff;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-input {
-    background-color: #111111;
-    border-top: 1px solid #222;
+    background-color: #1a1a1a;
+    border-top: 1px solid #333333;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-input input {
-    background-color: #1f1f1f;
-    border: none;
+    background-color: #2a2a2a;
+    border: 1px solid #333333;
     color: #ffffff;
-    padding: 10px 16px;
-    border-radius: 22px;
-    font-size: 15px;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-input input::placeholder {
-    color: #6b7280;
+    color: #888888;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-input input:focus {
-    background-color: #2a2a2a;
+    border-color: #555555;
+    background-color: #3a3a3a;
     outline: none;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-input button {
     background-color: #0d6efd;
     color: #ffffff;
     border: none;
-    border-radius: 22px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: opacity 0.15s ease;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-input button:hover:not(:disabled) {
-    opacity: 0.85;
+    background-color: #0b5ed7;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-message.system-message {
-    background-color: #1f2937;
-    border: none;
-    border-left: 3px solid #60a5fa;
-    padding: 8px 12px;
-    margin: 5px 0;
-    border-radius: 8px;
+    background-color: #1a2a1a;
+    border: 1px solid #2d4d2d;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .system-text {
-    color: #e5e7eb;
-    font-weight: 400;
+    color: #4caf50;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .system-icon {
-    color: #60a5fa;
+    color: #4caf50;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .system-time {
-    color: #6b7280;
+    color: #888888;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .message-username {
-    color: #60a5fa;
-    font-weight: 600;
-    font-size: 13px;
+    color: #ffffff;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .message-time {
-    color: #6b7280;
-    font-size: 11px;
+    color: #888888;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-loading,
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-error {
     color: #ffffff;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .chat-error {
-    color: #ef4444;
+    color: #ff6b6b;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .empty-chat {
-    color: #6b7280;
+    color: #888888;
 }
 .tournament-details-tournamentdetails .tournament-chat-panel .connection-status.disconnected {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background-color: #2a1a1a;
+    color: #ff6b6b;
 }
 /* Адаптивность */
 /* =================================================

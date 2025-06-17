@@ -89,43 +89,35 @@ function TournamentChat({ messages, newMessage, onInputChange, onSubmit, onKeyPr
             )}
 
             <div className="chat-messages">
-                {messages.map((message, index) => {
-                    const prevMessage = index > 0 ? messages[index - 1] : null;
-                    const showUserInfo = !prevMessage || prevMessage.sender_id !== message.sender_id;
-                    
-                    return (
-                        <div key={index} className={`chat-message ${message.sender_id === user?.id ? 'own-message' : ''}`}>
-                            {message.sender_id !== user?.id && showUserInfo && (
-                                <div className="message-avatar">
-                                    <img 
-                                        src={ensureHttps(message.sender_avatar || message.avatar_url) || '/default-avatar.png'} 
-                                        alt={message.sender_username || message.username} 
-                                        onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                    />
+                {messages.map((message, index) => (
+                    <div key={index} className={`chat-message ${message.sender_id === user?.id ? 'own-message' : ''}`}>
+                        {message.sender_id !== user?.id && (
+                            <div className="message-avatar">
+                                <img 
+                                    src={ensureHttps(message.sender_avatar || message.avatar_url) || '/default-avatar.png'} 
+                                    alt={message.sender_username || message.username} 
+                                    onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                />
+                            </div>
+                        )}
+                        <div className="message-content">
+                            {message.sender_id !== user?.id && (
+                                <div className="message-header">
+                                    <span className="message-username">{message.sender_username || message.username}</span>
+                                    <span className="message-time">
+                                        {new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
                                 </div>
                             )}
-                            {message.sender_id !== user?.id && !showUserInfo && (
-                                <div className="message-avatar-placeholder"></div>
+                            <div className="message-text">{message.content}</div>
+                            {message.sender_id === user?.id && (
+                                <div className="message-time-own">
+                                    {new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
                             )}
-                            <div className="message-content">
-                                {message.sender_id !== user?.id && showUserInfo && (
-                                    <div className="message-header">
-                                        <span className="message-username">{message.sender_username || message.username}</span>
-                                        <span className="message-time">
-                                            {new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="message-text">{message.content}</div>
-                                {message.sender_id === user?.id && (
-                                    <div className="message-time-own">
-                                        {new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </div>
-                                )}
-                            </div>
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
                 <div ref={chatEndRef} />
             </div>
             
