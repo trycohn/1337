@@ -674,27 +674,29 @@ function TournamentDetails() {
                     <div className="tab-content-participants">
                         <h3>👥 Участники турнира</h3>
                         
-                        {/* Панель участников */}
-                        <UnifiedParticipantsPanel
-                            tournament={tournament}
-                            participants={tournament.participants || []}
-                            matches={matches}
-                            mixedTeams={tournament.teams || []}
-                            isCreatorOrAdmin={isAdminOrCreator}
-                            user={user}
-                            onRemoveParticipant={() => {}}
-                            onShowAddParticipantModal={() => openModal('addParticipant')}
-                            onShowParticipantSearchModal={() => openModal('participantSearch')}
-                            onTeamsGenerated={handleTeamsGenerated}
-                            onTeamsUpdated={() => {}}
-                            calculateTeamAverageRating={() => 0}
-                            setRatingType={() => {}}
-                            userPermissions={{}}
-                            handleParticipate={() => {}}
-                            setMessage={setMessage}
-                        />
+                        {/* Панель участников - скрываем для микс-турниров с сформированными командами */}
+                        {!(tournament.participant_type === 'mix' && tournament.teams && tournament.teams.length > 0) && (
+                            <UnifiedParticipantsPanel
+                                tournament={tournament}
+                                participants={tournament.participants || []}
+                                matches={matches}
+                                mixedTeams={tournament.teams || []}
+                                isCreatorOrAdmin={isAdminOrCreator}
+                                user={user}
+                                onRemoveParticipant={() => {}}
+                                onShowAddParticipantModal={() => openModal('addParticipant')}
+                                onShowParticipantSearchModal={() => openModal('participantSearch')}
+                                onTeamsGenerated={handleTeamsGenerated}
+                                onTeamsUpdated={() => {}}
+                                calculateTeamAverageRating={() => 0}
+                                setRatingType={() => {}}
+                                userPermissions={{}}
+                                handleParticipate={() => {}}
+                                setMessage={setMessage}
+                            />
+                        )}
 
-                        {/* Генератор команд для микс-турниров (скрываем список участников если команды сформированы) */}
+                        {/* Генератор команд для микс-турниров */}
                         {tournament.participant_type === 'mix' && (
                             <TeamGenerator
                                 tournament={tournament}
@@ -704,6 +706,16 @@ function TournamentDetails() {
                                 onRemoveParticipant={() => {}}
                                 isAdminOrCreator={isAdminOrCreator}
                             />
+                        )}
+
+                        {/* Сообщение для микс-турниров с сформированными командами */}
+                        {tournament.participant_type === 'mix' && tournament.teams && tournament.teams.length > 0 && (
+                            <div className="teams-formed-notice">
+                                <div className="notice-content">
+                                    <h4>✅ Команды сформированы</h4>
+                                    <p>Участники распределены по командам. Список участников теперь доступен в генераторе команд.</p>
+                                </div>
+                            </div>
                         )}
                     </div>
                 );

@@ -2369,12 +2369,6 @@ a.participant-name:hover {
     gap: 8px;
     padding: 16px 24px 0;
     overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE и Edge */
-}
-
-.tabs-navigation-tournamentdetails::-webkit-scrollbar {
-    display: none; /* WebKit browsers (Chrome, Safari, etc.) */
 }
 
 .tab-button-tournamentdetails {
@@ -6450,6 +6444,7 @@ a.participant-name:hover {
     text-align: center;
     font-weight: 600;
     text-transform: uppercase;
+    font-size: 0.9em;
     letter-spacing: 0.5px;
     font-size: 13px;
     border-bottom: 2px solid #555555;
@@ -7840,5 +7835,62 @@ a.participant-name:hover {
     
     .winners-section h3 {
         font-size: 20px;
+    }
+}
+
+/* 🆕 Уведомление о сформированных командах */
+.teams-formed-notice {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #0ea5e9;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.teams-formed-notice::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer-notice 2s infinite;
+}
+
+@keyframes shimmer-notice {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.notice-content h4 {
+    color: #0c4a6e;
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.notice-content p {
+    color: #0369a1;
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .teams-formed-notice {
+        padding: 16px;
+        margin: 16px 0;
+    }
+    
+    .notice-content h4 {
+        font-size: 1.1rem;
+    }
+    
+    .notice-content p {
+        font-size: 0.9rem;
     }
 }
