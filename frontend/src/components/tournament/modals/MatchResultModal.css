@@ -922,4 +922,465 @@
     transform: translateY(0);
 }
 /* Адаптивные стили для мобильных устройств */
+  
+/* 🆕 СТИЛИ ДЛЯ АВТОМАТИЧЕСКОГО РАСЧЕТА СЧЕТА */
+.auto-calculate-section {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.auto-calculate-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.auto-calculate-checkbox:hover {
+    color: #007bff;
+}
+
+.auto-calculate-checkbox input[type="checkbox"] {
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #007bff;
+}
+
+.auto-calculate-checkbox input[type="checkbox"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auto-calculate-indicator {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(0, 123, 255, 0.1);
+    border: 1px solid rgba(0, 123, 255, 0.2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: pulseIndicator 2s ease-in-out infinite;
+}
+
+@keyframes pulseIndicator {
+    0%, 100% {
+        background: rgba(0, 123, 255, 0.1);
+    }
+    50% {
+        background: rgba(0, 123, 255, 0.15);
+    }
+}
+
+.indicator-icon {
+    font-size: 14px;
+    animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.indicator-text {
+    font-size: 12px;
+    color: #007bff;
+    font-weight: 500;
+}
+
+.score-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.score-input-wrapper input.auto-calculated {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border-color: #9c27b0;
+    color: #6a1b9a;
+    font-weight: 600;
+    position: relative;
+}
+
+.score-input-wrapper input.auto-calculated:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+.auto-calculated-badge {
+    position: absolute;
+    right: -10px;
+    top: -8px;
+    background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
+    animation: badgePulse 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 3px 6px rgba(156, 39, 176, 0.4);
+    }
+}
+
+.auto-calculate-help {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(23, 162, 184, 0.05);
+    border: 1px solid rgba(23, 162, 184, 0.2);
+    border-radius: 6px;
+    border-left: 4px solid #17a2b8;
+}
+
+.auto-calculate-help p {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #17a2b8;
+    font-weight: 600;
+}
+
+.auto-calculate-help ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: none;
+}
+
+.auto-calculate-help li {
+    font-size: 12px;
+    color: #495057;
+    margin-bottom: 4px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.auto-calculate-help li::before {
+    content: "▶";
+    position: absolute;
+    left: -15px;
+    color: #17a2b8;
+    font-size: 10px;
+}
+
+.auto-calculate-help li:last-child {
+    margin-bottom: 0;
+}
+
+/* Анимация при включении автоматического расчета */
+.score-inputs:has(.auto-calculated) {
+    animation: autoCalculateActivated 0.5s ease-out;
+}
+
+@keyframes autoCalculateActivated {
+    0% {
+        transform: scale(1);
+        box-shadow: none;
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(156, 39, 176, 0.2);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: none;
+    }
+}
+
+.recalculate-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 123, 255, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.recalculate-btn:hover:not(:disabled) {
+    background: rgba(0, 123, 255, 0.1);
+    border-color: rgba(0, 123, 255, 0.5);
+    transform: scale(1.1);
+}
+
+.recalculate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.manual-calculate-section {
+    margin-top: 8px;
+    padding: 10px;
+    background: rgba(255, 193, 7, 0.05);
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    border-radius: 6px;
+    border-left: 4px solid #ffc107;
+}
+
+.manual-hint {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: #856404;
+    line-height: 1.4;
+}
+
+.manual-recalculate-btn {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+.manual-recalculate-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ff8f00 0%, #f57c00 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(255, 193, 7, 0.4);
+}
+
+.manual-recalculate-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+.manual-recalculate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Мобильная адаптация для автоматического расчета */
+@media (max-width: 768px) {
+    .enhanced-match-result-modal {
+        width: 95vw;
+        max-height: 90vh;
+        margin: 20px;
+    }
+    
+    .teams-display {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .vs-separator {
+        margin: 8px 0;
+        transform: rotate(90deg);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .score-inputs {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+    
+    .team-tooltip {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90vw;
+        max-width: 350px;
+    }
+    
+    .team-tooltip::before {
+        display: none;
+    }
+    
+    .auto-calculate-section {
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+    
+    .auto-calculate-checkbox {
+        font-size: 13px;
+    }
+    
+    .auto-calculate-checkbox input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .indicator-text {
+        font-size: 11px;
+    }
+    
+    .auto-calculate-help {
+        padding: 10px;
+    }
+    
+    .auto-calculate-help p {
+        font-size: 12px;
+    }
+    
+    .auto-calculate-help li {
+        font-size: 11px;
+    }
+    
+    .auto-calculated-badge {
+        font-size: 9px;
+        padding: 1px 4px;
+        right: -8px;
+        top: -6px;
+    }
+    
+    .recalculate-btn {
+        padding: 1px 4px;
+        font-size: 11px;
+    }
+    
+    .manual-recalculate-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .maps-section {
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .map-entry {
+        padding: 12px;
+    }
+    
+    .map-scores {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .map-score-separator {
+        transform: rotate(90deg);
+        padding: 5px 0;
+    }
+    
+    .map-select-container {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .remove-map-btn {
+        margin-left: 0;
+        width: 100%;
+        height: 40px;
+    }
+    
+    .debug-maps-info {
+        padding: 8px !important;
+        margin: 8px 0 !important;
+    }
+    
+    .no-maps-section {
+        padding: 15px;
+        margin: 10px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .enhanced-match-result-modal {
+        width: 98vw;
+        margin: 10px;
+        padding: 16px;
+    }
+    
+    .map-scores {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .map-score-separator {
+        transform: rotate(90deg);
+        margin: 4px 0;
+    }
+    
+    .auto-calculate-section {
+        padding: 8px;
+    }
+    
+    .auto-calculate-checkbox {
+        font-size: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .auto-calculate-indicator {
+        margin-top: 6px;
+        padding: 4px 8px;
+        flex-wrap: wrap;
+    }
+    
+    .score-input-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .auto-calculated-badge {
+        position: static;
+        margin-top: 4px;
+        align-self: center;
+        font-size: 8px;
+    }
+    
+    .indicator-text {
+        font-size: 10px;
+    }
+    
+    .recalculate-btn {
+        margin-left: 0;
+        margin-top: 4px;
+        align-self: flex-start;
+    }
+    
+    .maps-container {
+        max-height: 50vh;
+    }
+    
+    .map-entry {
+        padding: 10px;
+    }
+    
+    .map-score-input input {
+        width: 50px;
+        padding: 6px;
+        font-size: 14px;
+    }
+    
+    .add-map-btn {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+}
  

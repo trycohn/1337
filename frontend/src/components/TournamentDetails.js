@@ -587,6 +587,99 @@ function TournamentDetails() {
         }
     }, [tournament?.participants]);
 
+    // 🆕 Функция сохранения результата матча
+    const saveMatchResult = useCallback(async (resultData) => {
+        if (!selectedMatch) {
+            console.error('❌ Нет выбранного матча для сохранения результата');
+            return;
+        }
+
+        // Получаем ID матча из selectedMatch
+        const matchId = typeof selectedMatch === 'object' ? selectedMatch.id : selectedMatch;
+        
+        if (!matchId && matchId !== 0) {
+            console.error('❌ Не удалось определить ID матча:', selectedMatch);
+            return;
+        }
+
+        console.log('💾 Начинаем сохранение результата матча:', {
+            matchId,
+            resultData,
+            tournamentId: id
+        });
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('Отсутствует токен авторизации');
+            }
+
+            // Подготовка данных для отправки
+            const submitData = {
+                score1: parseInt(resultData.score1) || 0,
+                score2: parseInt(resultData.score2) || 0,
+                maps_data: resultData.maps_data || [],
+                winner_team_id: null
+            };
+
+            // Определение победителя
+            if (resultData.winner === 'team1') {
+                submitData.winner_team_id = selectedMatch.team1_id;
+            } else if (resultData.winner === 'team2') {
+                submitData.winner_team_id = selectedMatch.team2_id;
+            } else if (submitData.score1 > submitData.score2) {
+                submitData.winner_team_id = selectedMatch.team1_id;
+            } else if (submitData.score2 > submitData.score1) {
+                submitData.winner_team_id = selectedMatch.team2_id;
+            }
+
+            console.log('📡 Отправляем данные на сервер:', submitData);
+
+            // Отправка запроса на сервер
+            const response = await api.put(`/api/tournaments/${id}/matches/${matchId}/result`, submitData, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('✅ Результат матча успешно сохранен:', response.data);
+
+            // Закрываем модальное окно
+            closeModal('matchResult');
+            setSelectedMatch(null);
+            setMatchResultData({ score1: 0, score2: 0, maps_data: [] });
+
+            // Обновляем данные турнира
+            await fetchTournamentData();
+
+            setMessage('✅ Результат матча успешно сохранен!');
+            setTimeout(() => setMessage(''), 3000);
+
+        } catch (error) {
+            console.error('❌ Ошибка при сохранении результата матча:', error);
+            
+            let errorMessage = 'Ошибка при сохранении результата матча';
+            
+            if (error.response?.status === 403) {
+                errorMessage = 'У вас нет прав для редактирования результатов этого матча';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Матч не найден';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setMessage(`❌ ${errorMessage}`);
+            setTimeout(() => setMessage(''), 5000);
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedMatch, id, fetchTournamentData, closeModal]);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
@@ -1200,8 +1293,8 @@ function TournamentDetails() {
                         selectedMatch={selectedMatch}
                         matchResultData={matchResultData}
                         setMatchResultData={setMatchResultData}
-                        onSave={() => {}}
-                        isLoading={false}
+                        onSave={saveMatchResult}
+                        isLoading={loading}
                         tournament={tournament}
                     />
                 )}
