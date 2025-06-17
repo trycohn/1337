@@ -752,16 +752,66 @@ function TournamentDetails() {
                                             canEditMatches={canEditMatches}
                                             selectedMatch={selectedMatch}
                                             setSelectedMatch={(match) => {
-                                                // 🔧 ИСПРАВЛЕНИЕ: Обрабатываем match как объект или ID
+                                                // 🔧 ИСПРАВЛЕНИЕ: Обрабатываем match как объект или ID с проверкой на null
+                                                console.log('🎯 setSelectedMatch вызван с:', match, 'тип:', typeof match);
+                                                
+                                                if (match === null || match === undefined) {
+                                                    console.log('🎯 Выбран матч: null/undefined - снимаем выделение');
+                                                    setSelectedMatch(null);
+                                                    return;
+                                                }
+                                                
                                                 const matchId = typeof match === 'object' && match !== null ? match.id : match;
-                                                console.log('🎯 Выбран матч:', matchId, 'тип:', typeof match);
-                                                setSelectedMatch(matchId);
+                                                console.log('🎯 Выбран матч ID:', matchId, 'из объекта:', match);
+                                                
+                                                if (matchId) {
+                                                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Найти полный объект матча и открыть модальное окно
+                                                    const fullMatch = matches.find(m => m.id === parseInt(matchId));
+                                                    if (fullMatch && canEditMatches) {
+                                                        console.log('🎯 Найден полный объект матча:', fullMatch);
+                                                        
+                                                        // Получаем информацию о командах
+                                                        const team1Info = tournament.teams?.find(t => t.id === fullMatch.team1_id) || 
+                                                                         tournament.participants?.find(p => p.id === fullMatch.team1_id);
+                                                        const team2Info = tournament.teams?.find(t => t.id === fullMatch.team2_id) || 
+                                                                         tournament.participants?.find(p => p.id === fullMatch.team2_id);
+                                                        
+                                                        // Создаем расширенный объект матча
+                                                        const matchWithTeamInfo = {
+                                                            ...fullMatch,
+                                                            team1_name: team1Info?.name || team1Info?.username || 'Команда 1',
+                                                            team2_name: team2Info?.name || team2Info?.username || 'Команда 2',
+                                                            team1_composition: team1Info,
+                                                            team2_composition: team2Info
+                                                        };
+                                                        
+                                                        setSelectedMatch(matchWithTeamInfo);
+                                                        setMatchResultData({
+                                                            score1: fullMatch.score1 || 0,
+                                                            score2: fullMatch.score2 || 0,
+                                                            maps_data: fullMatch.maps_data || []
+                                                        });
+                                                        openModal('matchResult');
+                                                        console.log('🎯 Открыто модальное окно для редактирования матча:', matchId);
+                                                    } else {
+                                                        console.warn('⚠️ Матч не найден или нет прав на редактирование:', matchId);
+                                                        setSelectedMatch(matchId);
+                                                    }
+                                                } else {
+                                                    console.warn('⚠️ Не удалось определить ID матча из:', match);
+                                                    setSelectedMatch(null);
+                                                }
                                             }}
                                             handleTeamClick={() => {}}
                                             format={tournament.format}
                                             onMatchClick={(match) => {
-                                                setSelectedMatchForDetails(match);
-                                                openModal('matchDetails');
+                                                console.log('🎯 onMatchClick вызван с:', match);
+                                                if (match && match.id) {
+                                                    setSelectedMatchForDetails(match);
+                                                    openModal('matchDetails');
+                                                } else {
+                                                    console.warn('⚠️ onMatchClick: некорректный объект матча:', match);
+                                                }
                                             }}
                                         />
                                     </Suspense>
