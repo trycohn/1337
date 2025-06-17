@@ -647,6 +647,13 @@ function TournamentDetails() {
 
             console.log('✅ Результат матча успешно сохранен:', response.data);
 
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очищаем кеш турнира после сохранения
+            const cacheKey = `tournament_cache_${id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+            console.log('🗑️ Кеш турнира очищен для принудительного обновления');
+
             // Закрываем модальное окно
             closeModal('matchResult');
             setSelectedMatch(null);
@@ -744,7 +751,12 @@ function TournamentDetails() {
                                             games={games}
                                             canEditMatches={canEditMatches}
                                             selectedMatch={selectedMatch}
-                                            setSelectedMatch={setSelectedMatch}
+                                            setSelectedMatch={(match) => {
+                                                // 🔧 ИСПРАВЛЕНИЕ: Обрабатываем match как объект или ID
+                                                const matchId = typeof match === 'object' && match !== null ? match.id : match;
+                                                console.log('🎯 Выбран матч:', matchId, 'тип:', typeof match);
+                                                setSelectedMatch(matchId);
+                                            }}
                                             handleTeamClick={() => {}}
                                             format={tournament.format}
                                             onMatchClick={(match) => {
@@ -949,7 +961,15 @@ function TournamentDetails() {
                                                             <button 
                                                                 className="edit-compact-btn"
                                                                 onClick={() => {
-                                                                    setSelectedMatch(match);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Передаем весь объект матча, но с правильными данными о командах
+                                                                    const matchWithTeamInfo = {
+                                                                        ...match,
+                                                                        team1_name: team1Info?.name || team1Info?.username || 'Команда 1',
+                                                                        team2_name: team2Info?.name || team2Info?.username || 'Команда 2',
+                                                                        team1_composition: team1Info,
+                                                                        team2_composition: team2Info
+                                                                    };
+                                                                    setSelectedMatch(matchWithTeamInfo);
                                                                     setMatchResultData({
                                                                         score1: match.score1 || 0,
                                                                         score2: match.score2 || 0,
