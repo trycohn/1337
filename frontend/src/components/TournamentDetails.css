@@ -7306,8 +7306,6 @@ a.participant-name:hover {
     flex-wrap: nowrap;
     gap: 8px;
     padding: 16px 24px 0;
-    border-bottom: 2px solid #e5e7eb;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
@@ -7412,8 +7410,6 @@ a.participant-name:hover {
 /* 🆕 Контент вкладок */
 .tournament-content-tournamentdetails {
     padding: 24px;
-    background: #ffffff;
-    border-radius: 0 0 12px 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 

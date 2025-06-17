@@ -593,6 +593,32 @@ function TournamentDetails() {
         console.log('🔄 Переключение на вкладку:', tabName);
     }, []);
 
+    // 🆕 Проверка, нужно ли показывать вкладку участников
+    const shouldShowParticipantsTab = useMemo(() => {
+        if (!tournament) return false;
+        
+        // Скрываем для турниров в статусах "in-progress" и "completed"
+        if (tournament.status === 'in-progress' || tournament.status === 'completed') {
+            return false;
+        }
+        
+        // Для микс-турниров: скрываем если команды уже сформированы
+        if (tournament.participant_type === 'mix' && tournament.teams && tournament.teams.length > 0) {
+            return false;
+        }
+        
+        return true;
+    }, [tournament]);
+
+    // 🆕 Автоматическое переключение на доступную вкладку
+    useEffect(() => {
+        if (!shouldShowParticipantsTab && activeTab === 'participants') {
+            // Если вкладка участников недоступна, переключаемся на главную
+            setActiveTab('info');
+            console.log('🔄 Автоматическое переключение с вкладки "Участники" на "Главная"');
+        }
+    }, [shouldShowParticipantsTab, activeTab]);
+
     // 🆕 Рендеринг контента вкладок
     const renderTabContent = () => {
         switch (activeTab) {
@@ -1083,12 +1109,14 @@ function TournamentDetails() {
                                 <span className="tab-label-tournamentdetails">📋 Главная</span>
                             </button>
                             
-                            <button 
-                                className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
-                                onClick={() => switchTab('participants')}
-                            >
-                                <span className="tab-label-tournamentdetails">👥 Участники</span>
-                            </button>
+                            {shouldShowParticipantsTab && (
+                                <button 
+                                    className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
+                                    onClick={() => switchTab('participants')}
+                                >
+                                    <span className="tab-label-tournamentdetails">👥 Участники</span>
+                                </button>
+                            )}
                             
                             <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
