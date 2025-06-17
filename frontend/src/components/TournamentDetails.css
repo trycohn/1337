@@ -5775,3 +5775,317 @@ a.participant-name:hover {
     margin: 0;
     line-height: 1.5;
 }
+
+/* 🎨 Modern Monochrome Tournament Details - Updated Tab Navigation */
+
+.tournament-header-tournamentdetails {
+    padding: 0 0 24px 0;
+    border-bottom: 1px solid #1a1a1a;
+    margin-bottom: 32px;
+}
+
+.tournament-header-tournamentdetails h2 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 300;
+    letter-spacing: -0.025em;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tabs-navigation-tournamentdetails {
+    display: flex;
+    border-bottom: 1px solid #1a1a1a;
+    margin-bottom: 32px;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+}
+
+.tabs-navigation-tournamentdetails::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-button-tournamentdetails {
+    background: transparent;
+    border: none;
+    padding: 12px 24px;
+    color: #666666;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    white-space: nowrap;
+    min-width: fit-content;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-button-tournamentdetails::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #ffffff;
+    transition: width 0.3s ease;
+}
+
+.tab-button-tournamentdetails:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-button-tournamentdetails:hover::before {
+    width: 100%;
+}
+
+.tab-button-tournamentdetails.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom-color: #ffffff;
+}
+
+.tab-button-tournamentdetails.active::before {
+    width: 100%;
+}
+
+.tab-label-tournamentdetails {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tournament-content-tournamentdetails {
+    padding: 0;
+}
+
+.tab-content-tournamentdetails {
+    animation: fadeInContent 0.3s ease;
+}
+
+@keyframes fadeInContent {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tab content sections */
+.tab-content-info,
+.tab-content-participants,
+.tab-content-bracket,
+.tab-content-results,
+.tab-content-management {
+    min-height: 400px;
+    color: #ffffff;
+}
+
+/* Empty state improvements */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #666666;
+    background: #111111;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+}
+
+.empty-state p {
+    margin: 8px 0;
+    font-size: 0.875rem;
+}
+
+.empty-state .text-muted {
+    color: #555555;
+    font-size: 0.75rem;
+}
+
+/* Access denied section */
+.access-denied {
+    text-align: center;
+    padding: 48px 24px;
+    background: #111111;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+}
+
+.access-denied h3 {
+    color: #ffffff;
+    margin: 0 0 16px 0;
+    font-size: 1.125rem;
+    font-weight: 500;
+}
+
+.access-denied p {
+    color: #999999;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* Results section updates */
+.results-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.result-compact-item {
+    background: #111111;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.result-compact-item:hover {
+    border-color: #333333;
+    transform: translateY(-1px);
+}
+
+.result-compact-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.result-compact-round {
+    font-size: 0.75rem;
+    color: #999999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.third-place-indicator,
+.grand-final-indicator {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.result-compact-match {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.team-name-btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    min-width: 120px;
+}
+
+.team-name-btn:hover {
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.team-name-btn.winner {
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.winner-score {
+    color: #ffffff;
+}
+
+.score-separator {
+    color: #666666;
+}
+
+.result-compact-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.details-btn,
+.edit-compact-btn {
+    background: transparent;
+    border: 1px solid #333333;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.details-btn:hover {
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.edit-compact-btn:hover {
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.match-completed-time {
+    font-size: 0.75rem;
+    color: #666666;
+    margin-top: 8px;
+}
+
+/* Teams formed notice */
+.teams-formed-notice {
+    background: #111111;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.teams-formed-notice::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+    animation: shimmer-notice 3s infinite;
+}
+
+@keyframes shimmer-notice {
+    0%, 100% { left: -100%; }
+    50% { left: 100%; }
+}
+
+.notice-content h4 {
+    color: #ffffff;
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.notice-content p {
+    color: #999999;
+    margin: 0;
+    font-size: 0.875rem;
+}
