@@ -12,19 +12,16 @@
     background-color: #222222;
     border: 1px solid #333333;
 }
-
 .attachment-button:hover {
     background-color: #333333;
     border-color: #555555;
     transform: translateY(-1px);
 }
-
 .attachment-icon {
     font-style: normal;
     font-size: 1.2rem;
     color: #ffffff;
 }
-
 .attachment-options {
     position: absolute;
     bottom: 50px;
@@ -37,7 +34,6 @@
     z-index: 10;
     overflow: hidden;
 }
-
 .attachment-option {
     padding: 12px 16px;
     display: flex;
@@ -48,15 +44,12 @@
     font-size: 14px;
     border-bottom: 1px solid #222222;
 }
-
 .attachment-option:last-child {
     border-bottom: none;
 }
-
 .attachment-option:hover {
     background-color: #1a1a1a;
 }
-
 .attachment-option i {
     margin-right: 10px;
     font-style: normal;

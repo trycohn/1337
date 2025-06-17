@@ -1,7 +1,6 @@
 /* =========================
    МОДУЛЬ ДОСТИЖЕНИЙ - СТИЛИ
    ========================= */
-
 /* Основная панель достижений */
 .achievements-panel {
     width: 100%;
@@ -11,7 +10,6 @@
     border-radius: 0;
     overflow: hidden;
 }
-
 /* Заголовок панели */
 .achievements-header {
     display: flex;
@@ -21,21 +19,18 @@
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
 }
-
 .achievements-title {
     font-size: 1.5rem;
     font-weight: 300;
     color: var(--text-primary);
     margin: 0;
 }
-
 /* Элементы управления */
 .achievements-controls {
     display: flex;
     gap: var(--spacing-md);
     align-items: center;
 }
-
 .achievements-search {
     padding: 8px 12px;
     border: 1px solid var(--border-color);
@@ -46,12 +41,10 @@
     width: 200px;
     transition: var(--transition);
 }
-
 .achievements-search:focus {
     outline: none;
     border-color: var(--border-hover);
 }
-
 .achievements-sort {
     padding: 8px 12px;
     border: 1px solid var(--border-color);
@@ -62,11 +55,9 @@
     cursor: pointer;
     transition: var(--transition);
 }
-
 .achievements-sort:hover {
     border-color: var(--border-hover);
 }
-
 /* Статистика игрока */
 .achievements-player-stats {
     display: grid;
@@ -76,7 +67,6 @@
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
 }
-
 .player-level-card {
     display: flex;
     flex-direction: column;
@@ -87,49 +77,41 @@
     background: var(--bg-primary);
     transition: var(--transition);
 }
-
 .player-level-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-1px);
 }
-
 .player-level {
     font-size: 2rem;
     font-weight: 300;
     color: var(--text-primary);
     margin-bottom: 8px;
 }
-
 .player-level-label {
     font-size: 0.8rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
-
 .player-progress {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
 }
-
 .progress-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-sm);
 }
-
 .progress-label {
     font-size: 0.9rem;
     color: var(--text-muted);
 }
-
 .progress-value {
     font-weight: 300;
     color: var(--text-primary);
 }
-
 .xp-progress-bar {
     width: 100%;
     height: 8px;
@@ -139,13 +121,11 @@
     overflow: hidden;
     margin-top: 8px;
 }
-
 .xp-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
     transition: width 0.5s ease;
 }
-
 /* Фильтры категорий */
 .achievements-filters {
     display: flex;
@@ -155,7 +135,6 @@
     background: var(--bg-primary);
     overflow-x: auto;
 }
-
 .filter-category {
     display: flex;
     align-items: center;
@@ -171,23 +150,19 @@
     white-space: nowrap;
     min-width: fit-content;
 }
-
 .filter-category:hover {
     border-color: var(--border-hover);
     color: var(--text-primary);
 }
-
 .filter-category.active {
     background: var(--accent-primary);
     color: var(--bg-primary);
     border-color: var(--accent-primary);
 }
-
 .filter-category.active:hover {
     background: var(--accent-secondary);
     border-color: var(--accent-secondary);
 }
-
 .category-count {
     background: var(--bg-primary);
     color: var(--text-muted);
@@ -197,12 +172,10 @@
     min-width: 20px;
     text-align: center;
 }
-
 .filter-category.active .category-count {
     background: rgba(255, 255, 255, 0.2);
     color: var(--bg-primary);
 }
-
 /* Переключатели фильтров */
 .achievements-filter-toggles {
     display: flex;
@@ -211,7 +184,6 @@
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
 }
-
 .filter-toggle {
     display: flex;
     align-items: center;
@@ -221,15 +193,12 @@
     color: var(--text-muted);
     transition: var(--transition);
 }
-
 .filter-toggle:hover {
     color: var(--text-primary);
 }
-
 .filter-toggle.active {
     color: var(--accent-primary);
 }
-
 .filter-checkbox {
     width: 16px;
     height: 16px;
@@ -239,12 +208,10 @@
     position: relative;
     transition: var(--transition);
 }
-
 .filter-checkbox.checked {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
 }
-
 .filter-checkbox.checked::after {
     content: '✓';
     position: absolute;
@@ -255,7 +222,6 @@
     font-size: 10px;
     font-weight: bold;
 }
-
 /* Сетка достижений */
 .achievements-grid {
     display: grid;
@@ -264,7 +230,6 @@
     padding: var(--spacing-lg);
     background: var(--bg-primary);
 }
-
 /* Карточка достижения */
 .achievement-card {
     display: flex;
@@ -276,26 +241,21 @@
     overflow: hidden;
     position: relative;
 }
-
 .achievement-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
-
 .achievement-card.unlocked {
     border-color: var(--accent-primary);
     background: linear-gradient(135deg, var(--bg-secondary), rgba(108, 99, 255, 0.05));
 }
-
 .achievement-card.locked {
     opacity: 0.6;
 }
-
 .achievement-card.locked .achievement-icon {
     filter: grayscale(100%);
 }
-
 /* Заголовок карточки */
 .achievement-card-header {
     display: flex;
@@ -304,7 +264,6 @@
     padding: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
 }
-
 .achievement-icon {
     font-size: 2rem;
     width: 48px;
@@ -317,18 +276,15 @@
     background: var(--bg-primary);
     transition: var(--transition);
 }
-
 .achievement-card.unlocked .achievement-icon {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
     color: var(--bg-primary);
 }
-
 .achievement-info {
     flex: 1;
     min-width: 0;
 }
-
 .achievement-name {
     font-size: 1rem;
     font-weight: 400;
@@ -336,7 +292,6 @@
     margin: 0 0 4px 0;
     line-height: 1.2;
 }
-
 .achievement-rarity {
     font-size: 0.8rem;
     font-weight: 300;
@@ -344,7 +299,6 @@
     align-items: center;
     gap: 4px;
 }
-
 /* Тело карточки */
 .achievement-card-body {
     padding: var(--spacing-md);
@@ -353,7 +307,6 @@
     flex-direction: column;
     gap: var(--spacing-sm);
 }
-
 .achievement-description {
     font-size: 0.9rem;
     color: var(--text-muted);
@@ -361,7 +314,6 @@
     margin: 0;
     flex: 1;
 }
-
 .achievement-xp {
     display: flex;
     align-items: center;
@@ -370,18 +322,15 @@
     color: var(--text-primary);
     font-weight: 300;
 }
-
 .achievement-unlock-date {
     font-size: 0.8rem;
     color: var(--text-muted);
     font-style: italic;
 }
-
 /* Прогресс достижения */
 .achievement-progress {
     margin-top: var(--spacing-sm);
 }
-
 .achievement-progress-bar {
     width: 100%;
     height: 6px;
@@ -391,39 +340,33 @@
     overflow: hidden;
     margin-bottom: 4px;
 }
-
 .achievement-progress-fill {
     height: 100%;
     background: var(--accent-primary);
     transition: width 0.5s ease;
 }
-
 .achievement-progress-text {
     font-size: 0.8rem;
     color: var(--text-muted);
     text-align: right;
 }
-
 /* Недавние достижения */
 .recent-achievements {
     padding: var(--spacing-lg);
     border-top: 1px solid var(--border-color);
     background: var(--bg-secondary);
 }
-
 .recent-achievements-title {
     font-size: 1.2rem;
     font-weight: 300;
     color: var(--text-primary);
     margin: 0 0 var(--spacing-md) 0;
 }
-
 .recent-achievements-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
 }
-
 .recent-achievement-item {
     display: flex;
     align-items: center;
@@ -434,12 +377,10 @@
     background: var(--bg-primary);
     transition: var(--transition);
 }
-
 .recent-achievement-item:hover {
     border-color: var(--border-hover);
     transform: translateX(4px);
 }
-
 .recent-achievement-icon {
     font-size: 1.5rem;
     width: 32px;
@@ -448,23 +389,19 @@
     align-items: center;
     justify-content: center;
 }
-
 .recent-achievement-info {
     flex: 1;
 }
-
 .recent-achievement-name {
     font-size: 0.9rem;
     font-weight: 400;
     color: var(--text-primary);
     margin: 0 0 2px 0;
 }
-
 .recent-achievement-time {
     font-size: 0.8rem;
     color: var(--text-muted);
 }
-
 /* Пустое состояние */
 .achievements-empty {
     display: flex;
@@ -475,26 +412,22 @@
     text-align: center;
     min-height: 300px;
 }
-
 .achievements-empty-icon {
     font-size: 4rem;
     margin-bottom: var(--spacing-md);
     opacity: 0.5;
 }
-
 .achievements-empty-title {
     font-size: 1.2rem;
     font-weight: 300;
     color: var(--text-primary);
     margin: 0 0 var(--spacing-sm) 0;
 }
-
 .achievements-empty-message {
     font-size: 0.9rem;
     color: var(--text-muted);
     margin: 0;
 }
-
 /* Состояние загрузки */
 .achievements-loading {
     display: flex;
@@ -503,7 +436,6 @@
     padding: var(--spacing-xl);
     min-height: 300px;
 }
-
 .loading-spinner {
     width: 40px;
     height: 40px;
@@ -512,12 +444,10 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
 /* Уведомления о достижениях */
 .achievement-notifications-container {
     position: fixed;
@@ -529,7 +459,6 @@
     gap: var(--spacing-sm);
     max-width: 400px;
 }
-
 .achievement-notification {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
@@ -541,44 +470,35 @@
     position: relative;
     overflow: hidden;
 }
-
 .achievement-notification.visible {
     transform: translateX(0);
     opacity: 1;
 }
-
 .achievement-notification.closing {
     transform: translateX(100%);
     opacity: 0;
 }
-
 .achievement-notification.notification-achievement_unlocked {
     border-left: 4px solid var(--accent-primary);
 }
-
 .achievement-notification.notification-level_up {
     border-left: 4px solid #ff9800;
 }
-
 .achievement-notification.notification-progress_update {
     border-left: 4px solid #4caf50;
 }
-
 .achievement-notification.notification-streak_milestone {
     border-left: 4px solid #ff5722;
 }
-
 .notification-inner {
     padding: var(--spacing-md);
     position: relative;
 }
-
 .notification-content {
     display: flex;
     gap: var(--spacing-sm);
     align-items: flex-start;
 }
-
 .notification-icon {
     font-size: 1.5rem;
     flex-shrink: 0;
@@ -591,33 +511,28 @@
     border-radius: 0;
     background: var(--bg-secondary);
 }
-
 .notification-text {
     flex: 1;
     min-width: 0;
 }
-
 .notification-title {
     font-size: 1rem;
     font-weight: 400;
     color: var(--text-primary);
     margin: 0 0 4px 0;
 }
-
 .notification-message {
     font-size: 0.9rem;
     color: var(--text-primary);
     margin: 0 0 4px 0;
     font-weight: 300;
 }
-
 .notification-description {
     font-size: 0.8rem;
     color: var(--text-muted);
     margin: 0 0 8px 0;
     line-height: 1.3;
 }
-
 .notification-xp {
     display: flex;
     align-items: center;
@@ -626,13 +541,11 @@
     color: var(--accent-primary);
     font-weight: 300;
 }
-
 .notification-rarity {
     font-size: 0.8rem;
     font-weight: 300;
     margin-top: 4px;
 }
-
 .notification-close {
     position: absolute;
     top: 8px;
@@ -649,12 +562,10 @@
     justify-content: center;
     transition: var(--transition);
 }
-
 .notification-close:hover {
     color: var(--text-primary);
     background: var(--bg-secondary);
 }
-
 .notification-timestamp {
     padding: 4px var(--spacing-md);
     border-top: 1px solid var(--border-color);
@@ -663,98 +574,7 @@
     color: var(--text-muted);
     text-align: right;
 }
-
 /* Адаптивность */
-@media (max-width: 768px) {
-    .achievements-panel {
-        border-radius: 0;
-    }
-    
-    .achievements-header {
-        flex-direction: column;
-        gap: var(--spacing-md);
-        align-items: stretch;
-    }
-    
-    .achievements-controls {
-        justify-content: space-between;
-    }
-    
-    .achievements-search {
-        flex: 1;
-        min-width: 0;
-    }
-    
-    .achievements-player-stats {
-        grid-template-columns: 1fr;
-    }
-    
-    .achievements-filters {
-        padding: var(--spacing-sm);
-    }
-    
-    .achievements-grid {
-        grid-template-columns: 1fr;
-        padding: var(--spacing-md);
-        gap: var(--spacing-sm);
-    }
-    
-    .achievement-notifications-container {
-        left: 10px;
-        right: 10px;
-        max-width: none;
-    }
-    
-    .achievement-notification {
-        transform: translateY(-100%);
-    }
-    
-    .achievement-notification.visible {
-        transform: translateY(0);
-    }
-    
-    .achievement-notification.closing {
-        transform: translateY(-100%);
-    }
-}
-
-@media (max-width: 480px) {
-    .achievements-header {
-        padding: var(--spacing-md);
-    }
-    
-    .achievements-title {
-        font-size: 1.3rem;
-    }
-    
-    .achievements-filters {
-        flex-wrap: wrap;
-    }
-    
-    .filter-category {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-    
-    .achievement-card-header {
-        padding: var(--spacing-sm);
-    }
-    
-    .achievement-card-body {
-        padding: var(--spacing-sm);
-    }
-    
-    .achievement-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1.5rem;
-    }
-    
-    .achievement-name {
-        font-size: 0.9rem;
-    }
-}
-
 /* Пустые состояния достижений */
 .empty-achievements {
     display: flex;
@@ -770,21 +590,18 @@
     border: 2px dashed #dee2e6;
     min-height: 400px;
 }
-
 .empty-achievements-icon {
     font-size: 4rem;
     margin-bottom: 20px;
     opacity: 0.7;
     animation: float 3s ease-in-out infinite;
 }
-
 .empty-achievements h3 {
     color: #495057;
     margin-bottom: 10px;
     font-size: 1.5rem;
     font-weight: 600;
 }
-
 .empty-achievements p {
     color: #6c757d;
     font-size: 1.1rem;
@@ -792,21 +609,17 @@
     margin-bottom: 20px;
     line-height: 1.6;
 }
-
 /* Специальные стили для нового пользователя */
 .empty-achievements.new-user {
     background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     border-color: #90caf9;
 }
-
 .empty-achievements.new-user h3 {
     color: #1565c0;
 }
-
 .empty-achievements.new-user p {
     color: #1976d2;
 }
-
 .new-user-tips {
     background: rgba(255, 255, 255, 0.8);
     padding: 25px;
@@ -815,20 +628,17 @@
     max-width: 600px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
 .new-user-tips h4 {
     color: #1565c0;
     margin-bottom: 15px;
     font-size: 1.2rem;
     font-weight: 600;
 }
-
 .new-user-tips ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 .new-user-tips li {
     padding: 8px 0;
     color: #424242;
@@ -837,27 +647,22 @@
     align-items: center;
     gap: 10px;
 }
-
 .new-user-tips li:hover {
     color: #1565c0;
     transform: translateX(5px);
     transition: all 0.3s ease;
 }
-
 /* Стили для отфильтрованного состояния */
 .empty-achievements.filtered {
     background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%);
     border-color: #ffb74d;
 }
-
 .empty-achievements.filtered h3 {
     color: #e65100;
 }
-
 .empty-achievements.filtered p {
     color: #f57c00;
 }
-
 .reset-filters-btn {
     background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
     color: white;
@@ -871,26 +676,21 @@
     margin-top: 15px;
     box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
 }
-
 .reset-filters-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
 }
-
 /* Стили для состояния "нет достижений" */
 .empty-achievements.no-achievements {
     background: linear-gradient(135deg, #f3e5f5 0%, #ce93d8 100%);
     border-color: #ba68c8;
 }
-
 .empty-achievements.no-achievements h3 {
     color: #7b1fa2;
 }
-
 .empty-achievements.no-achievements p {
     color: #8e24aa;
 }
-
 .achievement-suggestions {
     background: rgba(255, 255, 255, 0.9);
     padding: 20px;
@@ -899,17 +699,14 @@
     max-width: 500px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
 .achievement-suggestions p {
     margin: 0;
     color: #7b1fa2 !important;
     font-size: 1rem;
 }
-
 .achievement-suggestions strong {
     color: #4a148c;
 }
-
 /* Анимация плавания */
 @keyframes float {
     0%, 100% {
@@ -919,12 +716,10 @@
         transform: translateY(-10px);
     }
 }
-
 /* Анимация появления */
 .empty-achievements {
     animation: fadeInUp 0.6s ease-out;
 }
-
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -935,36 +730,5 @@
         transform: translateY(0);
     }
 }
-
 /* Адаптивность для мобильных устройств */
-@media (max-width: 768px) {
-    .empty-achievements {
-        padding: 40px 15px;
-        min-height: 300px;
-    }
-    
-    .empty-achievements-icon {
-        font-size: 3rem;
-    }
-    
-    .empty-achievements h3 {
-        font-size: 1.3rem;
-    }
-    
-    .empty-achievements p {
-        font-size: 1rem;
-    }
-    
-    .new-user-tips {
-        padding: 20px;
-        margin-top: 15px;
-    }
-    
-    .new-user-tips h4 {
-        font-size: 1.1rem;
-    }
-    
-    .new-user-tips li {
-        font-size: 0.9rem;
-    }
-} 
+ 

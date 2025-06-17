@@ -1,35 +1,28 @@
 /* =========================
    МИНИМАЛИСТИЧНЫЙ ПРОФИЛЬ ОРГАНИЗАЦИИ
    ========================= */
-
 /* CSS Variables - Черно-белая тема */
 :root {
     --bg-primary: #000000;
     --bg-secondary: #111111;
     --bg-tertiary: #1a1a1a;
-    
     --text-primary: #ffffff;
     --text-secondary: #cccccc;
     --text-muted: #888888;
     --text-disabled: #666666;
-    
     --border-color: #333333;
     --border-hover: #555555;
-    
     --accent-success: #4caf50;
     --accent-error: #ff6b6b;
     --accent-warning: #ffcc66;
-    
     --spacing-xs: 8px;
     --spacing-sm: 12px;
     --spacing-md: 14px;
     --spacing-lg: 18px;
     --spacing-xl: 24px;
     --spacing-2xl: 32px;
-    
     --transition: all 0.2s ease;
 }
-
 /* Общие стили для профиля организатора */
 .organizer-profile {
     max-width: 1400px;
@@ -42,7 +35,6 @@
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-
 /* Заголовок профиля */
 .organizer-header {
     display: flex;
@@ -52,11 +44,9 @@
     border-bottom: 1px solid var(--border-color);
     gap: var(--spacing-xl);
 }
-
 .organizer-logo {
     flex-shrink: 0;
 }
-
 .org-logo {
     width: 120px;
     height: 120px;
@@ -66,16 +56,13 @@
     box-shadow: none;
     transition: var(--transition);
 }
-
 .org-logo:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
-
 .organizer-info {
     flex: 1;
 }
-
 .organizer-name {
     font-size: 2rem;
     font-weight: 300;
@@ -84,7 +71,6 @@
     letter-spacing: 1px;
     text-transform: uppercase;
 }
-
 .organizer-manager {
     display: flex;
     align-items: center;
@@ -93,7 +79,6 @@
     color: var(--text-secondary);
     font-weight: 300;
 }
-
 .manager-link {
     display: flex;
     align-items: center;
@@ -103,11 +88,9 @@
     transition: var(--transition);
     font-weight: 300;
 }
-
 .manager-link:hover {
     color: var(--text-secondary);
 }
-
 .manager-avatar {
     width: 32px;
     height: 32px;
@@ -115,12 +98,10 @@
     object-fit: cover;
     border: 1px solid var(--border-color);
 }
-
 .organizer-stats-summary {
     display: flex;
     gap: var(--spacing-xl);
 }
-
 .stat-item {
     display: flex;
     flex-direction: column;
@@ -130,12 +111,10 @@
     padding: var(--spacing-md);
     transition: var(--transition);
 }
-
 .stat-item:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
-
 .stat-value {
     font-size: 1.5rem;
     font-weight: 300;
@@ -143,7 +122,6 @@
     margin-bottom: var(--spacing-xs);
     line-height: 1;
 }
-
 .stat-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -151,7 +129,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 /* Навигация по вкладкам */
 .organizer-navigation {
     display: flex;
@@ -159,7 +136,6 @@
     margin-bottom: var(--spacing-xl);
     border-bottom: 1px solid var(--border-color);
 }
-
 .nav-tab {
     padding: var(--spacing-md) var(--spacing-lg);
     background: none;
@@ -173,18 +149,15 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .nav-tab:hover {
     color: var(--text-primary);
     background-color: var(--bg-tertiary);
 }
-
 .nav-tab.active {
     color: var(--text-primary);
     border-bottom-color: var(--text-primary);
     background-color: transparent;
 }
-
 /* Контент вкладок */
 .organizer-content {
     background-color: transparent;
@@ -192,7 +165,6 @@
     padding: var(--spacing-xl);
     box-shadow: none;
 }
-
 /* Вкладка "О нас" */
 .about-tab h3 {
     color: var(--text-primary);
@@ -203,29 +175,24 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .organizer-description {
     margin-bottom: var(--spacing-2xl);
 }
-
 .organizer-description p {
     color: var(--text-secondary);
     line-height: 1.6;
     font-size: 1rem;
     font-weight: 300;
 }
-
 .organizer-detailed-stats {
     margin-top: var(--spacing-xl);
 }
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
-
 .stat-card {
     background-color: transparent;
     border: 1px solid var(--border-color);
@@ -235,19 +202,16 @@
     transition: var(--transition);
     box-shadow: none;
 }
-
 .stat-card:hover {
     transform: translateY(-2px);
     border-color: var(--border-hover);
 }
-
 .stat-card .stat-value {
     font-size: 1.8rem;
     font-weight: 300;
     color: var(--text-primary);
     margin-bottom: var(--spacing-xs);
 }
-
 .stat-card .stat-label {
     color: var(--text-muted);
     font-size: 0.8rem;
@@ -255,7 +219,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 /* Вкладка турниров */
 .tournaments-tab h3 {
     color: var(--text-primary);
@@ -266,13 +229,11 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .tournaments-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
 }
-
 .tournament-card {
     background-color: transparent;
     border: 1px solid var(--border-color);
@@ -281,25 +242,21 @@
     box-shadow: none;
     transition: var(--transition);
 }
-
 .tournament-card:hover {
     transform: translateY(-2px);
     border-color: var(--border-hover);
 }
-
 .tournament-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: var(--spacing-md);
 }
-
 .tournament-info h4 {
     margin: 0 0 var(--spacing-sm) 0;
     font-size: 1.2rem;
     font-weight: 300;
 }
-
 .tournament-link {
     color: var(--text-primary);
     text-decoration: none;
@@ -307,18 +264,15 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .tournament-link:hover {
     color: var(--text-secondary);
 }
-
 .tournament-meta {
     display: flex;
     gap: var(--spacing-md);
     flex-wrap: wrap;
     margin-top: var(--spacing-sm);
 }
-
 .tournament-status {
     padding: 4px 12px;
     border-radius: 0;
@@ -327,68 +281,57 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .tournament-status-active {
     background-color: transparent;
     color: var(--accent-success);
     border: 1px solid var(--accent-success);
 }
-
 .tournament-status-completed {
     background-color: transparent;
     color: var(--text-muted);
     border: 1px solid var(--text-muted);
 }
-
 .tournament-status-upcoming {
     background-color: transparent;
     color: var(--accent-warning);
     border: 1px solid var(--accent-warning);
 }
-
 .tournament-status-registration {
     background-color: transparent;
     color: var(--accent-error);
     border: 1px solid var(--accent-error);
 }
-
 .tournament-discipline,
 .tournament-date {
     color: var(--text-muted);
     font-size: 0.8rem;
     font-weight: 300;
 }
-
 .tournament-details {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
     text-align: right;
 }
-
 .detail-item {
     display: flex;
     justify-content: space-between;
     gap: var(--spacing-sm);
     font-size: 0.8rem;
 }
-
 .detail-label {
     color: var(--text-muted);
     font-weight: 300;
 }
-
 .detail-value {
     color: var(--text-secondary);
     font-weight: 300;
 }
-
 .tournament-winner {
     margin-top: var(--spacing-lg);
     padding-top: var(--spacing-lg);
     border-top: 1px solid var(--border-color);
 }
-
 .tournament-winner h5 {
     margin: 0 0 var(--spacing-md) 0;
     color: var(--text-primary);
@@ -397,7 +340,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .winner-link {
     display: flex;
     align-items: center;
@@ -406,11 +348,9 @@
     text-decoration: none;
     transition: var(--transition);
 }
-
 .winner-link:hover {
     color: var(--text-secondary);
 }
-
 .winner-avatar {
     width: 32px;
     height: 32px;
@@ -418,24 +358,20 @@
     object-fit: cover;
     border: 1px solid var(--border-color);
 }
-
 .winner-name {
     font-weight: 300;
 }
-
 .team-winner {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
 }
-
 .team-members {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
     margin-left: var(--spacing-lg);
 }
-
 .team-member {
     display: flex;
     align-items: center;
@@ -446,11 +382,9 @@
     transition: var(--transition);
     font-weight: 300;
 }
-
 .team-member:hover {
     color: var(--text-primary);
 }
-
 .team-members .member-avatar {
     width: 24px;
     height: 24px;
@@ -458,11 +392,9 @@
     object-fit: cover;
     border: 1px solid var(--border-color);
 }
-
 .team-members .member-name {
     font-size: 0.8rem;
 }
-
 .no-winner,
 .no-tournaments {
     color: var(--text-muted);
@@ -471,7 +403,6 @@
     padding: var(--spacing-lg);
     font-weight: 300;
 }
-
 /* Вкладка команды */
 .members-tab h3 {
     color: var(--text-primary);
@@ -482,13 +413,11 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .members-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-lg);
 }
-
 .member-card {
     background-color: transparent;
     border: 1px solid var(--border-color);
@@ -497,12 +426,10 @@
     box-shadow: none;
     transition: var(--transition);
 }
-
 .member-card:hover {
     transform: translateY(-2px);
     border-color: var(--border-hover);
 }
-
 .member-link {
     display: flex;
     align-items: center;
@@ -510,7 +437,6 @@
     color: inherit;
     text-decoration: none;
 }
-
 .members-tab .member-avatar {
     width: 60px;
     height: 60px;
@@ -519,11 +445,9 @@
     border: 1px solid var(--border-color);
     box-shadow: none;
 }
-
 .member-info {
     flex: 1;
 }
-
 .member-name {
     font-size: 1rem;
     font-weight: 300;
@@ -532,20 +456,17 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .member-role {
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin-bottom: var(--spacing-xs);
     font-weight: 300;
 }
-
 .member-joined {
     font-size: 0.7rem;
     color: var(--text-muted);
     font-weight: 300;
 }
-
 .no-members {
     color: var(--text-muted);
     font-style: italic;
@@ -553,7 +474,6 @@
     padding: var(--spacing-lg);
     font-weight: 300;
 }
-
 /* Вкладка контактов */
 .contacts-tab h3 {
     color: var(--text-primary);
@@ -564,13 +484,11 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .contacts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--spacing-lg);
 }
-
 .contact-item {
     background-color: transparent;
     border: 1px solid var(--border-color);
@@ -578,7 +496,6 @@
     padding: var(--spacing-lg);
     box-shadow: none;
 }
-
 .contact-label {
     color: var(--text-muted);
     font-weight: 300;
@@ -587,23 +504,19 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .contact-value {
     color: var(--text-secondary);
     font-weight: 300;
 }
-
 .contact-value a {
     color: var(--text-primary);
     text-decoration: none;
     transition: var(--transition);
 }
-
 .contact-value a:hover {
     color: var(--text-secondary);
     text-decoration: underline;
 }
-
 .no-contacts {
     color: var(--text-muted);
     font-style: italic;
@@ -611,7 +524,6 @@
     padding: var(--spacing-lg);
     font-weight: 300;
 }
-
 /* Состояния загрузки и ошибки */
 .organizer-loading,
 .organizer-error {
@@ -624,113 +536,10 @@
     margin: var(--spacing-xl) auto;
     max-width: 600px;
 }
-
 .organizer-error {
     color: var(--accent-error);
     background-color: rgba(255, 107, 107, 0.1);
     border: 1px solid rgba(255, 107, 107, 0.3);
 }
-
 /* Адаптивность */
-@media (max-width: 1024px) {
-    .organizer-header {
-        flex-direction: column;
-        text-align: center;
-        gap: var(--spacing-xl);
-    }
-    
-    .organizer-stats-summary {
-        justify-content: center;
-    }
-    
-    .tournament-header {
-        flex-direction: column;
-        gap: var(--spacing-md);
-    }
-    
-    .tournament-details {
-        text-align: left;
-    }
-}
-
-@media (max-width: 768px) {
-    .organizer-profile {
-        padding: var(--spacing-xl);
-    }
-    
-    .organizer-name {
-        font-size: 2rem;
-    }
-    
-    .organizer-navigation {
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
-    }
-    
-    .nav-tab {
-        padding: var(--spacing-md) var(--spacing-lg);
-        font-size: 0.9rem;
-    }
-    
-    .organizer-content {
-        padding: var(--spacing-xl);
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .members-list {
-        grid-template-columns: 1fr;
-    }
-    
-    .contacts-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .organizer-stats-summary {
-        flex-direction: column;
-        gap: var(--spacing-xl);
-    }
-    
-    .tournament-meta {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-    }
-    
-    .team-members {
-        margin-left: var(--spacing-lg);
-    }
-}
-
-@media (max-width: 480px) {
-    .org-logo {
-        width: 80px;
-        height: 80px;
-    }
-    
-    .organizer-name {
-        font-size: 2rem;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stat-card {
-        padding: var(--spacing-xl);
-    }
-    
-    .tournament-card {
-        padding: var(--spacing-xl);
-    }
-    
-    .member-card {
-        padding: var(--spacing-xl);
-    }
-    
-    .members-tab .member-avatar {
-        width: 50px;
-        height: 50px;
-    }
-} 
+ 

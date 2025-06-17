@@ -6,7 +6,6 @@
     border-radius: 0;
     color: #ffffff;
 }
-
 .add-participant-modal .modal-header {
     display: flex;
     justify-content: space-between;
@@ -14,7 +13,6 @@
     padding: 20px;
     border-bottom: 1px solid #333333;
 }
-
 .add-participant-modal .modal-header h3 {
     margin: 0;
     color: #ffffff;
@@ -23,7 +21,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .add-participant-modal .close-btn {
     background: none;
     border: none;
@@ -39,19 +36,15 @@
     border-radius: 0;
     transition: color 0.2s ease;
 }
-
 .add-participant-modal .close-btn:hover {
     color: #888888;
 }
-
 .add-participant-form {
     padding: 20px;
 }
-
 .add-participant-form .form-group {
     margin-bottom: 20px;
 }
-
 .add-participant-form .form-group label {
     display: block;
     margin-bottom: 8px;
@@ -61,11 +54,9 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .add-participant-form .form-group .required {
     color: #ff6b6b;
 }
-
 .add-participant-form .form-group input {
     width: 100%;
     padding: 12px;
@@ -76,22 +67,18 @@
     font-size: 1em;
     transition: all 0.2s ease;
 }
-
 .add-participant-form .form-group input:focus {
     outline: none;
     border-color: #555555;
     background-color: #333333;
 }
-
 .add-participant-form .form-group input:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
-
 .add-participant-form .form-group input::placeholder {
     color: #888888;
 }
-
 .add-participant-form .modal-actions {
     display: flex;
     gap: 15px;
@@ -100,7 +87,6 @@
     padding-top: 20px;
     border-top: 1px solid #333333;
 }
-
 .add-participant-form .cancel-btn,
 .add-participant-form .confirm-btn {
     padding: 12px 24px;
@@ -114,67 +100,28 @@
     transition: all 0.2s ease;
     min-width: 120px;
 }
-
 .add-participant-form .cancel-btn {
     background-color: transparent;
     color: #ffffff;
     border-color: #ffffff;
 }
-
 .add-participant-form .cancel-btn:hover:not(:disabled) {
     background-color: #ffffff;
     color: #000000;
 }
-
 .add-participant-form .confirm-btn {
     background-color: #ffffff;
     color: #000000;
     border-color: #ffffff;
 }
-
 .add-participant-form .confirm-btn:hover:not(:disabled) {
     background-color: #000000;
     color: #ffffff;
 }
-
 .add-participant-form .confirm-btn:disabled,
 .add-participant-form .cancel-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
-
 /* Responsive */
-@media (max-width: 768px) {
-    .add-participant-modal {
-        width: 95%;
-        margin: 20px auto;
-    }
-    
-    .add-participant-form {
-        padding: 15px;
-    }
-    
-    .add-participant-form .modal-actions {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .add-participant-form .cancel-btn,
-    .add-participant-form .confirm-btn {
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .add-participant-modal .modal-header {
-        padding: 15px;
-    }
-    
-    .add-participant-modal .modal-header h3 {
-        font-size: 1em;
-    }
-    
-    .add-participant-form .form-group input {
-        padding: 10px;
-    }
-} 
+ 

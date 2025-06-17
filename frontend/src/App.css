@@ -1,6 +1,5 @@
 /* Импортируем основные стили */
 @import './styles/index.css';
-
 /* Основные стили приложения */
 .App {
   text-align: center;
@@ -8,18 +7,10 @@
   flex-direction: column;
   min-height: 100vh;
 }
-
 .App-logo {
   height: 40vmin;
   pointer-events: none;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
   background-color: var(--dark-gray);
   min-height: 100vh;
@@ -30,11 +21,9 @@
   font-size: calc(10px + 2vmin);
   color: var(--light-text);
 }
-
 .App-link {
   color: var(--primary-color);
 }
-
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

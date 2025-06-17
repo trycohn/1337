@@ -11,11 +11,9 @@
   z-index: 9999;
   backdrop-filter: blur(3px);
 }
-
 .dark-theme .loader-container {
   background-color: rgba(30, 30, 30, 0.8);
 }
-
 .loader {
   width: 60px;
   height: 60px;
@@ -23,7 +21,6 @@
   position: relative;
   animation: loader-rotate 1.5s linear infinite;
 }
-
 .loader-inner {
   position: absolute;
   width: 100%;
@@ -33,7 +30,6 @@
   border-radius: 50%;
   animation: loader-spin 1s cubic-bezier(0.42, 0.61, 0.58, 0.41) infinite;
 }
-
 @keyframes loader-rotate {
   0% {
     transform: rotate(0deg);
@@ -42,7 +38,6 @@
     transform: rotate(360deg);
   }
 }
-
 @keyframes loader-spin {
   0% {
     transform: rotate(0deg);

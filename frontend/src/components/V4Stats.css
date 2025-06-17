@@ -1,5 +1,4 @@
 /* ✨ V4 ULTIMATE: Стили для революционного дашборда статистики */
-
 /* =========================
    ЦВЕТОВАЯ СХЕМА V4 
    ========================= */
@@ -10,20 +9,17 @@
     --v4-gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     --v4-gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     --v4-gradient-info: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    
     /* V4 Цвета */
     --v4-primary: #667eea;
     --v4-success: #4facfe;
     --v4-warning: #fa709a;
     --v4-danger: #ff6b6b;
     --v4-info: #667eea;
-    
     /* V4 Анимации */
     --v4-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --v4-glow: 0 0 20px rgba(102, 126, 234, 0.4);
     --v4-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
-
 /* =========================
    V4 ULTIMATE DASHBOARD
    ========================= */
@@ -32,7 +28,6 @@
     position: relative;
     z-index: 1;
 }
-
 /* V4 Navigation */
 .v4-navigation {
     display: flex;
@@ -48,7 +43,6 @@
     position: relative;
     overflow: hidden;
 }
-
 .v4-navigation::before {
     content: '';
     position: absolute;
@@ -63,12 +57,10 @@
     animation: v4-shimmer 4s infinite;
     pointer-events: none;
 }
-
 @keyframes v4-shimmer {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
-
 .v4-nav-btn {
     position: relative;
     padding: var(--spacing-md) var(--spacing-lg);
@@ -83,7 +75,6 @@
     overflow: hidden;
     z-index: 1;
 }
-
 .v4-nav-btn::before {
     content: '';
     position: absolute;
@@ -95,12 +86,10 @@
     transition: var(--v4-transition);
     z-index: -1;
 }
-
 .v4-nav-btn:hover::before,
 .v4-nav-btn.active::before {
     left: 0;
 }
-
 .v4-nav-btn:hover,
 .v4-nav-btn.active {
     color: var(--text-primary);
@@ -108,20 +97,17 @@
     box-shadow: var(--v4-glow);
     transform: translateY(-2px);
 }
-
 .v4-enhanced-recalc {
     margin-left: auto;
     background: var(--v4-gradient-success);
     color: var(--text-primary);
     font-weight: 600;
 }
-
 .v4-enhanced-recalc:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
 }
-
 /* Real-time Updates */
 .v4-realtime-updates {
     background: rgba(255, 107, 107, 0.1);
@@ -131,7 +117,6 @@
     margin-bottom: var(--spacing-lg);
     animation: v4-pulse 2s infinite;
 }
-
 @keyframes v4-pulse {
     0%, 100% { 
         box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
@@ -140,7 +125,6 @@
         box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
     }
 }
-
 .v4-realtime-updates h4 {
     color: var(--v4-danger);
     margin: 0 0 var(--spacing-sm) 0;
@@ -148,29 +132,24 @@
     text-transform: uppercase;
     letter-spacing: 1px;
 }
-
 .v4-realtime-item {
     display: flex;
     justify-content: space-between;
     padding: var(--spacing-xs) 0;
     border-bottom: 1px solid rgba(255, 107, 107, 0.2);
 }
-
 .v4-realtime-item:last-child {
     border-bottom: none;
 }
-
 .v4-update-time {
     color: var(--text-muted);
     font-size: 0.8rem;
     font-family: 'Courier New', monospace;
 }
-
 .v4-update-message {
     color: var(--text-primary);
     font-weight: 500;
 }
-
 /* Achievement Notification */
 .v4-achievement-notification {
     position: fixed;
@@ -184,7 +163,6 @@
     z-index: 9999;
     animation: v4-achievement-appear 0.5s ease;
 }
-
 @keyframes v4-achievement-appear {
     from {
         transform: translateX(100%) scale(0.8);
@@ -195,23 +173,19 @@
         opacity: 1;
     }
 }
-
 .v4-achievement-content {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
 }
-
 .v4-achievement-icon {
     font-size: 2rem;
     animation: v4-bounce 1s infinite;
 }
-
 @keyframes v4-bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
 }
-
 /* Enhanced Stats Grid */
 .v4-enhanced-stats-grid {
     display: grid;
@@ -219,7 +193,6 @@
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-xl);
 }
-
 .v4-stat-card {
     position: relative;
     padding: var(--spacing-xl);
@@ -230,7 +203,6 @@
     overflow: hidden;
     cursor: pointer;
 }
-
 .v4-stat-card::before {
     content: '';
     position: absolute;
@@ -242,47 +214,37 @@
     transition: var(--v4-transition);
     pointer-events: none;
 }
-
 .v4-stat-card.v4-primary::before {
     background: var(--v4-gradient-primary);
 }
-
 .v4-stat-card.v4-success::before {
     background: var(--v4-gradient-success);
 }
-
 .v4-stat-card.v4-warning::before {
     background: var(--v4-gradient-warning);
 }
-
 .v4-stat-card.v4-info::before {
     background: var(--v4-gradient-info);
 }
-
 .v4-stat-card:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: var(--v4-shadow);
 }
-
 .v4-stat-card:hover::before {
     opacity: 0.1;
 }
-
 .v4-stat-card .v4-stat-icon {
     font-size: 2.5rem;
     margin-bottom: var(--spacing-md);
     transition: var(--v4-transition);
 }
-
 .v4-stat-card:hover .v4-stat-icon {
     transform: scale(1.2) rotate(5deg);
 }
-
 .v4-stat-content {
     position: relative;
     z-index: 2;
 }
-
 .v4-stat-value {
     font-size: 2.5rem;
     font-weight: 700;
@@ -294,12 +256,10 @@
     -webkit-text-fill-color: transparent;
     animation: v4-glow-text 3s ease-in-out infinite;
 }
-
 @keyframes v4-glow-text {
     0%, 100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
     50% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
 }
-
 .v4-stat-label {
     font-size: 0.9rem;
     color: var(--text-secondary);
@@ -307,7 +267,6 @@
     letter-spacing: 1px;
     font-weight: 500;
 }
-
 /* Weekly Progress */
 .v4-weekly-progress {
     background: rgba(74, 172, 254, 0.05);
@@ -316,7 +275,6 @@
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-lg);
 }
-
 .v4-weekly-progress h4 {
     color: var(--v4-success);
     margin: 0 0 var(--spacing-lg) 0;
@@ -324,25 +282,21 @@
     text-transform: uppercase;
     letter-spacing: 1px;
 }
-
 .v4-progress-bars {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
 }
-
 .v4-progress-item {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
 }
-
 .v4-progress-item span:first-child {
     min-width: 80px;
     color: var(--text-secondary);
     font-weight: 500;
 }
-
 .v4-progress-bar {
     flex: 1;
     height: 8px;
@@ -351,7 +305,6 @@
     overflow: hidden;
     position: relative;
 }
-
 .v4-progress-fill {
     height: 100%;
     background: var(--v4-gradient-success);
@@ -359,7 +312,6 @@
     transition: width 1s ease;
     position: relative;
 }
-
 .v4-progress-fill::after {
     content: '';
     position: absolute;
@@ -373,19 +325,16 @@
         transparent);
     animation: v4-progress-shine 2s infinite;
 }
-
 @keyframes v4-progress-shine {
     0% { left: -100%; }
     100% { left: 100%; }
 }
-
 .v4-progress-item span:last-child {
     min-width: 60px;
     color: var(--text-primary);
     font-weight: 600;
     text-align: right;
 }
-
 /* Personal Bests */
 .v4-personal-bests {
     background: rgba(250, 112, 154, 0.05);
@@ -394,7 +343,6 @@
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-lg);
 }
-
 .v4-personal-bests h4 {
     color: var(--v4-warning);
     margin: 0 0 var(--spacing-lg) 0;
@@ -402,13 +350,11 @@
     text-transform: uppercase;
     letter-spacing: 1px;
 }
-
 .v4-bests-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: var(--spacing-md);
 }
-
 .v4-best-item {
     text-align: center;
     padding: var(--spacing-md);
@@ -417,12 +363,10 @@
     border-radius: 8px;
     transition: var(--v4-transition);
 }
-
 .v4-best-item:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.05);
 }
-
 .v4-best-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -430,24 +374,20 @@
     letter-spacing: 0.5px;
     margin-bottom: var(--spacing-xs);
 }
-
 .v4-best-value {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--v4-warning);
 }
-
 /* Charts */
 .v4-charts-content {
     margin-top: var(--spacing-lg);
 }
-
 .v4-charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: var(--spacing-xl);
 }
-
 .v4-chart-container {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -455,13 +395,11 @@
     padding: var(--spacing-xl);
     transition: var(--v4-transition);
 }
-
 .v4-chart-container:hover {
     transform: translateY(-4px);
     box-shadow: var(--v4-shadow);
     border-color: rgba(102, 126, 234, 0.3);
 }
-
 .v4-chart-container h4 {
     color: var(--text-primary);
     margin: 0 0 var(--spacing-lg) 0;
@@ -470,23 +408,19 @@
     letter-spacing: 1px;
     text-align: center;
 }
-
 .v4-chart-wrapper {
     height: 300px;
     position: relative;
 }
-
 /* Achievements */
 .v4-achievements-content {
     margin-top: var(--spacing-lg);
 }
-
 .v4-achievements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--spacing-lg);
 }
-
 .v4-achievement-card {
     display: flex;
     align-items: center;
@@ -498,22 +432,18 @@
     position: relative;
     overflow: hidden;
 }
-
 .v4-achievement-card.unlocked {
     background: rgba(76, 175, 80, 0.1);
     border-color: rgba(76, 175, 80, 0.3);
 }
-
 .v4-achievement-card.locked {
     background: rgba(255, 255, 255, 0.02);
     opacity: 0.6;
 }
-
 .v4-achievement-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--v4-shadow);
 }
-
 .v4-achievement-card .v4-achievement-icon {
     font-size: 3rem;
     width: 60px;
@@ -525,11 +455,9 @@
     border-radius: 50%;
     flex-shrink: 0;
 }
-
 .v4-achievement-card.unlocked .v4-achievement-icon {
     animation: v4-achievement-glow 2s ease-in-out infinite;
 }
-
 @keyframes v4-achievement-glow {
     0%, 100% { 
         box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
@@ -540,27 +468,23 @@
         transform: scale(1.05);
     }
 }
-
 .v4-achievement-content h4 {
     margin: 0 0 var(--spacing-xs) 0;
     color: var(--text-primary);
     font-weight: 600;
 }
-
 .v4-achievement-content p {
     margin: 0 0 var(--spacing-sm) 0;
     color: var(--text-secondary);
     font-size: 0.9rem;
     line-height: 1.4;
 }
-
 .v4-achievement-meta {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-xs);
 }
-
 .v4-rarity {
     padding: 2px 8px;
     border-radius: 12px;
@@ -569,49 +493,40 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .rarity-common {
     background: rgba(128, 128, 128, 0.2);
     color: #808080;
 }
-
 .rarity-rare {
     background: rgba(0, 123, 255, 0.2);
     color: #007bff;
 }
-
 .rarity-epic {
     background: rgba(102, 126, 234, 0.2);
     color: #667eea;
 }
-
 .rarity-legendary {
     background: rgba(255, 193, 7, 0.2);
     color: #ffc107;
 }
-
 .rarity-mythical {
     background: rgba(233, 30, 99, 0.2);
     color: #e91e63;
 }
-
 .v4-points {
     font-size: 0.8rem;
     color: var(--v4-warning);
     font-weight: 600;
 }
-
 .v4-achievement-date {
     font-size: 0.7rem;
     color: var(--text-muted);
     font-style: italic;
 }
-
 /* AI Content */
 .v4-ai-content {
     margin-top: var(--spacing-lg);
 }
-
 .v4-ai-prompt {
     text-align: center;
     padding: var(--spacing-2xl);
@@ -619,19 +534,16 @@
     border-radius: 20px;
     color: var(--text-primary);
 }
-
 .v4-ai-prompt h4 {
     margin: 0 0 var(--spacing-md) 0;
     font-size: 1.5rem;
     font-weight: 700;
 }
-
 .v4-ai-prompt p {
     margin: 0 0 var(--spacing-xl) 0;
     font-size: 1.1rem;
     opacity: 0.9;
 }
-
 .v4-ai-generate-btn {
     padding: var(--spacing-lg) var(--spacing-2xl);
     background: var(--v4-gradient-success);
@@ -643,23 +555,19 @@
     cursor: pointer;
     transition: var(--v4-transition);
 }
-
 .v4-ai-generate-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 10px 30px rgba(74, 172, 254, 0.4);
 }
-
 .v4-ai-generate-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
-
 .v4-ai-results {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xl);
 }
-
 .v4-ai-summary,
 .v4-ai-recommendations,
 .v4-ai-predictions {
@@ -668,7 +576,6 @@
     border-radius: 16px;
     padding: var(--spacing-xl);
 }
-
 .v4-ai-summary h4,
 .v4-ai-recommendations h4,
 .v4-ai-predictions h4 {
@@ -678,13 +585,11 @@
     text-transform: uppercase;
     letter-spacing: 1px;
 }
-
 .v4-ai-recommendations ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 .v4-ai-recommendations li {
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-sm);
@@ -693,13 +598,11 @@
     border-radius: 0 8px 8px 0;
     color: var(--text-secondary);
 }
-
 .v4-predictions-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-md);
 }
-
 .v4-prediction-item {
     text-align: center;
     padding: var(--spacing-lg);
@@ -707,24 +610,20 @@
     border-radius: 12px;
     color: var(--text-primary);
 }
-
 .v4-prediction-label {
     font-size: 0.9rem;
     opacity: 0.8;
     margin-bottom: var(--spacing-xs);
 }
-
 .v4-prediction-value {
     font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: var(--spacing-xs);
 }
-
 .v4-prediction-confidence {
     font-size: 0.8rem;
     opacity: 0.7;
 }
-
 /* Loading States */
 .v4-loading {
     text-align: center;
@@ -733,82 +632,9 @@
     color: var(--text-secondary);
     animation: v4-pulse-text 1.5s ease-in-out infinite;
 }
-
 @keyframes v4-pulse-text {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
-
 /* Responsive Design */
-@media (max-width: 1200px) {
-    .v4-charts-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .v4-chart-container {
-        min-height: 350px;
-    }
-}
-
-@media (max-width: 768px) {
-    .v4-navigation {
-        flex-direction: column;
-        gap: var(--spacing-xs);
-    }
-    
-    .v4-nav-btn {
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: 0.8rem;
-    }
-    
-    .v4-enhanced-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .v4-stat-card {
-        padding: var(--spacing-lg);
-    }
-    
-    .v4-stat-value {
-        font-size: 2rem;
-    }
-    
-    .v4-achievements-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .v4-achievement-card {
-        flex-direction: column;
-        text-align: center;
-        gap: var(--spacing-md);
-    }
-    
-    .v4-chart-wrapper {
-        height: 250px;
-    }
-    
-    .v4-predictions-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    .v4-enhanced-stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .v4-stat-card {
-        padding: var(--spacing-md);
-    }
-    
-    .v4-achievement-notification {
-        top: 10px;
-        right: 10px;
-        left: 10px;
-        padding: var(--spacing-md);
-    }
-    
-    .v4-chart-wrapper {
-        height: 200px;
-    }
-} 
+ 

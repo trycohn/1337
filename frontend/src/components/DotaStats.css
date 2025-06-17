@@ -7,7 +7,6 @@
     border-radius: 15px;
     color: #fff;
 }
-
 .dota-stats-header {
     text-align: center;
     margin-bottom: 30px;
@@ -16,19 +15,16 @@
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
 }
-
 .dota-stats-header h2 {
     margin: 0 0 10px 0;
     font-size: 2.5rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
-
 .dota-stats-header p {
     margin: 0;
     font-size: 1.1rem;
     opacity: 0.9;
 }
-
 .dota-stats-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -36,7 +32,6 @@
     margin-bottom: 30px;
     justify-content: center;
 }
-
 .tab {
     padding: 12px 20px;
     background: #333;
@@ -49,19 +44,16 @@
     transition: all 0.3s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
-
 .tab:hover {
     background: #555;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
-
 .tab.active {
     background: linear-gradient(45deg, #cc0000, #ff6600);
     color: #fff;
     box-shadow: 0 4px 15px rgba(204, 0, 0, 0.4);
 }
-
 .error-message {
     background: #ff4444;
     color: #fff;
@@ -71,14 +63,12 @@
     text-align: center;
     box-shadow: 0 2px 10px rgba(255, 68, 68, 0.3);
 }
-
 .loading {
     text-align: center;
     padding: 40px;
     font-size: 1.2rem;
     color: #ccc;
 }
-
 /* Секция поиска */
 .search-section, .player-section, .match-section {
     background: rgba(255, 255, 255, 0.05);
@@ -87,14 +77,12 @@
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
 }
-
 .search-form, .player-form, .match-form {
     display: flex;
     gap: 15px;
     margin-bottom: 25px;
     flex-wrap: wrap;
 }
-
 .search-form input, .player-form input, .match-form input {
     flex: 1;
     min-width: 250px;
@@ -107,12 +95,10 @@
     outline: none;
     transition: all 0.3s ease;
 }
-
 .search-form input:focus, .player-form input:focus, .match-form input:focus {
     border-color: #cc0000;
     box-shadow: 0 0 15px rgba(204, 0, 0, 0.3);
 }
-
 .search-form button, .player-form button, .match-form button {
     padding: 12px 25px;
     background: linear-gradient(45deg, #cc0000, #ff6600);
@@ -125,24 +111,20 @@
     transition: all 0.3s ease;
     min-width: 120px;
 }
-
 .search-form button:hover, .player-form button:hover, .match-form button:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
 }
-
 .search-form button:disabled, .player-form button:disabled, .match-form button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
 }
-
 /* Результаты поиска */
 .search-results h4 {
     margin-bottom: 20px;
     color: #ff6600;
 }
-
 .search-result-item {
     display: flex;
     align-items: center;
@@ -153,41 +135,34 @@
     margin-bottom: 10px;
     transition: all 0.3s ease;
 }
-
 .search-result-item:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateX(5px);
 }
-
 .player-avatar {
     width: 50px;
     height: 50px;
     border-radius: 50%;
     border: 2px solid #cc0000;
 }
-
 .player-avatar-large {
     width: 100px;
     height: 100px;
     border-radius: 50%;
     border: 3px solid #cc0000;
 }
-
 .player-info {
     flex: 1;
 }
-
 .player-info strong {
     color: #ff6600;
     font-size: 1.1rem;
 }
-
 .player-info p {
     margin: 5px 0;
     color: #ccc;
     font-size: 0.9rem;
 }
-
 /* Статистика игрока */
 .player-profile {
     display: flex;
@@ -198,33 +173,27 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
 }
-
 .profile-info h4 {
     margin: 0 0 10px 0;
     color: #ff6600;
     font-size: 1.5rem;
 }
-
 .profile-info p {
     margin: 5px 0;
     color: #ccc;
 }
-
 .stats-overview {
     margin-bottom: 30px;
 }
-
 .stats-overview h4 {
     margin-bottom: 15px;
     color: #ff6600;
 }
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
 }
-
 .stat-item {
     display: flex;
     justify-content: space-between;
@@ -232,33 +201,26 @@
     border-radius: 8px;
     border-left: 4px solid #cc0000;
 }
-
 .stat-label {
     color: #ccc;
 }
-
 .stat-value {
     color: #fff;
     font-weight: 600;
     font-size: 1.1rem;
-    
 }
-
 /* Последние матчи */
 .recent-matches, .top-heroes {
     margin-bottom: 30px;
 }
-
 .recent-matches h4, .top-heroes h4 {
     margin-bottom: 15px;
     color: #ff6600;
 }
-
 .matches-list {
     display: grid;
     gap: 10px;
 }
-
 .match-item {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
@@ -269,74 +231,61 @@
     align-items: center;
     font-size: 0.9rem;
 }
-
 .match-item.win {
     background: rgba(76, 175, 80, 0.1);
     border-left-color: #4caf50;
 }
-
 .match-item.loss {
     background: rgba(244, 67, 54, 0.1);
     border-left-color: #f44336;
 }
-
 .heroes-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 15px;
 }
-
 .hero-item {
     padding: 15px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     border-left: 4px solid #cc0000;
 }
-
 /* Информация о матче */
 .match-details {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     padding: 25px;
 }
-
 .match-header {
     text-align: center;
     margin-bottom: 25px;
     padding-bottom: 20px;
     border-bottom: 2px solid #555;
 }
-
 .match-header h4 {
     color: #ff6600;
     margin-bottom: 10px;
 }
-
 .teams-scores {
     display: flex;
     justify-content: space-around;
     margin-bottom: 30px;
 }
-
 .team {
     text-align: center;
     padding: 15px;
     border-radius: 8px;
 }
-
 .team.radiant {
     background: rgba(92, 184, 92, 0.2);
 }
-
 .team.dire {
     background: rgba(217, 83, 79, 0.2);
 }
-
 .players-grid {
     display: grid;
     gap: 10px;
 }
-
 .player-row {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
@@ -346,15 +295,12 @@
     align-items: center;
     font-size: 0.9rem;
 }
-
 .player-row.radiant {
     background: rgba(92, 184, 92, 0.1);
 }
-
 .player-row.dire {
     background: rgba(217, 83, 79, 0.1);
 }
-
 /* Статистика героев */
 .heroes-section, .pro-matches-section, .distributions-section {
     background: rgba(255, 255, 255, 0.05);
@@ -363,12 +309,10 @@
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
 }
-
 .heroes-table {
     display: grid;
     gap: 10px;
 }
-
 .hero-stat-item {
     display: flex;
     justify-content: space-between;
@@ -378,24 +322,20 @@
     border-radius: 8px;
     border-left: 4px solid #cc0000;
 }
-
 .hero-name {
     font-weight: 600;
     color: #ff6600;
 }
-
 .hero-stats {
     display: flex;
     gap: 20px;
     font-size: 0.9rem;
 }
-
 /* Профессиональные матчи */
 .pro-matches-list {
     display: grid;
     gap: 10px;
 }
-
 .pro-match-item {
     display: grid;
     grid-template-columns: 2fr 1fr 2fr 1fr;
@@ -406,29 +346,24 @@
     border-left: 4px solid #cc0000;
     align-items: center;
 }
-
 .match-teams {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-
 .vs {
     color: #888;
     font-weight: 600;
 }
-
 .winner {
     color: #4caf50;
     font-weight: 600;
 }
-
 /* Распределение рангов */
 .ranks-chart {
     display: grid;
     gap: 10px;
 }
-
 .rank-bar {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr;
@@ -438,113 +373,32 @@
     border-radius: 5px;
     align-items: center;
 }
-
 .rank-label {
     font-weight: 600;
     color: #ff6600;
 }
-
 .rank-percentage {
     color: #4caf50;
     font-weight: 600;
 }
-
 .rank-count {
     color: #ccc;
     font-size: 0.9rem;
 }
-
 /* Иконки рангов */
 .rank-info {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-
 .rank-icon {
     width: 40px;
     height: 40px;
     object-fit: contain;
     transition: transform 0.2s ease;
 }
-
 .rank-icon:hover {
     transform: scale(1.1);
 }
-
 /* Адаптивность */
-@media (max-width: 768px) {
-    .dota-stats {
-        padding: 15px;
-    }
-    
-    .dota-stats-header h2 {
-        font-size: 2rem;
-    }
-    
-    .dota-stats-tabs {
-        flex-direction: column;
-    }
-    
-    .tab {
-        width: 100%;
-        text-align: center;
-    }
-    
-    .search-form, .player-form, .match-form {
-        flex-direction: column;
-    }
-    
-    .search-form input, .player-form input, .match-form input {
-        min-width: unset;
-    }
-    
-    .player-profile {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .match-item {
-        grid-template-columns: 1fr;
-        gap: 5px;
-    }
-    
-    .heroes-list {
-        grid-template-columns: 1fr;
-    }
-    
-    .player-row {
-        grid-template-columns: 1fr;
-        gap: 5px;
-    }
-    
-    .pro-match-item {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-    
-    .rank-bar {
-        grid-template-columns: 1fr;
-        gap: 5px;
-    }
-    
-    .hero-stat-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .hero-stats {
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .rank-icon {
-        width: 32px;
-        height: 32px;
-    }
-} 
+ 

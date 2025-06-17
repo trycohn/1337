@@ -1,5 +1,4 @@
 /* Главный файл стилей */
-
 /* Импорты основных стилей */
 @import './variables.css';
 @import './base.css';
@@ -7,13 +6,11 @@
 @import './utilities.css';
 @import './layout.css';
 @import './animations.css';
-
 /* HTML страницы на русском языке */
 html {
   font-family: 'Play', Arial, sans-serif;
   font-size: 20px;
 }
-
 body {
   font-family: 'Play', Arial, sans-serif;
   font-size: 20px;

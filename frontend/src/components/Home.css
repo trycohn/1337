@@ -1,5 +1,4 @@
 /* frontend/src/Home.css */
-
 /* Общие стили */
 .home-container {
   width: 100%;
@@ -7,25 +6,21 @@
   display: flex;
   flex-direction: column;
 }
-
 main {
   margin: 0 auto;
   flex: 1;
   max-width: 80%; /* Ограничиваем ширину до 80% от видимого окна */
   width: 80%; /* Устанавливаем ширину в 80% */
 }
-
 main section {
   text-align: center;
   padding: 20px;
 }
-
 /* Стили для header */
 header.header {
   width: 100%;
   padding: 10px 0;
 }
-
 .header {
   display: flex;
   justify-content: space-between;
@@ -36,12 +31,10 @@ header.header {
   top: 0;
   z-index: 1000;
 }
-
 .nav-container {
   display: flex;
   align-items: center;
 }
-
 .hamburger {
   display: none;
   background: none;
@@ -49,24 +42,20 @@ header.header {
   cursor: pointer;
   padding: 0 10px;
 }
-
 .hamburger svg {
   width: 24px;
   height: 24px;
   transition: transform 0.3s ease;
 }
-
 .hamburger:hover svg path {
   fill: #111111;
 }
-
 .navigation {
   display: flex;
   gap: 10px;
   transition: all 0.3s ease;
   align-items: center; /* Добавляем вертикальное выравнивание */
 }
-
 .navigation a,
 .navigation button {
     text-decoration: none;
@@ -85,43 +74,35 @@ header.header {
     box-sizing: border-box;
     white-space: nowrap; /* Предотвращает перенос текста */
 }
-
 .navigation button {
   background-color: #ffffff;
   color: #000000;
 }
-
-
 .navigation a:hover,
 .navigation button:hover {
     color: #ffffff;
 }
-
 /* Стили для авторизации и профиля */
 .auth-block {
   display: flex;
   align-items: center;
 }
-
 .auth-block input,
 .auth-block button,
 .auth-block span {
   color: #ffffff;
 }
-
 .user-info {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-
 /* Стили для аватара в хедере */
 .header-avatar-link {
   display: flex;
   align-items: center;
   text-decoration: none;
 }
-
 .header-avatar {
   width: 32px;
   height: 32px;
@@ -130,16 +111,13 @@ header.header {
   border: 2px solid #4a76a8;
   transition: transform 0.2s;
 }
-
 .header-avatar:hover {
   transform: scale(1.1);
 }
-
 .user-info span {
   margin-right: 10px;
   white-space: nowrap; /* Предотвращает перенос имени пользователя */
 }
-
 .user-info button {
   padding: 2px 10px;
   background-color: #ffffff;
@@ -149,23 +127,19 @@ header.header {
   cursor: pointer;
   font-size: 16px;
 }
-
 .user-info button:hover {
   background-color: #7b7b7b;
 }
-
 .login-form {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-
 .login-form input {
   padding: 5px;
   border: 1px solid;
   border-radius: 4px;
 }
-
 .login-form button {
   padding: 5px 10px;
   background-color: #ffffff;
@@ -174,17 +148,14 @@ header.header {
   border-radius: 0px;
   cursor: pointer;
 }
-
 .login-form button:hover {
   background-color: #7b7b7b;
 }
-
 .login-form .error {
   color: red;
   margin-left: 10px;
   font-size: 0.9em;
 }
-
 /* Стили для формы создания турнира */
 .create-tournament form {
   display: flex;
@@ -192,7 +163,6 @@ header.header {
   max-width: 400px;
   margin-bottom: 20px;
 }
-
 .create-tournament input,
 .create-tournament select,
 .create-tournament .react-datepicker-wrapper {
@@ -201,7 +171,6 @@ header.header {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-
 .create-tournament button {
   padding: 0px 5px;
   background-color: #ffffff;
@@ -210,11 +179,9 @@ header.header {
   border-radius: 0px;
   cursor: pointer;
 }
-
 .create-tournament button:hover {
   background-color: #7b7b7b;
 }
-
 /* Стили для списка турниров - минималистичный черно-белый дизайн */
 .tournaments-list {
   background-color: #000000;
@@ -225,7 +192,6 @@ header.header {
   overflow: visible !important; /* Добавляем для видимости выпадающих списков */
   position: relative; /* Для правильного позиционирования дочерних элементов */
 }
-
 .tournaments-list h2 {
   color: #ffffff;
   font-weight: 300;
@@ -234,7 +200,6 @@ header.header {
   text-align: center;
   letter-spacing: 1px;
 }
-
 .tournaments-list table {
   width: 100%;
   border-collapse: separate;
@@ -246,7 +211,6 @@ header.header {
   overflow: visible !important;
   box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
 }
-
 .tournaments-list th,
 .tournaments-list td {
   padding: 16px 12px;
@@ -256,38 +220,31 @@ header.header {
   border-bottom: 1px solid #333333;
   transition: all 0.2s ease;
 }
-
 /* Устанавливаем ширину столбцов */
 .tournaments-list th:nth-child(1),
 .tournaments-list td:nth-child(1) {
   width: 20%; /* Игра */
 }
-
 .tournaments-list th:nth-child(2),
 .tournaments-list td:nth-child(2) {
   width: 25%; /* Название турнира */
 }
-
 .tournaments-list th:nth-child(3),
 .tournaments-list td:nth-child(3) {
   width: 15%; /* Участники */
 }
-
 .tournaments-list th:nth-child(4),
 .tournaments-list td:nth-child(4) {
   width: 15%; /* Формат */
 }
-
 .tournaments-list th:nth-child(5),
 .tournaments-list td:nth-child(5) {
   width: 15%; /* Дата */
 }
-
 .tournaments-list th:nth-child(6),
 .tournaments-list td:nth-child(6) {
   width: 10%; /* Статус */
 }
-
 .tournaments-list th {
   position: relative;
   background-color: #111111;
@@ -300,38 +257,30 @@ header.header {
   overflow: visible !important;
   z-index: 10;
 }
-
 .tournaments-list th:first-child {
   border-top-left-radius: 8px;
 }
-
 .tournaments-list th:last-child {
   border-top-right-radius: 8px;
 }
-
 .tournaments-list tbody tr {
   background-color: #000000;
   transition: all 0.3s ease;
 }
-
 .tournaments-list tbody tr:hover {
   background-color: #1a1a1a;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
-
 .tournaments-list tbody tr:last-child td:first-child {
   border-bottom-left-radius: 8px;
 }
-
 .tournaments-list tbody tr:last-child td:last-child {
   border-bottom-right-radius: 8px;
 }
-
 .tournaments-list tbody tr:last-child td {
   border-bottom: none;
 }
-
 .tournaments-list td {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -339,7 +288,6 @@ header.header {
   font-size: 14px;
   font-weight: 400;
 }
-
 .tournaments-list td a {
   color: #ffffff;
   text-decoration: none;
@@ -347,12 +295,10 @@ header.header {
   transition: color 0.2s ease;
   border-bottom: 1px solid transparent;
 }
-
 .tournaments-list td a:hover {
   color: #cccccc;
   border-bottom-color: #cccccc;
 }
-
 /* Стили для фильтров */
 .tournaments-list th input,
 .tournaments-list th .react-datepicker-wrapper,
@@ -367,7 +313,6 @@ header.header {
   font-size: 13px;
   transition: all 0.2s ease;
 }
-
 .tournaments-list th input:focus,
 .tournaments-list th .react-datepicker__input-container input:focus {
   outline: none;
@@ -375,11 +320,9 @@ header.header {
   background-color: #222222;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
-
 .tournaments-list th input::placeholder {
   color: #888888;
 }
-
 .tournaments-list th .filter-icon,
 .tournaments-list th .dropdown-icon,
 .tournaments-list th .sort-icon {
@@ -393,14 +336,12 @@ header.header {
   min-width: 12px;
   text-align: center;
 }
-
 .tournaments-list th .filter-icon:hover,
 .tournaments-list th .dropdown-icon:hover,
 .tournaments-list th .sort-icon:hover {
   color: #ffffff;
   transform: scale(1.1);
 }
-
 .tournaments-list th .dropdown {
   position: absolute !important;
   top: 100% !important;
@@ -419,7 +360,6 @@ header.header {
   white-space: nowrap !important;
   display: block !important;
 }
-
 .tournaments-list th .dropdown-item {
   padding: 12px 16px !important;
   cursor: pointer !important;
@@ -432,16 +372,13 @@ header.header {
   background-color: transparent !important;
   color: #ffffff !important;
 }
-
 .tournaments-list th .dropdown-item:last-child {
   border-bottom: none;
 }
-
 .tournaments-list th .dropdown-item:hover {
   background-color: #2a2a2a !important;
   color: #ffffff !important;
 }
-
 /* Кнопка сброса фильтра */
 .tournaments-list th .dropdown-item.clear-filter {
   background-color: #333333;
@@ -449,23 +386,19 @@ header.header {
   font-weight: 600;
   border-bottom: 2px solid #444444;
 }
-
 .tournaments-list th .dropdown-item.clear-filter:hover {
   background-color: #444444;
 }
-
 /* Индикатор активного фильтра */
 .tournaments-list th.filtered {
   background-color: #222222;
   border-bottom-color: #555555;
 }
-
 .tournaments-list th.filtered .dropdown-icon,
 .tournaments-list th.filtered .filter-icon {
   color: #ffffff;
   font-weight: bold;
 }
-
 /* Кнопка сброса всех фильтров */
 .tournaments-list .clear-all-filters-btn {
   padding: 8px 16px;
@@ -479,13 +412,11 @@ header.header {
   transition: all 0.2s ease;
   margin-bottom: 16px;
 }
-
 .tournaments-list .clear-all-filters-btn:hover {
   background-color: #444444;
   border-color: #666666;
   transform: translateY(-1px);
 }
-
 /* Стили для статусов турниров */
 .tournament-status-badge {
   display: inline-block;
@@ -496,25 +427,21 @@ header.header {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .tournament-status-active {
   background-color: #1a4d1a;
   color: #66ff66;
   border: 1px solid #2d7d2d;
 }
-
 .tournament-status-in-progress {
   background-color: #4d3d1a;
   color: #ffcc66;
   border: 1px solid #7d6d2d;
 }
-
 .tournament-status-completed {
   background-color: #4d1a1a;
   color: #ff6666;
   border: 1px solid #7d2d2d;
 }
-
 /* Кнопки переключения вида */
 .tournaments-view-controls {
   display: flex;
@@ -522,7 +449,6 @@ header.header {
   margin-bottom: 24px;
   gap: 8px;
 }
-
 .view-mode-btn {
   padding: 10px 20px;
   background-color: #1a1a1a;
@@ -534,18 +460,15 @@ header.header {
   font-weight: 500;
   transition: all 0.2s ease;
 }
-
 .view-mode-btn:hover {
   background-color: #2a2a2a;
   border-color: #444444;
 }
-
 .view-mode-btn.active {
   background-color: #333333;
   border-color: #555555;
   color: #ffffff;
 }
-
 /* Сообщение об отсутствии турниров */
 .tournaments-list p {
   color: #888888;
@@ -554,7 +477,6 @@ header.header {
   margin: 40px 0;
   font-style: italic;
 }
-
 .tournaments-list .error {
   color: #ff6666;
   background-color: #2a1a1a;
@@ -563,21 +485,17 @@ header.header {
   border: 1px solid #4d2d2d;
   margin-bottom: 20px;
 }
-
 /* Стили для управления участием */
 .participation-controls {
   margin-top: 20px;
 }
-
 .team-selection {
   margin-bottom: 10px;
 }
-
 .team-selection label {
   display: block;
   margin-bottom: 5px;
 }
-
 .team-selection select,
 .team-selection input {
   width: 100%;
@@ -587,17 +505,14 @@ header.header {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-
 .add-participant,
 .invite-participant {
   margin-top: 20px;
 }
-
 .add-participant h3,
 .invite-participant h3 {
   margin-bottom: 10px;
 }
-
 .add-participant input,
 .invite-participant input,
 .invite-participant select {
@@ -608,7 +523,6 @@ header.header {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-
 .add-participant button {
   padding: 0px 5px;
   background-color: #ffffff;
@@ -617,11 +531,9 @@ header.header {
   border-radius: 0px;
   cursor: pointer;
 }
-
 .add-participant button:hover {
   background-color: #218838;
 }
-
 .invite-participant button {
   padding: 0px 5px;
   background-color: #ffffff;
@@ -630,90 +542,72 @@ header.header {
   border-radius: 0px;
   cursor: pointer;
 }
-
 .invite-participant button:hover {
   background-color: #0056b3;
 }
-
 .participation-controls button:nth-child(3) {
   background-color: #ffc107;
 }
-
 .participation-controls button:nth-child(3):hover {
   background-color: #e0a800;
 }
-
 .admin-request-actions {
   margin-top: 5px;
   display: flex;
   gap: 10px;
 }
-
 .admin-request-actions button {
   padding: 0px 5px;
   border: none;
   border-radius: 0px;
   cursor: pointer;
 }
-
 .admin-request-actions button:first-child {
   background-color: #28a745;
   color: white;
 }
-
 .admin-request-actions button:first-child:hover {
   background-color: #218838;
 }
-
 .admin-request-actions button:last-child {
   background-color: #dc3545;
   color: white;
 }
-
 .admin-request-actions button:last-child:hover {
   background-color: #c82333;
 }
-
 /* Стили для списка победителей */
 .winners-list {
   margin-top: 20px;
 }
-
 .winners-list h3 {
   margin-bottom: 10px;
 }
-
 .winners-list ul {
   list-style-type: none;
   padding: 0;
 }
-
 .winners-list li {
   margin: 5px 0;
 }
-
 /* Стили для ссылки на чаты */
 .messages-link {
   display: flex;
   align-items: center;
   position: relative;
 }
-
 .messages-icon-container {
   position: relative;
   display: flex;
   align-items: center;
 }
-
 .messages-icon {
   font-size: 24px;
   transition: color 0.2s ease;
 }
-
 .messages-link:hover .messages-icon {
   color: #ffffff !important;
 }
-
 /* Стили для счетчика непрочитанных сообщений */
 .unread-badge {
   position: absolute;
@@ -733,7 +627,6 @@ header.header {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   animation: pulse 2s infinite;
 }
-
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
@@ -745,7 +638,6 @@ header.header {
     box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
   }
 }
-
 /* Стили для страницы авторизации */
 .auth-page {
   display: flex;
@@ -755,7 +647,6 @@ header.header {
   min-width: 35vw;
   padding: 20px;
 }
-
 .auth-container {
   max-width: 500px;
   width: 100%;
@@ -764,12 +655,10 @@ header.header {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
-
 .auth-tabs {
   display: flex;
   border-bottom: 1px solid #e1e1e1;
 }
-
 .auth-tab {
   flex: 1;
   padding: 15px;
@@ -780,18 +669,15 @@ header.header {
   cursor: pointer;
   transition: all 0.3s ease;
 }
-
 .auth-tab.active {
   background-color: #0c0c0c;
   color: white;
 }
-
 .auth-form-container {
   padding: 30px;
   min-height: 420px; /* Фиксированная минимальная высота для форм */
   position: relative;
 }
-
 .auth-form {
   position: absolute;
   top: 30px;
@@ -803,29 +689,24 @@ header.header {
   flex-direction: column;
   width: calc(100% - 60px); /* Учитываем левый и правый отступы */
 }
-
 .auth-form.hidden {
   opacity: 0;
   z-index: -1;
 }
-
 .auth-form.visible {
   opacity: 1;
   z-index: 1;
 }
-
 .auth-form h2 {
   margin-top: 0;
   margin-bottom: 25px;
   text-align: center;
   color: #333;
 }
-
 .form-group {
   margin-bottom: 20px;
   width: 100%;
 }
-
 .form-group input {
   width: 100%;
   padding: 12px 15px;
@@ -835,12 +716,10 @@ header.header {
   transition: border-color 0.3s;
   box-sizing: border-box; /* Важно! */
 }
-
 .form-group input:focus {
   outline: none;
   border-color: #4a76a8;
 }
-
 .auth-button {
   width: 100%;
   padding: 0px 5px;
@@ -856,11 +735,9 @@ header.header {
   box-sizing: border-box; /* Важно! */
   min-height: 40px;
 }
-
 .auth-button:hover {
   background-color: #0069d9;
 }
-
 .social-login-buttons {
   display: flex;
   flex-direction: column;
@@ -868,7 +745,6 @@ header.header {
   margin-top: 10px;
   width: 100%;
 }
-
 .steam-button {
   background-color: #ffffff;
   color: rgb(0, 0, 0);
@@ -884,11 +760,9 @@ header.header {
   box-sizing: border-box; /* Важно! */
   min-height: 40px;
 }
-
 .steam-button:hover {
   background-color: #2a3f5f;
 }
-
 .faceit-button {
   background-color: #ffffff;
   color: rgb(0, 0, 0);
@@ -905,11 +779,9 @@ header.header {
   min-height: 40px;
   margin-bottom: 5px;
 }
-
 .faceit-button:hover {
   background-color: #ff7a2f;
 }
-
 .error-message {
   color: #dc3545;
   text-align: center;
@@ -919,7 +791,6 @@ header.header {
   left: 30px;
   right: 30px;
 }
-
 .success-message {
   color: #28a745;
   text-align: center;
@@ -931,29 +802,11 @@ header.header {
   background-color: rgba(40, 167, 69, 0.1);
   border-radius: 4px;
 }
-
-@media (max-width: 600px) {
-  .auth-container {
-    max-width: 100%;
-  }
-  
-  .auth-form-container {
-    padding: 20px;
-  }
-  
-  .auth-form {
-    left: 20px;
-    right: 20px;
-    width: calc(100% - 40px);
-  }
-}
-
 /* Стили для кнопки Войти в шапке */
 .login-button-container {
   display: flex;
   align-items: center;
 }
-
 .login-button {
   background-color: #ffffff;
   color: rgb(0, 0, 0);
@@ -963,24 +816,20 @@ header.header {
   font-weight: 600;
   transition: background-color 0.3s;
 }
-
 .login-button:hover {
   background-color: #0069d9;
 }
-
 /* Стили для уведомлений */
 .notification-dropdown {
     max-height: 300px;
     overflow-y: auto;
     width: 100%;
 }
-
 .admin-request-status {
     margin-top: 10px;
     display: flex;
     align-items: center;
 }
-
 .status-pending {
     background-color: #ffd700;
     color: #333;
@@ -990,7 +839,6 @@ header.header {
     margin-right: 10px;
     display: inline-block;
 }
-
 .status-accepted {
     background-color: #28a745;
     color: white;
@@ -999,7 +847,6 @@ header.header {
     border-radius: 4px;
     display: inline-block;
 }
-
 .status-rejected {
     background-color: #dc3545;
     color: white;
@@ -1008,18 +855,15 @@ header.header {
     border-radius: 4px;
     display: inline-block;
 }
-
 .admin-request-actions {
     margin-top: 5px;
     display: flex;
     gap: 5px;
 }
-
 /* Стили для участников турнира с аватарами */
 .participants-list {
   margin-top: 15px;
 }
-
 .participants-list ul {
   list-style: none;
   padding: 0;
@@ -1027,7 +871,6 @@ header.header {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
 }
-
 .participant-item {
   display: flex;
   align-items: center;
@@ -1036,16 +879,13 @@ header.header {
   padding: 10px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-
 .participant-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-
 .participant-avatar {
   margin-right: 10px;
 }
-
 .participant-avatar-img {
   width: 40px;
   height: 40px;
@@ -1053,16 +893,13 @@ header.header {
   object-fit: cover;
   border: 2px solid #4a76a8;
 }
-
 .participant-info {
   flex: 1;
 }
-
 .participant-name {
   font-weight: 600;
   display: block;
 }
-
 .admin-badge {
   display: inline-block;
   background-color: #ffc107;
@@ -1072,20 +909,17 @@ header.header {
   border-radius: 10px;
   margin-top: 4px;
 }
-
 /* Стили для уведомлений о запросах в друзья */
 .friend-request-status {
   margin-top: 10px;
   padding: 5px 10px;
   border-radius: 5px;
 }
-
 .friend-request-actions {
   display: flex;
   gap: 10px;
   margin-top: 5px;
 }
-
 .friend-request-actions button {
   padding: 0px 5px;
   border: none;
@@ -1094,30 +928,24 @@ header.header {
   cursor: pointer;
   transition: background-color 0.2s;
 }
-
 .friend-request-actions button:first-child {
   background-color: #4CAF50;
   color: white;
 }
-
 .friend-request-actions button:first-child:hover {
   background-color: #3e8e41;
 }
-
 .friend-request-actions button:last-child {
   background-color: #f44336;
   color: white;
 }
-
 .friend-request-actions button:last-child:hover {
   background-color: #d32f2f;
 }
-
 .friend-request-actions button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
 }
-
 .view-profile-link {
   display: inline-block;
   margin-top: 5px;
@@ -1130,12 +958,10 @@ header.header {
   font-size: 12px;
   transition: all 0.2s;
 }
-
 .view-profile-link:hover {
   background-color: #4682b4;
   color: white;
 }
-
 /* Стили для карточного представления турниров */
 .tournaments-cards {
   display: grid;
@@ -1143,7 +969,6 @@ header.header {
   gap: 20px;
   padding: 0;
 }
-
 .tournament-card {
   background-color: #111111;
   border: 1px solid #333333;
@@ -1152,13 +977,11 @@ header.header {
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
-
 .tournament-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
   border-color: #555555;
 }
-
 .tournament-name {
   background-color: #1a1a1a;
   padding: 16px 20px;
@@ -1168,21 +991,17 @@ header.header {
   border-bottom: 1px solid #333333;
   letter-spacing: 0.5px;
 }
-
 .tournament-name a {
   color: #ffffff;
   text-decoration: none;
   transition: color 0.2s ease;
 }
-
 .tournament-name a:hover {
   color: #cccccc;
 }
-
 .tournament-details {
   padding: 20px;
 }
-
 .tournament-info {
   display: flex;
   justify-content: space-between;
@@ -1192,12 +1011,10 @@ header.header {
   padding: 8px 0;
   border-bottom: 1px solid #222222;
 }
-
 .tournament-info:last-child {
   border-bottom: none;
   margin-bottom: 0;
 }
-
 .tournament-label {
   color: #888888;
   font-weight: 500;
@@ -1206,14 +1023,12 @@ header.header {
   letter-spacing: 0.5px;
   min-width: 80px;
 }
-
 .tournament-value {
   color: #ffffff;
   font-weight: 400;
   text-align: right;
   flex: 1;
 }
-
 .tournament-status {
   padding: 4px 8px;
   border-radius: 4px;
@@ -1222,31 +1037,26 @@ header.header {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
 .tournament-status.active {
   background-color: #1a4d1a;
   color: #66ff66;
   border: 1px solid #2d7d2d;
 }
-
 .tournament-status.in-progress {
   background-color: #4d3d1a;
   color: #ffcc66;
   border: 1px solid #7d6d2d;
 }
-
 .tournament-status.completed {
   background-color: #4d1a1a;
   color: #ff6666;
   border: 1px solid #7d2d2d;
 }
-
 /* Мобильная фильтрация */
 .tournaments-filter-bar {
   margin-bottom: 20px;
   display: none;
 }
-
 .mobile-filter-input {
   width: 100%;
   padding: 12px 16px;
@@ -1257,49 +1067,26 @@ header.header {
   color: #ffffff;
   transition: all 0.2s ease;
 }
-
 .mobile-filter-input:focus {
   outline: none;
   border-color: #555555;
   background-color: #222222;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
-
 .mobile-filter-input::placeholder {
   color: #888888;
 }
-
 /* Улучшенные стили для выпадающих списков на планшетах */
-@media (max-width: 768px) and (min-width: 481px) {
-  .tournaments-list th .dropdown {
-    min-width: 120px;
-    font-size: 12px;
-  }
-  
-  .tournaments-list th .dropdown-item {
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-  
-  .tournaments-list th .filter-icon,
-  .tournaments-list th .dropdown-icon,
-  .tournaments-list th .sort-icon {
-    font-size: 11px;
-  }
-}
-
 .forgot-password-link {
   text-align: right;
   margin-bottom: 15px;
 }
-
 .forgot-password-link a {
   color: #666;
   font-size: 14px;
   text-decoration: none;
   transition: color 0.2s ease;
 }
-
 .forgot-password-link a:hover {
   color: #333;
   text-decoration: underline;

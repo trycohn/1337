@@ -1,7 +1,6 @@
 /* Импорт переменных и стилей */
 @import './styles/index.css';
 @import url('https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap');
-
 body {
   margin: 0;
   font-family: 'Play', Arial, sans-serif;
@@ -11,12 +10,10 @@ body {
   color: #ffffff;
   font-size: 20px;
 }
-
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
-
 /* Стили для языка страницы */
 html {
   lang: ru;

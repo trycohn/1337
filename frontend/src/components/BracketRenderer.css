@@ -2,7 +2,6 @@
  * BracketRenderer.css
  * Основной файл стилей для отображения турнирных сеток
  */
-
 /* Основные стили контейнера сетки */
 .bracket-renderer-wrapper {
     position: relative;
@@ -18,11 +17,9 @@
     -ms-user-select: none;
     min-height: 500px;
 }
-
 .bracket-renderer-wrapper.dragging {
     cursor: grabbing !important;
 }
-
 /* Содержимое сетки с возможностью трансформации */
 .bracket-renderer-content {
     width: fit-content;
@@ -39,7 +36,6 @@
     min-height: 500px;
     color: #000000; /* Цвет шрифта по умолчанию - черный */
 }
-
 /* Контролы масштабирования и навигации */
 .bracket-controls {
     position: absolute;
@@ -53,7 +49,6 @@
     display: flex;
     pointer-events: auto;
 }
-
 .bracket-controls button {
     height: 30px;
     margin: 0 2px;
@@ -67,17 +62,14 @@
     transition: background-color 0.3s, color 0.3s;
     pointer-events: auto;
 }
-
 .bracket-controls button:hover {
     background-color: #0e0e0e;
     color: white;
 }
-
 .bracket-controls button svg {
     width: 16px;
     height: 16px;
 }
-
 /* Заголовки сеток */
 .bracket-title {
     position: relative;
@@ -95,7 +87,6 @@
     text-align: center;
     border: none;
 }
-
 /* Блоки сеток */
 .bracket {
     display: flex;
@@ -105,14 +96,12 @@
     position: relative;
     width: 100%;
 }
-
 .winners-bracket, 
 .losers-bracket {
     margin-bottom: 10px;
     position: relative;
     width: 100%;
 }
-
 /* Сетка с раундами */
 .bracket-grid {
     display: flex;
@@ -125,7 +114,6 @@
     width: 100%;
     height: 100%;
 }
-
 /* Разделитель между сетками */
 .bracket-divider {
     display: block;
@@ -135,7 +123,6 @@
     margin: 15px 0;
     position: relative;
 }
-
 /* Колонки раундов */
 .round-column {
     display: flex;
@@ -146,7 +133,6 @@
     height: 100%;
     gap: 5px;
 }
-
 .round-column h3 {
     font-size: 1em;
     font-weight: bold;
@@ -154,7 +140,6 @@
     color: #555;
     white-space: nowrap;
 }
-
 /* Матчи */
 .custom-seed {
     background-color: #fff;
@@ -169,21 +154,17 @@
     align-items: center;
     pointer-events: auto;
 }
-
 .custom-seed:hover {
     background-color: #7d7d7d;
 }
-
 .custom-seed.selected {
     box-shadow: 0 0 5px #ffffff;
 }
-
 .match-number {
     font-size: 0.8em;
     color: #777;
     margin-bottom: 5px;
 }
-
 /* Команды внутри матча */
 .match-teams {
     display: flex;
@@ -191,7 +172,6 @@
     gap: 4px;
     width: 100%;
 }
-
 /* Контейнер для матча с двумя участниками */
 .match-container {
     position: relative;
@@ -202,14 +182,12 @@
     margin-bottom: 10px;
     gap: 10px;
 }
-
 .match-content {
     display: flex;
     flex-direction: column;
     flex: 1;
     gap: 5px;
 }
-
 /* 🔧 ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ КНОПКИ РЕДАКТИРОВАНИЯ МАТЧА */
 .edit-match-btn-container {
     width: 35px;
@@ -226,7 +204,6 @@
     border: 1px solid #6b7280;
     border-left: none;
 }
-
 .edit-match-btn {
     background: none;
     border: none;
@@ -242,13 +219,11 @@
     transition: all 0.3s ease;
     pointer-events: auto;
 }
-
 .edit-match-btn:hover {
     background: none;
     color: #ffffff;
     transform: scale(1.1);
 }
-
 /* Эффекты при наведении на контейнер */
 .match-container.completed:hover .edit-match-btn-container {
     opacity: 1;
@@ -256,22 +231,18 @@
     border-color: #9ca3af;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-
 .edit-match-btn-container:hover {
     background: linear-gradient(135deg, #6b7280, #9ca3af) !important;
     border-color: #d1d5db !important;
     transform: translateX(2px);
 }
-
 .edit-match-btn-container:hover .edit-match-btn {
     color: #ffffff !important;
 }
-
 /* Анимация появления кнопки */
 .match-container.completed .edit-match-btn-container {
     animation: slideInFromRight 0.3s ease-out;
 }
-
 @keyframes slideInFromRight {
     from {
         opacity: 0;
@@ -282,25 +253,20 @@
         transform: translateX(0);
     }
 }
-
 /* Убираем старые стили match-view-block так как они больше не используются */
 .match-view-block {
     display: none;
 }
-
 /* Стили для завершенных матчей */
 .match-container.completed {
     position: relative;
 }
-
 .match-container.completed .custom-seed {
     cursor: inherit;
 }
-
 .match-container.completed .custom-seed:hover {
     background-color: #f5f5f5;
 }
-
 .team {
     display: flex;
     justify-content: flex-start;
@@ -309,17 +275,14 @@
     font-size: 0.9em;
     width: 100%;
 }
-
 .team:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
-
 .team.winner .team-name,
 .team.winner .team-score {
     font-weight: bold;
     color: #1f1f1f;
 }
-
 .team-name {
     flex-grow: 1;
     overflow: hidden;
@@ -328,7 +291,6 @@
     margin-right: 10px;
     color: #000000;
 }
-
 .custom-seed .team-name {
     color: #000000;
     border: none;
@@ -336,7 +298,6 @@
     padding: 4px 4px;
     font-weight: 700;
 }
-
 .team-score {
     min-width: 20px;
     text-align: center;
@@ -346,16 +307,13 @@
     color: #000000;
     margin-left: auto;
 }
-
 .custom-seed .team-score {
     font-size: 1em;
 }
-
 /* Стили для плейсхолдера TBD */
 .team-name.placeholder {
     font-weight: normal !important;
 }
-
 /* Финальные матчи */
 .final-matches-container {
     display: flex;
@@ -365,7 +323,6 @@
     position: relative;
     width: 100%;
 }
-
 .final-matches-grid {
     display: flex;
     flex-direction: row;
@@ -373,7 +330,6 @@
     gap: 40px;
     width: 100%;
 }
-
 .match-title {
     font-size: 1em;
     margin-bottom: 5px;
@@ -382,7 +338,6 @@
     text-align: center;
     border: none;
 }
-
 .placement-match,
 .grand-final {
     display: flex;
@@ -391,13 +346,11 @@
     width: auto;
     min-width: 250px;
 }
-
 .placement-match .match-container,
 .grand-final .match-container {
     width: 100%;
     margin-bottom: 0;
 }
-
 /* Сообщение о пустой сетке */
 .empty-bracket-message {
     display: flex;
@@ -409,7 +362,6 @@
     text-align: center;
     padding: 20px;
 }
-
 /* Стили для loading-bracket и bracket-error */
 .loading-bracket {
     display: flex;
@@ -424,7 +376,6 @@
     padding: 20px;
     text-align: center;
 }
-
 .bracket-error {
     display: flex;
     justify-content: center;
@@ -438,7 +389,6 @@
     padding: 20px;
     text-align: center;
 }
-
 /* Стили для сообщений об ошибках */
 .bracket-error {
     text-align: center;
@@ -451,7 +401,6 @@
     font-size: 16px;
     line-height: 1.5;
 }
-
 .reload-button, 
 .regenerate-button {
     background-color: #ffffff;
@@ -464,16 +413,13 @@
     font-size: 14px;
     transition: background-color 0.3s;
 }
-
 .reload-button:hover, 
 .regenerate-button:hover {
     background-color: #356ac3;
 }
-
 .regenerate-button:hover {
     background-color: #2d8c46;
 }
-
 .empty-bracket-message {
     border: 1px solid #dee2e6;
     border-radius: 5px;
@@ -484,52 +430,12 @@
     padding: 20px;
     text-align: center;
 }
-
 /* Медиа-запросы для адаптивности */
-@media (max-width: 600px) {
-    .bracket-grid {
-        /* flex-direction сохраняем как row даже на мобильных устройствах */
-        overflow-x: auto;
-        width: 100%;
-    }
-    
-    .round-column {
-        min-width: 220px;
-    }
-    
-    .custom-seed {
-        width: 100%;
-    }
-    
-    .final-matches-grid {
-        flex-direction: column;
-    }
-}
-
 /* Медиа-запросы для адаптивной высоты */
-@media (max-width: 767px) {
-    .bracket-renderer-wrapper {
-        height: calc(100vh - 100px);
-    }
-}
-
-@media (min-width: 768px) and (max-width: 1027px) {
-    .bracket-renderer-wrapper {
-        height: 600px;
-    }
-}
-
-@media (min-width: 1028px) {
-    .bracket-renderer-wrapper {
-        height: 800px;
-    }
-}
-
 /* Стили для аватара команды */
 .team-avatar {
     display: none;
 }
-
 /* Стили для обычных матчей (не завершенных) */
 .match-container:not(.completed) {
     display: flex;
@@ -539,18 +445,15 @@
     gap: 5px;
     position: relative;
 }
-
 .match-container:not(.completed) .custom-seed {
     margin: 0;
     box-shadow: none;
     border-bottom: none;
 }
-
 .match-container:not(.completed) .custom-seed:first-child {
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
 }
-
 .match-container:not(.completed) .custom-seed:last-child {
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;

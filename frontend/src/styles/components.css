@@ -1,11 +1,9 @@
 /* Импорт переменных */
 @import './variables.css';
-
 /* Навигация */
 nav {
   background-color: #000;
 }
-
 nav a, nav button {
   color: #ffffff;
   text-transform: uppercase;
@@ -14,12 +12,10 @@ nav a, nav button {
   border: none;
   transition: color var(--transition-normal);
 }
-
 nav a:hover, nav button:hover {
   color: #ffffff;
   text-decoration: none;
 }
-
 /* Кнопки навигации и авторизации */
 .nav-button, .auth-button {
   color: #000000;
@@ -34,17 +30,14 @@ nav a:hover, nav button:hover {
   cursor: pointer;
   transition: all var(--transition-normal);
 }
-
 .nav-button:hover, .auth-button:hover {
   color: #ffffff;
   background-color: #7b7b7b;
 }
-
 /* Иконки в навигации */
 .nav-icon, nav .icon {
   color: #ffffff;
 }
-
 /* Кнопки */
 .btn {
   display: inline-block;
@@ -61,92 +54,74 @@ nav a:hover, nav button:hover {
   line-height: 1.55;
   transition: all var(--transition-normal);
 }
-
 .btn:hover {
   background-color: var(--secondary-color);
   color: var(--light-text);
 }
-
 .btn-primary {
   background-color: var(--primary-color);
   color: var(--light-text);
 }
-
 .btn-primary:hover {
   background-color: var(--primary-hover);
 }
-
 .btn-secondary {
   background-color: var(--secondary-color);
   color: var(--light-text);
 }
-
 .btn-secondary:hover {
   background-color: var(--primary-hover);
 }
-
 .btn-outline {
   background-color: transparent;
   border: 1px solid var(--light-text);
   color: var(--light-text);
 }
-
 .btn-outline:hover {
   background-color: var(--light-text);
   color: var(--dark-text);
 }
-
 .btn-success {
   background-color: var(--success-color);
   color: var(--light-text);
 }
-
 .btn-success:hover {
   background-color: #218838;
 }
-
 .btn-danger {
   background-color: var(--error-color);
   color: var(--light-text);
 }
-
 .btn-danger:hover {
   background-color: #c82333;
 }
-
 .btn-sm {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-small);
 }
-
 .btn-lg {
   padding: var(--spacing-md) var(--spacing-lg);
   font-size: var(--font-size-medium);
 }
-
 .btn-block {
   display: block;
   width: 100%;
 }
-
 .btn-disabled,
 .btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
-
 /* Формы */
 .form-group {
   margin-bottom: var(--spacing-md);
 }
-
 .form-label {
   display: block;
   margin-bottom: var(--spacing-xs);
   color: var(--text-color);
   font-weight: 500;
 }
-
 .form-control {
   width: 100%;
   padding: var(--spacing-sm);
@@ -156,59 +131,49 @@ nav a:hover, nav button:hover {
   color: var(--text-color);
   font-size: var(--font-size-normal);
 }
-
 .form-control:focus {
   outline: none;
   border-color: var(--primary-color);
 }
-
 .form-check {
   position: relative;
   display: block;
   padding-left: 1.25rem;
 }
-
 .form-check-input {
   position: absolute;
   margin-top: 0.3rem;
   margin-left: -1.25rem;
 }
-
 .form-check-label {
   margin-bottom: 0;
 }
-
 /* Сообщения */
 .alert {
   padding: var(--spacing-md);
   border-radius: var(--border-radius-sm);
   margin-bottom: var(--spacing-md);
 }
-
 .alert-success {
   background-color: rgba(40, 167, 69, 0.1);
   border: 1px solid var(--success-color);
   color: var(--success-color);
 }
-
 .alert-danger {
   background-color: rgba(220, 53, 69, 0.1);
   border: 1px solid var(--error-color);
   color: var(--error-color);
 }
-
 .alert-warning {
   background-color: rgba(255, 193, 7, 0.1);
   border: 1px solid var(--warning-color);
   color: var(--warning-color);
 }
-
 .alert-info {
   background-color: rgba(23, 162, 184, 0.1);
   border: 1px solid var(--info-color);
   color: var(--info-color);
 }
-
 /* Карточки */
 .card {
   background-color: var(--card-background);
@@ -217,32 +182,26 @@ nav a:hover, nav button:hover {
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
-
 .card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-md);
 }
-
 .card-header {
   padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--light-gray);
   margin-bottom: var(--spacing-md);
 }
-
 .card-title {
   margin: 0;
   color: var(--text-color);
 }
-
 .card-body {
   margin-bottom: var(--spacing-md);
 }
-
 .card-footer {
   border-top: 1px solid var(--light-gray);
   padding-top: var(--spacing-sm);
 }
-
 /* Бэйджи */
 .badge {
   display: inline-block;
@@ -251,58 +210,47 @@ nav a:hover, nav button:hover {
   font-size: var(--font-size-small);
   font-weight: 500;
 }
-
 .badge-primary {
   background-color: var(--primary-color);
   color: var(--light-text);
 }
-
 .badge-secondary {
   background-color: var(--secondary-color);
   color: var(--light-text);
 }
-
 .badge-success {
   background-color: var(--success-color);
   color: var(--light-text);
 }
-
 .badge-danger {
   background-color: var(--error-color);
   color: var(--light-text);
 }
-
 .badge-warning {
   background-color: var(--warning-color);
   color: var(--dark-text);
 }
-
 .badge-info {
   background-color: var(--info-color);
   color: var(--light-text);
 }
-
 /* Аватары */
 .avatar {
   border-radius: 50%;
   object-fit: cover;
 }
-
 .avatar-sm {
   width: 32px;
   height: 32px;
 }
-
 .avatar-md {
   width: 48px;
   height: 48px;
 }
-
 .avatar-lg {
   width: 64px;
   height: 64px;
 }
-
 /* Модальные окна */
 .modal-backdrop {
   position: fixed;
@@ -316,28 +264,23 @@ nav a:hover, nav button:hover {
   justify-content: center;
   z-index: 1000;
 }
-
 .modal-content {
   background-color: var(--card-background);
   border-radius: var(--border-radius-md);
   max-width: 500px;
   box-shadow: var(--shadow-lg);
 }
-
 .modal-header {
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--light-gray);
 }
-
 .modal-title {
   margin: 0;
   color: var(--text-color);
 }
-
 .modal-body {
   padding: var(--spacing-md);
 }
-
 .modal-footer {
   padding: var(--spacing-md);
   border-top: 1px solid var(--light-gray);
@@ -345,23 +288,19 @@ nav a:hover, nav button:hover {
   justify-content: flex-end;
   gap: var(--spacing-sm);
 }
-
 /* Списки */
 .list-group {
   border-radius: var(--border-radius-sm);
   overflow: hidden;
 }
-
 .list-group-item {
   padding: var(--spacing-md);
   background-color: var(--card-background);
   border-bottom: 1px solid var(--light-gray);
 }
-
 .list-group-item:last-child {
   border-bottom: none;
 }
-
 /* Уведомления */
 .notification {
   padding: var(--spacing-sm);
@@ -369,21 +308,17 @@ nav a:hover, nav button:hover {
   border-left: 3px solid var(--primary-color);
   margin-bottom: var(--spacing-sm);
 }
-
 .notification.unread {
   background-color: rgba(0, 123, 255, 0.05);
 }
-
 .notification-title {
   font-weight: 600;
   margin-bottom: var(--spacing-xs);
 }
-
 .notification-body {
   color: var(--secondary-text);
   font-size: var(--font-size-small);
 }
-
 .notification-time {
   font-size: var(--font-size-small);
   color: var(--secondary-text);

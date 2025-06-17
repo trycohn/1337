@@ -1,6 +1,5 @@
 /* Импорт переменных */
 @import '../variables.css';
-
 /* Стили для компонента Home */
 .home-container {
   width: 100%;
@@ -8,30 +7,25 @@
   display: flex;
   flex-direction: column;
 }
-
 .home-section {
   text-align: center;
   padding: var(--spacing-lg);
 }
-
 .home-hero {
   background-color: var(--background-color);
   margin-bottom: var(--spacing-lg);
 }
-
 .home-hero h1 {
   font-size: var(--font-size-xlarge);
   margin-bottom: var(--spacing-md);
   color: var(--text-color);
 }
-
 .home-hero p {
   font-size: var(--font-size-medium);
   max-width: 700px;
   margin: 0 auto var(--spacing-lg);
   color: var(--secondary-text);
 }
-
 .home-features {
   display: flex;
   flex-wrap: wrap;
@@ -39,7 +33,6 @@
   gap: var(--spacing-lg);
   margin: var(--spacing-lg) 0;
 }
-
 .feature-card {
   flex: 1;
   min-width: 250px;
@@ -50,67 +43,56 @@
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
-
 .feature-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-md);
 }
-
 .feature-icon {
   font-size: 2rem;
   margin-bottom: var(--spacing-sm);
   color: var(--primary-color);
 }
-
 .feature-title {
   font-size: var(--font-size-medium);
   margin-bottom: var(--spacing-sm);
   color: var(--text-color);
   text-transform: uppercase;
 }
-
 .feature-description {
   color: var(--secondary-text);
 }
-
 .home-cta {
   background-color: var(--card-background);
   color: var(--text-color);
   padding: var(--spacing-xl) 0;
   margin: var(--spacing-xl) 0;
 }
-
 .home-cta h2 {
   color: var(--text-color);
   margin-bottom: var(--spacing-md);
   text-transform: uppercase;
 }
-
 .home-cta-buttons {
   display: flex;
   justify-content: center;
   gap: var(--spacing-md);
   margin-top: var(--spacing-md);
 }
-
 .tournaments-section {
   margin: var(--spacing-xl) 0;
 }
-
 .tournaments-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md);
 }
-
 .tournaments-title {
   font-size: var(--font-size-large);
   margin: 0;
   text-transform: uppercase;
   color: var(--text-color);
 }
-
 .view-all-link {
   color: var(--primary-color);
   text-decoration: none;
@@ -118,18 +100,15 @@
   transition: color var(--transition-normal);
   text-transform: uppercase;
 }
-
 .view-all-link:hover {
   color: var(--primary-hover);
   text-decoration: none;
 }
-
 .tournament-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--spacing-md);
 }
-
 .tournament-card {
   border-radius: var(--border-radius-md);
   overflow: hidden;
@@ -137,24 +116,20 @@
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
-
 .tournament-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-md);
 }
-
 .tournament-card-header {
   background-color: var(--card-background);
   color: var(--primary-color);
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--light-gray);
 }
-
 .tournament-card-body {
   padding: var(--spacing-md);
   color: var(--text-color);
 }
-
 .tournament-card-footer {
   padding: var(--spacing-md);
   border-top: 1px solid var(--light-gray);
@@ -163,7 +138,6 @@
   align-items: center;
   background-color: var(--card-background);
 }
-
 .tournament-info {
   display: flex;
   flex-direction: column;
@@ -171,34 +145,12 @@
   margin-bottom: var(--spacing-sm);
   color: var(--secondary-text);
 }
-
 .tournament-info-item {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
 }
-
 .tournament-info-icon {
   color: var(--primary-color);
 }
-
-/* Медиа-запросы */
-@media (max-width: 768px) {
-  .home-features {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .feature-card {
-    max-width: 100%;
-  }
-  
-  .home-cta-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .tournament-cards {
-    grid-template-columns: 1fr;
-  }
-} 
+/* Медиа-запросы удалены */ 

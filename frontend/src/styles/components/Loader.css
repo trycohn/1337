@@ -1,6 +1,5 @@
 /* Импорт переменных */
 @import '../variables.css';
-
 /* Стили для загрузчика */
 .loader-container {
   position: fixed;
@@ -15,7 +14,6 @@
   z-index: 9999;
   transition: opacity var(--transition-normal);
 }
-
 .loader-spinner {
   width: 50px;
   height: 50px;
@@ -24,13 +22,11 @@
   border-radius: 50%;
   animation: spin 1s ease-in-out infinite;
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
-
 /* Индикатор загрузки страницы */
 .page-loader {
   display: flex;
@@ -39,7 +35,6 @@
   justify-content: center;
   height: 100vh;
 }
-
 .page-loader-spinner {
   width: 60px;
   height: 60px;
@@ -48,13 +43,11 @@
   border-radius: 50%;
   animation: spin 1s ease-in-out infinite;
 }
-
 .page-loader-text {
   margin-top: var(--spacing-md);
   color: var(--primary-color);
   font-weight: 500;
 }
-
 /* Индикатор загрузки компонента */
 .component-loader {
   display: flex;
@@ -62,7 +55,6 @@
   align-items: center;
   padding: var(--spacing-xl) 0;
 }
-
 .component-loader-spinner {
   width: 40px;
   height: 40px;
@@ -71,7 +63,6 @@
   border-radius: 50%;
   animation: spin 1s ease-in-out infinite;
 }
-
 /* Индикатор загрузки кнопки */
 .button-loader {
   display: inline-block;
@@ -84,7 +75,6 @@
   margin-right: var(--spacing-xs);
   vertical-align: middle;
 }
-
 /* Индикатор прогресса */
 .progress-container {
   width: 100%;
@@ -93,7 +83,6 @@
   overflow: hidden;
   position: relative;
 }
-
 .progress-bar {
   height: 100%;
   background-color: var(--primary-color);
@@ -102,7 +91,6 @@
   left: 0;
   transition: width 0.3s ease;
 }
-
 /* Индикатор загрузки на всю страницу */
 .fullscreen-loader {
   position: fixed;
@@ -117,13 +105,11 @@
   justify-content: center;
   z-index: 9999;
 }
-
 .fullscreen-loader-logo {
   width: 100px;
   height: 100px;
   margin-bottom: var(--spacing-lg);
 }
-
 .fullscreen-loader-progress {
   width: 200px;
   height: 4px;
@@ -132,7 +118,6 @@
   overflow: hidden;
   position: relative;
 }
-
 .fullscreen-loader-progress-bar {
   height: 100%;
   background-color: var(--primary-color);
@@ -141,14 +126,12 @@
   left: 0;
   transition: width 0.3s ease;
 }
-
 /* Анимированные точки загрузки */
 .loading-dots {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-
 .dot {
   width: 8px;
   height: 8px;
@@ -157,15 +140,12 @@
   background-color: var(--primary-color);
   animation: dot-pulse 1.5s infinite ease-in-out;
 }
-
 .dot:nth-child(2) {
   animation-delay: 0.2s;
 }
-
 .dot:nth-child(3) {
   animation-delay: 0.4s;
 }
-
 @keyframes dot-pulse {
   0%, 100% {
     transform: scale(0.8);
@@ -176,7 +156,6 @@
     opacity: 1;
   }
 }
-
 /* Скелетон (каркас) загрузки */
 .skeleton-loader {
   display: block;
@@ -185,7 +164,6 @@
   background-color: rgba(0, 123, 255, 0.1);
   border-radius: var(--border-radius-sm);
 }
-
 .skeleton-loader::after {
   content: "";
   position: absolute;
@@ -196,32 +174,26 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   animation: skeleton-loader 1.5s infinite;
 }
-
 .skeleton-text {
   height: 16px;
   margin-bottom: var(--spacing-sm);
   width: 100%;
 }
-
 .skeleton-text-sm {
   width: 50%;
 }
-
 .skeleton-text-lg {
   height: 24px;
 }
-
 .skeleton-circle {
   width: 48px;
   height: 48px;
   border-radius: 50%;
 }
-
 .skeleton-rect {
   width: 100%;
   height: 200px;
 }
-
 @keyframes skeleton-loader {
   0% {
     transform: translateX(-100%);

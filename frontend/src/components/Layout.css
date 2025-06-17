@@ -1,5 +1,4 @@
 /* Стили для компонента Layout */
-
 /* Стиль для аватара в хедере */
 .header-avatar-link .profile-avatar {
     width: 30px;
@@ -8,139 +7,21 @@
     object-fit: cover;
     border: 2px solid #4a76a8;
 }
-
 /* Стили для админ ссылки */
 .admin-link {
     color: #ff6b6b !important;
     font-weight: 600 !important;
     position: relative;
 }
-
 .admin-link::before {
     content: '⚙️';
     margin-right: 5px;
 }
-
 .admin-link:hover {
     color: #ff8e8e !important;
     text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
 } 
-
-/* Медиа-запросы для адаптивности мобильного отображения */
-@media (max-width: 768px) {
-    .header {
-        padding: 8px 15px;
-    }
-    
-    .header-avatar-link .profile-avatar {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .navigation a, .navigation button {
-        padding: 0px 5px;
-        color: #000;
-        background-color: #ffffff;
-    }
-}
-
-@media (max-width: 600px) {
-    .header {
-        padding: 5px 10px;
-    }
-    
-    .nav-container {
-        flex: 0 0 auto;
-        margin-right: 10px;
-    }
-    
-    .auth-block {
-        flex: 1;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-    }
-
-    .header-avatar-link .profile-avatar {
-        width: 26px;
-        height: 26px;
-        border-width: 1px;
-    }
-    
-    .user-info {
-        gap: 10px;
-    }
-    
-    .user-info button {
-        font-size: 12px;
-        padding: 0px 5px;
-        height: 24px;
-    }
-    
-    .bell-icon, .messages-icon {
-        font-size: 20px;
-    }
-    
-    .unread-count {
-        width: 14px;
-        height: 14px;
-        font-size: 10px;
-        top: -3px;
-        right: -8px;
-    }
-    
-    .notification-dropdown-wrapper {
-        width: 250px;
-        right: -15px;
-    }
-    
-    /* Анимация появления меню */
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-}
-
+/* Медиа-запросы удалены */
 /* Дополнительные стили для мобильного меню */
-@media (max-width: 600px) {
-    .navigation.open {
-        display: flex;
-        flex-direction: column;
-        width: 100vw;
-        padding-bottom: 10px;
-        padding-top: 10px;
-        animation: slideDown 0.3s ease forwards;
-        height: auto;
-        background-color: #ffffff;
-        color: #000;
-    }
-}
-
 /* Дополнительные стили для страницы мессенджера на мобильных устройствах */
-@media (max-width: 768px) {
-    .home-container:has(.messenger-page) {
-        height: 100vh;
-        overflow: hidden;
-    }
-    
-    .messenger-page {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden;
-    }
-} 
+ 

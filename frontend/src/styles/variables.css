@@ -15,7 +15,6 @@
   --error-color: #dc3545;
   --warning-color: #ffc107;
   --info-color: #17a2b8;
-  
   /* Шрифты */
   --font-family: 'Play', Arial, sans-serif;
   --mono-font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
@@ -24,29 +23,24 @@
   --font-size-medium: 18px;
   --font-size-large: 24px;
   --font-size-xlarge: 32px;
-  
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
-  
   /* Границы */
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
-  
   /* Тени */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.7);
-  
   /* Анимации */
   --transition-fast: 0.2s;
   --transition-normal: 0.3s;
   --transition-slow: 0.5s;
-  
   /* Макет */
   --header-height: 60px;
   --footer-height: 60px;

@@ -7,14 +7,12 @@
     flex-direction: column;
     background-color: #000000;
 }
-
 .message-date-separator {
     display: flex;
     justify-content: center;
     margin: 20px 0;
     position: relative;
 }
-
 .message-date-separator span {
     background-color: #222222;
     border: 1px solid #333333;

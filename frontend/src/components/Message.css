@@ -5,12 +5,10 @@
     margin-bottom: 12px;
     width: 100%;
 }
-
 /* Контейнер с собственными сообщениями выравниваем по правому краю */
 .message-container.own-container {
     justify-content: flex-end;
 }
-
 .message {
     display: block;
     width: fit-content;
@@ -25,28 +23,23 @@
     color: #ffffff;
     transition: all 0.2s ease;
 }
-
 .message:hover {
     background-color: #2a2a2a;
     border-color: #444444;
 }
-
 .message.own {
     background-color: #333333;
     border-color: #555555;
 }
-
 .message.own:hover {
     background-color: #3a3a3a;
     border-color: #666666;
 }
-
 .message-text {
     font-size: 14px;
     line-height: 1.5;
     color: #ffffff;
 }
-
 .message-meta {
     margin-left: 12px;
     display: flex;
@@ -57,28 +50,22 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .message-container.own-container .message-meta {
     margin-left: 0;
     margin-right: 12px;
 }
-
 .message-time {
     margin-right: 6px;
 }
-
 .message-status {
     font-size: 12px;
 }
-
 .message-status.read {
     color: #66ff66;
 }
-
 .message-status.sent {
     color: #888888;
 }
-
 /* Стили для контекстного меню сообщений */
 .message-context-menu {
     position: absolute;
@@ -91,7 +78,6 @@
     animation: fadeIn 0.2s ease;
     overflow: hidden;
 }
-
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -102,13 +88,11 @@
         transform: translateY(0);
     }
 }
-
 .message-context-menu ul {
     list-style: none;
     margin: 0;
     padding: 0;
 }
-
 .message-context-menu li {
     padding: 12px 16px;
     font-size: 14px;
@@ -117,21 +101,17 @@
     transition: all 0.2s ease;
     border-bottom: 1px solid #222222;
 }
-
 .message-context-menu li:last-child {
     border-bottom: none;
 }
-
 .message-context-menu li:hover {
     background-color: #1a1a1a;
 }
-
 /* Стили для сообщений с изображениями */
 .message-container .message .message-image {
     overflow: hidden;
     border-radius: 12px;
 }
-
 /* Убираем фон для сообщений с изображениями */
 .message.image-message {
     background-color: transparent;
@@ -139,7 +119,6 @@
     box-shadow: none;
     padding: 0;
 }
-
 /* Убираем стандартный фон для уведомлений */
 .message.announcement-wrapper {
     background-color: transparent;
@@ -147,14 +126,12 @@
     box-shadow: none;
     padding: 0;
 }
-
 .message-image {
     max-width: 100%;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid #333333;
 }
-
 .message-image img {
     width: 100%;
     max-height: 300px;
@@ -164,11 +141,9 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease;
 }
-
 .message-image img:hover {
     transform: scale(1.02);
 }
-
 /* Стили для документов */
 .message-document, .message-file {
     display: flex;
@@ -179,23 +154,19 @@
     padding: 12px 16px;
     transition: all 0.2s ease;
 }
-
 .message-document:hover, .message-file:hover {
     background-color: #222222;
     border-color: #444444;
 }
-
 .document-icon, .file-icon {
     font-size: 24px;
     margin-right: 12px;
     color: #888888;
 }
-
 .document-info, .file-info {
     flex: 1;
     min-width: 0;
 }
-
 .document-name, .file-name {
     font-weight: 500;
     margin-bottom: 4px;
@@ -205,7 +176,6 @@
     color: #ffffff;
     font-size: 14px;
 }
-
 .document-download, .file-download {
     font-size: 12px;
     color: #888888;
@@ -215,12 +185,10 @@
     letter-spacing: 0.5px;
     transition: color 0.2s ease;
 }
-
 .document-download:hover, .file-download:hover {
     color: #ffffff;
     text-decoration: underline;
 }
-
 /* Стили для объявлений */
 .message-announcement {
     display: flex;
@@ -232,26 +200,22 @@
     margin-bottom: 8px;
     transition: all 0.2s ease;
 }
-
 .message-announcement:hover {
     background-color: #222222;
     border-color: #555555;
     border-left-color: #ffcc66;
 }
-
 .announcement-icon {
     font-size: 20px;
     margin-right: 16px;
     color: #ffcc66;
     flex-shrink: 0;
 }
-
 .announcement-content {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
-
 .announcement-text {
     font-weight: 500;
     color: #ffffff;
@@ -259,14 +223,12 @@
     line-height: 1.5;
     font-size: 14px;
 }
-
 /* Стили для кнопок в уведомлениях */
 .announcement-actions {
     display: flex;
     gap: 12px;
     margin-top: 8px;
 }
-
 .action-button {
     padding: 8px 16px;
     border-radius: 6px;
@@ -278,42 +240,35 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .action-button.accept {
     background-color: #2a4d2a;
     border-color: #4d7d4d;
     color: #66ff66;
 }
-
 .action-button.accept:hover:not(:disabled) {
     background-color: #3d6d3d;
     border-color: #66ff66;
     transform: translateY(-1px);
 }
-
 .action-button.reject {
     background-color: #4d2a2a;
     border-color: #7d4d4d;
     color: #ff6666;
 }
-
 .action-button.reject:hover:not(:disabled) {
     background-color: #6d3d3d;
     border-color: #ff6666;
     transform: translateY(-1px);
 }
-
 .action-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
 }
-
 .announcement-response {
     margin-top: 8px;
     font-size: 13px;
 }
-
 .response-status {
     padding: 6px 12px;
     border-radius: 6px;
@@ -323,127 +278,28 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 .response-status.accepted {
     background-color: rgba(102, 255, 102, 0.1);
     color: #66ff66;
     border: 1px solid rgba(102, 255, 102, 0.3);
 }
-
 .response-status.rejected {
     background-color: rgba(255, 102, 102, 0.1);
     color: #ff6666;
     border: 1px solid rgba(255, 102, 102, 0.3);
 }
-
 .response-processed {
     color: #888888;
     font-style: italic;
 }
-
 /* Медиа-запросы для мобильной адаптации */
-@media (max-width: 768px) {
-    .message {
-        max-width: 85%;
-        padding: 10px 14px;
-    }
-    
-    .message-text {
-        font-size: 13px;
-    }
-    
-    .message-meta {
-        font-size: 10px;
-        margin-left: 10px;
-    }
-    
-    .message-container.own-container .message-meta {
-        margin-left: 0;
-        margin-right: 10px;
-    }
-    
-    .message-image img {
-        max-height: 250px;
-    }
-    
-    .message-document, .message-file {
-        padding: 10px 12px;
-    }
-    
-    .document-icon, .file-icon {
-        font-size: 20px;
-        margin-right: 10px;
-    }
-    
-    .document-name, .file-name {
-        font-size: 13px;
-    }
-    
-    .document-download, .file-download {
-        font-size: 11px;
-    }
-    
-    .message-announcement {
-        padding: 12px;
-    }
-    
-    .announcement-icon {
-        font-size: 18px;
-        margin-right: 12px;
-    }
-    
-    .announcement-text {
-        font-size: 13px;
-    }
-    
-    .action-button {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-    
-    .announcement-actions {
-        gap: 10px;
-        margin-top: 6px;
-    }
-    
-    .message-context-menu {
-        min-width: 120px;
-    }
-    
-    .message-context-menu li {
-        padding: 10px 12px;
-        font-size: 13px;
-    }
-}
-
-@media (max-width: 600px) {
-    .message {
-        max-width: 90%;
-        padding: 8px 12px;
-    }
-    
-    .message-text {
-        font-size: 12px;
-    }
-    
-    .message-meta {
-        font-size: 9px;
-    }
-    
-    .message-image img {
-        max-height: 200px;
-    }
-}
-
 /* Стили для турнирных чатов */
 .tournament-container {
     margin-bottom: 20px;
 }
-
 .tournament-container .message-container {
     margin-bottom: 5px;
 }
-
 .message-user-info {
     display: flex;
     align-items: center;
@@ -451,11 +307,9 @@
     margin-bottom: 8px;
     padding-left: 8px;
 }
-
 .message-user-avatar {
     flex-shrink: 0;
 }
-
 .message-user-avatar img {
     width: 32px;
     height: 32px;
@@ -463,24 +317,20 @@
     object-fit: cover;
     border: 2px solid #e0e0e0;
 }
-
 .message-user-details {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
-
 .message-username {
     font-weight: 600;
     color: #333;
     font-size: 14px;
 }
-
 .message-time-header {
     font-size: 11px;
     color: #666;
 }
-
 .tournament-message {
     border-radius: 8px;
     padding: 10px 12px;
@@ -488,55 +338,26 @@
     word-wrap: break-word;
     margin-left: 42px; /* Отступ для аватарки */
 }
-
 .tournament-container.own-container .tournament-message {
     margin-left: 0;
     margin-right: 42px;
 }
-
 .tournament-container.own-container .message-user-info {
     flex-direction: row-reverse;
     padding-right: 8px;
     padding-left: 0;
 }
-
 .tournament-container.own-container .message-user-details {
     align-items: flex-end;
 }
-
 /* Специальные стили для системных сообщений в турнирах */
 .tournament-container .announcement-wrapper {
     margin-left: 42px;
     margin-right: 0;
 }
-
 .tournament-container.own-container .announcement-wrapper {
     margin-left: 0;
     margin-right: 42px;
 }
-
 /* Адаптивность для мобильных устройств */
-@media (max-width: 768px) {
-    .tournament-message {
-        max-width: 85%;
-        margin-left: 35px;
-    }
-    
-    .tournament-container.own-container .tournament-message {
-        margin-left: 0;
-        margin-right: 35px;
-    }
-    
-    .message-user-avatar img {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .message-username {
-        font-size: 13px;
-    }
-    
-    .message-time-header {
-        font-size: 10px;
-    }
-} 
+ 

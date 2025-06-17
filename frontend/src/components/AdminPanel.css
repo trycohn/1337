@@ -8,14 +8,12 @@
     min-height: 80vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-
 .admin-header {
     margin-bottom: 48px;
     text-align: left;
     border-bottom: 1px solid #333333;
     padding-bottom: 24px;
 }
-
 .admin-header h1 {
     color: #ffffff;
     font-size: 32px;
@@ -23,14 +21,12 @@
     margin: 0 0 8px 0;
     letter-spacing: -0.02em;
 }
-
 .admin-header p {
     color: #999999;
     font-size: 16px;
     margin: 0;
     font-weight: 400;
 }
-
 /* Навигация */
 .admin-navigation {
     display: flex;
@@ -38,7 +34,6 @@
     margin-bottom: 48px;
     border-bottom: 1px solid #333333;
 }
-
 .admin-navigation .nav-tab {
     padding: 16px 24px;
     background: none;
@@ -51,16 +46,13 @@
     transition: all 0.2s ease;
     position: relative;
 }
-
 .admin-navigation .nav-tab:hover {
     color: #ffffff;
 }
-
 .admin-navigation .nav-tab.active {
     color: #ffffff;
     border-bottom-color: #ffffff;
 }
-
 /* Состояния загрузки и ошибки */
 .admin-loading,
 .admin-error {
@@ -74,13 +66,11 @@
     margin: 32px auto;
     max-width: 600px;
 }
-
 .admin-error {
     color: #ff6b6b;
     background-color: #1a0e0e;
     border-color: #443333;
 }
-
 /* Вкладка статистики */
 .stats-tab h2 {
     color: #ffffff;
@@ -89,14 +79,12 @@
     font-weight: 600;
     letter-spacing: -0.01em;
 }
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 24px;
     margin-top: 24px;
 }
-
 .stat-card {
     background-color: #111111;
     border: 1px solid #333333;
@@ -105,11 +93,9 @@
     text-align: center;
     transition: border-color 0.2s ease;
 }
-
 .stat-card:hover {
     border-color: #ffffff;
 }
-
 .stat-value {
     font-size: 48px;
     font-weight: 700;
@@ -117,7 +103,6 @@
     margin-bottom: 8px;
     letter-spacing: -0.02em;
 }
-
 .stat-label {
     color: #999999;
     font-size: 14px;
@@ -125,7 +110,6 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-
 /* Вкладка заявок */
 .requests-tab h2 {
     color: #ffffff;
@@ -134,20 +118,17 @@
     font-weight: 600;
     letter-spacing: -0.01em;
 }
-
 .requests-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32px;
 }
-
 .requests-filters {
     display: flex;
     gap: 16px;
     align-items: center;
 }
-
 .status-filter {
     padding: 8px 16px;
     background-color: #111111;
@@ -159,19 +140,16 @@
     transition: border-color 0.2s ease;
     font-weight: 500;
 }
-
 .status-filter:focus {
     outline: none;
     border-color: #ffffff;
 }
-
 /* Список заявок */
 .requests-list {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
-
 .request-card {
     background-color: #111111;
     border: 1px solid #333333;
@@ -179,47 +157,39 @@
     padding: 24px;
     transition: border-color 0.2s ease;
 }
-
 .request-card:hover {
     border-color: #ffffff;
 }
-
 .request-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 16px;
 }
-
 .request-info h3 {
     color: #ffffff;
     margin: 0 0 8px 0;
     font-size: 18px;
     font-weight: 600;
 }
-
 .request-user {
     color: #999999;
     margin: 4px 0;
     font-size: 14px;
 }
-
 .request-user span {
     color: #ffffff;
     font-weight: 500;
 }
-
 .request-date {
     color: #666666;
     margin: 4px 0;
     font-size: 13px;
 }
-
 .request-status {
     display: flex;
     align-items: center;
 }
-
 .status-badge {
     padding: 4px 12px;
     border-radius: 16px;
@@ -228,40 +198,33 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-
 .status-pending {
     background-color: #2a2519;
     color: #fbbf24;
     border: 1px solid #fbbf24;
 }
-
 .status-approved {
     background-color: #0f2419;
     color: #10b981;
     border: 1px solid #10b981;
 }
-
 .status-rejected {
     background-color: #2a1919;
     color: #f87171;
     border: 1px solid #f87171;
 }
-
 .request-description {
     margin-bottom: 16px;
 }
-
 .request-description p {
     color: #cccccc;
     line-height: 1.6;
     margin: 0;
 }
-
 .request-actions {
     display: flex;
     gap: 12px;
 }
-
 .view-details-btn {
     padding: 8px 16px;
     background-color: #ffffff;
@@ -273,11 +236,9 @@
     font-size: 14px;
     transition: background-color 0.2s ease;
 }
-
 .view-details-btn:hover {
     background-color: #cccccc;
 }
-
 .no-requests {
     text-align: center;
     color: #999999;
@@ -287,7 +248,6 @@
     border: 1px solid #333333;
     border-radius: 8px;
 }
-
 /* Пагинация */
 .pagination {
     display: flex;
@@ -297,7 +257,6 @@
     margin-top: 48px;
     padding: 24px;
 }
-
 .pagination button {
     padding: 8px 16px;
     background-color: #ffffff;
@@ -308,22 +267,18 @@
     font-weight: 500;
     transition: background-color 0.2s ease;
 }
-
 .pagination button:hover:not(:disabled) {
     background-color: #cccccc;
 }
-
 .pagination button:disabled {
     background-color: #333333;
     color: #666666;
     cursor: not-allowed;
 }
-
 .pagination span {
     color: #ffffff;
     font-weight: 500;
 }
-
 /* Модальные окна */
 .modal-overlay {
     position: fixed;
@@ -339,7 +294,6 @@
     opacity: 0;
     animation: fadeIn 0.2s ease-out forwards;
 }
-
 .modal-content {
     background-color: #111111;
     border: 1px solid #333333;
@@ -351,19 +305,16 @@
     max-height: 90vh;
     overflow-y: auto;
 }
-
 .request-modal {
     width: 90%;
     max-width: 800px;
     padding: 32px;
 }
-
 .action-modal {
     width: 90%;
     max-width: 500px;
     padding: 32px;
 }
-
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -372,14 +323,12 @@
     border-bottom: 1px solid #333333;
     padding-bottom: 24px;
 }
-
 .modal-header h3 {
     margin: 0;
     color: #ffffff;
     font-size: 20px;
     font-weight: 600;
 }
-
 .close-btn {
     background: none;
     border: none;
@@ -395,17 +344,14 @@
     justify-content: center;
     transition: all 0.2s ease;
 }
-
 .close-btn:hover {
     background-color: #222222;
     color: #ffffff;
 }
-
 /* Детали заявки */
 .request-details {
     margin-bottom: 32px;
 }
-
 .detail-section {
     margin-bottom: 24px;
     padding: 24px;
@@ -413,7 +359,6 @@
     border: 1px solid #333333;
     border-radius: 8px;
 }
-
 .detail-section h4 {
     color: #ffffff;
     margin: 0 0 16px 0;
@@ -422,34 +367,28 @@
     border-bottom: 1px solid #333333;
     padding-bottom: 12px;
 }
-
 .detail-section p {
     color: #cccccc;
     margin: 8px 0;
     line-height: 1.6;
 }
-
 .detail-section strong {
     color: #ffffff;
     font-weight: 600;
 }
-
 .detail-section a {
     color: #ffffff;
     text-decoration: underline;
     transition: opacity 0.2s ease;
 }
-
 .detail-section a:hover {
     opacity: 0.7;
 }
-
 .user-info {
     display: flex;
     align-items: center;
     gap: 16px;
 }
-
 .user-avatar {
     width: 60px;
     height: 60px;
@@ -457,7 +396,6 @@
     object-fit: cover;
     border: 2px solid #333333;
 }
-
 .description-box,
 .comment-box {
     background-color: #000000;
@@ -469,11 +407,9 @@
     line-height: 1.6;
     white-space: pre-wrap;
 }
-
 .logo-section {
     margin-top: 16px;
 }
-
 .organization-logo {
     max-width: 200px;
     max-height: 150px;
@@ -481,11 +417,9 @@
     border: 1px solid #333333;
     margin-top: 12px;
 }
-
 .admin-comment {
     margin-top: 16px;
 }
-
 /* Действия в модальном окне */
 .modal-actions {
     display: flex;
@@ -495,7 +429,6 @@
     padding-top: 24px;
     border-top: 1px solid #333333;
 }
-
 .approve-btn,
 .reject-btn,
 .confirm-btn,
@@ -509,43 +442,36 @@
     transition: all 0.2s ease;
     min-width: 100px;
 }
-
 .approve-btn,
 .confirm-btn {
     background-color: #ffffff;
     color: #000000;
     border-color: #ffffff;
 }
-
 .approve-btn:hover,
 .confirm-btn:hover:not(:disabled) {
     background-color: #cccccc;
 }
-
 .reject-btn,
 .reject-confirm {
     background-color: #111111;
     color: #f87171;
     border-color: #f87171;
 }
-
 .reject-btn:hover,
 .reject-confirm:hover:not(:disabled) {
     background-color: #f87171;
     color: #000000;
 }
-
 .cancel-btn {
     background-color: #111111;
     color: #999999;
     border-color: #333333;
 }
-
 .cancel-btn:hover {
     background-color: #222222;
     color: #ffffff;
 }
-
 .confirm-btn:disabled,
 .reject-confirm:disabled {
     background-color: #222222;
@@ -553,12 +479,10 @@
     border-color: #333333;
     cursor: not-allowed;
 }
-
 /* Формы в модальных окнах */
 .form-group {
     margin-bottom: 24px;
 }
-
 .form-group label {
     display: block;
     color: #ffffff;
@@ -566,12 +490,10 @@
     margin-bottom: 8px;
     font-size: 14px;
 }
-
 .required {
     color: #f87171;
     margin-left: 2px;
 }
-
 .form-group input,
 .form-group textarea {
     width: 100%;
@@ -585,29 +507,24 @@
     box-sizing: border-box;
     font-family: inherit;
 }
-
 .form-group input:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: #ffffff;
 }
-
 .form-group textarea {
     resize: vertical;
     min-height: 100px;
 }
-
 .form-group input::placeholder,
 .form-group textarea::placeholder {
     color: #666666;
 }
-
 /* Анимации */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
 @keyframes slideIn {
     from { 
         opacity: 0;
@@ -618,100 +535,5 @@
         transform: translateY(0);
     }
 }
-
 /* Адаптивность */
-@media (max-width: 1200px) {
-    .admin-panel {
-        padding: 24px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    }
-}
-
-@media (max-width: 768px) {
-    .admin-panel {
-        padding: 16px;
-    }
-    
-    .admin-header h1 {
-        font-size: 28px;
-    }
-    
-    .admin-navigation {
-        flex-wrap: wrap;
-        gap: 0;
-    }
-    
-    .admin-navigation .nav-tab {
-        padding: 12px 16px;
-        font-size: 14px;
-    }
-    
-    .requests-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-    }
-    
-    .request-header {
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-    }
-    
-    .modal-content {
-        width: 95%;
-        padding: 24px;
-        margin: 16px;
-    }
-    
-    .user-info {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .modal-actions {
-        flex-direction: column;
-    }
-    
-    .approve-btn,
-    .reject-btn,
-    .confirm-btn,
-    .cancel-btn {
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .admin-panel {
-        padding: 12px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    
-    .stat-card {
-        padding: 24px;
-    }
-    
-    .request-card {
-        padding: 16px;
-    }
-    
-    .modal-content {
-        padding: 16px;
-    }
-    
-    .organization-logo {
-        max-width: 150px;
-        max-height: 100px;
-    }
-} 
+ 
