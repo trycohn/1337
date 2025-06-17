@@ -286,7 +286,7 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
 
     return (
         <div className={`message-container ${isOwn ? 'own-container' : ''} ${showUserInfo ? 'tournament-container' : ''}`}>
-            {showUserInfo && (
+            {showUserInfo && !isOwn && (
                 <div className="message-user-info">
                     <div className="message-user-avatar">
                         <img 

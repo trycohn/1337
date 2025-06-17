@@ -125,8 +125,21 @@ function createSocketServer(httpServer) {
         );
         
         const message = result.rows[0];
-        message.sender_username = socket.user.username;
-        message.sender_avatar = socket.user.avatar_url;
+        
+        // Загружаем актуальные данные пользователя из БД
+        const userResult = await pool.query(
+          'SELECT username, avatar_url FROM users WHERE id = $1',
+          [socket.userId]
+        );
+        
+        if (userResult.rows.length > 0) {
+          message.sender_username = userResult.rows[0].username;
+          message.sender_avatar = userResult.rows[0].avatar_url;
+        } else {
+          // Если пользователь не найден, используем данные из socket
+          message.sender_username = socket.user.username;
+          message.sender_avatar = socket.user.avatar_url;
+        }
 
         console.log(`💾 [Socket.IO] Сообщение сохранено в БД:`, message);
 
@@ -176,8 +189,21 @@ function createSocketServer(httpServer) {
         );
         
         const message = result.rows[0];
-        message.sender_username = socket.user.username;
-        message.sender_avatar = socket.user.avatar_url;
+        
+        // Загружаем актуальные данные пользователя из БД
+        const userResult = await pool.query(
+          'SELECT username, avatar_url FROM users WHERE id = $1',
+          [socket.userId]
+        );
+        
+        if (userResult.rows.length > 0) {
+          message.sender_username = userResult.rows[0].username;
+          message.sender_avatar = userResult.rows[0].avatar_url;
+        } else {
+          // Если пользователь не найден, используем данные из socket
+          message.sender_username = socket.user.username;
+          message.sender_avatar = socket.user.avatar_url;
+        }
 
         // Отправляем в комнату турнира
         io.to(`tournament_${tournamentId}`).emit('tournament_message', message);

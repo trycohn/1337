@@ -336,11 +336,14 @@
     padding: 10px 12px;
     max-width: 70%;
     word-wrap: break-word;
-    margin-left: 42px; /* Отступ для аватарки */
+}
+/* Отступ для сообщений с информацией о пользователе */
+.tournament-container:not(.own-container) .tournament-message {
+    margin-left: 42px;
 }
 .tournament-container.own-container .tournament-message {
     margin-left: 0;
-    margin-right: 42px;
+    margin-right: 0; /* Убираем отступ для собственных сообщений */
 }
 .tournament-container.own-container .message-user-info {
     flex-direction: row-reverse;
