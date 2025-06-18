@@ -10,7 +10,8 @@ function ChatInput({
     onSendAttachment 
 }) {
     // Проверяем, является ли чат только для чтения
-    const isReadOnly = activeChat.name === '1337community';
+    // Личные чаты с системным пользователем 1337community доступны для ответа
+    const isReadOnly = activeChat.type === 'tournament' && activeChat.name === '1337community';
 
     if (isReadOnly) {
         return (
