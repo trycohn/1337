@@ -312,25 +312,19 @@ const useTournamentManagement = (tournamentId) => {
             });
 
             const response = await axios.post(`/api/tournaments/${tournamentId}/invite-admin`, {
-                user_id: userId
+                inviteeId: userId
             }, {
                 headers: getAuthHeaders()
             });
 
             console.log('👑 Ответ сервера на приглашение администратора:', response.data);
 
-            if (response.data.success) {
-                return {
-                    success: true,
-                    message: response.data.message || 'Приглашение отправлено',
-                    data: response.data.data
-                };
-            } else {
-                return {
-                    success: false,
-                    message: response.data.message || 'Ошибка при отправке приглашения'
-                };
-            }
+            // Backend возвращает объект с message, но без success флага
+            return {
+                success: true,
+                message: response.data.message || 'Приглашение отправлено',
+                data: response.data
+            };
         } catch (error) {
             console.error('👑 Ошибка при приглашении администратора:', error);
             const errorMessage = error.response?.data?.message || 'Ошибка при отправке приглашения';
