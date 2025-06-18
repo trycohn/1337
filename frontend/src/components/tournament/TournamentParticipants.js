@@ -40,28 +40,38 @@ const TournamentParticipants = ({
 
     // Поиск пользователей для приглашения
     const searchParticipants = useCallback(async (query) => {
+        console.log('🔍 [TournamentParticipants] Поиск участников, запрос:', query);
+        
         if (!query || query.trim().length < 3) {
+            console.log('🔍 [TournamentParticipants] Запрос слишком короткий');
             setParticipantSearchResults([]);
             return;
         }
 
         setIsSearchingParticipants(true);
+        
         try {
             const result = await tournamentManagement.searchUsers(query.trim());
+            
             if (result.success) {
+                console.log('🔍 [TournamentParticipants] Поиск успешный, найдено пользователей:', result.data?.length || 0);
+                
                 // Фильтруем уже добавленных участников
                 const existingParticipantIds = getParticipantsList().map(p => p.user_id || p.id);
                 const filteredResults = (result.data || []).filter(user => 
                     !existingParticipantIds.includes(user.id)
                 );
+                
+                console.log('🔍 [TournamentParticipants] После фильтрации:', filteredResults.length);
                 setParticipantSearchResults(filteredResults);
             } else {
+                console.error('🔍 [TournamentParticipants] Ошибка поиска:', result.error);
                 setParticipantSearchResults([]);
                 setMessage(`❌ Ошибка поиска: ${result.error}`);
                 setTimeout(() => setMessage(''), 3000);
             }
         } catch (error) {
-            console.error('❌ Ошибка поиска участников:', error);
+            console.error('❌ [TournamentParticipants] Ошибка поиска участников:', error);
             setParticipantSearchResults([]);
             setMessage('❌ Ошибка при поиске пользователей');
             setTimeout(() => setMessage(''), 3000);
@@ -170,19 +180,6 @@ const TournamentParticipants = ({
         
         return isParticipant ? 'participant' : 'available';
     }, [getParticipantsList]);
-
-    // Обработчик поиска с дебаунсом
-    useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (participantSearchQuery.trim().length >= 3) {
-                searchParticipants(participantSearchQuery);
-            } else {
-                setParticipantSearchResults([]);
-            }
-        }, 300);
-
-        return () => clearTimeout(delayedSearch);
-    }, [participantSearchQuery, searchParticipants]);
 
     // 🆕 Проверка, нужно ли показывать список участников
     const shouldShowParticipantsList = useCallback(() => {
@@ -360,10 +357,11 @@ const TournamentParticipants = ({
                         setParticipantSearchResults([]);
                     }}
                     searchQuery={participantSearchQuery}
-                    onSearchQueryChange={setParticipantSearchQuery}
+                    setSearchQuery={setParticipantSearchQuery}
+                    onSearch={searchParticipants}
                     searchResults={participantSearchResults}
                     isSearching={isSearchingParticipants}
-                    onInviteUser={inviteParticipant}
+                    onInvite={inviteParticipant}
                     getUserStatus={getUserParticipationStatus}
                     mode="participants"
                 />

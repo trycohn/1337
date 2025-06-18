@@ -99,7 +99,10 @@ const ParticipantSearchModal = ({
         const newTimeout = setTimeout(() => {
             setSearchQuery(value);
             if (onSearch) {
+                console.log('🔍 [ParticipantSearchModal] Выполняем поиск:', value);
                 onSearch(value);
+            } else {
+                console.warn('🔍 [ParticipantSearchModal] onSearch не передан!');
             }
         }, 300); // 300ms задержка
 

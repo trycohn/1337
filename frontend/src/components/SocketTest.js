@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '../hooks/useSocket';
+import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
 
 const SocketTest = () => {
   const socket = useSocket();
@@ -117,4 +118,132 @@ const SocketTest = () => {
   );
 };
 
-export default SocketTest; 
+// Тестовый компонент для диагностики поиска пользователей
+const UserSearchTest = () => {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [error, setError] = useState(null);
+    
+    // Используем хук с фиктивным ID турнира для тестирования
+    const tournamentManagement = useTournamentManagement(1);
+
+    const testSearch = useCallback(async () => {
+        if (!query || query.trim().length < 2) {
+            setResults([]);
+            return;
+        }
+
+        setIsSearching(true);
+        setError(null);
+        
+        try {
+            console.log('🔍 [TEST] Начинаем тестовый поиск:', query);
+            const result = await tournamentManagement.searchUsers(query.trim());
+            
+            console.log('🔍 [TEST] Результат тестового поиска:', result);
+            
+            if (result.success) {
+                setResults(result.data || []);
+                setError(null);
+            } else {
+                setResults([]);
+                setError(result.error || 'Неизвестная ошибка');
+            }
+        } catch (err) {
+            console.error('🔍 [TEST] Ошибка тестового поиска:', err);
+            setResults([]);
+            setError(err.message || 'Критическая ошибка');
+        } finally {
+            setIsSearching(false);
+        }
+    }, [query, tournamentManagement]);
+
+    return (
+        <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+            <h2>🔍 Тест поиска пользователей</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Введите имя пользователя для поиска..."
+                    style={{
+                        width: '100%',
+                        padding: '10px',
+                        fontSize: '16px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px'
+                    }}
+                />
+            </div>
+
+            <button 
+                onClick={testSearch}
+                disabled={isSearching || !query.trim()}
+                style={{
+                    padding: '10px 20px',
+                    fontSize: '16px',
+                    backgroundColor: isSearching ? '#ccc' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: isSearching ? 'not-allowed' : 'pointer'
+                }}
+            >
+                {isSearching ? 'Поиск...' : 'Найти пользователей'}
+            </button>
+
+            {error && (
+                <div style={{
+                    marginTop: '20px',
+                    padding: '10px',
+                    backgroundColor: '#f8d7da',
+                    color: '#721c24',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '4px'
+                }}>
+                    ❌ Ошибка: {error}
+                </div>
+            )}
+
+            {results.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                    <h3>Результаты поиска ({results.length}):</h3>
+                    {results.map((user) => (
+                        <div 
+                            key={user.id}
+                            style={{
+                                padding: '10px',
+                                margin: '5px 0',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                backgroundColor: '#f9f9f9'
+                            }}
+                        >
+                            <strong>{user.username}</strong> (ID: {user.id})
+                            {user.faceit_elo && <span> | FACEIT: {user.faceit_elo}</span>}
+                            {user.cs2_premier_rank && <span> | CS2: {user.cs2_premier_rank}</span>}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {!isSearching && query.trim() && results.length === 0 && !error && (
+                <div style={{
+                    marginTop: '20px',
+                    padding: '10px',
+                    backgroundColor: '#fff3cd',
+                    color: '#856404',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '4px'
+                }}>
+                    🔍 Пользователи не найдены
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default UserSearchTest; 
