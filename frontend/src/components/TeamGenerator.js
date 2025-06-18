@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 import { ensureHttps } from '../utils/userHelpers';
-import TeamCard from './TeamCard';
 import './TeamGenerator.css';
 
 /**
@@ -31,7 +30,6 @@ const TeamGenerator = ({
     const [mixedTeams, setMixedTeams] = useState([]);
     const [originalParticipants, setOriginalParticipants] = useState([]);
     const [loadingParticipants, setLoadingParticipants] = useState(false);
-    const [loadingTeams, setLoadingTeams] = useState(false);
 
     // 🆕 СОСТОЯНИЯ ДЛЯ МОДАЛЬНОГО ОКНА ПЕРЕФОРМИРОВАНИЯ
     const [showReformModal, setShowReformModal] = useState(false);
@@ -185,7 +183,28 @@ const TeamGenerator = ({
             
             console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
         }
-    }, [tournament?.id, tournament?.team_size, isReforming]);
+    }, [tournament?.id, tournament?.team_size, tournament?.teams, mixedTeams.length, ratingType, isReforming]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
+
+    // 🔧 ПЕРЕМЕЩЕННЫЙ ЭФФЕКТ: Основной эффект для загрузки данных
+    useEffect(() => {
+        // Загружаем команды при изменении турнира
+        if (tournament && tournament.id) {
+            const teamsExist = tournament.teams && tournament.teams.length > 0;
+            
+            if (teamsExist) {
+                console.log('✅ Команды найдены в турнире, используем их');
+                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
+                const enrichedTeams = tournament.teams.map(team => ({
+                    ...team,
+                    averageRating: calculateTeamAverageRating(team)
+                }));
+                setMixedTeams(enrichedTeams);
+            }
+            // 🔧 УБИРАЕМ ВЫЗОВ fetchTeams - теперь в отдельном useEffect
+        }
+
+        // 🔧 УБИРАЕМ ЗАГРУЗКУ УЧАСТНИКОВ - теперь в отдельном useEffect
+    }, [tournament?.id, tournament?.team_size, isReforming]); // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: убираем все функции из зависимостей
 
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
@@ -210,7 +229,7 @@ const TeamGenerator = ({
         } catch (error) {
             console.error('❌ Ошибка загрузки команд:', error);
         }
-    }, [tournament?.id, calculateTeamAverageRating]); // 🔧 УБИРАЕМ mixedTeams.length ИЗ ЗАВИСИМОСТЕЙ
+    }, [tournament?.id, calculateTeamAverageRating]);
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
@@ -240,46 +259,27 @@ const TeamGenerator = ({
             }
         } catch (error) {
             console.error('Ошибка при загрузке оригинальных участников:', error);
-            // 🔧 НЕ ИСПОЛЬЗУЕМ TOAST В ЗАВИСИМОСТЯХ
         } finally {
             setLoadingParticipants(false);
         }
-    }, [tournament?.id, shouldMakeRequest]); // 🔧 ИСПРАВЛЕНО: убран toast из зависимостей
+    }, [tournament?.id, shouldMakeRequest]);
 
-    // 🔧 ПЕРЕМЕЩЕННЫЙ ЭФФЕКТ: Основной эффект для загрузки данных
+    // 🔧 ОТДЕЛЬНЫЙ ЭФФЕКТ ДЛЯ ЗАГРУЗКИ КОМАНД
     useEffect(() => {
-        // Загружаем команды при изменении турнира
-        if (tournament && tournament.id) {
-            const teamsExist = tournament.teams && tournament.teams.length > 0;
-            
-            if (teamsExist) {
-                console.log('✅ Команды найдены в турнире, используем их');
-                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
-                const enrichedTeams = tournament.teams.map(team => ({
-                    ...team,
-                    averageRating: calculateTeamAverageRating(team)
-                }));
-                setMixedTeams(enrichedTeams);
-            } else {
-                console.log('📥 Команды не найдены, загружаем с сервера');
-                fetchTeams();
-            }
+        if (tournament?.id && (!tournament?.teams || tournament.teams.length === 0)) {
+            fetchTeams();
         }
+    }, [fetchTeams, tournament?.id, tournament?.teams]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
 
-        // 🆕 ИСПРАВЛЕНИЕ: Проверяем нужно ли уведомить о командах
-        if (tournament && tournament.teams && tournament.teams.length > 0 && onTeamsGenerated) {
-            // Только если команды есть и мы ещё не уведомляли
-            console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
-        }
-
-        // Загружаем оригинальных участников, если это микс турнир и участники не загружены
-        if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
+    // 🔧 ОТДЕЛЬНЫЙ ЭФФЕКТ ДЛЯ ЗАГРУЗКИ УЧАСТНИКОВ
+    useEffect(() => {
+        if (tournament?.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
             fetchOriginalParticipants();
         }
-    }, [tournament?.id, tournament?.team_size, isReforming, fetchOriginalParticipants, fetchTeams, calculateTeamAverageRating, originalParticipants.length, onTeamsGenerated]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
+    }, [fetchOriginalParticipants, tournament?.id, tournament?.participant_type, tournament?.format, originalParticipants.length, tournament, calculateTeamAverageRating]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
 
     // Функция для обновления размера команды на сервере
-    const updateTeamSize = async (newSize) => {
+    const updateTeamSize = useCallback(async (newSize) => {
         if (!tournament || !tournament.id || !isAdminOrCreator) return;
         
         try {
@@ -305,7 +305,7 @@ const TeamGenerator = ({
                 toast.error(error.response?.data?.error || 'Не удалось обновить размер команды');
             }
         }
-    };
+    }, [tournament, isAdminOrCreator, toast, onTeamsUpdated]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
 
     // Функция для формирования команд
     const handleFormTeams = async () => {
@@ -372,12 +372,6 @@ const TeamGenerator = ({
     // Команды из турнира или из локального состояния
     const teamsExist = tournament?.teams && tournament.teams.length > 0;
     const teamsList = teamsExist ? tournament.teams : mixedTeams;
-    
-    // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ ДЛЯ ОТОБРАЖЕНИЯ
-    const enrichedTeamsList = teamsList.map(team => ({
-        ...team,
-        averageRating: team.averageRating || calculateTeamAverageRating(team)
-    }));
     
     // Отладочная информация для проверки команд
     console.log('TeamGenerator render:', {
