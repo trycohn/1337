@@ -20,6 +20,9 @@ import {
     getDefaultCS2Maps 
 } from '../utils/mapHelpers';
 
+// 🆕 ИМПОРТ ХУКА ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
+import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
+
 // Стили
 import './TournamentDetails.css';
 
@@ -197,6 +200,12 @@ function TournamentDetails() {
         matchDetails: false
     });
 
+    // 🆕 СОСТОЯНИЯ ДЛЯ ПОИСКА АДМИНИСТРАТОРОВ
+    const [adminSearchQuery, setAdminSearchQuery] = useState('');
+    const [adminSearchResults, setAdminSearchResults] = useState([]);
+    const [isSearchingAdmins, setIsSearchingAdmins] = useState(false);
+    const [adminSearchModal, setAdminSearchModal] = useState(false);
+
     // Данные для модальных окон
     const [newParticipantData, setNewParticipantData] = useState({
         display_name: '',
@@ -215,6 +224,9 @@ function TournamentDetails() {
 
     // Рефы
     const wsRef = useRef(null);
+
+    // 🆕 ХУК ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
+    const tournamentManagement = useTournamentManagement(id);
 
     // Функции управления модальными окнами
     const openModal = useCallback((modalName) => {
@@ -1079,9 +1091,9 @@ function TournamentDetails() {
                                 }}
                                 onGenerateBracket={() => {}}
                                 onClearResults={() => {}}
-                                onInviteAdmin={() => {}}
-                                onRemoveAdmin={() => {}}
-                                onShowAdminSearchModal={() => {}}
+                                onInviteAdmin={inviteAdmin}
+                                onRemoveAdmin={removeAdmin}
+                                onShowAdminSearchModal={openAdminSearchModal}
                             />
                         ) : (
                             <div className="access-denied">
@@ -1225,6 +1237,100 @@ function TournamentDetails() {
             });
         }
     }, [user, tournament, id]);
+
+    // 🆕 ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
+
+    // Поиск пользователей для приглашения в администраторы
+    const searchAdmins = useCallback(async (query) => {
+        if (!query || query.trim().length < 3) {
+            setAdminSearchResults([]);
+            return;
+        }
+
+        setIsSearchingAdmins(true);
+        try {
+            const result = await tournamentManagement.searchUsers(query.trim());
+            if (result.success) {
+                setAdminSearchResults(result.data || []);
+            } else {
+                setAdminSearchResults([]);
+                setMessage(`❌ Ошибка поиска: ${result.error}`);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка поиска администраторов:', error);
+            setAdminSearchResults([]);
+            setMessage('❌ Ошибка при поиске пользователей');
+            setTimeout(() => setMessage(''), 3000);
+        } finally {
+            setIsSearchingAdmins(false);
+        }
+    }, [tournamentManagement]);
+
+    // Приглашение пользователя в администраторы
+    const inviteAdmin = useCallback(async (userId, userName) => {
+        try {
+            setIsSearchingAdmins(true);
+            const result = await tournamentManagement.inviteAdmin(userId);
+            
+            if (result.success) {
+                setMessage(`✅ ${userName} приглашен в администраторы турнира`);
+                setAdminSearchModal(false);
+                setAdminSearchQuery('');
+                setAdminSearchResults([]);
+                
+                // Обновляем данные турнира
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${result.message || 'Ошибка при приглашении администратора'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка приглашения администратора:', error);
+            setMessage('❌ Ошибка при приглашении администратора');
+        } finally {
+            setIsSearchingAdmins(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [tournamentManagement, fetchTournamentData]);
+
+    // Удаление администратора
+    const removeAdmin = useCallback(async (userId) => {
+        const confirmed = window.confirm('Вы уверены, что хотите удалить этого администратора?');
+        if (!confirmed) return;
+
+        try {
+            const result = await tournamentManagement.removeAdmin(userId);
+            
+            if (result.success) {
+                setMessage('✅ Администратор удален из турнира');
+                
+                // Обновляем данные турнира
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${result.message || 'Ошибка при удалении администратора'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка удаления администратора:', error);
+            setMessage('❌ Ошибка при удалении администратора');
+        } finally {
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [tournamentManagement, fetchTournamentData]);
+
+    // Открытие модального окна поиска администраторов
+    const openAdminSearchModal = useCallback(() => {
+        setAdminSearchModal(true);
+        setAdminSearchQuery('');
+        setAdminSearchResults([]);
+    }, []);
+
+    // Закрытие модального окна поиска администраторов
+    const closeAdminSearchModal = useCallback(() => {
+        setAdminSearchModal(false);
+        setAdminSearchQuery('');
+        setAdminSearchResults([]);
+        setIsSearchingAdmins(false);
+    }, []);
 
     // Обработка ошибок загрузки
     if (loading) {
@@ -1381,6 +1487,23 @@ function TournamentDetails() {
                             openModal('matchResult');
                         }}
                         tournament={tournament}
+                    />
+                )}
+
+                {/* 🆕 Модальное окно поиска администраторов */}
+                {adminSearchModal && (
+                    <ParticipantSearchModal
+                        isOpen={adminSearchModal}
+                        onClose={closeAdminSearchModal}
+                        mode="admin"
+                        onInviteAdmin={inviteAdmin}
+                        searchQuery={adminSearchQuery}
+                        setSearchQuery={setAdminSearchQuery}
+                        searchResults={adminSearchResults}
+                        isSearching={isSearchingAdmins}
+                        onSearch={searchAdmins}
+                        existingAdmins={tournament?.admins || []}
+                        existingParticipants={[]} // Не нужно для режима админов
                     />
                 )}
 
