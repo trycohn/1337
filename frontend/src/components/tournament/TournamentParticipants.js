@@ -188,13 +188,12 @@ const TournamentParticipants = ({
     const shouldShowParticipantsList = useCallback(() => {
         if (!tournament) return false;
         
-        // Для микс турниров скрываем оригинальный список участников в статусах "идет" и "завершен"
-        if (tournament.format === 'mix' && 
-            (tournament.status === 'in_progress' || tournament.status === 'completed')) {
-            return false;
+        // Для микс турниров ВСЕГДА используем TeamGenerator - он содержит всю необходимую логику
+        if (tournament.format === 'mix') {
+            return false; // Не показываем стандартные списки, используем только TeamGenerator
         }
         
-        // Для всех остальных случаев показываем список участников
+        // Для всех остальных типов турниров показываем список участников
         return true;
     }, [tournament]);
 
@@ -216,7 +215,21 @@ const TournamentParticipants = ({
                 </div>
             </div>
 
-            {/* 🆕 Условное отображение списков участников */}
+            {/* 🆕 Для микс турниров ВСЕГДА показываем TeamGenerator */}
+            {tournament?.format === 'mix' && (
+                <div className="team-generator-section">
+                    <TeamGenerator
+                        tournament={tournament}
+                        participants={participantsList}
+                        onTeamsGenerated={onTeamsGenerated}
+                        onTeamsUpdated={onTournamentUpdate}
+                        onRemoveParticipant={removeParticipant}
+                        isAdminOrCreator={isAdminOrCreator}
+                    />
+                </div>
+            )}
+
+            {/* Условное отображение списков участников для НЕ-микс турниров */}
             {shouldShowParticipantsList() && (
                 <>
                     {/* Список участников для команд */}
@@ -314,46 +327,6 @@ const TournamentParticipants = ({
                         </div>
                     )}
                 </>
-            )}
-
-            {/* 🆕 Уведомление для скрытых списков участников в микс турнирах */}
-            {!shouldShowParticipantsList() && tournament?.format === 'mix' && (
-                <div className="participants-hidden-notice">
-                    <div className="notice-content">
-                        <h4>ℹ️ Список участников скрыт</h4>
-                        <p>
-                            {tournament.status === 'in_progress' && 
-                                'Турнир в процессе. Команды уже сформированы и доступны во вкладке "Сетка".'}
-                            {tournament.status === 'completed' && 
-                                'Турнир завершен. Результаты доступны во вкладках "Сетка" и "Результаты".'}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Генератор команд для микс турниров */}
-            {tournament?.format === 'mix' && tournament?.status !== 'in_progress' && (
-                <div className="team-generator-section">
-                    <h4>⚡ Генератор команд</h4>
-                    <TeamGenerator
-                        tournament={tournament}
-                        participants={participantsList}
-                        onTeamsGenerated={onTeamsGenerated}
-                        onTeamsUpdated={onTournamentUpdate}
-                        onRemoveParticipant={removeParticipant}
-                        isAdminOrCreator={isAdminOrCreator}
-                    />
-                </div>
-            )}
-
-            {/* Уведомление для микс турниров в процессе */}
-            {tournament?.format === 'mix' && tournament?.status === 'in_progress' && (
-                <div className="teams-formed-notice">
-                    <div className="notice-content">
-                        <h4>✅ Команды сформированы</h4>
-                        <p>Турнир в процессе. Показан оригинальный список участников до формирования команд.</p>
-                    </div>
-                </div>
             )}
 
             {/* Панель управления участниками для администраторов */}
