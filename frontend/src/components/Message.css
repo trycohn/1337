@@ -200,6 +200,19 @@
     margin-bottom: 8px;
     transition: all 0.2s ease;
 }
+
+/* 🆕 Специальные стили для приглашений администраторов */
+.message-announcement.admin-invitation {
+    border-left-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.message-announcement.admin-invitation:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-color: #555555;
+    border-left-color: #4CAF50;
+}
+
 .message-announcement:hover {
     background-color: #222222;
     border-color: #555555;

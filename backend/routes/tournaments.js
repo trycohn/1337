@@ -3651,4 +3651,224 @@ router.get('/:id/chat/participants', authenticateToken, async (req, res) => {
     }
 });
 
+// 🆕 API endpoint для принятия приглашения администратора
+router.post('/admin-invitations/:id/accept', authenticateToken, async (req, res) => {
+    try {
+        const invitationId = parseInt(req.params.id);
+        const userId = req.user.id;
+
+        console.log('🤝 Принятие приглашения администратора:', { invitationId, userId });
+
+        // Используем функцию из базы данных для принятия приглашения
+        const result = await pool.query(
+            'SELECT accept_admin_invitation($1, $2) as success',
+            [invitationId, userId]
+        );
+
+        if (result.rows[0].success) {
+            // Получаем информацию о приглашении для уведомления
+            const invitationInfo = await pool.query(`
+                SELECT ai.*, t.name as tournament_name, 
+                       inviter.username as inviter_username,
+                       invitee.username as invitee_username
+                FROM admin_invitations ai
+                JOIN tournaments t ON ai.tournament_id = t.id
+                JOIN users inviter ON ai.inviter_id = inviter.id
+                JOIN users invitee ON ai.invitee_id = invitee.id
+                WHERE ai.id = $1
+            `, [invitationId]);
+
+            if (invitationInfo.rows.length > 0) {
+                const invitation = invitationInfo.rows[0];
+                
+                // Отправляем уведомление приглашающему о принятии
+                const notificationMessage = `🎉 ${invitation.invitee_username} принял приглашение стать администратором турнира "${invitation.tournament_name}"`;
+                
+                // Находим чат турнира для отправки уведомления
+                const chatResult = await pool.query(
+                    'SELECT id FROM chats WHERE name = $1 AND type = $2',
+                    [invitation.tournament_name, 'group']
+                );
+
+                if (chatResult.rows.length > 0) {
+                    const chatId = chatResult.rows[0].id;
+                    
+                    // Получаем системного пользователя
+                    const systemUserResult = await pool.query(
+                        'SELECT id FROM users WHERE username = $1 AND is_system_user = true',
+                        ['1337community']
+                    );
+
+                    if (systemUserResult.rows.length > 0) {
+                        const systemUserId = systemUserResult.rows[0].id;
+                        
+                        // Создаем сообщение об успешном принятии приглашения
+                        await pool.query(`
+                            INSERT INTO messages (chat_id, sender_id, content, message_type, metadata)
+                            VALUES ($1, $2, $3, $4, $5)
+                        `, [
+                            chatId,
+                            systemUserId,
+                            notificationMessage,
+                            'system_notification',
+                            JSON.stringify({
+                                type: 'admin_invitation_accepted',
+                                tournament_id: invitation.tournament_id,
+                                new_admin_id: userId,
+                                inviter_id: invitation.inviter_id
+                            })
+                        ]);
+
+                        // Отправляем через WebSocket
+                        if (global.io) {
+                            global.io.to(`chat_${chatId}`).emit('message', {
+                                chat_id: chatId,
+                                sender_id: systemUserId,
+                                content: notificationMessage,
+                                message_type: 'system_notification',
+                                created_at: new Date().toISOString()
+                            });
+                        }
+                    }
+                }
+
+                res.json({
+                    success: true,
+                    message: `Вы успешно стали администратором турнира "${invitation.tournament_name}"`,
+                    tournament_id: invitation.tournament_id,
+                    tournament_name: invitation.tournament_name
+                });
+            } else {
+                res.json({
+                    success: true,
+                    message: 'Приглашение успешно принято'
+                });
+            }
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Не удалось принять приглашение. Возможно, оно уже обработано или истекло.'
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка при принятии приглашения администратора:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при принятии приглашения',
+            error: error.message
+        });
+    }
+});
+
+// 🆕 API endpoint для отклонения приглашения администратора
+router.post('/admin-invitations/:id/decline', authenticateToken, async (req, res) => {
+    try {
+        const invitationId = parseInt(req.params.id);
+        const userId = req.user.id;
+
+        console.log('❌ Отклонение приглашения администратора:', { invitationId, userId });
+
+        // Используем функцию из базы данных для отклонения приглашения
+        const result = await pool.query(
+            'SELECT decline_admin_invitation($1, $2) as success',
+            [invitationId, userId]
+        );
+
+        if (result.rows[0].success) {
+            // Получаем информацию о приглашении для уведомления
+            const invitationInfo = await pool.query(`
+                SELECT ai.*, t.name as tournament_name, 
+                       inviter.username as inviter_username,
+                       invitee.username as invitee_username
+                FROM admin_invitations ai
+                JOIN tournaments t ON ai.tournament_id = t.id
+                JOIN users inviter ON ai.inviter_id = inviter.id
+                JOIN users invitee ON ai.invitee_id = invitee.id
+                WHERE ai.id = $1
+            `, [invitationId]);
+
+            if (invitationInfo.rows.length > 0) {
+                const invitation = invitationInfo.rows[0];
+                
+                // Отправляем уведомление приглашающему об отклонении
+                const notificationMessage = `😔 ${invitation.invitee_username} отклонил приглашение стать администратором турнира "${invitation.tournament_name}"`;
+                
+                // Находим чат турнира для отправки уведомления
+                const chatResult = await pool.query(
+                    'SELECT id FROM chats WHERE name = $1 AND type = $2',
+                    [invitation.tournament_name, 'group']
+                );
+
+                if (chatResult.rows.length > 0) {
+                    const chatId = chatResult.rows[0].id;
+                    
+                    // Получаем системного пользователя
+                    const systemUserResult = await pool.query(
+                        'SELECT id FROM users WHERE username = $1 AND is_system_user = true',
+                        ['1337community']
+                    );
+
+                    if (systemUserResult.rows.length > 0) {
+                        const systemUserId = systemUserResult.rows[0].id;
+                        
+                        // Создаем сообщение об отклонении приглашения
+                        await pool.query(`
+                            INSERT INTO messages (chat_id, sender_id, content, message_type, metadata)
+                            VALUES ($1, $2, $3, $4, $5)
+                        `, [
+                            chatId,
+                            systemUserId,
+                            notificationMessage,
+                            'system_notification',
+                            JSON.stringify({
+                                type: 'admin_invitation_declined',
+                                tournament_id: invitation.tournament_id,
+                                declined_by: userId,
+                                inviter_id: invitation.inviter_id
+                            })
+                        ]);
+
+                        // Отправляем через WebSocket
+                        if (global.io) {
+                            global.io.to(`chat_${chatId}`).emit('message', {
+                                chat_id: chatId,
+                                sender_id: systemUserId,
+                                content: notificationMessage,
+                                message_type: 'system_notification',
+                                created_at: new Date().toISOString()
+                            });
+                        }
+                    }
+                }
+
+                res.json({
+                    success: true,
+                    message: `Приглашение в администраторы турнира "${invitation.tournament_name}" отклонено`,
+                    tournament_id: invitation.tournament_id,
+                    tournament_name: invitation.tournament_name
+                });
+            } else {
+                res.json({
+                    success: true,
+                    message: 'Приглашение успешно отклонено'
+                });
+            }
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Не удалось отклонить приглашение. Возможно, оно уже обработано.'
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка при отклонении приглашения администратора:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при отклонении приглашения',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
