@@ -57,16 +57,31 @@ const TournamentInfoSection = ({ tournament, user, isCreator, isAdminOrCreator }
     // 🆕 Функция для получения читаемого статуса турнира
     const getStatusDisplayName = (status) => {
         const statusConfig = {
+            // 🔧 ИСПРАВЛЕННЫЕ СТАТУСЫ - соответствуют backend API
             'active': { label: '🟢 Активный', class: 'status-active' },
+            'in_progress': { label: '🟢 Идет', class: 'status-in-progress' },
+            'in-progress': { label: '🟢 Идет', class: 'status-in-progress' }, // Альтернативное написание
+            'completed': { label: '✅ Завершен', class: 'status-completed' },
+            
+            // 🔧 ДОПОЛНИТЕЛЬНЫЕ СТАТУСЫ (если будут добавлены в будущем)
             'upcoming': { label: '🔜 Предстоящий', class: 'status-upcoming' },
             'ongoing': { label: '🟢 Идет', class: 'status-ongoing' },
-            'in-progress': { label: '🟢 В процессе', class: 'status-in-progress' },
-            'completed': { label: '✅ Завершен', class: 'status-completed' },
             'cancelled': { label: '❌ Отменен', class: 'status-cancelled' },
-            'paused': { label: '⏸️ Приостановлен', class: 'status-paused' }
+            'paused': { label: '⏸️ Приостановлен', class: 'status-paused' },
+            'pending': { label: '⏳ Ожидание', class: 'status-pending' }
         };
         
-        return statusConfig[status] || { label: '❓ Неизвестно', class: 'status-unknown' };
+        const result = statusConfig[status] || { label: `❓ ${status || 'Неизвестно'}`, class: 'status-unknown' };
+        
+        // 🔧 ОТЛАДОЧНАЯ ИНФОРМАЦИЯ
+        console.log('🔍 getStatusDisplayName:', {
+            inputStatus: status,
+            inputType: typeof status,
+            foundConfig: !!statusConfig[status],
+            result: result
+        });
+        
+        return result;
     };
 
     // Функция для форматирования даты
