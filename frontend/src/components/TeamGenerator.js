@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api';
 import { ensureHttps } from '../utils/userHelpers';
 import './TeamGenerator.css';
@@ -373,6 +373,16 @@ const TeamGenerator = ({
     const teamsExist = tournament?.teams && tournament.teams.length > 0;
     const teamsList = teamsExist ? tournament.teams : mixedTeams;
     
+    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Мемоизируем обогащенные команды для предотвращения бесконечного рендера
+    const teamsToShow = useMemo(() => {
+        if (!teamsList || teamsList.length === 0) return [];
+        
+        return teamsList.map(team => ({
+            ...team,
+            averageRating: team.averageRating || calculateTeamAverageRating(team)
+        }));
+    }, [teamsList, calculateTeamAverageRating]);
+    
     // Отладочная информация для проверки команд
     console.log('TeamGenerator render:', {
         teamsExist,
@@ -385,16 +395,8 @@ const TeamGenerator = ({
 
     // Функция рендеринга команд (для микс турниров)
     const renderTeamsList = () => {
-        const teamsExist = mixedTeams && mixedTeams.length > 0;
-        const tournamentTeams = tournament?.teams || [];
-        
         // Если команды есть, отображаем их
-        if (teamsExist || tournamentTeams.length > 0) {
-            const teamsToShow = teamsExist ? mixedTeams : tournamentTeams.map(team => ({
-                ...team,
-                averageRating: calculateTeamAverageRating(team)
-            }));
-
+        if (teamsToShow.length > 0) {
             return (
                 <div className="teams-display">
                     {/* 🎯 ЗАГОЛОВОК С УЛУЧШЕННОЙ СТАТИСТИКОЙ */}
