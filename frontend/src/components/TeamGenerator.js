@@ -58,37 +58,31 @@ const TeamGenerator = ({
 
     // 🎯 ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ИМЕН УЧАСТНИКОВ КОМАНД (простая функция без useCallback)
     const formatMemberName = (memberName) => {
-        if (!memberName) return { displayName: 'Неизвестно', isLongName: false, isTruncated: false };
+        if (!memberName) return { displayName: 'Неизвестный игрок', originalName: '', isLongName: false, isTruncated: false };
         
-        const name = String(memberName);
-        const nameLength = name.length;
-        
-        // Если имя длиннее 13 символов - обрезаем до 13
-        const displayName = nameLength > 13 ? name.substring(0, 13) + '...' : name;
-        
-        // Если имя длиннее 9 символов - применяем уменьшенный шрифт
-        const isLongName = nameLength > 9;
-        const isTruncated = nameLength > 13;
+        const maxLength = 12;
+        const isLongName = memberName.length > maxLength;
+        const isTruncated = isLongName;
         
         return {
-            displayName,
+            displayName: isLongName ? `${memberName.substring(0, maxLength)}...` : memberName,
+            originalName: memberName,
             isLongName,
-            isTruncated,
-            originalName: name
+            isTruncated
         };
     };
 
-    // 🎯 ФУНКЦИЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
+    // 🎯 ФУНКЦИЯ ДЛЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
     const calculateTeamAverageRating = useCallback((team) => {
-        if (!team.members || team.members.length === 0) return 0;
+        if (!team?.members || team.members.length === 0) return 0;
         
         const ratings = team.members.map(member => {
             if (ratingType === 'faceit') {
-                return parseInt(member.faceit_elo) || 1000; // Базовый рейтинг FACEIT
+                return parseInt(member.faceit_elo) || 1000;
             } else {
-                return parseInt(member.cs2_premier_rank || member.premier_rank) || 5; // Базовый ранг CS2
+                return parseInt(member.cs2_premier_rank || member.premier_rank) || 5;
             }
-        }).filter(rating => rating > 0);
+        }).filter(rating => !isNaN(rating));
         
         if (ratings.length === 0) return 0;
         
@@ -96,29 +90,24 @@ const TeamGenerator = ({
         return Math.round(average);
     }, [ratingType]);
 
+    // 🆕 ЭФФЕКТ ДЛЯ СОХРАНЕНИЯ ratingType В localStorage
+    useEffect(() => {
+        if (tournament?.id && ratingType) {
+            localStorage.setItem(`tournament_${tournament.id}_ratingType`, ratingType);
+            console.log(`💾 Сохранен ratingType в localStorage: ${ratingType} для турнира ${tournament.id}`);
+        }
+    }, [tournament?.id, ratingType]);
+
+    // 🎯 ОПРЕДЕЛЯЕМ displayParticipants ЗДЕСЬ, чтобы избежать "used before defined"
+    const displayParticipants = originalParticipants.length > 0 ? originalParticipants : participants || [];
+
     // 🆕 ФУНКЦИЯ ПРОВЕРКИ ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ
     const canReformTeams = useCallback(() => {
-        // Базовые проверки
-        if (!tournament || !isAdminOrCreator) return false;
-        
-        // Проверка статуса турнира - должен быть 'active', но НЕ 'in_progress'
-        if (tournament.status !== 'active') return false;
-        
-        // 🔧 ИСПРАВЛЕНИЕ: Для микс турниров проверяем наличие команд в mixedTeams И/ИЛИ что турнир уже переключен в командный режим
-        const hasTeams = (mixedTeams && mixedTeams.length > 0) || 
-                         (tournament.teams && tournament.teams.length > 0) ||
-                         (tournament.format === 'mix' && tournament.participant_type === 'team'); // Добавляем условие для переключенных турниров
-        if (!hasTeams) return false;
-        
-        // Проверка что турнир микс-формата
-        if (tournament.format !== 'mix') return false;
-        
-        // Проверка что нет созданных матчей (турнир еще не начался)
-        // Это важно - если матчи созданы, переформирование может нарушить сетку
-        if (tournament.matches && tournament.matches.length > 0) return false;
-        
-        return true;
-    }, [tournament, isAdminOrCreator, mixedTeams]);
+        return isAdminOrCreator && 
+               tournament?.status === 'active' && 
+               mixedTeams.length > 0 && 
+               displayParticipants.length >= 2;
+    }, [isAdminOrCreator, tournament?.status, mixedTeams.length, displayParticipants.length]);
 
     // 🆕 ФУНКЦИЯ ПОЛУЧЕНИЯ ТЕКСТА О СОСТОЯНИИ УЧАСТНИКОВ
     const getParticipantsStatusText = useCallback(() => {
@@ -137,9 +126,6 @@ const TeamGenerator = ({
         
         return ` (${inTeam.length} в командах)`;
     }, [originalParticipants, participants]);
-
-    // 🎯 ОПРЕДЕЛЯЕМ displayParticipants ЗДЕСЬ, чтобы избежать "used before defined"
-    const displayParticipants = originalParticipants.length > 0 ? originalParticipants : participants || [];
 
     // 🆕 СОСТОЯНИЕ ДЛЯ ОТСЛЕЖИВАНИЯ ПРОЦЕССА ПЕРЕФОРМИРОВАНИЯ
     const [isReforming, setIsReforming] = useState(false);
@@ -199,20 +185,7 @@ const TeamGenerator = ({
             
             console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
         }
-
-        // Загружаем оригинальных участников, если это микс турнир и участники не загружены
-        if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
-            fetchOriginalParticipants();
-        }
-    }, [tournament?.id, tournament?.team_size, isReforming, fetchOriginalParticipants]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
-
-    // 🆕 ЭФФЕКТ ДЛЯ СОХРАНЕНИЯ ratingType В localStorage
-    useEffect(() => {
-        if (tournament?.id && ratingType) {
-            localStorage.setItem(`tournament_${tournament.id}_ratingType`, ratingType);
-            console.log(`💾 Сохранен ratingType в localStorage: ${ratingType} для турнира ${tournament.id}`);
-        }
-    }, [tournament?.id, ratingType]);
+    }, [tournament?.id, tournament?.team_size, isReforming]);
 
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
@@ -272,6 +245,38 @@ const TeamGenerator = ({
             setLoadingParticipants(false);
         }
     }, [tournament?.id, shouldMakeRequest]); // 🔧 ИСПРАВЛЕНО: убран toast из зависимостей
+
+    // 🔧 ПЕРЕМЕЩЕННЫЙ ЭФФЕКТ: Основной эффект для загрузки данных
+    useEffect(() => {
+        // Загружаем команды при изменении турнира
+        if (tournament && tournament.id) {
+            const teamsExist = tournament.teams && tournament.teams.length > 0;
+            
+            if (teamsExist) {
+                console.log('✅ Команды найдены в турнире, используем их');
+                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
+                const enrichedTeams = tournament.teams.map(team => ({
+                    ...team,
+                    averageRating: calculateTeamAverageRating(team)
+                }));
+                setMixedTeams(enrichedTeams);
+            } else {
+                console.log('📥 Команды не найдены, загружаем с сервера');
+                fetchTeams();
+            }
+        }
+
+        // 🆕 ИСПРАВЛЕНИЕ: Проверяем нужно ли уведомить о командах
+        if (tournament && tournament.teams && tournament.teams.length > 0 && onTeamsGenerated) {
+            // Только если команды есть и мы ещё не уведомляли
+            console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
+        }
+
+        // Загружаем оригинальных участников, если это микс турнир и участники не загружены
+        if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
+            fetchOriginalParticipants();
+        }
+    }, [tournament?.id, tournament?.team_size, isReforming, fetchOriginalParticipants, fetchTeams, calculateTeamAverageRating, originalParticipants.length, onTeamsGenerated]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
 
     // Функция для обновления размера команды на сервере
     const updateTeamSize = async (newSize) => {

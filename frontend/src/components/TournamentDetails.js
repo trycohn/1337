@@ -27,7 +27,6 @@ import useTournamentManagement from '../hooks/tournament/useTournamentManagement
 import './TournamentDetails.css';
 
 // Компоненты
-import TeamGenerator from './TeamGenerator';
 import TournamentInfoSection from './TournamentInfoSection';
 import MatchResultModal from './tournament/modals/MatchResultModal';
 import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
@@ -145,7 +144,7 @@ function TournamentDetails() {
 
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
-
+    
     // Состояния для модальных окон (упрощенная версия без хука)
     const [modals, setModals] = useState({
         addParticipant: false,
@@ -167,13 +166,13 @@ function TournamentDetails() {
         faceit_elo: '',
         cs2_premier_rank: ''
     });
-
+    
     const [matchResultData, setMatchResultData] = useState({
         score1: 0,
         score2: 0,
         maps_data: []
     });
-
+    
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState(null);
 
     // Рефы
@@ -264,7 +263,7 @@ function TournamentDetails() {
                         
                         setLoading(false);
                         return;
-                    } else {
+                } else {
                         console.warn('⚠️ Кешированные данные невалидны:', validation.error);
                         localStorage.removeItem(cacheKey);
                         localStorage.removeItem(cacheTimestampKey);
@@ -304,9 +303,9 @@ function TournamentDetails() {
             // Очищаем поврежденный кеш
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheTimestampKey);
-        } finally {
-            setLoading(false);
-        }
+            } finally {
+                setLoading(false);
+            }
     }, [id, handleAuthError]);
 
     // Загрузка карт для игры
@@ -372,7 +371,7 @@ function TournamentDetails() {
                     [gameName]: defaultMaps,
                     [`${gameName}_loading`]: false
                 }));
-            } else {
+        } else {
                 setAvailableMaps(prev => ({
                     ...prev,
                     [gameName]: [],
@@ -576,7 +575,7 @@ function TournamentDetails() {
 
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token');
             
             if (!token) {
                 throw new Error('Отсутствует токен авторизации');
@@ -710,9 +709,9 @@ function TournamentDetails() {
                                                 if (match === null || match === undefined) {
                                                     console.log('🎯 Выбран матч: null/undefined - снимаем выделение');
                                                     setSelectedMatch(null);
-                                                    return;
-                                                }
-                                                
+            return;
+        }
+        
                                                 const matchId = typeof match === 'object' && match !== null ? match.id : match;
                                                 console.log('🎯 Выбран матч ID:', matchId, 'из объекта:', match);
                                                 
@@ -761,7 +760,7 @@ function TournamentDetails() {
                                                 if (match && match.id) {
                                                     setSelectedMatchForDetails(match);
                                                     openModal('matchDetails');
-                                                } else {
+        } else {
                                                     console.warn('⚠️ onMatchClick: некорректный объект матча:', match);
                                                 }
                                             }}
@@ -957,18 +956,18 @@ function TournamentDetails() {
                                             </div>
                                         );
                                     })}
-                            </div>
+                </div>
                         ) : (
                             <div className="empty-state">
                                 <p>📋 Результаты матчей пока отсутствуют</p>
                                 <p className="text-muted">Результаты появятся после проведения матчей</p>
                             </div>
                         )}
-                    </div>
-                );
+            </div>
+        );
 
             case 'management':
-                return (
+        return (
                     <div className="tab-content-management">
                         {isAdminOrCreator ? (
                             <TournamentAdminPanel
@@ -1002,10 +1001,10 @@ function TournamentDetails() {
                             <div className="access-denied">
                                 <h3>🔒 Доступ ограничен</h3>
                                 <p>Эта секция доступна только администраторам и создателю турнира.</p>
-                            </div>
+                </div>
                         )}
-                    </div>
-                );
+            </div>
+        );
 
             default:
                 return <div>Неизвестная вкладка</div>;
@@ -1053,7 +1052,7 @@ function TournamentDetails() {
             console.log('⏳ Отложена инициализация WebSocket: нет пользователя или ID турнира');
             return;
         }
-
+        
         const token = localStorage.getItem('token');
         if (!token) {
             console.log('⏳ Отсутствует токен для WebSocket подключения');
@@ -1237,13 +1236,13 @@ function TournamentDetails() {
 
     // Обработка ошибок загрузки
     if (loading) {
-        return (
+                        return (
             <div className="tournament-loading" data-testid="tournament-loading">
                 <div className="loading-content">
                     <h2>🔄 Загрузка турнира...</h2>
                     <p>Пожалуйста, подождите</p>
                 </div>
-            </div>
+                                            </div>
         );
     }
 
@@ -1253,7 +1252,7 @@ function TournamentDetails() {
                 <div className="auth-error-message">
                     <h2>⚠️ Ошибка загрузки турнира</h2>
                     <p>{error}</p>
-                    <button 
+                                                        <button 
                         className="auth-error-button" 
                         onClick={() => {
                             setError(null);
@@ -1261,9 +1260,9 @@ function TournamentDetails() {
                         }}
                     >
                         🔄 Попробовать снова
-                    </button>
-                </div>
-            </div>
+                                                        </button>
+                                                    </div>
+                                            </div>
         );
     }
 
@@ -1273,7 +1272,7 @@ function TournamentDetails() {
                 <h2>❓ Турнир не найден</h2>
                 <p>Турнир с указанным ID не существует или был удален.</p>
                 <button onClick={() => navigate('/')}>🏠 На главную</button>
-            </div>
+                                                        </div>
         );
     }
 
@@ -1286,58 +1285,58 @@ function TournamentDetails() {
                         {/* Заголовок турнира */}
                         <div className="tournament-header-tournamentdetails">
                             <h2 data-testid="tournament-title">{tournament.name}</h2>
-                        </div>
+                                </div>
 
                         {/* 🆕 Навигация по вкладкам */}
                         <div className="tabs-navigation-tournamentdetails">
-                            <button 
+                                                        <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
                                 onClick={() => switchTab('info')}
-                            >
+                                                        >
                                 <span className="tab-label-tournamentdetails">📋 Главная</span>
-                            </button>
+                                                        </button>
                             
                             {shouldShowParticipantsTab && (
-                                <button 
+                                                            <button 
                                     className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
                                     onClick={() => switchTab('participants')}
-                                >
+                                                            >
                                     <span className="tab-label-tournamentdetails">👥 Участники</span>
-                                </button>
+                                                            </button>
                             )}
                             
-                            <button 
+                                            <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
                                 onClick={() => switchTab('bracket')}
-                            >
+                                            >
                                 <span className="tab-label-tournamentdetails">🏆 Сетка</span>
-                            </button>
+                                            </button>
                             
-                            <button 
+                                            <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'results' ? 'active' : ''}`}
                                 onClick={() => switchTab('results')}
-                            >
+                                            >
                                 <span className="tab-label-tournamentdetails">📊 Результаты</span>
-                            </button>
+                                            </button>
                             
                             {isAdminOrCreator && (
-                                <button 
+                                        <button 
                                     className={`tab-button-tournamentdetails ${activeTab === 'management' ? 'active' : ''}`}
                                     onClick={() => switchTab('management')}
-                                >
+                                        >
                                     <span className="tab-label-tournamentdetails">⚙️ Управление</span>
-                                </button>
-                            )}
-                        </div>
+                                        </button>
+                                    )}
+                                </div>
 
                         {/* 🆕 Контент вкладок */}
                         <div className="tournament-content-tournamentdetails">
-                            <div className="tab-content-tournamentdetails">
+                        <div className="tab-content-tournamentdetails">
                                 {renderTabContent()}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                        </div>
+                                        </div>
+                                                                </div>
+                                                                </div>
 
                 {/* Модальные окна */}
                 {modals.addParticipant && (
@@ -1347,12 +1346,12 @@ function TournamentDetails() {
                         newParticipantData={newParticipantData}
                         setNewParticipantData={setNewParticipantData}
                         onSubmit={() => {}}
-                        isLoading={false}
+                                isLoading={false}
                     />
                 )}
 
                 {modals.participantSearch && (
-                    <ParticipantSearchModal
+                <ParticipantSearchModal
                         isOpen={modals.participantSearch}
                         onClose={() => closeModal('participantSearch')}
                         onInvite={() => {}}
@@ -1361,25 +1360,25 @@ function TournamentDetails() {
                         searchResults={[]}
                         isSearching={false}
                         onSearch={() => {}}
-                        existingParticipants={tournament.participants || []}
-                    />
+                    existingParticipants={tournament.participants || []}
+                />
                 )}
 
                 {modals.matchResult && selectedMatch && (
-                    <MatchResultModal
+                <MatchResultModal
                         isOpen={modals.matchResult}
                         onClose={() => closeModal('matchResult')}
                         selectedMatch={selectedMatch}
                         matchResultData={matchResultData}
                         setMatchResultData={setMatchResultData}
-                        onSave={saveMatchResult}
+                    onSave={saveMatchResult}
                         isLoading={loading}
                         tournament={tournament}
                     />
                 )}
 
                 {modals.matchDetails && selectedMatchForDetails && (
-                    <MatchDetailsModal
+                <MatchDetailsModal
                         isOpen={modals.matchDetails}
                         onClose={() => closeModal('matchDetails')}
                         selectedMatch={selectedMatchForDetails}
@@ -1388,24 +1387,24 @@ function TournamentDetails() {
                             closeModal('matchDetails');
                             setSelectedMatch(selectedMatchForDetails);
                             openModal('matchResult');
-                        }}
-                        tournament={tournament}
+                    }}
+                    tournament={tournament}
                     />
                 )}
 
                 {/* 🆕 Модальное окно поиска администраторов */}
                 {adminSearchModal && (
-                    <ParticipantSearchModal
+                <ParticipantSearchModal
                         isOpen={adminSearchModal}
                         onClose={closeAdminSearchModal}
                         mode="admin"
-                        onInviteAdmin={inviteAdmin}
+                    onInviteAdmin={inviteAdmin}
                         searchQuery={adminSearchQuery}
                         setSearchQuery={setAdminSearchQuery}
                         searchResults={adminSearchResults}
                         isSearching={isSearchingAdmins}
                         onSearch={searchAdmins}
-                        existingAdmins={tournament?.admins || []}
+                    existingAdmins={tournament?.admins || []}
                         existingParticipants={[]} // Не нужно для режима админов
                     />
                 )}
@@ -1435,4 +1434,4 @@ function TournamentDetails() {
     );
 }
 
-export default TournamentDetails; 
+export default TournamentDetails;
