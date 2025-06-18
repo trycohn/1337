@@ -477,6 +477,10 @@ const useTournamentManagement = (tournamentId) => {
         regenerateBracket,
         saveMatchResult,
         
+        // 🆕 ALIAS-ФУНКЦИИ ДЛЯ СОВМЕСТИМОСТИ
+        inviteParticipant: addRegisteredParticipant, // Алиас для приглашения зарегистрированного пользователя
+        addUnregisteredParticipant: addGuestParticipant, // Алиас для добавления незарегистрированного участника
+        
         // Утилиты
         checkAccess,
         clearError,

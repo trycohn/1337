@@ -36,6 +36,9 @@ import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
 import UnifiedParticipantsPanel from './tournament/UnifiedParticipantsPanel';
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
+import TournamentParticipants from './tournament/TournamentParticipants';
+import TournamentWinners from './tournament/TournamentWinners';
+import TournamentChat from './TournamentChat';
 
 // Контекст
 import { useUser } from '../context/UserContext';
@@ -117,55 +120,6 @@ const validateParticipantData = (participant) => {
     }
     return participant.id && (participant.name || participant.username);
 };
-
-// Компонент призеров турнира
-const TournamentWinners = React.memo(({ tournament }) => {
-    if (tournament.status !== 'completed' || !tournament.winners) {
-        return null;
-    }
-
-    const winners = Array.isArray(tournament.winners) ? tournament.winners : [];
-    
-    if (winners.length === 0) {
-        return null;
-    }
-
-    return (
-        <div className="winners-section">
-            <h3>🏆 Призеры турнира</h3>
-            <div className="winners-podium">
-                {winners.slice(0, 3).map((winner, index) => (
-                    <div key={winner.id || index} className={`winner-card place-${index + 1}`}>
-                        <div className="medal-icon">
-                            {index === 0 && <span className="gold-medal">🥇</span>}
-                            {index === 1 && <span className="silver-medal">🥈</span>}
-                            {index === 2 && <span className="bronze-medal">🥉</span>}
-                        </div>
-                        <div className="winner-info">
-                            {winner.avatar_url && (
-                                <img 
-                                    src={ensureHttps(winner.avatar_url)} 
-                                    alt={`Призер ${index + 1}`}
-                                    className="winner-avatar"
-                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                />
-                            )}
-                            <div className="winner-name">
-                                {winner.user_id ? (
-                                    <Link to={`/user/${winner.user_id}`} target="_blank" rel="noopener noreferrer">
-                                        {winner.name || winner.username || 'Участник'}
-                                    </Link>
-                                ) : (
-                                    <span>{winner.name || winner.username || 'Участник'}</span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-});
 
 // Основной компонент
 function TournamentDetails() {
@@ -839,51 +793,14 @@ function TournamentDetails() {
             case 'participants':
                 return (
                     <div className="tab-content-participants">
-                        <h3>👥 Участники турнира</h3>
-                        
-                        {/* Панель участников - скрываем для микс-турниров с сформированными командами */}
-                        {!(tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) && (
-                            <UnifiedParticipantsPanel
-                                tournament={tournament}
-                                participants={tournament.participants || []}
-                                matches={matches}
-                                mixedTeams={tournament.teams || []}
-                                isCreatorOrAdmin={isAdminOrCreator}
-                                user={user}
-                                onRemoveParticipant={() => {}}
-                                onShowAddParticipantModal={() => openModal('addParticipant')}
-                                onShowParticipantSearchModal={() => openModal('participantSearch')}
-                                onTeamsGenerated={handleTeamsGenerated}
-                                onTeamsUpdated={() => {}}
-                                calculateTeamAverageRating={() => 0}
-                                setRatingType={() => {}}
-                                userPermissions={{}}
-                                handleParticipate={() => {}}
-                                setMessage={setMessage}
-                            />
-                        )}
-
-                        {/* Генератор команд для микс-турниров */}
-                        {tournament.format === 'mix' && (
-                            <TeamGenerator
-                                tournament={tournament}
-                                participants={tournament.teams && tournament.teams.length > 0 ? [] : originalParticipants}
-                                onTeamsGenerated={handleTeamsGenerated}
-                                onTeamsUpdated={() => {}}
-                                onRemoveParticipant={() => {}}
-                                isAdminOrCreator={isAdminOrCreator}
-                            />
-                        )}
-
-                        {/* Сообщение для микс-турниров с сформированными командами */}
-                        {tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0 && (
-                            <div className="teams-formed-notice">
-                                <div className="notice-content">
-                                    <h4>✅ Команды сформированы</h4>
-                                    <p>Участники распределены по командам. Список участников теперь доступен в генераторе команд.</p>
-                                </div>
-                            </div>
-                        )}
+                        <TournamentParticipants
+                            tournament={tournament}
+                            user={user}
+                            isAdminOrCreator={isAdminOrCreator}
+                            originalParticipants={originalParticipants}
+                            onTeamsGenerated={handleTeamsGenerated}
+                            onTournamentUpdate={fetchTournamentData}
+                        />
                     </div>
                 );
 

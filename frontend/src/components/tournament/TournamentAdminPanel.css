@@ -614,14 +614,10 @@
     transform: translateY(-1px);
 }
 .admin-item.creator {
-    background: linear-gradient(135deg, #ffd700, #ffed4a);
-    border-color: #ffd700;
-    color: #333333;
+    color: #ffffff;
 }
 .admin-item.creator:hover {
-    background: linear-gradient(135deg, #ffed4a, #ffd700);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 .admin-info {
     display: flex;
