@@ -197,8 +197,6 @@ const TeamGenerator = ({
             
             setMixedTeams(enrichedTeams);
             
-            // 🎯 НЕ ВЫЗЫВАЕМ onTeamsGenerated для уже существующих команд
-            // так как это приводит к бесконечному циклу перезагрузки
             console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
         }
 
@@ -206,16 +204,7 @@ const TeamGenerator = ({
         if (tournament && tournament.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
             fetchOriginalParticipants();
         }
-
-        // Отладочная информация по командам
-        console.log('TeamGenerator useEffect:', {
-            tournamentTeams: tournament?.teams,
-            hasTeams: tournament?.teams && tournament.teams.length > 0,
-            participantType: tournament?.participant_type,
-            mixedTeamsLength: mixedTeams.length,
-            isReforming: isReforming // 🆕 Добавлена диагностика процесса переформирования
-        });
-    }, [tournament?.id, tournament?.participant_type, tournament?.format, participants?.length, ratingType, isReforming]); // 🆕 Добавляем isReforming в зависимости
+    }, [tournament?.id, tournament?.team_size, isReforming, fetchOriginalParticipants]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
 
     // 🆕 ЭФФЕКТ ДЛЯ СОХРАНЕНИЯ ratingType В localStorage
     useEffect(() => {
@@ -242,19 +231,13 @@ const TeamGenerator = ({
                 
                 setMixedTeams(enrichedTeams);
                 
-                // 🎯 ВЫЗЫВАЕМ onTeamsGenerated ТОЛЬКО если команды были ВПЕРВЫЕ загружены
-                // Проверяем что текущие команды пустые (это первая загрузка)
-                if (mixedTeams.length === 0 && onTeamsGenerated) {
-                    console.log('fetchTeams: вызываем onTeamsGenerated с загруженными командами (первая загрузка)', enrichedTeams);
-                    onTeamsGenerated(enrichedTeams);
-                } else {
-                    console.log('fetchTeams: команды обновлены без вызова onTeamsGenerated (предотвращение цикла)');
-                }
+                // 🎯 НЕ ВЫЗЫВАЕМ onTeamsGenerated для предотвращения циклов
+                console.log('fetchTeams: команды обновлены без вызова onTeamsGenerated (предотвращение цикла)');
             }
         } catch (error) {
             console.error('❌ Ошибка загрузки команд:', error);
         }
-    }, [tournament?.id, calculateTeamAverageRating, mixedTeams.length]); // Добавляем mixedTeams.length для проверки
+    }, [tournament?.id, calculateTeamAverageRating]); // 🔧 УБИРАЕМ mixedTeams.length ИЗ ЗАВИСИМОСТЕЙ
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
@@ -284,13 +267,11 @@ const TeamGenerator = ({
             }
         } catch (error) {
             console.error('Ошибка при загрузке оригинальных участников:', error);
-            if (toast) {
-                toast.error('Не удалось загрузить список участников');
-            }
+            // 🔧 НЕ ИСПОЛЬЗУЕМ TOAST В ЗАВИСИМОСТЯХ
         } finally {
             setLoadingParticipants(false);
         }
-    }, [tournament?.id]); // ИСПРАВЛЕНО: убран toast из зависимостей
+    }, [tournament?.id, shouldMakeRequest]); // 🔧 ИСПРАВЛЕНО: убран toast из зависимостей
 
     // Функция для обновления размера команды на сервере
     const updateTeamSize = async (newSize) => {
@@ -407,18 +388,6 @@ const TeamGenerator = ({
     const renderTeamsList = () => {
         const teamsExist = mixedTeams && mixedTeams.length > 0;
         const tournamentTeams = tournament?.teams || [];
-        
-        console.log('TeamGenerator render:', {
-            teamsExist,
-            tournamentTeams,
-            mixedTeamsLength: mixedTeams.length,
-            teamsListLength: tournamentTeams.length,
-            shouldShowTeams: teamsExist || tournamentTeams.length > 0,
-            onTeamsGeneratedExists: !!onTeamsGenerated
-        });
-
-        // 🎯 УБИРАЕМ ДУБЛИРУЮЩИЙ ВЫЗОВ onTeamsGenerated ИЗ РЕНДЕРА
-        // Вызовы onTeamsGenerated должны происходить только в useEffect и при генерации новых команд
         
         // Если команды есть, отображаем их
         if (teamsExist || tournamentTeams.length > 0) {
