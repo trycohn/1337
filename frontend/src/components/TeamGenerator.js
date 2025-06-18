@@ -185,27 +185,6 @@ const TeamGenerator = ({
         }
     }, [tournament?.id, tournament?.team_size, tournament?.teams, mixedTeams.length, ratingType, isReforming]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
 
-    // 🔧 ПЕРЕМЕЩЕННЫЙ ЭФФЕКТ: Основной эффект для загрузки данных
-    useEffect(() => {
-        // Загружаем команды при изменении турнира
-        if (tournament && tournament.id) {
-            const teamsExist = tournament.teams && tournament.teams.length > 0;
-            
-            if (teamsExist) {
-                console.log('✅ Команды найдены в турнире, используем их');
-                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
-                const enrichedTeams = tournament.teams.map(team => ({
-                    ...team,
-                    averageRating: calculateTeamAverageRating(team)
-                }));
-                setMixedTeams(enrichedTeams);
-            }
-            // 🔧 УБИРАЕМ ВЫЗОВ fetchTeams - теперь в отдельном useEffect
-        }
-
-        // 🔧 УБИРАЕМ ЗАГРУЗКУ УЧАСТНИКОВ - теперь в отдельном useEffect
-    }, [tournament?.id, tournament?.team_size, isReforming]); // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: убираем все функции из зависимостей
-
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
         if (!tournament?.id) return;
@@ -215,10 +194,25 @@ const TeamGenerator = ({
             if (response.data && Array.isArray(response.data)) {
                 console.log('Загруженные команды турнира:', response.data);
                 
-                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
+                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ БЕЗ ЗАВИСИМОСТИ ОТ calculateTeamAverageRating
                 const enrichedTeams = response.data.map(team => ({
                     ...team,
-                    averageRating: calculateTeamAverageRating(team)
+                    averageRating: team.averageRating || (() => {
+                        if (!team.members || team.members.length === 0) return 0;
+                        
+                        const ratings = team.members.map(member => {
+                            if (ratingType === 'faceit') {
+                                return parseInt(member.faceit_elo) || 1000;
+                            } else {
+                                return parseInt(member.cs2_premier_rank || member.premier_rank) || 5;
+                            }
+                        }).filter(rating => rating > 0);
+                        
+                        if (ratings.length === 0) return 0;
+                        
+                        const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+                        return Math.round(average);
+                    })()
                 }));
                 
                 setMixedTeams(enrichedTeams);
@@ -229,7 +223,7 @@ const TeamGenerator = ({
         } catch (error) {
             console.error('❌ Ошибка загрузки команд:', error);
         }
-    }, [tournament?.id, calculateTeamAverageRating]);
+    }, [tournament?.id, ratingType]); // 🔧 УБИРАЕМ calculateTeamAverageRating ИЗ ЗАВИСИМОСТЕЙ
 
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
@@ -276,7 +270,7 @@ const TeamGenerator = ({
         if (tournament?.id && tournament.participant_type === 'team' && tournament.format === 'mix' && originalParticipants.length === 0) {
             fetchOriginalParticipants();
         }
-    }, [fetchOriginalParticipants, tournament?.id, tournament?.participant_type, tournament?.format, originalParticipants.length, tournament, calculateTeamAverageRating]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
+    }, [fetchOriginalParticipants, tournament?.id, tournament?.participant_type, tournament?.format, originalParticipants.length]); // 🔧 УБИРАЕМ calculateTeamAverageRating ИЗ ЗАВИСИМОСТЕЙ
 
     // Функция для обновления размера команды на сервере
     const updateTeamSize = useCallback(async (newSize) => {
@@ -383,16 +377,6 @@ const TeamGenerator = ({
         }));
     }, [teamsList, calculateTeamAverageRating]);
     
-    // Отладочная информация для проверки команд
-    console.log('TeamGenerator render:', {
-        teamsExist,
-        tournamentTeams: tournament?.teams,
-        mixedTeamsLength: mixedTeams.length,
-        teamsListLength: teamsList.length,
-        shouldShowTeams: teamsExist || teamsList.length > 0,
-        participantsCount: displayParticipants.length
-    });
-
     // Функция рендеринга команд (для микс турниров)
     const renderTeamsList = () => {
         // Если команды есть, отображаем их
