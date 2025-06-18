@@ -162,7 +162,7 @@
 
 /* 🆕 Администраторы турнира */
 .meta-item.admins-meta {
-    grid-column: span 1;
+    grid-column: span 2;
 }
 
 .admins-list {
@@ -303,6 +303,7 @@
     background: #111111;
     border: 1px solid #1a1a1a;
     border-radius: 8px;
+    width: 100%;
 }
 
 .description-block {
