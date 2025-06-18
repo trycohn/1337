@@ -319,35 +319,37 @@ const useTournamentManagement = (tournamentId) => {
 
             console.log('👑 Ответ сервера на приглашение администратора:', response.data);
 
-            // Backend возвращает объект с message, но без success флага
+            // 🔧 ОБНОВЛЕННАЯ ОБРАБОТКА: поддержка повторных приглашений
+            const message = response.data.message || 'Приглашение отправлено';
+            const isResend = response.data.isResend || false;
+            const cancelledCount = response.data.cancelledInvitations || 0;
+
+            console.log('👑 Детали приглашения:', {
+                isResend,
+                cancelledCount,
+                message
+            });
+
             return {
                 success: true,
-                message: response.data.message || 'Приглашение отправлено',
-                data: response.data
+                message: message,
+                data: response.data,
+                isResend: isResend,
+                cancelledInvitations: cancelledCount
             };
         } catch (error) {
             console.error('👑 Ошибка при приглашении администратора:', error);
             
-            // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
+            // 🔧 УПРОЩЕННАЯ ОБРАБОТКА ОШИБОК (убираем специальную обработку существующих приглашений)
             let errorMessage = 'Ошибка при отправке приглашения';
             
             if (error.response?.data) {
                 const errorData = error.response.data;
-                
-                // Основное сообщение об ошибке
                 errorMessage = errorData.message || errorMessage;
                 
                 // Добавляем дополнительные детали если есть
                 if (errorData.details) {
                     errorMessage += `. ${errorData.details}`;
-                }
-                
-                // Специальная обработка для уже существующих приглашений
-                if (errorData.existingInvitationId) {
-                    console.log('🔄 Обнаружено существующее приглашение:', {
-                        invitationId: errorData.existingInvitationId,
-                        expiresAt: errorData.expiresAt
-                    });
                 }
             } else if (error.message) {
                 errorMessage = error.message;
@@ -358,7 +360,7 @@ const useTournamentManagement = (tournamentId) => {
             return {
                 success: false,
                 message: errorMessage,
-                errorData: error.response?.data // Передаем дополнительные данные об ошибке
+                errorData: error.response?.data
             };
         } finally {
             setIsLoading(false);

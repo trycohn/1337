@@ -1176,7 +1176,14 @@ function TournamentDetails() {
             const result = await tournamentManagement.inviteAdmin(userId);
             
             if (result.success) {
-                setMessage(`✅ ${userName} приглашен в администраторы турнира`);
+                // 🔧 ОБНОВЛЕННОЕ СООБЩЕНИЕ: учитываем повторные приглашения
+                let message = `✅ ${userName} приглашен в администраторы турнира`;
+                
+                if (result.isResend && result.cancelledInvitations > 0) {
+                    message = `🔄 Предыдущее приглашение отменено. ${userName} получил новое приглашение в администраторы турнира`;
+                }
+                
+                setMessage(message);
                 setAdminSearchModal(false);
                 setAdminSearchQuery('');
                 setAdminSearchResults([]);
@@ -1184,37 +1191,8 @@ function TournamentDetails() {
                 // Обновляем данные турнира
                 await fetchTournamentData();
             } else {
-                // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
+                // 🔧 УПРОЩЕННАЯ ОБРАБОТКА ОШИБОК (убираем сложную логику для повторных приглашений)
                 let errorMessage = result.message || 'Ошибка при приглашении администратора';
-                
-                // Специальная обработка для уже существующих приглашений
-                if (result.errorData?.existingInvitationId) {
-                    const expiresAt = new Date(result.errorData.expiresAt);
-                    const timeLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60)); // часы
-                    
-                    if (timeLeft > 0) {
-                        errorMessage = `${userName} уже приглашен в администраторы. Приглашение истекает через ${timeLeft} ч.`;
-                    } else {
-                        errorMessage = `Предыдущее приглашение для ${userName} истекло. Попробуйте еще раз.`;
-                        
-                        // Автоматически повторяем попытку для истекших приглашений
-                        console.log('🔄 Повторная попытка приглашения после истечения предыдущего');
-                        setTimeout(async () => {
-                            const retryResult = await tournamentManagement.inviteAdmin(userId);
-                            if (retryResult.success) {
-                                setMessage(`✅ ${userName} приглашен в администраторы турнира (повторная попытка)`);
-                                setAdminSearchModal(false);
-                                setAdminSearchQuery('');
-                                setAdminSearchResults([]);
-                                await fetchTournamentData();
-                            } else {
-                                setMessage(`❌ Не удалось пригласить ${userName}: ${retryResult.message}`);
-                            }
-                        }, 1000);
-                        return;
-                    }
-                }
-                
                 setMessage(`❌ ${errorMessage}`);
             }
         } catch (error) {

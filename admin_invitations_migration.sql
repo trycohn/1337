@@ -3,6 +3,20 @@
 -- Автор: 1337 Community Development Team
 -- Описание: Создание таблиц и функций для управления администраторами турниров
 
+-- 0. Добавление колонки is_system_user если она не существует
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'is_system_user'
+    ) THEN
+        ALTER TABLE users ADD COLUMN is_system_user BOOLEAN DEFAULT FALSE;
+        RAISE NOTICE 'Добавлена колонка is_system_user в таблицу users';
+    ELSE
+        RAISE NOTICE 'Колонка is_system_user уже существует в таблице users';
+    END IF;
+END $$;
+
 -- 1. Создание таблицы администраторов турниров
 CREATE TABLE IF NOT EXISTS tournament_admins (
     id SERIAL PRIMARY KEY,
@@ -13,32 +27,76 @@ CREATE TABLE IF NOT EXISTS tournament_admins (
     UNIQUE(tournament_id, user_id)
 );
 
--- 2. Создание таблицы приглашений администраторов
+-- 2. Обновление таблицы приглашений администраторов
+-- 2.1. Сначала удаляем старый уникальный индекс если он существует
+DO $$ 
+BEGIN
+    -- Удаляем уникальный индекс если он существует
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'admin_invitations_tournament_id_invitee_id_status_key'
+    ) THEN
+        ALTER TABLE admin_invitations DROP CONSTRAINT admin_invitations_tournament_id_invitee_id_status_key;
+        RAISE NOTICE 'Удален старый уникальный индекс admin_invitations_tournament_id_invitee_id_status_key';
+    END IF;
+END $$;
+
+-- 2.2. Создаем таблицу если не существует
 CREATE TABLE IF NOT EXISTS admin_invitations (
     id SERIAL PRIMARY KEY,
     tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
     inviter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     invitee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+    status VARCHAR(20) DEFAULT 'pending',
     expires_at TIMESTAMP NOT NULL,
     responded_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(tournament_id, invitee_id, status) -- Предотвращает дублирующие pending приглашения
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- 2.3. Обновляем ограничение статуса для поддержки нового статуса 'cancelled'
+DO $$ 
+BEGIN
+    -- Удаляем старое ограничение если существует
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'admin_invitations_status_check'
+    ) THEN
+        ALTER TABLE admin_invitations DROP CONSTRAINT admin_invitations_status_check;
+        RAISE NOTICE 'Удалено старое ограничение статуса';
+    END IF;
+    
+    -- Добавляем новое ограничение с поддержкой 'cancelled'
+    ALTER TABLE admin_invitations ADD CONSTRAINT admin_invitations_status_check 
+    CHECK (status IN ('pending', 'accepted', 'declined', 'expired', 'cancelled'));
+    
+    RAISE NOTICE 'Добавлено новое ограничение статуса с поддержкой cancelled';
+END $$;
+
 -- 3. Создание или обновление системного пользователя
-INSERT INTO users (username, email, password_hash, is_system_user, avatar_url, created_at) 
-VALUES (
-    '1337community', 
-    'system@1337community.com', 
-    '$2b$10$dummyhash', 
-    true,
-    '/api/uploads/avatars/system-logo.png',
-    NOW()
-)
-ON CONFLICT (username) DO UPDATE SET
-    is_system_user = true,
-    email = 'system@1337community.com';
+DO $$ 
+BEGIN
+    -- Проверяем существует ли пользователь
+    IF NOT EXISTS (SELECT 1 FROM users WHERE username = '1337community') THEN
+        -- Создаем нового пользователя
+        INSERT INTO users (username, email, password_hash, is_system_user, avatar_url, created_at) 
+        VALUES (
+            '1337community', 
+            'system@1337community.com', 
+            '$2b$10$dummyhash', 
+            true,
+            '/api/uploads/avatars/system-logo.png',
+            NOW()
+        );
+        RAISE NOTICE 'Создан новый системный пользователь 1337community';
+    ELSE
+        -- Обновляем существующего пользователя
+        UPDATE users SET
+            is_system_user = true,
+            email = 'system@1337community.com'
+        WHERE username = '1337community';
+        RAISE NOTICE 'Обновлен существующий пользователь 1337community';
+    END IF;
+END $$;
 
 -- 4. Создание индексов для оптимизации
 CREATE INDEX IF NOT EXISTS idx_tournament_admins_tournament_id ON tournament_admins(tournament_id);
@@ -174,6 +232,11 @@ BEGIN
         RAISE NOTICE 'Обновлено % истекших приглашений администраторов', affected_rows;
     END IF;
     
+    -- 🆕 Также очищаем старые отмененные приглашения (старше 30 дней)
+    DELETE FROM admin_invitations 
+    WHERE status = 'cancelled' 
+      AND created_at <= NOW() - INTERVAL '30 days';
+    
     RETURN affected_rows;
 END;
 $$ LANGUAGE plpgsql;
@@ -279,18 +342,7 @@ CREATE TRIGGER admin_invitation_notification_trigger
     WHEN (NEW.status = 'pending')
     EXECUTE FUNCTION send_admin_invitation_notification();
 
--- 10. Добавление колонки is_system_user если она не существует
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'users' AND column_name = 'is_system_user'
-    ) THEN
-        ALTER TABLE users ADD COLUMN is_system_user BOOLEAN DEFAULT FALSE;
-    END IF;
-END $$;
-
--- 11. Создание задачи для очистки истекших приглашений (опционально)
+-- 10. Создание задачи для очистки истекших приглашений (опционально)
 -- Можно добавить в cron или вызывать периодически
 -- SELECT update_expired_invitations();
 
