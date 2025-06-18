@@ -3785,3 +3785,101 @@ POST /api/tournaments/admin-invitations/:id/decline // Отклонение пр
 **Статус**: Готово к развертыванию на продакшене
 
 ---
+
+## ✅ Исправление ошибки повторных приглашений администраторов (22.01.2025)
+
+### **Проблема**:
+При попытке повторного приглашения пользователя в администраторы турнира возникала ошибка:
+```
+POST /api/tournaments/59/invite-admin 400 (Bad Request)
+❌ API Error: {message: 'Приглашение уже было отправлено этому пользователю'}
+```
+
+### **Причина**:
+- В таблице `admin_invitations` есть уникальный индекс `UNIQUE(tournament_id, invitee_id, status)`
+- Истекшие приглашения не очищались автоматически
+- При отклонении приглашения нельзя было отправить новое
+
+### **Исправления**:
+
+#### **Backend (tournaments.js)**:
+1. **Автоматическая очистка истекших приглашений** перед проверкой существующих
+2. **Улучшенная проверка статуса** приглашений с детальной информацией
+3. **Возможность переотправки** после отклонения или истечения
+4. **Расширенная обработка ошибок** с constraint violations
+
+```javascript
+// Очищаем истекшие приглашения
+await pool.query(
+    'UPDATE admin_invitations SET status = $1 WHERE status = $2 AND expires_at <= NOW()',
+    ['expired', 'pending']
+);
+
+// Проверяем активные приглашения с дополнительной информацией
+const existingInvitation = await pool.query(
+    'SELECT id, status, expires_at FROM admin_invitations WHERE tournament_id = $1 AND invitee_id = $2 AND status = $3',
+    [tournamentId, inviteeId, 'pending']
+);
+```
+
+#### **Frontend (useTournamentManagement.js)**:
+1. **Детальная обработка ошибок** с информацией о времени истечения
+2. **Автоматическая повторная попытка** для истекших приглашений
+3. **Улучшенные сообщения** пользователю
+
+```javascript
+// Специальная обработка для уже существующих приглашений
+if (result.errorData?.existingInvitationId) {
+    const timeLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60));
+    if (timeLeft > 0) {
+        errorMessage = `${userName} уже приглашен. Приглашение истекает через ${timeLeft} ч.`;
+    } else {
+        // Автоматически повторяем попытку
+        setTimeout(() => retryInvitation(), 1000);
+    }
+}
+```
+
+#### **Database (admin_invitations_migration.sql)**:
+1. **Функция автоматической очистки**:
+```sql
+CREATE OR REPLACE FUNCTION cleanup_expired_admin_invitations() RETURNS INTEGER AS $$
+DECLARE
+    affected_rows INTEGER;
+BEGIN
+    UPDATE admin_invitations 
+    SET status = 'expired'
+    WHERE status = 'pending' AND expires_at <= NOW();
+    
+    GET DIAGNOSTICS affected_rows = ROW_COUNT;
+    RETURN affected_rows;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+2. **Триггер автоматической очистки** при каждом новом приглашении:
+```sql
+CREATE TRIGGER auto_cleanup_trigger
+    BEFORE INSERT ON admin_invitations
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION auto_cleanup_expired_invitations();
+```
+
+#### **Новые API endpoints**:
+- `POST /admin-invitations/cleanup-expired` - ручная очистка (для админов)
+- `GET /admin-invitations/stats` - статистика приглашений
+
+### **Результат**:
+✅ **Исправлена ошибка** повторных приглашений  
+✅ **Автоматическая очистка** истекших приглашений  
+✅ **Улучшенный UX** с детальными сообщениями об ошибках  
+✅ **Возможность переотправки** после отклонения или истечения  
+✅ **Автоматическая повторная попытка** для истекших приглашений  
+
+### **Тестирование**:
+1. Отправка приглашения → ✅ Работает
+2. Повторная отправка того же приглашения → ✅ Показывает время до истечения
+3. Отправка после истечения → ✅ Автоматически создает новое
+4. Отправка после отклонения → ✅ Позволяет создать новое
+
+---

@@ -327,12 +327,38 @@ const useTournamentManagement = (tournamentId) => {
             };
         } catch (error) {
             console.error('👑 Ошибка при приглашении администратора:', error);
-            const errorMessage = error.response?.data?.message || 'Ошибка при отправке приглашения';
+            
+            // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
+            let errorMessage = 'Ошибка при отправке приглашения';
+            
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                
+                // Основное сообщение об ошибке
+                errorMessage = errorData.message || errorMessage;
+                
+                // Добавляем дополнительные детали если есть
+                if (errorData.details) {
+                    errorMessage += `. ${errorData.details}`;
+                }
+                
+                // Специальная обработка для уже существующих приглашений
+                if (errorData.existingInvitationId) {
+                    console.log('🔄 Обнаружено существующее приглашение:', {
+                        invitationId: errorData.existingInvitationId,
+                        expiresAt: errorData.expiresAt
+                    });
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
             setError(errorMessage);
             
             return {
                 success: false,
-                message: errorMessage
+                message: errorMessage,
+                errorData: error.response?.data // Передаем дополнительные данные об ошибке
             };
         } finally {
             setIsLoading(false);

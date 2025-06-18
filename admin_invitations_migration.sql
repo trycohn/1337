@@ -156,6 +156,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 🆕 7.1. Улучшенная функция очистки с возвращением количества обновленных записей
+CREATE OR REPLACE FUNCTION cleanup_expired_admin_invitations() RETURNS INTEGER AS $$
+DECLARE
+    affected_rows INTEGER;
+BEGIN
+    -- Обновляем статус истекших приглашений
+    UPDATE admin_invitations 
+    SET status = 'expired'
+    WHERE status = 'pending' 
+      AND expires_at <= NOW();
+    
+    GET DIAGNOSTICS affected_rows = ROW_COUNT;
+    
+    -- Логируем если есть обновления
+    IF affected_rows > 0 THEN
+        RAISE NOTICE 'Обновлено % истекших приглашений администраторов', affected_rows;
+    END IF;
+    
+    RETURN affected_rows;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 🆕 7.2. Функция для автоматической очистки при каждом новом приглашении (триггер)
+CREATE OR REPLACE FUNCTION auto_cleanup_expired_invitations() RETURNS TRIGGER AS $$
+BEGIN
+    -- Очищаем истекшие приглашения перед вставкой нового
+    PERFORM cleanup_expired_admin_invitations();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 🆕 7.3. Создание триггера для автоматической очистки
+DROP TRIGGER IF EXISTS auto_cleanup_trigger ON admin_invitations;
+CREATE TRIGGER auto_cleanup_trigger
+    BEFORE INSERT ON admin_invitations
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION auto_cleanup_expired_invitations();
+
 -- 8. Функция для отправки уведомления о приглашении (триггер)
 CREATE OR REPLACE FUNCTION send_admin_invitation_notification() RETURNS TRIGGER AS $$
 DECLARE

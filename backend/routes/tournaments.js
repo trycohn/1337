@@ -3364,17 +3364,55 @@ router.post('/:id/invite-admin', authenticateToken, async (req, res) => {
             return res.status(400).json({ message: 'Пользователь уже является администратором турнира' });
         }
 
-        // Проверяем, нет ли уже активного приглашения
+        // 🔧 УЛУЧШЕННАЯ ЛОГИКА: сначала очищаем истекшие приглашения
+        await pool.query(
+            'UPDATE admin_invitations SET status = $1 WHERE status = $2 AND expires_at <= NOW()',
+            ['expired', 'pending']
+        );
+
+        // 🔧 УЛУЧШЕННАЯ ЛОГИКА: проверяем существующие активные приглашения
         const existingInvitationResult = await pool.query(
-            'SELECT id FROM admin_invitations WHERE tournament_id = $1 AND invitee_id = $2 AND status = $3',
+            'SELECT id, status, expires_at FROM admin_invitations WHERE tournament_id = $1 AND invitee_id = $2 AND status = $3',
             [tournamentId, inviteeId, 'pending']
         );
 
         if (existingInvitationResult.rows.length > 0) {
-            return res.status(400).json({ message: 'Приглашение уже было отправлено этому пользователю' });
+            const existingInvitation = existingInvitationResult.rows[0];
+            
+            // Проверяем, не истекло ли приглашение
+            if (new Date(existingInvitation.expires_at) <= new Date()) {
+                // Если истекло, обновляем статус и создаем новое
+                await pool.query(
+                    'UPDATE admin_invitations SET status = $1 WHERE id = $2',
+                    ['expired', existingInvitation.id]
+                );
+                console.log(`🔄 Обновлен статус истекшего приглашения ${existingInvitation.id} на 'expired'`);
+            } else {
+                // Если не истекло, возвращаем ошибку с дополнительной информацией
+                const expiresAt = new Date(existingInvitation.expires_at);
+                const timeLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60)); // часы
+                
+                return res.status(400).json({ 
+                    message: `Приглашение уже было отправлено этому пользователю`,
+                    details: `Активное приглашение истекает через ${timeLeft} ч.`,
+                    existingInvitationId: existingInvitation.id,
+                    expiresAt: existingInvitation.expires_at
+                });
+            }
         }
 
-        // Создаем приглашение
+        // 🔧 УЛУЧШЕННАЯ ЛОГИКА: обрабатываем отклоненные приглашения
+        const declinedInvitationResult = await pool.query(
+            'SELECT id FROM admin_invitations WHERE tournament_id = $1 AND invitee_id = $2 AND status = $3',
+            [tournamentId, inviteeId, 'declined']
+        );
+
+        if (declinedInvitationResult.rows.length > 0) {
+            // Если пользователь ранее отклонил приглашение, создаем новое
+            console.log(`🔄 Пользователь ${inviteeId} ранее отклонил приглашение, создаем новое`);
+        }
+
+        // Создаем новое приглашение
         const insertResult = await pool.query(
             `INSERT INTO admin_invitations (tournament_id, inviter_id, invitee_id, status, expires_at)
              VALUES ($1, $2, $3, $4, NOW() + INTERVAL '7 days')
@@ -3389,8 +3427,14 @@ router.post('/:id/invite-admin', authenticateToken, async (req, res) => {
             tournamentId,
             req.user.id,
             'admin_invitation_sent',
-            { invitee_id: inviteeId, invitation_id: invitationId }
+            { 
+                invitee_id: inviteeId, 
+                invitation_id: invitationId,
+                is_resend: declinedInvitationResult.rows.length > 0
+            }
         );
+
+        console.log(`✅ Создано новое приглашение администратора: ID ${invitationId} для пользователя ${inviteeId} в турнир ${tournamentId}`);
 
         res.status(201).json({
             message: 'Приглашение отправлено',
@@ -3399,7 +3443,18 @@ router.post('/:id/invite-admin', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Ошибка при отправке приглашения администратора:', error);
+        console.error('❌ Ошибка при отправке приглашения администратора:', error);
+        
+        // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК: специальная обработка constraint ошибок
+        if (error.code === '23505') { // unique_violation
+            if (error.constraint && error.constraint.includes('admin_invitations')) {
+                return res.status(400).json({ 
+                    message: 'Активное приглашение для этого пользователя уже существует',
+                    details: 'Дождитесь ответа на предыдущее приглашение или его истечения'
+                });
+            }
+        }
+        
         res.status(500).json({ 
             message: 'Ошибка сервера при отправке приглашения',
             error: error.message 
@@ -3866,6 +3921,89 @@ router.post('/admin-invitations/:id/decline', authenticateToken, async (req, res
         res.status(500).json({
             success: false,
             message: 'Ошибка сервера при отклонении приглашения',
+            error: error.message
+        });
+    }
+});
+
+// 🆕 ОЧИСТКА ИСТЕКШИХ ПРИГЛАШЕНИЙ АДМИНИСТРАТОРОВ
+router.post('/admin-invitations/cleanup-expired', authenticateToken, async (req, res) => {
+    try {
+        // Проверяем, является ли пользователь администратором системы
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Доступ запрещен: требуются права администратора' });
+        }
+
+        // Обновляем статус истекших приглашений
+        const result = await pool.query(
+            'UPDATE admin_invitations SET status = $1 WHERE status = $2 AND expires_at <= NOW()',
+            ['expired', 'pending']
+        );
+
+        const expiredCount = result.rowCount;
+
+        console.log(`🧹 Очистка истекших приглашений: обновлено ${expiredCount} записей`);
+
+        res.json({
+            success: true,
+            message: `Очищено ${expiredCount} истекших приглашений`,
+            expiredCount: expiredCount
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка при очистке истекших приглашений:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при очистке истекших приглашений',
+            error: error.message
+        });
+    }
+});
+
+// 🆕 ПОЛУЧЕНИЕ СТАТИСТИКИ ПРИГЛАШЕНИЙ АДМИНИСТРАТОРОВ
+router.get('/admin-invitations/stats', authenticateToken, async (req, res) => {
+    try {
+        // Проверяем, является ли пользователь администратором системы
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Доступ запрещен: требуются права администратора' });
+        }
+
+        // Получаем статистику по приглашениям
+        const statsResult = await pool.query(`
+            SELECT 
+                status,
+                COUNT(*) as count,
+                COUNT(CASE WHEN expires_at <= NOW() THEN 1 END) as expired_count
+            FROM admin_invitations 
+            GROUP BY status
+            ORDER BY status
+        `);
+
+        const totalResult = await pool.query('SELECT COUNT(*) as total FROM admin_invitations');
+        const activeResult = await pool.query(`
+            SELECT COUNT(*) as active 
+            FROM admin_invitations 
+            WHERE status = 'pending' AND expires_at > NOW()
+        `);
+
+        res.json({
+            success: true,
+            stats: {
+                total: parseInt(totalResult.rows[0].total),
+                active: parseInt(activeResult.rows[0].active),
+                by_status: statsResult.rows.map(row => ({
+                    status: row.status,
+                    count: parseInt(row.count),
+                    expired_count: parseInt(row.expired_count)
+                }))
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка при получении статистики приглашений:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при получении статистики',
             error: error.message
         });
     }
