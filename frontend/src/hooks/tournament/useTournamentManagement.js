@@ -313,6 +313,8 @@ const useTournamentManagement = (tournamentId) => {
 
             const response = await axios.post(`/api/tournaments/${tournamentId}/invite-admin`, {
                 user_id: userId
+            }, {
+                headers: getAuthHeaders()
             });
 
             console.log('👑 Ответ сервера на приглашение администратора:', response.data);
@@ -341,7 +343,7 @@ const useTournamentManagement = (tournamentId) => {
         } finally {
             setIsLoading(false);
         }
-    }, [tournamentId]);
+    }, [tournamentId, getAuthHeaders]);
 
     // 🆕 УДАЛЕНИЕ АДМИНИСТРАТОРА
     const removeAdmin = useCallback(async (userId) => {
@@ -354,7 +356,9 @@ const useTournamentManagement = (tournamentId) => {
                 userId
             });
 
-            const response = await axios.delete(`/api/tournaments/${tournamentId}/admins/${userId}`);
+            const response = await axios.delete(`/api/tournaments/${tournamentId}/admins/${userId}`, {
+                headers: getAuthHeaders()
+            });
 
             console.log('🗑️ Ответ сервера на удаление администратора:', response.data);
 
@@ -382,7 +386,7 @@ const useTournamentManagement = (tournamentId) => {
         } finally {
             setIsLoading(false);
         }
-    }, [tournamentId]);
+    }, [tournamentId, getAuthHeaders]);
 
     // 🆕 ПРИНЯТИЕ ПРИГЛАШЕНИЯ АДМИНИСТРАТОРА (для системы чата)
     const acceptAdminInvitation = useCallback(async (invitationId) => {
