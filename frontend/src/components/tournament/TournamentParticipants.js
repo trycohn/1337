@@ -184,6 +184,20 @@ const TournamentParticipants = ({
         return () => clearTimeout(delayedSearch);
     }, [participantSearchQuery, searchParticipants]);
 
+    // 🆕 Проверка, нужно ли показывать список участников
+    const shouldShowParticipantsList = useCallback(() => {
+        if (!tournament) return false;
+        
+        // Для микс турниров скрываем оригинальный список участников в статусах "идет" и "завершен"
+        if (tournament.format === 'mix' && 
+            (tournament.status === 'in_progress' || tournament.status === 'completed')) {
+            return false;
+        }
+        
+        // Для всех остальных случаев показываем список участников
+        return true;
+    }, [tournament]);
+
     const participantsList = getParticipantsList();
 
     return (
@@ -202,98 +216,118 @@ const TournamentParticipants = ({
                 </div>
             </div>
 
-            {/* Список участников для команд */}
-            {tournament?.participant_type === 'team' && (
-                <div className="teams-list">
-                    {tournament.teams?.map((team, index) => (
-                        <div key={team.id || index} className="team-card">
-                            <div className="team-header">
-                                <div className="team-info">
-                                    <h4 className="team-name">{team.name}</h4>
-                                    <span className="team-members-count">
-                                        {team.members?.length || 0} участников
-                                    </span>
-                                </div>
-                                {isAdminOrCreator && (
-                                    <button 
-                                        className="remove-team-btn"
-                                        onClick={() => removeParticipant(team.id, team.name)}
-                                        title="Удалить команду"
-                                    >
-                                        🗑️
-                                    </button>
-                                )}
-                            </div>
-                            <div className="team-members">
-                                {team.members?.map((member, memberIndex) => (
-                                    <div key={member.id || memberIndex} className="team-member">
-                                        <div className="member-info">
-                                            {member.avatar_url && (
-                                                <img 
-                                                    src={member.avatar_url} 
-                                                    alt={member.username}
-                                                    className="member-avatar"
-                                                />
-                                            )}
-                                            <span className="member-name">{member.username}</span>
+            {/* 🆕 Условное отображение списков участников */}
+            {shouldShowParticipantsList() && (
+                <>
+                    {/* Список участников для команд */}
+                    {tournament?.participant_type === 'team' && (
+                        <div className="teams-list">
+                            {tournament.teams?.map((team, index) => (
+                                <div key={team.id || index} className="team-card">
+                                    <div className="team-header">
+                                        <div className="team-info">
+                                            <h4 className="team-name">{team.name}</h4>
+                                            <span className="team-members-count">
+                                                {team.members?.length || 0} участников
+                                            </span>
                                         </div>
-                                        <div className="member-stats">
-                                            {member.faceit_elo && (
-                                                <span className="stat">FACEIT: {member.faceit_elo}</span>
-                                            )}
-                                            {member.cs2_premier_rank && (
-                                                <span className="stat">CS2: {member.cs2_premier_rank}</span>
-                                            )}
+                                        {isAdminOrCreator && (
+                                            <button 
+                                                className="remove-team-btn"
+                                                onClick={() => removeParticipant(team.id, team.name)}
+                                                title="Удалить команду"
+                                            >
+                                                🗑️
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="team-members">
+                                        {team.members?.map((member, memberIndex) => (
+                                            <div key={member.id || memberIndex} className="team-member">
+                                                <div className="member-info">
+                                                    {member.avatar_url && (
+                                                        <img 
+                                                            src={member.avatar_url} 
+                                                            alt={member.username}
+                                                            className="member-avatar"
+                                                        />
+                                                    )}
+                                                    <span className="member-name">{member.username}</span>
+                                                </div>
+                                                <div className="member-stats">
+                                                    {member.faceit_elo && (
+                                                        <span className="stat">FACEIT: {member.faceit_elo}</span>
+                                                    )}
+                                                    {member.cs2_premier_rank && (
+                                                        <span className="stat">CS2: {member.cs2_premier_rank}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Список участников для соло турниров */}
+                    {tournament?.participant_type === 'solo' && (
+                        <div className="participants-list">
+                            {participantsList.map((participant, index) => (
+                                <div key={participant.id || index} className="participant-card">
+                                    <div className="participant-info">
+                                        {participant.avatar_url && (
+                                            <img 
+                                                src={participant.avatar_url} 
+                                                alt={participant.username || participant.name}
+                                                className="participant-avatar"
+                                            />
+                                        )}
+                                        <div className="participant-details">
+                                            <span className="participant-name">
+                                                {participant.username || participant.name || participant.display_name}
+                                            </span>
+                                            <div className="participant-stats">
+                                                {participant.faceit_elo && (
+                                                    <span className="stat">FACEIT: {participant.faceit_elo}</span>
+                                                )}
+                                                {participant.cs2_premier_rank && (
+                                                    <span className="stat">CS2: {participant.cs2_premier_rank}</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                    {isAdminOrCreator && (
+                                        <button 
+                                            className="remove-participant-btn"
+                                            onClick={() => removeParticipant(
+                                                participant.id, 
+                                                participant.username || participant.name || participant.display_name
+                                            )}
+                                            title="Удалить участника"
+                                        >
+                                            🗑️
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
 
-            {/* Список участников для соло турниров */}
-            {tournament?.participant_type === 'solo' && (
-                <div className="participants-list">
-                    {participantsList.map((participant, index) => (
-                        <div key={participant.id || index} className="participant-card">
-                            <div className="participant-info">
-                                {participant.avatar_url && (
-                                    <img 
-                                        src={participant.avatar_url} 
-                                        alt={participant.username || participant.name}
-                                        className="participant-avatar"
-                                    />
-                                )}
-                                <div className="participant-details">
-                                    <span className="participant-name">
-                                        {participant.username || participant.name || participant.display_name}
-                                    </span>
-                                    <div className="participant-stats">
-                                        {participant.faceit_elo && (
-                                            <span className="stat">FACEIT: {participant.faceit_elo}</span>
-                                        )}
-                                        {participant.cs2_premier_rank && (
-                                            <span className="stat">CS2: {participant.cs2_premier_rank}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            {isAdminOrCreator && (
-                                <button 
-                                    className="remove-participant-btn"
-                                    onClick={() => removeParticipant(
-                                        participant.id, 
-                                        participant.username || participant.name || participant.display_name
-                                    )}
-                                    title="Удалить участника"
-                                >
-                                    🗑️
-                                </button>
-                            )}
-                        </div>
-                    ))}
+            {/* 🆕 Уведомление для скрытых списков участников в микс турнирах */}
+            {!shouldShowParticipantsList() && tournament?.format === 'mix' && (
+                <div className="participants-hidden-notice">
+                    <div className="notice-content">
+                        <h4>ℹ️ Список участников скрыт</h4>
+                        <p>
+                            {tournament.status === 'in_progress' && 
+                                'Турнир в процессе. Команды уже сформированы и доступны во вкладке "Сетка".'}
+                            {tournament.status === 'completed' && 
+                                'Турнир завершен. Результаты доступны во вкладках "Сетка" и "Результаты".'}
+                        </p>
+                    </div>
                 </div>
             )}
 

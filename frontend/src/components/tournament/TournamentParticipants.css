@@ -281,6 +281,28 @@
     line-height: 1.5;
 }
 
+/* 🆕 Уведомление о скрытом списке участников */
+.participants-hidden-notice {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 24px 0;
+}
+
+.participants-hidden-notice .notice-content h4 {
+    margin: 0 0 8px 0;
+    color: #3b82f6;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.participants-hidden-notice .notice-content p {
+    margin: 0;
+    color: #888888;
+    line-height: 1.5;
+}
+
 /* Панель управления участниками */
 .participants-admin-panel {
     margin-top: 32px;
