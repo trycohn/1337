@@ -594,11 +594,38 @@ const BracketRenderer = ({
                                     {(roundMatches || []).map((match) => {
                                         const isSelected = selectedMatch === safeParseBracketId(match.id);
                                         const isCompleted = match.state === 'DONE';
+                                        
+                                        // 🏆 Определяем классы для команд-победителей и проигравших
+                                        const team1Classes = ['custom-seed'];
+                                        const team2Classes = ['custom-seed'];
+                                        
+                                        if (isSelected) {
+                                            team1Classes.push('selected');
+                                            team2Classes.push('selected');
+                                        }
+                                        
+                                        if (isCompleted && match.participants) {
+                                            const participant1 = match.participants[0];
+                                            const participant2 = match.participants[1];
+                                            
+                                            if (participant1?.isWinner) {
+                                                team1Classes.push('winner');
+                                            } else if (participant1 && !participant1.isWinner) {
+                                                team1Classes.push('loser');
+                                            }
+                                            
+                                            if (participant2?.isWinner) {
+                                                team2Classes.push('winner');
+                                            } else if (participant2 && !participant2.isWinner) {
+                                                team2Classes.push('loser');
+                                            }
+                                        }
+                                        
                                         return (
                                             <div key={match.id} className={`match-container ${isCompleted ? 'completed' : ''}`}>
                                                 <div className="match-content">
                                                     <div
-                                                        className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                        className={team1Classes.join(' ')}
                                                         onClick={(e) => {
                                                             // Если есть функция просмотра деталей матча и матч завершен
                                                             if (onMatchClick && match.state === 'DONE') {
@@ -629,7 +656,7 @@ const BracketRenderer = ({
                                                         </span>
                                                     </div>
                                                     <div
-                                                        className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                        className={team2Classes.join(' ')}
                                                         onClick={(e) => {
                                                             // Если есть функция просмотра деталей матча и матч завершен
                                                             if (onMatchClick && match.state === 'DONE') {
@@ -696,11 +723,38 @@ const BracketRenderer = ({
                                             {roundMatches.map((match) => {
                                                 const isSelected = selectedMatch === safeParseBracketId(match.id);
                                                 const isCompleted = match.state === 'DONE';
+                                                
+                                                // 🏆 Определяем классы для команд-победителей и проигравших
+                                                const team1Classes = ['custom-seed'];
+                                                const team2Classes = ['custom-seed'];
+                                                
+                                                if (isSelected) {
+                                                    team1Classes.push('selected');
+                                                    team2Classes.push('selected');
+                                                }
+                                                
+                                                if (isCompleted && match.participants) {
+                                                    const participant1 = match.participants[0];
+                                                    const participant2 = match.participants[1];
+                                                    
+                                                    if (participant1?.isWinner) {
+                                                        team1Classes.push('winner');
+                                                    } else if (participant1 && !participant1.isWinner) {
+                                                        team1Classes.push('loser');
+                                                    }
+                                                    
+                                                    if (participant2?.isWinner) {
+                                                        team2Classes.push('winner');
+                                                    } else if (participant2 && !participant2.isWinner) {
+                                                        team2Classes.push('loser');
+                                                    }
+                                                }
+                                                
                                                 return (
                                                     <div key={match.id} className={`match-container ${isCompleted ? 'completed' : ''}`}>
                                                         <div className="match-content">
                                                             <div
-                                                                className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                                className={team1Classes.join(' ')}
                                                                 onClick={(e) => {
                                                                     // Если есть функция просмотра деталей матча и матч завершен
                                                                     if (onMatchClick && match.state === 'DONE') {
@@ -731,7 +785,7 @@ const BracketRenderer = ({
                                                                 </span>
                                                             </div>
                                                             <div
-                                                                className={`custom-seed ${isSelected ? 'selected' : ''}`}
+                                                                className={team2Classes.join(' ')}
                                                                 onClick={(e) => {
                                                                     // Если есть функция просмотра деталей матча и матч завершен
                                                                     if (onMatchClick && match.state === 'DONE') {
@@ -797,68 +851,103 @@ const BracketRenderer = ({
                                         <h3 className="match-title">Большой финал</h3>
                                         <div className={`match-container ${grandFinalMatch.state === 'DONE' ? 'completed' : ''}`}>
                                             <div className="match-content">
-                                                <div
-                                                    className={`custom-seed ${selectedMatch === safeParseBracketId(grandFinalMatch.id) ? 'selected' : ''}`}
-                                                    onClick={(e) => {
-                                                        // Если есть функция просмотра деталей матча и матч завершен
-                                                        if (onMatchClick && grandFinalMatch.state === 'DONE') {
-                                                            onMatchClick(grandFinalMatch);
+                                                {(() => {
+                                                    // 🏆 Определяем классы для команд-победителей и проигравших в гранд-финале
+                                                    const isSelected = selectedMatch === safeParseBracketId(grandFinalMatch.id);
+                                                    const isCompleted = grandFinalMatch.state === 'DONE';
+                                                    
+                                                    const team1Classes = ['custom-seed'];
+                                                    const team2Classes = ['custom-seed'];
+                                                    
+                                                    if (isSelected) {
+                                                        team1Classes.push('selected');
+                                                        team2Classes.push('selected');
+                                                    }
+                                                    
+                                                    if (isCompleted && grandFinalMatch.participants) {
+                                                        const participant1 = grandFinalMatch.participants[0];
+                                                        const participant2 = grandFinalMatch.participants[1];
+                                                        
+                                                        if (participant1?.isWinner) {
+                                                            team1Classes.push('winner');
+                                                        } else if (participant1 && !participant1.isWinner) {
+                                                            team1Classes.push('loser');
                                                         }
-                                                        // Иначе обычное поведение для выбора победителя
-                                                        else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
-                                                            setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
-                                                            // Добавляем вызов handleTeamClick
-                                                            if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[0]?.id) {
-                                                                handleTeamClick(grandFinalMatch.participants[0].id, grandFinalMatch.id);
-                                                            }
+                                                        
+                                                        if (participant2?.isWinner) {
+                                                            team2Classes.push('winner');
+                                                        } else if (participant2 && !participant2.isWinner) {
+                                                            team2Classes.push('loser');
                                                         }
-                                                    }}
-                                                >
-                                                    {grandFinalMatch.participants[0]?.avatarUrl && (
-                                                        <div className="team-avatar">
-                                                            <img 
-                                                                src={grandFinalMatch.participants[0].avatarUrl} 
-                                                                alt={`${grandFinalMatch.participants[0]?.name || 'TBD'}`}
-                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <span className={`team-name${!grandFinalMatch.participants[0]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {grandFinalMatch.participants[0]?.score ?? '-'}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={`custom-seed ${selectedMatch === safeParseBracketId(grandFinalMatch.id) ? 'selected' : ''}`}
-                                                    onClick={(e) => {
-                                                        // Если есть функция просмотра деталей матча и матч завершен
-                                                        if (onMatchClick && grandFinalMatch.state === 'DONE') {
-                                                            onMatchClick(grandFinalMatch);
-                                                        }
-                                                        // Иначе обычное поведение для выбора победителя
-                                                        else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
-                                                            setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
-                                                            // Добавляем вызов handleTeamClick
-                                                            if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[1]?.id) {
-                                                                handleTeamClick(grandFinalMatch.participants[1].id, grandFinalMatch.id);
-                                                            }
-                                                        }
-                                                    }}
-                                                >
-                                                    {grandFinalMatch.participants[1]?.avatarUrl && (
-                                                        <div className="team-avatar">
-                                                            <img 
-                                                                src={grandFinalMatch.participants[1].avatarUrl} 
-                                                                alt={`${grandFinalMatch.participants[1]?.name || 'TBD'}`}
-                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <span className={`team-name${!grandFinalMatch.participants[1]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {grandFinalMatch.participants[1]?.score ?? '-'}
-                                                    </span>
-                                                </div>
+                                                    }
+                                                    
+                                                    return (
+                                                        <>
+                                                            <div
+                                                                className={team1Classes.join(' ')}
+                                                                onClick={(e) => {
+                                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                                    if (onMatchClick && grandFinalMatch.state === 'DONE') {
+                                                                        onMatchClick(grandFinalMatch);
+                                                                    }
+                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
+                                                                        setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
+                                                                        // Добавляем вызов handleTeamClick
+                                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[0]?.id) {
+                                                                            handleTeamClick(grandFinalMatch.participants[0].id, grandFinalMatch.id);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {grandFinalMatch.participants[0]?.avatarUrl && (
+                                                                    <div className="team-avatar">
+                                                                        <img 
+                                                                            src={grandFinalMatch.participants[0].avatarUrl} 
+                                                                            alt={`${grandFinalMatch.participants[0]?.name || 'TBD'}`}
+                                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <span className={`team-name${!grandFinalMatch.participants[0]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score">
+                                                                    {grandFinalMatch.participants[0]?.score ?? '-'}
+                                                                </span>
+                                                            </div>
+                                                            <div
+                                                                className={team2Classes.join(' ')}
+                                                                onClick={(e) => {
+                                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                                    if (onMatchClick && grandFinalMatch.state === 'DONE') {
+                                                                        onMatchClick(grandFinalMatch);
+                                                                    }
+                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
+                                                                        setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
+                                                                        // Добавляем вызов handleTeamClick
+                                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(grandFinalMatch.id) && grandFinalMatch.participants[1]?.id) {
+                                                                            handleTeamClick(grandFinalMatch.participants[1].id, grandFinalMatch.id);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {grandFinalMatch.participants[1]?.avatarUrl && (
+                                                                    <div className="team-avatar">
+                                                                        <img 
+                                                                            src={grandFinalMatch.participants[1].avatarUrl} 
+                                                                            alt={`${grandFinalMatch.participants[1]?.name || 'TBD'}`}
+                                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <span className={`team-name${!grandFinalMatch.participants[1]?.name ? ' placeholder' : ''}`}>{grandFinalMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score">
+                                                                    {grandFinalMatch.participants[1]?.score ?? '-'}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                             {/* Блок просмотра результатов для завершенного гранд-финала */}
                                             {grandFinalMatch.state === 'DONE' && onMatchClick && (
@@ -880,68 +969,103 @@ const BracketRenderer = ({
                                         <h3 className="match-title">Матч за 3-е место</h3>
                                         <div className={`match-container ${placementMatch.state === 'DONE' ? 'completed' : ''}`}>
                                             <div className="match-content">
-                                                <div
-                                                    className={`custom-seed ${selectedMatch === safeParseBracketId(placementMatch.id) ? 'selected' : ''}`}
-                                                    onClick={(e) => {
-                                                        // Если есть функция просмотра деталей матча и матч завершен
-                                                        if (onMatchClick && placementMatch.state === 'DONE') {
-                                                            onMatchClick(placementMatch);
+                                                {(() => {
+                                                    // 🏆 Определяем классы для команд-победителей и проигравших в матче за 3-е место
+                                                    const isSelected = selectedMatch === safeParseBracketId(placementMatch.id);
+                                                    const isCompleted = placementMatch.state === 'DONE';
+                                                    
+                                                    const team1Classes = ['custom-seed'];
+                                                    const team2Classes = ['custom-seed'];
+                                                    
+                                                    if (isSelected) {
+                                                        team1Classes.push('selected');
+                                                        team2Classes.push('selected');
+                                                    }
+                                                    
+                                                    if (isCompleted && placementMatch.participants) {
+                                                        const participant1 = placementMatch.participants[0];
+                                                        const participant2 = placementMatch.participants[1];
+                                                        
+                                                        if (participant1?.isWinner) {
+                                                            team1Classes.push('winner');
+                                                        } else if (participant1 && !participant1.isWinner) {
+                                                            team1Classes.push('loser');
                                                         }
-                                                        // Иначе обычное поведение для выбора победителя
-                                                        else if (canEditMatches && placementMatch.state !== 'DONE') {
-                                                            setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
-                                                            // Добавляем вызов handleTeamClick
-                                                            if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[0]?.id) {
-                                                                handleTeamClick(placementMatch.participants[0].id, placementMatch.id);
-                                                            }
+                                                        
+                                                        if (participant2?.isWinner) {
+                                                            team2Classes.push('winner');
+                                                        } else if (participant2 && !participant2.isWinner) {
+                                                            team2Classes.push('loser');
                                                         }
-                                                    }}
-                                                >
-                                                    {placementMatch.participants[0]?.avatarUrl && (
-                                                        <div className="team-avatar">
-                                                            <img 
-                                                                src={placementMatch.participants[0].avatarUrl} 
-                                                                alt={`${placementMatch.participants[0]?.name || 'TBD'}`}
-                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <span className={`team-name${!placementMatch.participants[0]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {placementMatch.participants[0]?.score ?? '-'}
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    className={`custom-seed ${selectedMatch === safeParseBracketId(placementMatch.id) ? 'selected' : ''}`}
-                                                    onClick={(e) => {
-                                                        // Если есть функция просмотра деталей матча и матч завершен
-                                                        if (onMatchClick && placementMatch.state === 'DONE') {
-                                                            onMatchClick(placementMatch);
-                                                        }
-                                                        // Иначе обычное поведение для выбора победителя
-                                                        else if (canEditMatches && placementMatch.state !== 'DONE') {
-                                                            setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
-                                                            // Добавляем вызов handleTeamClick
-                                                            if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[1]?.id) {
-                                                                handleTeamClick(placementMatch.participants[1].id, placementMatch.id);
-                                                            }
-                                                        }
-                                                    }}
-                                                >
-                                                    {placementMatch.participants[1]?.avatarUrl && (
-                                                        <div className="team-avatar">
-                                                            <img 
-                                                                src={placementMatch.participants[1].avatarUrl} 
-                                                                alt={`${placementMatch.participants[1]?.name || 'TBD'}`}
-                                                                onError={(e) => {e.target.src = '/default-avatar.png'}}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <span className={`team-name${!placementMatch.participants[1]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
-                                                    <span className="team-score">
-                                                        {placementMatch.participants[1]?.score ?? '-'}
-                                                    </span>
-                                                </div>
+                                                    }
+                                                    
+                                                    return (
+                                                        <>
+                                                            <div
+                                                                className={team1Classes.join(' ')}
+                                                                onClick={(e) => {
+                                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                                    if (onMatchClick && placementMatch.state === 'DONE') {
+                                                                        onMatchClick(placementMatch);
+                                                                    }
+                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    else if (canEditMatches && placementMatch.state !== 'DONE') {
+                                                                        setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
+                                                                        // Добавляем вызов handleTeamClick
+                                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[0]?.id) {
+                                                                            handleTeamClick(placementMatch.participants[0].id, placementMatch.id);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {placementMatch.participants[0]?.avatarUrl && (
+                                                                    <div className="team-avatar">
+                                                                        <img 
+                                                                            src={placementMatch.participants[0].avatarUrl} 
+                                                                            alt={`${placementMatch.participants[0]?.name || 'TBD'}`}
+                                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <span className={`team-name${!placementMatch.participants[0]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[0]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score">
+                                                                    {placementMatch.participants[0]?.score ?? '-'}
+                                                                </span>
+                                                            </div>
+                                                            <div
+                                                                className={team2Classes.join(' ')}
+                                                                onClick={(e) => {
+                                                                    // Если есть функция просмотра деталей матча и матч завершен
+                                                                    if (onMatchClick && placementMatch.state === 'DONE') {
+                                                                        onMatchClick(placementMatch);
+                                                                    }
+                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    else if (canEditMatches && placementMatch.state !== 'DONE') {
+                                                                        setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
+                                                                        // Добавляем вызов handleTeamClick
+                                                                        if (handleTeamClick && selectedMatch !== safeParseBracketId(placementMatch.id) && placementMatch.participants[1]?.id) {
+                                                                            handleTeamClick(placementMatch.participants[1].id, placementMatch.id);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {placementMatch.participants[1]?.avatarUrl && (
+                                                                    <div className="team-avatar">
+                                                                        <img 
+                                                                            src={placementMatch.participants[1].avatarUrl} 
+                                                                            alt={`${placementMatch.participants[1]?.name || 'TBD'}`}
+                                                                            onError={(e) => {e.target.src = '/default-avatar.png'}}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <span className={`team-name${!placementMatch.participants[1]?.name ? ' placeholder' : ''}`}>{placementMatch.participants[1]?.name?.slice(0, 20) || 'TBD'}</span>
+                                                                <span className="team-score">
+                                                                    {placementMatch.participants[1]?.score ?? '-'}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                             {/* Блок просмотра результатов для завершенного матча за 3-е место */}
                                             {placementMatch.state === 'DONE' && onMatchClick && (
