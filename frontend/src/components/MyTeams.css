@@ -1,0 +1,412 @@
+.my-teams {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.teams-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    font-size: 18px;
+    color: #666;
+}
+
+.error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.error-message button {
+    background: none;
+    border: none;
+    color: #c62828;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    margin-left: 10px;
+}
+
+/* Приглашения */
+.team-invitations {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border-left: 4px solid #007bff;
+}
+
+.team-invitations h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.invitation-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.invitation-info .team-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.team-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.invitation-card h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.invitation-card p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.invitation-message {
+    font-style: italic;
+    color: #555 !important;
+    margin-top: 4px !important;
+}
+
+.invitation-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.accept-btn, .reject-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.accept-btn {
+    background: #28a745;
+    color: white;
+}
+
+.accept-btn:hover {
+    background: #218838;
+}
+
+.reject-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.reject-btn:hover {
+    background: #c82333;
+}
+
+/* Заголовок */
+.teams-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.teams-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 28px;
+}
+
+.create-team-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.create-team-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Сетка команд */
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.no-teams {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
+}
+
+.no-teams p {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: #666;
+}
+
+/* Карточка команды */
+.team-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.team-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: #667eea;
+}
+
+.team-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.team-avatar-container {
+    flex-shrink: 0;
+}
+
+.team-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 3px solid #f8f9fa;
+}
+
+.team-avatar-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    border: 3px solid #f8f9fa;
+}
+
+.team-info {
+    flex: 1;
+}
+
+.team-name {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    color: #333;
+    font-weight: 600;
+}
+
+.team-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.captain-badge, .temporary-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.captain-badge {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.temporary-badge {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+/* Участники команды */
+.team-members {
+    margin-top: 15px;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.member-item:hover {
+    background: #e9ecef;
+}
+
+.member-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.member-name {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.more-members {
+    padding: 8px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .my-teams {
+        padding: 15px;
+    }
+    
+    .teams-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .teams-header h2 {
+        text-align: center;
+        font-size: 24px;
+    }
+    
+    .teams-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .team-card {
+        padding: 15px;
+    }
+    
+    .team-header {
+        gap: 12px;
+    }
+    
+    .team-avatar, .team-avatar-placeholder {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .team-avatar-placeholder {
+        font-size: 20px;
+    }
+    
+    .team-name {
+        font-size: 18px;
+    }
+    
+    .invitation-card {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .invitation-actions {
+        justify-content: space-between;
+    }
+    
+    .accept-btn, .reject-btn {
+        flex: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .my-teams {
+        padding: 10px;
+    }
+    
+    .team-invitations {
+        padding: 15px;
+    }
+    
+    .team-card {
+        padding: 12px;
+    }
+    
+    .teams-header h2 {
+        font-size: 22px;
+    }
+    
+    .create-team-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+} 

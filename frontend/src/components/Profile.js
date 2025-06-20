@@ -27,6 +27,7 @@ import V4StatsDashboard from './V4StatsDashboard';
 import './V4Stats.css';
 
 import AchievementsPanel from './achievements/AchievementsPanel';
+import MyTeams from './MyTeams';
 
 // Регистрируем компоненты Chart.js
 ChartJS.register(
@@ -2302,6 +2303,15 @@ function Profile() {
                             </div>
                         </button>
                         <button 
+                            className={`nav-tab-profile ${activeTab === 'teams' ? 'active' : ''}`} 
+                            onClick={() => switchTab('teams')}
+                        >
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">⚔️</span>
+                                <span>Мои команды</span>
+                            </div>
+                        </button>
+                        <button 
                             className={`nav-tab-profile ${activeTab === 'achievements' ? 'active' : ''}`} 
                             onClick={() => switchTab('achievements')}
                         >
@@ -3018,6 +3028,11 @@ function Profile() {
                                     </div>
                                 )}
                             </>
+                        )}
+                        
+                        {/* Teams Tab */}
+                        {activeTab === 'teams' && (
+                            <MyTeams user={user} />
                         )}
                         
                         {/* Organization Tab */}
