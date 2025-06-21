@@ -174,7 +174,7 @@ router.post('/:teamId/avatar', authenticateToken, upload.single('avatar'), async
             return res.status(400).json({ error: 'Файл не загружен' });
         }
         
-        const avatarUrl = `/api/uploads/team-avatars/${req.file.filename}`;
+        const avatarUrl = `/uploads/team-avatars/${req.file.filename}`;
         
         // Удаляем старый аватар если есть
         const oldAvatar = team.rows[0].avatar_url;
