@@ -117,7 +117,7 @@ const TeamModal = ({ team, onClose, onTeamUpdated, onTeamDeleted, currentUser })
             setError('');
             
             // Показываем уведомление об успехе
-            alert('Приглашение отправлено!');
+            window.alert('Приглашение отправлено!');
         } catch (err) {
             console.error('Ошибка отправки приглашения:', err);
             setError(err.response?.data?.error || 'Ошибка отправки приглашения');
@@ -128,7 +128,7 @@ const TeamModal = ({ team, onClose, onTeamUpdated, onTeamDeleted, currentUser })
 
     // Удалить участника
     const removeMember = async (userId, username) => {
-        if (!confirm(`Вы уверены, что хотите удалить ${username} из команды?`)) {
+        if (!window.confirm(`Вы уверены, что хотите удалить ${username} из команды?`)) {
             return;
         }
 
@@ -161,7 +161,7 @@ const TeamModal = ({ team, onClose, onTeamUpdated, onTeamDeleted, currentUser })
     const transferCaptaincy = async () => {
         if (!selectedNewCaptain) return;
 
-        if (!confirm(`Вы уверены, что хотите передать капитанство пользователю ${selectedNewCaptain.username}?`)) {
+        if (!window.confirm(`Вы уверены, что хотите передать капитанство пользователю ${selectedNewCaptain.username}?`)) {
             return;
         }
 
@@ -200,7 +200,7 @@ const TeamModal = ({ team, onClose, onTeamUpdated, onTeamDeleted, currentUser })
 
     // Покинуть команду
     const leaveTeam = async () => {
-        if (!confirm('Вы уверены, что хотите покинуть команду?')) {
+        if (!window.confirm('Вы уверены, что хотите покинуть команду?')) {
             return;
         }
 
@@ -223,7 +223,7 @@ const TeamModal = ({ team, onClose, onTeamUpdated, onTeamDeleted, currentUser })
 
     // Удалить команду
     const deleteTeam = async () => {
-        if (!confirm('Вы уверены, что хотите удалить команду? Это действие необратимо.')) {
+        if (!window.confirm('Вы уверены, что хотите удалить команду? Это действие необратимо.')) {
             return;
         }
 
