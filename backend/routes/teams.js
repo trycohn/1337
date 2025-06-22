@@ -174,12 +174,17 @@ router.post('/:teamId/avatar', authenticateToken, upload.single('avatar'), async
             return res.status(400).json({ error: 'Файл не загружен' });
         }
         
-        const avatarUrl = `/uploads/team-avatars/${req.file.filename}`;
+        // Формируем полный URL для аватара
+        const baseUrl = process.env.NODE_ENV === 'production' 
+            ? 'https://1337community.com' 
+            : `http://localhost:${process.env.PORT || 3000}`;
+        const avatarUrl = `${baseUrl}/uploads/team-avatars/${req.file.filename}`;
         
         // Удаляем старый аватар если есть
         const oldAvatar = team.rows[0].avatar_url;
         if (oldAvatar) {
-            const oldAvatarPath = path.join(__dirname, '../uploads/team-avatars', path.basename(oldAvatar));
+            const filename = path.basename(oldAvatar);
+            const oldAvatarPath = path.join(__dirname, '../uploads/team-avatars', filename);
             try {
                 await fs.unlink(oldAvatarPath);
             } catch (error) {
@@ -530,7 +535,8 @@ router.delete('/:teamId', authenticateToken, async (req, res) => {
         
         // Удаляем аватар команды если есть
         if (team.rows[0].avatar_url) {
-            const avatarPath = path.join(__dirname, '../uploads/team-avatars', path.basename(team.rows[0].avatar_url));
+            const filename = path.basename(team.rows[0].avatar_url);
+            const avatarPath = path.join(__dirname, '../uploads/team-avatars', filename);
             try {
                 await fs.unlink(avatarPath);
             } catch (error) {
