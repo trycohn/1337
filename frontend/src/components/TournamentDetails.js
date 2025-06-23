@@ -1017,23 +1017,36 @@ function TournamentDetails() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
+            console.log('🔄 Загружаем данные пользователя и команды...');
             api.get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
                 .then((userResponse) => {
+                    console.log('✅ Пользователь загружен:', userResponse.data.username);
                     setUser(userResponse.data);
-                    return api.get(`/api/teams?userId=${userResponse.data.id}`, { 
+                    
+                    // Загружаем команды пользователя
+                    return api.get('/api/teams/my-teams', { 
                         headers: { Authorization: `Bearer ${token}` } 
                     });
                 })
-                .then((res) => setTeams(Array.isArray(res.data) ? res.data : []))
+                .then((res) => {
+                    console.log('✅ Команды загружены:', res.data.length);
+                    setTeams(Array.isArray(res.data) ? res.data : []);
+                })
                 .catch((error) => {
                     console.error('❌ Ошибка загрузки пользователя или команд:', error);
-                    handleAuthError(error, 'загрузке пользователя');
+                    if (error.response?.status === 403) {
+                        console.log('🔐 Ошибка аутентификации, очищаем токен');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        setError('Сессия истекла. Пожалуйста, войдите в систему заново.');
+                        setTimeout(() => navigate('/'), 1000);
+                    }
                 });
         } else {
             setUser(null);
             setTeams([]);
         }
-    }, [handleAuthError]);
+    }, []); // Убираем handleAuthError из зависимостей чтобы избежать дублирования
 
     // Загрузка данных турнира
     useEffect(() => {

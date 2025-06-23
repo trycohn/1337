@@ -23,7 +23,7 @@ export const useTournamentAuth = (tournament, tournamentId) => {
                     setUser(userResponse.data);
                     // Загружаем команды пользователя
                     api
-                        .get(`/api/teams?userId=${userResponse.data.id}`, { 
+                        .get('/api/teams/my-teams', { 
                             headers: { Authorization: `Bearer ${token}` } 
                         })
                         .then((res) => setTeams(res.data || []))
