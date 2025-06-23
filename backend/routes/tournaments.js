@@ -2267,6 +2267,45 @@ router.put('/:id/prize-pool', authenticateToken, verifyAdminOrCreator, async (re
     }
 });
 
+// 🆕 ФУНКЦИЯ НОРМАЛИЗАЦИИ РЕЙТИНГА УЧАСТНИКА (ВАРИАНТ 2: БЭКЕНД РЕШЕНИЕ)
+function normalizeParticipantRating(participant, ratingType) {
+    let rating;
+    
+    if (ratingType === 'faceit') {
+        // Приоритет для FACEIT: кастомный ELO → пользовательский ELO → faceit_rating → дефолт
+        if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
+            rating = parseInt(participant.faceit_elo);
+        } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
+            rating = parseInt(participant.user_faceit_elo);
+        } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
+            rating = parseInt(participant.faceit_rating);
+        } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
+            rating = parseInt(participant.user_faceit_rating);
+        } else {
+            rating = 1000; // дефолт для FACEIT
+        }
+    } else {
+        // Приоритет для Premier: кастомный ранг → premier_rank → пользовательский ранг → premier_rating → дефолт
+        if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
+            rating = parseInt(participant.cs2_premier_rank);
+        } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
+            rating = parseInt(participant.premier_rank);
+        } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
+            rating = parseInt(participant.user_premier_rank);
+        } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+            rating = parseInt(participant.premier_rating);
+        } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
+            rating = parseInt(participant.user_premier_rating);
+        } else {
+            rating = 5; // дефолт для Premier
+        }
+    }
+    
+    console.log(`   🔧 normalizeRating(${participant.name}, ${ratingType}): tp.${ratingType === 'faceit' ? 'faceit_elo' : 'cs2_premier_rank'}=${ratingType === 'faceit' ? participant.faceit_elo : participant.cs2_premier_rank}, user=${ratingType === 'faceit' ? participant.user_faceit_elo : participant.user_premier_rank} → result=${rating}`);
+    
+    return rating;
+}
+
 // Генерация команд для микс-турнира и переключение в командный режим
 router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, async (req, res) => {
     const { id } = req.params;
@@ -2304,13 +2343,14 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`🎯 Генерация команд для турнира "${tournamentName}" (ID: ${id})`);
         console.log(`📊 Параметры: размер команды = ${teamSize} (из настроек турнира), тип рейтинга = ${ratingType}`);
 
-        // 🆕 ПОЛУЧАЕМ ВСЕХ УЧАСТНИКОВ СНАЧАЛА ПЕРЕД УДАЛЕНИЕМ КОМАНД
+        // 🆕 УЛУЧШЕННЫЙ SQL ЗАПРОС: получаем ВСЕ возможные поля рейтинга с правильными приоритетами
         const partRes = await pool.query(
             `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
-                    tp.faceit_elo, tp.cs2_premier_rank,
+                    tp.faceit_elo, tp.cs2_premier_rank, tp.premier_rank,
                     u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
+                    u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
                     COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_rating,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as premier_rating
+                    COALESCE(tp.cs2_premier_rank, tp.premier_rank, u.cs2_premier_rank, 5) as premier_rating
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
@@ -2325,13 +2365,46 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         console.log(`📊 Всего участников для формирования команд: ${participants.length}`);
         
-        // 🆕 ПРОВЕРЯЕМ ДОСТАТОЧНОСТЬ УЧАСТНИКОВ ДО УДАЛЕНИЯ КОМАНД
+        // 🆕 ПРИМЕНЯЕМ НОРМАЛИЗАЦИЮ РЕЙТИНГОВ К КАЖДОМУ УЧАСТНИКУ
+        console.log(`🔧 ПРИМЕНЯЕМ ФУНКЦИЮ НОРМАЛИЗАЦИИ РЕЙТИНГОВ:`);
+        participants.forEach(participant => {
+            // Сохраняем оригинальные значения для диагностики
+            participant.original_faceit_elo = participant.faceit_elo;
+            participant.original_cs2_premier_rank = participant.cs2_premier_rank;
+            participant.original_premier_rank = participant.premier_rank;
+            participant.original_user_faceit_elo = participant.user_faceit_elo;
+            participant.original_user_premier_rank = participant.user_premier_rank;
+            participant.original_faceit_rating = participant.faceit_rating;
+            participant.original_premier_rating = participant.premier_rating;
+            
+            // Применяем нормализацию для обоих типов рейтинга
+            participant.normalized_faceit_rating = normalizeParticipantRating(participant, 'faceit');
+            participant.normalized_premier_rating = normalizeParticipantRating(participant, 'premier');
+            
+            // Перезаписываем финальные значения нормализованными
+            participant.faceit_rating = participant.normalized_faceit_rating;
+            participant.premier_rating = participant.normalized_premier_rating;
+        });
+        
+        console.log(`📊 СТАТИСТИКА УЧАСТНИКОВ:`);
+        console.log(`   - Зарегистрированных: ${participants.length}`);
+        console.log(`   - Гостей: ${participants.filter(p => !p.user_id).length}`);
+        console.log(`   - С кастомными рейтингами: ${participants.filter(p => p.faceit_elo || p.cs2_premier_rank).length}`);
+        
+        if (participants.filter(p => !p.user_id).length > 0) {
+            console.log(`👥 ГОСТИ С РЕЙТИНГАМИ:`);
+            participants.filter(p => !p.user_id).forEach(guest => {
+                console.log(`   - ${guest.name}: faceit=${guest.faceit_elo}, premier=${guest.cs2_premier_rank}`);
+            });
+        }
+        
+        // 🆕 ПРОВЕРЯЕМ ДОСТАТОЧНОСТЬ УЧАСТНИКОВ ПОСЛЕ НОРМАЛИЗАЦИИ
         const totalPlayers = participants.length;
         const fullTeams = Math.floor(totalPlayers / teamSize);
         const playersInTeams = fullTeams * teamSize;
         const remainingPlayers = totalPlayers - playersInTeams;
         
-        console.log(`📊 Статистика формирования команд:`);
+        console.log(`📊 Статистика формирования команд после нормализации:`);
         console.log(`   - Всего участников: ${totalPlayers}`);
         console.log(`   - Размер команды: ${teamSize}`);
         console.log(`   - Полных команд: ${fullTeams}`);
@@ -2362,54 +2435,40 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         
         console.log(`✅ Удалено ${deleteResult.rowCount} существующих команд`);
 
-        // 🆕 УЛУЧШЕННАЯ ДИАГНОСТИКА РЕЙТИНГОВ УЧАСТНИКОВ
-        console.log(`🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА РЕЙТИНГОВ (тип: ${ratingType}):`);
+        // 🆕 ДИАГНОСТИКА НОРМАЛИЗОВАННЫХ РЕЙТИНГОВ
+        console.log(`🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА НОРМАЛИЗОВАННЫХ РЕЙТИНГОВ (тип: ${ratingType}):`);
         participants.forEach((p, index) => {
             const debugInfo = {
                 index: index + 1,
                 name: p.name,
                 user_id: p.user_id,
                 is_guest: !p.user_id,
-                tp_faceit_elo: p.faceit_elo,
-                tp_cs2_premier_rank: p.cs2_premier_rank,
-                user_faceit_elo: p.user_faceit_elo,
-                user_premier_rank: p.user_premier_rank,
-                final_faceit_rating: p.faceit_rating,
-                final_premier_rating: p.premier_rating,
-                selected_rating: ratingType === 'faceit' ? p.faceit_rating : p.premier_rating,
+                tp_faceit_elo: p.original_faceit_elo,
+                tp_cs2_premier_rank: p.original_cs2_premier_rank,
+                tp_premier_rank: p.original_premier_rank,
+                user_faceit_elo: p.original_user_faceit_elo,
+                user_premier_rank: p.original_user_premier_rank,
+                original_faceit_rating: p.original_faceit_rating,
+                original_premier_rating: p.original_premier_rating,
+                normalized_faceit_rating: p.normalized_faceit_rating,
+                normalized_premier_rating: p.normalized_premier_rating,
+                final_selected_rating: ratingType === 'faceit' ? p.faceit_rating : p.premier_rating,
                 in_team: p.in_team
             };
             console.log(`  ${index + 1}. ${JSON.stringify(debugInfo)}`);
         });
         
-        // 🆕 СТАТИСТИКА ПО ТИПАМ УЧАСТНИКОВ
-        const guestParticipants = participants.filter(p => !p.user_id);
-        const registeredParticipants = participants.filter(p => p.user_id);
-        const participantsWithCustomRatings = participants.filter(p => p.faceit_elo || p.cs2_premier_rank);
-        
-        console.log(`📊 СТАТИСТИКА УЧАСТНИКОВ:`);
-        console.log(`   - Зарегистрированных: ${registeredParticipants.length}`);
-        console.log(`   - Гостей: ${guestParticipants.length}`);
-        console.log(`   - С кастомными рейтингами: ${participantsWithCustomRatings.length}`);
-        
-        if (guestParticipants.length > 0) {
-            console.log(`👥 ГОСТИ С РЕЙТИНГАМИ:`);
-            guestParticipants.forEach(guest => {
-                console.log(`   - ${guest.name}: faceit=${guest.faceit_elo}, premier=${guest.cs2_premier_rank}`);
-            });
-        }
-        
         // 🆕 СОРТИРУЕМ ИГРОКОВ ПО РЕЙТИНГУ (в зависимости от выбранного типа)
         const sortedParticipants = [...participants].sort((a, b) => {
             let ratingA, ratingB;
-            
-            if (ratingType === 'faceit') {
+    
+    if (ratingType === 'faceit') {
                 ratingA = a.faceit_rating;
                 ratingB = b.faceit_rating;
             } else if (ratingType === 'premier') {
                 ratingA = a.premier_rating;
                 ratingB = b.premier_rating;
-            } else {
+        } else {
                 ratingA = a.faceit_rating;
                 ratingB = b.faceit_rating;
             }
@@ -2437,7 +2496,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 console.log(`     - Итоговый FACEIT рейтинг: ${p.faceit_rating}`);
                 console.log(`     - Итоговый Premier рейтинг: ${p.premier_rating}`);
                 console.log(`     - ИСПОЛЬЗУЕМЫЙ рейтинг (${ratingType}): ${selectedRating}`);
-            } else {
+    } else {
                 console.log(`  ${index + 1}. ${p.name} - ${ratingType} рейтинг: ${selectedRating} ${isGuest ? '(гость)' : '(зарег.)'} ${hasCustomRating ? '(кастом)' : '(проф.)'}`);
             }
         });
@@ -2521,61 +2580,6 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             }, 0) / participantsForTeams.length;
             
             console.log(`📊 Общий средний рейтинг: ${Math.round(averageRating)}`);
-            
-            // ============================================
-            // 🎯 ВАРИАНТ 2: АДАПТИВНЫЙ АЛГОРИТМ С ПРИНУДИТЕЛЬНОЙ БАЛАНСИРОВКОЙ (РЕКОМЕНДУЕМЫЙ)
-            // 
-            // Принцип работы:
-            // 1. Выбор базового алгоритма по размеру команды:
-            //    - teamSize = 2: Специальный алгоритм для пар (текущий)
-            //    - teamSize = 3-5: Модифицированная "змейка"
-            //    - teamSize > 5: Классическая "змейка"
-            // 2. Принудительная балансировка до 100 попыток:
-            //    - Цель: достичь ≤15% расхождения между командами
-            //    - Умный поиск лучших обменов игроков между командами
-            //    - Анализ влияния каждого обмена на общий баланс
-            // 3. Детальная диагностика процесса
-            //
-            // Плюсы: универсальность, гарантированное улучшение, умная оптимизация
-            // Минусы: более сложная реализация, дольше выполняется (100-500ms)
-            // Ожидаемый баланс: 10-20% расхождения
-            // 
-            // Пример реализации:
-            // ```javascript
-            // let teams = createInitialTeams(participantsForTeams, teamSize, algorithm);
-            // let attempts = 0;
-            // while (!isBalanced(teams, 15) && attempts < 100) {
-            //     const bestSwap = findBestPlayerSwap(teams, ratingType);
-            //     if (bestSwap) executeSwap(teams, bestSwap);
-            //     attempts++;
-            // }
-            // ```
-            // ============================================
-            
-            // ============================================  
-            // 🎯 ВАРИАНТ 3: ГИБРИДНЫЙ АЛГОРИТМ С ЭЛЕМЕНТАМИ ML
-            //
-            // Принцип работы:
-            // 1. Генетический алгоритм:
-            //    - 50 поколений эволюции популяций команд
-            //    - Турнирная селекция по фитнесу (баланс команд)
-            //    - Одноточечное скрещивание с мутацией 10%
-            // 2. Симуляция отжига:
-            //    - 1000 итераций градиентного спуска
-            //    - Температурное охлаждение 99.5% за итерацию
-            //    - Принятие худших решений с вероятностью exp(-delta/temperature)
-            // 3. Жадная оптимизация как fallback
-            // 4. Автоматический выбор лучшего результата из всех методов
-            //
-            // Плюсы: максимально возможный баланс, использует современные алгоритмы
-            // Минусы: сложность, долгое выполнение (3-10s), непредсказуемость
-            // Ожидаемый баланс: 5-15% расхождения
-            //
-            // Пример для команд из 2 игроков:
-            // Входящие рейтинги: [3000, 2500, 2000, 1500, 1200, 1000, 900, 800]
-            // Результат ML: К1:[1400,900]=1150, К2:[1200,950]=1075, К3:[1100,1000]=1050, К4:[800,1250]=1025
-            // Баланс: (1150-1025)/1025 = 12% ← ОТЛИЧНЫЙ РЕЗУЛЬТАТ!
-            // ============================================
             
             // 🚀 РЕАЛИЗАЦИЯ ВАРИАНТА 1: ОПТИМИЗИРОВАННЫЙ ПОПАРНЫЙ АЛГОРИТМ
             
@@ -2990,7 +2994,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             resultMessage += `, ${remainingPlayers} участников остались вне команд`;
         }
         resultMessage += `. Использован рейтинг: ${ratingType === 'faceit' ? 'FACEIT ELO' : 'CS2 Premier Rank'}.`;
-        
+
         // Отправляем объявление в чат турнира о формировании команд
         await sendTournamentChatAnnouncement(
             id,
@@ -3023,9 +3027,20 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         const balanceQuality = finalBalanceForResponse.percentageDiff <= 8 ? 'Отличный' : 
                                finalBalanceForResponse.percentageDiff <= 15 ? 'Хороший' : 
                                finalBalanceForResponse.percentageDiff <= 25 ? 'Удовлетворительный' : 'Плохой';
-        
-        // Возвращаем сформированные команды с детальной статистикой
-        res.json({ 
+
+        // Логируем результат
+        await logTournamentEvent(id, req.user.id, 'teams_generated', { 
+            teamsCount: createdTeams.length, 
+            participantsCount: playersInTeams,
+            ratingType,
+            algorithm: teamSize === 2 ? 'paired' : 'snake'
+        });
+
+        console.log(`✅ Команды сформированы для турнира ${id}. Создано ${createdTeams.length} команд`);
+
+        res.json({
+            success: true,
+            message: resultMessage,
             teams: createdTeams,
             summary: {
                 totalParticipants: totalPlayers,
@@ -3034,17 +3049,21 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                 participantsNotInTeams: remainingPlayers,
                 ratingType: ratingType,
                 teamSize: teamSize,
-                message: resultMessage,
+                algorithm: teamSize === 2 ? 'paired_optimization' : 'snake_distribution',
+                balanceInfo: {
+                    finalBalance: balanceCheck.percentageDiff,
+                    rebalanceAttempts: rebalanceAttempts,
+                    isBalanced: balanceCheck.isBalanced,
+                    minTeamRating: Math.round(balanceCheck.minAvg),
+                    maxTeamRating: Math.round(balanceCheck.maxAvg)
+                },
                 // 🆕 РАСШИРЕННАЯ СТАТИСТИКА БАЛАНСА
                 balanceStats: {
                     overallAverageRating: Math.round(overallAverage),
                     ratingStandardDeviation: Math.round(ratingStandardDeviation * 100) / 100,
                     teamAverageRatings: teamAverageRatings.map(avg => Math.round(avg)),
-                    // 🎯 НОВАЯ СТАТИСТИКА БАЛАНСА
                     balancePercentage: Math.round(finalBalanceForResponse.percentageDiff * 100) / 100,
-                    isBalanced: finalBalanceForResponse.isBalanced,
                     balanceQuality: balanceQuality,
-                    rebalanceAttempts: rebalanceAttempts,
                     targetAchieved: finalBalanceForResponse.isBalanced,
                     minTeamRating: Math.round(finalBalanceForResponse.minAvg),
                     maxTeamRating: Math.round(finalBalanceForResponse.maxAvg)

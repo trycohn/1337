@@ -70,19 +70,30 @@ const TeamGenerator = ({
         };
     };
 
-    // 🎯 ФУНКЦИЯ ДЛЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
+    // 🎯 УЛУЧШЕННАЯ ФУНКЦИЯ ДЛЯ РАСЧЕТА СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
     const calculateTeamAverageRating = useCallback((team) => {
         if (!team?.members || team.members.length === 0) return 0;
         
         const ratings = team.members.map(member => {
+            let rating;
             if (ratingType === 'faceit') {
-                return parseInt(member.faceit_elo) || 1000;
+                // Приоритет: поле напрямую -> кастомное поле -> поле пользователя -> дефолт
+                rating = parseInt(member.faceit_elo) || 
+                        parseInt(member.faceit_rating) || 
+                        parseInt(member.user_faceit_elo) || 
+                        1000;
             } else {
-                return parseInt(member.cs2_premier_rank || member.premier_rank) || 5;
+                // Приоритет: поле напрямую -> кастомное поле -> поле пользователя -> дефолт  
+                rating = parseInt(member.cs2_premier_rank) || 
+                        parseInt(member.premier_rank) || 
+                        parseInt(member.premier_rating) || 
+                        parseInt(member.user_premier_rank) || 
+                        5;
             }
-        }).filter(rating => !isNaN(rating));
+            return rating;
+        }).filter(rating => !isNaN(rating) && rating > 0);
         
-        if (ratings.length === 0) return 0;
+        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 5;
         
         const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
         return Math.round(average);
