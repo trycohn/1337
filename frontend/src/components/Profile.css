@@ -23,6 +23,7 @@
     --spacing-2xl: 32px;
     --transition: all 0.2s ease;
 }
+
 /* Base Styles */
 .profile-container {
     max-width: 1400px;
@@ -33,21 +34,25 @@
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
 /* Header Section */
 .profile-header {
     padding: var(--spacing-2xl);
     margin-bottom: var(--spacing-xl);
     transition: var(--transition);
 }
+
 .profile-header:hover {
     border-color: var(--border-hover);
 }
+
 .profile-header-content {
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: var(--spacing-xl);
     align-items: center;
 }
+
 /* Avatar Section */
 .profile-avatar-section {
     display: flex;
@@ -55,6 +60,7 @@
     align-items: center;
     position: relative;
 }
+
 .profile-avatar {
     width: 120px;
     height: 120px;
@@ -64,10 +70,12 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .profile-avatar:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
+
 .avatar-change-btn {
     position: absolute;
     bottom: -8px;
@@ -83,16 +91,19 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .avatar-change-btn:hover {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transform: translateY(-1px);
 }
+
 /* User Info */
 .profile-user-info {
     flex: 1;
     min-width: 0;
 }
+
 .profile-user-name {
     font-size: 2rem;
     font-weight: 300;
@@ -101,6 +112,7 @@
     letter-spacing: 1px;
     line-height: 1.2;
 }
+
 .profile-user-status {
     display: flex;
     align-items: center;
@@ -110,12 +122,14 @@
     color: var(--text-secondary);
     font-weight: 300;
 }
+
 .status-indicator {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--accent-success);
 }
+
 .profile-user-meta {
     display: flex;
     flex-wrap: wrap;
@@ -124,6 +138,7 @@
     font-size: 0.9rem;
     font-weight: 300;
 }
+
 .meta-item {
     display: flex;
     align-items: center;
@@ -132,6 +147,7 @@
     border: 1px solid var(--border-color);
     border-radius: 0;
 }
+
 /* Quick Stats */
 .profile-quick-stats {
     display: grid;
@@ -139,6 +155,7 @@
     gap: var(--spacing-md);
     min-width: 280px;
 }
+
 .quick-stat-card {
     border: 1px solid var(--border-color);
     border-radius: 0;
@@ -146,10 +163,12 @@
     text-align: center;
     transition: var(--transition);
 }
+
 .quick-stat-card:hover {
     transform: translateY(-2px);
     border-color: var(--border-hover);
 }
+
 .quick-stat-value {
     font-size: 1.5rem;
     font-weight: 300;
@@ -157,6 +176,7 @@
     margin-bottom: 4px;
     line-height: 1;
 }
+
 .quick-stat-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -164,6 +184,7 @@
     letter-spacing: 0.5px;
     font-weight: 300;
 }
+
 /* Main Content Layout */
 .profile-main-content {
     display: grid;
@@ -171,6 +192,7 @@
     gap: var(--spacing-xl);
     align-items: start;
 }
+
 /* Sidebar Navigation */
 .profile-sidebar {
     padding: var(--spacing-lg);
@@ -178,6 +200,7 @@
     top: var(--spacing-lg);
     height: fit-content;
 }
+
 .sidebar-nav-profile {
     display: flex;
     flex-direction: column;
@@ -186,6 +209,7 @@
     padding: 8px;
     overflow: hidden;
 }
+
 /* Эффект мерцания для контейнера навигации */
 .sidebar-nav-profile::before {
     content: '';
@@ -200,10 +224,12 @@
         transparent 100%);
     animation: shimmer 3s infinite;
 }
+
 @keyframes shimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
 }
+
 .nav-tab-profile {
     display: flex;
     align-items: center;
@@ -224,6 +250,7 @@
     text-align: left;
     overflow: hidden;
 }
+
 /* Эффект подсветки слева */
 .nav-tab-profile::before {
     content: '';
@@ -236,6 +263,7 @@
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(-50%);
 }
+
 /* Эффект фона при наведении */
 .nav-tab-profile::after {
     content: '';
@@ -248,6 +276,7 @@
     transition: top 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
 }
+
 .nav-tab-content-profile {
     display: flex;
     align-items: center;
@@ -256,12 +285,14 @@
     z-index: 2;
     transition: all 0.3s ease;
 }
+
 .nav-tab-icon-profile {
     font-size: 1rem;
     min-width: 16px;
     opacity: 0.6;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .nav-tab-profile:hover {
     color: #ffffff;
     background-color: rgba(255, 255, 255, 0.05);
@@ -269,16 +300,20 @@
     transform: translateX(3px);
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
+
 .nav-tab-profile:hover::before {
     height: 60%;
 }
+
 .nav-tab-profile:hover::after {
     top: 100%;
 }
+
 .nav-tab-profile:hover .nav-tab-icon-profile {
     opacity: 1;
     transform: scale(1.1);
 }
+
 .nav-tab-profile.active {
     color: #ffffff;
     background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
@@ -287,6 +322,7 @@
     box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
     z-index: 2;
 }
+
 .nav-tab-profile.active::before {
     height: 100%;
     width: 3px;
@@ -294,19 +330,23 @@
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     animation: pulse 2s infinite;
 }
+
 .nav-tab-profile.active::after {
     display: none;
 }
+
 .nav-tab-profile.active .nav-tab-icon-profile {
     opacity: 1;
     color: #ffffff;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
 }
+
 .nav-tab-profile.active .nav-tab-content-profile {
     font-weight: 400;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
+
 /* Эффект пульсации для активной вкладки */
 @keyframes pulse {
     0%, 100% { 
@@ -318,15 +358,18 @@
         opacity: 0.8;
     }
 }
+
 /* Content Area */
 .profile-content-area {
     min-height: 600px;
     overflow: hidden;
 }
+
 .content-section {
     padding: var(--spacing-xl);
     height: 100%;
 }
+
 .content-header {
     display: flex;
     align-items: center;
@@ -334,6 +377,7 @@
     padding-bottom: var(--spacing-lg);
     border-bottom: 1px solid var(--border-color);
 }
+
 .content-title {
     font-size: 1.5rem;
     font-weight: 300;
@@ -342,20 +386,24 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 /* Cards */
 .content-card {
     padding: var(--spacing-xl);
     transition: var(--transition);
 }
+
 .content-card:hover {
     transform: translateY(-1px);
 }
+
 .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: var(--spacing-lg);
 }
+
 .card-title {
     font-size: 1.2rem;
     font-weight: 300;
@@ -364,11 +412,13 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .card-content {
     color: var(--text-secondary);
     line-height: 1.6;
     font-weight: 300;
 }
+
 /* Buttons */
 .btn {
     display: inline-flex;
@@ -390,51 +440,66 @@
     background-color: var(--text-primary);
     color: var(--bg-primary);
 }
+
 .btn:hover {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transform: translateY(-1px);
 }
+
 .btn-secondary {
     background-color: transparent;
     color: var(--text-primary);
     border-color: var(--border-color);
 }
+
 .btn-secondary:hover {
     background-color: var(--bg-tertiary);
     border-color: var(--border-hover);
 }
+
 .btn-danger {
     background-color: var(--accent-error);
     color: var(--text-primary);
     border-color: var(--accent-error);
     height: 30px;
 }
+
 .btn-danger:hover {
     background-color: transparent;
     color: var(--accent-error);
 }
+
 .btn-success {
     background-color: var(--accent-success);
     color: var(--text-primary);
     border-color: var(--accent-success);
 }
+
 .btn-success:hover {
     background-color: transparent;
     color: var(--accent-success);
 }
+
 .btn-sm {
     padding: 6px 12px;
     font-size: 0.8rem;
 }
+
 .btn-lg {
     padding: var(--spacing-md) var(--spacing-xl);
     font-size: 1rem;
 }
+
+.btn-steam {
+    background-color: #2a475e;
+}
+
 /* Forms */
 .form-group {
     margin-bottom: var(--spacing-lg);
 }
+
 .form-label {
     display: block;
     margin-bottom: var(--spacing-xs);
@@ -444,6 +509,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .form-input,
 .form-textarea {
     width: 100%;
@@ -456,32 +522,38 @@
     font-weight: 300;
     transition: var(--transition);
 }
+
 .form-input:focus,
 .form-textarea:focus {
     outline: none;
     border-color: var(--border-hover);
     background-color: var(--bg-secondary);
 }
+
 .form-input::placeholder,
 .form-textarea::placeholder {
     color: var(--text-muted);
 }
+
 /* Grid Layouts */
 .grid-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-lg);
 }
+
 .grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-lg);
 }
+
 .grid-auto {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: var(--spacing-lg);
 }
+
 /* Loading States */
 .loading-spinner {
     display: flex;
@@ -490,26 +562,34 @@
     height: 200px;
     color: var(--text-muted);
 }
+
 .empty-state {
     text-align: center;
     padding: var(--spacing-2xl);
     color: var(--text-muted);
 }
+
 .empty-state-title {
     font-size: 1.2rem;
     font-weight: 300;
     margin-bottom: var(--spacing-sm);
     color: var(--text-secondary);
 }
+
 .empty-state-description {
     font-size: 0.9rem;
     line-height: 1.6;
 }
-/* Responsive Design */
+
+.nickname-section {
+    width: 240px;
+}
+
+/* Additional Responsive Adjustments */
+
 /* =========================
-   СПЕЦИФИЧНЫЕ КОМПОНЕНТЫ
+   МОДАЛЬНЫЕ ОКНА
    ========================= */
-/* Модальные окна */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -523,17 +603,21 @@
     z-index: 1000;
     animation: fadeIn 0.3s ease;
 }
+
 .modal-overlay.closing {
     animation: fadeOut 0.3s ease;
 }
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
 @keyframes fadeOut {
     from { opacity: 1; }
     to { opacity: 0; }
 }
+
 .modal-content {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -544,9 +628,11 @@
     overflow-y: auto;
     animation: slideIn 0.3s ease;
 }
+
 .closing .modal-content {
     animation: slideOut 0.3s ease;
 }
+
 @keyframes slideIn {
     from {
         transform: translateY(-50px);
@@ -557,6 +643,7 @@
         opacity: 1;
     }
 }
+
 @keyframes slideOut {
     from {
         transform: translateY(0);
@@ -567,6 +654,7 @@
         opacity: 0;
     }
 }
+
 .modal-content h3 {
     font-size: 1.3rem;
     font-weight: 300;
@@ -577,15 +665,34 @@
     border-bottom: 1px solid var(--border-color);
     padding-bottom: var(--spacing-sm);
 }
+
 .modal-buttons {
     display: flex;
     gap: var(--spacing-sm);
     justify-content: flex-end;
     margin-top: var(--spacing-lg);
 }
+
 .modal-buttons button {
     min-width: 100px;
 }
+
+.close-modal-btn {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.close-modal-btn:hover {
+    color: var(--text-primary);
+}
+
 /* Email Input */
 .email-input {
     width: 100%;
@@ -599,29 +706,35 @@
     transition: var(--transition);
     margin-bottom: var(--spacing-md);
 }
+
 .email-input:focus {
     outline: none;
     border-color: var(--border-hover);
     background-color: var(--bg-primary);
 }
+
 .email-input::placeholder {
     color: var(--text-muted);
 }
+
 /* Verification Code Input */
 .code-input-container {
     position: relative;
     margin: var(--spacing-lg) 0;
 }
+
 .code-input-hidden {
     position: absolute;
     left: -9999px;
     opacity: 0;
 }
+
 .code-display {
     display: flex;
     gap: var(--spacing-sm);
     justify-content: center;
 }
+
 .code-digit {
     width: 40px;
     height: 50px;
@@ -637,13 +750,16 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .code-digit.filled {
     background-color: var(--bg-primary);
     border-color: var(--border-hover);
 }
+
 .code-input-container:focus-within .code-digit.active {
     border-color: var(--text-primary);
 }
+
 /* Error Messages */
 .verification-error,
 .error {
@@ -656,6 +772,7 @@
     font-size: 0.9rem;
     font-weight: 300;
 }
+
 /* Success Messages */
 .success {
     background-color: rgba(76, 175, 80, 0.1);
@@ -667,6 +784,7 @@
     font-size: 0.9rem;
     font-weight: 300;
 }
+
 /* Verification Alert */
 .verification-alert {
     background-color: rgba(255, 204, 102, 0.1);
@@ -676,14 +794,17 @@
     margin-bottom: var(--spacing-lg);
     text-align: center;
 }
+
 .verification-alert p {
     color: var(--text-secondary);
     margin: 0 0 var(--spacing-sm) 0;
     font-weight: 300;
 }
+
 .verification-alert strong {
     color: var(--accent-warning);
 }
+
 .verification-alert button {
     background-color: var(--accent-warning);
     color: var(--bg-primary);
@@ -696,30 +817,87 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .verification-alert button:hover {
     background-color: transparent;
     color: var(--accent-warning);
 }
-/* Steam/Faceit Sections */
+
+/* Avatar Modal */
+.avatar-modal {
+    z-index: 1001;
+}
+
+.avatar-preview {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.current-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    margin: 0 auto var(--spacing-md);
+}
+
+.avatar-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.avatar-options button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.avatar-options button:hover:not(:disabled) {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-hover);
+}
+
+.avatar-options button:disabled {
+    background-color: var(--text-disabled);
+    color: var(--bg-primary);
+    cursor: not-allowed;
+}
+
+/* =========================
+   STEAM/FACEIT СЕКЦИИ
+   ========================= */
 .steam-section,
 .faceit-section {
     padding: var(--spacing-lg);
 }
+
 .steam-buttons {
     display: flex;
     gap: var(--spacing-sm);
     flex-wrap: wrap;
 }
+
 /* CS2 Stats */
 .cs2-stats {
     margin-top: var(--spacing-lg);
 }
+
 .rank-container {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-md);
     margin-top: var(--spacing-sm);
 }
+
 .rank-item {
     display: flex;
     flex-direction: column;
@@ -730,22 +908,26 @@
     border-radius: 0;
     min-width: 120px;
 }
+
 .rank-image {
     width: 60px;
     height: 60px;
     object-fit: contain;
     margin-bottom: var(--spacing-xs);
 }
+
 .rank-wins {
     font-size: 0.8rem;
     color: var(--text-muted);
     text-align: center;
     font-weight: 300;
 }
+
 /* Faceit Stats */
 .faceit-stats {
     margin-top: var(--spacing-lg);
 }
+
 .faceit-elo {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -754,17 +936,20 @@
     text-align: center;
     margin-bottom: var(--spacing-md);
 }
+
 .faceit-elo p {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 300;
     color: var(--text-primary);
 }
+
 .faceit-detailed-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: var(--spacing-sm);
 }
+
 .faceit-detailed-stats p {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -774,19 +959,26 @@
     text-align: center;
     font-weight: 300;
 }
+
 .faceit-detailed-stats strong {
     color: var(--text-primary);
 }
-/* Friends Section */
+
+/* =========================
+   FRIENDS SECTION
+   ========================= */
 .friends-section {
     margin-bottom: var(--spacing-xl);
 }
+
 .friends-search {
     margin-bottom: var(--spacing-lg);
 }
+
 .friends-search .form-input {
     padding-left: 40px;
 }
+
 .search-icon {
     position: absolute;
     left: var(--spacing-sm);
@@ -795,6 +987,7 @@
     color: var(--text-muted);
     font-size: 1rem;
 }
+
 .search-results {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -803,6 +996,7 @@
     overflow-y: auto;
     margin-top: var(--spacing-xs);
 }
+
 .search-item {
     display: flex;
     align-items: center;
@@ -812,12 +1006,15 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .search-item:hover {
     background-color: var(--bg-secondary);
 }
+
 .search-item:last-child {
     border-bottom: none;
 }
+
 .search-avatar {
     width: 40px;
     height: 40px;
@@ -825,17 +1022,20 @@
     object-fit: cover;
     border: 1px solid var(--border-color);
 }
+
 .search-username {
     flex: 1;
     font-weight: 300;
     color: var(--text-primary);
 }
+
 /* Friends List */
 .friends-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-md);
 }
+
 .friend-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -844,15 +1044,18 @@
     transition: var(--transition);
     position: relative;
 }
+
 .friend-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
+
 .friend-card-content {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
 }
+
 .friend-avatar {
     width: 50px;
     height: 50px;
@@ -861,12 +1064,15 @@
     border: 1px solid var(--border-color);
     transition: var(--transition);
 }
+
 .friend-card:hover .friend-avatar {
     border-color: var(--border-hover);
 }
+
 .friend-info {
     flex: 1;
 }
+
 .friend-username {
     font-size: 1rem;
     font-weight: 300;
@@ -877,9 +1083,11 @@
     margin-bottom: var(--spacing-xs);
     display: block;
 }
+
 .friend-username:hover {
     color: var(--text-secondary);
 }
+
 .friend-status {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -887,6 +1095,7 @@
     align-items: center;
     gap: var(--spacing-xs);
 }
+
 .friend-status::before {
     content: '';
     width: 6px;
@@ -894,16 +1103,20 @@
     border-radius: 50%;
     background-color: var(--text-muted);
 }
+
 .friend-status.online::before {
     background-color: var(--accent-success);
 }
+
 .friend-status.offline::before {
     background-color: var(--accent-error);
 }
+
 .friend-last-online {
     font-size: 0.7rem;
     color: var(--text-disabled);
 }
+
 .friend-actions {
     position: absolute;
     top: var(--spacing-sm);
@@ -911,9 +1124,11 @@
     opacity: 0;
     transition: var(--transition);
 }
+
 .friend-card:hover .friend-actions {
     opacity: 1;
 }
+
 .remove-friend-btn {
     background-color: var(--accent-error);
     color: var(--text-primary);
@@ -927,14 +1142,17 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .remove-friend-btn:hover {
     background-color: transparent;
     color: var(--accent-error);
 }
+
 /* Friend Requests */
 .friend-requests {
     margin-bottom: var(--spacing-xl);
 }
+
 .friend-request-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -946,14 +1164,17 @@
     justify-content: space-between;
     transition: var(--transition);
 }
+
 .friend-request-card:hover {
     border-color: var(--border-hover);
 }
+
 .request-user-info {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
 }
+
 .request-avatar {
     width: 40px;
     height: 40px;
@@ -961,6 +1182,7 @@
     object-fit: cover;
     border: 1px solid var(--border-color);
 }
+
 .request-username {
     font-weight: 300;
     color: var(--text-primary);
@@ -968,13 +1190,16 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .request-username:hover {
     color: var(--text-secondary);
 }
+
 .request-actions {
     display: flex;
     gap: var(--spacing-xs);
 }
+
 .accept-request-btn,
 .reject-request-btn {
     padding: 6px 12px;
@@ -986,33 +1211,42 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .accept-request-btn {
     background-color: var(--accent-success);
     color: var(--text-primary);
     border: 1px solid var(--accent-success);
 }
+
 .accept-request-btn:hover {
     background-color: transparent;
     color: var(--accent-success);
 }
+
 .reject-request-btn {
     background-color: var(--accent-error);
     color: var(--text-primary);
     border: 1px solid var(--accent-error);
 }
+
 .reject-request-btn:hover {
     background-color: transparent;
     color: var(--accent-error);
 }
-/* Stats Overview */
+
+/* =========================
+   STATS OVERVIEW
+   ========================= */
 .stats-overview {
     margin-bottom: var(--spacing-xl);
 }
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-md);
 }
+
 .stats-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -1021,10 +1255,12 @@
     text-align: center;
     transition: var(--transition);
 }
+
 .stats-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
+
 .stats-value {
     font-size: 2rem;
     font-weight: 300;
@@ -1032,6 +1268,7 @@
     margin-bottom: var(--spacing-xs);
     line-height: 1;
 }
+
 .stats-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -1039,14 +1276,19 @@
     letter-spacing: 0.5px;
     font-weight: 300;
 }
-/* Organization Section */
+
+/* =========================
+   ORGANIZATION SECTION
+   ========================= */
 .organization-tab {
     padding: var(--spacing-xl);
 }
+
 .organization-header {
     text-align: center;
     margin-bottom: var(--spacing-xl);
 }
+
 .organization-header h3 {
     font-size: 1.5rem;
     font-weight: 300;
@@ -1055,11 +1297,13 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .organization-header p {
     color: var(--text-secondary);
     font-weight: 300;
     line-height: 1.6;
 }
+
 .organization-requirement-alert {
     background-color: rgba(255, 204, 102, 0.1);
     border: 1px solid var(--accent-warning);
@@ -1068,6 +1312,7 @@
     margin-bottom: var(--spacing-xl);
     text-align: center;
 }
+
 .organization-requirement-alert h4 {
     color: var(--accent-warning);
     font-weight: 300;
@@ -1075,11 +1320,13 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .organization-requirement-alert p {
     color: var(--text-secondary);
     margin: 0 0 var(--spacing-md) 0;
     font-weight: 300;
 }
+
 .organization-requirement-alert button {
     background-color: var(--accent-warning);
     color: var(--bg-primary);
@@ -1092,10 +1339,12 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .organization-requirement-alert button:hover {
     background-color: transparent;
     color: var(--accent-warning);
 }
+
 /* Organization Form */
 .organization-form {
     background-color: var(--bg-tertiary);
@@ -1104,9 +1353,11 @@
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
 }
+
 .required {
     color: var(--accent-error);
 }
+
 .logo-upload-section {
     border: 2px dashed var(--border-color);
     border-radius: 0;
@@ -1116,20 +1367,24 @@
     transition: var(--transition);
     margin-bottom: var(--spacing-lg);
 }
+
 .logo-upload-section:hover {
     border-color: var(--border-hover);
 }
+
 .organization-logo-preview {
     width: 100px;
     height: 100px;
     object-fit: contain;
     margin: 0 auto var(--spacing-sm);
 }
+
 .logo-actions {
     display: flex;
     gap: var(--spacing-sm);
     justify-content: center;
 }
+
 .change-logo-btn,
 .remove-logo-btn,
 .upload-logo-btn {
@@ -1142,24 +1397,29 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .change-logo-btn {
     background-color: var(--text-primary);
     color: var(--bg-primary);
     border: 1px solid var(--text-primary);
 }
+
 .change-logo-btn:hover {
     background-color: var(--bg-primary);
     color: var(--text-primary);
 }
+
 .remove-logo-btn {
     background-color: var(--accent-error);
     color: var(--text-primary);
     border: 1px solid var(--accent-error);
 }
+
 .remove-logo-btn:hover {
     background-color: transparent;
     color: var(--accent-error);
 }
+
 .upload-logo-btn {
     background-color: var(--accent-success);
     color: var(--text-primary);
@@ -1167,15 +1427,18 @@
     padding: var(--spacing-lg) var(--spacing-xl);
     font-size: 1rem;
 }
+
 .upload-logo-btn:hover {
     background-color: transparent;
     color: var(--accent-success);
 }
+
 .upload-hint {
     font-size: 0.8rem;
     color: var(--text-muted);
     margin-top: var(--spacing-sm);
 }
+
 .submit-organization-btn {
     background-color: var(--accent-success);
     color: var(--text-primary);
@@ -1190,16 +1453,19 @@
     transition: var(--transition);
     width: 100%;
 }
+
 .submit-organization-btn:hover:not(:disabled) {
     background-color: transparent;
     color: var(--accent-success);
 }
+
 .submit-organization-btn:disabled {
     background-color: var(--text-disabled);
     color: var(--bg-primary);
     border-color: var(--text-disabled);
     cursor: not-allowed;
 }
+
 .organization-error {
     background-color: rgba(255, 107, 107, 0.1);
     color: var(--accent-error);
@@ -1209,6 +1475,7 @@
     margin: var(--spacing-sm) 0;
     font-weight: 300;
 }
+
 .organization-success {
     background-color: rgba(76, 175, 80, 0.1);
     color: var(--accent-success);
@@ -1218,20 +1485,24 @@
     margin: var(--spacing-sm) 0;
     font-weight: 300;
 }
+
 /* User Organizations */
 .user-organizations {
     margin-bottom: var(--spacing-xl);
 }
+
 .organization-loading {
     text-align: center;
     padding: var(--spacing-xl);
     color: var(--text-muted);
 }
+
 .organizations-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--spacing-lg);
 }
+
 .organization-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -1239,19 +1510,23 @@
     padding: var(--spacing-lg);
     transition: var(--transition);
 }
+
 .organization-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
+
 .org-card-header {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
 }
+
 .org-logo-container {
     flex-shrink: 0;
 }
+
 .org-card-logo {
     width: 50px;
     height: 50px;
@@ -1259,23 +1534,28 @@
     border: 1px solid var(--border-color);
     border-radius: 0;
 }
+
 .org-card-info {
     flex: 1;
 }
+
 .org-card-info h4 {
     margin: 0 0 var(--spacing-xs) 0;
     font-weight: 300;
     color: var(--text-primary);
 }
+
 .org-name-link {
     color: var(--text-primary);
     text-decoration: none;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .org-name-link:hover {
     color: var(--text-secondary);
 }
+
 .org-role {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -1283,40 +1563,48 @@
     letter-spacing: 0.5px;
     font-weight: 300;
 }
+
 .org-joined {
     font-size: 0.7rem;
     color: var(--text-disabled);
 }
+
 .org-stats {
     display: flex;
     gap: var(--spacing-md);
     margin-top: var(--spacing-sm);
 }
+
 .org-stat-item {
     text-align: center;
     flex: 1;
 }
+
 .org-stat-value {
     font-size: 1.2rem;
     font-weight: 300;
     color: var(--text-primary);
     margin-bottom: 2px;
 }
+
 .org-stat-label {
     font-size: 0.7rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .org-description {
     margin-top: var(--spacing-sm);
 }
+
 .org-description p {
     font-size: 0.8rem;
     color: var(--text-secondary);
     line-height: 1.4;
     margin: 0;
 }
+
 .add-organization-note {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -1324,26 +1612,31 @@
     padding: var(--spacing-lg);
     text-align: center;
 }
+
 .add-organization-note p {
     color: var(--text-muted);
     margin: 0;
     font-weight: 300;
 }
+
 .no-organizations {
     text-align: center;
     color: var(--text-muted);
     padding: var(--spacing-xl);
 }
+
 /* Organization Request Status */
 .organization-request-status {
     margin-bottom: var(--spacing-xl);
 }
+
 .request-status-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 0;
     padding: var(--spacing-xl);
 }
+
 .status-header {
     display: flex;
     align-items: center;
@@ -1352,6 +1645,7 @@
     padding-bottom: var(--spacing-sm);
     border-bottom: 1px solid var(--border-color);
 }
+
 .status-header h4 {
     margin: 0;
     font-weight: 300;
@@ -1359,6 +1653,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .status-badge {
     padding: 4px 8px;
     border-radius: 0;
@@ -1367,31 +1662,38 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .status-pending {
     background-color: rgba(255, 204, 102, 0.2);
     color: var(--accent-warning);
     border: 1px solid var(--accent-warning);
 }
+
 .status-approved {
     background-color: rgba(76, 175, 80, 0.2);
     color: var(--accent-success);
     border: 1px solid var(--accent-success);
 }
+
 .status-rejected {
     background-color: rgba(255, 107, 107, 0.2);
     color: var(--accent-error);
     border: 1px solid var(--accent-error);
 }
+
 .request-details {
     color: var(--text-secondary);
 }
+
 .request-details p {
     margin: 0 0 var(--spacing-xs) 0;
     font-weight: 300;
 }
+
 .request-details strong {
     color: var(--text-primary);
 }
+
 .admin-comment {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -1399,6 +1701,7 @@
     padding: var(--spacing-md);
     margin-top: var(--spacing-md);
 }
+
 .comment-text {
     color: var(--text-secondary);
     font-style: italic;
@@ -1406,81 +1709,20 @@
     font-weight: 300;
     line-height: 1.4;
 }
-/* Avatar Modal */
-.avatar-modal {
-    z-index: 1001;
-}
-.avatar-preview {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-}
-.current-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border-color);
-    margin: 0 auto var(--spacing-md);
-}
-.avatar-options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-.avatar-options button {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.avatar-options button:hover:not(:disabled) {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-hover);
-}
-.avatar-options button:disabled {
-    background-color: var(--text-disabled);
-    color: var(--bg-primary);
-    cursor: not-allowed;
-}
-.close-modal-btn {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.close-modal-btn:hover {
-    color: var(--text-primary);
-}
-.nickname-section {
-    width: 240px;
-}
-.btn-steam {
-    background-color: #2a475e;
-}
-/* Additional Responsive Adjustments */
+
 /* =========================
-   DOTA 2 STATS STYLES - ИСПРАВЛЕНО
+   DOTA 2 STATS STYLES
    ========================= */
-/* Основные стили для Dota 2 статистики */
 .dota-stats {
     margin-bottom: var(--spacing-lg);
 }
+
 .dota-player-stats {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
 }
+
 .dota-profile-info {
     display: flex;
     align-items: center;
@@ -1490,6 +1732,7 @@
     border-radius: 0;
     background: var(--bg-secondary);
 }
+
 .dota-avatar {
     width: 80px;
     height: 80px;
@@ -1497,21 +1740,25 @@
     object-fit: cover;
     border: 2px solid var(--border-color);
 }
+
 .dota-profile-details {
     flex: 1;
     min-width: 0;
 }
+
 .dota-profile-details h4 {
     margin: 0 0 var(--spacing-xs) 0;
     color: var(--text-primary);
     font-size: 1.2rem;
     font-weight: 300;
 }
+
 .dota-profile-details p {
     margin: 4px 0;
     color: var(--text-secondary);
     font-size: 0.9rem;
 }
+
 .dota-general-stats,
 .dota-recent-matches,
 .dota-top-heroes {
@@ -1520,6 +1767,7 @@
     border-radius: 0;
     background: var(--bg-secondary);
 }
+
 .dota-general-stats h5,
 .dota-recent-matches h5,
 .dota-top-heroes h5 {
@@ -1530,11 +1778,13 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .dota-general-stats .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-md);
 }
+
 .dota-general-stats .stat-item {
     display: flex;
     justify-content: space-between;
@@ -1544,21 +1794,25 @@
     border-radius: 0;
     background: var(--bg-tertiary);
 }
+
 .dota-general-stats .stat-label {
     color: var(--text-secondary);
     font-size: 0.9rem;
 }
+
 .dota-general-stats .stat-value {
     color: var(--text-primary);
     font-weight: 500;
     font-size: 1.1rem;
 }
+
 /* Последние матчи */
 .matches-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
 }
+
 .match-item {
     display: grid;
     grid-template-columns: 1fr auto auto auto;
@@ -1568,34 +1822,42 @@
     align-items: center;
     font-size: 0.9rem;
 }
+
 .match-item.win {
     background: rgba(76, 175, 80, 0.1);
     border-left: 4px solid var(--accent-success);
 }
+
 .match-item.loss {
     background: rgba(255, 107, 107, 0.1);
     border-left: 4px solid var(--accent-error);
 }
+
 .match-hero {
     color: var(--text-secondary);
 }
+
 .match-kda {
     color: var(--text-primary);
     font-weight: 500;
 }
+
 .match-duration {
     color: var(--text-muted);
 }
+
 .match-result {
     color: var(--text-primary);
     font-weight: 500;
 }
-/* Топ героев - ИСПРАВЛЕННЫЕ СТИЛИ */
+
+/* Топ героев */
 .heroes-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-md);
 }
+
 .hero-item {
     display: flex;
     flex-direction: column;
@@ -1609,11 +1871,13 @@
     position: relative;
     overflow: hidden;
 }
+
 .hero-item:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
+
 .hero-name {
     color: var(--text-primary);
     font-weight: 500;
@@ -1623,12 +1887,14 @@
     align-items: center;
     gap: var(--spacing-xs);
 }
+
 .hero-stats-container {
     display: flex;
     justify-content: space-between;
     width: 100%;
     gap: var(--spacing-sm);
 }
+
 .hero-games,
 .hero-winrate {
     color: var(--text-secondary);
@@ -1641,6 +1907,7 @@
     text-align: center;
     font-weight: 300;
 }
+
 /* Иконки героев */
 .hero-icon {
     width: 40px;
@@ -1650,20 +1917,24 @@
     border: 1px solid var(--border-color);
     transition: var(--transition);
 }
+
 .hero-icon:hover {
     border-color: var(--border-hover);
     transform: scale(1.05);
 }
+
 .match-hero .hero-icon {
     width: 35px;
     height: 26px;
 }
+
 .hero-name .hero-icon {
     width: 60px;
     height: 45px;
     margin-bottom: var(--spacing-xs);
     border-radius: 8px;
 }
+
 /* Сообщения о отсутствии данных */
 .no-dota-stats,
 .no-dota-profile {
@@ -1671,24 +1942,27 @@
     padding: var(--spacing-xl);
     color: var(--text-muted);
 }
+
 .no-dota-stats p,
 .no-dota-profile p {
     margin: var(--spacing-sm) 0;
     color: var(--text-secondary);
 }
-/* Responsive стили для Dota 2 */
+
 /* =========================
    TOURNAMENTS TAB STYLES
    ========================= */
 .tournaments-section {
     margin-top: var(--spacing-lg);
 }
+
 .tournaments-view-controls {
     display: flex;
     gap: var(--spacing-xs);
     margin-bottom: var(--spacing-lg);
     justify-content: flex-end;
 }
+
 .view-mode-btn {
     padding: var(--spacing-xs) var(--spacing-md);
     border: 1px solid var(--border-color);
@@ -1702,18 +1976,22 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .view-mode-btn:hover {
     background-color: var(--bg-tertiary);
     border-color: var(--border-hover);
 }
+
 .view-mode-btn.active {
     background-color: var(--text-primary);
     color: var(--bg-primary);
     border-color: var(--text-primary);
 }
+
 .tournaments-filter-bar {
     margin-bottom: var(--spacing-lg);
 }
+
 .mobile-filter-input {
     width: 100%;
     max-width: 300px;
@@ -1726,14 +2004,17 @@
     font-weight: 300;
     transition: var(--transition);
 }
+
 .mobile-filter-input:focus {
     outline: none;
     border-color: var(--border-hover);
     background-color: var(--bg-secondary);
 }
+
 .mobile-filter-input::placeholder {
     color: var(--text-muted);
 }
+
 /* Tournament Table Styles */
 .tournaments-section table {
     width: 100%;
@@ -1742,6 +2023,7 @@
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
 }
+
 .tournaments-section th,
 .tournaments-section td {
     padding: var(--spacing-md);
@@ -1750,6 +2032,7 @@
     font-weight: 300;
     position: relative;
 }
+
 .tournaments-section th {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
@@ -1759,24 +2042,30 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .tournaments-section th:hover {
     background-color: var(--border-color);
 }
+
 .tournaments-section th.filtered {
     background-color: var(--accent-warning);
     color: var(--bg-primary);
 }
+
 .tournaments-section td {
     color: var(--text-secondary);
 }
+
 .tournaments-section td a {
     color: var(--text-primary);
     text-decoration: none;
     transition: var(--transition);
 }
+
 .tournaments-section td a:hover {
     color: var(--text-secondary);
 }
+
 /* Tournament Status Badges */
 .tournament-status-badge {
     padding: 4px 8px;
@@ -1786,21 +2075,25 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .tournament-status-active {
     background-color: rgba(76, 175, 80, 0.2);
     color: var(--accent-success);
     border: 1px solid var(--accent-success);
 }
+
 .tournament-status-in-progress {
     background-color: rgba(255, 204, 102, 0.2);
     color: var(--accent-warning);
     border: 1px solid var(--accent-warning);
 }
+
 .tournament-status-completed {
     background-color: rgba(255, 107, 107, 0.2);
     color: var(--accent-error);
     border: 1px solid var(--accent-error);
 }
+
 /* Tournament Result Styles */
 .tournament-result {
     font-weight: 500;
@@ -1810,31 +2103,37 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .tournament-result.победитель {
     color: var(--accent-success);
     background-color: rgba(76, 175, 80, 0.1);
     border: 1px solid var(--accent-success);
 }
+
 .tournament-result.призер {
     color: var(--accent-warning);
     background-color: rgba(255, 204, 102, 0.1);
     border: 1px solid var(--accent-warning);
 }
+
 .tournament-result.участник {
     color: var(--text-muted);
     background-color: rgba(136, 136, 136, 0.1);
     border: 1px solid var(--text-muted);
 }
+
 .tournament-result.pending {
     color: var(--text-disabled);
     background-color: rgba(102, 102, 102, 0.1);
     border: 1px solid var(--text-disabled);
 }
+
 .tournament-stats {
     margin-top: 2px;
     color: var(--text-muted);
     font-size: 0.7rem;
 }
+
 /* Tournament Cards */
 .tournaments-cards {
     display: grid;
@@ -1842,6 +2141,7 @@
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
+
 .tournament-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -1849,30 +2149,36 @@
     padding: var(--spacing-lg);
     transition: var(--transition);
 }
+
 .tournament-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
+
 .tournament-name {
     margin: 0 0 var(--spacing-md) 0;
     font-size: 1.1rem;
     font-weight: 300;
     color: var(--text-primary);
 }
+
 .tournament-name a {
     color: var(--text-primary);
     text-decoration: none;
     transition: var(--transition);
 }
+
 .tournament-name a:hover {
     color: var(--text-secondary);
 }
+
 .tournament-details {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
 }
+
 .tournament-info {
     display: flex;
     justify-content: space-between;
@@ -1880,9 +2186,11 @@
     padding: var(--spacing-xs) 0;
     border-bottom: 1px solid var(--border-color);
 }
+
 .tournament-info:last-child {
     border-bottom: none;
 }
+
 .tournament-label {
     color: var(--text-muted);
     font-size: 0.8rem;
@@ -1890,11 +2198,13 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .tournament-value {
     color: var(--text-primary);
     font-weight: 300;
     text-align: right;
 }
+
 .tournament-status {
     padding: 2px 6px;
     border-radius: 0;
@@ -1903,21 +2213,25 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .tournament-status.active {
     color: var(--accent-success);
     background-color: rgba(76, 175, 80, 0.1);
     border: 1px solid var(--accent-success);
 }
+
 .tournament-status.in-progress {
     color: var(--accent-warning);
     background-color: rgba(255, 204, 102, 0.1);
     border: 1px solid var(--accent-warning);
 }
+
 .tournament-status.completed {
     color: var(--accent-error);
     background-color: rgba(255, 107, 107, 0.1);
     border: 1px solid var(--accent-error);
 }
+
 /* Filter and Sort Icons */
 .dropdown-icon,
 .filter-icon,
@@ -1927,11 +2241,13 @@
     opacity: 0.7;
     transition: var(--transition);
 }
+
 .dropdown-icon:hover,
 .filter-icon:hover,
 .sort-icon:hover {
     opacity: 1;
 }
+
 /* Clear Filters Button */
 .clear-all-filters-btn {
     background-color: var(--accent-error);
@@ -1946,20 +2262,26 @@
     cursor: pointer;
     transition: var(--transition);
 }
+
 .clear-all-filters-btn:hover {
     background-color: transparent;
     color: var(--accent-error);
 }
-/* Game Stats by Type */
+
+/* =========================
+   GAME STATS BY TYPE
+   ========================= */
 .game-stats-section {
     margin-top: var(--spacing-lg);
 }
+
 .game-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-md);
 }
+
 .game-stat-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -1967,10 +2289,12 @@
     padding: var(--spacing-lg);
     transition: var(--transition);
 }
+
 .game-stat-card:hover {
     border-color: var(--border-hover);
     transform: translateY(-2px);
 }
+
 .game-stat-header {
     display: flex;
     justify-content: space-between;
@@ -1979,6 +2303,7 @@
     padding-bottom: var(--spacing-sm);
     border-bottom: 1px solid var(--border-color);
 }
+
 .game-stat-title {
     font-size: 1.1rem;
     font-weight: 300;
@@ -1986,18 +2311,22 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .game-stat-icon {
     font-size: 1.2rem;
     opacity: 0.7;
 }
+
 .game-stat-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
 }
+
 .stat-type-section {
     text-align: center;
 }
+
 .stat-type-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -2005,11 +2334,13 @@
     letter-spacing: 0.5px;
     margin-bottom: var(--spacing-xs);
 }
+
 .stat-type-values {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
 }
+
 .stat-value-item {
     display: flex;
     justify-content: space-between;
@@ -2019,15 +2350,17 @@
     border: 1px solid var(--border-color);
     border-radius: 0;
 }
+
 .stat-value-label {
     font-size: 0.8rem;
     color: var(--text-secondary);
 }
+
 .stat-value-number {
     font-weight: 500;
     color: var(--text-primary);
 }
-/* Additional responsive styles for tournaments */
+
 /* Улучшенные индикаторы статуса пересчета статистики */
 .recalculation-status-container {
     display: flex;
@@ -2035,6 +2368,7 @@
     gap: var(--spacing-xs);
     min-width: 200px;
 }
+
 .recalculating-notice {
     display: flex;
     align-items: center;
@@ -2050,6 +2384,7 @@
     letter-spacing: 0.5px;
     animation: pulse-notice 2s infinite;
 }
+
 .recalculation-success {
     display: flex;
     align-items: center;
@@ -2065,6 +2400,7 @@
     letter-spacing: 0.5px;
     animation: fade-in-success 0.5s ease;
 }
+
 .recalculation-error {
     display: flex;
     align-items: center;
@@ -2080,6 +2416,7 @@
     letter-spacing: 0.5px;
     animation: shake 0.5s ease;
 }
+
 @keyframes fade-in-success {
     from { 
         opacity: 0;
@@ -2090,12 +2427,13 @@
         transform: translateY(0);
     }
 }
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-3px); }
     75% { transform: translateX(3px); }
 }
-/* Responsive adjustments */
+
 /* ✨ V4 ULTIMATE SECTION STYLES */
 .v4-ultimate-section {
     background: linear-gradient(135deg, 
@@ -2105,6 +2443,7 @@
     position: relative;
     overflow: hidden;
 }
+
 .v4-ultimate-section::before {
     content: '';
     position: absolute;
@@ -2120,15 +2459,18 @@
     pointer-events: none;
     z-index: 1;
 }
+
 @keyframes v4-section-shimmer {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
+
 .v4-ultimate-section .card-header {
     position: relative;
     z-index: 2;
     border-bottom: 1px solid rgba(102, 126, 234, 0.2);
 }
+
 .v4-ultimate-section .card-title {
     background: linear-gradient(45deg, #667eea, #764ba2);
     background-clip: text;
@@ -2137,6 +2479,7 @@
     font-weight: 600;
     text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
 }
+
 .v4-ultimate-badge {
     background: linear-gradient(45deg, #ff6b6b, #ee5a24);
     color: white;
@@ -2149,6 +2492,7 @@
     animation: v4-badge-pulse 2s infinite;
     box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
 }
+
 @keyframes v4-badge-pulse {
     0%, 100% { 
         transform: scale(1);
@@ -2159,19 +2503,21 @@
         box-shadow: 0 4px 20px rgba(255, 107, 107, 0.6);
     }
 }
+
 .v4-ultimate-section .card-content {
     position: relative;
     z-index: 2;
 }
+
 /* =========================
    СИСТЕМА ДОСТИЖЕНИЙ
    ========================= */
-/* Заголовок достижений */
 .achievements-summary {
     display: flex;
     gap: var(--spacing-xl);
     margin-top: var(--spacing-md);
 }
+
 .achievement-stat {
     display: flex;
     flex-direction: column;
@@ -2181,46 +2527,55 @@
     border-radius: 0;
     transition: var(--transition);
 }
+
 .achievement-stat:hover {
     border-color: var(--border-hover);
     transform: translateY(-1px);
 }
+
 .achievement-count {
     font-size: 1.8rem;
     font-weight: 300;
     color: var(--text-primary);
     margin-bottom: 4px;
 }
+
 .achievement-label {
     font-size: 0.8rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 /* Карточка прогресса игрока */
 .player-progress-card .card-content {
     padding: var(--spacing-xl);
 }
+
 .player-level-section {
     display: flex;
     align-items: center;
     gap: var(--spacing-xl);
 }
+
 .level-info {
     flex: 1;
 }
+
 .current-level {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
 }
+
 .level-number {
     font-size: 3rem;
     font-weight: 300;
     color: var(--text-primary);
     line-height: 1;
 }
+
 .level-label {
     font-size: 0.9rem;
     color: var(--text-muted);
@@ -2228,24 +2583,29 @@
     letter-spacing: 1px;
     font-weight: 300;
 }
+
 .xp-progress {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
 }
+
 .xp-info {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
     font-size: 0.9rem;
 }
+
 .current-xp {
     color: var(--text-primary);
     font-weight: 400;
 }
+
 .next-level-xp {
     color: var(--text-muted);
 }
+
 .xp-bar {
     width: 100%;
     height: 8px;
@@ -2254,11 +2614,13 @@
     border-radius: 0;
     overflow: hidden;
 }
+
 .xp-fill {
     height: 100%;
     background: linear-gradient(90deg, #666666, #ffffff);
     transition: width 0.5s ease;
 }
+
 .daily-streak {
     display: flex;
     flex-direction: column;
@@ -2268,15 +2630,18 @@
     border-radius: 0;
     min-width: 120px;
 }
+
 .streak-icon {
     font-size: 2rem;
     margin-bottom: var(--spacing-sm);
 }
+
 .streak-number {
     font-size: 1.5rem;
     font-weight: 300;
     color: var(--text-primary);
 }
+
 .streak-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -2284,6 +2649,7 @@
     letter-spacing: 0.5px;
     text-align: center;
 }
+
 /* Фильтры категорий достижений */
 .achievement-filters {
     display: flex;
@@ -2291,6 +2657,7 @@
     gap: var(--spacing-sm);
     margin-top: var(--spacing-md);
 }
+
 .category-filter {
     display: flex;
     align-items: center;
@@ -2307,22 +2674,27 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .category-filter:hover {
     color: var(--text-secondary);
     border-color: var(--border-hover);
     transform: translateY(-1px);
 }
+
 .category-filter.active {
     color: var(--text-primary);
     background-color: var(--bg-tertiary);
     border-color: var(--text-primary);
 }
+
 .category-icon {
     font-size: 1rem;
 }
+
 .category-name {
     flex: 1;
 }
+
 .category-count {
     padding: 2px 6px;
     background-color: var(--bg-secondary);
@@ -2331,6 +2703,7 @@
     border: 1px solid var(--border-color);
     border-radius: 0;
 }
+
 /* Сетка достижений */
 .achievements-grid {
     display: grid;
@@ -2338,6 +2711,7 @@
     gap: var(--spacing-lg);
     margin-top: var(--spacing-xl);
 }
+
 .achievement-card {
     display: flex;
     flex-direction: column;
@@ -2348,21 +2722,26 @@
     position: relative;
     overflow: hidden;
 }
+
 .achievement-card:hover {
     transform: translateY(-2px);
     border-color: var(--border-hover);
 }
+
 .achievement-card.unlocked {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
     border-color: var(--text-primary);
 }
+
 .achievement-card.locked {
     opacity: 0.6;
     background-color: var(--bg-secondary);
 }
+
 .achievement-card.locked:hover {
     opacity: 0.8;
 }
+
 .achievement-icon {
     font-size: 2.5rem;
     text-align: center;
@@ -2372,12 +2751,14 @@
     align-items: center;
     justify-content: center;
 }
+
 .achievement-info {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
 }
+
 .achievement-name {
     font-size: 1.1rem;
     font-weight: 400;
@@ -2386,9 +2767,11 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .achievement-card.locked .achievement-name {
     color: var(--text-muted);
 }
+
 .achievement-description {
     color: var(--text-secondary);
     font-size: 0.9rem;
@@ -2396,13 +2779,16 @@
     margin: 0;
     flex: 1;
 }
+
 .achievement-card.locked .achievement-description {
     color: var(--text-disabled);
 }
+
 /* Прогресс достижения */
 .achievement-progress {
     margin: var(--spacing-sm) 0;
 }
+
 .progress-bar {
     width: 100%;
     height: 6px;
@@ -2412,16 +2798,19 @@
     overflow: hidden;
     margin-bottom: var(--spacing-xs);
 }
+
 .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #666666, #ffffff);
     transition: width 0.5s ease;
 }
+
 .progress-text {
     font-size: 0.8rem;
     color: var(--text-muted);
     text-align: right;
 }
+
 /* Метаданные достижения */
 .achievement-meta {
     display: flex;
@@ -2431,6 +2820,7 @@
     padding-top: var(--spacing-md);
     border-top: 1px solid var(--border-color);
 }
+
 .achievement-xp {
     display: flex;
     align-items: center;
@@ -2438,32 +2828,40 @@
     color: var(--text-secondary);
     font-size: 0.9rem;
 }
+
 .xp-icon {
     color: #ffcc66;
 }
+
 .achievement-date {
     font-size: 0.8rem;
     color: var(--text-muted);
 }
+
 .achievement-rarity {
     font-size: 0.8rem;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
 .rarity-common {
     color: #cd7f32;
 }
+
 .rarity-rare {
     color: #c0c0c0;
 }
+
 .rarity-epic {
     color: #ffd700;
 }
+
 .rarity-legendary {
     color: #b19cd9;
     text-shadow: 0 0 8px rgba(177, 156, 217, 0.3);
 }
+
 .achievement-new-badge {
     position: absolute;
     top: var(--spacing-sm);
@@ -2478,16 +2876,19 @@
     letter-spacing: 0.5px;
     animation: pulse-badge 2s infinite;
 }
+
 @keyframes pulse-badge {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
 }
+
 /* Недавние достижения */
 .recent-achievements-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
 }
+
 .recent-achievement-item {
     display: flex;
     align-items: center;
@@ -2497,43 +2898,49 @@
     border-radius: 0;
     transition: var(--transition);
 }
+
 .recent-achievement-item:hover {
     border-color: var(--border-hover);
-    transform: translateX(4px);
+    transform: translateY(-1px);
 }
+
 .recent-achievement-icon {
     font-size: 1.5rem;
-    width: 40px;
+    min-width: 40px;
     text-align: center;
 }
+
 .recent-achievement-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--spacing-xs);
 }
+
 .recent-achievement-name {
+    font-size: 1rem;
     font-weight: 400;
     color: var(--text-primary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    margin: 0;
 }
+
 .recent-achievement-date {
     font-size: 0.8rem;
     color: var(--text-muted);
 }
+
 .recent-achievement-xp {
-    color: #ffcc66;
-    font-weight: 400;
     font-size: 0.9rem;
+    color: var(--accent-warning);
+    font-weight: 400;
 }
-/* Статистика достижений */
+
 .achievement-statistics .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
 }
+
 .achievement-statistics .stat-item {
     display: flex;
     flex-direction: column;
@@ -2543,2073 +2950,19 @@
     border-radius: 0;
     transition: var(--transition);
 }
+
 .achievement-statistics .stat-item:hover {
     border-color: var(--border-hover);
     transform: translateY(-1px);
 }
+
 .achievement-statistics .stat-value {
-    font-size: 2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-xs);
-    line-height: 1;
-}
-.achievement-statistics .stat-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-align: center;
-}
-/* Адаптивность */
-/* =========================
-   СПЕЦИФИЧНЫЕ КОМПОНЕНТЫ
-   ========================= */
-/* Модальные окна */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-.modal-overlay.closing {
-    animation: fadeOut 0.3s ease;
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-@keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-.modal-content {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-xl);
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: slideIn 0.3s ease;
-}
-.closing .modal-content {
-    animation: slideOut 0.3s ease;
-}
-@keyframes slideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-@keyframes slideOut {
-    from {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-}
-.modal-content h3 {
-    font-size: 1.3rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin: 0 0 var(--spacing-lg) 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: var(--spacing-sm);
-}
-.modal-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: flex-end;
-    margin-top: var(--spacing-lg);
-}
-.modal-buttons button {
-    min-width: 100px;
-}
-/* Email Input */
-.email-input {
-    width: 100%;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    font-weight: 300;
-    transition: var(--transition);
-    margin-bottom: var(--spacing-md);
-}
-.email-input:focus {
-    outline: none;
-    border-color: var(--border-hover);
-    background-color: var(--bg-primary);
-}
-.email-input::placeholder {
-    color: var(--text-muted);
-}
-/* Verification Code Input */
-.code-input-container {
-    position: relative;
-    margin: var(--spacing-lg) 0;
-}
-.code-input-hidden {
-    position: absolute;
-    left: -9999px;
-    opacity: 0;
-}
-.code-display {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: center;
-}
-.code-digit {
-    width: 40px;
-    height: 50px;
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-}
-.code-digit.filled {
-    background-color: var(--bg-primary);
-    border-color: var(--border-hover);
-}
-.code-input-container:focus-within .code-digit.active {
-    border-color: var(--text-primary);
-}
-/* Error Messages */
-.verification-error,
-.error {
-    background-color: rgba(255, 107, 107, 0.1);
-    color: var(--accent-error);
-    padding: var(--spacing-sm);
-    border: 1px solid var(--accent-error);
-    border-radius: 0;
-    margin: var(--spacing-sm) 0;
-    font-size: 0.9rem;
-    font-weight: 300;
-}
-/* Success Messages */
-.success {
-    background-color: rgba(76, 175, 80, 0.1);
-    color: var(--accent-success);
-    padding: var(--spacing-sm);
-    border: 1px solid var(--accent-success);
-    border-radius: 0;
-    margin: var(--spacing-sm) 0;
-    font-size: 0.9rem;
-    font-weight: 300;
-}
-/* Verification Alert */
-.verification-alert {
-    background-color: rgba(255, 204, 102, 0.1);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-}
-.verification-alert p {
-    color: var(--text-secondary);
-    margin: 0 0 var(--spacing-sm) 0;
-    font-weight: 300;
-}
-.verification-alert strong {
-    color: var(--accent-warning);
-}
-.verification-alert button {
-    background-color: var(--accent-warning);
-    color: var(--bg-primary);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.verification-alert button:hover {
-    background-color: transparent;
-    color: var(--accent-warning);
-}
-/* Steam/Faceit Sections */
-.steam-section,
-.faceit-section {
-    padding: var(--spacing-lg);
-}
-.steam-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
-}
-/* CS2 Stats */
-.cs2-stats {
-    margin-top: var(--spacing-lg);
-}
-.rank-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-sm);
-}
-.rank-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-sm);
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    min-width: 120px;
-}
-.rank-image {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    margin-bottom: var(--spacing-xs);
-}
-.rank-wins {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-align: center;
-    font-weight: 300;
-}
-/* Faceit Stats */
-.faceit-stats {
-    margin-top: var(--spacing-lg);
-}
-.faceit-elo {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    text-align: center;
-    margin-bottom: var(--spacing-md);
-}
-.faceit-elo p {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-}
-.faceit-detailed-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--spacing-sm);
-}
-.faceit-detailed-stats p {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-sm);
-    margin: 0;
-    text-align: center;
-    font-weight: 300;
-}
-.faceit-detailed-stats strong {
-    color: var(--text-primary);
-}
-/* Friends Section */
-.friends-section {
-    margin-bottom: var(--spacing-xl);
-}
-.friends-search {
-    margin-bottom: var(--spacing-lg);
-}
-.friends-search .form-input {
-    padding-left: 40px;
-}
-.search-icon {
-    position: absolute;
-    left: var(--spacing-sm);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 1rem;
-}
-.search-results {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    max-height: 300px;
-    overflow-y: auto;
-    margin-top: var(--spacing-xs);
-}
-.search-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
-    transition: var(--transition);
-}
-.search-item:hover {
-    background-color: var(--bg-secondary);
-}
-.search-item:last-child {
-    border-bottom: none;
-}
-.search-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid var(--border-color);
-}
-.search-username {
-    flex: 1;
-    font-weight: 300;
-    color: var(--text-primary);
-}
-/* Friends List */
-.friends-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-md);
-}
-.friend-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    transition: var(--transition);
-    position: relative;
-}
-.friend-card:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-}
-.friend-card-content {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-.friend-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid var(--border-color);
-    transition: var(--transition);
-}
-.friend-card:hover .friend-avatar {
-    border-color: var(--border-hover);
-}
-.friend-info {
-    flex: 1;
-}
-.friend-username {
-    font-size: 1rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-xs);
-    display: block;
-}
-.friend-username:hover {
-    color: var(--text-secondary);
-}
-.friend-status {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-.friend-status::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--text-muted);
-}
-.friend-status.online::before {
-    background-color: var(--accent-success);
-}
-.friend-status.offline::before {
-    background-color: var(--accent-error);
-}
-.friend-last-online {
-    font-size: 0.7rem;
-    color: var(--text-disabled);
-}
-.friend-actions {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    opacity: 0;
-    transition: var(--transition);
-}
-.friend-card:hover .friend-actions {
-    opacity: 1;
-}
-.remove-friend-btn {
-    background-color: var(--accent-error);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-error);
-    border-radius: 0;
-    padding: 4px 8px;
-    font-size: 0.7rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.remove-friend-btn:hover {
-    background-color: transparent;
-    color: var(--accent-error);
-}
-/* Friend Requests */
-.friend-requests {
-    margin-bottom: var(--spacing-xl);
-}
-.friend-request-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-sm);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: var(--transition);
-}
-.friend-request-card:hover {
-    border-color: var(--border-hover);
-}
-.request-user-info {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-.request-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid var(--border-color);
-}
-.request-username {
-    font-weight: 300;
-    color: var(--text-primary);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.request-username:hover {
-    color: var(--text-secondary);
-}
-.request-actions {
-    display: flex;
-    gap: var(--spacing-xs);
-}
-.accept-request-btn,
-.reject-request-btn {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    border-radius: 0;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.accept-request-btn {
-    background-color: var(--accent-success);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-success);
-}
-.accept-request-btn:hover {
-    background-color: transparent;
-    color: var(--accent-success);
-}
-.reject-request-btn {
-    background-color: var(--accent-error);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-error);
-}
-.reject-request-btn:hover {
-    background-color: transparent;
-    color: var(--accent-error);
-}
-/* Stats Overview */
-.stats-overview {
-    margin-bottom: var(--spacing-xl);
-}
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-md);
-}
-.stats-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    text-align: center;
-    transition: var(--transition);
-}
-.stats-card:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-}
-.stats-value {
-    font-size: 2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-xs);
-    line-height: 1;
-}
-.stats-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 300;
-}
-/* Organization Section */
-.organization-tab {
-    padding: var(--spacing-xl);
-}
-.organization-header {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-}
-.organization-header h3 {
-    font-size: 1.5rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin: 0 0 var(--spacing-sm) 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.organization-header p {
-    color: var(--text-secondary);
-    font-weight: 300;
-    line-height: 1.6;
-}
-.organization-requirement-alert {
-    background-color: rgba(255, 204, 102, 0.1);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
-    text-align: center;
-}
-.organization-requirement-alert h4 {
-    color: var(--accent-warning);
-    font-weight: 300;
-    margin: 0 0 var(--spacing-sm) 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.organization-requirement-alert p {
-    color: var(--text-secondary);
-    margin: 0 0 var(--spacing-md) 0;
-    font-weight: 300;
-}
-.organization-requirement-alert button {
-    background-color: var(--accent-warning);
-    color: var(--bg-primary);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.organization-requirement-alert button:hover {
-    background-color: transparent;
-    color: var(--accent-warning);
-}
-/* Organization Form */
-.organization-form {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-xl);
-    margin-bottom: var(--spacing-xl);
-}
-.required {
-    color: var(--accent-error);
-}
-.logo-upload-section {
-    border: 2px dashed var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-xl);
-    text-align: center;
-    cursor: pointer;
-    transition: var(--transition);
-    margin-bottom: var(--spacing-lg);
-}
-.logo-upload-section:hover {
-    border-color: var(--border-hover);
-}
-.organization-logo-preview {
-    width: 100px;
-    height: 100px;
-    object-fit: contain;
-    margin: 0 auto var(--spacing-sm);
-}
-.logo-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: center;
-}
-.change-logo-btn,
-.remove-logo-btn,
-.upload-logo-btn {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: 0.8rem;
-    border-radius: 0;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.change-logo-btn {
-    background-color: var(--text-primary);
-    color: var(--bg-primary);
-    border: 1px solid var(--text-primary);
-}
-.change-logo-btn:hover {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-}
-.remove-logo-btn {
-    background-color: var(--accent-error);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-error);
-}
-.remove-logo-btn:hover {
-    background-color: transparent;
-    color: var(--accent-error);
-}
-.upload-logo-btn {
-    background-color: var(--accent-success);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-success);
-    padding: var(--spacing-lg) var(--spacing-xl);
-    font-size: 1rem;
-}
-.upload-logo-btn:hover {
-    background-color: transparent;
-    color: var(--accent-success);
-}
-.upload-hint {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: var(--spacing-sm);
-}
-.submit-organization-btn {
-    background-color: var(--accent-success);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-success);
-    border-radius: 0;
-    padding: var(--spacing-md) var(--spacing-xl);
-    font-size: 1rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-    width: 100%;
-}
-.submit-organization-btn:hover:not(:disabled) {
-    background-color: transparent;
-    color: var(--accent-success);
-}
-.submit-organization-btn:disabled {
-    background-color: var(--text-disabled);
-    color: var(--bg-primary);
-    border-color: var(--text-disabled);
-    cursor: not-allowed;
-}
-.organization-error {
-    background-color: rgba(255, 107, 107, 0.1);
-    color: var(--accent-error);
-    padding: var(--spacing-sm);
-    border: 1px solid var(--accent-error);
-    border-radius: 0;
-    margin: var(--spacing-sm) 0;
-    font-weight: 300;
-}
-.organization-success {
-    background-color: rgba(76, 175, 80, 0.1);
-    color: var(--accent-success);
-    padding: var(--spacing-sm);
-    border: 1px solid var(--accent-success);
-    border-radius: 0;
-    margin: var(--spacing-sm) 0;
-    font-weight: 300;
-}
-/* User Organizations */
-.user-organizations {
-    margin-bottom: var(--spacing-xl);
-}
-.organization-loading {
-    text-align: center;
-    padding: var(--spacing-xl);
-    color: var(--text-muted);
-}
-.organizations-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--spacing-lg);
-}
-.organization-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    transition: var(--transition);
-}
-.organization-card:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-}
-.org-card-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-}
-.org-logo-container {
-    flex-shrink: 0;
-}
-.org-card-logo {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-}
-.org-card-info {
-    flex: 1;
-}
-.org-card-info h4 {
-    margin: 0 0 var(--spacing-xs) 0;
-    font-weight: 300;
-    color: var(--text-primary);
-}
-.org-name-link {
-    color: var(--text-primary);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.org-name-link:hover {
-    color: var(--text-secondary);
-}
-.org-role {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 300;
-}
-.org-joined {
-    font-size: 0.7rem;
-    color: var(--text-disabled);
-}
-.org-stats {
-    display: flex;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-sm);
-}
-.org-stat-item {
-    text-align: center;
-    flex: 1;
-}
-.org-stat-value {
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin-bottom: 2px;
-}
-.org-stat-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.org-description {
-    margin-top: var(--spacing-sm);
-}
-.org-description p {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-    margin: 0;
-}
-.add-organization-note {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    text-align: center;
-}
-.add-organization-note p {
-    color: var(--text-muted);
-    margin: 0;
-    font-weight: 300;
-}
-.no-organizations {
-    text-align: center;
-    color: var(--text-muted);
-    padding: var(--spacing-xl);
-}
-/* Organization Request Status */
-.organization-request-status {
-    margin-bottom: var(--spacing-xl);
-}
-.request-status-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-xl);
-}
-.status-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 1px solid var(--border-color);
-}
-.status-header h4 {
-    margin: 0;
-    font-weight: 300;
-    color: var(--text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 0;
-    font-size: 0.7rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.status-pending {
-    background-color: rgba(255, 204, 102, 0.2);
-    color: var(--accent-warning);
-    border: 1px solid var(--accent-warning);
-}
-.status-approved {
-    background-color: rgba(76, 175, 80, 0.2);
-    color: var(--accent-success);
-    border: 1px solid var(--accent-success);
-}
-.status-rejected {
-    background-color: rgba(255, 107, 107, 0.2);
-    color: var(--accent-error);
-    border: 1px solid var(--accent-error);
-}
-.request-details {
-    color: var(--text-secondary);
-}
-.request-details p {
-    margin: 0 0 var(--spacing-xs) 0;
-    font-weight: 300;
-}
-.request-details strong {
-    color: var(--text-primary);
-}
-.admin-comment {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-md);
-    margin-top: var(--spacing-md);
-}
-.comment-text {
-    color: var(--text-secondary);
-    font-style: italic;
-    margin: 0;
-    font-weight: 300;
-    line-height: 1.4;
-}
-/* Avatar Modal */
-.avatar-modal {
-    z-index: 1001;
-}
-.avatar-preview {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-}
-.current-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border-color);
-    margin: 0 auto var(--spacing-md);
-}
-.avatar-options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-.avatar-options button {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.avatar-options button:hover:not(:disabled) {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-hover);
-}
-.avatar-options button:disabled {
-    background-color: var(--text-disabled);
-    color: var(--bg-primary);
-    cursor: not-allowed;
-}
-.close-modal-btn {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.close-modal-btn:hover {
-    color: var(--text-primary);
-}
-.nickname-section {
-    width: 240px;
-}
-.btn-steam {
-    background-color: #2a475e;
-}
-/* Additional Responsive Adjustments */
-/* =========================
-   DOTA 2 STATS STYLES - ИСПРАВЛЕНО
-   ========================= */
-/* Основные стили для Dota 2 статистики */
-.dota-stats {
-    margin-bottom: var(--spacing-lg);
-}
-.dota-player-stats {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-}
-.dota-profile-info {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-lg);
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--bg-secondary);
-}
-.dota-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border-color);
-}
-.dota-profile-details {
-    flex: 1;
-    min-width: 0;
-}
-.dota-profile-details h4 {
-    margin: 0 0 var(--spacing-xs) 0;
-    color: var(--text-primary);
-    font-size: 1.2rem;
-    font-weight: 300;
-}
-.dota-profile-details p {
-    margin: 4px 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-.dota-general-stats,
-.dota-recent-matches,
-.dota-top-heroes {
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--bg-secondary);
-}
-.dota-general-stats h5,
-.dota-recent-matches h5,
-.dota-top-heroes h5 {
-    margin: 0 0 var(--spacing-md) 0;
-    color: var(--text-primary);
-    font-size: 1.1rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.dota-general-stats .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-md);
-}
-.dota-general-stats .stat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--bg-tertiary);
-}
-.dota-general-stats .stat-label {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-.dota-general-stats .stat-value {
-    color: var(--text-primary);
-    font-weight: 500;
-    font-size: 1.1rem;
-}
-/* Последние матчи */
-.matches-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-.match-item {
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    border-radius: 0;
-    align-items: center;
-    font-size: 0.9rem;
-}
-.match-item.win {
-    background: rgba(76, 175, 80, 0.1);
-    border-left: 4px solid var(--accent-success);
-}
-.match-item.loss {
-    background: rgba(255, 107, 107, 0.1);
-    border-left: 4px solid var(--accent-error);
-}
-.match-hero {
-    color: var(--text-secondary);
-}
-.match-kda {
-    color: var(--text-primary);
-    font-weight: 500;
-}
-.match-duration {
-    color: var(--text-muted);
-}
-.match-result {
-    color: var(--text-primary);
-    font-weight: 500;
-}
-/* Топ героев - ИСПРАВЛЕННЫЕ СТИЛИ */
-.heroes-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-md);
-}
-.hero-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--bg-tertiary);
-    transition: var(--transition);
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-.hero-item:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-}
-.hero-name {
-    color: var(--text-primary);
-    font-weight: 500;
-    margin-bottom: var(--spacing-md);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-.hero-stats-container {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    gap: var(--spacing-sm);
-}
-.hero-games,
-.hero-winrate {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    flex: 1;
-    text-align: center;
-    font-weight: 300;
-}
-/* Иконки героев */
-.hero-icon {
-    width: 40px;
-    height: 30px;
-    object-fit: cover;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    transition: var(--transition);
-}
-.hero-icon:hover {
-    border-color: var(--border-hover);
-    transform: scale(1.05);
-}
-.match-hero .hero-icon {
-    width: 35px;
-    height: 26px;
-}
-.hero-name .hero-icon {
-    width: 60px;
-    height: 45px;
-    margin-bottom: var(--spacing-xs);
-    border-radius: 8px;
-}
-/* Сообщения о отсутствии данных */
-.no-dota-stats,
-.no-dota-profile {
-    text-align: center;
-    padding: var(--spacing-xl);
-    color: var(--text-muted);
-}
-.no-dota-stats p,
-.no-dota-profile p {
-    margin: var(--spacing-sm) 0;
-    color: var(--text-secondary);
-}
-/* Responsive стили для Dota 2 */
-/* =========================
-   TOURNAMENTS TAB STYLES
-   ========================= */
-.tournaments-section {
-    margin-top: var(--spacing-lg);
-}
-.tournaments-view-controls {
-    display: flex;
-    gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-lg);
-    justify-content: flex-end;
-}
-.view-mode-btn {
-    padding: var(--spacing-xs) var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: transparent;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.view-mode-btn:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--border-hover);
-}
-.view-mode-btn.active {
-    background-color: var(--text-primary);
-    color: var(--bg-primary);
-    border-color: var(--text-primary);
-}
-.tournaments-filter-bar {
-    margin-bottom: var(--spacing-lg);
-}
-.mobile-filter-input {
-    width: 100%;
-    max-width: 300px;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    font-weight: 300;
-    transition: var(--transition);
-}
-.mobile-filter-input:focus {
-    outline: none;
-    border-color: var(--border-hover);
-    background-color: var(--bg-secondary);
-}
-.mobile-filter-input::placeholder {
-    color: var(--text-muted);
-}
-/* Tournament Table Styles */
-.tournaments-section table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: var(--spacing-lg);
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-}
-.tournaments-section th,
-.tournaments-section td {
-    padding: var(--spacing-md);
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    font-weight: 300;
-    position: relative;
-}
-.tournaments-section th {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.tournaments-section th:hover {
-    background-color: var(--border-color);
-}
-.tournaments-section th.filtered {
-    background-color: var(--accent-warning);
-    color: var(--bg-primary);
-}
-.tournaments-section td {
-    color: var(--text-secondary);
-}
-.tournaments-section td a {
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: var(--transition);
-}
-.tournaments-section td a:hover {
-    color: var(--text-secondary);
-}
-/* Tournament Status Badges */
-.tournament-status-badge {
-    padding: 4px 8px;
-    border-radius: 0;
-    font-size: 0.7rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.tournament-status-active {
-    background-color: rgba(76, 175, 80, 0.2);
-    color: var(--accent-success);
-    border: 1px solid var(--accent-success);
-}
-.tournament-status-in-progress {
-    background-color: rgba(255, 204, 102, 0.2);
-    color: var(--accent-warning);
-    border: 1px solid var(--accent-warning);
-}
-.tournament-status-completed {
-    background-color: rgba(255, 107, 107, 0.2);
-    color: var(--accent-error);
-    border: 1px solid var(--accent-error);
-}
-/* Tournament Result Styles */
-.tournament-result {
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 0;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.tournament-result.победитель {
-    color: var(--accent-success);
-    background-color: rgba(76, 175, 80, 0.1);
-    border: 1px solid var(--accent-success);
-}
-.tournament-result.призер {
-    color: var(--accent-warning);
-    background-color: rgba(255, 204, 102, 0.1);
-    border: 1px solid var(--accent-warning);
-}
-.tournament-result.участник {
-    color: var(--text-muted);
-    background-color: rgba(136, 136, 136, 0.1);
-    border: 1px solid var(--text-muted);
-}
-.tournament-result.pending {
-    color: var(--text-disabled);
-    background-color: rgba(102, 102, 102, 0.1);
-    border: 1px solid var(--text-disabled);
-}
-.tournament-stats {
-    margin-top: 2px;
-    color: var(--text-muted);
-    font-size: 0.7rem;
-}
-/* Tournament Cards */
-.tournaments-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-}
-.tournament-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    transition: var(--transition);
-}
-.tournament-card:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-}
-.tournament-name {
-    margin: 0 0 var(--spacing-md) 0;
-    font-size: 1.1rem;
-    font-weight: 300;
-    color: var(--text-primary);
-}
-.tournament-name a {
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: var(--transition);
-}
-.tournament-name a:hover {
-    color: var(--text-secondary);
-}
-.tournament-details {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-.tournament-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-xs) 0;
-    border-bottom: 1px solid var(--border-color);
-}
-.tournament-info:last-child {
-    border-bottom: none;
-}
-.tournament-label {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.tournament-value {
-    color: var(--text-primary);
-    font-weight: 300;
-    text-align: right;
-}
-.tournament-status {
-    padding: 2px 6px;
-    border-radius: 0;
-    font-size: 0.7rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.tournament-status.active {
-    color: var(--accent-success);
-    background-color: rgba(76, 175, 80, 0.1);
-    border: 1px solid var(--accent-success);
-}
-.tournament-status.in-progress {
-    color: var(--accent-warning);
-    background-color: rgba(255, 204, 102, 0.1);
-    border: 1px solid var(--accent-warning);
-}
-.tournament-status.completed {
-    color: var(--accent-error);
-    background-color: rgba(255, 107, 107, 0.1);
-    border: 1px solid var(--accent-error);
-}
-/* Filter and Sort Icons */
-.dropdown-icon,
-.filter-icon,
-.sort-icon {
-    margin-left: var(--spacing-xs);
-    cursor: pointer;
-    opacity: 0.7;
-    transition: var(--transition);
-}
-.dropdown-icon:hover,
-.filter-icon:hover,
-.sort-icon:hover {
-    opacity: 1;
-}
-/* Clear Filters Button */
-.clear-all-filters-btn {
-    background-color: var(--accent-error);
-    color: var(--text-primary);
-    border: 1px solid var(--accent-error);
-    border-radius: 0;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.clear-all-filters-btn:hover {
-    background-color: transparent;
-    color: var(--accent-error);
-}
-/* Game Stats by Type */
-.game-stats-section {
-    margin-top: var(--spacing-lg);
-}
-.game-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-md);
-}
-.game-stat-card {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    transition: var(--transition);
-}
-.game-stat-card:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-}
-.game-stat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-md);
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 1px solid var(--border-color);
-}
-.game-stat-title {
-    font-size: 1.1rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.game-stat-icon {
-    font-size: 1.2rem;
-    opacity: 0.7;
-}
-.game-stat-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
-}
-.stat-type-section {
-    text-align: center;
-}
-.stat-type-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-xs);
-}
-.stat-type-values {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-.stat-value-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-xs);
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-}
-.stat-value-label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-.stat-value-number {
-    font-weight: 500;
-    color: var(--text-primary);
-}
-/* Additional responsive styles for tournaments */
-/* Улучшенные индикаторы статуса пересчета статистики */
-.recalculation-status-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-    min-width: 200px;
-}
-.recalculating-notice {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: rgba(255, 204, 102, 0.1);
-    color: var(--accent-warning);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    animation: pulse-notice 2s infinite;
-}
-.recalculation-success {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: rgba(76, 175, 80, 0.1);
-    color: var(--accent-success);
-    border: 1px solid var(--accent-success);
-    border-radius: 0;
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    animation: fade-in-success 0.5s ease;
-}
-.recalculation-error {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: rgba(255, 107, 107, 0.1);
-    color: var(--accent-error);
-    border: 1px solid var(--accent-error);
-    border-radius: 0;
-    font-size: 0.8rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    animation: shake 0.5s ease;
-}
-@keyframes fade-in-success {
-    from { 
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to { 
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-3px); }
-    75% { transform: translateX(3px); }
-}
-/* Responsive adjustments */
-/* ✨ V4 ULTIMATE SECTION STYLES */
-.v4-ultimate-section {
-    background: linear-gradient(135deg, 
-        rgba(102, 126, 234, 0.05) 0%, 
-        rgba(118, 75, 162, 0.05) 100%);
-    border: 2px solid rgba(102, 126, 234, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-.v4-ultimate-section::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, 
-        transparent 30%, 
-        rgba(102, 126, 234, 0.1) 50%, 
-        transparent 70%);
-    animation: v4-section-shimmer 4s infinite;
-    pointer-events: none;
-    z-index: 1;
-}
-@keyframes v4-section-shimmer {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-.v4-ultimate-section .card-header {
-    position: relative;
-    z-index: 2;
-    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
-}
-.v4-ultimate-section .card-title {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 600;
-    text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
-}
-.v4-ultimate-badge {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    animation: v4-badge-pulse 2s infinite;
-    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
-}
-@keyframes v4-badge-pulse {
-    0%, 100% { 
-        transform: scale(1);
-        box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
-    }
-    50% { 
-        transform: scale(1.05);
-        box-shadow: 0 4px 20px rgba(255, 107, 107, 0.6);
-    }
-}
-.v4-ultimate-section .card-content {
-    position: relative;
-    z-index: 2;
-}
-/* =========================
-   СИСТЕМА ДОСТИЖЕНИЙ
-   ========================= */
-/* Заголовок достижений */
-.achievements-summary {
-    display: flex;
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-md);
-}
-.achievement-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    transition: var(--transition);
-}
-.achievement-stat:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-1px);
-}
-.achievement-count {
     font-size: 1.8rem;
     font-weight: 300;
     color: var(--text-primary);
     margin-bottom: 4px;
 }
-.achievement-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-/* Карточка прогресса игрока */
-.player-progress-card .card-content {
-    padding: var(--spacing-xl);
-}
-.player-level-section {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xl);
-}
-.level-info {
-    flex: 1;
-}
-.current-level {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-}
-.level-number {
-    font-size: 3rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    line-height: 1;
-}
-.level-label {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 300;
-}
-.xp-progress {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-.xp-info {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    font-size: 0.9rem;
-}
-.current-xp {
-    color: var(--text-primary);
-    font-weight: 400;
-}
-.next-level-xp {
-    color: var(--text-muted);
-}
-.xp-bar {
-    width: 100%;
-    height: 8px;
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    overflow: hidden;
-}
-.xp-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #666666, #ffffff);
-    transition: width 0.5s ease;
-}
-.daily-streak {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    min-width: 120px;
-}
-.streak-icon {
-    font-size: 2rem;
-    margin-bottom: var(--spacing-sm);
-}
-.streak-number {
-    font-size: 1.5rem;
-    font-weight: 300;
-    color: var(--text-primary);
-}
-.streak-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-align: center;
-}
-/* Фильтры категорий достижений */
-.achievement-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-md);
-}
-.category-filter {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background-color: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    cursor: pointer;
-    transition: var(--transition);
-    font-size: 0.85rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.category-filter:hover {
-    color: var(--text-secondary);
-    border-color: var(--border-hover);
-    transform: translateY(-1px);
-}
-.category-filter.active {
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
-    border-color: var(--text-primary);
-}
-.category-icon {
-    font-size: 1rem;
-}
-.category-name {
-    flex: 1;
-}
-.category-count {
-    padding: 2px 6px;
-    background-color: var(--bg-secondary);
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-}
-/* Сетка достижений */
-.achievements-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-xl);
-}
-.achievement-card {
-    display: flex;
-    flex-direction: column;
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-}
-.achievement-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-hover);
-}
-.achievement-card.unlocked {
-    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-    border-color: var(--text-primary);
-}
-.achievement-card.locked {
-    opacity: 0.6;
-    background-color: var(--bg-secondary);
-}
-.achievement-card.locked:hover {
-    opacity: 0.8;
-}
-.achievement-icon {
-    font-size: 2.5rem;
-    text-align: center;
-    margin-bottom: var(--spacing-md);
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.achievement-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-.achievement-name {
-    font-size: 1.1rem;
-    font-weight: 400;
-    color: var(--text-primary);
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.achievement-card.locked .achievement-name {
-    color: var(--text-muted);
-}
-.achievement-description {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin: 0;
-    flex: 1;
-}
-.achievement-card.locked .achievement-description {
-    color: var(--text-disabled);
-}
-/* Прогресс достижения */
-.achievement-progress {
-    margin: var(--spacing-sm) 0;
-}
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    overflow: hidden;
-    margin-bottom: var(--spacing-xs);
-}
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #666666, #ffffff);
-    transition: width 0.5s ease;
-}
-.progress-text {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-align: right;
-}
-/* Метаданные достижения */
-.achievement-meta {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--border-color);
-}
-.achievement-xp {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-.xp-icon {
-    color: #ffcc66;
-}
-.achievement-date {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-.achievement-rarity {
-    font-size: 0.8rem;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.rarity-common {
-    color: #cd7f32;
-}
-.rarity-rare {
-    color: #c0c0c0;
-}
-.rarity-epic {
-    color: #ffd700;
-}
-.rarity-legendary {
-    color: #b19cd9;
-    text-shadow: 0 0 8px rgba(177, 156, 217, 0.3);
-}
-.achievement-new-badge {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    background: linear-gradient(135deg, #ff6b6b, #ffcc66);
-    color: var(--text-primary);
-    padding: 4px 8px;
-    border-radius: 0;
-    font-size: 0.7rem;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    animation: pulse-badge 2s infinite;
-}
-@keyframes pulse-badge {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-/* Недавние достижения */
-.recent-achievements-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-}
-.recent-achievement-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    transition: var(--transition);
-}
-.recent-achievement-item:hover {
-    border-color: var(--border-hover);
-    transform: translateX(4px);
-}
-.recent-achievement-icon {
-    font-size: 1.5rem;
-    width: 40px;
-    text-align: center;
-}
-.recent-achievement-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.recent-achievement-name {
-    font-weight: 400;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.recent-achievement-date {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-.recent-achievement-xp {
-    color: #ffcc66;
-    font-weight: 400;
-    font-size: 0.9rem;
-}
-/* Статистика достижений */
-.achievement-statistics .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-lg);
-}
-.achievement-statistics .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    transition: var(--transition);
-}
-.achievement-statistics .stat-item:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-1px);
-}
-.achievement-statistics .stat-value {
-    font-size: 2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-xs);
-    line-height: 1;
-}
+
 .achievement-statistics .stat-label {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -4617,272 +2970,5 @@
     letter-spacing: 0.5px;
     text-align: center;
 }
-/* Адаптивность */
-/* =========================
-   СПЕЦИФИЧНЫЕ КОМПОНЕНТЫ
-   ========================= */
-/* Модальные окна */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-.modal-overlay.closing {
-    animation: fadeOut 0.3s ease;
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-@keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-.modal-content {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-xl);
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: slideIn 0.3s ease;
-}
-.closing .modal-content {
-    animation: slideOut 0.3s ease;
-}
-@keyframes slideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-@keyframes slideOut {
-    from {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-}
-.modal-content h3 {
-    font-size: 1.3rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    margin: 0 0 var(--spacing-lg) 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: var(--spacing-sm);
-}
-.modal-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: flex-end;
-    margin-top: var(--spacing-lg);
-}
-.modal-buttons button {
-    min-width: 100px;
-}
-/* Email Input */
-.email-input {
-    width: 100%;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    font-weight: 300;
-    transition: var(--transition);
-    margin-bottom: var(--spacing-md);
-}
-.email-input:focus {
-    outline: none;
-    border-color: var(--border-hover);
-    background-color: var(--bg-primary);
-}
-.email-input::placeholder {
-    color: var(--text-muted);
-}
-/* Verification Code Input */
-.code-input-container {
-    position: relative;
-    margin: var(--spacing-lg) 0;
-}
-.code-input-hidden {
-    position: absolute;
-    left: -9999px;
-    opacity: 0;
-}
-.code-display {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: center;
-}
-.code-digit {
-    width: 40px;
-    height: 50px;
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: var(--bg-tertiary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-}
-.code-digit.filled {
-    background-color: var(--bg-primary);
-    border-color: var(--border-hover);
-}
-.code-input-container:focus-within .code-digit.active {
-    border-color: var(--text-primary);
-}
-/* Error Messages */
-.verification-error,
-.error {
-    background-color: rgba(255, 107, 107, 0.1);
-    color: var(--accent-error);
-    padding: var(--spacing-sm);
-    border: 1px solid var(--accent-error);
-    border-radius: 0;
-    margin: var(--spacing-sm) 0;
-    font-size: 0.9rem;
-    font-weight: 300;
-}
-/* Success Messages */
-.success {
-    background-color: rgba(76, 175, 80, 0.1);
-    color: var(--accent-success);
-    padding: var(--spacing-sm);
-    border: 1px solid var(--accent-success);
-    border-radius: 0;
-    margin: var(--spacing-sm) 0;
-    font-size: 0.9rem;
-    font-weight: 300;
-}
-/* Verification Alert */
-.verification-alert {
-    background-color: rgba(255, 204, 102, 0.1);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-}
-.verification-alert p {
-    color: var(--text-secondary);
-    margin: 0 0 var(--spacing-sm) 0;
-    font-weight: 300;
-}
-.verification-alert strong {
-    color: var(--accent-warning);
-}
-.verification-alert button {
-    background-color: var(--accent-warning);
-    color: var(--bg-primary);
-    border: 1px solid var(--accent-warning);
-    border-radius: 0;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.verification-alert button:hover {
-    background-color: transparent;
-    color: var(--accent-warning);
-}
-/* Steam/Faceit Sections */
-.steam-section,
-.faceit-section {
-    padding: var(--spacing-lg);
-}
-.steam-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
-}
-/* CS2 Stats */
-.cs2-stats {
-    margin-top: var(--spacing-lg);
-}
-.rank-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-sm);
-}
-.rank-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--spacing-sm);
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    min-width: 120px;
-}
-.rank-image {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    margin-bottom: var(--spacing-xs);
-}
-.rank-wins {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-align: center;
-    font-weight: 300;
-}
-/* Faceit Stats */
-.faceit-stats {
-    margin-top: var(--spacing-lg);
-}
-.faceit-elo {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-lg);
-    text-align: center;
-    margin-bottom: var(--spacing-md);
-}
-.faceit-elo p {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: var(--text-primary);
-}
-.faceit-detailed-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--spacing-sm);
-}
-.faceit-detailed-stats p {
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: var(--spacing-sm);
-    margin: 0;
-    text-align: center;
-    font-weight: 300;
-}
+
+/* Responsive adjustments */ 
