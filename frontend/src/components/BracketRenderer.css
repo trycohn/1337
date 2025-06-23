@@ -65,23 +65,38 @@
     display: flex;
     pointer-events: auto;
 }
-.bracket-controls button {
+
+/* 🎯 ЕДИНЫЕ СТИЛИ КНОПОК ДЛЯ BRACKET RENDERER */
+.bracket-controls button, .reload-button, .regenerate-button {
+    font-family: 'Montserrat';
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff !important;
+    padding: 5px 25px;
+    border-radius: 0px;
+    border: 1px solid #ff0000;
+    background: #000000;
+    cursor: pointer !important;
+    transition: all 0.3s ease;
     height: 30px;
     margin: 0 2px;
-    background-color: #ffffff;
-    cursor: pointer !important;
-    font-size: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #000000;
-    transition: background-color 0.3s, color 0.3s;
     pointer-events: auto;
 }
-.bracket-controls button:hover {
-    background-color: #0e0e0e;
-    color: white;
+
+.bracket-controls button:hover, .reload-button:hover, .regenerate-button:hover {
+    color: #d5d5d5 !important;
+    background: #000000;
+    border: 1px solid #a60000;
 }
+
+.bracket-controls button:active, .reload-button:active, .regenerate-button:active {
+    color: #000000 !important;
+    background: #ffffff;
+}
+
 .bracket-controls button svg {
     width: 16px;
     height: 16px;
@@ -544,25 +559,6 @@
     color: #d84a4a;
     font-size: 16px;
     line-height: 1.5;
-}
-.reload-button, 
-.regenerate-button {
-    background-color: #ffffff;
-    color: rgb(0, 0, 0);
-    border: none;
-    padding: 8px 16px;
-    margin: 10px 5px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
-}
-.reload-button:hover, 
-.regenerate-button:hover {
-    background-color: #356ac3;
-}
-.regenerate-button:hover {
-    background-color: #2d8c46;
 }
 .empty-bracket-message {
     border: 1px solid #dee2e6;

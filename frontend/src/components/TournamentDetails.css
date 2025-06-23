@@ -1,3 +1,103 @@
+/* 🎯 ЕДИНЫЕ СТИЛИ КНОПОК ДЛЯ TOURNAMENT DETAILS */
+.tournament-details-tournamentdetails .btn,
+.tournament-details-tournamentdetails button,
+.generate-bracket-button,
+.regenerate-bracket-button,
+.form-teams-button,
+.add-participant-button,
+.reformate-teams-button,
+.clear-results-button,
+.auth-error-button,
+.participate-btn,
+.withdraw-btn,
+.save-btn,
+.cancel-btn,
+.confirm-btn,
+.edit-btn,
+.view-profile-btn,
+.add-participant-btn,
+.details-btn,
+.edit-compact-btn,
+.filter-btn,
+.remove-admin-btn,
+.invite-admin,
+.tab-button-tournamentdetails {
+  font-family: 'Montserrat';
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff !important;
+  padding: 5px 25px;
+  border-radius: 0px;
+  border: 1px solid #ff0000;
+  background: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.tournament-details-tournamentdetails .btn:hover,
+.tournament-details-tournamentdetails button:hover,
+.generate-bracket-button:hover,
+.regenerate-bracket-button:hover,
+.form-teams-button:hover,
+.add-participant-button:hover,
+.reformate-teams-button:hover,
+.clear-results-button:hover,
+.auth-error-button:hover,
+.participate-btn:hover,
+.withdraw-btn:hover,
+.save-btn:hover:not(:disabled),
+.cancel-btn:hover:not(:disabled),
+.confirm-btn:hover:not(:disabled),
+.edit-btn:hover,
+.view-profile-btn:hover,
+.add-participant-btn:hover,
+.details-btn:hover,
+.edit-compact-btn:hover,
+.filter-btn:hover,
+.remove-admin-btn:hover,
+.invite-admin:hover:not(:disabled),
+.tab-button-tournamentdetails:hover {
+  color: #d5d5d5 !important;
+  background: #000000;
+  border: 1px solid #a60000;
+}
+
+.tournament-details-tournamentdetails .btn:active,
+.tournament-details-tournamentdetails button:active,
+.generate-bracket-button:active,
+.regenerate-bracket-button:active,
+.form-teams-button:active,
+.add-participant-button:active,
+.reformate-teams-button:active,
+.clear-results-button:active,
+.auth-error-button:active,
+.participate-btn:active,
+.withdraw-btn:active,
+.save-btn:active,
+.cancel-btn:active,
+.confirm-btn:active,
+.edit-btn:active,
+.view-profile-btn:active,
+.add-participant-btn:active,
+.details-btn:active,
+.edit-compact-btn:active,
+.filter-btn:active,
+.remove-admin-btn:active,
+.invite-admin:active,
+.tab-button-tournamentdetails:active {
+  color: #000000 !important;
+  background: #ffffff;
+}
+
+/* Специальные состояния */
+.tab-button-tournamentdetails.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ff0000 !important;
+}
+
 .tournament-details-tournamentdetails {
     padding: 20px;
     margin: auto;

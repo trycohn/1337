@@ -89,75 +89,73 @@
   border-color: var(--primary-color);
   outline: none;
 }
+
+/* Кнопки авторизации */
 .auth-button {
+  width: 100%;
+  padding: var(--spacing-md);
+  background-color: var(--primary-color);
+  color: var(--light-text);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-normal);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+  margin-top: var(--spacing-md);
+}
+
+.auth-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.auth-button:disabled {
+  background-color: var(--light-gray);
+  cursor: not-allowed;
+}
+
+/* Социальные кнопки */
+.steam-button, .faceit-button {
   width: 100%;
   padding: var(--spacing-md);
   border: none;
   border-radius: var(--border-radius-sm);
-  background-color: #ffffff;
-  color: #000000;
-  font-size: 20px;
+  font-size: var(--font-size-normal);
   font-weight: 500;
-  text-transform: uppercase;
-  line-height: 1.55;
   cursor: pointer;
   transition: all var(--transition-normal);
-  margin-top: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  text-decoration: none;
 }
-.auth-button:hover {
-  background-color: #7b7b7b;
+
+.steam-button {
+  background-color: #171a21;
   color: #ffffff;
 }
+
+.steam-button:hover {
+  background-color: #1e2328;
+}
+
+.faceit-button {
+  background-color: #ff5500;
+  color: #ffffff;
+}
+
+.faceit-button:hover {
+  background-color: #e64a00;
+}
+
 .social-login-buttons {
   margin-top: var(--spacing-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
 }
-.steam-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: var(--spacing-md);
-  background-color: #ffffff;
-  color: #000000;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-normal);
-  gap: var(--spacing-sm);
-  text-transform: uppercase;
-  line-height: 1.55;
-  font-size: var(--font-size-normal);
-}
-.steam-button:hover {
-  background-color: #7b7b7b;
-  color: #ffffff;
-}
-.faceit-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: var(--spacing-md);
-  background-color: #ffffff;
-  color: rgb(0, 0, 0);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color var(--transition-normal);
-  gap: var(--spacing-sm);
-  text-transform: uppercase;
-  line-height: 1.55;
-  font-size: var(--font-size-normal);
-}
-.faceit-button:hover {
-  background-color: #7b7b7b;
-  color: #ffffff;
-}
+
 .error-message {
   color: var(--error-color);
   background-color: rgba(220, 53, 69, 0.1);

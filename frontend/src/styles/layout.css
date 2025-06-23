@@ -59,8 +59,7 @@ main {
   gap: var(--spacing-md);
   transition: all var(--transition-normal);
 }
-.navigation a, 
-.navigation button {
+.navigation a, .navigation button {
   color: #ffffff;
   text-transform: uppercase;
   font-family: var(--font-family);
@@ -69,13 +68,14 @@ main {
   font-size: var(--font-size-normal);
   padding: var(--spacing-xs) var(--spacing-sm);
   transition: color var(--transition-normal);
-}
-.navigation a:hover, 
-.navigation button:hover {
-  color: #000000;
+  cursor: pointer;
   text-decoration: none;
-  background-color: #7d7d7d;
 }
+.navigation a:hover, .navigation button:hover {
+  color: #d5d5d5;
+  text-decoration: none;
+}
+
 /* Мобильное меню */
 .hamburger {
   display: none;
@@ -91,30 +91,13 @@ main {
   fill: #ffffff;
 }
 .hamburger:hover svg {
-  fill: #ffffff;
+  fill: #d5d5d5;
 }
 /* Блок авторизации */
 .auth-block {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-}
-.login-button {
-  color: #000000;
-  background-color: #ffffff;
-  font-size: 20px;
-  text-transform: uppercase;
-  text-decoration: none;
-  line-height: 1.55;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-.login-button:hover {
-  color: #ffffff;
-  background-color: #7b7b7b;
 }
 .user-info {
   display: flex;
@@ -126,26 +109,30 @@ main {
   text-decoration: none;
   font-weight: 500;
   text-transform: uppercase;
+  transition: color var(--transition-normal);
 }
 .username-link:hover {
-  color: #ffffff;
-}
-.logout-button {
-  color: #000000;
-  background-color: #ffffff;
-  font-size: 20px;
-  text-transform: uppercase;
+  color: #d5d5d5;
   text-decoration: none;
-  line-height: 1.55;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-normal);
 }
-.logout-button:hover {
+
+/* Кнопки входа/выхода */
+.login-button, .logout-button {
   color: #ffffff;
-  background-color: #7b7b7b;
+  text-transform: uppercase;
+  font-family: var(--font-family);
+  background: none;
+  border: none;
+  font-size: var(--font-size-normal);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  transition: color var(--transition-normal);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.login-button:hover, .logout-button:hover {
+  color: #d5d5d5;
+  text-decoration: none;
 }
 /* Иконки уведомлений и сообщений */
 .notifications {

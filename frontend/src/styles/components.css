@@ -16,101 +16,33 @@ nav a:hover, nav button:hover {
   color: #ffffff;
   text-decoration: none;
 }
-/* Кнопки навигации и авторизации */
-.nav-button, .auth-button {
-  color: #000000;
-  background-color: #ffffff;
-  font-size: 20px;
-  text-transform: uppercase;
-  text-decoration: none;
-  line-height: 1.55;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: none;
-  border-radius: var(--border-radius-sm);
+/* 🎯 ЕДИНЫЙ СТИЛЬ КНОПОК */
+.btn, .nav-button, .auth-button, button {
+  font-family: 'Montserrat';
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff !important;
+  padding: 5px 25px;
+  border-radius: 0px;
+  border: 1px solid #ff0000;
+  background: #000000;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
 }
-.nav-button:hover, .auth-button:hover {
-  color: #ffffff;
-  background-color: #7b7b7b;
+.btn:hover, .nav-button:hover, .auth-button:hover, button:hover {
+  color: #d5d5d5 !important;
+  background: #000000;
+  border: 1px solid #a60000;
+}
+.btn:active, .nav-button:active, .auth-button:active, button:active {
+  color: #000000 !important;
+  background: #ffffff;
 }
 /* Иконки в навигации */
 .nav-icon, nav .icon {
   color: #ffffff;
-}
-/* Кнопки */
-.btn {
-  display: inline-block;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--light-text);
-  color: var(--dark-text);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-normal);
-  font-weight: 500;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  line-height: 1.55;
-  transition: all var(--transition-normal);
-}
-.btn:hover {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
-}
-.btn-primary {
-  background-color: var(--primary-color);
-  color: var(--light-text);
-}
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-}
-.btn-secondary {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
-}
-.btn-secondary:hover {
-  background-color: var(--primary-hover);
-}
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid var(--light-text);
-  color: var(--light-text);
-}
-.btn-outline:hover {
-  background-color: var(--light-text);
-  color: var(--dark-text);
-}
-.btn-success {
-  background-color: var(--success-color);
-  color: var(--light-text);
-}
-.btn-success:hover {
-  background-color: #218838;
-}
-.btn-danger {
-  background-color: var(--error-color);
-  color: var(--light-text);
-}
-.btn-danger:hover {
-  background-color: #c82333;
-}
-.btn-sm {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-small);
-}
-.btn-lg {
-  padding: var(--spacing-md) var(--spacing-lg);
-  font-size: var(--font-size-medium);
-}
-.btn-block {
-  display: block;
-  width: 100%;
-}
-.btn-disabled,
-.btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 /* Формы */
 .form-group {
