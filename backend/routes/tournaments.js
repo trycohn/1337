@@ -320,7 +320,7 @@ router.get('/:id', async (req, res) => {
         if (tournament.format === 'mix' || tournament.participant_type === 'team') {
             console.log(`🏆 [GET /tournaments/${tournamentId}] Загружаем команды для формата "${tournament.format}"...`);
             
-            // 🔧 ИСПРАВЛЕННЫЙ SQL ЗАПРОС - используем таблицу tournament_teams вместо teams
+            // 🔧 ИСПРАВЛЕННЫЙ SQL ЗАПРОС - включаем ВСЕ поля рейтинга для участников команд
             const teamsQuery = `
                 SELECT tt.id, tt.name, tt.tournament_id,
                     JSON_AGG(
@@ -329,8 +329,15 @@ router.get('/:id', async (req, res) => {
                             'user_id', tp.user_id,
                             'username', u.username,
                             'name', COALESCE(tp.name, u.username),
-                            'faceit_elo', u.faceit_elo,
-                            'cs2_premier_rank', u.cs2_premier_rank,
+                            'faceit_elo', tp.faceit_elo,
+                            'cs2_premier_rank', tp.cs2_premier_rank,
+                            'premier_rank', tp.premier_rank,
+                            'user_faceit_elo', u.faceit_elo,
+                            'user_premier_rank', u.cs2_premier_rank,
+                            'faceit_rating', u.faceit_rating,
+                            'user_faceit_rating', u.faceit_rating,
+                            'premier_rating', u.premier_rating,
+                            'user_premier_rating', u.premier_rating,
                             'avatar_url', u.avatar_url
                         ) ORDER BY tp.id
                     ) as members
@@ -484,9 +491,11 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
                     `SELECT tm.team_id, tm.user_id, tm.participant_id, 
                             tp.name, u.username, u.avatar_url, 
                             tp.faceit_elo as tp_faceit_elo, tp.cs2_premier_rank as tp_cs2_premier_rank,
+                            tp.premier_rank as tp_premier_rank,
                             u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_cs2_premier_rank,
+                            u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
                             COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo,
-                            COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
+                            COALESCE(tp.cs2_premier_rank, tp.premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
                      FROM tournament_team_members tm
                      LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                      LEFT JOIN users u ON tm.user_id = u.id

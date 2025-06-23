@@ -17,12 +17,27 @@ const MixTournament = () => {
     // Функция для расчета рейтинга игрока
     const calculatePlayerRating = (player) => {
         if (ratingType === 'faceit') {
-            // Приоритет отдается FACEit рейтингу
-            return player.faceit_rating || 1000; // 1000 - базовый ранг
+            // 🔧 ИСПРАВЛЕННЫЙ ПРИОРИТЕТ: кастомный → пользовательский → дефолт
+            if (player.faceit_elo && !isNaN(parseInt(player.faceit_elo)) && parseInt(player.faceit_elo) > 0) {
+                return parseInt(player.faceit_elo);
+            } else if (player.user_faceit_elo && !isNaN(parseInt(player.user_faceit_elo)) && parseInt(player.user_faceit_elo) > 0) {
+                return parseInt(player.user_faceit_elo);
+            } else if (player.faceit_rating && !isNaN(parseInt(player.faceit_rating)) && parseInt(player.faceit_rating) > 0) {
+                return parseInt(player.faceit_rating);
+            }
+            return 1000; // дефолт для FACEIT
         } else {
-            // Для Premier ранга
-            const premierRank = player.premier_rank || 5; // 5 - базовый ранг
-            return premierRank * 200; // Конвертируем ранг в рейтинг
+            // 🔧 ИСПРАВЛЕННЫЙ ПРИОРИТЕТ: кастомный → пользовательский → дефолт  
+            if (player.cs2_premier_rank && !isNaN(parseInt(player.cs2_premier_rank)) && parseInt(player.cs2_premier_rank) > 0) {
+                return parseInt(player.cs2_premier_rank);
+            } else if (player.premier_rank && !isNaN(parseInt(player.premier_rank)) && parseInt(player.premier_rank) > 0) {
+                return parseInt(player.premier_rank);
+            } else if (player.user_premier_rank && !isNaN(parseInt(player.user_premier_rank)) && parseInt(player.user_premier_rank) > 0) {
+                return parseInt(player.user_premier_rank);
+            } else if (player.premier_rating && !isNaN(parseInt(player.premier_rating)) && parseInt(player.premier_rating) > 0) {
+                return parseInt(player.premier_rating);
+            }
+            return 5; // дефолт для Premier
         }
     };
 
@@ -166,8 +181,8 @@ const MixTournament = () => {
                                 <span className="player-name">{player.name}</span>
                                 <span className="player-rating">
                                     {ratingType === 'faceit' 
-                                        ? `FACEit: ${player.faceit_rating || 1000}`
-                                        : `Premier: ${player.premier_rank || 5}`
+                                        ? `FACEIT: ${calculatePlayerRating(player)}`
+                                        : `Premier: ${calculatePlayerRating(player)}`
                                     }
                                 </span>
                             </div>
@@ -188,8 +203,8 @@ const MixTournament = () => {
                                             <span className="player-name">{player.name}</span>
                                             <span className="player-rating">
                                                 {ratingType === 'faceit' 
-                                                    ? `FACEit: ${player.faceit_rating || 1000}`
-                                                    : `Premier: ${player.premier_rank || 5}`
+                                                    ? `FACEIT: ${calculatePlayerRating(player)}`
+                                                    : `Premier: ${calculatePlayerRating(player)}`
                                                 }
                                             </span>
                                         </div>
