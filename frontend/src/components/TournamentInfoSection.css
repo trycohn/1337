@@ -67,7 +67,6 @@
 
 .meta-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 24px;
 }
 
@@ -1019,15 +1018,15 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .participate-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    background-color: #111111 !important;
+    color: white !important;
     padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
+    border: none !important;
+    border-radius: 0px;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
@@ -1035,20 +1034,17 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 200px;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    width: 100%;
 }
 
 .participate-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #5a67d8, #667eea);
+    background-color: #222222 !important;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .participate-btn:active:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .participate-btn:disabled {
@@ -1076,12 +1072,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(102, 126, 234, 0.1);
     padding: 8px 12px;
-    border-radius: 6px;
-    border-left: 3px solid #667eea;
     font-size: 0.85rem;
-    color: #b8c5ff;
+    color: #ffffff;
     line-height: 1.4;
 }
 
