@@ -686,6 +686,8 @@ function TournamentDetails() {
                             user={user}
                             isCreator={isCreator}
                             isAdminOrCreator={isAdminOrCreator}
+                            onParticipationUpdate={fetchTournamentData}
+                            userTeams={teams}
                         />
 
                         {/* Турнирная сетка */}

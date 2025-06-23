@@ -1008,4 +1008,132 @@
 .description-editor::-webkit-scrollbar-thumb:hover,
 .rules-editor::-webkit-scrollbar-thumb:hover {
     background: #555555;
+}
+
+/* 🆕 Стили для участия в турнире */
+.participation-section {
+    margin-top: 8px;
+}
+
+.participation-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.participate-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.participate-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a67d8, #667eea);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.participate-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.participate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.participation-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
+    font-size: 0.85rem;
+    color: #b8c5ff;
+    line-height: 1.4;
+}
+
+.hint-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.participation-status {
+    margin-top: 8px;
+}
+
+.participant-status-badge {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+}
+
+/* Мобильная адаптация */
+@media (max-width: 576px) {
+    .participation-controls {
+        align-items: stretch;
+    }
+    
+    .participate-btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .participation-hint {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+    
+    .participant-status-badge {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
 } 
