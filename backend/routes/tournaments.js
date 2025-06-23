@@ -4004,4 +4004,60 @@ router.get('/admin-invitations/stats', authenticateToken, async (req, res) => {
     }
 });
 
+// 🔧 ПОЛУЧЕНИЕ КОМАНД И ИХ УЧАСТНИКОВ ДЛЯ КОМАНДНЫХ ТУРНИРОВ (ИСПРАВЛЕНО: ВОССТАНОВЛЕН МАРШРУТ)
+router.get('/:id/teams', async (req, res) => {
+    const { id } = req.params;
+    try {
+        console.log(`🔍 [GET /:id/teams] Запрос команд для турнира ${id}`);
+        
+        // Проверяем существование турнира
+        const tourCheck = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tourCheck.rows.length === 0) {
+            console.log(`❌ [GET /:id/teams] Турнир ${id} не найден`);
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        // Получаем все команды турнира
+        const teamsRes = await pool.query(
+            `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
+             FROM tournament_teams tt
+             WHERE tt.tournament_id = $1
+             ORDER BY tt.id`,
+            [id]
+        );
+
+        console.log(`🔍 [GET /:id/teams] Найдено ${teamsRes.rows.length} команд для турнира ${id}`);
+
+        // Для каждой команды получаем участников с ПОЛНЫМИ полями рейтинга
+        const teams = await Promise.all(teamsRes.rows.map(async (team) => {
+            const membersRes = await pool.query(
+                `SELECT tm.team_id, tm.user_id, tm.participant_id, 
+                        tp.name, u.username, u.avatar_url, 
+                        tp.faceit_elo, tp.cs2_premier_rank, tp.premier_rank,
+                        u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
+                        u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating
+                 FROM tournament_team_members tm
+                 LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
+                 LEFT JOIN users u ON tm.user_id = u.id
+                 WHERE tm.team_id = $1
+                 ORDER BY tm.participant_id`,
+                [team.id]
+            );
+
+            console.log(`📊 [GET /:id/teams] Команда ${team.name}: ${membersRes.rows.length} участников`);
+
+            return {
+                ...team,
+                members: membersRes.rows
+            };
+        }));
+
+        console.log(`✅ [GET /:id/teams] Успешно загружены команды для турнира ${id}`);
+        res.json(teams);
+    } catch (err) {
+        console.error(`❌ [GET /:id/teams] Ошибка получения команд турнира ${id}:`, err);
+        res.status(500).json({ error: err.message || 'Ошибка при получении команд турнира' });
+    }
+});
+
 module.exports = router;
