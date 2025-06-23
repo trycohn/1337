@@ -986,9 +986,6 @@
     font-weight: 700;
     text-align: center;
     padding: 16px;
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    border-radius: 12px;
-    border: 1px solid #374151;
 }
 /* Стили для кнопки переформирования с информацией */
 .reform-teams-button {
