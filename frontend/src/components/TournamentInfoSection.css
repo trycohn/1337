@@ -15,7 +15,8 @@
      grid-template-areas:
        "section-header section-header section-header"
        "tournament-meta-grid description-block description-block"
-       "tournament-meta-grid rules-block rules-block";
+       "tournament-meta-grid rules-block rules-block"
+       "participants-section participants-section participants-section";  
     justify-items: center;
 }
 
@@ -723,6 +724,7 @@
     margin-top: 40px;
     padding-top: 24px;
     border-top: 1px solid #1a1a1a;
+    grid-area: participants-section;
 }
 
 .participants-list {
