@@ -46,7 +46,6 @@ const TournamentInfoSection = ({
         if (!tournament) return false;
         if (tournament.status !== 'active') return false;
         if (isUserParticipant()) return false;
-        if (isCreator || isAdminOrCreator) return false; // Создатель и администраторы не участвуют как обычные участники
         
         // Проверка лимита участников
         if (tournament.max_participants && tournament.participants?.length >= tournament.max_participants) {
