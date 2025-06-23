@@ -1,11 +1,10 @@
 .team-modal {
-    background: white;
+    background: #000000;
     border-radius: 16px;
     width: 95%;
     max-width: 1000px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -141,11 +140,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: rgb(0, 0, 0);
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #e9ecef;
     transition: all 0.2s;
+    color: #ffffff;
 }
 
 .member-item-large:hover {
@@ -239,25 +239,25 @@
 }
 
 .transfer-captain-btn {
-    background: #e3f2fd;
-    color: #1565c0;
-    border: 1px solid #bbdefb;
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #ff0000;
 }
 
 .transfer-captain-btn:hover:not(:disabled) {
-    background: #bbdefb;
+    background: #1a1a1a;
 }
 
 .delete-team-btn,
 .leave-team-btn {
-    background: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #ff0000;
 }
 
 .delete-team-btn:hover:not(:disabled),
 .leave-team-btn:hover:not(:disabled) {
-    background: #ffcdd2;
+    background: #000000;
 }
 
 .transfer-captain-btn:disabled {
@@ -267,11 +267,12 @@
 
 /* Правая секция - управление */
 .team-management-section {
-    background: #f8f9fa;
+    background: #000000;
     border-radius: 12px;
     padding: 20px;
     border: 2px solid #e9ecef;
     height: fit-content;
+    color: #ffffff;
 }
 
 .invite-header {
@@ -288,7 +289,7 @@
 }
 
 .toggle-invite-btn {
-    background: #667eea;
+    background: #000000;
     color: white;
     border: none;
     width: 30px;
@@ -304,7 +305,8 @@
 }
 
 .toggle-invite-btn:hover {
-    background: #5a6fd8;
+    background: #ffffff;
+    color: #000000;
     transform: scale(1.1);
 }
 
