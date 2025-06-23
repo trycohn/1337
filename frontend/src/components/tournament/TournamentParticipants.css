@@ -166,8 +166,10 @@
 
 /* Список участников для соло турниров */
 .participants-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -510,10 +512,6 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
-    }
-    
-    .participants-list {
-        grid-template-columns: 1fr;
     }
     
     .participant-card {

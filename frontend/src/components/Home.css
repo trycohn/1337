@@ -867,8 +867,9 @@ header.header {
 .participants-list ul {
   list-style: none;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 .participant-item {
