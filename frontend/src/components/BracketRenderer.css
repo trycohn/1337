@@ -23,7 +23,7 @@
     position: relative;
     overflow: hidden;
     width: 100%;
-    background-color: #0e0e0e;
+    background-color: #000000;
     border: 1px solid #ccc;
     user-select: none;
     cursor: grab !important;
@@ -45,7 +45,7 @@
     gap: 30px;
     padding: 40px 20px 20px 20px;
     will-change: transform;
-    background-color: #0e0e0e;
+    background-color: #000000;
     position: relative;
     transform-origin: 0 0;
     pointer-events: all;
