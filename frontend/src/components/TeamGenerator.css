@@ -360,7 +360,11 @@
 /* 🎯 УЛУЧШЕННЫЕ СТИЛИ ДЛЯ БЛОКА КОМАНД */
 /* Основной заголовок блока команд */
 .teams-header {
-  margin-bottom: 24px;
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-direction: column !important;
 }
 .teams-header h4 {
   margin: 0 0 16px 0;
