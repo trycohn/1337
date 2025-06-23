@@ -160,9 +160,6 @@
 }
 
 /* 🆕 Администраторы турнира */
-.meta-item.admins-meta {
-    grid-column: span 2;
-}
 
 .admins-list {
     display: flex;
