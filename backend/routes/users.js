@@ -254,9 +254,26 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
         }
 
+        // Пытаемся получить никнейм через Steam API при привязке
+        let steamNickname = null;
+        try {
+            const apiKey = process.env.STEAM_API_KEY;
+            if (apiKey) {
+                const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
+                if (response.data?.response?.players?.length > 0) {
+                    steamNickname = response.data.response.players[0].personaname;
+                    console.log(`Получен Steam никнейм для пользователя ${req.user.id}: "${steamNickname}"`);
+                }
+            }
+        } catch (apiError) {
+            console.log('Не удалось получить Steam никнейм при привязке:', apiError.message);
+            // Продолжаем без никнейма - это не критично
+        }
+
+        // Обновляем Steam данные в БД (включая никнейм если получили)
         await pool.query(
-            'UPDATE users SET steam_id = $1, steam_url = $2 WHERE id = $3',
-            [steamId, `https://steamcommunity.com/profiles/${steamId}`, req.user.id]
+            'UPDATE users SET steam_id = $1, steam_url = $2, steam_nickname = $3 WHERE id = $4',
+            [steamId, `https://steamcommunity.com/profiles/${steamId}`, steamNickname, req.user.id]
         );
         console.log('Steam ID linked successfully to user:', req.user.id);
 
@@ -270,7 +287,7 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
 // отвязка Steam ID
 router.post('/unlink-steam', authenticateToken, async (req, res) => {
     try {
-        await pool.query('UPDATE users SET steam_id = NULL, steam_url = NULL WHERE id = $1', [req.user.id]);
+        await pool.query('UPDATE users SET steam_id = NULL, steam_url = NULL, steam_nickname = NULL WHERE id = $1', [req.user.id]);
         res.json({ message: 'Steam отвязан' });
     } catch (err) {
         console.error('Ошибка отвязки Steam:', err);
@@ -374,18 +391,37 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 // Получение никнейма Steam
 router.get('/steam-nickname', authenticateToken, async (req, res) => {
     try {
-        const userResult = await pool.query('SELECT steam_id FROM users WHERE id = $1', [req.user.id]);
-        const steamId = userResult.rows[0].steam_id;
+        const userResult = await pool.query('SELECT steam_id, steam_nickname FROM users WHERE id = $1', [req.user.id]);
+        const { steam_id: steamId, steam_nickname: cachedNickname } = userResult.rows[0];
 
         if (!steamId) {
             return res.status(400).json({ error: 'Steam ID не привязан' });
         }
 
-        const apiKey = process.env.STEAM_API_KEY; // Укажи свой Steam API ключ в .env
-        const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
-        const steamNickname = response.data.response.players[0].personaname;
+        try {
+            // Пытаемся получить никнейм через Steam API
+            const apiKey = process.env.STEAM_API_KEY;
+            const response = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
+            const steamNickname = response.data.response.players[0].personaname;
 
-        res.json({ steamNickname });
+            // Если получили никнейм через API - обновляем в БД
+            if (steamNickname && steamNickname !== cachedNickname) {
+                console.log(`Обновляем Steam никнейм для пользователя ${req.user.id}: "${cachedNickname}" -> "${steamNickname}"`);
+                await pool.query('UPDATE users SET steam_nickname = $1 WHERE id = $2', [steamNickname, req.user.id]);
+            }
+
+            res.json({ steamNickname });
+        } catch (apiError) {
+            console.log('Steam API недоступен, используем кэшированный никнейм:', apiError.message);
+            
+            // Если API недоступен, но есть кэшированный никнейм - возвращаем его
+            if (cachedNickname) {
+                res.json({ steamNickname: cachedNickname });
+            } else {
+                // Если никнейма нет даже в кэше - возвращаем ошибку
+                res.status(500).json({ error: 'Steam API недоступен и никнейм не найден в кэше' });
+            }
+        }
     } catch (err) {
         console.error('Ошибка получения никнейма Steam:', err);
         res.status(500).json({ error: 'Не удалось получить никнейм Steam' });
