@@ -121,7 +121,7 @@ header.header {
 .user-info button {
   padding: 2px 10px;
   background-color: #ffffff;
-  color: rgb(0, 0, 0);
+  color: #000000 !important;
   border: none;
   border-radius: 0px;
   cursor: pointer;

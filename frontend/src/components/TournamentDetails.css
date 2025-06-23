@@ -33,9 +33,11 @@
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
-  display: inline-block;
+  display: flex;
   margin-right: 5px !important;
   margin-left: 5px !important;
+  align-items: center;
+  text-align: center;
 }
 
 .tournament-details-tournamentdetails .btn:hover,
