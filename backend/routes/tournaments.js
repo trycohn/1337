@@ -331,7 +331,6 @@ router.get('/:id', async (req, res) => {
                             'name', COALESCE(tp.name, u.username),
                             'faceit_elo', tp.faceit_elo,
                             'cs2_premier_rank', tp.cs2_premier_rank,
-                            'premier_rank', tp.premier_rank,
                             'user_faceit_elo', u.faceit_elo,
                             'user_premier_rank', u.cs2_premier_rank,
                             'faceit_rating', u.faceit_rating,
@@ -491,11 +490,10 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
                     `SELECT tm.team_id, tm.user_id, tm.participant_id, 
                             tp.name, u.username, u.avatar_url, 
                             tp.faceit_elo as tp_faceit_elo, tp.cs2_premier_rank as tp_cs2_premier_rank,
-                            tp.premier_rank as tp_premier_rank,
                             u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_cs2_premier_rank,
                             u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
                             COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo,
-                            COALESCE(tp.cs2_premier_rank, tp.premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
+                            COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
                      FROM tournament_team_members tm
                      LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                      LEFT JOIN users u ON tm.user_id = u.id
@@ -2294,11 +2292,9 @@ function normalizeParticipantRating(participant, ratingType) {
             rating = 1000; // дефолт для FACEIT
         }
     } else {
-        // Приоритет для Premier: кастомный ранг → premier_rank → пользовательский ранг → premier_rating → дефолт
+        // Приоритет для Premier: кастомный ранг → пользовательский ранг → premier_rating → дефолт
         if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
             rating = parseInt(participant.cs2_premier_rank);
-        } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
-            rating = parseInt(participant.premier_rank);
         } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
             rating = parseInt(participant.user_premier_rank);
         } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
@@ -2355,11 +2351,11 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         // 🆕 УЛУЧШЕННЫЙ SQL ЗАПРОС: получаем ВСЕ возможные поля рейтинга с правильными приоритетами
         const partRes = await pool.query(
             `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
-                    tp.faceit_elo, tp.cs2_premier_rank, tp.premier_rank,
+                    tp.faceit_elo, tp.cs2_premier_rank,
                     u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
                     u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
                     COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_rating,
-                    COALESCE(tp.cs2_premier_rank, tp.premier_rank, u.cs2_premier_rank, 5) as premier_rating
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as premier_rating
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
@@ -4033,7 +4029,7 @@ router.get('/:id/teams', async (req, res) => {
             const membersRes = await pool.query(
                 `SELECT tm.team_id, tm.user_id, tm.participant_id, 
                         tp.name, u.username, u.avatar_url, 
-                        tp.faceit_elo, tp.cs2_premier_rank, tp.premier_rank,
+                        tp.faceit_elo, tp.cs2_premier_rank,
                         u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
                         u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating
                  FROM tournament_team_members tm
