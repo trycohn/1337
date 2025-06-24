@@ -581,7 +581,7 @@
 /* Стили для обычных матчей (не завершенных) */
 .match-container:not(.completed) {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     width: 100%;
     margin-bottom: 20px;
     gap: 5px;
