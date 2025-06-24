@@ -307,13 +307,20 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     }
     
     // Выводим итоговую структуру сетки для отладки
-    console.log("Финальная структура сетки:", matches.map(m => ({
+    // Перечитываем данные из базы, чтобы показать реальное состояние после всех UPDATE запросов
+    const finalResult = await pool.query(
+        'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+        [tournamentId]
+    );
+    
+    console.log("Финальная структура сетки (из базы данных):", finalResult.rows.map(m => ({
         id: m.id,
         round: m.round,
         team1_id: m.team1_id,
         team2_id: m.team2_id,
         next_match_id: m.next_match_id,
-        loser_next_match_id: m.loser_next_match_id
+        loser_next_match_id: m.loser_next_match_id,
+        match_number: m.match_number
     })));
     
     return matches;

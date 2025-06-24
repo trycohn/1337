@@ -1450,11 +1450,11 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
 
         // Отправляем обновления всем клиентам, просматривающим этот турнир
         broadcastTournamentUpdate(id, tournamentData);
+        
         // Отправляем объявление в чат турнира о генерации сетки
         await sendTournamentChatAnnouncement(
-            tournamentData.name,
-            `Сетка турнира "${tournamentData.name}" сгенерирована`,
-            id
+            id, // ✅ ИСПРАВЛЕНО: передаем ID турнира, а не название
+            `Турнирная сетка сгенерирована для турнира "${tournament.name}"`
         );
         console.log('🔍 Bracket generated for tournament:', tournamentData);
         res.status(200).json({ message: 'Сетка успешно сгенерирована', tournament: tournamentData });
