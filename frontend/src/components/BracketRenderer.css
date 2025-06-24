@@ -176,6 +176,7 @@
     border-radius: 4px;
     padding: 4px 6px;
     width: 200px;
+    height: 48px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     cursor: inherit;
@@ -189,8 +190,6 @@
 .custom-seed.winner {
     background-color: #000000 !important;
     border: 2px solid #333333 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    transform: scale(1.02);
     animation: victoryGlow 2s ease-in-out infinite;
 }
 
@@ -228,18 +227,15 @@
 
 /* 🎯 СТИЛИ ДЛЯ ВЫБРАННЫХ МАТЧЕЙ */
 .custom-seed.selected {
-    box-shadow: 0 0 8px #4a90e2 !important;
-    border-color: #4a90e2 !important;
+    border-color: #ff0000 !important;
 }
 
 .custom-seed.selected.winner {
-    box-shadow: 0 0 8px #4a90e2, 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    border-color: #4a90e2 !important;
+    border-color: #ff0000 !important;
 }
 
 .custom-seed.selected.loser {
-    box-shadow: 0 0 8px #4a90e2, 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-    border-color: #4a90e2 !important;
+    border-color: #ff0000 !important;
 }
 
 /* 🎯 СТИЛИ ДЛЯ ЗАВЕРШЕННЫХ МАТЧЕЙ */
@@ -451,9 +447,10 @@
 .custom-seed .team-name {
     color: #000000;
     border: none;
-    font-size: 12px;
+    font-size: 16px;
     padding: 4px 4px;
     font-weight: 700;
+    margin: 2px !important;
 }
 .team-score {
     min-width: 20px;
