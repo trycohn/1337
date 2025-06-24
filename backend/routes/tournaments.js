@@ -1627,22 +1627,29 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
 
         // Перемещаем победителя в следующий матч, если он есть
         if (winner_team_id && match.next_match_id) {
+            console.log(`🔧 ПРОДВИЖЕНИЕ ПОБЕДИТЕЛЯ: Турнир ${tournamentId}, формат: ${tournament.format}`);
+            console.log(`🔧 Матч ${matchId}: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
+            
             const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
             if (nextMatchResult.rows.length > 0) {
                 const nextMatch = nextMatchResult.rows[0];
-                console.log(`Следующий матч для победителя: ${nextMatch.match_number}`);
+                console.log(`🔧 Следующий матч ${nextMatch.id} (№${nextMatch.match_number}): team1_id=${nextMatch.team1_id}, team2_id=${nextMatch.team2_id}`);
 
                 // Определяем, в какую позицию (team1 или team2) добавить победителя
                 if (!nextMatch.team1_id) {
                     await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
+                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
                 } else if (!nextMatch.team2_id) {
                     await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
+                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
                 } else {
-                    console.log(`Обе позиции в матче ${nextMatch.match_number} уже заняты`);
+                    console.log(`⚠️ Обе позиции в матче ${nextMatch.match_number} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
                 }
+            } else {
+                console.log(`❌ Следующий матч с ID ${match.next_match_id} не найден!`);
             }
+        } else {
+            console.log(`ℹ️ Продвижение победителя не требуется: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
         }
 
         // Перемещаем проигравшего в матч за 3-е место, если это полуфинал и есть loser_next_match_id
@@ -1984,22 +1991,29 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
 
         // Перемещаем победителя в следующий матч, если он есть
         if (winner_team_id && match.next_match_id) {
+            console.log(`🔧 ПРОДВИЖЕНИЕ ПОБЕДИТЕЛЯ: Турнир ${tournamentId}, формат: ${tournament.format}`);
+            console.log(`🔧 Матч ${matchId}: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
+            
             const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
             if (nextMatchResult.rows.length > 0) {
                 const nextMatch = nextMatchResult.rows[0];
-                console.log(`Следующий матч для победителя: ${nextMatch.match_number}`);
+                console.log(`🔧 Следующий матч ${nextMatch.id} (№${nextMatch.match_number}): team1_id=${nextMatch.team1_id}, team2_id=${nextMatch.team2_id}`);
 
                 // Определяем, в какую позицию (team1 или team2) добавить победителя
                 if (!nextMatch.team1_id) {
                     await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
+                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
                 } else if (!nextMatch.team2_id) {
                     await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
+                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
                 } else {
-                    console.log(`Обе позиции в матче ${nextMatch.match_number} уже заняты`);
+                    console.log(`⚠️ Обе позиции в матче ${nextMatch.match_number} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
                 }
+            } else {
+                console.log(`❌ Следующий матч с ID ${match.next_match_id} не найден!`);
             }
+        } else {
+            console.log(`ℹ️ Продвижение победителя не требуется: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
         }
 
         // Перемещаем проигравшего в матч за 3-е место, если это полуфинал и есть loser_next_match_id
