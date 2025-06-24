@@ -7,14 +7,24 @@ const sendNotification = async (userId, notification) => {
   try {
     console.log(`🔍 Начинаю обработку уведомления для пользователя ${userId}:`, JSON.stringify(notification, null, 2));
     
-    const app = global.app || require('./server');
-    const io = app.get('io');
-    if (!io) {
-      console.error('❌ socket.io instance not found');
-      return;
+    // 🔧 ИСПРАВЛЕНИЕ: Убираем проблематичный импорт
+    const app = global.app;
+    if (!app) {
+      console.log(`⚠️ [sendNotification] Global app не найден, пропускаем Socket.IO уведомление для пользователя ${userId}`);
+      // Продолжаем выполнение для добавления в системный чат
+    } else {
+      const io = app.get('io');
+      if (!io) {
+        console.log(`⚠️ [sendNotification] Socket.IO instance не найден для пользователя ${userId}`);
+      } else {
+        try {
+          io.to(`user_${userId}`).emit('notification', notification);
+          console.log(`📩 Уведомление отправлено пользователю ${userId} через WebSocket`);
+        } catch (socketError) {
+          console.warn(`⚠️ [sendNotification] Ошибка Socket.IO для пользователя ${userId}:`, socketError.message);
+        }
+      }
     }
-    io.to(`user_${userId}`).emit('notification', notification);
-    console.log(`📩 Уведомление отправлено пользователю ${userId} через WebSocket`);
 
     // Добавляем уведомление в персональный системный чат получателя
     try {
@@ -88,7 +98,16 @@ const sendNotification = async (userId, notification) => {
         );
         
         const newMsg = msgRes.rows[0];
-        io.to(`chat_${systemChatId}`).emit('message', newMsg);
+        
+        // 🔧 БЕЗОПАСНАЯ ОТПРАВКА В ЧАТ
+        if (app && app.get('io')) {
+          try {
+            app.get('io').to(`chat_${systemChatId}`).emit('message', newMsg);
+          } catch (chatSocketError) {
+            console.warn(`⚠️ [sendNotification] Ошибка отправки в чат ${systemChatId}:`, chatSocketError.message);
+          }
+        }
+        
         console.log(`📣 Уведомление добавлено в новый персональный системный чат ${systemChatId} пользователя ${userId}`);
         return;
       }
@@ -132,47 +151,97 @@ const sendNotification = async (userId, notification) => {
       );
       const newMsg = msgRes.rows[0];
       
-      // Отправляем сообщение в комнату чата
-      io.to(`chat_${systemChatId}`).emit('message', newMsg);
+      // 🔧 БЕЗОПАСНАЯ ОТПРАВКА В КОМНАТУ ЧАТА
+      if (app && app.get('io')) {
+        try {
+          app.get('io').to(`chat_${systemChatId}`).emit('message', newMsg);
+        } catch (chatSocketError) {
+          console.warn(`⚠️ [sendNotification] Ошибка отправки в чат ${systemChatId}:`, chatSocketError.message);
+        }
+      }
+      
       console.log(`📣 Уведомление добавлено в персональный системный чат ${systemChatId} пользователя ${userId}`);
     } catch (e) {
       console.error('❌ Ошибка добавления уведомления в системный чат:', e);
     }
 
   } catch (error) {
-    console.error('❌ Ошибка при отправке уведомления через Socket.IO:', error);
+    console.error('❌ Ошибка при отправке уведомления:', error);
+    // НЕ выбрасываем ошибку, чтобы не блокировать основной процесс
   }
 };
 
 // Функция для отправки уведомления всем подключенным клиентам
 const broadcastNotification = (notification) => {
   try {
-    const app = global.app || require('./server');
-    const io = app.get('io');
-    if (!io) {
-      console.error('❌ socket.io instance not found');
+    // 🔧 ИСПРАВЛЕНИЕ: Убираем проблематичный импорт
+    const app = global.app;
+    if (!app) {
+      console.log(`⚠️ [broadcastNotification] Global app не найден, пропускаем широковещательное уведомление`);
       return;
     }
-    io.emit('broadcast', notification);
-    console.log(`📢 Широковещательное уведомление отправлено:`, notification);
+    
+    const io = app.get('io');
+    if (!io) {
+      console.log(`⚠️ [broadcastNotification] Socket.IO instance не найден`);
+      return;
+    }
+    
+    try {
+      io.emit('broadcast', notification);
+      console.log(`📢 Широковещательное уведомление отправлено:`, notification);
+    } catch (socketError) {
+      console.warn(`⚠️ [broadcastNotification] Ошибка Socket.IO:`, socketError.message);
+    }
+    
   } catch (error) {
-    console.error('❌ Ошибка при отправке широковещательного уведомления через Socket.IO:', error);
+    console.warn(`⚠️ [broadcastNotification] Ошибка при отправке широковещательного уведомления:`, error.message);
+    // НЕ выбрасываем ошибку, чтобы не блокировать основной процесс
   }
 };
 
 // Функция для отправки обновлений турнира всем клиентам на странице турнира
 const broadcastTournamentUpdate = (tournamentId, tournamentData) => {
   try {
-    const app = global.app || require('./server');
-    const io = app.get('io');
-    if (!io) {
-      console.error('❌ socket.io instance not found');
+    // 🔧 ИСПРАВЛЕНИЕ: Делаем функцию более безопасной
+    const app = global.app;
+    if (!app) {
+      console.log(`⚠️ [broadcastTournamentUpdate] Global app не найден, пропускаем Socket.IO уведомление для турнира ${tournamentId}`);
       return;
     }
-    io.to(`tournament_${tournamentId}`).emit('tournament_update', tournamentData);
-    console.log(`📢 Обновление турнира ${tournamentId} отправлено через Socket.IO`);
+    
+    const io = app.get('io');
+    if (!io) {
+      console.log(`⚠️ [broadcastTournamentUpdate] Socket.IO instance не найден, пропускаем уведомление для турнира ${tournamentId}`);
+      return;
+    }
+    
+    // 🔧 ДОБАВЛЯЕМ ТАЙМАУТ для предотвращения зависания
+    const broadcastPromise = new Promise((resolve, reject) => {
+      try {
+        io.to(`tournament_${tournamentId}`).emit('tournament_update', tournamentData);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+    
+    // Устанавливаем таймаут в 2 секунды
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Broadcast timeout')), 2000);
+    });
+    
+    Promise.race([broadcastPromise, timeoutPromise])
+      .then(() => {
+        console.log(`✅ [broadcastTournamentUpdate] Обновление турнира ${tournamentId} отправлено через Socket.IO`);
+      })
+      .catch((error) => {
+        console.warn(`⚠️ [broadcastTournamentUpdate] Не удалось отправить обновление турнира ${tournamentId}:`, error.message);
+      });
+      
   } catch (error) {
-    console.error(`❌ Ошибка при отправке обновления турнира ${tournamentId} через Socket.IO:`, error);
+    console.warn(`⚠️ [broadcastTournamentUpdate] Ошибка при отправке обновления турнира ${tournamentId}:`, error.message);
+    // НЕ выбрасываем ошибку, чтобы не блокировать основной процесс
   }
 };
 
