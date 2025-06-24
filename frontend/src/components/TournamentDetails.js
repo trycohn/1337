@@ -652,6 +652,76 @@ function TournamentDetails() {
         }
     }, [selectedMatch, id, fetchTournamentData, closeModal]);
 
+    // 🆕 ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ МАТЧЕЙ ТУРНИРА
+    const resetMatchResults = useCallback(async () => {
+        const confirmMessage = `⚠️ ВНИМАНИЕ!\n\n` +
+            `Вы собираетесь сбросить ВСЕ результаты матчей турнира.\n\n` +
+            `Это действие:\n` +
+            `• Очистит результаты всех матчей\n` +
+            `• Вернет команды к исходным позициям в сетке\n` +
+            `• НЕ МОЖЕТ БЫТЬ ОТМЕНЕНО\n\n` +
+            `Продолжить?`;
+
+        const confirmed = window.confirm(confirmMessage);
+        if (!confirmed) return;
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('Отсутствует токен авторизации');
+            }
+
+            console.log('🔄 Начинаем сброс результатов матчей турнира', id);
+
+            // Отправка запроса на сервер
+            const response = await api.post(`/api/tournaments/${id}/reset-match-results`, {}, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('✅ Результаты матчей успешно сброшены:', response.data);
+
+            // Очищаем кеш турнира
+            const cacheKey = `tournament_cache_${id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+            console.log('🗑️ Кеш турнира очищен после сброса результатов');
+
+            // Обновляем данные турнира
+            await fetchTournamentData();
+
+            setMessage('✅ Все результаты матчей успешно сброшены! Турнирная сетка возвращена к исходному состоянию.');
+            setTimeout(() => setMessage(''), 5000);
+
+        } catch (error) {
+            console.error('❌ Ошибка при сбросе результатов матчей:', error);
+            
+            let errorMessage = 'Ошибка при сбросе результатов матчей';
+            
+            if (error.response?.status === 403) {
+                errorMessage = 'У вас нет прав для сброса результатов этого турнира';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Турнир не найден';
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response.data?.error || 'Сброс результатов недоступен для этого турнира';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setMessage(`❌ ${errorMessage}`);
+            setTimeout(() => setMessage(''), 5000);
+        } finally {
+            setLoading(false);
+        }
+    }, [id, fetchTournamentData]);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
@@ -994,7 +1064,7 @@ function TournamentDetails() {
                                     openModal('matchResult');
                                 }}
                                 onGenerateBracket={() => {}}
-                                onClearResults={() => {}}
+                                onClearResults={resetMatchResults}
                                 onInviteAdmin={inviteAdmin}
                                 onRemoveAdmin={removeAdmin}
                                 onShowAdminSearchModal={openAdminSearchModal}

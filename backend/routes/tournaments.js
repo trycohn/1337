@@ -4191,4 +4191,157 @@ router.get('/:id/validate-bracket', authenticateToken, async (req, res) => {
     }
 });
 
+// 🆕 ЭНДПОИНТ ДЛЯ СБРОСА РЕЗУЛЬТАТОВ МАТЧЕЙ ТУРНИРА
+router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    
+    try {
+        // Проверяем права доступа
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        
+        // Проверяем, что турнир в процессе
+        if (tournament.status !== 'in_progress') {
+            return res.status(400).json({ error: 'Сброс результатов доступен только для турниров в процессе' });
+        }
+        
+        // Проверяем права администратора или создателя
+        if (tournament.created_by !== userId) {
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может сбрасывать результаты' });
+            }
+        }
+        
+        // Начинаем транзакцию для безопасного сброса
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            console.log(`🔄 [reset-match-results] Начинаем сброс результатов для турнира ${id}`);
+            
+            // Получаем все матчи турнира с результатами
+            const matchesWithResults = await client.query(
+                'SELECT id, winner_team_id, score1, score2, maps_data FROM matches WHERE tournament_id = $1 AND winner_team_id IS NOT NULL',
+                [id]
+            );
+            
+            console.log(`📊 [reset-match-results] Найдено ${matchesWithResults.rows.length} матчей с результатами`);
+            
+            if (matchesWithResults.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Нет матчей с результатами для сброса' });
+            }
+            
+            // Сбрасываем результаты всех матчей
+            const resetResult = await client.query(`
+                UPDATE matches 
+                SET winner_team_id = NULL, 
+                    score1 = NULL, 
+                    score2 = NULL, 
+                    maps_data = NULL,
+                    status = 'pending',
+                    updated_at = NOW()
+                WHERE tournament_id = $1 AND winner_team_id IS NOT NULL
+                RETURNING id
+            `, [id]);
+            
+            const resetCount = resetResult.rows.length;
+            console.log(`✅ [reset-match-results] Сброшено результатов у ${resetCount} матчей`);
+            
+            // Получаем все матчи турнира и очищаем участников от продвинутых позиций
+            const allMatches = await client.query(
+                'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round',
+                [id]
+            );
+            
+            // Находим матчи первого раунда (и предварительного, если есть)
+            const firstRoundMatches = allMatches.rows.filter(match => match.round === -1 || match.round === 0);
+            const nonFirstRoundMatches = allMatches.rows.filter(match => match.round > 0);
+            
+            // Очищаем участников из матчей не первого раунда (кроме матчей за 3-е место)
+            for (const match of nonFirstRoundMatches) {
+                if (!match.is_third_place_match) {
+                    await client.query(
+                        'UPDATE matches SET team1_id = NULL, team2_id = NULL WHERE id = $1',
+                        [match.id]
+                    );
+                }
+            }
+            
+            // Очищаем матчи за 3-е место полностью
+            await client.query(`
+                UPDATE matches 
+                SET team1_id = NULL, team2_id = NULL
+                WHERE tournament_id = $1 AND is_third_place_match = true
+            `, [id]);
+            
+            console.log(`🧹 [reset-match-results] Очищены участники из ${nonFirstRoundMatches.length} матчей не первого раунда`);
+            
+            // Логируем операцию сброса
+            await logTournamentEvent(id, userId, 'match_results_reset', {
+                resetMatchesCount: resetCount,
+                totalMatches: allMatches.rows.length,
+                performedBy: req.user.username
+            });
+            
+            await client.query('COMMIT');
+            console.log(`🔓 [reset-match-results] Транзакция успешно завершена для турнира ${id}`);
+            
+            // Отправляем объявление в чат турнира
+            await sendTournamentChatAnnouncement(
+                id,
+                `Администратор ${req.user.username} сбросил результаты ${resetCount} матчей. Турнир можно продолжить с начала.`
+            );
+            
+            // Получаем обновленные данные турнира
+            const updatedTournamentResult = await pool.query(`
+                SELECT t.*, 
+                (SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object('avatar_url', u.avatar_url)), '[]') 
+                 FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id 
+                 WHERE tp.tournament_id = t.id) as participants, 
+                (SELECT COALESCE(json_agg(m.*), '[]') 
+                 FROM matches m WHERE m.tournament_id = t.id 
+                 ORDER BY m.round, m.match_number) as matches 
+                FROM tournaments t WHERE t.id = $1
+            `, [id]);
+            
+            const tournamentData = updatedTournamentResult.rows[0];
+            tournamentData.matches = Array.isArray(tournamentData.matches) && tournamentData.matches[0] !== null 
+                ? tournamentData.matches 
+                : [];
+            tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
+                ? tournamentData.participants 
+                : [];
+            
+            // Отправляем обновления всем клиентам
+            broadcastTournamentUpdate(id, tournamentData);
+            
+            res.status(200).json({
+                message: `Успешно сброшены результаты ${resetCount} матчей`,
+                resetCount: resetCount,
+                tournament: tournamentData
+            });
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+        
+    } catch (err) {
+        console.error('❌ Ошибка сброса результатов матчей:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

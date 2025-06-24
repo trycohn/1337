@@ -379,6 +379,14 @@ const TournamentAdminPanel = ({
                             >
                                 🗑️ Очистить результаты
                             </button>
+                            <button 
+                                className="action-btn-v2 reset-btn"
+                                onClick={onClearResults}
+                                disabled={isLoading}
+                                title="Сбросить все результаты матчей и вернуть их в исходное состояние"
+                            >
+                                🔄 Сбросить результаты
+                            </button>
                         </div>
                     </div>
                 )}
