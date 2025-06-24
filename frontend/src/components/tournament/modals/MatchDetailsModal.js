@@ -19,6 +19,17 @@ const MatchDetailsModal = ({
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
 
+    // Логирование для диагностики
+    if (isOpen && selectedMatch) {
+        console.log('🔍 MatchDetailsModal открылся с данными:', {
+            matchId: selectedMatch.id,
+            team1: selectedMatch.team1_name,
+            team2: selectedMatch.team2_name,
+            score: `${selectedMatch.score1}:${selectedMatch.score2}`,
+            winner: selectedMatch.winner_team_id
+        });
+    }
+
     if (!isOpen || !selectedMatch) return null;
 
     // 🎯 РАСЧЕТ СТАТИСТИКИ ПО КАРТАМ

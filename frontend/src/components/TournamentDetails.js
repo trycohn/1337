@@ -173,7 +173,27 @@ function TournamentDetails() {
         maps_data: []
     });
     
-    const [selectedMatchForDetails, setSelectedMatchForDetails] = useState(null);
+    const [selectedMatchForDetails, setSelectedMatchForDetailsBase] = useState(null);
+
+    // Обертка для логирования изменений selectedMatchForDetails
+    const setSelectedMatchForDetails = useCallback((match) => {
+        console.log('🔄 setSelectedMatchForDetails вызван:', {
+            oldMatchId: selectedMatchForDetails?.id,
+            newMatchId: match?.id,
+            newMatchData: match,
+            stackTrace: new Error().stack?.split('\n')[1]?.trim()
+        });
+        setSelectedMatchForDetailsBase(match);
+    }, [selectedMatchForDetails]);
+
+    // Логирование изменений selectedMatchForDetails
+    useEffect(() => {
+        console.log('🔍 selectedMatchForDetails изменился:', {
+            matchId: selectedMatchForDetails?.id,
+            team1: selectedMatchForDetails?.team1_name,
+            team2: selectedMatchForDetails?.team2_name
+        });
+    }, [selectedMatchForDetails]);
 
     // Рефы
     const wsRef = useRef(null);
@@ -933,11 +953,17 @@ function TournamentDetails() {
                                             handleTeamClick={() => {}}
                                             format={tournament.format}
                                             onMatchClick={(match) => {
-                                                console.log('🎯 onMatchClick вызван с:', match);
+                                                console.log('🎯 onMatchClick (overview) вызван с:', {
+                                                    matchId: match?.id,
+                                                    matchData: match,
+                                                    team1: match?.team1_name,
+                                                    team2: match?.team2_name,
+                                                    currentSelectedMatchForDetails: selectedMatchForDetails?.id
+                                                });
                                                 if (match && match.id) {
                                                     setSelectedMatchForDetails(match);
                                                     openModal('matchDetails');
-        } else {
+                                                } else {
                                                     console.warn('⚠️ onMatchClick: некорректный объект матча:', match);
                                                 }
                                             }}
@@ -1006,6 +1032,13 @@ function TournamentDetails() {
                                         handleTeamClick={() => {}}
                                         format={tournament.format}
                                         onMatchClick={(match) => {
+                                            console.log('🎯 onMatchClick (bracket) вызван с:', {
+                                                matchId: match?.id,
+                                                matchData: match,
+                                                team1: match?.team1_name || match?.participants?.[0]?.name,
+                                                team2: match?.team2_name || match?.participants?.[1]?.name,
+                                                currentSelectedMatchForDetails: selectedMatchForDetails?.id
+                                            });
                                             setSelectedMatchForDetails(match);
                                             openModal('matchDetails');
                                         }}
@@ -1110,6 +1143,13 @@ function TournamentDetails() {
                                                         <button 
                                                             className="details-btn"
                                                             onClick={() => {
+                                                                console.log('🎯 onMatchClick (компактный) вызван с:', {
+                                                                    matchId: match?.id,
+                                                                    matchData: match,
+                                                                    team1: match?.team1_name,
+                                                                    team2: match?.team2_name,
+                                                                    currentSelectedMatchForDetails: selectedMatchForDetails?.id
+                                                                });
                                                                 setSelectedMatchForDetails(match);
                                                                 openModal('matchDetails');
                                                             }}
