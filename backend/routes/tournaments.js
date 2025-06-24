@@ -4078,7 +4078,7 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
         console.log(`💾 [safeUpdateMatchResult] Обновляем результат матча ${matchId}...`);
         
         await client.query(
-            'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4, updated_at = NOW() WHERE id = $5',
+            'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5',
             [winnerId, score1, score2, JSON.stringify(mapsData), matchId]
         );
         
