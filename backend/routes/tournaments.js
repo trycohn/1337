@@ -1498,28 +1498,6 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             }
         }
 
-        // Запрет изменения результата, если следующий матч уже сыгран (есть winner_team_id)
-        for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
-            if (nextMatchId) {
-                const nextRes = await pool.query(
-                    'SELECT winner_team_id FROM matches WHERE id = $1',
-                    [nextMatchId]
-                );
-                if (nextRes.rows.length && nextRes.rows[0].winner_team_id) {
-                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже сыгран' });
-                }
-            }
-        }
-        
-        if (match.winner_team_id && match.winner_team_id === winner_team_id) {
-            return res.status(400).json({ error: 'Этот победитель уже установлен' });
-        }
-
-        // Проверка, что winner_team_id является одним из участников матча
-        if (winner_team_id && ![match.team1_id, match.team2_id].includes(winner_team_id)) {
-            return res.status(400).json({ error: 'Победитель должен быть одним из участников матча' });
-        }
-
         // Проверяем, изменились ли данные матча (счет, карты)
         const scoreChanged = match.score1 !== score1 || match.score2 !== score2;
         const mapsChanged = maps && Array.isArray(maps) && maps.length > 0;
@@ -1567,7 +1545,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
         if (Array.isArray(maps) && maps.length > 0 && isGameSupportingMaps) {
             console.log(`✅ Сохраняем данные о картах для игры: ${tournament.game}`);
             console.log(`📋 Данные карт:`, JSON.stringify(maps, null, 2));
-            mapsData = JSON.stringify(maps);
+            mapsData = maps; // Передаем массив, JSON.stringify будет в функции
             
             // Пересчитываем общий счет на основе выигранных карт
             if (maps.length > 1) {
@@ -1603,170 +1581,16 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             console.log(`- Является ли CS2: ${isGameSupportingMaps}`);
         }
 
-        // Обновление результата текущего матча
-        if (mapsData) {
-            console.log(`Обновляем матч ${matchId} с данными о картах:`, mapsData);
-            await pool.query(
-                'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5',
-                [winner_team_id, score1, score2, mapsData, matchId]
-            );
-            console.log(`Матч ${matchId} успешно обновлен с данными о картах`);
-        } else {
-            console.log(`Обновляем матч ${matchId} БЕЗ данных о картах`);
-            await pool.query(
-                'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4',
-                [winner_team_id, score1, score2, matchId]
-            );
-            console.log(`Матч ${matchId} успешно обновлен без данных о картах`);
-        }
-
-        console.log(`Обновлен результат матча ${match.match_number}: победитель ${winner_team_id}, счет ${score1}:${score2}`);
-
-        // Определяем проигравшего
-        const loser_team_id = match.team1_id === winner_team_id ? match.team2_id : match.team1_id;
-
-        // Перемещаем победителя в следующий матч, если он есть
-        if (winner_team_id && match.next_match_id) {
-            console.log(`🔧 ПРОДВИЖЕНИЕ ПОБЕДИТЕЛЯ: Турнир ${tournamentId}, формат: ${tournament.format}`);
-            console.log(`🔧 Матч ${matchId}: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
-            
-            const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-            if (nextMatchResult.rows.length > 0) {
-                const nextMatch = nextMatchResult.rows[0];
-                console.log(`🔧 Следующий матч ${nextMatch.id} (№${nextMatch.match_number}): team1_id=${nextMatch.team1_id}, team2_id=${nextMatch.team2_id}`);
-
-                // Определяем, в какую позицию (team1 или team2) добавить победителя
-                if (!nextMatch.team1_id) {
-                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
-                } else if (!nextMatch.team2_id) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
-                } else {
-                    console.log(`⚠️ Обе позиции в матче ${nextMatch.match_number} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
-                }
-            } else {
-                console.log(`❌ Следующий матч с ID ${match.next_match_id} не найден!`);
-            }
-        } else {
-            console.log(`ℹ️ Продвижение победителя не требуется: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
-        }
-
-        // Перемещаем проигравшего в матч за 3-е место, если это полуфинал и есть loser_next_match_id
-        if (loser_team_id && match.loser_next_match_id) {
-            const loserNextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.loser_next_match_id]);
-            if (loserNextMatchResult.rows.length > 0) {
-                const loserNextMatch = loserNextMatchResult.rows[0];
-                console.log(`Матч для проигравшего: ${loserNextMatch.match_number} (матч за 3-е место)`);
-
-                // Определяем, в какую позицию (team1 или team2) добавить проигравшего
-                if (!loserNextMatch.team1_id) {
-                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
-                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team1 матча ${loserNextMatch.match_number}`);
-                } else if (!loserNextMatch.team2_id) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
-                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team2 матча ${loserNextMatch.match_number}`);
-                } else {
-                    console.log(`Обе позиции в матче ${loserNextMatch.match_number} уже заняты`);
-                }
-            }
-        }
-
-        // Логика для предварительного раунда (раунд -1)
-        if (match.round === -1) {
-            // Эта логика уже обработана выше при проверке match.next_match_id
-            console.log('Обработан предварительный раунд');
-        }
-
-        // Логика для Double Elimination
-        if (tournament.format === 'double_elimination') {
-            if (match.round !== -1 && match.next_match_id) {
-                const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-                if (nextMatchResult.rows.length > 0) {
-                    const nextMatch = nextMatchResult.rows[0];
-
-                    // Проверяем, не добавлен ли победитель уже в следующий матч
-                    if (nextMatch.team1_id === winner_team_id || nextMatch.team2_id === winner_team_id) {
-                        console.log(`Победитель (team ${winner_team_id}) уже добавлен в матч ${nextMatch.id}`);
-                    } else if (!nextMatch.team1_id) {
-                        await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    } else if (!nextMatch.team2_id && nextMatch.team1_id !== winner_team_id) {
-                        await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    } else if (nextMatch.team1_id === nextMatch.team2_id) {
-                        await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    } else {
-                        const roundMatches = await pool.query(
-                            'SELECT * FROM matches WHERE tournament_id = $1 AND round = $2 AND bracket_type = $3',
-                            [tournamentId, match.round + 1, 'winner']
-                        );
-                        const availableMatch = roundMatches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
-                        if (availableMatch) {
-                            await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
-                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, matchId]);
-                        } else {
-                            return res.status(400).json({ error: 'Нет доступных мест в верхней сетке' });
-                        }
-                    }
-                }
-            }
-
-            // Проигравший переходит в нижнюю сетку или выбывает
-            if (loser_team_id) {
-                if (match.bracket_type === 'winner') {
-                    // Проигравший из верхней сетки переходит в нижнюю
-                    let targetLoserRound;
-                    const totalWinnerRounds = Math.ceil(Math.log2(6)); // Для 6 участников: 3 раунда (0, 1, 2)
-                    const totalLoserRounds = totalWinnerRounds + 1; // 4 раунда (1, 2, 3, 4)
-
-                    if (match.round === -1) {
-                        targetLoserRound = 1;
-                    } else if (match.round === totalWinnerRounds - 1) {
-                        // Проигравший из финала верхней сетки (Round 2) должен попасть в финал нижней сетки (Round 4)
-                        targetLoserRound = totalLoserRounds;
-                    } else {
-                        // Проигравшие из Round 0 верхней сетки -> Round 1 нижней, Round 1 верхней -> Round 2 нижней и т.д.
-                        targetLoserRound = match.round + 1;
-                    }
-
-                    let loserMatches = await pool.query(
-                        'SELECT * FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3 AND is_third_place_match = false',
-                        [tournamentId, 'loser', targetLoserRound]
-                    );
-
-                    let availableLoserMatch = loserMatches.rows.find(m => (!m.team1_id || !m.team2_id) && m.team1_id !== loser_team_id && m.team2_id !== loser_team_id);
-
-                    if (!availableLoserMatch) {
-                        const maxMatchNumberResult = await pool.query(
-                            'SELECT COALESCE(MAX(match_number), 0) as max_match_number FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3',
-                            [tournamentId, 'loser', targetLoserRound]
-                        );
-                        const maxMatchNumber = maxMatchNumberResult.rows[0].max_match_number;
-
-                        const newMatchResult = await pool.query(
-                            'INSERT INTO matches (tournament_id, round, match_number, bracket_type, team1_id, team2_id, match_date) ' +
-                            'VALUES ($1, $2, $3, $4, $5, NULL, NOW()) RETURNING *',
-                            [id, targetLoserRound, maxMatchNumber + 1, 'loser', loser_team_id]
-                        );
-                        availableLoserMatch = newMatchResult.rows[0];
-                        console.log(`Создан новый матч ${availableLoserMatch.id} в раунде ${targetLoserRound} сетки лузеров для проигравшего (team ${loser_team_id})`);
-                    } else {
-                        if (!availableLoserMatch.team1_id) {
-                            await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, availableLoserMatch.id]);
-                        } else {
-                            await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, availableLoserMatch.id]);
-                        }
-                        console.log(`Проигравший (team ${loser_team_id}) из раунда ${match.round} верхней сетки добавлен в матч ${availableLoserMatch.id} раунда ${targetLoserRound} сетки лузеров`);
-                    }
-                } else if (match.bracket_type === 'loser') {
-                    // Проигравший из нижней сетки выбывает из турнира
-                    console.log(`Проигравший (team ${loser_team_id}) из матча ${match.id} нижней сетки выбывает из турнира`);
-                }
-            }
-        }
+        // 🔥 ИСПОЛЬЗУЕМ НОВУЮ БЕЗОПАСНУЮ ФУНКЦИЮ ВМЕСТО СТАРОЙ ЛОГИКИ
+        console.log(`🔒 [update-match] Вызываем безопасную функцию обновления матча ${matchId}`);
+        const updateResult = await safeUpdateMatchResult(matchId, winner_team_id, score1, score2, mapsData, userId);
+        
+        console.log(`✅ [update-match] Матч ${matchId} успешно обновлен с продвижением`);
 
         // Динамически подгружаем текущее состояние турнира
         const tourInfoRes = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
         const tourInfo = tourInfoRes.rows[0];
+        
         // Загружаем участников в зависимости от типа
         let updatedParticipants;
         if (tourInfo.participant_type === 'solo') {
@@ -1788,19 +1612,23 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             );
             updatedParticipants = teamsRes.rows;
         }
+        
         // Загружаем матчи
         const matchesRes = await pool.query(
             'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
             [id]
         );
+        
         const tournamentData = {
             ...tourInfo,
             participants: updatedParticipants,
             participant_count: updatedParticipants.length,
             matches: matchesRes.rows
         };
+        
         // Отправляем обновления всем клиентам
         broadcastTournamentUpdate(id, tournamentData);
+        
         // Отправляем объявление в групповой чат турнира при обновлении результата матча
         {
             // Получаем имена команд/участников
@@ -1821,8 +1649,14 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             const announcement = `Матч ${match.match_number} ${team1Name} vs ${team2Name} завершен со счетом ${score1}:${score2}${winName ? `, победил ${winName}` : ''}. Ссылка на сетку: /tournaments/${id}`;
             await sendTournamentChatAnnouncement(id, announcement);
         }
+        
         console.log('🔍 Match updated for tournament:', tournamentData);
-        res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
+        res.status(200).json({ 
+            message: 'Результат обновлён', 
+            tournament: tournamentData,
+            advancementResult: updateResult.advancementResult,
+            loserAdvancementResult: updateResult.loserAdvancementResult
+        });
     } catch (err) {
         console.error('❌ Ошибка обновления матча:', err);
         res.status(500).json({ error: err.message });
@@ -1946,28 +1780,6 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
             }
         }
 
-        // Запрет изменения результата, если следующий матч уже сыгран (есть winner_team_id)
-        for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
-            if (nextMatchId) {
-                const nextRes = await pool.query(
-                    'SELECT winner_team_id FROM matches WHERE id = $1',
-                    [nextMatchId]
-                );
-                if (nextRes.rows.length && nextRes.rows[0].winner_team_id) {
-                    return res.status(400).json({ error: 'Нельзя изменить результат: следующий матч уже сыгран' });
-                }
-            }
-        }
-        
-        if (match.winner_team_id && match.winner_team_id === winner_team_id) {
-            return res.status(400).json({ error: 'Этот победитель уже установлен' });
-        }
-
-        // Проверка, что winner_team_id является одним из участников матча
-        if (winner_team_id && ![match.team1_id, match.team2_id].includes(winner_team_id)) {
-            return res.status(400).json({ error: 'Победитель должен быть одним из участников матча' });
-        }
-
         // Проверяем, изменились ли данные матча (счет, карты)
         const scoreChanged = match.score1 !== score1 || match.score2 !== score2;
         const mapsChanged = maps_data && Array.isArray(maps_data) && maps_data.length > 0;
@@ -1980,153 +1792,11 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
             return res.status(400).json({ error: 'Результат матча не изменился' });
         }
 
-        // Обновление результата текущего матча (включая maps_data)
-        await pool.query(
-            'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5',
-            [winner_team_id, score1, score2, maps_data ? JSON.stringify(maps_data) : null, matchIdNum]
-        );
-
-        // Определяем проигравшего
-        const loser_team_id = match.team1_id === winner_team_id ? match.team2_id : match.team1_id;
-
-        // Перемещаем победителя в следующий матч, если он есть
-        if (winner_team_id && match.next_match_id) {
-            console.log(`🔧 ПРОДВИЖЕНИЕ ПОБЕДИТЕЛЯ: Турнир ${tournamentId}, формат: ${tournament.format}`);
-            console.log(`🔧 Матч ${matchId}: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
-            
-            const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-            if (nextMatchResult.rows.length > 0) {
-                const nextMatch = nextMatchResult.rows[0];
-                console.log(`🔧 Следующий матч ${nextMatch.id} (№${nextMatch.match_number}): team1_id=${nextMatch.team1_id}, team2_id=${nextMatch.team2_id}`);
-
-                // Определяем, в какую позицию (team1 или team2) добавить победителя
-                if (!nextMatch.team1_id) {
-                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team1 матча ${nextMatch.match_number}`);
-                } else if (!nextMatch.team2_id) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    console.log(`✅ Победитель (${winner_team_id}) помещен в позицию team2 матча ${nextMatch.match_number}`);
-                } else {
-                    console.log(`⚠️ Обе позиции в матче ${nextMatch.match_number} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
-                }
-            } else {
-                console.log(`❌ Следующий матч с ID ${match.next_match_id} не найден!`);
-            }
-        } else {
-            console.log(`ℹ️ Продвижение победителя не требуется: winner_team_id=${winner_team_id}, next_match_id=${match.next_match_id}`);
-        }
-
-        // Перемещаем проигравшего в матч за 3-е место, если это полуфинал и есть loser_next_match_id
-        if (loser_team_id && match.loser_next_match_id) {
-            const loserNextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.loser_next_match_id]);
-            if (loserNextMatchResult.rows.length > 0) {
-                const loserNextMatch = loserNextMatchResult.rows[0];
-                console.log(`Матч для проигравшего: ${loserNextMatch.match_number} (матч за 3-е место)`);
-
-                // Определяем, в какую позицию (team1 или team2) добавить проигравшего
-                if (!loserNextMatch.team1_id) {
-                    await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
-                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team1 матча ${loserNextMatch.match_number}`);
-                } else if (!loserNextMatch.team2_id) {
-                    await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, loserNextMatch.id]);
-                    console.log(`Проигравший (${loser_team_id}) помещен в позицию team2 матча ${loserNextMatch.match_number}`);
-                } else {
-                    console.log(`Обе позиции в матче ${loserNextMatch.match_number} уже заняты`);
-                }
-            }
-        }
-
-        // Логика для предварительного раунда (раунд -1)
-        if (match.round === -1) {
-            // Эта логика уже обработана выше при проверке match.next_match_id
-            console.log('Обработан предварительный раунд');
-        }
-
-        // Логика для Double Elimination
-        if (tournament.format === 'double_elimination') {
-            if (match.round !== -1 && match.next_match_id) {
-                const nextMatchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [match.next_match_id]);
-                if (nextMatchResult.rows.length > 0) {
-                    const nextMatch = nextMatchResult.rows[0];
-
-                    // Проверяем, не добавлен ли победитель уже в следующий матч
-                    if (nextMatch.team1_id === winner_team_id || nextMatch.team2_id === winner_team_id) {
-                        console.log(`Победитель (team ${winner_team_id}) уже добавлен в матч ${nextMatch.id}`);
-                    } else if (!nextMatch.team1_id) {
-                        await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    } else if (!nextMatch.team2_id && nextMatch.team1_id !== winner_team_id) {
-                        await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    } else if (nextMatch.team1_id === nextMatch.team2_id) {
-                        await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, nextMatch.id]);
-                    } else {
-                        const roundMatches = await pool.query(
-                            'SELECT * FROM matches WHERE tournament_id = $1 AND round = $2 AND bracket_type = $3',
-                            [tournamentId, match.round + 1, 'winner']
-                        );
-                        const availableMatch = roundMatches.rows.find(m => !m.team2_id && m.team1_id !== winner_team_id);
-                        if (availableMatch) {
-                            await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [winner_team_id, availableMatch.id]);
-                            await pool.query('UPDATE matches SET next_match_id = $1 WHERE id = $2', [availableMatch.id, matchId]);
-                        } else {
-                            return res.status(400).json({ error: 'Нет доступных мест в верхней сетке' });
-                        }
-                    }
-                }
-            }
-
-            // Проигравший переходит в нижнюю сетку или выбывает
-            if (loser_team_id) {
-                if (match.bracket_type === 'winner') {
-                    // Проигравший из верхней сетки переходит в нижнюю
-                    let targetLoserRound;
-                    const totalWinnerRounds = Math.ceil(Math.log2(6)); // Для 6 участников: 3 раунда (0, 1, 2)
-                    const totalLoserRounds = totalWinnerRounds + 1; // 4 раунда (1, 2, 3, 4)
-
-                    if (match.round === -1) {
-                        targetLoserRound = 1;
-                    } else if (match.round === totalWinnerRounds - 1) {
-                        // Проигравший из финала верхней сетки (Round 2) должен попасть в финал нижней сетки (Round 4)
-                        targetLoserRound = totalLoserRounds;
-                    } else {
-                        // Проигравшие из Round 0 верхней сетки -> Round 1 нижней, Round 1 верхней -> Round 2 нижней и т.д.
-                        targetLoserRound = match.round + 1;
-                    }
-
-                    let loserMatches = await pool.query(
-                        'SELECT * FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3 AND is_third_place_match = false',
-                        [tournamentId, 'loser', targetLoserRound]
-                    );
-
-                    let availableLoserMatch = loserMatches.rows.find(m => (!m.team1_id || !m.team2_id) && m.team1_id !== loser_team_id && m.team2_id !== loser_team_id);
-
-                    if (!availableLoserMatch) {
-                        const maxMatchNumberResult = await pool.query(
-                            'SELECT COALESCE(MAX(match_number), 0) as max_match_number FROM matches WHERE tournament_id = $1 AND bracket_type = $2 AND round = $3',
-                            [tournamentId, 'loser', targetLoserRound]
-                        );
-                        const maxMatchNumber = maxMatchNumberResult.rows[0].max_match_number;
-
-                        const newMatchResult = await pool.query(
-                            'INSERT INTO matches (tournament_id, round, match_number, bracket_type, team1_id, team2_id, match_date) ' +
-                            'VALUES ($1, $2, $3, $4, $5, NULL, NOW()) RETURNING *',
-                            [id, targetLoserRound, maxMatchNumber + 1, 'loser', loser_team_id]
-                        );
-                        availableLoserMatch = newMatchResult.rows[0];
-                        console.log(`Создан новый матч ${availableLoserMatch.id} в раунде ${targetLoserRound} сетки лузеров для проигравшего (team ${loser_team_id})`);
-                    } else {
-                        if (!availableLoserMatch.team1_id) {
-                            await pool.query('UPDATE matches SET team1_id = $1 WHERE id = $2', [loser_team_id, availableLoserMatch.id]);
-                        } else {
-                            await pool.query('UPDATE matches SET team2_id = $1 WHERE id = $2', [loser_team_id, availableLoserMatch.id]);
-                        }
-                        console.log(`Проигравший (team ${loser_team_id}) из раунда ${match.round} верхней сетки добавлен в матч ${availableLoserMatch.id} раунда ${targetLoserRound} сетки лузеров`);
-                    }
-                } else if (match.bracket_type === 'loser') {
-                    // Проигравший из нижней сетки выбывает из турнира
-                    console.log(`Проигравший (team ${loser_team_id}) из матча ${match.id} нижней сетки выбывает из турнира`);
-                }
-            }
-        }
+        // 🔥 ИСПОЛЬЗУЕМ НОВУЮ БЕЗОПАСНУЮ ФУНКЦИЮ ВМЕСТО СТАРОЙ ЛОГИКИ
+        console.log(`🔒 [matches/:matchId/result] Вызываем безопасную функцию обновления матча ${matchIdNum}`);
+        const updateResult = await safeUpdateMatchResult(matchIdNum, winner_team_id, score1, score2, maps_data, userId);
+        
+        console.log(`✅ [matches/:matchId/result] Матч ${matchIdNum} успешно обновлен с продвижением`);
 
         // Получаем обновлённые данные турнира
         const updatedTournament = await pool.query(
@@ -2134,7 +1804,7 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
             '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
             '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
             'FROM tournaments t WHERE t.id = $1',
-            [matchIdNum]
+            [tournamentId]
         );
 
         const tournamentData = updatedTournament.rows[0] || {};
@@ -2146,10 +1816,15 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
             : [];
 
         // Отправляем обновления всем клиентам, просматривающим этот турнир
-        broadcastTournamentUpdate(matchIdNum, tournamentData);
+        broadcastTournamentUpdate(tournamentId, tournamentData);
 
         console.log('🔍 Match updated for tournament:', tournamentData);
-        res.status(200).json({ message: 'Результат обновлён', tournament: tournamentData });
+        res.status(200).json({ 
+            message: 'Результат обновлён', 
+            tournament: tournamentData,
+            advancementResult: updateResult.advancementResult,
+            loserAdvancementResult: updateResult.loserAdvancementResult
+        });
     } catch (err) {
         console.error('❌ Ошибка обновления результатов матча:', err);
         res.status(500).json({ error: err.message });
@@ -4096,6 +3771,423 @@ router.get('/:id/teams', async (req, res) => {
     } catch (err) {
         console.error(`❌ [GET /:id/teams] Ошибка получения команд турнира ${id}:`, err);
         res.status(500).json({ error: err.message || 'Ошибка при получении команд турнира' });
+    }
+});
+
+// 🔧 ФУНКЦИЯ БЕЗОПАСНОГО ПРОДВИЖЕНИЯ ПОБЕДИТЕЛЕЙ С ТРАНЗАКЦИЯМИ
+async function safeAdvanceWinner(matchId, winnerId, client = pool) {
+    const startTime = Date.now();
+    console.log(`🔧 [safeAdvanceWinner] Начинаем безопасное продвижение победителя ${winnerId} из матча ${matchId}`);
+    
+    try {
+        // 1. Получаем данные текущего матча с блокировкой
+        const matchResult = await client.query(
+            'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
+            [matchId]
+        );
+        
+        if (matchResult.rows.length === 0) {
+            throw new Error(`Матч ${matchId} не найден`);
+        }
+        
+        const match = matchResult.rows[0];
+        
+        // 2. Валидация: проверяем, что победитель является участником матча
+        if (![match.team1_id, match.team2_id].includes(winnerId)) {
+            throw new Error(`Команда ${winnerId} не является участником матча ${matchId}`);
+        }
+        
+        // 3. Если нет следующего матча - продвижение не требуется
+        if (!match.next_match_id) {
+            console.log(`✅ [safeAdvanceWinner] Матч ${matchId} не имеет следующего матча (финал?)`);
+            return { advanced: false, reason: 'no_next_match' };
+        }
+        
+        // 4. Получаем следующий матч с блокировкой
+        const nextMatchResult = await client.query(
+            'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
+            [match.next_match_id]
+        );
+        
+        if (nextMatchResult.rows.length === 0) {
+            throw new Error(`Следующий матч ${match.next_match_id} не найден`);
+        }
+        
+        const nextMatch = nextMatchResult.rows[0];
+        
+        console.log(`🔧 [safeAdvanceWinner] Следующий матч ${nextMatch.id}: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
+        
+        // 5. Проверяем, не занят ли уже победитель в следующем матче
+        if (nextMatch.team1_id === winnerId || nextMatch.team2_id === winnerId) {
+            console.log(`✅ [safeAdvanceWinner] Победитель ${winnerId} уже находится в матче ${nextMatch.id}`);
+            return { advanced: false, reason: 'already_advanced' };
+        }
+        
+        // 6. Определяем свободную позицию в следующем матче
+        let updateField = null;
+        let updateValue = winnerId;
+        
+        if (!nextMatch.team1_id) {
+            updateField = 'team1_id';
+        } else if (!nextMatch.team2_id) {
+            updateField = 'team2_id';
+        } else {
+            // Если обе позиции заняты - это ошибка в структуре сетки
+            throw new Error(`Все позиции в следующем матче ${nextMatch.id} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
+        }
+        
+        // 7. Атомарно обновляем следующий матч
+        const updateResult = await client.query(
+            `UPDATE matches SET ${updateField} = $1, updated_at = NOW() WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
+            [updateValue, nextMatch.id]
+        );
+        
+        if (updateResult.rows.length === 0) {
+            // Кто-то другой уже занял эту позицию
+            throw new Error(`Позиция ${updateField} в матче ${nextMatch.id} была занята другим процессом`);
+        }
+        
+        const endTime = Date.now();
+        console.log(`✅ [safeAdvanceWinner] Успешно продвинут победитель ${winnerId} в позицию ${updateField} матча ${nextMatch.id} за ${endTime - startTime}ms`);
+        
+        return {
+            advanced: true,
+            nextMatchId: nextMatch.id,
+            position: updateField,
+            previousTeam1: nextMatch.team1_id,
+            previousTeam2: nextMatch.team2_id,
+            newTeam1: updateField === 'team1_id' ? winnerId : nextMatch.team1_id,
+            newTeam2: updateField === 'team2_id' ? winnerId : nextMatch.team2_id
+        };
+        
+    } catch (error) {
+        const endTime = Date.now();
+        console.error(`❌ [safeAdvanceWinner] Ошибка продвижения победителя ${winnerId} из матча ${matchId} за ${endTime - startTime}ms:`, error.message);
+        throw error;
+    }
+}
+
+// 🆕 ФУНКЦИЯ БЕЗОПАСНОГО ПРОДВИЖЕНИЯ ПРОИГРАВШЕГО (для матчей за 3-е место)
+async function safeAdvanceLoser(matchId, loserId, client = pool) {
+    console.log(`🔧 [safeAdvanceLoser] Начинаем продвижение проигравшего ${loserId} из матча ${matchId}`);
+    
+    try {
+        // Получаем данные текущего матча
+        const matchResult = await client.query(
+            'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
+            [matchId]
+        );
+        
+        if (matchResult.rows.length === 0) {
+            throw new Error(`Матч ${matchId} не найден`);
+        }
+        
+        const match = matchResult.rows[0];
+        
+        // Если нет матча для проигравшего - продвижение не требуется
+        if (!match.loser_next_match_id) {
+            console.log(`✅ [safeAdvanceLoser] Матч ${matchId} не имеет матча для проигравшего`);
+            return { advanced: false, reason: 'no_loser_match' };
+        }
+        
+        // Получаем матч для проигравшего (обычно матч за 3-е место)
+        const loserMatchResult = await client.query(
+            'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
+            [match.loser_next_match_id]
+        );
+        
+        if (loserMatchResult.rows.length === 0) {
+            throw new Error(`Матч для проигравшего ${match.loser_next_match_id} не найден`);
+        }
+        
+        const loserMatch = loserMatchResult.rows[0];
+        
+        // Определяем свободную позицию
+        let updateField = null;
+        
+        if (!loserMatch.team1_id) {
+            updateField = 'team1_id';
+        } else if (!loserMatch.team2_id) {
+            updateField = 'team2_id';
+        } else {
+            console.log(`⚠️ [safeAdvanceLoser] Все позиции в матче проигравших ${loserMatch.id} уже заняты`);
+            return { advanced: false, reason: 'match_full' };
+        }
+        
+        // Атомарно обновляем матч для проигравшего
+        const updateResult = await client.query(
+            `UPDATE matches SET ${updateField} = $1, updated_at = NOW() WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
+            [loserId, loserMatch.id]
+        );
+        
+        if (updateResult.rows.length === 0) {
+            throw new Error(`Позиция ${updateField} в матче проигравших ${loserMatch.id} была занята другим процессом`);
+        }
+        
+        console.log(`✅ [safeAdvanceLoser] Успешно продвинут проигравший ${loserId} в позицию ${updateField} матча ${loserMatch.id}`);
+        
+        return {
+            advanced: true,
+            loserMatchId: loserMatch.id,
+            position: updateField
+        };
+        
+    } catch (error) {
+        console.error(`❌ [safeAdvanceLoser] Ошибка продвижения проигравшего ${loserId} из матча ${matchId}:`, error.message);
+        throw error;
+    }
+}
+
+// 🆕 ФУНКЦИЯ БЕЗОПАСНОГО ОБНОВЛЕНИЯ РЕЗУЛЬТАТА МАТЧА С ТРАНЗАКЦИЯМИ
+async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData, userId) {
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        console.log(`🔒 [safeUpdateMatchResult] Начинаем транзакцию для матча ${matchId}`);
+        
+        // 1. Получаем и блокируем текущий матч
+        const matchResult = await client.query(
+            'SELECT m.*, t.format as tournament_format FROM matches m JOIN tournaments t ON m.tournament_id = t.id WHERE m.id = $1 FOR UPDATE',
+            [matchId]
+        );
+        
+        if (matchResult.rows.length === 0) {
+            throw new Error(`Матч ${matchId} не найден`);
+        }
+        
+        const match = matchResult.rows[0];
+        const tournamentId = match.tournament_id;
+        
+        console.log(`🔒 [safeUpdateMatchResult] Заблокирован матч ${matchId} турнира ${tournamentId}`);
+        
+        // 2. Дополнительные проверки безопасности
+        
+        // Проверяем, что результат не пытаются изменить, если следующие матчи уже сыграны
+        for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
+            if (nextMatchId) {
+                const nextRes = await client.query(
+                    'SELECT winner_team_id, id FROM matches WHERE id = $1',
+                    [nextMatchId]
+                );
+                if (nextRes.rows.length && nextRes.rows[0].winner_team_id) {
+                    throw new Error(`Нельзя изменить результат: следующий матч ${nextMatchId} уже сыгран`);
+                }
+            }
+        }
+        
+        // Проверяем, что победитель является участником матча
+        if (winnerId && ![match.team1_id, match.team2_id].includes(winnerId)) {
+            throw new Error(`Команда ${winnerId} не является участником матча ${matchId}`);
+        }
+        
+        // 3. Атомарно обновляем результат текущего матча
+        let updateQuery, updateParams;
+        
+        if (mapsData) {
+            updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4, updated_at = NOW() WHERE id = $5 RETURNING *';
+            updateParams = [winnerId, score1, score2, JSON.stringify(mapsData), matchId];
+        } else {
+            updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, updated_at = NOW() WHERE id = $4 RETURNING *';
+            updateParams = [winnerId, score1, score2, matchId];
+        }
+        
+        const updateResult = await client.query(updateQuery, updateParams);
+        console.log(`✅ [safeUpdateMatchResult] Обновлен результат матча ${matchId}: winner=${winnerId}, score=${score1}:${score2}`);
+        
+        // 4. Продвигаем победителя в следующий матч (если есть)
+        let advancementResult = null;
+        if (winnerId && match.next_match_id) {
+            advancementResult = await safeAdvanceWinner(matchId, winnerId, client);
+        }
+        
+        // 5. Продвигаем проигравшего в матч за 3-е место (если есть)
+        let loserAdvancementResult = null;
+        if (winnerId && match.loser_next_match_id) {
+            const loserId = match.team1_id === winnerId ? match.team2_id : match.team1_id;
+            if (loserId) {
+                loserAdvancementResult = await safeAdvanceLoser(matchId, loserId, client);
+            }
+        }
+        
+        // 6. Логируем операцию
+        await logTournamentEvent(tournamentId, userId, 'match_result_updated', {
+            matchId: matchId,
+            winnerId: winnerId,
+            score: `${score1}:${score2}`,
+            advancementResult: advancementResult,
+            loserAdvancementResult: loserAdvancementResult,
+            hasMapsData: !!mapsData
+        });
+        
+        await client.query('COMMIT');
+        console.log(`🔓 [safeUpdateMatchResult] Транзакция успешно завершена для матча ${matchId}`);
+        
+        return {
+            success: true,
+            match: updateResult.rows[0],
+            advancementResult: advancementResult,
+            loserAdvancementResult: loserAdvancementResult,
+            tournamentId: tournamentId
+        };
+        
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error(`❌ [safeUpdateMatchResult] Ошибка обновления матча ${matchId}, откат транзакции:`, error.message);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+// 🆕 ФУНКЦИЯ КОМПЛЕКСНОЙ ДИАГНОСТИКИ ТУРНИРНОЙ СЕТКИ
+async function validateTournamentBracket(tournamentId) {
+    const startTime = Date.now();
+    console.log(`🔍 [validateTournamentBracket] Начинаем диагностику турнира ${tournamentId}`);
+    
+    try {
+        // 1. Получаем все матчи турнира
+        const matchesResult = await pool.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, match_number',
+            [tournamentId]
+        );
+        const matches = matchesResult.rows;
+        
+        if (matches.length === 0) {
+            return { valid: true, warnings: [], errors: [] };
+        }
+        
+        const warnings = [];
+        const errors = [];
+        
+        // 2. Проверяем каждый матч с результатом
+        for (const match of matches) {
+            if (match.winner_team_id) {
+                console.log(`🔍 Проверяем матч ${match.id} (№${match.match_number}): winner=${match.winner_team_id}`);
+                
+                // Проверка продвижения победителя
+                if (match.next_match_id) {
+                    const nextMatchResult = await pool.query(
+                        'SELECT * FROM matches WHERE id = $1',
+                        [match.next_match_id]
+                    );
+                    
+                    if (nextMatchResult.rows.length === 0) {
+                        errors.push(`Матч ${match.id}: Ссылка на несуществующий следующий матч ${match.next_match_id}`);
+                    } else {
+                        const nextMatch = nextMatchResult.rows[0];
+                        const winnerInNextMatch = (nextMatch.team1_id === match.winner_team_id || nextMatch.team2_id === match.winner_team_id);
+                        
+                        if (!winnerInNextMatch) {
+                            errors.push(`🚨 КРИТИЧЕСКАЯ ОШИБКА: Победитель ${match.winner_team_id} из матча ${match.id} НЕ находится в следующем матче ${nextMatch.id} (team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id})`);
+                        } else {
+                            console.log(`✅ Победитель ${match.winner_team_id} корректно продвинут в матч ${nextMatch.id}`);
+                        }
+                    }
+                }
+                
+                // Проверка продвижения проигравшего
+                if (match.loser_next_match_id) {
+                    const loserId = match.team1_id === match.winner_team_id ? match.team2_id : match.team1_id;
+                    
+                    const loserMatchResult = await pool.query(
+                        'SELECT * FROM matches WHERE id = $1',
+                        [match.loser_next_match_id]
+                    );
+                    
+                    if (loserMatchResult.rows.length === 0) {
+                        errors.push(`Матч ${match.id}: Ссылка на несуществующий матч для проигравшего ${match.loser_next_match_id}`);
+                    } else {
+                        const loserMatch = loserMatchResult.rows[0];
+                        const loserInLoserMatch = (loserMatch.team1_id === loserId || loserMatch.team2_id === loserId);
+                        
+                        if (!loserInLoserMatch) {
+                            errors.push(`🚨 ОШИБКА: Проигравший ${loserId} из матча ${match.id} НЕ находится в матче для проигравших ${loserMatch.id} (team1=${loserMatch.team1_id}, team2=${loserMatch.team2_id})`);
+                        } else {
+                            console.log(`✅ Проигравший ${loserId} корректно продвинут в матч для проигравших ${loserMatch.id}`);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 3. Проверяем потенциальные race conditions
+        const duplicateTeams = [];
+        const nextMatches = matches.filter(m => m.next_match_id);
+        
+        for (const nextMatchId of [...new Set(nextMatches.map(m => m.next_match_id))]) {
+            const nextMatchResult = await pool.query(
+                'SELECT * FROM matches WHERE id = $1',
+                [nextMatchId]
+            );
+            
+            if (nextMatchResult.rows.length > 0) {
+                const nextMatch = nextMatchResult.rows[0];
+                if (nextMatch.team1_id && nextMatch.team1_id === nextMatch.team2_id) {
+                    warnings.push(`Матч ${nextMatchId}: Одна команда ${nextMatch.team1_id} в обеих позициях`);
+                }
+            }
+        }
+        
+        const endTime = Date.now();
+        const result = {
+            valid: errors.length === 0,
+            warnings: warnings,
+            errors: errors,
+            matchesChecked: matches.length,
+            checkDuration: endTime - startTime
+        };
+        
+        console.log(`🔍 [validateTournamentBracket] Диагностика завершена за ${endTime - startTime}ms:`, result);
+        return result;
+        
+    } catch (error) {
+        console.error(`❌ [validateTournamentBracket] Ошибка диагностики турнира ${tournamentId}:`, error.message);
+        return {
+            valid: false,
+            warnings: [],
+            errors: [`Ошибка диагностики: ${error.message}`],
+            matchesChecked: 0,
+            checkDuration: Date.now() - startTime
+        };
+    }
+}
+
+// 🆕 ЭНДПОИНТ ДЛЯ ДИАГНОСТИКИ ТУРНИРНОЙ СЕТКИ
+router.get('/:id/validate-bracket', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    
+    try {
+        // Проверяем права доступа
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        if (tournament.created_by !== userId) {
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может проводить диагностику' });
+            }
+        }
+        
+        // Проводим диагностику
+        const validation = await validateTournamentBracket(id);
+        
+        res.status(200).json({
+            message: 'Диагностика турнирной сетки завершена',
+            tournamentId: id,
+            validation: validation
+        });
+        
+    } catch (err) {
+        console.error('❌ Ошибка диагностики турнирной сетки:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
