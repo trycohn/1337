@@ -755,7 +755,6 @@ router.post('/:id/withdraw', authenticateToken, async (req, res) => {
                         UPDATE matches 
                         SET winner_team_id = $1, 
                             status = 'completed',
-                            updated_at = NOW(),
                             score = $2
                         WHERE id = $3
                     `, [winnerId, 'Техническое поражение (отказ от участия)', match.id]);
@@ -3838,8 +3837,8 @@ async function safeAdvanceWinner(matchId, winnerId, client = pool) {
         
         // 7. Атомарно обновляем следующий матч
         const updateResult = await client.query(
-            `UPDATE matches SET ${updateField} = $1, updated_at = NOW() WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
-            [updateValue, nextMatch.id]
+            `UPDATE matches SET ${updateField} = $1 WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
+            [winnerId, nextMatch.id]
         );
         
         if (updateResult.rows.length === 0) {
@@ -3916,7 +3915,7 @@ async function safeAdvanceLoser(matchId, loserId, client = pool) {
         
         // Атомарно обновляем матч для проигравшего
         const updateResult = await client.query(
-            `UPDATE matches SET ${updateField} = $1, updated_at = NOW() WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
+            `UPDATE matches SET ${updateField} = $1 WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
             [loserId, loserMatch.id]
         );
         
@@ -3985,10 +3984,10 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
         let updateQuery, updateParams;
         
         if (mapsData) {
-            updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4, updated_at = NOW() WHERE id = $5 RETURNING *';
+            updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5 RETURNING *';
             updateParams = [winnerId, score1, score2, JSON.stringify(mapsData), matchId];
         } else {
-            updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, updated_at = NOW() WHERE id = $4 RETURNING *';
+            updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4 RETURNING *';
             updateParams = [winnerId, score1, score2, matchId];
         }
         
@@ -4248,8 +4247,7 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
                     score1 = NULL, 
                     score2 = NULL, 
                     maps_data = NULL,
-                    status = 'pending',
-                    updated_at = NOW()
+                    status = 'pending'
                 WHERE tournament_id = $1 AND winner_team_id IS NOT NULL
                 RETURNING id
             `, [id]);
