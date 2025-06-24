@@ -333,10 +333,10 @@ router.get('/:id', async (req, res) => {
                             'cs2_premier_rank', tp.cs2_premier_rank,
                             'user_faceit_elo', u.faceit_elo,
                             'user_premier_rank', u.cs2_premier_rank,
-                            'faceit_rating', u.faceit_rating,
-                            'user_faceit_rating', u.faceit_rating,
-                            'premier_rating', u.premier_rating,
-                            'user_premier_rating', u.premier_rating,
+                            'faceit_rating', u.faceit_elo,
+                            'user_faceit_rating', u.faceit_elo,
+                            'premier_rating', u.cs2_premier_rank,
+                            'user_premier_rating', u.cs2_premier_rank,
                             'avatar_url', u.avatar_url
                         ) ORDER BY tp.id
                     ) as members
@@ -491,7 +491,7 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
                             tp.name, u.username, u.avatar_url, 
                             tp.faceit_elo as tp_faceit_elo, tp.cs2_premier_rank as tp_cs2_premier_rank,
                             u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_cs2_premier_rank,
-                            u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
+                            u.faceit_elo as user_faceit_rating, u.cs2_premier_rank as user_premier_rating,
                             COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo,
                             COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 1) as cs2_premier_rank
                      FROM tournament_team_members tm
@@ -2360,7 +2360,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
             `SELECT tp.id AS participant_id, tp.user_id, tp.name, tp.in_team,
                     tp.faceit_elo, tp.cs2_premier_rank,
                     u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
-                    u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
+                    u.faceit_elo as user_faceit_rating, u.cs2_premier_rank as user_premier_rating,
                     COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_rating,
                     COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 1) as premier_rating
              FROM tournament_participants tp
@@ -2529,7 +2529,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
         console.log(`   - Разброс: ${maxRating - minRating}`);
         
         // 🔍 КРИТИЧЕСКАЯ ПРОВЕРКА НУЛЕВЫХ И БАЗОВЫХ РЕЙТИНГОВ
-        const baseRatingValue = ratingType === 'faceit' ? 1000 : 5;
+        const baseRatingValue = ratingType === 'faceit' ? 1000 : 1;
         const zeroRatings = ratingsUsed.filter(r => r === 0);
         const baseRatings = ratingsUsed.filter(r => r === baseRatingValue);
         
@@ -2937,7 +2937,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                     name: member.name,
                     // 🔧 ИСПРАВЛЕНИЕ: сохраняем правильные рейтинги
                     faceit_elo: member.faceit_elo || member.user_faceit_elo || 1000,
-                    cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank || 5,
+                    cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank || 1,
                     // 🆕 ДОБАВЛЯЕМ ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ДЛЯ ДИАГНОСТИКИ
                     faceit_rating_used: member.faceit_rating,
                     premier_rating_used: member.premier_rating
@@ -2953,7 +2953,8 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                     console.log(`   - Итоговый faceit_rating: ${member.faceit_rating}`);
                     console.log(`   - Итоговый premier_rating: ${member.premier_rating}`);
                     console.log(`   - Сохраняем faceit_elo: ${member.faceit_elo || member.user_faceit_elo || 1000}`);
-                    console.log(`   - Сохраняем cs2_premier_rank: ${member.cs2_premier_rank || member.user_premier_rank || 5}`);
+                    console.log(`   - Сохраняем cs2_premier_rank: ${member.cs2_premier_rank || member.user_premier_rank || 1}`);
+                    console.log(`   - Сохраняем cs2_premier_rank: ${member.cs2_premier_rank || member.user_premier_rank || 1}`);
                 }
             }
             
@@ -4038,7 +4039,7 @@ router.get('/:id/teams', async (req, res) => {
                         tp.name, u.username, u.avatar_url, 
                         tp.faceit_elo, tp.cs2_premier_rank,
                         u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
-                        u.faceit_rating as user_faceit_rating
+                        u.faceit_elo as user_faceit_rating, u.cs2_premier_rank as user_premier_rating
                  FROM tournament_team_members tm
                  LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                  LEFT JOIN users u ON tm.user_id = u.id
