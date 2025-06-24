@@ -29,23 +29,56 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     
     console.log(`Ближайшая степень двойки: ${closestPowerOfTwo}, всего раундов: ${totalRounds}`);
 
-    // Количество участников, которые должны сыграть в предварительном раунде,
-    // чтобы количество участников в основной сетке было равно степени двойки
-    const prelimParticipantsCount = (participantCount - closestPowerOfTwo) * 2;
+    // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА РАСЧЕТА ПРЕДВАРИТЕЛЬНЫХ МАТЧЕЙ
+    // Количество матчей в первом основном раунде = closestPowerOfTwo / 2
+    const round0MatchCount = closestPowerOfTwo / 2;
     
-    // Количество матчей в предварительном раунде
-    const prelimMatchesCount = Math.floor(prelimParticipantsCount / 2);
+    // Максимальное количество участников в основной сетке = closestPowerOfTwo
+    // Количество участников с автопроходом = минимум для заполнения половины слотов
+    // Остальные участники идут в предварительный раунд
     
-    // Количество участников, которые сразу проходят в основную сетку (round 0)
-    const byeParticipantsCount = participantCount - prelimParticipantsCount;
+    // Рассчитываем оптимальное распределение:
+    // - Сначала заполняем каждый матч основной сетки одним участником с автопроходом
+    // - Оставшихся участников отправляем в предварительный раунд
+    const minByeParticipants = Math.min(round0MatchCount, participantCount);
+    const preliminaryParticipants = participantCount - minByeParticipants;
     
-    console.log(`Матчей в предварительном раунде: ${prelimMatchesCount}`);
-    console.log(`Участников в предварительном раунде: ${prelimParticipantsCount}`);
+    // Количество предварительных матчей = количество свободных слотов в основной сетке
+    // Каждый матч основной сетки имеет максимум 1 свободный слот (второй участник)
+    let prelimMatchesCount = Math.min(preliminaryParticipants, round0MatchCount);
+    let actualPrelimParticipants = prelimMatchesCount * 2; // по 2 участника в каждом предварительном матче
+    let byeParticipantsCount = participantCount - actualPrelimParticipants;
+    
+    console.log(`🔧 ИСПРАВЛЕННЫЙ РАСЧЕТ:`);
+    console.log(`Матчей в основном раунде (0): ${round0MatchCount}`);
+    console.log(`Предварительных матчей: ${prelimMatchesCount}`);
+    console.log(`Участников в предварительном раунде: ${actualPrelimParticipants}`);
     console.log(`Участников с автоматическим проходом: ${byeParticipantsCount}`);
+    console.log(`Проверка: ${actualPrelimParticipants} + ${byeParticipantsCount} = ${actualPrelimParticipants + byeParticipantsCount} (должно быть ${participantCount})`);
     
-    // Создаем массивы участников предварительного раунда и участников с автоматическим проходом
-    const prelimParticipants = shuffledParticipants.slice(0, prelimParticipantsCount);
-    const byeParticipants = shuffledParticipants.slice(prelimParticipantsCount);
+    // Если расчет неверный, используем безопасную логику
+    if (actualPrelimParticipants + byeParticipantsCount !== participantCount) {
+        console.warn(`⚠️ Несоответствие в расчетах! Используем безопасную логику...`);
+        
+        // Безопасная логика: оставляем одного участника с автопроходом, остальных в предварительный раунд
+        const safeByeCount = 1;
+        const safePrelimParticipants = participantCount - safeByeCount;
+        const safePrelimMatches = Math.floor(safePrelimParticipants / 2);
+        
+        // Обновляем переменные
+        prelimMatchesCount = safePrelimMatches;
+        actualPrelimParticipants = safePrelimMatches * 2;
+        byeParticipantsCount = participantCount - actualPrelimParticipants;
+        
+        console.log(`🔧 БЕЗОПАСНАЯ ЛОГИКА:`);
+        console.log(`Предварительных матчей: ${prelimMatchesCount}`);
+        console.log(`Участников в предварительном раунде: ${actualPrelimParticipants}`);
+        console.log(`Участников с автопроходом: ${byeParticipantsCount}`);
+    }
+    
+    // Создаем массивы участников (после всех расчетов)
+    const prelimParticipants = shuffledParticipants.slice(0, actualPrelimParticipants);
+    const byeParticipants = shuffledParticipants.slice(actualPrelimParticipants);
     
     console.log(`Участники предварительного раунда:`, prelimParticipants.map(p => `${p.id}:${p.name}`));
     console.log(`Участники с автопроходом:`, byeParticipants.map(p => `${p.id}:${p.name}`));
@@ -97,7 +130,6 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     
     // Создаем матчи первого основного раунда (round 0)
     // Количество матчей в первом основном раунде = closestPowerOfTwo / 2
-    const round0MatchCount = closestPowerOfTwo / 2;
     console.log(`Количество матчей в основном раунде (0): ${round0MatchCount}`);
     
     // Создаем матчи первого раунда с правильным распределением участников
