@@ -1750,54 +1750,102 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
     const { winner_team_id, score1, score2, maps_data } = req.body; // 🆕 Добавляем maps_data
     const userId = req.user.id;
 
+    // 🔍 НАЧАЛЬНОЕ ЛОГИРОВАНИЕ
+    console.log(`🎯 [matches/:matchId/result] НАЧАЛО ОБРАБОТКИ ЗАПРОСА:`);
+    console.log(`   - Match ID: ${matchId}`);
+    console.log(`   - Winner Team ID: ${winner_team_id}`);
+    console.log(`   - Score: ${score1}:${score2}`);
+    console.log(`   - User ID: ${userId}`);
+    console.log(`   - Maps data:`, maps_data);
+    
+    const startTime = Date.now();
+
     try {
         // Преобразуем matchId в число
         const matchIdNum = Number(matchId);
+        console.log(`🔢 [matches/:matchId/result] Match ID преобразован в число: ${matchIdNum}`);
 
-        // Получение данных текущего матча
+        // 🔍 ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ МАТЧА С ПОДРОБНЫМ ЛОГИРОВАНИЕМ
+        console.log(`🔍 [matches/:matchId/result] Проверяем существование матча ${matchIdNum}...`);
         const matchResult = await pool.query('SELECT * FROM matches WHERE id = $1', [matchIdNum]);
+        
+        console.log(`📊 [matches/:matchId/result] Результат запроса матча:`);
+        console.log(`   - Количество найденных строк: ${matchResult.rows.length}`);
+        
         if (matchResult.rows.length === 0) {
+            console.log(`❌ [matches/:matchId/result] МАТЧ ${matchIdNum} НЕ НАЙДЕН В БАЗЕ ДАННЫХ!`);
             return res.status(404).json({ error: 'Матч не найден' });
         }
+        
         const match = matchResult.rows[0];
         const tournamentId = match.tournament_id;
+        
+        console.log(`✅ [matches/:matchId/result] Матч найден:`);
+        console.log(`   - Tournament ID: ${tournamentId}`);
+        console.log(`   - Team 1 ID: ${match.team1_id}`);
+        console.log(`   - Team 2 ID: ${match.team2_id}`);
+        console.log(`   - Current Winner: ${match.winner_team_id}`);
+        console.log(`   - Current Score: ${match.score1}:${match.score2}`);
+        console.log(`   - Next Match ID: ${match.next_match_id}`);
 
         // Проверка турнира и прав доступа
+        console.log(`🔍 [matches/:matchId/result] Проверяем турнир ${tournamentId}...`);
         const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [tournamentId]);
         if (tournamentResult.rows.length === 0) {
+            console.log(`❌ [matches/:matchId/result] ТУРНИР ${tournamentId} НЕ НАЙДЕН!`);
             return res.status(404).json({ error: 'Турнир не найден' });
         }
         const tournament = tournamentResult.rows[0];
+        
+        console.log(`✅ [matches/:matchId/result] Турнир найден: "${tournament.name}", статус: ${tournament.status}`);
 
         if (tournament.created_by !== userId) {
+            console.log(`🔍 [matches/:matchId/result] Проверяем права администратора для пользователя ${userId}...`);
             const adminCheck = await pool.query(
                 'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
                 [tournamentId, userId]
             );
             if (adminCheck.rows.length === 0) {
+                console.log(`❌ [matches/:matchId/result] ПОЛЬЗОВАТЕЛЬ ${userId} НЕ ИМЕЕТ ПРАВ НА ИЗМЕНЕНИЕ МАТЧА!`);
                 return res.status(403).json({ error: 'Только создатель или администратор может обновлять результаты матча' });
             }
+            console.log(`✅ [matches/:matchId/result] Пользователь ${userId} имеет права администратора`);
+        } else {
+            console.log(`✅ [matches/:matchId/result] Пользователь ${userId} является создателем турнира`);
         }
 
         // Проверяем, изменились ли данные матча (счет, карты)
         const scoreChanged = match.score1 !== score1 || match.score2 !== score2;
         const mapsChanged = maps_data && Array.isArray(maps_data) && maps_data.length > 0;
         
+        console.log(`🔍 [matches/:matchId/result] Анализируем изменения:`);
+        console.log(`   - Score changed: ${scoreChanged} (${match.score1}:${match.score2} -> ${score1}:${score2})`);
+        console.log(`   - Maps changed: ${mapsChanged}`);
+        console.log(`   - Winner changed: ${match.winner_team_id !== winner_team_id} (${match.winner_team_id} -> ${winner_team_id})`);
+        
         // Разрешаем обновление, если:
         // 1. Победитель изменился
         // 2. Изменился счет
         // 3. Добавлены/изменены данные о картах
         if (match.winner_team_id === winner_team_id && !scoreChanged && !mapsChanged) {
+            console.log(`⚠️ [matches/:matchId/result] РЕЗУЛЬТАТ МАТЧА НЕ ИЗМЕНИЛСЯ - отклоняем запрос`);
             return res.status(400).json({ error: 'Результат матча не изменился' });
         }
 
         // 🔥 ИСПОЛЬЗУЕМ НОВУЮ БЕЗОПАСНУЮ ФУНКЦИЮ ВМЕСТО СТАРОЙ ЛОГИКИ
-        console.log(`🔒 [matches/:matchId/result] Вызываем безопасную функцию обновления матча ${matchIdNum}`);
+        console.log(`🔒 [matches/:matchId/result] ВЫЗЫВАЕМ БЕЗОПАСНУЮ ФУНКЦИЮ safeUpdateMatchResult для матча ${matchIdNum}`);
+        console.log(`   - Параметры: winnerId=${winner_team_id}, score=${score1}:${score2}, userId=${userId}`);
+        console.log(`   - Время до вызова: ${Date.now() - startTime}ms`);
+        
         const updateResult = await safeUpdateMatchResult(matchIdNum, winner_team_id, score1, score2, maps_data, userId);
         
-        console.log(`✅ [matches/:matchId/result] Матч ${matchIdNum} успешно обновлен с продвижением`);
+        const afterSafeUpdateTime = Date.now();
+        console.log(`✅ [matches/:matchId/result] safeUpdateMatchResult ЗАВЕРШЕНА успешно за ${afterSafeUpdateTime - startTime}ms`);
+        console.log(`   - Результат продвижения победителя:`, updateResult.advancementResult);
+        console.log(`   - Результат продвижения проигравшего:`, updateResult.loserAdvancementResult);
 
         // Получаем обновлённые данные турнира
+        console.log(`🔍 [matches/:matchId/result] Получаем обновленные данные турнира ${tournamentId}...`);
         const updatedTournament = await pool.query(
             'SELECT t.*, ' +
             '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
@@ -1814,10 +1862,14 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
             ? tournamentData.participants 
             : [];
 
+        console.log(`📡 [matches/:matchId/result] Отправляем WebSocket обновления турнира ${tournamentId}...`);
         // Отправляем обновления всем клиентам, просматривающим этот турнир
         broadcastTournamentUpdate(tournamentId, tournamentData);
 
-        console.log('🔍 Match updated for tournament:', tournamentData);
+        const totalTime = Date.now() - startTime;
+        console.log(`✅ [matches/:matchId/result] ЗАПРОС ПОЛНОСТЬЮ ЗАВЕРШЕН за ${totalTime}ms`);
+        console.log('🔍 Match updated for tournament:', tournamentData.name);
+        
         res.status(200).json({ 
             message: 'Результат обновлён', 
             tournament: tournamentData,
@@ -1825,7 +1877,9 @@ router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, 
             loserAdvancementResult: updateResult.loserAdvancementResult
         });
     } catch (err) {
-        console.error('❌ Ошибка обновления результатов матча:', err);
+        const errorTime = Date.now() - startTime;
+        console.error(`❌ [matches/:matchId/result] ОШИБКА ПОСЛЕ ${errorTime}ms:`, err);
+        console.error(`❌ [matches/:matchId/result] Stack trace:`, err.stack);
         res.status(500).json({ error: err.message });
     }
 });
@@ -3776,10 +3830,11 @@ router.get('/:id/teams', async (req, res) => {
 // 🔧 ФУНКЦИЯ БЕЗОПАСНОГО ПРОДВИЖЕНИЯ ПОБЕДИТЕЛЕЙ С ТРАНЗАКЦИЯМИ
 async function safeAdvanceWinner(matchId, winnerId, client = pool) {
     const startTime = Date.now();
-    console.log(`🔧 [safeAdvanceWinner] Начинаем безопасное продвижение победителя ${winnerId} из матча ${matchId}`);
+    console.log(`🔧 [safeAdvanceWinner] НАЧАЛО: продвижение победителя ${winnerId} из матча ${matchId}`);
     
     try {
         // 1. Получаем данные текущего матча с блокировкой
+        console.log(`🔍 [safeAdvanceWinner] Получаем данные матча ${matchId}...`);
         const matchResult = await client.query(
             'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
             [matchId]
@@ -3790,6 +3845,7 @@ async function safeAdvanceWinner(matchId, winnerId, client = pool) {
         }
         
         const match = matchResult.rows[0];
+        console.log(`✅ [safeAdvanceWinner] Матч получен, next_match_id: ${match.next_match_id}`);
         
         // 2. Валидация: проверяем, что победитель является участником матча
         if (![match.team1_id, match.team2_id].includes(winnerId)) {
@@ -3803,6 +3859,7 @@ async function safeAdvanceWinner(matchId, winnerId, client = pool) {
         }
         
         // 4. Получаем следующий матч с блокировкой
+        console.log(`🔍 [safeAdvanceWinner] Получаем следующий матч ${match.next_match_id}...`);
         const nextMatchResult = await client.query(
             'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
             [match.next_match_id]
@@ -3834,6 +3891,8 @@ async function safeAdvanceWinner(matchId, winnerId, client = pool) {
             // Если обе позиции заняты - это ошибка в структуре сетки
             throw new Error(`Все позиции в следующем матче ${nextMatch.id} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
         }
+        
+        console.log(`💾 [safeAdvanceWinner] Обновляем позицию ${updateField} в матче ${nextMatch.id}...`);
         
         // 7. Атомарно обновляем следующий матч
         const updateResult = await client.query(
@@ -3868,7 +3927,7 @@ async function safeAdvanceWinner(matchId, winnerId, client = pool) {
 
 // 🆕 ФУНКЦИЯ БЕЗОПАСНОГО ПРОДВИЖЕНИЯ ПРОИГРАВШЕГО (для матчей за 3-е место)
 async function safeAdvanceLoser(matchId, loserId, client = pool) {
-    console.log(`🔧 [safeAdvanceLoser] Начинаем продвижение проигравшего ${loserId} из матча ${matchId}`);
+    console.log(`🔧 [safeAdvanceLoser] НАЧАЛО: продвижение проигравшего ${loserId} из матча ${matchId}`);
     
     try {
         // Получаем данные текущего матча
@@ -3888,6 +3947,8 @@ async function safeAdvanceLoser(matchId, loserId, client = pool) {
             console.log(`✅ [safeAdvanceLoser] Матч ${matchId} не имеет матча для проигравшего`);
             return { advanced: false, reason: 'no_loser_match' };
         }
+        
+        console.log(`🔍 [safeAdvanceLoser] Получаем матч для проигравшего ${match.loser_next_match_id}...`);
         
         // Получаем матч для проигравшего (обычно матч за 3-е место)
         const loserMatchResult = await client.query(
@@ -3912,6 +3973,8 @@ async function safeAdvanceLoser(matchId, loserId, client = pool) {
             console.log(`⚠️ [safeAdvanceLoser] Все позиции в матче проигравших ${loserMatch.id} уже заняты`);
             return { advanced: false, reason: 'match_full' };
         }
+        
+        console.log(`💾 [safeAdvanceLoser] Обновляем позицию ${updateField} в матче проигравших ${loserMatch.id}...`);
         
         // Атомарно обновляем матч для проигравшего
         const updateResult = await client.query(
@@ -3939,56 +4002,85 @@ async function safeAdvanceLoser(matchId, loserId, client = pool) {
 
 // 🆕 ФУНКЦИЯ БЕЗОПАСНОГО ОБНОВЛЕНИЯ РЕЗУЛЬТАТА МАТЧА С ТРАНЗАКЦИЯМИ
 async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData, userId) {
+    console.log(`🔒 [safeUpdateMatchResult] НАЧАЛО ФУНКЦИИ для матча ${matchId}`);
+    console.log(`   - Winner ID: ${winnerId}`);
+    console.log(`   - Score: ${score1}:${score2}`);
+    console.log(`   - User ID: ${userId}`);
+    console.log(`   - Maps data:`, mapsData);
+    
+    const startTime = Date.now();
     const client = await pool.connect();
     
     try {
+        console.log(`🔄 [safeUpdateMatchResult] Начинаем транзакцию...`);
         await client.query('BEGIN');
         console.log(`🔒 [safeUpdateMatchResult] Начинаем транзакцию для матча ${matchId}`);
         
         // 1. Получаем и блокируем текущий матч
+        console.log(`🔍 [safeUpdateMatchResult] Получаем данные матча ${matchId} с блокировкой...`);
         const matchResult = await client.query(
             'SELECT m.*, t.format as tournament_format FROM matches m JOIN tournaments t ON m.tournament_id = t.id WHERE m.id = $1 FOR UPDATE',
             [matchId]
         );
         
+        console.log(`📊 [safeUpdateMatchResult] Результат запроса матча с блокировкой:`);
+        console.log(`   - Количество найденных строк: ${matchResult.rows.length}`);
+        
         if (matchResult.rows.length === 0) {
+            console.log(`❌ [safeUpdateMatchResult] КРИТИЧЕСКАЯ ОШИБКА: Матч ${matchId} не найден в транзакции!`);
             throw new Error(`Матч ${matchId} не найден`);
         }
         
         const match = matchResult.rows[0];
         const tournamentId = match.tournament_id;
         
-        console.log(`🔒 [safeUpdateMatchResult] Заблокирован матч ${matchId} турнира ${tournamentId}`);
+        console.log(`✅ [safeUpdateMatchResult] Заблокирован матч ${matchId} турнира ${tournamentId}`);
+        console.log(`   - Team 1: ${match.team1_id}`);
+        console.log(`   - Team 2: ${match.team2_id}`);
+        console.log(`   - Current winner: ${match.winner_team_id}`);
+        console.log(`   - Next match: ${match.next_match_id}`);
+        console.log(`   - Loser next match: ${match.loser_next_match_id}`);
         
         // 2. Дополнительные проверки безопасности
+        console.log(`🔍 [safeUpdateMatchResult] Проверяем безопасность операции...`);
         
         // Проверяем, что результат не пытаются изменить, если следующие матчи уже сыграны
         for (const nextMatchId of [match.next_match_id, match.loser_next_match_id]) {
             if (nextMatchId) {
+                console.log(`🔍 [safeUpdateMatchResult] Проверяем следующий матч ${nextMatchId}...`);
                 const nextRes = await client.query(
                     'SELECT winner_team_id, id FROM matches WHERE id = $1',
                     [nextMatchId]
                 );
                 if (nextRes.rows.length && nextRes.rows[0].winner_team_id) {
+                    console.log(`❌ [safeUpdateMatchResult] ОШИБКА: Следующий матч ${nextMatchId} уже сыгран (winner: ${nextRes.rows[0].winner_team_id})`);
                     throw new Error(`Нельзя изменить результат: следующий матч ${nextMatchId} уже сыгран`);
+                } else {
+                    console.log(`✅ [safeUpdateMatchResult] Следующий матч ${nextMatchId} еще не сыгран`);
                 }
             }
         }
         
         // Проверяем, что победитель является участником матча
         if (winnerId && ![match.team1_id, match.team2_id].includes(winnerId)) {
+            console.log(`❌ [safeUpdateMatchResult] ОШИБКА: Команда ${winnerId} не является участником матча ${matchId} (team1: ${match.team1_id}, team2: ${match.team2_id})`);
             throw new Error(`Команда ${winnerId} не является участником матча ${matchId}`);
         }
         
+        console.log(`✅ [safeUpdateMatchResult] Все проверки безопасности пройдены`);
+        
         // 3. Атомарно обновляем результат текущего матча
+        console.log(`💾 [safeUpdateMatchResult] Обновляем результат матча ${matchId}...`);
         let updateQuery, updateParams;
         
         if (mapsData) {
             updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4 WHERE id = $5 RETURNING *';
             updateParams = [winnerId, score1, score2, JSON.stringify(mapsData), matchId];
+            console.log(`   - С данными карт: ${mapsData.length} карт`);
         } else {
             updateQuery = 'UPDATE matches SET winner_team_id = $1, score1 = $2, score2 = $3 WHERE id = $4 RETURNING *';
             updateParams = [winnerId, score1, score2, matchId];
+            console.log(`   - Без данных карт`);
         }
         
         const updateResult = await client.query(updateQuery, updateParams);
@@ -3997,7 +4089,11 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
         // 4. Продвигаем победителя в следующий матч (если есть)
         let advancementResult = null;
         if (winnerId && match.next_match_id) {
+            console.log(`🏆 [safeUpdateMatchResult] Продвигаем победителя ${winnerId} в следующий матч ${match.next_match_id}...`);
             advancementResult = await safeAdvanceWinner(matchId, winnerId, client);
+            console.log(`✅ [safeUpdateMatchResult] Результат продвижения победителя:`, advancementResult);
+        } else {
+            console.log(`⏭️ [safeUpdateMatchResult] Продвижение победителя не требуется (winnerId: ${winnerId}, nextMatch: ${match.next_match_id})`);
         }
         
         // 5. Продвигаем проигравшего в матч за 3-е место (если есть)
@@ -4005,11 +4101,18 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
         if (winnerId && match.loser_next_match_id) {
             const loserId = match.team1_id === winnerId ? match.team2_id : match.team1_id;
             if (loserId) {
+                console.log(`🥉 [safeUpdateMatchResult] Продвигаем проигравшего ${loserId} в матч за 3-е место ${match.loser_next_match_id}...`);
                 loserAdvancementResult = await safeAdvanceLoser(matchId, loserId, client);
+                console.log(`✅ [safeUpdateMatchResult] Результат продвижения проигравшего:`, loserAdvancementResult);
+            } else {
+                console.log(`⚠️ [safeUpdateMatchResult] Не удается определить проигравшего (team1: ${match.team1_id}, team2: ${match.team2_id}, winner: ${winnerId})`);
             }
+        } else {
+            console.log(`⏭️ [safeUpdateMatchResult] Продвижение проигравшего не требуется (winnerId: ${winnerId}, loserNextMatch: ${match.loser_next_match_id})`);
         }
         
         // 6. Логируем операцию
+        console.log(`📝 [safeUpdateMatchResult] Записываем лог операции...`);
         await logTournamentEvent(tournamentId, userId, 'match_result_updated', {
             matchId: matchId,
             winnerId: winnerId,
@@ -4018,9 +4121,14 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
             loserAdvancementResult: loserAdvancementResult,
             hasMapsData: !!mapsData
         });
+        console.log(`✅ [safeUpdateMatchResult] Лог операции записан`);
         
+        console.log(`🔓 [safeUpdateMatchResult] Коммитим транзакцию...`);
         await client.query('COMMIT');
         console.log(`🔓 [safeUpdateMatchResult] Транзакция успешно завершена для матча ${matchId}`);
+        
+        const endTime = Date.now();
+        console.log(`✅ [safeUpdateMatchResult] ФУНКЦИЯ ЗАВЕРШЕНА УСПЕШНО за ${endTime - startTime}ms`);
         
         return {
             success: true,
@@ -4031,11 +4139,16 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
         };
         
     } catch (error) {
+        const errorTime = Date.now() - startTime;
+        console.log(`❌ [safeUpdateMatchResult] ОТКАТ ТРАНЗАКЦИИ после ${errorTime}ms...`);
         await client.query('ROLLBACK');
         console.error(`❌ [safeUpdateMatchResult] Ошибка обновления матча ${matchId}, откат транзакции:`, error.message);
+        console.error(`❌ [safeUpdateMatchResult] Stack trace:`, error.stack);
         throw error;
     } finally {
+        console.log(`🔓 [safeUpdateMatchResult] Освобождаем подключение к БД...`);
         client.release();
+        console.log(`✅ [safeUpdateMatchResult] Подключение к БД освобождено`);
     }
 }
 
