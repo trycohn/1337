@@ -4196,38 +4196,25 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
     const userId = req.user.id;
     
     try {
-        console.log(`🔄 [reset-match-results] Начинаем сброс результатов для турнира ${id}`);
+        console.log(`🔄 [reset-match-results] Начинаем полный сброс турнирной сетки для турнира ${id}`);
         
         // Начинаем транзакцию
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             
-            // Простое обновление: очищаем все результаты матчей турнира
-            const resetResult = await client.query(`
-                UPDATE matches 
-                SET winner_team_id = NULL, 
-                    score1 = NULL, 
-                    score2 = NULL, 
-                    maps_data = NULL,
-                    status = 'pending'
-                WHERE tournament_id = $1
-                RETURNING id
-            `, [id]);
+            // Получаем количество матчей для логирования
+            const countResult = await client.query('SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1', [id]);
+            const matchesCount = parseInt(countResult.rows[0].count);
             
-            const resetCount = resetResult.rows.length;
-            console.log(`✅ [reset-match-results] Очищено результатов у ${resetCount} матчей`);
+            // Полностью удаляем ВСЕ матчи турнира
+            await client.query('DELETE FROM matches WHERE tournament_id = $1', [id]);
             
-            // Очищаем участников из всех матчей кроме первого раунда
-            await client.query(`
-                UPDATE matches 
-                SET team1_id = NULL, team2_id = NULL
-                WHERE tournament_id = $1 AND round > 0
-            `, [id]);
+            console.log(`✅ [reset-match-results] Удалено ${matchesCount} матчей турнира`);
             
             // Логируем операцию
-            await logTournamentEvent(id, userId, 'match_results_reset', {
-                resetMatchesCount: resetCount,
+            await logTournamentEvent(id, userId, 'bracket_reset', {
+                deletedMatchesCount: matchesCount,
                 performedBy: req.user.username
             });
             
@@ -4237,12 +4224,12 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
             // Отправляем уведомление в чат
             await sendTournamentChatAnnouncement(
                 id,
-                `Администратор ${req.user.username} сбросил результаты матчей. Турнир можно продолжить с начала.`
+                `Администратор ${req.user.username} сбросил турнирную сетку. Можно заново сгенерировать сетку турнира.`
             );
             
             res.status(200).json({
-                message: `Успешно сброшены результаты ${resetCount} матчей`,
-                resetCount: resetCount
+                message: `Успешно удалена турнирная сетка (${matchesCount} матчей)`,
+                deletedCount: matchesCount
             });
             
         } catch (error) {
@@ -4253,7 +4240,7 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
         }
         
     } catch (err) {
-        console.error('❌ Ошибка сброса результатов матчей:', err);
+        console.error('❌ Ошибка сброса турнирной сетки:', err);
         res.status(500).json({ error: err.message });
     }
 });
