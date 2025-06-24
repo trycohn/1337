@@ -582,6 +582,11 @@ function TournamentDetails() {
                 throw new Error('Отсутствует токен авторизации');
             }
 
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем актуальные team_id из массива matches
+            const currentMatch = matches.find(m => m.id === parseInt(matchId));
+            const team1_id = selectedMatch.team1_id || currentMatch?.team1_id;
+            const team2_id = selectedMatch.team2_id || currentMatch?.team2_id;
+
             // 🔧 ИСПРАВЛЕНО: Улучшенная подготовка данных для отправки
             const submitData = {
                 score1: parseInt(resultData.score1) || 0,
@@ -590,32 +595,55 @@ function TournamentDetails() {
                 winner_team_id: null
             };
 
-            // 🔧 ИСПРАВЛЕНО: Улучшенное определение победителя с отладкой
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Улучшенное определение победителя с fallback логикой
             console.log('🔍 Определяем победителя:', {
                 resultDataWinner: resultData.winner,
                 selectedMatchTeam1: selectedMatch.team1_id,
                 selectedMatchTeam2: selectedMatch.team2_id,
+                fallbackTeam1: team1_id,
+                fallbackTeam2: team2_id,
                 score1: submitData.score1,
                 score2: submitData.score2
             });
 
             // Приоритет 1: Явно выбранный победитель
-            if (resultData.winner === 'team1' && selectedMatch.team1_id) {
-                submitData.winner_team_id = selectedMatch.team1_id;
-                console.log('✅ Победитель определен явно: team1 ->', selectedMatch.team1_id);
-            } else if (resultData.winner === 'team2' && selectedMatch.team2_id) {
-                submitData.winner_team_id = selectedMatch.team2_id;
-                console.log('✅ Победитель определен явно: team2 ->', selectedMatch.team2_id);
+            if (resultData.winner === 'team1' && team1_id) {
+                submitData.winner_team_id = team1_id;
+                console.log('✅ Победитель определен явно: team1 ->', team1_id);
+            } else if (resultData.winner === 'team2' && team2_id) {
+                submitData.winner_team_id = team2_id;
+                console.log('✅ Победитель определен явно: team2 ->', team2_id);
             } 
             // Приоритет 2: Определение по счету
-            else if (submitData.score1 > submitData.score2 && selectedMatch.team1_id) {
-                submitData.winner_team_id = selectedMatch.team1_id;
-                console.log('✅ Победитель определен по счету: team1 ->', selectedMatch.team1_id);
-            } else if (submitData.score2 > submitData.score1 && selectedMatch.team2_id) {
-                submitData.winner_team_id = selectedMatch.team2_id;
-                console.log('✅ Победитель определен по счету: team2 ->', selectedMatch.team2_id);
+            else if (submitData.score1 > submitData.score2 && team1_id) {
+                submitData.winner_team_id = team1_id;
+                console.log('✅ Победитель определен по счету: team1 ->', team1_id);
+            } else if (submitData.score2 > submitData.score1 && team2_id) {
+                submitData.winner_team_id = team2_id;
+                console.log('✅ Победитель определен по счету: team2 ->', team2_id);
             } else {
                 console.log('⚠️ Победитель не определен - ничья или недостаточно данных');
+            }
+
+            // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся что winner_team_id не null при наличии счета
+            if (submitData.winner_team_id === null && (submitData.score1 !== submitData.score2)) {
+                console.warn('⚠️ КРИТИЧЕСКАЯ ПРОБЛЕМА: winner_team_id = null при разном счете! Данные матча:', {
+                    matchId,
+                    selectedMatch,
+                    currentMatch,
+                    team1_id,
+                    team2_id,
+                    resultData
+                });
+                
+                // Экстренный fallback - берем любой доступный team_id
+                if (submitData.score1 > submitData.score2) {
+                    submitData.winner_team_id = team1_id || selectedMatch.team1_id || currentMatch?.team1_id;
+                } else if (submitData.score2 > submitData.score1) {
+                    submitData.winner_team_id = team2_id || selectedMatch.team2_id || currentMatch?.team2_id;
+                }
+                
+                console.log('🚨 Применен экстренный fallback, winner_team_id:', submitData.winner_team_id);
             }
 
             console.log('📡 Отправляем данные на сервер:', submitData);
@@ -678,7 +706,7 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMatch, id, fetchTournamentData, closeModal]);
+    }, [selectedMatch, id, fetchTournamentData, closeModal, matches]);
 
     // 🆕 ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ МАТЧЕЙ ТУРНИРА
     const resetMatchResults = useCallback(async () => {
