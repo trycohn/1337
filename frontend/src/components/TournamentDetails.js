@@ -961,8 +961,58 @@ function TournamentDetails() {
                                                     currentSelectedMatchForDetails: selectedMatchForDetails?.id
                                                 });
                                                 if (match && match.id) {
-                                                    setSelectedMatchForDetails(match);
-                                                    openModal('matchDetails');
+                                                    // 🔧 ИСПРАВЛЕНИЕ: Найти оригинальный матч по ID из массива matches
+                                                    const originalMatch = matches.find(m => m.id === parseInt(match.id));
+                                                    if (originalMatch) {
+                                                        console.log('🎯 Найден оригинальный матч для просмотра:', {
+                                                            matchId: originalMatch.id,
+                                                            team1_id: originalMatch.team1_id,
+                                                            team2_id: originalMatch.team2_id,
+                                                            score1: originalMatch.score1,
+                                                            score2: originalMatch.score2,
+                                                            winner_team_id: originalMatch.winner_team_id
+                                                        });
+
+                                                        // Обогащаем матч данными о командах из tournament
+                                                        let team1Info = null;
+                                                        let team2Info = null;
+
+                                                        // Ищем информацию о командах
+                                                        if (tournament.teams?.length > 0) {
+                                                            team1Info = tournament.teams.find(t => t.id === originalMatch.team1_id);
+                                                            team2Info = tournament.teams.find(t => t.id === originalMatch.team2_id);
+                                                        }
+
+                                                        if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
+                                                            if (!team1Info) {
+                                                                team1Info = tournament.participants.find(p => p.id === originalMatch.team1_id);
+                                                            }
+                                                            if (!team2Info) {
+                                                                team2Info = tournament.participants.find(p => p.id === originalMatch.team2_id);
+                                                            }
+                                                        }
+
+                                                        // Создаем обогащенный объект матча
+                                                        const enrichedMatch = {
+                                                            ...originalMatch,
+                                                            team1_name: team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${originalMatch.team1_id}`,
+                                                            team2_name: team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${originalMatch.team2_id}`,
+                                                            team1_composition: team1Info,
+                                                            team2_composition: team2Info
+                                                        };
+
+                                                        console.log('🎯 Передаем обогащенный матч в модальное окно:', {
+                                                            matchId: enrichedMatch.id,
+                                                            team1_name: enrichedMatch.team1_name,
+                                                            team2_name: enrichedMatch.team2_name,
+                                                            score: `${enrichedMatch.score1}:${enrichedMatch.score2}`
+                                                        });
+
+                                                        setSelectedMatchForDetails(enrichedMatch);
+                                                        openModal('matchDetails');
+                                                    } else {
+                                                        console.warn('⚠️ onMatchClick: не найден оригинальный матч для ID:', match.id);
+                                                    }
                                                 } else {
                                                     console.warn('⚠️ onMatchClick: некорректный объект матча:', match);
                                                 }
@@ -1039,8 +1089,52 @@ function TournamentDetails() {
                                                 team2: match?.team2_name || match?.participants?.[1]?.name,
                                                 currentSelectedMatchForDetails: selectedMatchForDetails?.id
                                             });
-                                            setSelectedMatchForDetails(match);
-                                            openModal('matchDetails');
+                                            // 🔧 ИСПРАВЛЕНИЕ: Найти оригинальный матч по ID из массива matches
+                                            if (match && match.id) {
+                                                const originalMatch = matches.find(m => m.id === parseInt(match.id));
+                                                if (originalMatch) {
+                                                    console.log('🎯 Найден оригинальный матч для просмотра (bracket):', {
+                                                        matchId: originalMatch.id,
+                                                        team1_id: originalMatch.team1_id,
+                                                        team2_id: originalMatch.team2_id,
+                                                        score1: originalMatch.score1,
+                                                        score2: originalMatch.score2
+                                                    });
+
+                                                    // Обогащаем матч данными о командах
+                                                    let team1Info = null;
+                                                    let team2Info = null;
+
+                                                    if (tournament.teams?.length > 0) {
+                                                        team1Info = tournament.teams.find(t => t.id === originalMatch.team1_id);
+                                                        team2Info = tournament.teams.find(t => t.id === originalMatch.team2_id);
+                                                    }
+
+                                                    if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
+                                                        if (!team1Info) {
+                                                            team1Info = tournament.participants.find(p => p.id === originalMatch.team1_id);
+                                                        }
+                                                        if (!team2Info) {
+                                                            team2Info = tournament.participants.find(p => p.id === originalMatch.team2_id);
+                                                        }
+                                                    }
+
+                                                    const enrichedMatch = {
+                                                        ...originalMatch,
+                                                        team1_name: team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${originalMatch.team1_id}`,
+                                                        team2_name: team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${originalMatch.team2_id}`,
+                                                        team1_composition: team1Info,
+                                                        team2_composition: team2Info
+                                                    };
+
+                                                    setSelectedMatchForDetails(enrichedMatch);
+                                                    openModal('matchDetails');
+                                                } else {
+                                                    console.warn('⚠️ onMatchClick (bracket): не найден оригинальный матч для ID:', match.id);
+                                                }
+                                            } else {
+                                                console.warn('⚠️ onMatchClick (bracket): некорректный объект матча:', match);
+                                            }
                                         }}
                                     />
                                 </Suspense>
@@ -1150,7 +1244,43 @@ function TournamentDetails() {
                                                                     team2: match?.team2_name,
                                                                     currentSelectedMatchForDetails: selectedMatchForDetails?.id
                                                                 });
-                                                                setSelectedMatchForDetails(match);
+                                                                // 🔧 ИСПРАВЛЕНИЕ: Используем уже оригинальный матч
+                                                                // В компактном отображении мы уже работаем с оригинальными матчами
+                                                                
+                                                                // Обогащаем матч данными о командах
+                                                                let team1Info = null;
+                                                                let team2Info = null;
+
+                                                                if (tournament.teams?.length > 0) {
+                                                                    team1Info = tournament.teams.find(t => t.id === match.team1_id);
+                                                                    team2Info = tournament.teams.find(t => t.id === match.team2_id);
+                                                                }
+
+                                                                if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
+                                                                    if (!team1Info) {
+                                                                        team1Info = tournament.participants.find(p => p.id === match.team1_id);
+                                                                    }
+                                                                    if (!team2Info) {
+                                                                        team2Info = tournament.participants.find(p => p.id === match.team2_id);
+                                                                    }
+                                                                }
+
+                                                                const enrichedMatch = {
+                                                                    ...match,
+                                                                    team1_name: team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${match.team1_id}`,
+                                                                    team2_name: team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${match.team2_id}`,
+                                                                    team1_composition: team1Info,
+                                                                    team2_composition: team2Info
+                                                                };
+
+                                                                console.log('🎯 Передаем обогащенный матч в модальное окно (компактный):', {
+                                                                    matchId: enrichedMatch.id,
+                                                                    team1_name: enrichedMatch.team1_name,
+                                                                    team2_name: enrichedMatch.team2_name,
+                                                                    score: `${enrichedMatch.score1}:${enrichedMatch.score2}`
+                                                                });
+
+                                                                setSelectedMatchForDetails(enrichedMatch);
                                                                 openModal('matchDetails');
                                                             }}
                                                         >
