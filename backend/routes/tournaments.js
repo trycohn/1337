@@ -493,7 +493,7 @@ router.post('/:id/start', authenticateToken, verifyAdminOrCreator, async (req, r
                             u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_cs2_premier_rank,
                             u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
                             COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo,
-                            COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank
+                            COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 1) as cs2_premier_rank
                      FROM tournament_team_members tm
                      LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                      LEFT JOIN users u ON tm.user_id = u.id
@@ -2279,7 +2279,12 @@ function normalizeParticipantRating(participant, ratingType) {
     let rating;
     
     if (ratingType === 'faceit') {
-        // Приоритет для FACEIT: кастомный ELO → пользовательский ELO → faceit_rating → дефолт
+        // 🎯 ПРИОРИТЕТ ДЛЯ FACEIT (согласно требованиям):
+        // 1. Кастомный ELO участника турнира (если был указан при формировании команд)
+        // 2. ELO зарегистрированного пользователя
+        // 3. FACEIT рейтинг пользователя (резервный)
+        // 4. Дефолт 1000
+        
         if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
             rating = parseInt(participant.faceit_elo);
         } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
@@ -2289,25 +2294,27 @@ function normalizeParticipantRating(participant, ratingType) {
         } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
             rating = parseInt(participant.user_faceit_rating);
         } else {
-            rating = 1000; // дефолт для FACEIT
+            rating = 1000; // Дефолт для FACEIT
         }
-    } else {
-        // Приоритет для Premier: кастомный ранг → пользовательский ранг → premier_rating → дефолт
+    } else if (ratingType === 'premier') {
+        // 🎯 ПРИОРИТЕТ ДЛЯ CS2 PREMIER (согласно требованиям):
+        // 1. Кастомный ранг участника турнира (если был указан при формировании команд)
+        // 2. Premier ранг зарегистрированного пользователя
+        // 3. Дефолт 1 (а не 5 как было раньше, согласно требованиям)
+        
         if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
             rating = parseInt(participant.cs2_premier_rank);
         } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
             rating = parseInt(participant.user_premier_rank);
-        } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
-            rating = parseInt(participant.premier_rating);
-        } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
-            rating = parseInt(participant.user_premier_rating);
         } else {
-            rating = 5; // дефолт для Premier
+            rating = 1; // 🔧 ИСПРАВЛЕНО: дефолт для Premier согласно требованиям
         }
+    } else {
+        // Fallback на faceit если тип не определен
+        rating = 1000;
     }
     
-    console.log(`   🔧 normalizeRating(${participant.name}, ${ratingType}): tp.${ratingType === 'faceit' ? 'faceit_elo' : 'cs2_premier_rank'}=${ratingType === 'faceit' ? participant.faceit_elo : participant.cs2_premier_rank}, user=${ratingType === 'faceit' ? participant.user_faceit_elo : participant.user_premier_rank} → result=${rating}`);
-    
+    console.log(`📊 Рейтинг участника ${participant.name}: ${rating} (тип: ${ratingType})`);
     return rating;
 }
 
@@ -2355,7 +2362,7 @@ router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, 
                     u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
                     u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating,
                     COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_rating,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as premier_rating
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 1) as premier_rating
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
@@ -3166,7 +3173,7 @@ router.get('/:id/original-participants', async (req, res) => {
                     tp.faceit_elo, tp.cs2_premier_rank,
                     u.avatar_url, u.username, 
                     COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_elo_combined,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as cs2_premier_rank_combined
+                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 1) as cs2_premier_rank_combined
              FROM tournament_participants tp
              LEFT JOIN users u ON tp.user_id = u.id
              WHERE tp.tournament_id = $1
@@ -4031,7 +4038,7 @@ router.get('/:id/teams', async (req, res) => {
                         tp.name, u.username, u.avatar_url, 
                         tp.faceit_elo, tp.cs2_premier_rank,
                         u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
-                        u.faceit_rating as user_faceit_rating, u.premier_rating as user_premier_rating
+                        u.faceit_rating as user_faceit_rating
                  FROM tournament_team_members tm
                  LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                  LEFT JOIN users u ON tm.user_id = u.id
@@ -4042,9 +4049,30 @@ router.get('/:id/teams', async (req, res) => {
 
             console.log(`📊 [GET /:id/teams] Команда ${team.name}: ${membersRes.rows.length} участников`);
 
+            // 🆕 РАСЧЕТ СРЕДНЕГО РЕЙТИНГА КОМАНДЫ (среднеарифметическое участников)
+            const members = membersRes.rows;
+            let averageRatingFaceit = 0;
+            let averageRatingPremier = 0;
+            
+            if (members.length > 0) {
+                // Рассчитываем для FACEIT
+                const faceitRatings = members.map(member => normalizeParticipantRating(member, 'faceit'));
+                averageRatingFaceit = Math.round(faceitRatings.reduce((sum, rating) => sum + rating, 0) / faceitRatings.length);
+                
+                // Рассчитываем для Premier  
+                const premierRatings = members.map(member => normalizeParticipantRating(member, 'premier'));
+                averageRatingPremier = Math.round(premierRatings.reduce((sum, rating) => sum + rating, 0) / premierRatings.length);
+                
+                console.log(`📊 Команда ${team.name}: FACEIT средний ${averageRatingFaceit}, Premier средний ${averageRatingPremier}`);
+            }
+
             return {
                 ...team,
-                members: membersRes.rows
+                members: members,
+                // 🆕 ДОБАВЛЯЕМ СРЕДНИЕ РЕЙТИНГИ КОМАНДЫ
+                averageRatingFaceit: averageRatingFaceit,
+                averageRatingPremier: averageRatingPremier,
+                averageRating: averageRatingFaceit // для обратной совместимости
             };
         }));
 
