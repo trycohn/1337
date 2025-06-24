@@ -224,6 +224,38 @@ app.get('/testdb', async (req, res) => {
     }
 });
 
+// 🆕 Временный endpoint для изменения статуса турнира 59
+app.get('/update-tournament-59-status', async (req, res) => {
+    try {
+        const pool = require('./db');
+        
+        // Проверяем текущий статус
+        const current = await pool.query('SELECT id, name, status FROM tournaments WHERE id = 59');
+        console.log('📊 Текущий статус турнира 59:', current.rows[0]);
+        
+        if (current.rows.length === 0) {
+            return res.json({ status: 'error', message: 'Турнир 59 не найден' });
+        }
+        
+        // Обновляем статус на 'active'
+        const updated = await pool.query(
+            'UPDATE tournaments SET status = $1 WHERE id = $2 RETURNING id, name, status', 
+            ['active', 59]
+        );
+        
+        console.log('✅ Статус турнира 59 изменен:', updated.rows[0]);
+        res.json({ 
+            status: 'success', 
+            before: current.rows[0], 
+            after: updated.rows[0] 
+        });
+        
+    } catch (err) {
+        console.error('❌ Ошибка изменения статуса:', err);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
 // 🔧 Тестовый маршрут для Socket.IO
 app.get('/test-socketio', (req, res) => {
     try {

@@ -4196,25 +4196,52 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
     const userId = req.user.id;
     
     try {
-        console.log(`🔄 [reset-match-results] Начинаем полный сброс турнирной сетки для турнира ${id}`);
+        console.log(`🔄 [reset-match-results] Начинаем сброс результатов матчей для турнира ${id}`);
         
         // Начинаем транзакцию
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             
-            // Получаем количество матчей для логирования
-            const countResult = await client.query('SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1', [id]);
-            const matchesCount = parseInt(countResult.rows[0].count);
+            // Получаем количество матчей с результатами для логирования
+            const countResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1 AND winner_team_id IS NOT NULL', 
+                [id]
+            );
+            const matchesWithResultsCount = parseInt(countResult.rows[0].count);
             
-            // Полностью удаляем ВСЕ матчи турнира
-            await client.query('DELETE FROM matches WHERE tournament_id = $1', [id]);
+            // Очищаем ТОЛЬКО результаты матчей, оставляя структуру сетки
+            await client.query(`
+                UPDATE matches 
+                SET winner_team_id = NULL, 
+                    score1 = NULL, 
+                    score2 = NULL, 
+                    maps_data = NULL
+                WHERE tournament_id = $1
+            `, [id]);
             
-            console.log(`✅ [reset-match-results] Удалено ${matchesCount} матчей турнира`);
+            // Очищаем команды из матчей, кроме первого раунда (возвращаем к исходной сетке)
+            await client.query(`
+                UPDATE matches 
+                SET team1_id = NULL, 
+                    team2_id = NULL
+                WHERE tournament_id = $1 AND round > 1
+            `, [id]);
+            
+            console.log(`✅ [reset-match-results] Очищены результаты ${matchesWithResultsCount} матчей турнира`);
+            
+            // Меняем статус турнира обратно на 'active'
+            await client.query(
+                'UPDATE tournaments SET status = $1 WHERE id = $2',
+                ['active', id]
+            );
+            
+            console.log(`✅ [reset-match-results] Статус турнира ${id} изменен на 'active'`);
             
             // Логируем операцию
-            await logTournamentEvent(id, userId, 'bracket_reset', {
-                deletedMatchesCount: matchesCount,
+            await logTournamentEvent(id, userId, 'match_results_reset', {
+                clearedResultsCount: matchesWithResultsCount,
+                statusChangedTo: 'active',
                 performedBy: req.user.username
             });
             
@@ -4224,12 +4251,14 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
             // Отправляем уведомление в чат
             await sendTournamentChatAnnouncement(
                 id,
-                `Администратор ${req.user.username} сбросил турнирную сетку. Можно заново сгенерировать сетку турнира.`
+                `Администратор ${req.user.username} сбросил результаты матчей. Турнирная сетка возвращена к начальному состоянию. Статус турнира изменен на "Активный".`
             );
             
             res.status(200).json({
-                message: `Успешно удалена турнирная сетка (${matchesCount} матчей)`,
-                deletedCount: matchesCount
+                message: `Успешно очищены результаты ${matchesWithResultsCount} матчей и изменен статус на "Активный"`,
+                clearedCount: matchesWithResultsCount,
+                statusChanged: true,
+                newStatus: 'active'
             });
             
         } catch (error) {
@@ -4240,7 +4269,7 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
         }
         
     } catch (err) {
-        console.error('❌ Ошибка сброса турнирной сетки:', err);
+        console.error('❌ Ошибка сброса результатов матчей:', err);
         res.status(500).json({ error: err.message });
     }
 });
