@@ -93,7 +93,7 @@ async function sendTournamentChatAnnouncement(tournamentId, announcement) {
 }
 
 // Вспомогательная функция для записи событий в журнал турнира
-async function logTournamentEvent(tournamentId, userId, eventType, eventData = {}) {
+async function logTournamentEvent(tournamentId, userId, eventType, eventData = {}, client = null) {
     try {
         console.log('📊 Записываем событие в tournament_logs:', {
             tournamentId,
@@ -102,8 +102,11 @@ async function logTournamentEvent(tournamentId, userId, eventType, eventData = {
             eventData
         });
         
+        // Используем переданный client или pool по умолчанию
+        const dbClient = client || pool;
+        
         // Проверяем, что tournament_logs таблица существует
-        const tableExists = await pool.query(`
+        const tableExists = await dbClient.query(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
                 WHERE table_schema = 'public' 
@@ -116,7 +119,7 @@ async function logTournamentEvent(tournamentId, userId, eventType, eventData = {
             return;
         }
         
-        const result = await pool.query(
+        const result = await dbClient.query(
             `INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data)
              VALUES ($1, $2, $3, $4)
              RETURNING id`,
@@ -4110,7 +4113,7 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
             winner_team_id: winnerId,
             score: `${score1}:${score2}`,
             maps_count: mapsData?.length || 0
-        });
+        }, client);
 
         // 6. Коммитим транзакцию
         console.log(`✅ [safeUpdateMatchResult] Коммитим транзакцию...`);
@@ -4339,7 +4342,7 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
                 clearedResultsCount: matchesWithResultsCount,
                 statusChangedTo: 'active',
                 performedBy: req.user.username
-            });
+            }, client);
             
             await client.query('COMMIT');
             console.log(`🔓 [reset-match-results] Транзакция завершена для турнира ${id}`);
