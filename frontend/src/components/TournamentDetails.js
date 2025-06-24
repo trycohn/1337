@@ -570,18 +570,19 @@ function TournamentDetails() {
         console.log('💾 Начинаем сохранение результата матча:', {
             matchId,
             resultData,
-            tournamentId: id
+            tournamentId: id,
+            selectedMatch: selectedMatch
         });
 
         try {
             setLoading(true);
-        const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token');
             
             if (!token) {
                 throw new Error('Отсутствует токен авторизации');
             }
 
-            // Подготовка данных для отправки
+            // 🔧 ИСПРАВЛЕНО: Улучшенная подготовка данных для отправки
             const submitData = {
                 score1: parseInt(resultData.score1) || 0,
                 score2: parseInt(resultData.score2) || 0,
@@ -589,15 +590,32 @@ function TournamentDetails() {
                 winner_team_id: null
             };
 
-            // Определение победителя
-            if (resultData.winner === 'team1') {
+            // 🔧 ИСПРАВЛЕНО: Улучшенное определение победителя с отладкой
+            console.log('🔍 Определяем победителя:', {
+                resultDataWinner: resultData.winner,
+                selectedMatchTeam1: selectedMatch.team1_id,
+                selectedMatchTeam2: selectedMatch.team2_id,
+                score1: submitData.score1,
+                score2: submitData.score2
+            });
+
+            // Приоритет 1: Явно выбранный победитель
+            if (resultData.winner === 'team1' && selectedMatch.team1_id) {
                 submitData.winner_team_id = selectedMatch.team1_id;
-            } else if (resultData.winner === 'team2') {
+                console.log('✅ Победитель определен явно: team1 ->', selectedMatch.team1_id);
+            } else if (resultData.winner === 'team2' && selectedMatch.team2_id) {
                 submitData.winner_team_id = selectedMatch.team2_id;
-            } else if (submitData.score1 > submitData.score2) {
+                console.log('✅ Победитель определен явно: team2 ->', selectedMatch.team2_id);
+            } 
+            // Приоритет 2: Определение по счету
+            else if (submitData.score1 > submitData.score2 && selectedMatch.team1_id) {
                 submitData.winner_team_id = selectedMatch.team1_id;
-            } else if (submitData.score2 > submitData.score1) {
+                console.log('✅ Победитель определен по счету: team1 ->', selectedMatch.team1_id);
+            } else if (submitData.score2 > submitData.score1 && selectedMatch.team2_id) {
                 submitData.winner_team_id = selectedMatch.team2_id;
+                console.log('✅ Победитель определен по счету: team2 ->', selectedMatch.team2_id);
+            } else {
+                console.log('⚠️ Победитель не определен - ничья или недостаточно данных');
             }
 
             console.log('📡 Отправляем данные на сервер:', submitData);
@@ -624,8 +642,18 @@ function TournamentDetails() {
             setSelectedMatch(null);
             setMatchResultData({ score1: 0, score2: 0, maps_data: [] });
 
-            // Обновляем данные турнира
-            await fetchTournamentData();
+            // 🔧 ИСПРАВЛЕНО: Обновляем данные турнира с обработкой ошибок
+            console.log('🔄 Начинаем обновление данных турнира...');
+            try {
+                await fetchTournamentData();
+                console.log('✅ Данные турнира успешно обновлены');
+            } catch (fetchError) {
+                console.error('❌ Ошибка при обновлении данных турнира:', fetchError);
+                // Не блокируем весь процесс, показываем предупреждение
+                setMessage('⚠️ Результат сохранен, но данные турнира могут быть устаревшими. Обновите страницу.');
+                setTimeout(() => setMessage(''), 5000);
+                return; // Выходим раньше чтобы не показывать success сообщение
+            }
 
             setMessage('✅ Результат матча успешно сохранен!');
             setTimeout(() => setMessage(''), 3000);
@@ -795,17 +823,64 @@ function TournamentDetails() {
                                                     if (fullMatch && canEditMatches) {
                                                         console.log('🎯 Найден полный объект матча:', fullMatch);
                                                         
-                                                        // Получаем информацию о командах
-                                                        const team1Info = tournament.teams?.find(t => t.id === fullMatch.team1_id) || 
-                                                                         tournament.participants?.find(p => p.id === fullMatch.team1_id);
-                                                        const team2Info = tournament.teams?.find(t => t.id === fullMatch.team2_id) || 
-                                                                         tournament.participants?.find(p => p.id === fullMatch.team2_id);
+                                                        // 🔧 ИСПРАВЛЕНО: Улучшенное получение информации о командах
+                                                        console.log('🔍 Ищем информацию о командах для матча:', {
+                                                            team1_id: fullMatch.team1_id,
+                                                            team2_id: fullMatch.team2_id,
+                                                            tournamentTeams: tournament.teams?.length || 0,
+                                                            tournamentParticipants: tournament.participants?.length || 0
+                                                        });
+
+                                                        // Пробуем найти в разных источниках
+                                                        let team1Info = null;
+                                                        let team2Info = null;
+
+                                                        // Источник 1: tournament.teams
+                                                        if (tournament.teams?.length > 0) {
+                                                            team1Info = tournament.teams.find(t => t.id === fullMatch.team1_id);
+                                                            team2Info = tournament.teams.find(t => t.id === fullMatch.team2_id);
+                                                            console.log('🔍 Поиск в tournament.teams:', { team1Info, team2Info });
+                                                        }
+
+                                                        // Источник 2: tournament.participants (если не найдено в teams)
+                                                        if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
+                                                            if (!team1Info) {
+                                                                team1Info = tournament.participants.find(p => p.id === fullMatch.team1_id);
+                                                            }
+                                                            if (!team2Info) {
+                                                                team2Info = tournament.participants.find(p => p.id === fullMatch.team2_id);
+                                                            }
+                                                            console.log('🔍 Поиск в tournament.participants:', { team1Info, team2Info });
+                                                        }
+
+                                                        // Источник 3: Кеш матчей (если есть дополнительные данные)
+                                                        if (!team1Info || !team2Info) {
+                                                            // Пробуем найти в других матчах с такими же командами
+                                                            const relatedMatches = matches.filter(m => 
+                                                                m.team1_id === fullMatch.team1_id || 
+                                                                m.team2_id === fullMatch.team1_id || 
+                                                                m.team1_id === fullMatch.team2_id || 
+                                                                m.team2_id === fullMatch.team2_id
+                                                            );
+                                                            console.log('🔍 Связанные матчи для поиска названий:', relatedMatches.length);
+                                                        }
+
+                                                        // Определяем окончательные названия
+                                                        const team1Name = team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${fullMatch.team1_id}`;
+                                                        const team2Name = team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${fullMatch.team2_id}`;
+
+                                                        console.log('✅ Окончательные названия команд:', {
+                                                            team1Name,
+                                                            team2Name,
+                                                            team1Info: team1Info ? 'найден' : 'не найден',
+                                                            team2Info: team2Info ? 'найден' : 'не найден'
+                                                        });
                                                         
                                                         // Создаем расширенный объект матча
                                                         const matchWithTeamInfo = {
                                                             ...fullMatch,
-                                                            team1_name: team1Info?.name || team1Info?.username || 'Команда 1',
-                                                            team2_name: team2Info?.name || team2Info?.username || 'Команда 2',
+                                                            team1_name: team1Name,
+                                                            team2_name: team2Name,
                                                             team1_composition: team1Info,
                                                             team2_composition: team2Info
                                                         };
@@ -934,10 +1009,29 @@ function TournamentDetails() {
                                     .filter(match => match.winner_team_id || (match.score1 !== null && match.score2 !== null))
                                     .sort((a, b) => new Date(b.updated_at || b.completed_at) - new Date(a.updated_at || a.completed_at))
                                     .map((match) => {
-                                        const team1Info = tournament.teams?.find(t => t.id === match.team1_id) || 
-                                                         tournament.participants?.find(p => p.id === match.team1_id);
-                                        const team2Info = tournament.teams?.find(t => t.id === match.team2_id) || 
-                                                         tournament.participants?.find(p => p.id === match.team2_id);
+                                        // 🔧 ИСПРАВЛЕНО: Улучшенный поиск информации о командах
+                                        let team1Info = null;
+                                        let team2Info = null;
+
+                                        // Источник 1: tournament.teams
+                                        if (tournament.teams?.length > 0) {
+                                            team1Info = tournament.teams.find(t => t.id === match.team1_id);
+                                            team2Info = tournament.teams.find(t => t.id === match.team2_id);
+                                        }
+
+                                        // Источник 2: tournament.participants (если не найдено в teams)
+                                        if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
+                                            if (!team1Info) {
+                                                team1Info = tournament.participants.find(p => p.id === match.team1_id);
+                                            }
+                                            if (!team2Info) {
+                                                team2Info = tournament.participants.find(p => p.id === match.team2_id);
+                                            }
+                                        }
+
+                                        // Определяем окончательные названия
+                                        const team1Name = team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${match.team1_id}`;
+                                        const team2Name = team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${match.team2_id}`;
 
                                         return (
                                             <div key={match.id} className="result-compact-item">
@@ -963,7 +1057,7 @@ function TournamentDetails() {
                                                                 }
                                                             }}
                                                         >
-                                                            {team1Info?.name || team1Info?.username || 'Команда 1'}
+                                                            {team1Name}
                                                         </button>
                                                         
                                                         <div className="match-score">
@@ -980,7 +1074,7 @@ function TournamentDetails() {
                                                                 }
                                                             }}
                                                         >
-                                                            {team2Info?.name || team2Info?.username || 'Команда 2'}
+                                                            {team2Name}
                                                         </button>
                                                     </div>
 
@@ -1002,8 +1096,8 @@ function TournamentDetails() {
                                                                     // 🔧 ИСПРАВЛЕНИЕ: Передаем весь объект матча, но с правильными данными о командах
                                                                     const matchWithTeamInfo = {
                                                                         ...match,
-                                                                        team1_name: team1Info?.name || team1Info?.username || 'Команда 1',
-                                                                        team2_name: team2Info?.name || team2Info?.username || 'Команда 2',
+                                                                        team1_name: team1Name,
+                                                                        team2_name: team2Name,
                                                                         team1_composition: team1Info,
                                                                         team2_composition: team2Info
                                                                     };
@@ -1491,54 +1585,54 @@ function TournamentDetails() {
 
                         {/* 🆕 Навигация по вкладкам */}
                         <div className="tabs-navigation-tournamentdetails">
-                                                        <button 
+                            <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
                                 onClick={() => switchTab('info')}
-                                                        >
+                            >
                                 <span className="tab-label-tournamentdetails">📋 Главная</span>
-                                                        </button>
+                            </button>
                             
                             {shouldShowParticipantsTab && (
-                                                            <button 
+                                <button 
                                     className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
                                     onClick={() => switchTab('participants')}
-                                                            >
+                                >
                                     <span className="tab-label-tournamentdetails">👥 Участники</span>
-                                                            </button>
+                                </button>
                             )}
                             
-                                            <button 
+                            <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
                                 onClick={() => switchTab('bracket')}
-                                            >
+                            >
                                 <span className="tab-label-tournamentdetails">🏆 Сетка</span>
-                                            </button>
+                            </button>
                             
-                                            <button 
+                            <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'results' ? 'active' : ''}`}
                                 onClick={() => switchTab('results')}
-                                            >
+                            >
                                 <span className="tab-label-tournamentdetails">📊 Результаты</span>
-                                            </button>
+                            </button>
                             
                             {isAdminOrCreator && (
-                                        <button 
+                                <button 
                                     className={`tab-button-tournamentdetails ${activeTab === 'management' ? 'active' : ''}`}
                                     onClick={() => switchTab('management')}
-                                        >
+                                >
                                     <span className="tab-label-tournamentdetails">⚙️ Управление</span>
-                                        </button>
-                                    )}
-                                </div>
+                                </button>
+                            )}
+                        </div>
 
                         {/* 🆕 Контент вкладок */}
                         <div className="tournament-content-tournamentdetails">
-                        <div className="tab-content-tournamentdetails">
+                            <div className="tab-content-tournamentdetails">
                                 {renderTabContent()}
-                                        </div>
-                                        </div>
-                                                                </div>
-                                                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Модальные окна */}
                 {modals.addParticipant && (
@@ -1548,12 +1642,12 @@ function TournamentDetails() {
                         newParticipantData={newParticipantData}
                         setNewParticipantData={setNewParticipantData}
                         onSubmit={() => {}}
-                                isLoading={false}
+                        isLoading={false}
                     />
                 )}
 
                 {modals.participantSearch && (
-                <ParticipantSearchModal
+                    <ParticipantSearchModal
                         isOpen={modals.participantSearch}
                         onClose={() => closeModal('participantSearch')}
                         onInvite={() => {}}
@@ -1562,25 +1656,25 @@ function TournamentDetails() {
                         searchResults={[]}
                         isSearching={false}
                         onSearch={() => {}}
-                    existingParticipants={tournament.participants || []}
-                />
+                        existingParticipants={tournament.participants || []}
+                    />
                 )}
 
                 {modals.matchResult && selectedMatch && (
-                <MatchResultModal
+                    <MatchResultModal
                         isOpen={modals.matchResult}
                         onClose={() => closeModal('matchResult')}
                         selectedMatch={selectedMatch}
                         matchResultData={matchResultData}
                         setMatchResultData={setMatchResultData}
-                    onSave={saveMatchResult}
+                        onSave={saveMatchResult}
                         isLoading={loading}
                         tournament={tournament}
                     />
                 )}
 
                 {modals.matchDetails && selectedMatchForDetails && (
-                <MatchDetailsModal
+                    <MatchDetailsModal
                         isOpen={modals.matchDetails}
                         onClose={() => closeModal('matchDetails')}
                         selectedMatch={selectedMatchForDetails}
@@ -1589,24 +1683,24 @@ function TournamentDetails() {
                             closeModal('matchDetails');
                             setSelectedMatch(selectedMatchForDetails);
                             openModal('matchResult');
-                    }}
-                    tournament={tournament}
+                        }}
+                        tournament={tournament}
                     />
                 )}
 
                 {/* 🆕 Модальное окно поиска администраторов */}
                 {adminSearchModal && (
-                <ParticipantSearchModal
+                    <ParticipantSearchModal
                         isOpen={adminSearchModal}
                         onClose={closeAdminSearchModal}
                         mode="admin"
-                    onInviteAdmin={inviteAdmin}
+                        onInviteAdmin={inviteAdmin}
                         searchQuery={adminSearchQuery}
                         setSearchQuery={setAdminSearchQuery}
                         searchResults={adminSearchResults}
                         isSearching={isSearchingAdmins}
                         onSearch={searchAdmins}
-                    existingAdmins={tournament?.admins || []}
+                        existingAdmins={tournament?.admins || []}
                         existingParticipants={[]} // Не нужно для режима админов
                     />
                 )}
