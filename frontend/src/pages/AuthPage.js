@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import '../components/Home.css';
+import '../styles/components/Auth.css';
 
 function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -147,12 +147,17 @@ function AuthPage() {
                 required
               />
             </div>
-            <div className="forgot-password-link">
-              <a href="/forgot-password" style={{ color: '#666', fontSize: '14px', textDecoration: 'none' }}>
+            <div className="forgot-password">
+              <a href="/forgot-password">
                 Забыли пароль?
               </a>
             </div>
             <button type="submit" className="auth-button">Войти</button>
+            
+            <div className="auth-divider">
+              <span className="auth-divider-text">или</span>
+            </div>
+            
             <div className="social-login-buttons">
               <button 
                 type="button" 
@@ -204,6 +209,27 @@ function AuthPage() {
               />
             </div>
             <button type="submit" className="auth-button">Зарегистрироваться</button>
+            
+            <div className="auth-divider">
+              <span className="auth-divider-text">или</span>
+            </div>
+            
+            <div className="social-login-buttons">
+              <button 
+                type="button" 
+                className="steam-button"
+                onClick={handleSteamLogin}
+              >
+                Войти через Steam
+              </button>
+              <button 
+                type="button" 
+                className="faceit-button"
+                onClick={handleFaceitLogin}
+              >
+                Войти через FACEIT
+              </button>
+            </div>
           </form>
           
           {error && <p className="error-message">{error}</p>}
