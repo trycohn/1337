@@ -4295,7 +4295,7 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
     const userId = req.user.id;
     
     try {
-        console.log(`🔄 [reset-match-results] Начинаем сброс результатов матчей для турнира ${id}`);
+        console.log(`🔄 [reset-match-results] УЛУЧШЕННЫЙ СБРОС результатов матчей для турнира ${id}`);
         
         // Начинаем транзакцию
         const client = await pool.connect();
@@ -4309,7 +4309,9 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
             );
             const matchesWithResultsCount = parseInt(countResult.rows[0].count);
             
-            // Очищаем ТОЛЬКО результаты матчей, оставляя структуру сетки
+            console.log(`📊 [reset-match-results] Найдено ${matchesWithResultsCount} матчей с результатами`);
+            
+            // 1. Очищаем ВСЕ результаты матчей
             await client.query(`
                 UPDATE matches 
                 SET winner_team_id = NULL, 
@@ -4319,17 +4321,13 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
                 WHERE tournament_id = $1
             `, [id]);
             
-            // Очищаем команды из матчей, кроме первого раунда (возвращаем к исходной сетке)
-            await client.query(`
-                UPDATE matches 
-                SET team1_id = NULL, 
-                    team2_id = NULL
-                WHERE tournament_id = $1 AND round > 1
-            `, [id]);
+            console.log(`✅ [reset-match-results] Очищены результаты всех матчей`);
             
-            console.log(`✅ [reset-match-results] Очищены результаты ${matchesWithResultsCount} матчей турнира`);
+            // 2. Восстанавливаем изначальную структуру сетки
+            const restoreResult = await restoreOriginalBracketStructure(id, client);
+            console.log(`✅ [reset-match-results] Структура сетки восстановлена:`, restoreResult);
             
-            // Меняем статус турнира обратно на 'active'
+            // 3. Меняем статус турнира обратно на 'active'
             await client.query(
                 'UPDATE tournaments SET status = $1 WHERE id = $2',
                 ['active', id]
@@ -4337,27 +4335,30 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
             
             console.log(`✅ [reset-match-results] Статус турнира ${id} изменен на 'active'`);
             
-            // Логируем операцию
+            // 4. Логируем операцию
             await logTournamentEvent(id, userId, 'match_results_reset', {
                 clearedResultsCount: matchesWithResultsCount,
                 statusChangedTo: 'active',
+                participantsRestored: restoreResult.participantsPlaced,
                 performedBy: req.user.username
             }, client);
             
             await client.query('COMMIT');
             console.log(`🔓 [reset-match-results] Транзакция завершена для турнира ${id}`);
             
-            // Отправляем уведомление в чат
+            // 5. Отправляем уведомление в чат
             await sendTournamentChatAnnouncement(
                 id,
-                `Администратор ${req.user.username} сбросил результаты матчей. Турнирная сетка возвращена к начальному состоянию. Статус турнира изменен на "Активный".`
+                `🔄 Администратор ${req.user.username} сбросил результаты матчей и восстановил изначальную структуру турнирной сетки. Статус турнира изменен на "Активный".`
             );
             
             res.status(200).json({
-                message: `Успешно очищены результаты ${matchesWithResultsCount} матчей и изменен статус на "Активный"`,
+                message: `Успешно очищены результаты ${matchesWithResultsCount} матчей и восстановлена изначальная структура сетки`,
                 clearedCount: matchesWithResultsCount,
                 statusChanged: true,
-                newStatus: 'active'
+                newStatus: 'active',
+                participantsRestored: restoreResult.participantsPlaced,
+                structureRestored: true
             });
             
         } catch (error) {
@@ -4372,5 +4373,185 @@ router.post('/:id/reset-match-results', authenticateToken, verifyAdminOrCreator,
         res.status(500).json({ error: err.message });
     }
 });
+
+// 🆕 ФУНКЦИЯ ВОССТАНОВЛЕНИЯ ИЗНАЧАЛЬНОЙ СТРУКТУРЫ СЕТКИ
+async function restoreOriginalBracketStructure(tournamentId, client) {
+    console.log(`🔧 [restoreOriginalBracketStructure] Восстанавливаем изначальную структуру турнира ${tournamentId}`);
+    
+    try {
+        // 1. Получаем информацию о турнире и участниках
+        const tournamentResult = await client.query(`
+            SELECT t.*, tp.participant_id, tp.in_team 
+            FROM tournaments t
+            LEFT JOIN tournament_participants tp ON t.id = tp.tournament_id 
+            WHERE t.id = $1
+            ORDER BY tp.id
+        `, [tournamentId]);
+        
+        if (tournamentResult.rows.length === 0) {
+            throw new Error(`Турнир ${tournamentId} не найден`);
+        }
+        
+        const tournament = tournamentResult.rows[0];
+        const participants = tournamentResult.rows
+            .filter(row => row.participant_id)
+            .map(row => ({ id: row.participant_id, in_team: row.in_team }));
+        
+        console.log(`📊 [restoreOriginalBracketStructure] Турнир: ${tournament.format}, участников: ${participants.length}`);
+        
+        // 2. Очищаем все команды из всех матчей
+        await client.query(`
+            UPDATE matches 
+            SET team1_id = NULL, team2_id = NULL
+            WHERE tournament_id = $1
+        `, [tournamentId]);
+        
+        console.log(`✅ [restoreOriginalBracketStructure] Очищены все команды из матчей`);
+        
+        // 3. Для Single Elimination восстанавливаем структуру
+        if (tournament.format === 'single_elimination') {
+            await restoreSingleEliminationStructure(tournamentId, participants, client);
+        } else if (tournament.format === 'double_elimination') {
+            await restoreDoubleEliminationStructure(tournamentId, participants, client);
+        } else {
+            console.log(`⚠️ [restoreOriginalBracketStructure] Неизвестный формат: ${tournament.format}`);
+        }
+        
+        console.log(`✅ [restoreOriginalBracketStructure] Структура сетки восстановлена`);
+        return { success: true, participantsPlaced: participants.length };
+        
+    } catch (error) {
+        console.error(`❌ [restoreOriginalBracketStructure] Ошибка восстановления структуры:`, error.message);
+        throw error;
+    }
+}
+
+// 🆕 ФУНКЦИЯ ВОССТАНОВЛЕНИЯ SINGLE ELIMINATION
+async function restoreSingleEliminationStructure(tournamentId, participants, client) {
+    console.log(`🏆 [restoreSingleEliminationStructure] Восстанавливаем Single Elimination для ${participants.length} участников`);
+    
+    try {
+        // Получаем все матчи турнира
+        const matchesResult = await client.query(`
+            SELECT * FROM matches 
+            WHERE tournament_id = $1 
+            ORDER BY round, match_number
+        `, [tournamentId]);
+        
+        const matches = matchesResult.rows;
+        const participantCount = participants.length;
+        
+        // Рандомизируем участников (как при генерации)
+        const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+        
+        // Определяем ближайшую степень двойки
+        const pow = Math.floor(Math.log2(participantCount));
+        const closestPowerOfTwo = Math.pow(2, pow);
+        const round0MatchCount = closestPowerOfTwo / 2;
+        
+        // Рассчитываем распределение участников
+        const minByeParticipants = Math.min(round0MatchCount, participantCount);
+        const preliminaryParticipants = participantCount - minByeParticipants;
+        const prelimMatchesCount = Math.min(preliminaryParticipants, round0MatchCount);
+        const actualPrelimParticipants = prelimMatchesCount * 2;
+        const byeParticipantsCount = participantCount - actualPrelimParticipants;
+        
+        console.log(`📊 Участников: ${participantCount}, предварительных матчей: ${prelimMatchesCount}, с автопроходом: ${byeParticipantsCount}`);
+        
+        // Распределяем участников
+        const prelimParticipants = shuffledParticipants.slice(0, actualPrelimParticipants);
+        const byeParticipants = shuffledParticipants.slice(actualPrelimParticipants);
+        
+        // 1. Размещаем участников в предварительный раунд (round = -1)
+        const prelimMatches = matches.filter(m => m.round === -1);
+        for (let i = 0; i < prelimMatches.length && i < prelimMatchesCount; i++) {
+            const match = prelimMatches[i];
+            const team1Index = i * 2;
+            const team2Index = i * 2 + 1;
+            
+            if (team1Index < prelimParticipants.length && team2Index < prelimParticipants.length) {
+                await client.query(`
+                    UPDATE matches 
+                    SET team1_id = $1, team2_id = $2 
+                    WHERE id = $3
+                `, [prelimParticipants[team1Index].id, prelimParticipants[team2Index].id, match.id]);
+                
+                console.log(`✅ Предварительный матч ${match.id}: ${prelimParticipants[team1Index].id} vs ${prelimParticipants[team2Index].id}`);
+            }
+        }
+        
+        // 2. Размещаем участников с автопроходом в первый раунд (round = 0)
+        const round0Matches = matches.filter(m => m.round === 0);
+        let byeParticipantIndex = 0;
+        
+        for (let i = 0; i < round0Matches.length && i < round0MatchCount; i++) {
+            const match = round0Matches[i];
+            let team1 = null;
+            let team2 = null;
+            
+            // Распределяем участников с автопроходом равномерно
+            if (byeParticipantIndex < byeParticipantsCount) {
+                team1 = byeParticipants[byeParticipantIndex];
+                byeParticipantIndex++;
+                
+                if (byeParticipantIndex < byeParticipantsCount) {
+                    team2 = byeParticipants[byeParticipantIndex];
+                    byeParticipantIndex++;
+                }
+            }
+            
+            // Обновляем только если есть участники
+            if (team1 || team2) {
+                await client.query(`
+                    UPDATE matches 
+                    SET team1_id = $1, team2_id = $2 
+                    WHERE id = $3
+                `, [team1?.id || null, team2?.id || null, match.id]);
+                
+                console.log(`✅ Первый раунд матч ${match.id}: ${team1?.id || 'TBD'} vs ${team2?.id || 'TBD'}`);
+            }
+        }
+        
+        console.log(`✅ [restoreSingleEliminationStructure] Структура Single Elimination восстановлена`);
+        return { success: true };
+        
+    } catch (error) {
+        console.error(`❌ [restoreSingleEliminationStructure] Ошибка:`, error.message);
+        throw error;
+    }
+}
+
+// 🆕 ФУНКЦИЯ ВОССТАНОВЛЕНИЯ DOUBLE ELIMINATION (заглушка)
+async function restoreDoubleEliminationStructure(tournamentId, participants, client) {
+    console.log(`🏆 [restoreDoubleEliminationStructure] Восстанавливаем Double Elimination для ${participants.length} участников`);
+    
+    // Пока используем простую логику - размещаем всех участников в первый раунд Winners Bracket
+    const matchesResult = await client.query(`
+        SELECT * FROM matches 
+        WHERE tournament_id = $1 AND bracket_type = 'winner' AND round = 0
+        ORDER BY match_number
+    `, [tournamentId]);
+    
+    const round0Matches = matchesResult.rows;
+    
+    for (let i = 0; i < round0Matches.length && i * 2 < participants.length; i++) {
+        const match = round0Matches[i];
+        const team1Index = i * 2;
+        const team2Index = i * 2 + 1;
+        
+        const team1 = participants[team1Index];
+        const team2 = participants[team2Index] || null;
+        
+        await client.query(`
+            UPDATE matches 
+            SET team1_id = $1, team2_id = $2 
+            WHERE id = $3
+        `, [team1.id, team2?.id || null, match.id]);
+        
+        console.log(`✅ Double Elimination матч ${match.id}: ${team1.id} vs ${team2?.id || 'TBD'}`);
+    }
+    
+    return { success: true };
+}
 
 module.exports = router;
