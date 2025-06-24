@@ -26,6 +26,8 @@ const BracketRenderer = ({
     const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
     const [groupedMatches, setGroupedMatches] = useState({ winnerRounds: {}, loserRounds: {}, placementMatch: null, grandFinalMatch: null });
     const [dataError, setDataError] = useState(null);
+    // 🆕 Состояние для показа тултипа о неполном матче
+    const [incompleteMatchTooltip, setIncompleteMatchTooltip] = useState({ show: false, message: '', x: 0, y: 0 });
 
     // Ссылки для работы с DOM
     const wrapperRef = useRef(null);
@@ -508,6 +510,46 @@ const BracketRenderer = ({
         }
     }, [games]); // Только games в зависимостях
 
+    // 🆕 Функция проверки заполненности матча
+    const isMatchIncomplete = useCallback((match) => {
+        if (!match.participants || match.participants.length < 2) {
+            return true;
+        }
+        return match.participants.some(participant => 
+            !participant || !participant.name || participant.name === 'TBD'
+        );
+    }, []);
+
+    // 🆕 Функция показа тултипа о неполном матче
+    const showIncompleteMatchTooltip = useCallback((event, message = 'Не все участники матча определены') => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setIncompleteMatchTooltip({
+            show: true,
+            message,
+            x: rect.left + rect.width / 2,
+            y: rect.top - 10
+        });
+        
+        // Автоматически скрываем тултип через 3 секунды
+        setTimeout(() => {
+            setIncompleteMatchTooltip(prev => ({ ...prev, show: false }));
+        }, 3000);
+    }, []);
+
+    // 🆕 Обработчик клика по матчу с проверкой заполненности
+    const handleMatchClick = useCallback((match, event) => {
+        if (!onMatchClick || !match.id) return;
+
+        // Проверяем заполненность матча
+        if (isMatchIncomplete(match)) {
+            showIncompleteMatchTooltip(event);
+            return;
+        }
+
+        // Если матч заполнен, открываем модальное окно
+        onMatchClick(match);
+    }, [onMatchClick, isMatchIncomplete, showIncompleteMatchTooltip]);
+
     // Рендеринг ошибки данных, если она есть
     if (dataError) {
         return (
@@ -627,11 +669,11 @@ const BracketRenderer = ({
                                                     <div
                                                         className={team1Classes.join(' ')}
                                                         onClick={(e) => {
-                                                            // Если есть функция просмотра деталей матча и матч завершен
-                                                            if (onMatchClick && match.state === 'DONE') {
-                                                                onMatchClick(match);
+                                                            // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                            if (onMatchClick && match.id) {
+                                                                handleMatchClick(match, e);
                                                             }
-                                                            // Иначе обычное поведение для выбора победителя
+                                                            // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                             else if (canEditMatches && match.state !== 'DONE') {
                                                                 setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                 // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
@@ -658,11 +700,11 @@ const BracketRenderer = ({
                                                     <div
                                                         className={team2Classes.join(' ')}
                                                         onClick={(e) => {
-                                                            // Если есть функция просмотра деталей матча и матч завершен
-                                                            if (onMatchClick && match.state === 'DONE') {
-                                                                onMatchClick(match);
+                                                            // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                            if (onMatchClick && match.id) {
+                                                                handleMatchClick(match, e);
                                                             }
-                                                            // Иначе обычное поведение для выбора победителя
+                                                            // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                             else if (canEditMatches && match.state !== 'DONE') {
                                                                 setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                 // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
@@ -687,12 +729,14 @@ const BracketRenderer = ({
                                                         </span>
                                                     </div>
                                                 </div>
-                                                {/* Блок просмотра результатов для завершенных матчей */}
-                                                {isCompleted && onMatchClick && (
+                                                {/* 🔧 ИСПРАВЛЕНИЕ: Показываем кнопку просмотра для всех матчей */}
+                                                {onMatchClick && (
                                                     <div className="edit-match-btn-container">
                                                         <button 
                                                             className="edit-match-btn"
-                                                            onClick={() => onMatchClick(match)}
+                                                            onClick={(e) => {
+                                                                handleMatchClick(match, e);
+                                                            }}
                                                             title="Просмотреть/редактировать результат"
                                                         >
                                                             🔍
@@ -756,11 +800,11 @@ const BracketRenderer = ({
                                                             <div
                                                                 className={team1Classes.join(' ')}
                                                                 onClick={(e) => {
-                                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                                    if (onMatchClick && match.state === 'DONE') {
-                                                                        onMatchClick(match);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                                    if (onMatchClick && match.id) {
+                                                                        handleMatchClick(match, e);
                                                                     }
-                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                                     else if (canEditMatches && match.state !== 'DONE') {
                                                                         setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                         // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
@@ -787,11 +831,11 @@ const BracketRenderer = ({
                                                             <div
                                                                 className={team2Classes.join(' ')}
                                                                 onClick={(e) => {
-                                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                                    if (onMatchClick && match.state === 'DONE') {
-                                                                        onMatchClick(match);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                                    if (onMatchClick && match.id) {
+                                                                        handleMatchClick(match, e);
                                                                     }
-                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                                     else if (canEditMatches && match.state !== 'DONE') {
                                                                         setSelectedMatch(isSelected ? null : safeParseBracketId(match.id));
                                                                         // Добавляем вызов handleTeamClick, передавая ID команды и ID матча
@@ -816,12 +860,14 @@ const BracketRenderer = ({
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        {/* Блок просмотра результатов для завершенных матчей */}
-                                                        {isCompleted && onMatchClick && (
+                                                        {/* 🔧 ИСПРАВЛЕНИЕ: Показываем кнопку просмотра для всех матчей */}
+                                                        {onMatchClick && (
                                                             <div className="edit-match-btn-container">
                                                                 <button 
                                                                     className="edit-match-btn"
-                                                                    onClick={() => onMatchClick(match)}
+                                                                    onClick={(e) => {
+                                                                        handleMatchClick(match, e);
+                                                                    }}
                                                                     title="Просмотреть/редактировать результат"
                                                                 >
                                                                     🔍
@@ -886,11 +932,11 @@ const BracketRenderer = ({
                                                             <div
                                                                 className={team1Classes.join(' ')}
                                                                 onClick={(e) => {
-                                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                                    if (onMatchClick && grandFinalMatch.state === 'DONE') {
-                                                                        onMatchClick(grandFinalMatch);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                                    if (onMatchClick && grandFinalMatch.id) {
+                                                                        handleMatchClick(grandFinalMatch, e);
                                                                     }
-                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                                     else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
                                                                         setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
                                                                         // Добавляем вызов handleTeamClick
@@ -917,11 +963,11 @@ const BracketRenderer = ({
                                                             <div
                                                                 className={team2Classes.join(' ')}
                                                                 onClick={(e) => {
-                                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                                    if (onMatchClick && grandFinalMatch.state === 'DONE') {
-                                                                        onMatchClick(grandFinalMatch);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                                    if (onMatchClick && grandFinalMatch.id) {
+                                                                        handleMatchClick(grandFinalMatch, e);
                                                                     }
-                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                                     else if (canEditMatches && grandFinalMatch.state !== 'DONE') {
                                                                         setSelectedMatch(selectedMatch === safeParseBracketId(grandFinalMatch.id) ? null : safeParseBracketId(grandFinalMatch.id));
                                                                         // Добавляем вызов handleTeamClick
@@ -949,12 +995,14 @@ const BracketRenderer = ({
                                                     );
                                                 })()}
                                             </div>
-                                            {/* Блок просмотра результатов для завершенного гранд-финала */}
-                                            {grandFinalMatch.state === 'DONE' && onMatchClick && (
+                                            {/* 🔧 ИСПРАВЛЕНИЕ: Показываем кнопку просмотра для всех матчей */}
+                                            {onMatchClick && (
                                                 <div className="edit-match-btn-container">
                                                     <button 
                                                         className="edit-match-btn"
-                                                        onClick={() => onMatchClick(grandFinalMatch)}
+                                                        onClick={(e) => {
+                                                            handleMatchClick(grandFinalMatch, e);
+                                                        }}
                                                         title="Просмотреть/редактировать результат"
                                                     >
                                                         🔍
@@ -1004,11 +1052,11 @@ const BracketRenderer = ({
                                                             <div
                                                                 className={team1Classes.join(' ')}
                                                                 onClick={(e) => {
-                                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                                    if (onMatchClick && placementMatch.state === 'DONE') {
-                                                                        onMatchClick(placementMatch);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                                    if (onMatchClick && placementMatch.id) {
+                                                                        handleMatchClick(placementMatch, e);
                                                                     }
-                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                                     else if (canEditMatches && placementMatch.state !== 'DONE') {
                                                                         setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
                                                                         // Добавляем вызов handleTeamClick
@@ -1035,11 +1083,11 @@ const BracketRenderer = ({
                                                             <div
                                                                 className={team2Classes.join(' ')}
                                                                 onClick={(e) => {
-                                                                    // Если есть функция просмотра деталей матча и матч завершен
-                                                                    if (onMatchClick && placementMatch.state === 'DONE') {
-                                                                        onMatchClick(placementMatch);
+                                                                    // 🔧 ИСПРАВЛЕНИЕ: Проверяем заполненность матча перед открытием деталей
+                                                                    if (onMatchClick && placementMatch.id) {
+                                                                        handleMatchClick(placementMatch, e);
                                                                     }
-                                                                    // Иначе обычное поведение для выбора победителя
+                                                                    // Сохраняем поведение для выбора победителя только для незавершенных матчей
                                                                     else if (canEditMatches && placementMatch.state !== 'DONE') {
                                                                         setSelectedMatch(selectedMatch === safeParseBracketId(placementMatch.id) ? null : safeParseBracketId(placementMatch.id));
                                                                         // Добавляем вызов handleTeamClick
@@ -1067,12 +1115,14 @@ const BracketRenderer = ({
                                                     );
                                                 })()}
                                             </div>
-                                            {/* Блок просмотра результатов для завершенного матча за 3-е место */}
-                                            {placementMatch.state === 'DONE' && onMatchClick && (
+                                            {/* 🔧 ИСПРАВЛЕНИЕ: Показываем кнопку просмотра для всех матчей */}
+                                            {onMatchClick && (
                                                 <div className="edit-match-btn-container">
                                                     <button 
                                                         className="edit-match-btn"
-                                                        onClick={() => onMatchClick(placementMatch)}
+                                                        onClick={(e) => {
+                                                            handleMatchClick(placementMatch, e);
+                                                        }}
                                                         title="Просмотреть/редактировать результат"
                                                     >
                                                         🔍
@@ -1087,6 +1137,46 @@ const BracketRenderer = ({
                     </>
                 }
             </div>
+            
+            {/* 🆕 Тултип для неполных матчей */}
+            {incompleteMatchTooltip.show && (
+                <div 
+                    className="incomplete-match-tooltip"
+                    style={{
+                        position: 'fixed',
+                        left: incompleteMatchTooltip.x,
+                        top: incompleteMatchTooltip.y,
+                        transform: 'translate(-50%, -100%)',
+                        zIndex: 9999,
+                        backgroundColor: '#333333',
+                        color: '#ffffff',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        border: '1px solid #ff6b6b',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                        whiteSpace: 'nowrap',
+                        pointerEvents: 'none',
+                        animation: 'tooltipFadeIn 0.3s ease-out'
+                    }}
+                >
+                    {incompleteMatchTooltip.message}
+                    <div 
+                        style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: 0,
+                            height: 0,
+                            borderLeft: '6px solid transparent',
+                            borderRight: '6px solid transparent',
+                            borderTop: '6px solid #333333'
+                        }}
+                    />
+                </div>
+            )}
         </div>
     );
 };

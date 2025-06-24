@@ -5,7 +5,7 @@
 -- Dumped from database version 14.18 (Ubuntu 14.18-0ubuntu0.22.04.1)
 -- Dumped by pg_dump version 17.2
 
--- Started on 2025-06-12 17:04:33
+-- Started on 2025-06-24 09:27:29
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -30,7 +30,7 @@ CREATE SCHEMA pgagent;
 ALTER SCHEMA pgagent OWNER TO postgres;
 
 --
--- TOC entry 4099 (class 0 OID 0)
+-- TOC entry 4155 (class 0 OID 0)
 -- Dependencies: 6
 -- Name: SCHEMA pgagent; Type: COMMENT; Schema: -; Owner: postgres
 --
@@ -47,7 +47,7 @@ CREATE EXTENSION IF NOT EXISTS pgagent WITH SCHEMA pgagent;
 
 
 --
--- TOC entry 4101 (class 0 OID 0)
+-- TOC entry 4157 (class 0 OID 0)
 -- Dependencies: 2
 -- Name: EXTENSION pgagent; Type: COMMENT; Schema: -; Owner: 
 --
@@ -56,7 +56,7 @@ COMMENT ON EXTENSION pgagent IS 'A PostgreSQL job scheduler';
 
 
 --
--- TOC entry 327 (class 1255 OID 28122)
+-- TOC entry 336 (class 1255 OID 28122)
 -- Name: accept_admin_invitation(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -143,7 +143,25 @@ $$;
 ALTER FUNCTION public.accept_admin_invitation(invitation_id integer, accepting_user_id integer) OWNER TO postgres;
 
 --
--- TOC entry 322 (class 1255 OID 27950)
+-- TOC entry 319 (class 1255 OID 28316)
+-- Name: auto_cleanup_expired_invitations(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.auto_cleanup_expired_invitations() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Очищаем истекшие приглашения перед вставкой нового
+    PERFORM cleanup_expired_admin_invitations();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.auto_cleanup_expired_invitations() OWNER TO postgres;
+
+--
+-- TOC entry 331 (class 1255 OID 27950)
 -- Name: calculate_level_from_xp(integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -164,8 +182,8 @@ $$;
 ALTER FUNCTION public.calculate_level_from_xp(xp integer) OWNER TO postgres;
 
 --
--- TOC entry 4103 (class 0 OID 0)
--- Dependencies: 322
+-- TOC entry 4159 (class 0 OID 0)
+-- Dependencies: 331
 -- Name: FUNCTION calculate_level_from_xp(xp integer); Type: COMMENT; Schema: public; Owner: postgres
 --
 
@@ -173,7 +191,7 @@ COMMENT ON FUNCTION public.calculate_level_from_xp(xp integer) IS 'Вычисл�
 
 
 --
--- TOC entry 321 (class 1255 OID 26687)
+-- TOC entry 330 (class 1255 OID 26687)
 -- Name: check_achievements(integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -270,7 +288,7 @@ $$;
 ALTER FUNCTION public.check_achievements(user_id_param integer) OWNER TO postgres;
 
 --
--- TOC entry 324 (class 1255 OID 27953)
+-- TOC entry 333 (class 1255 OID 27953)
 -- Name: check_and_unlock_achievements(integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -375,8 +393,8 @@ $$;
 ALTER FUNCTION public.check_and_unlock_achievements(p_user_id integer) OWNER TO postgres;
 
 --
--- TOC entry 4104 (class 0 OID 0)
--- Dependencies: 324
+-- TOC entry 4160 (class 0 OID 0)
+-- Dependencies: 333
 -- Name: FUNCTION check_and_unlock_achievements(p_user_id integer); Type: COMMENT; Schema: public; Owner: postgres
 --
 
@@ -384,7 +402,38 @@ COMMENT ON FUNCTION public.check_and_unlock_achievements(p_user_id integer) IS '
 
 
 --
--- TOC entry 326 (class 1255 OID 28124)
+-- TOC entry 318 (class 1255 OID 28315)
+-- Name: cleanup_expired_admin_invitations(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.cleanup_expired_admin_invitations() RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    affected_rows INTEGER;
+BEGIN
+    -- Обновляем статус истекших приглашений
+    UPDATE admin_invitations 
+    SET status = 'expired'
+    WHERE status = 'pending' 
+      AND expires_at <= NOW();
+    
+    GET DIAGNOSTICS affected_rows = ROW_COUNT;
+    
+    -- Логируем если есть обновления
+    IF affected_rows > 0 THEN
+        RAISE NOTICE 'Обновлено % истекших приглашений администраторов', affected_rows;
+    END IF;
+    
+    RETURN affected_rows;
+END;
+$$;
+
+
+ALTER FUNCTION public.cleanup_expired_admin_invitations() OWNER TO postgres;
+
+--
+-- TOC entry 334 (class 1255 OID 28124)
 -- Name: cleanup_expired_invitations(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -410,7 +459,7 @@ $$;
 ALTER FUNCTION public.cleanup_expired_invitations() OWNER TO postgres;
 
 --
--- TOC entry 328 (class 1255 OID 28123)
+-- TOC entry 337 (class 1255 OID 28123)
 -- Name: decline_admin_invitation(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -466,7 +515,7 @@ $$;
 ALTER FUNCTION public.decline_admin_invitation(invitation_id integer, declining_user_id integer) OWNER TO postgres;
 
 --
--- TOC entry 329 (class 1255 OID 28206)
+-- TOC entry 338 (class 1255 OID 28206)
 -- Name: maintenance_cleanup(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -500,7 +549,7 @@ $$;
 ALTER FUNCTION public.maintenance_cleanup() OWNER TO postgres;
 
 --
--- TOC entry 325 (class 1255 OID 28193)
+-- TOC entry 335 (class 1255 OID 28193)
 -- Name: send_admin_invitation_notification(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -508,86 +557,144 @@ CREATE FUNCTION public.send_admin_invitation_notification() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 DECLARE
-    tournament_record RECORD;
-    inviter_record RECORD;
     system_user_id INTEGER;
-    chat_id INTEGER;
+    tournament_record RECORD;
+    private_chat_id INTEGER;
     message_text TEXT;
+    existing_chat_count INTEGER;
 BEGIN
-    -- Получаем данные о турнире и пригласившем
-    SELECT t.*, u.username as inviter_username
-    INTO tournament_record
-    FROM tournaments t
-    JOIN users u ON NEW.inviter_id = u.id
-    WHERE t.id = NEW.tournament_id;
-    
     -- Получаем ID системного пользователя
     SELECT id INTO system_user_id 
     FROM users 
     WHERE username = '1337community' AND is_system_user = true
     LIMIT 1;
     
-    -- Если системный пользователь найден, отправляем уведомление
-    IF system_user_id IS NOT NULL THEN
-        -- Ищем чат турнира
-        SELECT id INTO chat_id
-        FROM chats 
-        WHERE name = tournament_record.name 
-          AND type = 'group'
+    IF system_user_id IS NULL THEN
+        RAISE NOTICE 'Системный пользователь 1337community не найден';
+        RETURN NEW;
+    END IF;
+    
+    RAISE NOTICE 'Найден системный пользователь ID: %', system_user_id;
+    
+    -- Получаем данные о турнире и пригласившем пользователе
+    SELECT 
+        t.id,
+        t.name as tournament_name,
+        u.username as inviter_username
+    INTO tournament_record
+    FROM tournaments t
+    JOIN users u ON NEW.inviter_id = u.id
+    WHERE t.id = NEW.tournament_id;
+    
+    IF NOT FOUND THEN
+        RAISE NOTICE 'Турнир с ID % не найден', NEW.tournament_id;
+        RETURN NEW;
+    END IF;
+    
+    RAISE NOTICE 'Найден турнир: % (ID: %)', tournament_record.tournament_name, tournament_record.id;
+    
+    -- Ищем существующий личный чат между системным пользователем и приглашаемым
+    SELECT COUNT(*) INTO existing_chat_count
+    FROM chats c
+    WHERE c.type = 'private' 
+      AND EXISTS (
+          SELECT 1 FROM chat_participants cp1 
+          WHERE cp1.chat_id = c.id AND cp1.user_id = system_user_id
+      )
+      AND EXISTS (
+          SELECT 1 FROM chat_participants cp2 
+          WHERE cp2.chat_id = c.id AND cp2.user_id = NEW.invitee_id
+      );
+    
+    IF existing_chat_count > 0 THEN
+        -- Находим существующий чат
+        SELECT c.id INTO private_chat_id
+        FROM chats c
+        WHERE c.type = 'private' 
+          AND EXISTS (
+              SELECT 1 FROM chat_participants cp1 
+              WHERE cp1.chat_id = c.id AND cp1.user_id = system_user_id
+          )
+          AND EXISTS (
+              SELECT 1 FROM chat_participants cp2 
+              WHERE cp2.chat_id = c.id AND cp2.user_id = NEW.invitee_id
+          )
         LIMIT 1;
         
-        -- Если чат найден, создаем сообщение
-        IF chat_id IS NOT NULL THEN
-            message_text := format(
-                '🤝 %s приглашает вас стать администратором турнира "%s"!
+        RAISE NOTICE 'Используем существующий личный чат ID: %', private_chat_id;
+    ELSE
+        -- Создаем новый личный чат
+        INSERT INTO chats (name, type, created_at)
+        VALUES ('Личные сообщения', 'private', NOW())
+        RETURNING id INTO private_chat_id;
+        
+        -- Добавляем системного пользователя в чат
+        INSERT INTO chat_participants (chat_id, user_id, is_admin, joined_at)
+        VALUES (private_chat_id, system_user_id, true, NOW());
+        
+        -- Добавляем приглашаемого пользователя в чат
+        INSERT INTO chat_participants (chat_id, user_id, is_admin, joined_at)
+        VALUES (private_chat_id, NEW.invitee_id, false, NOW());
+        
+        RAISE NOTICE 'Создан новый личный чат ID: % между пользователями % и %', 
+            private_chat_id, system_user_id, NEW.invitee_id;
+    END IF;
+    
+    -- Формируем текст сообщения
+    message_text := format(
+        'Приглашение в администраторы турнира!
+
+%s приглашает вас стать администратором турнира "%s".
 
 Вы получите права на:
-• Управление участниками
-• Редактирование результатов матчей  
-• Приглашение других администраторов
+- Управление участниками турнира
+- Редактирование результатов матчей  
+- Приглашение других администраторов
 
 Приглашение действительно до: %s
 
-Для ответа используйте команды в чате или перейдите на страницу турнира.',
-                tournament_record.inviter_username,
-                tournament_record.name,
-                TO_CHAR(NEW.expires_at AT TIME ZONE 'Europe/Moscow', 'DD.MM.YYYY HH24:MI')
-            );
-            
-            -- Создаем сообщение с метаданными для кнопок
-            INSERT INTO messages (chat_id, sender_id, content, message_type, metadata, created_at)
-            VALUES (
-                chat_id,
-                system_user_id,
-                message_text,
-                'admin_invitation',
+Выберите действие:',
+        tournament_record.inviter_username,
+        tournament_record.tournament_name,
+        TO_CHAR(NEW.expires_at AT TIME ZONE 'Europe/Moscow', 'DD.MM.YYYY HH24:MI')
+    );
+    
+    -- Отправляем сообщение с интерактивными кнопками
+    INSERT INTO messages (chat_id, sender_id, content, message_type, metadata, created_at)
+    VALUES (
+        private_chat_id,
+        system_user_id,
+        message_text,
+        'admin_invitation',
+        jsonb_build_object(
+            'invitation_id', NEW.id,
+            'tournament_id', NEW.tournament_id,
+            'inviter_id', NEW.inviter_id,
+            'invitee_id', NEW.invitee_id,
+            'tournament_name', tournament_record.tournament_name,
+            'actions', jsonb_build_array(
                 jsonb_build_object(
-                    'invitation_id', NEW.id,
-                    'tournament_id', NEW.tournament_id,
-                    'inviter_id', NEW.inviter_id,
-                    'invitee_id', NEW.invitee_id,
-                    'actions', jsonb_build_array(
-                        jsonb_build_object(
-                            'type', 'accept_admin_invitation',
-                            'label', '✅ Принять',
-                            'invitation_id', NEW.id
-                        ),
-                        jsonb_build_object(
-                            'type', 'decline_admin_invitation',
-                            'label', '❌ Отклонить', 
-                            'invitation_id', NEW.id
-                        )
-                    )
+                    'type', 'accept_admin_invitation',
+                    'label', 'Принять',
+                    'invitation_id', NEW.id
                 ),
-                NOW()
-            );
-        END IF;
-    END IF;
+                jsonb_build_object(
+                    'type', 'decline_admin_invitation',
+                    'label', 'Отклонить', 
+                    'invitation_id', NEW.id
+                )
+            )
+        ),
+        NOW()
+    );
+    
+    RAISE NOTICE 'Отправлено личное сообщение-приглашение в чат % пользователю % (invitation_id: %)', 
+        private_chat_id, NEW.invitee_id, NEW.id;
     
     RETURN NEW;
     
 EXCEPTION WHEN OTHERS THEN
-    -- В случае ошибки не прерываем основную операцию
+    RAISE NOTICE 'Ошибка при отправке личного приглашения: %', SQLERRM;
     RETURN NEW;
 END;
 $$;
@@ -596,7 +703,7 @@ $$;
 ALTER FUNCTION public.send_admin_invitation_notification() OWNER TO postgres;
 
 --
--- TOC entry 311 (class 1255 OID 26273)
+-- TOC entry 317 (class 1255 OID 26273)
 -- Name: update_chat_timestamp(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -615,7 +722,7 @@ $$;
 ALTER FUNCTION public.update_chat_timestamp() OWNER TO postgres;
 
 --
--- TOC entry 307 (class 1255 OID 26164)
+-- TOC entry 313 (class 1255 OID 26164)
 -- Name: update_friends_updated_at(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -632,7 +739,7 @@ $$;
 ALTER FUNCTION public.update_friends_updated_at() OWNER TO postgres;
 
 --
--- TOC entry 318 (class 1255 OID 26306)
+-- TOC entry 327 (class 1255 OID 26306)
 -- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -649,7 +756,7 @@ $$;
 ALTER FUNCTION public.update_updated_at_column() OWNER TO postgres;
 
 --
--- TOC entry 323 (class 1255 OID 27951)
+-- TOC entry 332 (class 1255 OID 27951)
 -- Name: update_user_progress(integer, character varying, jsonb); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -807,13 +914,30 @@ $$;
 ALTER FUNCTION public.update_user_progress(p_user_id integer, p_action_type character varying, p_action_data jsonb) OWNER TO postgres;
 
 --
--- TOC entry 4108 (class 0 OID 0)
--- Dependencies: 323
+-- TOC entry 4164 (class 0 OID 0)
+-- Dependencies: 332
 -- Name: FUNCTION update_user_progress(p_user_id integer, p_action_type character varying, p_action_data jsonb); Type: COMMENT; Schema: public; Owner: postgres
 --
 
 COMMENT ON FUNCTION public.update_user_progress(p_user_id integer, p_action_type character varying, p_action_data jsonb) IS 'Обновляет прогресс пользователя при выполнении действий';
 
+
+--
+-- TOC entry 326 (class 1255 OID 28408)
+-- Name: update_user_teams_updated_at(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_user_teams_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_user_teams_updated_at() OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -836,7 +960,7 @@ CREATE TABLE public.achievement_action_logs (
 ALTER TABLE public.achievement_action_logs OWNER TO postgres;
 
 --
--- TOC entry 4109 (class 0 OID 0)
+-- TOC entry 4165 (class 0 OID 0)
 -- Dependencies: 294
 -- Name: TABLE achievement_action_logs; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -861,7 +985,7 @@ CREATE SEQUENCE public.achievement_action_logs_id_seq
 ALTER SEQUENCE public.achievement_action_logs_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4110 (class 0 OID 0)
+-- TOC entry 4166 (class 0 OID 0)
 -- Dependencies: 293
 -- Name: achievement_action_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -888,7 +1012,7 @@ CREATE TABLE public.achievement_categories (
 ALTER TABLE public.achievement_categories OWNER TO postgres;
 
 --
--- TOC entry 4111 (class 0 OID 0)
+-- TOC entry 4167 (class 0 OID 0)
 -- Dependencies: 290
 -- Name: TABLE achievement_categories; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -913,7 +1037,7 @@ CREATE SEQUENCE public.achievement_categories_id_seq
 ALTER SEQUENCE public.achievement_categories_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4112 (class 0 OID 0)
+-- TOC entry 4168 (class 0 OID 0)
 -- Dependencies: 289
 -- Name: achievement_categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -952,7 +1076,7 @@ CREATE TABLE public.achievements (
 ALTER TABLE public.achievements OWNER TO postgres;
 
 --
--- TOC entry 4113 (class 0 OID 0)
+-- TOC entry 4169 (class 0 OID 0)
 -- Dependencies: 285
 -- Name: TABLE achievements; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -977,7 +1101,7 @@ CREATE SEQUENCE public.achievements_id_seq
 ALTER SEQUENCE public.achievements_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4114 (class 0 OID 0)
+-- TOC entry 4170 (class 0 OID 0)
 -- Dependencies: 284
 -- Name: achievements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1001,7 +1125,7 @@ CREATE TABLE public.admin_invitations (
     created_at timestamp with time zone DEFAULT now(),
     expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval) NOT NULL,
     responded_at timestamp with time zone,
-    CONSTRAINT admin_invitations_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'declined'::character varying, 'expired'::character varying])::text[])))
+    CONSTRAINT admin_invitations_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'declined'::character varying, 'expired'::character varying, 'cancelled'::character varying])::text[])))
 );
 
 
@@ -1046,7 +1170,7 @@ CREATE TABLE public.tournaments (
 ALTER TABLE public.tournaments OWNER TO postgres;
 
 --
--- TOC entry 4116 (class 0 OID 0)
+-- TOC entry 4172 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: TABLE tournaments; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1055,7 +1179,7 @@ COMMENT ON TABLE public.tournaments IS 'Обновлен турнир 59: изм
 
 
 --
--- TOC entry 4117 (class 0 OID 0)
+-- TOC entry 4173 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.winner_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1064,7 +1188,7 @@ COMMENT ON COLUMN public.tournaments.winner_id IS 'ID победителя ту�
 
 
 --
--- TOC entry 4118 (class 0 OID 0)
+-- TOC entry 4174 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.winner_name; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1073,7 +1197,7 @@ COMMENT ON COLUMN public.tournaments.winner_name IS 'Имя победителя
 
 
 --
--- TOC entry 4119 (class 0 OID 0)
+-- TOC entry 4175 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.second_place_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1082,7 +1206,7 @@ COMMENT ON COLUMN public.tournaments.second_place_id IS 'ID участника, 
 
 
 --
--- TOC entry 4120 (class 0 OID 0)
+-- TOC entry 4176 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.second_place_name; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1091,7 +1215,7 @@ COMMENT ON COLUMN public.tournaments.second_place_name IS 'Имя участни
 
 
 --
--- TOC entry 4121 (class 0 OID 0)
+-- TOC entry 4177 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.third_place_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1100,7 +1224,7 @@ COMMENT ON COLUMN public.tournaments.third_place_id IS 'ID участника, �
 
 
 --
--- TOC entry 4122 (class 0 OID 0)
+-- TOC entry 4178 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.third_place_name; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1109,7 +1233,7 @@ COMMENT ON COLUMN public.tournaments.third_place_name IS 'Имя участни�
 
 
 --
--- TOC entry 4123 (class 0 OID 0)
+-- TOC entry 4179 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: COLUMN tournaments.chat_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1142,7 +1266,11 @@ CREATE TABLE public.users (
     faceit_elo integer DEFAULT 0,
     last_active timestamp without time zone DEFAULT now(),
     last_notifications_seen timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    is_system_user boolean DEFAULT false
+    is_system_user boolean DEFAULT false,
+    password_reset_token character varying(255),
+    password_reset_expires timestamp without time zone,
+    steam_nickname character varying(255),
+    steam_nickname_updated timestamp without time zone
 );
 
 
@@ -1201,7 +1329,7 @@ CREATE SEQUENCE public.admin_invitations_id_seq
 ALTER SEQUENCE public.admin_invitations_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4125 (class 0 OID 0)
+-- TOC entry 4181 (class 0 OID 0)
 -- Dependencies: 297
 -- Name: admin_invitations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1242,7 +1370,7 @@ CREATE SEQUENCE public.admin_requests_id_seq
 ALTER SEQUENCE public.admin_requests_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4127 (class 0 OID 0)
+-- TOC entry 4183 (class 0 OID 0)
 -- Dependencies: 252
 -- Name: admin_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1285,7 +1413,7 @@ CREATE SEQUENCE public.chat_participants_id_seq
 ALTER SEQUENCE public.chat_participants_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4128 (class 0 OID 0)
+-- TOC entry 4184 (class 0 OID 0)
 -- Dependencies: 260
 -- Name: chat_participants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1326,7 +1454,7 @@ CREATE SEQUENCE public.chats_id_seq
 ALTER SEQUENCE public.chats_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4129 (class 0 OID 0)
+-- TOC entry 4185 (class 0 OID 0)
 -- Dependencies: 258
 -- Name: chats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1353,7 +1481,7 @@ CREATE TABLE public.dota_profiles (
 ALTER TABLE public.dota_profiles OWNER TO postgres;
 
 --
--- TOC entry 4130 (class 0 OID 0)
+-- TOC entry 4186 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: TABLE dota_profiles; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1362,7 +1490,7 @@ COMMENT ON TABLE public.dota_profiles IS 'Профили игроков Dota 2 �
 
 
 --
--- TOC entry 4131 (class 0 OID 0)
+-- TOC entry 4187 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: COLUMN dota_profiles.user_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1371,7 +1499,7 @@ COMMENT ON COLUMN public.dota_profiles.user_id IS 'ID пользователя �
 
 
 --
--- TOC entry 4132 (class 0 OID 0)
+-- TOC entry 4188 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: COLUMN dota_profiles.steam_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1380,7 +1508,7 @@ COMMENT ON COLUMN public.dota_profiles.steam_id IS 'Steam ID пользоват�
 
 
 --
--- TOC entry 4133 (class 0 OID 0)
+-- TOC entry 4189 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: COLUMN dota_profiles.dota_stats; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1389,7 +1517,7 @@ COMMENT ON COLUMN public.dota_profiles.dota_stats IS 'JSON данные стат
 
 
 --
--- TOC entry 4134 (class 0 OID 0)
+-- TOC entry 4190 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: COLUMN dota_profiles.created_at; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1398,7 +1526,7 @@ COMMENT ON COLUMN public.dota_profiles.created_at IS 'Дата создания 
 
 
 --
--- TOC entry 4135 (class 0 OID 0)
+-- TOC entry 4191 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: COLUMN dota_profiles.updated_at; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1407,7 +1535,7 @@ COMMENT ON COLUMN public.dota_profiles.updated_at IS 'Дата последне�
 
 
 --
--- TOC entry 4136 (class 0 OID 0)
+-- TOC entry 4192 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: COLUMN dota_profiles.estimated_mmr; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1432,7 +1560,7 @@ CREATE SEQUENCE public.dota_profiles_id_seq
 ALTER SEQUENCE public.dota_profiles_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4137 (class 0 OID 0)
+-- TOC entry 4193 (class 0 OID 0)
 -- Dependencies: 280
 -- Name: dota_profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1475,7 +1603,7 @@ CREATE SEQUENCE public.friends_id_seq
 ALTER SEQUENCE public.friends_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4138 (class 0 OID 0)
+-- TOC entry 4194 (class 0 OID 0)
 -- Dependencies: 256
 -- Name: friends_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1514,7 +1642,7 @@ CREATE SEQUENCE public.games_id_seq
 ALTER SEQUENCE public.games_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4139 (class 0 OID 0)
+-- TOC entry 4195 (class 0 OID 0)
 -- Dependencies: 246
 -- Name: games_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1540,7 +1668,7 @@ CREATE TABLE public.maps (
 ALTER TABLE public.maps OWNER TO postgres;
 
 --
--- TOC entry 4140 (class 0 OID 0)
+-- TOC entry 4196 (class 0 OID 0)
 -- Dependencies: 269
 -- Name: TABLE maps; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1565,7 +1693,7 @@ CREATE SEQUENCE public.maps_id_seq
 ALTER SEQUENCE public.maps_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4141 (class 0 OID 0)
+-- TOC entry 4197 (class 0 OID 0)
 -- Dependencies: 268
 -- Name: maps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1604,7 +1732,7 @@ CREATE TABLE public.matches (
 ALTER TABLE public.matches OWNER TO postgres;
 
 --
--- TOC entry 4142 (class 0 OID 0)
+-- TOC entry 4198 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: COLUMN matches.maps_data; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -1629,7 +1757,7 @@ CREATE SEQUENCE public.matches_id_seq
 ALTER SEQUENCE public.matches_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4143 (class 0 OID 0)
+-- TOC entry 4199 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: matches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1670,7 +1798,7 @@ CREATE SEQUENCE public.message_status_id_seq
 ALTER SEQUENCE public.message_status_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4144 (class 0 OID 0)
+-- TOC entry 4200 (class 0 OID 0)
 -- Dependencies: 264
 -- Name: message_status_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1714,7 +1842,7 @@ CREATE SEQUENCE public.messages_id_seq
 ALTER SEQUENCE public.messages_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4145 (class 0 OID 0)
+-- TOC entry 4201 (class 0 OID 0)
 -- Dependencies: 262
 -- Name: messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1736,7 +1864,8 @@ CREATE TABLE public.notifications (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     tournament_id integer,
     requester_id integer,
-    invitation_id integer
+    invitation_id integer,
+    team_invitation_id integer
 );
 
 
@@ -1759,7 +1888,7 @@ CREATE SEQUENCE public.notifications_id_seq
 ALTER SEQUENCE public.notifications_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4146 (class 0 OID 0)
+-- TOC entry 4202 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1809,7 +1938,7 @@ CREATE SEQUENCE public.organization_requests_id_seq
 ALTER SEQUENCE public.organization_requests_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4147 (class 0 OID 0)
+-- TOC entry 4203 (class 0 OID 0)
 -- Dependencies: 278
 -- Name: organization_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1850,7 +1979,7 @@ CREATE SEQUENCE public.organizer_members_id_seq
 ALTER SEQUENCE public.organizer_members_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4148 (class 0 OID 0)
+-- TOC entry 4204 (class 0 OID 0)
 -- Dependencies: 274
 -- Name: organizer_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1900,7 +2029,7 @@ CREATE SEQUENCE public.organizers_id_seq
 ALTER SEQUENCE public.organizers_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4149 (class 0 OID 0)
+-- TOC entry 4205 (class 0 OID 0)
 -- Dependencies: 272
 -- Name: organizers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1940,7 +2069,7 @@ CREATE SEQUENCE public.participants_id_seq
 ALTER SEQUENCE public.participants_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4150 (class 0 OID 0)
+-- TOC entry 4206 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: participants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -1982,7 +2111,7 @@ CREATE SEQUENCE public.player_stats_id_seq
 ALTER SEQUENCE public.player_stats_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4151 (class 0 OID 0)
+-- TOC entry 4207 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: player_stats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2022,7 +2151,7 @@ CREATE SEQUENCE public.players_id_seq
 ALTER SEQUENCE public.players_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4152 (class 0 OID 0)
+-- TOC entry 4208 (class 0 OID 0)
 -- Dependencies: 233
 -- Name: players_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2062,7 +2191,7 @@ CREATE SEQUENCE public.teams_id_seq
 ALTER SEQUENCE public.teams_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4153 (class 0 OID 0)
+-- TOC entry 4209 (class 0 OID 0)
 -- Dependencies: 235
 -- Name: teams_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2105,7 +2234,7 @@ CREATE SEQUENCE public.tournament_admins_id_seq
 ALTER SEQUENCE public.tournament_admins_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4155 (class 0 OID 0)
+-- TOC entry 4211 (class 0 OID 0)
 -- Dependencies: 295
 -- Name: tournament_admins_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2189,7 +2318,7 @@ CREATE SEQUENCE public.tournament_invitations_id_seq
 ALTER SEQUENCE public.tournament_invitations_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4158 (class 0 OID 0)
+-- TOC entry 4214 (class 0 OID 0)
 -- Dependencies: 266
 -- Name: tournament_invitations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2215,7 +2344,7 @@ CREATE TABLE public.tournament_logs (
 ALTER TABLE public.tournament_logs OWNER TO postgres;
 
 --
--- TOC entry 4159 (class 0 OID 0)
+-- TOC entry 4215 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: TABLE tournament_logs; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2224,7 +2353,7 @@ COMMENT ON TABLE public.tournament_logs IS 'Журнал событий турн
 
 
 --
--- TOC entry 4160 (class 0 OID 0)
+-- TOC entry 4216 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: COLUMN tournament_logs.tournament_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2233,7 +2362,7 @@ COMMENT ON COLUMN public.tournament_logs.tournament_id IS 'ID турнира';
 
 
 --
--- TOC entry 4161 (class 0 OID 0)
+-- TOC entry 4217 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: COLUMN tournament_logs.user_id; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2242,7 +2371,7 @@ COMMENT ON COLUMN public.tournament_logs.user_id IS 'ID пользователя
 
 
 --
--- TOC entry 4162 (class 0 OID 0)
+-- TOC entry 4218 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: COLUMN tournament_logs.event_type; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2251,7 +2380,7 @@ COMMENT ON COLUMN public.tournament_logs.event_type IS 'Тип события (t
 
 
 --
--- TOC entry 4163 (class 0 OID 0)
+-- TOC entry 4219 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: COLUMN tournament_logs.event_data; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2260,7 +2389,7 @@ COMMENT ON COLUMN public.tournament_logs.event_data IS 'Дополнительн
 
 
 --
--- TOC entry 4164 (class 0 OID 0)
+-- TOC entry 4220 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: COLUMN tournament_logs.created_at; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2285,7 +2414,7 @@ CREATE SEQUENCE public.tournament_logs_id_seq
 ALTER SEQUENCE public.tournament_logs_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4166 (class 0 OID 0)
+-- TOC entry 4222 (class 0 OID 0)
 -- Dependencies: 282
 -- Name: tournament_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2326,7 +2455,7 @@ CREATE SEQUENCE public.tournament_messages_id_seq
 ALTER SEQUENCE public.tournament_messages_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4168 (class 0 OID 0)
+-- TOC entry 4224 (class 0 OID 0)
 -- Dependencies: 270
 -- Name: tournament_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2366,7 +2495,7 @@ CREATE SEQUENCE public.tournament_organizers_id_seq
 ALTER SEQUENCE public.tournament_organizers_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4169 (class 0 OID 0)
+-- TOC entry 4225 (class 0 OID 0)
 -- Dependencies: 276
 -- Name: tournament_organizers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2401,7 +2530,7 @@ CREATE TABLE public.tournament_participants (
 ALTER TABLE public.tournament_participants OWNER TO postgres;
 
 --
--- TOC entry 4170 (class 0 OID 0)
+-- TOC entry 4226 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: COLUMN tournament_participants.in_team; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2410,7 +2539,7 @@ COMMENT ON COLUMN public.tournament_participants.in_team IS 'Флаг указы
 
 
 --
--- TOC entry 4171 (class 0 OID 0)
+-- TOC entry 4227 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: COLUMN tournament_participants.faceit_elo; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2419,7 +2548,7 @@ COMMENT ON COLUMN public.tournament_participants.faceit_elo IS 'FACEIT ELO ре�
 
 
 --
--- TOC entry 4172 (class 0 OID 0)
+-- TOC entry 4228 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: COLUMN tournament_participants.cs2_premier_rank; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2444,7 +2573,7 @@ CREATE SEQUENCE public.tournament_participants_id_seq
 ALTER SEQUENCE public.tournament_participants_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4173 (class 0 OID 0)
+-- TOC entry 4229 (class 0 OID 0)
 -- Dependencies: 237
 -- Name: tournament_participants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2484,7 +2613,7 @@ CREATE SEQUENCE public.tournament_team_members_id_seq
 ALTER SEQUENCE public.tournament_team_members_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4174 (class 0 OID 0)
+-- TOC entry 4230 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: tournament_team_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2524,7 +2653,7 @@ CREATE SEQUENCE public.tournament_team_players_id_seq
 ALTER SEQUENCE public.tournament_team_players_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4175 (class 0 OID 0)
+-- TOC entry 4231 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: tournament_team_players_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2565,7 +2694,7 @@ CREATE SEQUENCE public.tournament_teams_id_seq
 ALTER SEQUENCE public.tournament_teams_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4176 (class 0 OID 0)
+-- TOC entry 4232 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: tournament_teams_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2590,7 +2719,7 @@ CREATE SEQUENCE public.tournaments_id_seq
 ALTER SEQUENCE public.tournaments_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4177 (class 0 OID 0)
+-- TOC entry 4233 (class 0 OID 0)
 -- Dependencies: 243
 -- Name: tournaments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2617,7 +2746,7 @@ CREATE TABLE public.user_achievements (
 ALTER TABLE public.user_achievements OWNER TO postgres;
 
 --
--- TOC entry 4178 (class 0 OID 0)
+-- TOC entry 4234 (class 0 OID 0)
 -- Dependencies: 287
 -- Name: TABLE user_achievements; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2642,7 +2771,7 @@ CREATE SEQUENCE public.user_achievements_id_seq
 ALTER SEQUENCE public.user_achievements_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4179 (class 0 OID 0)
+-- TOC entry 4235 (class 0 OID 0)
 -- Dependencies: 286
 -- Name: user_achievements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2682,7 +2811,7 @@ CREATE TABLE public.user_progress (
 ALTER TABLE public.user_progress OWNER TO postgres;
 
 --
--- TOC entry 4180 (class 0 OID 0)
+-- TOC entry 4236 (class 0 OID 0)
 -- Dependencies: 292
 -- Name: TABLE user_progress; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2707,12 +2836,142 @@ CREATE SEQUENCE public.user_progress_id_seq
 ALTER SEQUENCE public.user_progress_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4181 (class 0 OID 0)
+-- TOC entry 4237 (class 0 OID 0)
 -- Dependencies: 291
 -- Name: user_progress_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.user_progress_id_seq OWNED BY public.user_progress.id;
+
+
+--
+-- TOC entry 306 (class 1259 OID 28374)
+-- Name: user_team_invitations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_team_invitations (
+    id integer NOT NULL,
+    team_id integer NOT NULL,
+    inviter_id integer NOT NULL,
+    invited_user_id integer NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    message text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    responded_at timestamp without time zone
+);
+
+
+ALTER TABLE public.user_team_invitations OWNER TO postgres;
+
+--
+-- TOC entry 305 (class 1259 OID 28373)
+-- Name: user_team_invitations_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_team_invitations_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_team_invitations_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4238 (class 0 OID 0)
+-- Dependencies: 305
+-- Name: user_team_invitations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_team_invitations_id_seq OWNED BY public.user_team_invitations.id;
+
+
+--
+-- TOC entry 304 (class 1259 OID 28353)
+-- Name: user_team_members; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_team_members (
+    id integer NOT NULL,
+    team_id integer NOT NULL,
+    user_id integer NOT NULL,
+    role character varying(50) DEFAULT 'member'::character varying,
+    joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.user_team_members OWNER TO postgres;
+
+--
+-- TOC entry 303 (class 1259 OID 28352)
+-- Name: user_team_members_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_team_members_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_team_members_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4239 (class 0 OID 0)
+-- Dependencies: 303
+-- Name: user_team_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_team_members_id_seq OWNED BY public.user_team_members.id;
+
+
+--
+-- TOC entry 302 (class 1259 OID 28331)
+-- Name: user_teams; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_teams (
+    id integer NOT NULL,
+    name character varying(20) NOT NULL,
+    description text,
+    captain_id integer NOT NULL,
+    avatar_url character varying(255),
+    is_permanent boolean DEFAULT true,
+    tournament_id integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.user_teams OWNER TO postgres;
+
+--
+-- TOC entry 301 (class 1259 OID 28330)
+-- Name: user_teams_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_teams_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_teams_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 4240 (class 0 OID 0)
+-- Dependencies: 301
+-- Name: user_teams_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_teams_id_seq OWNED BY public.user_teams.id;
 
 
 --
@@ -2746,7 +3005,7 @@ CREATE TABLE public.user_tournament_stats (
 ALTER TABLE public.user_tournament_stats OWNER TO postgres;
 
 --
--- TOC entry 4182 (class 0 OID 0)
+-- TOC entry 4241 (class 0 OID 0)
 -- Dependencies: 255
 -- Name: COLUMN user_tournament_stats.team_name; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2755,7 +3014,7 @@ COMMENT ON COLUMN public.user_tournament_stats.team_name IS 'Название к
 
 
 --
--- TOC entry 4183 (class 0 OID 0)
+-- TOC entry 4242 (class 0 OID 0)
 -- Dependencies: 255
 -- Name: COLUMN user_tournament_stats.is_team_member; Type: COMMENT; Schema: public; Owner: postgres
 --
@@ -2795,7 +3054,7 @@ CREATE SEQUENCE public.users_id_seq
 ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
 
 --
--- TOC entry 4184 (class 0 OID 0)
+-- TOC entry 4243 (class 0 OID 0)
 -- Dependencies: 245
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -2835,7 +3094,7 @@ CREATE VIEW public.v4_leaderboard AS
 ALTER VIEW public.v4_leaderboard OWNER TO postgres;
 
 --
--- TOC entry 3633 (class 2604 OID 27915)
+-- TOC entry 3651 (class 2604 OID 27915)
 -- Name: achievement_action_logs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2843,7 +3102,7 @@ ALTER TABLE ONLY public.achievement_action_logs ALTER COLUMN id SET DEFAULT next
 
 
 --
--- TOC entry 3611 (class 2604 OID 27872)
+-- TOC entry 3629 (class 2604 OID 27872)
 -- Name: achievement_categories id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2851,7 +3110,7 @@ ALTER TABLE ONLY public.achievement_categories ALTER COLUMN id SET DEFAULT nextv
 
 
 --
--- TOC entry 3596 (class 2604 OID 26647)
+-- TOC entry 3614 (class 2604 OID 26647)
 -- Name: achievements id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2859,7 +3118,7 @@ ALTER TABLE ONLY public.achievements ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3638 (class 2604 OID 28157)
+-- TOC entry 3656 (class 2604 OID 28157)
 -- Name: admin_invitations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2867,7 +3126,7 @@ ALTER TABLE ONLY public.admin_invitations ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3535 (class 2604 OID 18121)
+-- TOC entry 3553 (class 2604 OID 18121)
 -- Name: admin_requests id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2875,7 +3134,7 @@ ALTER TABLE ONLY public.admin_requests ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 3559 (class 2604 OID 26206)
+-- TOC entry 3577 (class 2604 OID 26206)
 -- Name: chat_participants id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2883,7 +3142,7 @@ ALTER TABLE ONLY public.chat_participants ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3554 (class 2604 OID 26195)
+-- TOC entry 3572 (class 2604 OID 26195)
 -- Name: chats id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2891,7 +3150,7 @@ ALTER TABLE ONLY public.chats ALTER COLUMN id SET DEFAULT nextval('public.chats_
 
 
 --
--- TOC entry 3591 (class 2604 OID 26485)
+-- TOC entry 3609 (class 2604 OID 26485)
 -- Name: dota_profiles id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2899,7 +3158,7 @@ ALTER TABLE ONLY public.dota_profiles ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3550 (class 2604 OID 26170)
+-- TOC entry 3568 (class 2604 OID 26170)
 -- Name: friends id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2907,7 +3166,7 @@ ALTER TABLE ONLY public.friends ALTER COLUMN id SET DEFAULT nextval('public.frie
 
 
 --
--- TOC entry 3530 (class 2604 OID 18056)
+-- TOC entry 3548 (class 2604 OID 18056)
 -- Name: games id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2915,7 +3174,7 @@ ALTER TABLE ONLY public.games ALTER COLUMN id SET DEFAULT nextval('public.games_
 
 
 --
--- TOC entry 3574 (class 2604 OID 26358)
+-- TOC entry 3592 (class 2604 OID 26358)
 -- Name: maps id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2923,7 +3182,7 @@ ALTER TABLE ONLY public.maps ALTER COLUMN id SET DEFAULT nextval('public.maps_id
 
 
 --
--- TOC entry 3489 (class 2604 OID 17798)
+-- TOC entry 3507 (class 2604 OID 17798)
 -- Name: matches id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2931,7 +3190,7 @@ ALTER TABLE ONLY public.matches ALTER COLUMN id SET DEFAULT nextval('public.matc
 
 
 --
--- TOC entry 3568 (class 2604 OID 26251)
+-- TOC entry 3586 (class 2604 OID 26251)
 -- Name: message_status id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2939,7 +3198,7 @@ ALTER TABLE ONLY public.message_status ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 3564 (class 2604 OID 26229)
+-- TOC entry 3582 (class 2604 OID 26229)
 -- Name: messages id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2947,7 +3206,7 @@ ALTER TABLE ONLY public.messages ALTER COLUMN id SET DEFAULT nextval('public.mes
 
 
 --
--- TOC entry 3531 (class 2604 OID 18072)
+-- TOC entry 3549 (class 2604 OID 18072)
 -- Name: notifications id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2955,7 +3214,7 @@ ALTER TABLE ONLY public.notifications ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3587 (class 2604 OID 26459)
+-- TOC entry 3605 (class 2604 OID 26459)
 -- Name: organization_requests id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2963,7 +3222,7 @@ ALTER TABLE ONLY public.organization_requests ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 3582 (class 2604 OID 26411)
+-- TOC entry 3600 (class 2604 OID 26411)
 -- Name: organizer_members id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2971,7 +3230,7 @@ ALTER TABLE ONLY public.organizer_members ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3578 (class 2604 OID 26391)
+-- TOC entry 3596 (class 2604 OID 26391)
 -- Name: organizers id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2979,7 +3238,7 @@ ALTER TABLE ONLY public.organizers ALTER COLUMN id SET DEFAULT nextval('public.o
 
 
 --
--- TOC entry 3493 (class 2604 OID 17799)
+-- TOC entry 3511 (class 2604 OID 17799)
 -- Name: participants id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2987,7 +3246,7 @@ ALTER TABLE ONLY public.participants ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3495 (class 2604 OID 17800)
+-- TOC entry 3513 (class 2604 OID 17800)
 -- Name: player_stats id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2995,7 +3254,7 @@ ALTER TABLE ONLY public.player_stats ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3499 (class 2604 OID 17801)
+-- TOC entry 3517 (class 2604 OID 17801)
 -- Name: players id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3003,7 +3262,7 @@ ALTER TABLE ONLY public.players ALTER COLUMN id SET DEFAULT nextval('public.play
 
 
 --
--- TOC entry 3501 (class 2604 OID 17802)
+-- TOC entry 3519 (class 2604 OID 17802)
 -- Name: teams id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3011,7 +3270,7 @@ ALTER TABLE ONLY public.teams ALTER COLUMN id SET DEFAULT nextval('public.teams_
 
 
 --
--- TOC entry 3635 (class 2604 OID 28129)
+-- TOC entry 3653 (class 2604 OID 28129)
 -- Name: tournament_admins id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3019,7 +3278,7 @@ ALTER TABLE ONLY public.tournament_admins ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3570 (class 2604 OID 26279)
+-- TOC entry 3588 (class 2604 OID 26279)
 -- Name: tournament_invitations id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3027,7 +3286,7 @@ ALTER TABLE ONLY public.tournament_invitations ALTER COLUMN id SET DEFAULT nextv
 
 
 --
--- TOC entry 3594 (class 2604 OID 26513)
+-- TOC entry 3612 (class 2604 OID 26513)
 -- Name: tournament_logs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3035,7 +3294,7 @@ ALTER TABLE ONLY public.tournament_logs ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 3576 (class 2604 OID 26369)
+-- TOC entry 3594 (class 2604 OID 26369)
 -- Name: tournament_messages id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3043,7 +3302,7 @@ ALTER TABLE ONLY public.tournament_messages ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- TOC entry 3585 (class 2604 OID 26432)
+-- TOC entry 3603 (class 2604 OID 26432)
 -- Name: tournament_organizers id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3051,7 +3310,7 @@ ALTER TABLE ONLY public.tournament_organizers ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 3503 (class 2604 OID 17804)
+-- TOC entry 3521 (class 2604 OID 17804)
 -- Name: tournament_participants id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3059,7 +3318,7 @@ ALTER TABLE ONLY public.tournament_participants ALTER COLUMN id SET DEFAULT next
 
 
 --
--- TOC entry 3534 (class 2604 OID 18095)
+-- TOC entry 3552 (class 2604 OID 18095)
 -- Name: tournament_team_members id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3067,7 +3326,7 @@ ALTER TABLE ONLY public.tournament_team_members ALTER COLUMN id SET DEFAULT next
 
 
 --
--- TOC entry 3507 (class 2604 OID 17805)
+-- TOC entry 3525 (class 2604 OID 17805)
 -- Name: tournament_team_players id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3075,7 +3334,7 @@ ALTER TABLE ONLY public.tournament_team_players ALTER COLUMN id SET DEFAULT next
 
 
 --
--- TOC entry 3509 (class 2604 OID 17806)
+-- TOC entry 3527 (class 2604 OID 17806)
 -- Name: tournament_teams id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3083,7 +3342,7 @@ ALTER TABLE ONLY public.tournament_teams ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3510 (class 2604 OID 17807)
+-- TOC entry 3528 (class 2604 OID 17807)
 -- Name: tournaments id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3091,7 +3350,7 @@ ALTER TABLE ONLY public.tournaments ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3607 (class 2604 OID 26664)
+-- TOC entry 3625 (class 2604 OID 26664)
 -- Name: user_achievements id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3099,7 +3358,7 @@ ALTER TABLE ONLY public.user_achievements ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3615 (class 2604 OID 27884)
+-- TOC entry 3633 (class 2604 OID 27884)
 -- Name: user_progress id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3107,7 +3366,31 @@ ALTER TABLE ONLY public.user_progress ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3521 (class 2604 OID 17808)
+-- TOC entry 3668 (class 2604 OID 28377)
+-- Name: user_team_invitations id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_invitations ALTER COLUMN id SET DEFAULT nextval('public.user_team_invitations_id_seq'::regclass);
+
+
+--
+-- TOC entry 3665 (class 2604 OID 28356)
+-- Name: user_team_members id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_members ALTER COLUMN id SET DEFAULT nextval('public.user_team_members_id_seq'::regclass);
+
+
+--
+-- TOC entry 3661 (class 2604 OID 28334)
+-- Name: user_teams id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_teams ALTER COLUMN id SET DEFAULT nextval('public.user_teams_id_seq'::regclass);
+
+
+--
+-- TOC entry 3539 (class 2604 OID 17808)
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3115,7 +3398,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- TOC entry 3860 (class 2606 OID 27920)
+-- TOC entry 3891 (class 2606 OID 27920)
 -- Name: achievement_action_logs achievement_action_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3124,7 +3407,7 @@ ALTER TABLE ONLY public.achievement_action_logs
 
 
 --
--- TOC entry 3852 (class 2606 OID 27879)
+-- TOC entry 3883 (class 2606 OID 27879)
 -- Name: achievement_categories achievement_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3133,7 +3416,7 @@ ALTER TABLE ONLY public.achievement_categories
 
 
 --
--- TOC entry 3833 (class 2606 OID 26657)
+-- TOC entry 3864 (class 2606 OID 26657)
 -- Name: achievements achievements_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3142,7 +3425,7 @@ ALTER TABLE ONLY public.achievements
 
 
 --
--- TOC entry 3835 (class 2606 OID 26659)
+-- TOC entry 3866 (class 2606 OID 26659)
 -- Name: achievements achievements_title_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3151,7 +3434,7 @@ ALTER TABLE ONLY public.achievements
 
 
 --
--- TOC entry 3871 (class 2606 OID 28166)
+-- TOC entry 3902 (class 2606 OID 28166)
 -- Name: admin_invitations admin_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3160,16 +3443,7 @@ ALTER TABLE ONLY public.admin_invitations
 
 
 --
--- TOC entry 3873 (class 2606 OID 28168)
--- Name: admin_invitations admin_invitations_tournament_id_invitee_id_status_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.admin_invitations
-    ADD CONSTRAINT admin_invitations_tournament_id_invitee_id_status_key UNIQUE (tournament_id, invitee_id, status) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- TOC entry 3745 (class 2606 OID 18125)
+-- TOC entry 3776 (class 2606 OID 18125)
 -- Name: admin_requests admin_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3178,7 +3452,7 @@ ALTER TABLE ONLY public.admin_requests
 
 
 --
--- TOC entry 3747 (class 2606 OID 18127)
+-- TOC entry 3778 (class 2606 OID 18127)
 -- Name: admin_requests admin_requests_tournament_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3187,7 +3461,7 @@ ALTER TABLE ONLY public.admin_requests
 
 
 --
--- TOC entry 3768 (class 2606 OID 26214)
+-- TOC entry 3799 (class 2606 OID 26214)
 -- Name: chat_participants chat_participants_chat_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3196,7 +3470,7 @@ ALTER TABLE ONLY public.chat_participants
 
 
 --
--- TOC entry 3770 (class 2606 OID 26212)
+-- TOC entry 3801 (class 2606 OID 26212)
 -- Name: chat_participants chat_participants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3205,7 +3479,7 @@ ALTER TABLE ONLY public.chat_participants
 
 
 --
--- TOC entry 3766 (class 2606 OID 26201)
+-- TOC entry 3797 (class 2606 OID 26201)
 -- Name: chats chats_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3214,7 +3488,7 @@ ALTER TABLE ONLY public.chats
 
 
 --
--- TOC entry 3820 (class 2606 OID 26491)
+-- TOC entry 3851 (class 2606 OID 26491)
 -- Name: dota_profiles dota_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3223,7 +3497,7 @@ ALTER TABLE ONLY public.dota_profiles
 
 
 --
--- TOC entry 3822 (class 2606 OID 26493)
+-- TOC entry 3853 (class 2606 OID 26493)
 -- Name: dota_profiles dota_profiles_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3232,7 +3506,7 @@ ALTER TABLE ONLY public.dota_profiles
 
 
 --
--- TOC entry 3760 (class 2606 OID 26176)
+-- TOC entry 3791 (class 2606 OID 26176)
 -- Name: friends friends_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3241,7 +3515,7 @@ ALTER TABLE ONLY public.friends
 
 
 --
--- TOC entry 3733 (class 2606 OID 18060)
+-- TOC entry 3764 (class 2606 OID 18060)
 -- Name: games games_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3250,7 +3524,7 @@ ALTER TABLE ONLY public.games
 
 
 --
--- TOC entry 3793 (class 2606 OID 26363)
+-- TOC entry 3824 (class 2606 OID 26363)
 -- Name: maps maps_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3259,7 +3533,7 @@ ALTER TABLE ONLY public.maps
 
 
 --
--- TOC entry 3691 (class 2606 OID 17810)
+-- TOC entry 3719 (class 2606 OID 17810)
 -- Name: matches matches_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3268,7 +3542,7 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3780 (class 2606 OID 26256)
+-- TOC entry 3811 (class 2606 OID 26256)
 -- Name: message_status message_status_message_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3277,7 +3551,7 @@ ALTER TABLE ONLY public.message_status
 
 
 --
--- TOC entry 3782 (class 2606 OID 26254)
+-- TOC entry 3813 (class 2606 OID 26254)
 -- Name: message_status message_status_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3286,7 +3560,7 @@ ALTER TABLE ONLY public.message_status
 
 
 --
--- TOC entry 3776 (class 2606 OID 26236)
+-- TOC entry 3807 (class 2606 OID 26236)
 -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3295,7 +3569,7 @@ ALTER TABLE ONLY public.messages
 
 
 --
--- TOC entry 3737 (class 2606 OID 18078)
+-- TOC entry 3768 (class 2606 OID 18078)
 -- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3304,7 +3578,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3818 (class 2606 OID 26466)
+-- TOC entry 3849 (class 2606 OID 26466)
 -- Name: organization_requests organization_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3313,7 +3587,7 @@ ALTER TABLE ONLY public.organization_requests
 
 
 --
--- TOC entry 3805 (class 2606 OID 26417)
+-- TOC entry 3836 (class 2606 OID 26417)
 -- Name: organizer_members organizer_members_organizer_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3322,7 +3596,7 @@ ALTER TABLE ONLY public.organizer_members
 
 
 --
--- TOC entry 3807 (class 2606 OID 26415)
+-- TOC entry 3838 (class 2606 OID 26415)
 -- Name: organizer_members organizer_members_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3331,7 +3605,7 @@ ALTER TABLE ONLY public.organizer_members
 
 
 --
--- TOC entry 3799 (class 2606 OID 26398)
+-- TOC entry 3830 (class 2606 OID 26398)
 -- Name: organizers organizers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3340,7 +3614,7 @@ ALTER TABLE ONLY public.organizers
 
 
 --
--- TOC entry 3801 (class 2606 OID 26400)
+-- TOC entry 3832 (class 2606 OID 26400)
 -- Name: organizers organizers_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3349,7 +3623,7 @@ ALTER TABLE ONLY public.organizers
 
 
 --
--- TOC entry 3693 (class 2606 OID 17812)
+-- TOC entry 3721 (class 2606 OID 17812)
 -- Name: participants participants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3358,7 +3632,7 @@ ALTER TABLE ONLY public.participants
 
 
 --
--- TOC entry 3695 (class 2606 OID 17814)
+-- TOC entry 3723 (class 2606 OID 17814)
 -- Name: player_stats player_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3367,7 +3641,7 @@ ALTER TABLE ONLY public.player_stats
 
 
 --
--- TOC entry 3697 (class 2606 OID 17816)
+-- TOC entry 3725 (class 2606 OID 17816)
 -- Name: players players_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3376,7 +3650,7 @@ ALTER TABLE ONLY public.players
 
 
 --
--- TOC entry 3699 (class 2606 OID 17818)
+-- TOC entry 3727 (class 2606 OID 17818)
 -- Name: teams teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3385,7 +3659,7 @@ ALTER TABLE ONLY public.teams
 
 
 --
--- TOC entry 3867 (class 2606 OID 28135)
+-- TOC entry 3898 (class 2606 OID 28135)
 -- Name: tournament_admins tournament_admins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3394,7 +3668,7 @@ ALTER TABLE ONLY public.tournament_admins
 
 
 --
--- TOC entry 3869 (class 2606 OID 28137)
+-- TOC entry 3900 (class 2606 OID 28137)
 -- Name: tournament_admins tournament_admins_tournament_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3403,7 +3677,7 @@ ALTER TABLE ONLY public.tournament_admins
 
 
 --
--- TOC entry 3787 (class 2606 OID 26285)
+-- TOC entry 3818 (class 2606 OID 26285)
 -- Name: tournament_invitations tournament_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3412,7 +3686,7 @@ ALTER TABLE ONLY public.tournament_invitations
 
 
 --
--- TOC entry 3789 (class 2606 OID 26287)
+-- TOC entry 3820 (class 2606 OID 26287)
 -- Name: tournament_invitations tournament_invitations_tournament_id_user_id_status_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3421,7 +3695,7 @@ ALTER TABLE ONLY public.tournament_invitations
 
 
 --
--- TOC entry 3831 (class 2606 OID 26518)
+-- TOC entry 3862 (class 2606 OID 26518)
 -- Name: tournament_logs tournament_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3430,7 +3704,7 @@ ALTER TABLE ONLY public.tournament_logs
 
 
 --
--- TOC entry 3795 (class 2606 OID 26374)
+-- TOC entry 3826 (class 2606 OID 26374)
 -- Name: tournament_messages tournament_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3439,7 +3713,7 @@ ALTER TABLE ONLY public.tournament_messages
 
 
 --
--- TOC entry 3811 (class 2606 OID 26435)
+-- TOC entry 3842 (class 2606 OID 26435)
 -- Name: tournament_organizers tournament_organizers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3448,7 +3722,7 @@ ALTER TABLE ONLY public.tournament_organizers
 
 
 --
--- TOC entry 3813 (class 2606 OID 26437)
+-- TOC entry 3844 (class 2606 OID 26437)
 -- Name: tournament_organizers tournament_organizers_tournament_id_organizer_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3457,7 +3731,7 @@ ALTER TABLE ONLY public.tournament_organizers
 
 
 --
--- TOC entry 3704 (class 2606 OID 17824)
+-- TOC entry 3732 (class 2606 OID 17824)
 -- Name: tournament_participants tournament_participants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3466,7 +3740,7 @@ ALTER TABLE ONLY public.tournament_participants
 
 
 --
--- TOC entry 3706 (class 2606 OID 26322)
+-- TOC entry 3734 (class 2606 OID 26322)
 -- Name: tournament_participants tournament_participants_tournament_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3475,7 +3749,7 @@ ALTER TABLE ONLY public.tournament_participants
 
 
 --
--- TOC entry 3741 (class 2606 OID 18097)
+-- TOC entry 3772 (class 2606 OID 18097)
 -- Name: tournament_team_members tournament_team_members_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3484,7 +3758,7 @@ ALTER TABLE ONLY public.tournament_team_members
 
 
 --
--- TOC entry 3743 (class 2606 OID 18099)
+-- TOC entry 3774 (class 2606 OID 18099)
 -- Name: tournament_team_members tournament_team_members_team_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3493,7 +3767,7 @@ ALTER TABLE ONLY public.tournament_team_members
 
 
 --
--- TOC entry 3708 (class 2606 OID 17826)
+-- TOC entry 3736 (class 2606 OID 17826)
 -- Name: tournament_team_players tournament_team_players_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3502,7 +3776,7 @@ ALTER TABLE ONLY public.tournament_team_players
 
 
 --
--- TOC entry 3710 (class 2606 OID 17828)
+-- TOC entry 3738 (class 2606 OID 17828)
 -- Name: tournament_team_players tournament_team_players_tournament_team_id_player_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3511,7 +3785,7 @@ ALTER TABLE ONLY public.tournament_team_players
 
 
 --
--- TOC entry 3713 (class 2606 OID 17830)
+-- TOC entry 3741 (class 2606 OID 17830)
 -- Name: tournament_teams tournament_teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3520,7 +3794,7 @@ ALTER TABLE ONLY public.tournament_teams
 
 
 --
--- TOC entry 3715 (class 2606 OID 17832)
+-- TOC entry 3743 (class 2606 OID 17832)
 -- Name: tournament_teams tournament_teams_tournament_id_team_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3529,7 +3803,7 @@ ALTER TABLE ONLY public.tournament_teams
 
 
 --
--- TOC entry 3724 (class 2606 OID 17834)
+-- TOC entry 3752 (class 2606 OID 17834)
 -- Name: tournaments tournaments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3538,7 +3812,7 @@ ALTER TABLE ONLY public.tournaments
 
 
 --
--- TOC entry 3764 (class 2606 OID 26178)
+-- TOC entry 3795 (class 2606 OID 26178)
 -- Name: friends unique_friendship; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3547,7 +3821,7 @@ ALTER TABLE ONLY public.friends
 
 
 --
--- TOC entry 3735 (class 2606 OID 18067)
+-- TOC entry 3766 (class 2606 OID 18067)
 -- Name: games unique_game_name; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3556,7 +3830,7 @@ ALTER TABLE ONLY public.games
 
 
 --
--- TOC entry 3727 (class 2606 OID 18228)
+-- TOC entry 3758 (class 2606 OID 18228)
 -- Name: users unique_steam_id; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3565,7 +3839,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3717 (class 2606 OID 18090)
+-- TOC entry 3745 (class 2606 OID 18090)
 -- Name: tournament_teams unique_team_name_per_tournament; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3574,7 +3848,7 @@ ALTER TABLE ONLY public.tournament_teams
 
 
 --
--- TOC entry 3846 (class 2606 OID 26668)
+-- TOC entry 3877 (class 2606 OID 26668)
 -- Name: user_achievements user_achievements_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3583,7 +3857,7 @@ ALTER TABLE ONLY public.user_achievements
 
 
 --
--- TOC entry 3848 (class 2606 OID 27938)
+-- TOC entry 3879 (class 2606 OID 27938)
 -- Name: user_achievements user_achievements_user_achievement_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3592,7 +3866,7 @@ ALTER TABLE ONLY public.user_achievements
 
 
 --
--- TOC entry 3850 (class 2606 OID 26670)
+-- TOC entry 3881 (class 2606 OID 26670)
 -- Name: user_achievements user_achievements_user_id_achievement_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3601,7 +3875,7 @@ ALTER TABLE ONLY public.user_achievements
 
 
 --
--- TOC entry 3856 (class 2606 OID 27903)
+-- TOC entry 3887 (class 2606 OID 27903)
 -- Name: user_progress user_progress_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3610,7 +3884,7 @@ ALTER TABLE ONLY public.user_progress
 
 
 --
--- TOC entry 3858 (class 2606 OID 27905)
+-- TOC entry 3889 (class 2606 OID 27905)
 -- Name: user_progress user_progress_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3619,7 +3893,52 @@ ALTER TABLE ONLY public.user_progress
 
 
 --
--- TOC entry 3756 (class 2606 OID 18211)
+-- TOC entry 3922 (class 2606 OID 28383)
+-- Name: user_team_invitations user_team_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_invitations
+    ADD CONSTRAINT user_team_invitations_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3924 (class 2606 OID 28385)
+-- Name: user_team_invitations user_team_invitations_team_id_invited_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_invitations
+    ADD CONSTRAINT user_team_invitations_team_id_invited_user_id_key UNIQUE (team_id, invited_user_id);
+
+
+--
+-- TOC entry 3915 (class 2606 OID 28360)
+-- Name: user_team_members user_team_members_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_members
+    ADD CONSTRAINT user_team_members_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3917 (class 2606 OID 28362)
+-- Name: user_team_members user_team_members_team_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_members
+    ADD CONSTRAINT user_team_members_team_id_user_id_key UNIQUE (team_id, user_id);
+
+
+--
+-- TOC entry 3911 (class 2606 OID 28341)
+-- Name: user_teams user_teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_teams
+    ADD CONSTRAINT user_teams_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3787 (class 2606 OID 18211)
 -- Name: user_tournament_stats user_tournament_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3628,7 +3947,7 @@ ALTER TABLE ONLY public.user_tournament_stats
 
 
 --
--- TOC entry 3758 (class 2606 OID 26642)
+-- TOC entry 3789 (class 2606 OID 26642)
 -- Name: user_tournament_stats user_tournament_stats_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3637,7 +3956,7 @@ ALTER TABLE ONLY public.user_tournament_stats
 
 
 --
--- TOC entry 3729 (class 2606 OID 17836)
+-- TOC entry 3760 (class 2606 OID 17836)
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3646,7 +3965,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3731 (class 2606 OID 17838)
+-- TOC entry 3762 (class 2606 OID 17838)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3655,7 +3974,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3836 (class 1259 OID 27939)
+-- TOC entry 3867 (class 1259 OID 27939)
 -- Name: idx_achievements_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3663,7 +3982,7 @@ CREATE INDEX idx_achievements_active ON public.achievements USING btree (is_acti
 
 
 --
--- TOC entry 3837 (class 1259 OID 26681)
+-- TOC entry 3868 (class 1259 OID 26681)
 -- Name: idx_achievements_category; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3671,7 +3990,7 @@ CREATE INDEX idx_achievements_category ON public.achievements USING btree (categ
 
 
 --
--- TOC entry 3838 (class 1259 OID 26683)
+-- TOC entry 3869 (class 1259 OID 26683)
 -- Name: idx_achievements_condition_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3679,7 +3998,7 @@ CREATE INDEX idx_achievements_condition_type ON public.achievements USING btree 
 
 
 --
--- TOC entry 3839 (class 1259 OID 26682)
+-- TOC entry 3870 (class 1259 OID 26682)
 -- Name: idx_achievements_rarity; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3687,7 +4006,7 @@ CREATE INDEX idx_achievements_rarity ON public.achievements USING btree (rarity)
 
 
 --
--- TOC entry 3861 (class 1259 OID 27946)
+-- TOC entry 3892 (class 1259 OID 27946)
 -- Name: idx_action_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3695,7 +4014,7 @@ CREATE INDEX idx_action_created_at ON public.achievement_action_logs USING btree
 
 
 --
--- TOC entry 3874 (class 1259 OID 28192)
+-- TOC entry 3903 (class 1259 OID 28192)
 -- Name: idx_admin_invitations_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3703,7 +4022,7 @@ CREATE INDEX idx_admin_invitations_active ON public.admin_invitations USING btre
 
 
 --
--- TOC entry 3875 (class 1259 OID 28191)
+-- TOC entry 3904 (class 1259 OID 28191)
 -- Name: idx_admin_invitations_expires_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3711,7 +4030,7 @@ CREATE INDEX idx_admin_invitations_expires_at ON public.admin_invitations USING 
 
 
 --
--- TOC entry 3876 (class 1259 OID 28189)
+-- TOC entry 3905 (class 1259 OID 28189)
 -- Name: idx_admin_invitations_invitee_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3719,7 +4038,7 @@ CREATE INDEX idx_admin_invitations_invitee_id ON public.admin_invitations USING 
 
 
 --
--- TOC entry 3877 (class 1259 OID 28190)
+-- TOC entry 3906 (class 1259 OID 28190)
 -- Name: idx_admin_invitations_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3727,7 +4046,7 @@ CREATE INDEX idx_admin_invitations_status ON public.admin_invitations USING btre
 
 
 --
--- TOC entry 3878 (class 1259 OID 28188)
+-- TOC entry 3907 (class 1259 OID 28188)
 -- Name: idx_admin_invitations_tournament_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3735,7 +4054,7 @@ CREATE INDEX idx_admin_invitations_tournament_id ON public.admin_invitations USI
 
 
 --
--- TOC entry 3771 (class 1259 OID 26267)
+-- TOC entry 3802 (class 1259 OID 26267)
 -- Name: idx_chat_participants_chat_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3743,7 +4062,7 @@ CREATE INDEX idx_chat_participants_chat_id ON public.chat_participants USING btr
 
 
 --
--- TOC entry 3772 (class 1259 OID 26268)
+-- TOC entry 3803 (class 1259 OID 26268)
 -- Name: idx_chat_participants_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3751,7 +4070,7 @@ CREATE INDEX idx_chat_participants_user_id ON public.chat_participants USING btr
 
 
 --
--- TOC entry 3823 (class 1259 OID 26500)
+-- TOC entry 3854 (class 1259 OID 26500)
 -- Name: idx_dota_profiles_steam_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3759,7 +4078,7 @@ CREATE INDEX idx_dota_profiles_steam_id ON public.dota_profiles USING btree (ste
 
 
 --
--- TOC entry 3824 (class 1259 OID 26501)
+-- TOC entry 3855 (class 1259 OID 26501)
 -- Name: idx_dota_profiles_updated_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3767,7 +4086,7 @@ CREATE INDEX idx_dota_profiles_updated_at ON public.dota_profiles USING btree (u
 
 
 --
--- TOC entry 3825 (class 1259 OID 26499)
+-- TOC entry 3856 (class 1259 OID 26499)
 -- Name: idx_dota_profiles_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3775,7 +4094,7 @@ CREATE INDEX idx_dota_profiles_user_id ON public.dota_profiles USING btree (user
 
 
 --
--- TOC entry 3761 (class 1259 OID 26190)
+-- TOC entry 3792 (class 1259 OID 26190)
 -- Name: idx_friends_friend_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3783,7 +4102,7 @@ CREATE INDEX idx_friends_friend_id ON public.friends USING btree (friend_id);
 
 
 --
--- TOC entry 3762 (class 1259 OID 26189)
+-- TOC entry 3793 (class 1259 OID 26189)
 -- Name: idx_friends_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3791,7 +4110,7 @@ CREATE INDEX idx_friends_user_id ON public.friends USING btree (user_id);
 
 
 --
--- TOC entry 3790 (class 1259 OID 26385)
+-- TOC entry 3821 (class 1259 OID 26385)
 -- Name: idx_maps_game; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3799,7 +4118,7 @@ CREATE INDEX idx_maps_game ON public.maps USING btree (game);
 
 
 --
--- TOC entry 3689 (class 1259 OID 17841)
+-- TOC entry 3717 (class 1259 OID 17841)
 -- Name: idx_matches_tournament; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3807,7 +4126,7 @@ CREATE INDEX idx_matches_tournament ON public.matches USING btree (tournament_id
 
 
 --
--- TOC entry 3777 (class 1259 OID 26271)
+-- TOC entry 3808 (class 1259 OID 26271)
 -- Name: idx_message_status_message_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3815,7 +4134,7 @@ CREATE INDEX idx_message_status_message_id ON public.message_status USING btree 
 
 
 --
--- TOC entry 3778 (class 1259 OID 26272)
+-- TOC entry 3809 (class 1259 OID 26272)
 -- Name: idx_message_status_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3823,7 +4142,7 @@ CREATE INDEX idx_message_status_user_id ON public.message_status USING btree (us
 
 
 --
--- TOC entry 3773 (class 1259 OID 26269)
+-- TOC entry 3804 (class 1259 OID 26269)
 -- Name: idx_messages_chat_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3831,7 +4150,7 @@ CREATE INDEX idx_messages_chat_id ON public.messages USING btree (chat_id);
 
 
 --
--- TOC entry 3774 (class 1259 OID 26270)
+-- TOC entry 3805 (class 1259 OID 26270)
 -- Name: idx_messages_sender_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3839,7 +4158,7 @@ CREATE INDEX idx_messages_sender_id ON public.messages USING btree (sender_id);
 
 
 --
--- TOC entry 3814 (class 1259 OID 26479)
+-- TOC entry 3845 (class 1259 OID 26479)
 -- Name: idx_organization_requests_reviewed_by; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3847,7 +4166,7 @@ CREATE INDEX idx_organization_requests_reviewed_by ON public.organization_reques
 
 
 --
--- TOC entry 3815 (class 1259 OID 26478)
+-- TOC entry 3846 (class 1259 OID 26478)
 -- Name: idx_organization_requests_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3855,7 +4174,7 @@ CREATE INDEX idx_organization_requests_status ON public.organization_requests US
 
 
 --
--- TOC entry 3816 (class 1259 OID 26477)
+-- TOC entry 3847 (class 1259 OID 26477)
 -- Name: idx_organization_requests_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3863,7 +4182,7 @@ CREATE INDEX idx_organization_requests_user_id ON public.organization_requests U
 
 
 --
--- TOC entry 3802 (class 1259 OID 26450)
+-- TOC entry 3833 (class 1259 OID 26450)
 -- Name: idx_organizer_members_organizer; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3871,7 +4190,7 @@ CREATE INDEX idx_organizer_members_organizer ON public.organizer_members USING b
 
 
 --
--- TOC entry 3803 (class 1259 OID 26451)
+-- TOC entry 3834 (class 1259 OID 26451)
 -- Name: idx_organizer_members_user; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3879,7 +4198,7 @@ CREATE INDEX idx_organizer_members_user ON public.organizer_members USING btree 
 
 
 --
--- TOC entry 3796 (class 1259 OID 26449)
+-- TOC entry 3827 (class 1259 OID 26449)
 -- Name: idx_organizers_manager; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3887,7 +4206,7 @@ CREATE INDEX idx_organizers_manager ON public.organizers USING btree (manager_us
 
 
 --
--- TOC entry 3797 (class 1259 OID 26448)
+-- TOC entry 3828 (class 1259 OID 26448)
 -- Name: idx_organizers_slug; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3895,7 +4214,15 @@ CREATE INDEX idx_organizers_slug ON public.organizers USING btree (slug);
 
 
 --
--- TOC entry 3863 (class 1259 OID 28185)
+-- TOC entry 3753 (class 1259 OID 28221)
+-- Name: idx_password_reset_token; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_password_reset_token ON public.users USING btree (password_reset_token);
+
+
+--
+-- TOC entry 3894 (class 1259 OID 28185)
 -- Name: idx_tournament_admins_tournament_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3903,7 +4230,7 @@ CREATE INDEX idx_tournament_admins_tournament_id ON public.tournament_admins USI
 
 
 --
--- TOC entry 3864 (class 1259 OID 28187)
+-- TOC entry 3895 (class 1259 OID 28187)
 -- Name: idx_tournament_admins_tournament_user; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3911,7 +4238,7 @@ CREATE INDEX idx_tournament_admins_tournament_user ON public.tournament_admins U
 
 
 --
--- TOC entry 3865 (class 1259 OID 28186)
+-- TOC entry 3896 (class 1259 OID 28186)
 -- Name: idx_tournament_admins_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3919,7 +4246,7 @@ CREATE INDEX idx_tournament_admins_user_id ON public.tournament_admins USING btr
 
 
 --
--- TOC entry 3718 (class 1259 OID 17842)
+-- TOC entry 3746 (class 1259 OID 17842)
 -- Name: idx_tournament_format; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3927,7 +4254,7 @@ CREATE INDEX idx_tournament_format ON public.tournaments USING btree (format);
 
 
 --
--- TOC entry 3783 (class 1259 OID 26305)
+-- TOC entry 3814 (class 1259 OID 26305)
 -- Name: idx_tournament_invitations_status; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3935,7 +4262,7 @@ CREATE INDEX idx_tournament_invitations_status ON public.tournament_invitations 
 
 
 --
--- TOC entry 3784 (class 1259 OID 26304)
+-- TOC entry 3815 (class 1259 OID 26304)
 -- Name: idx_tournament_invitations_tournament_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3943,7 +4270,7 @@ CREATE INDEX idx_tournament_invitations_tournament_id ON public.tournament_invit
 
 
 --
--- TOC entry 3785 (class 1259 OID 26303)
+-- TOC entry 3816 (class 1259 OID 26303)
 -- Name: idx_tournament_invitations_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3951,7 +4278,7 @@ CREATE INDEX idx_tournament_invitations_user_id ON public.tournament_invitations
 
 
 --
--- TOC entry 3826 (class 1259 OID 26530)
+-- TOC entry 3857 (class 1259 OID 26530)
 -- Name: idx_tournament_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3959,7 +4286,7 @@ CREATE INDEX idx_tournament_logs_created_at ON public.tournament_logs USING btre
 
 
 --
--- TOC entry 3827 (class 1259 OID 26531)
+-- TOC entry 3858 (class 1259 OID 26531)
 -- Name: idx_tournament_logs_event_type; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3967,7 +4294,7 @@ CREATE INDEX idx_tournament_logs_event_type ON public.tournament_logs USING btre
 
 
 --
--- TOC entry 3828 (class 1259 OID 26529)
+-- TOC entry 3859 (class 1259 OID 26529)
 -- Name: idx_tournament_logs_tournament_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3975,7 +4302,7 @@ CREATE INDEX idx_tournament_logs_tournament_id ON public.tournament_logs USING b
 
 
 --
--- TOC entry 3829 (class 1259 OID 28195)
+-- TOC entry 3860 (class 1259 OID 28195)
 -- Name: idx_tournament_logs_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3983,7 +4310,7 @@ CREATE INDEX idx_tournament_logs_user_id ON public.tournament_logs USING btree (
 
 
 --
--- TOC entry 3808 (class 1259 OID 26453)
+-- TOC entry 3839 (class 1259 OID 26453)
 -- Name: idx_tournament_organizers_organizer; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3991,7 +4318,7 @@ CREATE INDEX idx_tournament_organizers_organizer ON public.tournament_organizers
 
 
 --
--- TOC entry 3809 (class 1259 OID 26452)
+-- TOC entry 3840 (class 1259 OID 26452)
 -- Name: idx_tournament_organizers_tournament; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3999,7 +4326,7 @@ CREATE INDEX idx_tournament_organizers_tournament ON public.tournament_organizer
 
 
 --
--- TOC entry 3700 (class 1259 OID 27992)
+-- TOC entry 3728 (class 1259 OID 27992)
 -- Name: idx_tournament_participants_cs2_premier_rank; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4007,7 +4334,7 @@ CREATE INDEX idx_tournament_participants_cs2_premier_rank ON public.tournament_p
 
 
 --
--- TOC entry 3701 (class 1259 OID 27991)
+-- TOC entry 3729 (class 1259 OID 27991)
 -- Name: idx_tournament_participants_faceit_elo; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4015,7 +4342,7 @@ CREATE INDEX idx_tournament_participants_faceit_elo ON public.tournament_partici
 
 
 --
--- TOC entry 3702 (class 1259 OID 27988)
+-- TOC entry 3730 (class 1259 OID 27988)
 -- Name: idx_tournament_participants_in_team; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4023,7 +4350,7 @@ CREATE INDEX idx_tournament_participants_in_team ON public.tournament_participan
 
 
 --
--- TOC entry 3738 (class 1259 OID 26317)
+-- TOC entry 3769 (class 1259 OID 26317)
 -- Name: idx_tournament_team_members_participant_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4031,7 +4358,7 @@ CREATE INDEX idx_tournament_team_members_participant_id ON public.tournament_tea
 
 
 --
--- TOC entry 3739 (class 1259 OID 26311)
+-- TOC entry 3770 (class 1259 OID 26311)
 -- Name: idx_tournament_team_members_team_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4039,7 +4366,7 @@ CREATE INDEX idx_tournament_team_members_team_id ON public.tournament_team_membe
 
 
 --
--- TOC entry 3711 (class 1259 OID 26310)
+-- TOC entry 3739 (class 1259 OID 26310)
 -- Name: idx_tournament_teams_tournament_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4047,7 +4374,7 @@ CREATE INDEX idx_tournament_teams_tournament_id ON public.tournament_teams USING
 
 
 --
--- TOC entry 3719 (class 1259 OID 28016)
+-- TOC entry 3747 (class 1259 OID 28016)
 -- Name: idx_tournaments_chat_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4055,7 +4382,7 @@ CREATE INDEX idx_tournaments_chat_id ON public.tournaments USING btree (chat_id)
 
 
 --
--- TOC entry 3720 (class 1259 OID 27973)
+-- TOC entry 3748 (class 1259 OID 27973)
 -- Name: idx_tournaments_second_place_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4063,7 +4390,7 @@ CREATE INDEX idx_tournaments_second_place_id ON public.tournaments USING btree (
 
 
 --
--- TOC entry 3721 (class 1259 OID 27974)
+-- TOC entry 3749 (class 1259 OID 27974)
 -- Name: idx_tournaments_third_place_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4071,7 +4398,7 @@ CREATE INDEX idx_tournaments_third_place_id ON public.tournaments USING btree (t
 
 
 --
--- TOC entry 3722 (class 1259 OID 27972)
+-- TOC entry 3750 (class 1259 OID 27972)
 -- Name: idx_tournaments_winner_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4079,7 +4406,7 @@ CREATE INDEX idx_tournaments_winner_id ON public.tournaments USING btree (winner
 
 
 --
--- TOC entry 3840 (class 1259 OID 27941)
+-- TOC entry 3871 (class 1259 OID 27941)
 -- Name: idx_user_achievements_achievement; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4087,7 +4414,7 @@ CREATE INDEX idx_user_achievements_achievement ON public.user_achievements USING
 
 
 --
--- TOC entry 3841 (class 1259 OID 26685)
+-- TOC entry 3872 (class 1259 OID 26685)
 -- Name: idx_user_achievements_achievement_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4095,7 +4422,7 @@ CREATE INDEX idx_user_achievements_achievement_id ON public.user_achievements US
 
 
 --
--- TOC entry 3842 (class 1259 OID 27942)
+-- TOC entry 3873 (class 1259 OID 27942)
 -- Name: idx_user_achievements_unlocked; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4103,7 +4430,7 @@ CREATE INDEX idx_user_achievements_unlocked ON public.user_achievements USING bt
 
 
 --
--- TOC entry 3843 (class 1259 OID 27940)
+-- TOC entry 3874 (class 1259 OID 27940)
 -- Name: idx_user_achievements_user; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4111,7 +4438,7 @@ CREATE INDEX idx_user_achievements_user ON public.user_achievements USING btree 
 
 
 --
--- TOC entry 3844 (class 1259 OID 26684)
+-- TOC entry 3875 (class 1259 OID 26684)
 -- Name: idx_user_achievements_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4119,7 +4446,7 @@ CREATE INDEX idx_user_achievements_user_id ON public.user_achievements USING btr
 
 
 --
--- TOC entry 3862 (class 1259 OID 27945)
+-- TOC entry 3893 (class 1259 OID 27945)
 -- Name: idx_user_action; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4127,7 +4454,7 @@ CREATE INDEX idx_user_action ON public.achievement_action_logs USING btree (user
 
 
 --
--- TOC entry 3853 (class 1259 OID 27943)
+-- TOC entry 3884 (class 1259 OID 27943)
 -- Name: idx_user_progress_level; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4135,7 +4462,7 @@ CREATE INDEX idx_user_progress_level ON public.user_progress USING btree (level)
 
 
 --
--- TOC entry 3854 (class 1259 OID 27944)
+-- TOC entry 3885 (class 1259 OID 27944)
 -- Name: idx_user_progress_xp; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4143,7 +4470,63 @@ CREATE INDEX idx_user_progress_xp ON public.user_progress USING btree (total_xp)
 
 
 --
--- TOC entry 3748 (class 1259 OID 26536)
+-- TOC entry 3918 (class 1259 OID 28407)
+-- Name: idx_user_team_invitations_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_team_invitations_status ON public.user_team_invitations USING btree (status);
+
+
+--
+-- TOC entry 3919 (class 1259 OID 28405)
+-- Name: idx_user_team_invitations_team; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_team_invitations_team ON public.user_team_invitations USING btree (team_id);
+
+
+--
+-- TOC entry 3920 (class 1259 OID 28406)
+-- Name: idx_user_team_invitations_user; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_team_invitations_user ON public.user_team_invitations USING btree (invited_user_id);
+
+
+--
+-- TOC entry 3912 (class 1259 OID 28403)
+-- Name: idx_user_team_members_team; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_team_members_team ON public.user_team_members USING btree (team_id);
+
+
+--
+-- TOC entry 3913 (class 1259 OID 28404)
+-- Name: idx_user_team_members_user; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_team_members_user ON public.user_team_members USING btree (user_id);
+
+
+--
+-- TOC entry 3908 (class 1259 OID 28401)
+-- Name: idx_user_teams_captain; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_teams_captain ON public.user_teams USING btree (captain_id);
+
+
+--
+-- TOC entry 3909 (class 1259 OID 28402)
+-- Name: idx_user_teams_tournament; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_teams_tournament ON public.user_teams USING btree (tournament_id);
+
+
+--
+-- TOC entry 3779 (class 1259 OID 26536)
 -- Name: idx_user_tournament_stats_is_team; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4151,7 +4534,7 @@ CREATE INDEX idx_user_tournament_stats_is_team ON public.user_tournament_stats U
 
 
 --
--- TOC entry 3749 (class 1259 OID 27976)
+-- TOC entry 3780 (class 1259 OID 27976)
 -- Name: idx_user_tournament_stats_is_team_member; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4159,7 +4542,7 @@ CREATE INDEX idx_user_tournament_stats_is_team_member ON public.user_tournament_
 
 
 --
--- TOC entry 3750 (class 1259 OID 26547)
+-- TOC entry 3781 (class 1259 OID 26547)
 -- Name: idx_user_tournament_stats_performance; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4167,7 +4550,7 @@ CREATE INDEX idx_user_tournament_stats_performance ON public.user_tournament_sta
 
 
 --
--- TOC entry 3751 (class 1259 OID 26535)
+-- TOC entry 3782 (class 1259 OID 26535)
 -- Name: idx_user_tournament_stats_result; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4175,7 +4558,7 @@ CREATE INDEX idx_user_tournament_stats_result ON public.user_tournament_stats US
 
 
 --
--- TOC entry 3752 (class 1259 OID 27975)
+-- TOC entry 3783 (class 1259 OID 27975)
 -- Name: idx_user_tournament_stats_team_name; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4183,7 +4566,7 @@ CREATE INDEX idx_user_tournament_stats_team_name ON public.user_tournament_stats
 
 
 --
--- TOC entry 3753 (class 1259 OID 26534)
+-- TOC entry 3784 (class 1259 OID 26534)
 -- Name: idx_user_tournament_stats_tournament_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4191,7 +4574,7 @@ CREATE INDEX idx_user_tournament_stats_tournament_id ON public.user_tournament_s
 
 
 --
--- TOC entry 3754 (class 1259 OID 26533)
+-- TOC entry 3785 (class 1259 OID 26533)
 -- Name: idx_user_tournament_stats_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4199,7 +4582,7 @@ CREATE INDEX idx_user_tournament_stats_user_id ON public.user_tournament_stats U
 
 
 --
--- TOC entry 3725 (class 1259 OID 28008)
+-- TOC entry 3754 (class 1259 OID 28008)
 -- Name: idx_users_last_notifications_seen; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4207,7 +4590,23 @@ CREATE INDEX idx_users_last_notifications_seen ON public.users USING btree (last
 
 
 --
--- TOC entry 3791 (class 1259 OID 26364)
+-- TOC entry 3755 (class 1259 OID 28266)
+-- Name: idx_users_steam_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_users_steam_id ON public.users USING btree (steam_id) WHERE (steam_id IS NOT NULL);
+
+
+--
+-- TOC entry 3756 (class 1259 OID 28267)
+-- Name: idx_users_steam_nickname_cache; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_users_steam_nickname_cache ON public.users USING btree (steam_nickname_updated) WHERE (steam_nickname_updated IS NOT NULL);
+
+
+--
+-- TOC entry 3822 (class 1259 OID 26364)
 -- Name: maps_game_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4215,7 +4614,7 @@ CREATE INDEX maps_game_idx ON public.maps USING btree (game);
 
 
 --
--- TOC entry 3951 (class 2620 OID 28194)
+-- TOC entry 4005 (class 2620 OID 28329)
 -- Name: admin_invitations admin_invitation_notification_trigger; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4223,7 +4622,15 @@ CREATE TRIGGER admin_invitation_notification_trigger AFTER INSERT ON public.admi
 
 
 --
--- TOC entry 3949 (class 2620 OID 27947)
+-- TOC entry 4006 (class 2620 OID 28317)
+-- Name: admin_invitations auto_cleanup_trigger; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER auto_cleanup_trigger BEFORE INSERT ON public.admin_invitations FOR EACH STATEMENT EXECUTE FUNCTION public.auto_cleanup_expired_invitations();
+
+
+--
+-- TOC entry 4003 (class 2620 OID 27947)
 -- Name: achievement_categories update_achievement_categories_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4231,7 +4638,7 @@ CREATE TRIGGER update_achievement_categories_updated_at BEFORE UPDATE ON public.
 
 
 --
--- TOC entry 3948 (class 2620 OID 27948)
+-- TOC entry 4002 (class 2620 OID 27948)
 -- Name: achievements update_achievements_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4239,7 +4646,7 @@ CREATE TRIGGER update_achievements_updated_at BEFORE UPDATE ON public.achievemen
 
 
 --
--- TOC entry 3943 (class 2620 OID 26274)
+-- TOC entry 3997 (class 2620 OID 26274)
 -- Name: messages update_chat_timestamp_trigger; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4247,7 +4654,7 @@ CREATE TRIGGER update_chat_timestamp_trigger AFTER INSERT ON public.messages FOR
 
 
 --
--- TOC entry 3947 (class 2620 OID 26532)
+-- TOC entry 4001 (class 2620 OID 26532)
 -- Name: dota_profiles update_dota_profiles_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4255,7 +4662,7 @@ CREATE TRIGGER update_dota_profiles_updated_at BEFORE UPDATE ON public.dota_prof
 
 
 --
--- TOC entry 3946 (class 2620 OID 26480)
+-- TOC entry 4000 (class 2620 OID 26480)
 -- Name: organization_requests update_organization_requests_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4263,7 +4670,7 @@ CREATE TRIGGER update_organization_requests_updated_at BEFORE UPDATE ON public.o
 
 
 --
--- TOC entry 3945 (class 2620 OID 26454)
+-- TOC entry 3999 (class 2620 OID 26454)
 -- Name: organizers update_organizers_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4271,7 +4678,7 @@ CREATE TRIGGER update_organizers_updated_at BEFORE UPDATE ON public.organizers F
 
 
 --
--- TOC entry 3944 (class 2620 OID 26307)
+-- TOC entry 3998 (class 2620 OID 26307)
 -- Name: tournament_invitations update_tournament_invitations_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4279,7 +4686,7 @@ CREATE TRIGGER update_tournament_invitations_updated_at BEFORE UPDATE ON public.
 
 
 --
--- TOC entry 3950 (class 2620 OID 27949)
+-- TOC entry 4004 (class 2620 OID 27949)
 -- Name: user_progress update_user_progress_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4287,7 +4694,7 @@ CREATE TRIGGER update_user_progress_updated_at BEFORE UPDATE ON public.user_prog
 
 
 --
--- TOC entry 3942 (class 2620 OID 26537)
+-- TOC entry 3996 (class 2620 OID 26537)
 -- Name: user_tournament_stats update_user_tournament_stats_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -4295,7 +4702,15 @@ CREATE TRIGGER update_user_tournament_stats_updated_at BEFORE UPDATE ON public.u
 
 
 --
--- TOC entry 3935 (class 2606 OID 27921)
+-- TOC entry 4007 (class 2620 OID 28409)
+-- Name: user_teams user_teams_updated_at_trigger; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER user_teams_updated_at_trigger BEFORE UPDATE ON public.user_teams FOR EACH ROW EXECUTE FUNCTION public.update_user_teams_updated_at();
+
+
+--
+-- TOC entry 3982 (class 2606 OID 27921)
 -- Name: achievement_action_logs achievement_action_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4304,7 +4719,7 @@ ALTER TABLE ONLY public.achievement_action_logs
 
 
 --
--- TOC entry 3931 (class 2606 OID 27930)
+-- TOC entry 3978 (class 2606 OID 27930)
 -- Name: achievements achievements_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4313,7 +4728,7 @@ ALTER TABLE ONLY public.achievements
 
 
 --
--- TOC entry 3939 (class 2606 OID 28180)
+-- TOC entry 3986 (class 2606 OID 28180)
 -- Name: admin_invitations admin_invitations_invitee_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4322,7 +4737,7 @@ ALTER TABLE ONLY public.admin_invitations
 
 
 --
--- TOC entry 3940 (class 2606 OID 28175)
+-- TOC entry 3987 (class 2606 OID 28175)
 -- Name: admin_invitations admin_invitations_inviter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4331,7 +4746,7 @@ ALTER TABLE ONLY public.admin_invitations
 
 
 --
--- TOC entry 3941 (class 2606 OID 28170)
+-- TOC entry 3988 (class 2606 OID 28170)
 -- Name: admin_invitations admin_invitations_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4340,7 +4755,7 @@ ALTER TABLE ONLY public.admin_invitations
 
 
 --
--- TOC entry 3904 (class 2606 OID 18128)
+-- TOC entry 3951 (class 2606 OID 18128)
 -- Name: admin_requests admin_requests_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4349,7 +4764,7 @@ ALTER TABLE ONLY public.admin_requests
 
 
 --
--- TOC entry 3905 (class 2606 OID 18133)
+-- TOC entry 3952 (class 2606 OID 18133)
 -- Name: admin_requests admin_requests_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4358,7 +4773,7 @@ ALTER TABLE ONLY public.admin_requests
 
 
 --
--- TOC entry 3910 (class 2606 OID 26215)
+-- TOC entry 3957 (class 2606 OID 26215)
 -- Name: chat_participants chat_participants_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4367,7 +4782,7 @@ ALTER TABLE ONLY public.chat_participants
 
 
 --
--- TOC entry 3911 (class 2606 OID 26220)
+-- TOC entry 3958 (class 2606 OID 26220)
 -- Name: chat_participants chat_participants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4376,7 +4791,7 @@ ALTER TABLE ONLY public.chat_participants
 
 
 --
--- TOC entry 3928 (class 2606 OID 26494)
+-- TOC entry 3975 (class 2606 OID 26494)
 -- Name: dota_profiles dota_profiles_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4385,7 +4800,7 @@ ALTER TABLE ONLY public.dota_profiles
 
 
 --
--- TOC entry 3888 (class 2606 OID 26325)
+-- TOC entry 3934 (class 2606 OID 26325)
 -- Name: tournament_participants fk_invited_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4394,7 +4809,7 @@ ALTER TABLE ONLY public.tournament_participants
 
 
 --
--- TOC entry 3879 (class 2606 OID 18195)
+-- TOC entry 3925 (class 2606 OID 18195)
 -- Name: matches fk_loser_next_match; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4403,7 +4818,16 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3889 (class 2606 OID 18222)
+-- TOC entry 3944 (class 2606 OID 28411)
+-- Name: notifications fk_notifications_team_invitation; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT fk_notifications_team_invitation FOREIGN KEY (team_invitation_id) REFERENCES public.user_team_invitations(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3935 (class 2606 OID 18222)
 -- Name: tournament_participants fk_user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4412,7 +4836,7 @@ ALTER TABLE ONLY public.tournament_participants
 
 
 --
--- TOC entry 3908 (class 2606 OID 26184)
+-- TOC entry 3955 (class 2606 OID 26184)
 -- Name: friends friends_friend_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4421,7 +4845,7 @@ ALTER TABLE ONLY public.friends
 
 
 --
--- TOC entry 3909 (class 2606 OID 26179)
+-- TOC entry 3956 (class 2606 OID 26179)
 -- Name: friends friends_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4430,7 +4854,7 @@ ALTER TABLE ONLY public.friends
 
 
 --
--- TOC entry 3880 (class 2606 OID 18190)
+-- TOC entry 3926 (class 2606 OID 18190)
 -- Name: matches matches_loser_next_match_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4439,7 +4863,7 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3881 (class 2606 OID 18185)
+-- TOC entry 3927 (class 2606 OID 18185)
 -- Name: matches matches_next_match_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4448,7 +4872,7 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3882 (class 2606 OID 18164)
+-- TOC entry 3928 (class 2606 OID 18164)
 -- Name: matches matches_source_match1_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4457,7 +4881,7 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3883 (class 2606 OID 18169)
+-- TOC entry 3929 (class 2606 OID 18169)
 -- Name: matches matches_source_match2_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4466,7 +4890,7 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3884 (class 2606 OID 17843)
+-- TOC entry 3930 (class 2606 OID 17843)
 -- Name: matches matches_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4475,7 +4899,7 @@ ALTER TABLE ONLY public.matches
 
 
 --
--- TOC entry 3914 (class 2606 OID 26257)
+-- TOC entry 3961 (class 2606 OID 26257)
 -- Name: message_status message_status_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4484,7 +4908,7 @@ ALTER TABLE ONLY public.message_status
 
 
 --
--- TOC entry 3915 (class 2606 OID 26262)
+-- TOC entry 3962 (class 2606 OID 26262)
 -- Name: message_status message_status_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4493,7 +4917,7 @@ ALTER TABLE ONLY public.message_status
 
 
 --
--- TOC entry 3912 (class 2606 OID 26237)
+-- TOC entry 3959 (class 2606 OID 26237)
 -- Name: messages messages_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4502,7 +4926,7 @@ ALTER TABLE ONLY public.messages
 
 
 --
--- TOC entry 3913 (class 2606 OID 26242)
+-- TOC entry 3960 (class 2606 OID 26242)
 -- Name: messages messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4511,7 +4935,7 @@ ALTER TABLE ONLY public.messages
 
 
 --
--- TOC entry 3898 (class 2606 OID 18148)
+-- TOC entry 3945 (class 2606 OID 18148)
 -- Name: notifications notifications_requester_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4520,7 +4944,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3899 (class 2606 OID 18143)
+-- TOC entry 3946 (class 2606 OID 18143)
 -- Name: notifications notifications_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4529,7 +4953,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3900 (class 2606 OID 18079)
+-- TOC entry 3947 (class 2606 OID 18079)
 -- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4538,7 +4962,7 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- TOC entry 3926 (class 2606 OID 26472)
+-- TOC entry 3973 (class 2606 OID 26472)
 -- Name: organization_requests organization_requests_reviewed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4547,7 +4971,7 @@ ALTER TABLE ONLY public.organization_requests
 
 
 --
--- TOC entry 3927 (class 2606 OID 26467)
+-- TOC entry 3974 (class 2606 OID 26467)
 -- Name: organization_requests organization_requests_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4556,7 +4980,7 @@ ALTER TABLE ONLY public.organization_requests
 
 
 --
--- TOC entry 3922 (class 2606 OID 26418)
+-- TOC entry 3969 (class 2606 OID 26418)
 -- Name: organizer_members organizer_members_organizer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4565,7 +4989,7 @@ ALTER TABLE ONLY public.organizer_members
 
 
 --
--- TOC entry 3923 (class 2606 OID 26423)
+-- TOC entry 3970 (class 2606 OID 26423)
 -- Name: organizer_members organizer_members_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4574,7 +4998,7 @@ ALTER TABLE ONLY public.organizer_members
 
 
 --
--- TOC entry 3921 (class 2606 OID 26401)
+-- TOC entry 3968 (class 2606 OID 26401)
 -- Name: organizers organizers_manager_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4583,7 +5007,7 @@ ALTER TABLE ONLY public.organizers
 
 
 --
--- TOC entry 3885 (class 2606 OID 17848)
+-- TOC entry 3931 (class 2606 OID 17848)
 -- Name: participants participants_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4592,7 +5016,7 @@ ALTER TABLE ONLY public.participants
 
 
 --
--- TOC entry 3886 (class 2606 OID 17853)
+-- TOC entry 3932 (class 2606 OID 17853)
 -- Name: player_stats player_stats_match_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4601,7 +5025,7 @@ ALTER TABLE ONLY public.player_stats
 
 
 --
--- TOC entry 3887 (class 2606 OID 17858)
+-- TOC entry 3933 (class 2606 OID 17858)
 -- Name: player_stats player_stats_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4610,7 +5034,7 @@ ALTER TABLE ONLY public.player_stats
 
 
 --
--- TOC entry 3936 (class 2606 OID 28148)
+-- TOC entry 3983 (class 2606 OID 28148)
 -- Name: tournament_admins tournament_admins_assigned_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4619,7 +5043,7 @@ ALTER TABLE ONLY public.tournament_admins
 
 
 --
--- TOC entry 3937 (class 2606 OID 28138)
+-- TOC entry 3984 (class 2606 OID 28138)
 -- Name: tournament_admins tournament_admins_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4628,7 +5052,7 @@ ALTER TABLE ONLY public.tournament_admins
 
 
 --
--- TOC entry 3938 (class 2606 OID 28143)
+-- TOC entry 3985 (class 2606 OID 28143)
 -- Name: tournament_admins tournament_admins_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4637,7 +5061,7 @@ ALTER TABLE ONLY public.tournament_admins
 
 
 --
--- TOC entry 3916 (class 2606 OID 26298)
+-- TOC entry 3963 (class 2606 OID 26298)
 -- Name: tournament_invitations tournament_invitations_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4646,7 +5070,7 @@ ALTER TABLE ONLY public.tournament_invitations
 
 
 --
--- TOC entry 3917 (class 2606 OID 26288)
+-- TOC entry 3964 (class 2606 OID 26288)
 -- Name: tournament_invitations tournament_invitations_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4655,7 +5079,7 @@ ALTER TABLE ONLY public.tournament_invitations
 
 
 --
--- TOC entry 3918 (class 2606 OID 26293)
+-- TOC entry 3965 (class 2606 OID 26293)
 -- Name: tournament_invitations tournament_invitations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4664,7 +5088,7 @@ ALTER TABLE ONLY public.tournament_invitations
 
 
 --
--- TOC entry 3929 (class 2606 OID 26519)
+-- TOC entry 3976 (class 2606 OID 26519)
 -- Name: tournament_logs tournament_logs_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4673,7 +5097,7 @@ ALTER TABLE ONLY public.tournament_logs
 
 
 --
--- TOC entry 3930 (class 2606 OID 26524)
+-- TOC entry 3977 (class 2606 OID 26524)
 -- Name: tournament_logs tournament_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4682,7 +5106,7 @@ ALTER TABLE ONLY public.tournament_logs
 
 
 --
--- TOC entry 3919 (class 2606 OID 26380)
+-- TOC entry 3966 (class 2606 OID 26380)
 -- Name: tournament_messages tournament_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4691,7 +5115,7 @@ ALTER TABLE ONLY public.tournament_messages
 
 
 --
--- TOC entry 3920 (class 2606 OID 26375)
+-- TOC entry 3967 (class 2606 OID 26375)
 -- Name: tournament_messages tournament_messages_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4700,7 +5124,7 @@ ALTER TABLE ONLY public.tournament_messages
 
 
 --
--- TOC entry 3924 (class 2606 OID 26443)
+-- TOC entry 3971 (class 2606 OID 26443)
 -- Name: tournament_organizers tournament_organizers_organizer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4709,7 +5133,7 @@ ALTER TABLE ONLY public.tournament_organizers
 
 
 --
--- TOC entry 3925 (class 2606 OID 26438)
+-- TOC entry 3972 (class 2606 OID 26438)
 -- Name: tournament_organizers tournament_organizers_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4718,7 +5142,7 @@ ALTER TABLE ONLY public.tournament_organizers
 
 
 --
--- TOC entry 3890 (class 2606 OID 17873)
+-- TOC entry 3936 (class 2606 OID 17873)
 -- Name: tournament_participants tournament_participants_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4727,7 +5151,7 @@ ALTER TABLE ONLY public.tournament_participants
 
 
 --
--- TOC entry 3891 (class 2606 OID 18110)
+-- TOC entry 3937 (class 2606 OID 18110)
 -- Name: tournament_participants tournament_participants_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4736,7 +5160,7 @@ ALTER TABLE ONLY public.tournament_participants
 
 
 --
--- TOC entry 3901 (class 2606 OID 26312)
+-- TOC entry 3948 (class 2606 OID 26312)
 -- Name: tournament_team_members tournament_team_members_participant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4745,7 +5169,7 @@ ALTER TABLE ONLY public.tournament_team_members
 
 
 --
--- TOC entry 3902 (class 2606 OID 18100)
+-- TOC entry 3949 (class 2606 OID 18100)
 -- Name: tournament_team_members tournament_team_members_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4754,7 +5178,7 @@ ALTER TABLE ONLY public.tournament_team_members
 
 
 --
--- TOC entry 3903 (class 2606 OID 18105)
+-- TOC entry 3950 (class 2606 OID 18105)
 -- Name: tournament_team_members tournament_team_members_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4763,7 +5187,7 @@ ALTER TABLE ONLY public.tournament_team_members
 
 
 --
--- TOC entry 3892 (class 2606 OID 17878)
+-- TOC entry 3938 (class 2606 OID 17878)
 -- Name: tournament_team_players tournament_team_players_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4772,7 +5196,7 @@ ALTER TABLE ONLY public.tournament_team_players
 
 
 --
--- TOC entry 3893 (class 2606 OID 17883)
+-- TOC entry 3939 (class 2606 OID 17883)
 -- Name: tournament_team_players tournament_team_players_tournament_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4781,7 +5205,7 @@ ALTER TABLE ONLY public.tournament_team_players
 
 
 --
--- TOC entry 3894 (class 2606 OID 18084)
+-- TOC entry 3940 (class 2606 OID 18084)
 -- Name: tournament_teams tournament_teams_creator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4790,7 +5214,7 @@ ALTER TABLE ONLY public.tournament_teams
 
 
 --
--- TOC entry 3895 (class 2606 OID 17888)
+-- TOC entry 3941 (class 2606 OID 17888)
 -- Name: tournament_teams tournament_teams_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4799,7 +5223,7 @@ ALTER TABLE ONLY public.tournament_teams
 
 
 --
--- TOC entry 3896 (class 2606 OID 17893)
+-- TOC entry 3942 (class 2606 OID 17893)
 -- Name: tournament_teams tournament_teams_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4808,7 +5232,7 @@ ALTER TABLE ONLY public.tournament_teams
 
 
 --
--- TOC entry 3897 (class 2606 OID 28011)
+-- TOC entry 3943 (class 2606 OID 28011)
 -- Name: tournaments tournaments_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4817,7 +5241,7 @@ ALTER TABLE ONLY public.tournaments
 
 
 --
--- TOC entry 3932 (class 2606 OID 26676)
+-- TOC entry 3979 (class 2606 OID 26676)
 -- Name: user_achievements user_achievements_achievement_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4826,7 +5250,7 @@ ALTER TABLE ONLY public.user_achievements
 
 
 --
--- TOC entry 3933 (class 2606 OID 26671)
+-- TOC entry 3980 (class 2606 OID 26671)
 -- Name: user_achievements user_achievements_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4835,7 +5259,7 @@ ALTER TABLE ONLY public.user_achievements
 
 
 --
--- TOC entry 3934 (class 2606 OID 27906)
+-- TOC entry 3981 (class 2606 OID 27906)
 -- Name: user_progress user_progress_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4844,7 +5268,70 @@ ALTER TABLE ONLY public.user_progress
 
 
 --
--- TOC entry 3906 (class 2606 OID 18217)
+-- TOC entry 3993 (class 2606 OID 28396)
+-- Name: user_team_invitations user_team_invitations_invited_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_invitations
+    ADD CONSTRAINT user_team_invitations_invited_user_id_fkey FOREIGN KEY (invited_user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3994 (class 2606 OID 28391)
+-- Name: user_team_invitations user_team_invitations_inviter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_invitations
+    ADD CONSTRAINT user_team_invitations_inviter_id_fkey FOREIGN KEY (inviter_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3995 (class 2606 OID 28386)
+-- Name: user_team_invitations user_team_invitations_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_invitations
+    ADD CONSTRAINT user_team_invitations_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.user_teams(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3991 (class 2606 OID 28363)
+-- Name: user_team_members user_team_members_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_members
+    ADD CONSTRAINT user_team_members_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.user_teams(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3992 (class 2606 OID 28368)
+-- Name: user_team_members user_team_members_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_team_members
+    ADD CONSTRAINT user_team_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3989 (class 2606 OID 28342)
+-- Name: user_teams user_teams_captain_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_teams
+    ADD CONSTRAINT user_teams_captain_id_fkey FOREIGN KEY (captain_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3990 (class 2606 OID 28347)
+-- Name: user_teams user_teams_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_teams
+    ADD CONSTRAINT user_teams_tournament_id_fkey FOREIGN KEY (tournament_id) REFERENCES public.tournaments(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3953 (class 2606 OID 18217)
 -- Name: user_tournament_stats user_tournament_stats_tournament_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4853,7 +5340,7 @@ ALTER TABLE ONLY public.user_tournament_stats
 
 
 --
--- TOC entry 3907 (class 2606 OID 18212)
+-- TOC entry 3954 (class 2606 OID 18212)
 -- Name: user_tournament_stats user_tournament_stats_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4862,7 +5349,7 @@ ALTER TABLE ONLY public.user_tournament_stats
 
 
 --
--- TOC entry 4100 (class 0 OID 0)
+-- TOC entry 4156 (class 0 OID 0)
 -- Dependencies: 7
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
 --
@@ -4872,8 +5359,8 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
--- TOC entry 4102 (class 0 OID 0)
--- Dependencies: 327
+-- TOC entry 4158 (class 0 OID 0)
+-- Dependencies: 336
 -- Name: FUNCTION accept_admin_invitation(invitation_id integer, accepting_user_id integer); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -4881,8 +5368,8 @@ GRANT ALL ON FUNCTION public.accept_admin_invitation(invitation_id integer, acce
 
 
 --
--- TOC entry 4105 (class 0 OID 0)
--- Dependencies: 326
+-- TOC entry 4161 (class 0 OID 0)
+-- Dependencies: 334
 -- Name: FUNCTION cleanup_expired_invitations(); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -4890,8 +5377,8 @@ GRANT ALL ON FUNCTION public.cleanup_expired_invitations() TO app_role;
 
 
 --
--- TOC entry 4106 (class 0 OID 0)
--- Dependencies: 328
+-- TOC entry 4162 (class 0 OID 0)
+-- Dependencies: 337
 -- Name: FUNCTION decline_admin_invitation(invitation_id integer, declining_user_id integer); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -4899,8 +5386,8 @@ GRANT ALL ON FUNCTION public.decline_admin_invitation(invitation_id integer, dec
 
 
 --
--- TOC entry 4107 (class 0 OID 0)
--- Dependencies: 329
+-- TOC entry 4163 (class 0 OID 0)
+-- Dependencies: 338
 -- Name: FUNCTION maintenance_cleanup(); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -4908,7 +5395,7 @@ GRANT ALL ON FUNCTION public.maintenance_cleanup() TO app_role;
 
 
 --
--- TOC entry 4115 (class 0 OID 0)
+-- TOC entry 4171 (class 0 OID 0)
 -- Dependencies: 298
 -- Name: TABLE admin_invitations; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4917,7 +5404,7 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.admin_invitations TO app_role;
 
 
 --
--- TOC entry 4124 (class 0 OID 0)
+-- TOC entry 4180 (class 0 OID 0)
 -- Dependencies: 300
 -- Name: TABLE active_admin_invitations; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4926,7 +5413,7 @@ GRANT SELECT ON TABLE public.active_admin_invitations TO app_role;
 
 
 --
--- TOC entry 4126 (class 0 OID 0)
+-- TOC entry 4182 (class 0 OID 0)
 -- Dependencies: 297
 -- Name: SEQUENCE admin_invitations_id_seq; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4935,7 +5422,7 @@ GRANT SELECT,USAGE ON SEQUENCE public.admin_invitations_id_seq TO app_role;
 
 
 --
--- TOC entry 4154 (class 0 OID 0)
+-- TOC entry 4210 (class 0 OID 0)
 -- Dependencies: 296
 -- Name: TABLE tournament_admins; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4944,7 +5431,7 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.tournament_admins TO app_role;
 
 
 --
--- TOC entry 4156 (class 0 OID 0)
+-- TOC entry 4212 (class 0 OID 0)
 -- Dependencies: 295
 -- Name: SEQUENCE tournament_admins_id_seq; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4953,7 +5440,7 @@ GRANT SELECT,USAGE ON SEQUENCE public.tournament_admins_id_seq TO app_role;
 
 
 --
--- TOC entry 4157 (class 0 OID 0)
+-- TOC entry 4213 (class 0 OID 0)
 -- Dependencies: 299
 -- Name: TABLE tournament_admins_view; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4962,7 +5449,7 @@ GRANT SELECT ON TABLE public.tournament_admins_view TO app_role;
 
 
 --
--- TOC entry 4165 (class 0 OID 0)
+-- TOC entry 4221 (class 0 OID 0)
 -- Dependencies: 283
 -- Name: TABLE tournament_logs; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4971,7 +5458,7 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.tournament_logs TO app_role;
 
 
 --
--- TOC entry 4167 (class 0 OID 0)
+-- TOC entry 4223 (class 0 OID 0)
 -- Dependencies: 282
 -- Name: SEQUENCE tournament_logs_id_seq; Type: ACL; Schema: public; Owner: postgres
 --
@@ -4979,7 +5466,7 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.tournament_logs TO app_role;
 GRANT SELECT,USAGE ON SEQUENCE public.tournament_logs_id_seq TO app_role;
 
 
--- Completed on 2025-06-12 17:04:35
+-- Completed on 2025-06-24 09:27:32
 
 --
 -- PostgreSQL database dump complete

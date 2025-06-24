@@ -324,13 +324,11 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #9ca3af;
+  color: #ffffff;
   text-align: center;
   padding: 40px 20px;
   font-size: 1rem;
-  background-color: #1f2937;
-  border-radius: 8px;
-  border: 1px solid #374151;
+  background-color: #000000;
   width: 100%;
   grid-column: 1 / -1;
 }
@@ -362,7 +360,11 @@
 /* 🎯 УЛУЧШЕННЫЕ СТИЛИ ДЛЯ БЛОКА КОМАНД */
 /* Основной заголовок блока команд */
 .teams-header {
-  margin-bottom: 24px;
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-direction: column !important;
 }
 .teams-header h4 {
   margin: 0 0 16px 0;
@@ -988,9 +990,6 @@
     font-weight: 700;
     text-align: center;
     padding: 16px;
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    border-radius: 12px;
-    border: 1px solid #374151;
 }
 /* Стили для кнопки переформирования с информацией */
 .reform-teams-button {

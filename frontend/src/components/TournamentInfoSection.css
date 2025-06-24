@@ -60,7 +60,7 @@
     gap: 16px;
     margin-bottom: 32px;
     padding: 24px;
-    background: #111111;
+    background: #000000;
     border: 1px solid #1a1a1a;
     border-radius: 8px;
     grid-area: tournament-meta-grid;
@@ -76,15 +76,9 @@
     flex-direction: column;
     gap: 8px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.02);
     border: 1px solid #2a2a2a;
     border-radius: 6px;
     transition: all 0.2s ease;
-}
-
-.meta-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: #333333;
 }
 
 .meta-item strong {
@@ -298,7 +292,7 @@
 .rules-block {
     margin-bottom: 32px;
     padding: 24px;
-    background: #111111;
+    background: #000000;
     border: 1px solid #1a1a1a;
     border-radius: 8px;
     width: 100%;
@@ -728,8 +722,10 @@
 }
 
 .participants-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 12px;
     margin-top: 16px;
 }
@@ -954,10 +950,6 @@
     .admin-item {
         flex: 1;
         min-width: 120px;
-    }
-    
-    .participants-list {
-        grid-template-columns: 1fr;
     }
     
     .form-actions {

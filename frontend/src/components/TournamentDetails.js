@@ -652,6 +652,76 @@ function TournamentDetails() {
         }
     }, [selectedMatch, id, fetchTournamentData, closeModal]);
 
+    // 🆕 ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ МАТЧЕЙ ТУРНИРА
+    const resetMatchResults = useCallback(async () => {
+        const confirmMessage = `⚠️ ВНИМАНИЕ!\n\n` +
+            `Вы собираетесь сбросить ВСЕ результаты матчей турнира.\n\n` +
+            `Это действие:\n` +
+            `• Очистит результаты всех матчей\n` +
+            `• Вернет команды к исходным позициям в сетке\n` +
+            `• НЕ МОЖЕТ БЫТЬ ОТМЕНЕНО\n\n` +
+            `Продолжить?`;
+
+        const confirmed = window.confirm(confirmMessage);
+        if (!confirmed) return;
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('Отсутствует токен авторизации');
+            }
+
+            console.log('🔄 Начинаем сброс результатов матчей турнира', id);
+
+            // Отправка запроса на сервер
+            const response = await api.post(`/api/tournaments/${id}/reset-match-results`, {}, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('✅ Результаты матчей успешно сброшены:', response.data);
+
+            // Очищаем кеш турнира
+            const cacheKey = `tournament_cache_${id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+            console.log('🗑️ Кеш турнира очищен после сброса результатов');
+
+            // Обновляем данные турнира
+            await fetchTournamentData();
+
+            setMessage('✅ Все результаты матчей успешно сброшены! Турнирная сетка возвращена к исходному состоянию.');
+            setTimeout(() => setMessage(''), 5000);
+
+        } catch (error) {
+            console.error('❌ Ошибка при сбросе результатов матчей:', error);
+            
+            let errorMessage = 'Ошибка при сбросе результатов матчей';
+            
+            if (error.response?.status === 403) {
+                errorMessage = 'У вас нет прав для сброса результатов этого турнира';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Турнир не найден';
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response.data?.error || 'Сброс результатов недоступен для этого турнира';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setMessage(`❌ ${errorMessage}`);
+            setTimeout(() => setMessage(''), 5000);
+        } finally {
+            setLoading(false);
+        }
+    }, [id, fetchTournamentData]);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
@@ -800,7 +870,7 @@ function TournamentDetails() {
                                 {canGenerateBracket && (
                                     <button 
                                         className="generate-bracket-button"
-                                        onClick={() => {}}
+                                        onClick={handleGenerateBracket}
                                     >
                                         🎯 Сгенерировать сетку
                                     </button>
@@ -808,7 +878,7 @@ function TournamentDetails() {
                                 {canEditMatches && games.length > 0 && (
                                     <button 
                                         className="regenerate-bracket-button"
-                                        onClick={() => {}}
+                                        onClick={handleRegenerateBracket}
                                     >
                                         🔄 Перегенерировать сетку
                                     </button>
@@ -978,9 +1048,9 @@ function TournamentDetails() {
                                 matches={matches}
                                 isCreatorOrAdmin={isAdminOrCreator}
                                 isLoading={loading}
-                                onStartTournament={() => {}}
-                                onEndTournament={() => {}}
-                                onRegenerateBracket={() => {}}
+                                onStartTournament={handleStartTournament}
+                                onEndTournament={handleEndTournament}
+                                onRegenerateBracket={handleRegenerateBracket}
                                 onShowAddParticipantModal={() => openModal('addParticipant')}
                                 onShowParticipantSearchModal={() => openModal('participantSearch')}
                                 onRemoveParticipant={() => {}}
@@ -993,8 +1063,8 @@ function TournamentDetails() {
                                     });
                                     openModal('matchResult');
                                 }}
-                                onGenerateBracket={() => {}}
-                                onClearResults={() => {}}
+                                onGenerateBracket={handleGenerateBracket}
+                                onClearResults={resetMatchResults}
                                 onInviteAdmin={inviteAdmin}
                                 onRemoveAdmin={removeAdmin}
                                 onShowAdminSearchModal={openAdminSearchModal}
@@ -1258,6 +1328,112 @@ function TournamentDetails() {
         setIsSearchingAdmins(false);
     }, []);
 
+    // 🆕 WRAPPER-ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
+    const handleStartTournament = useCallback(async () => {
+        const confirmMessage = `🚀 Вы собираетесь запустить турнир.\n\nПосле запуска:\n• Участники не смогут покинуть турнир\n• Нельзя будет изменить настройки\n• Начнется проведение матчей\n\nПродолжить?`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        try {
+            setLoading(true);
+            const result = await tournamentManagement.startTournament();
+            
+            if (result.success) {
+                setMessage('✅ Турнир успешно запущен!');
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${result.error || 'Ошибка при запуске турнира'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при запуске турнира:', error);
+            setMessage('❌ Ошибка при запуске турнира');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [tournamentManagement, fetchTournamentData]);
+
+    const handleEndTournament = useCallback(async () => {
+        const confirmMessage = `🏁 Вы собираетесь завершить турнир.\n\nПосле завершения:\n• Нельзя будет изменить результаты\n• Будут подведены итоги\n• Действие необратимо\n\nПродолжить?`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        try {
+            setLoading(true);
+            const result = await tournamentManagement.endTournament();
+            
+            if (result.success) {
+                setMessage('✅ Турнир успешно завершен!');
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${result.error || 'Ошибка при завершении турнира'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при завершении турнира:', error);
+            setMessage('❌ Ошибка при завершении турнира');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [tournamentManagement, fetchTournamentData]);
+
+    const handleRegenerateBracket = useCallback(async () => {
+        const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново\n• Действие необратимо\n\nПродолжить?`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        try {
+            setLoading(true);
+            const result = await tournamentManagement.regenerateBracket();
+            
+            if (result.success) {
+                setMessage('✅ Турнирная сетка успешно перегенерирована!');
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${result.error || 'Ошибка при перегенерации сетки'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при перегенерации сетки:', error);
+            setMessage('❌ Ошибка при перегенерации сетки');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [tournamentManagement, fetchTournamentData]);
+
+    const handleGenerateBracket = useCallback(async () => {
+        try {
+            setLoading(true);
+            
+            // Пока что используем простой API-вызов для генерации сетки
+            const token = localStorage.getItem('token');
+            const response = await api.post(`/api/tournaments/${id}/generate-bracket`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                setMessage('✅ Турнирная сетка успешно сгенерирована!');
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${response.data.message || 'Ошибка при генерации сетки'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при генерации сетки:', error);
+            let errorMessage = 'Ошибка при генерации сетки';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setMessage(`❌ ${errorMessage}`);
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [id, fetchTournamentData]);
+
     // Обработка ошибок загрузки
     if (loading) {
                         return (
@@ -1438,11 +1614,11 @@ function TournamentDetails() {
                     tournament={tournament}
                     user={user}
                     hasAccess={isAdminOrCreator}
-                    onStartTournament={() => {}}
-                    onEndTournament={() => {}}
-                    onGenerateBracket={() => {}}
-                    onRegenerateBracket={() => {}}
-                    onClearResults={() => {}}
+                    onStartTournament={handleStartTournament}
+                    onEndTournament={handleEndTournament}
+                    onGenerateBracket={handleGenerateBracket}
+                    onRegenerateBracket={handleRegenerateBracket}
+                    onClearResults={resetMatchResults}
                     hasMatches={matches.length > 0}
                     hasBracket={games.length > 0}
                 />

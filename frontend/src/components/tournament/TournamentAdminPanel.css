@@ -394,6 +394,14 @@
     background-color: #ff6b6b;
     color: #ffffff;
 }
+.reset-btn {
+    color: #ff9800;
+    border-color: #ff9800;
+}
+.reset-btn:hover:not(:disabled) {
+    background-color: #ff9800;
+    color: #ffffff;
+}
 .action-btn-v2:disabled {
     opacity: 0.6;
     cursor: not-allowed;

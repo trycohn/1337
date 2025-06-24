@@ -7,11 +7,33 @@ const TeamCard = ({ team, index, ratingType }) => {
     const teamMembers = team.members || team.players || [];
     
     const getFaceitRating = (player) => {
-        return player.faceit_elo || player.faceit_rating || 1000;
+        // Приоритет: кастомный ELO → пользовательский ELO → faceit_rating → user_faceit_rating → дефолт
+        if (player.faceit_elo && !isNaN(parseInt(player.faceit_elo)) && parseInt(player.faceit_elo) > 0) {
+            return parseInt(player.faceit_elo);
+        } else if (player.user_faceit_elo && !isNaN(parseInt(player.user_faceit_elo)) && parseInt(player.user_faceit_elo) > 0) {
+            return parseInt(player.user_faceit_elo);
+        } else if (player.faceit_rating && !isNaN(parseInt(player.faceit_rating)) && parseInt(player.faceit_rating) > 0) {
+            return parseInt(player.faceit_rating);
+        } else if (player.user_faceit_rating && !isNaN(parseInt(player.user_faceit_rating)) && parseInt(player.user_faceit_rating) > 0) {
+            return parseInt(player.user_faceit_rating);
+        }
+        return 1000; // дефолт
     };
     
     const getPremierRating = (player) => {
-        return player.premier_rank || player.cs2_premier_rank || 5;
+        // Приоритет: кастомный ранг → пользовательский ранг → premier_rank → user_premier_rank → дефолт
+        if (player.cs2_premier_rank && !isNaN(parseInt(player.cs2_premier_rank)) && parseInt(player.cs2_premier_rank) > 0) {
+            return parseInt(player.cs2_premier_rank);
+        } else if (player.premier_rank && !isNaN(parseInt(player.premier_rank)) && parseInt(player.premier_rank) > 0) {
+            return parseInt(player.premier_rank);
+        } else if (player.premier_rating && !isNaN(parseInt(player.premier_rating)) && parseInt(player.premier_rating) > 0) {
+            return parseInt(player.premier_rating);
+        } else if (player.user_premier_rank && !isNaN(parseInt(player.user_premier_rank)) && parseInt(player.user_premier_rank) > 0) {
+            return parseInt(player.user_premier_rank);
+        } else if (player.user_premier_rating && !isNaN(parseInt(player.user_premier_rating)) && parseInt(player.user_premier_rating) > 0) {
+            return parseInt(player.user_premier_rating);
+        }
+        return 5; // дефолт
     };
     
     const getPlayerRating = (player) => {
@@ -34,13 +56,18 @@ const TeamCard = ({ team, index, ratingType }) => {
     const calculateAverageRating = () => {
         if (!teamMembers || teamMembers.length === 0) return 0;
         
-        if (ratingType === 'faceit') {
-            const total = teamMembers.reduce((sum, player) => sum + getFaceitRating(player), 0);
-            return Math.round(total / teamMembers.length);
-        } else {
-            const total = teamMembers.reduce((sum, player) => sum + getPremierRating(player), 0);
-            return Math.round(total / teamMembers.length);
-        }
+        const ratings = teamMembers.map(player => {
+            if (ratingType === 'faceit') {
+                return getFaceitRating(player);
+            } else {
+                return getPremierRating(player);
+            }
+        }).filter(rating => !isNaN(rating) && rating > 0);
+        
+        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 5;
+        
+        const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+        return Math.round(average);
     };
     
     const averageRating = team.totalRating ? Math.round(team.totalRating) : calculateAverageRating();
