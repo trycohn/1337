@@ -377,25 +377,30 @@
     color: #ffffff;
     transform: scale(1.1);
 }
-/* Эффекты при наведении на контейнер */
-.match-container.completed:hover .edit-match-btn-container {
+/* 🎯 УНИВЕРСАЛЬНЫЕ ЭФФЕКТЫ ДЛЯ ВСЕХ КНОПОК ДЕТАЛИЗАЦИИ */
+/* Эффекты при наведении на контейнер - для ВСЕХ матчей */
+.match-container:hover .edit-match-btn-container {
     opacity: 1;
     background: linear-gradient(135deg, #4b5563, #6b7280);
     border-color: #9ca3af;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
 .edit-match-btn-container:hover {
     background: linear-gradient(135deg, #6b7280, #9ca3af) !important;
     border-color: #d1d5db !important;
     transform: translateX(2px);
 }
+
 .edit-match-btn-container:hover .edit-match-btn {
     color: #ffffff !important;
 }
-/* Анимация появления кнопки */
-.match-container.completed .edit-match-btn-container {
+
+/* Анимация появления кнопки - для ВСЕХ матчей */
+.match-container .edit-match-btn-container {
     animation: slideInFromRight 0.3s ease-out;
 }
+
 @keyframes slideInFromRight {
     from {
         opacity: 0;
@@ -406,6 +411,8 @@
         transform: translateX(0);
     }
 }
+
+/* 🗑️ УДАЛЯЕМ СТАРЫЕ СПЕЦИФИЧНЫЕ СТИЛИ ДЛЯ ЗАВЕРШЕННЫХ МАТЧЕЙ */
 /* Убираем старые стили match-view-block так как они больше не используются */
 .match-view-block {
     display: none;
