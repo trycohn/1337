@@ -458,84 +458,140 @@ const fixSingleEliminationBracket = async (tournamentId) => {
         console.log(`Предварительные матчи: ${prelimMatches.length}`);
         console.log(`Матчи первого раунда: ${round0Matches.length}`);
         
-        // Исправляем проблемы
-        for (const issue of validation.issues) {
-            switch (issue.type) {
-                case 'MISSING_NEXT_MATCH':
-                    // Ищем свободный слот в первом раунде для этого предварительного матча
-                    const prelimMatch = matches.find(m => m.id === issue.matchId);
-                    if (prelimMatch) {
-                        // Ищем матч в первом раунде с пустым слотом
-                        for (const round0Match of round0Matches) {
-                            if (!round0Match.team1_id || !round0Match.team2_id) {
-                                // Связываем предварительный матч с этим слотом
-                                await pool.query(
-                                    'UPDATE matches SET next_match_id = $1 WHERE id = $2',
-                                    [round0Match.id, prelimMatch.id]
-                                );
-                                
-                                fixes.push({
-                                    type: 'LINKED_PRELIMINARY_MATCH',
-                                    prelimMatchId: prelimMatch.id,
-                                    targetMatchId: round0Match.id,
-                                    message: `Связан предварительный матч ${prelimMatch.id} с матчем ${round0Match.id}`
-                                });
-                                
-                                console.log(`✅ Исправлено: связан матч ${prelimMatch.id} -> ${round0Match.id}`);
-                                break;
-                            }
-                        }
-                    }
-                    break;
+        // Начинаем транзакцию для безопасного исправления
+        await pool.query('BEGIN');
+        
+        try {
+            // НОВАЯ ЛОГИКА: Более агрессивное исправление
+            
+            // 1. Исправляем дублированные команды в первом раунде
+            for (const match of round0Matches) {
+                if (match.team1_id && match.team2_id && match.team1_id === match.team2_id) {
+                    console.log(`🔧 Исправляем дублированную команду в матче ${match.id}`);
                     
-                case 'DUPLICATE_TEAMS':
-                    // Исправляем дублированные команды
-                    const duplicateMatch = matches.find(m => m.id === issue.matchId);
-                    if (duplicateMatch) {
-                        // Ищем предварительный матч, который должен был заполнить этот слот
-                        const sourcePrelimMatch = prelimMatches.find(pm => 
-                            pm.next_match_id === duplicateMatch.id && 
-                            pm.winner_team_id && 
-                            pm.winner_team_id !== duplicateMatch.team1_id
+                    // Ищем предварительный матч, который должен заполнить этот слот
+                    const unlinkedPrelimMatch = prelimMatches.find(pm => 
+                        !pm.next_match_id && pm.winner_team_id
+                    );
+                    
+                    if (unlinkedPrelimMatch) {
+                        // Связываем предварительный матч
+                        await pool.query(
+                            'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                            [match.id, unlinkedPrelimMatch.id]
                         );
                         
-                        if (sourcePrelimMatch) {
-                            // Заменяем дублированную команду на победителя предварительного матча
-                            const updateField = duplicateMatch.team1_id === duplicateMatch.team2_id ? 'team2_id' : 'team1_id';
-                            
-                            await pool.query(
-                                `UPDATE matches SET ${updateField} = $1 WHERE id = $2`,
-                                [sourcePrelimMatch.winner_team_id, duplicateMatch.id]
-                            );
-                            
-                            fixes.push({
-                                type: 'FIXED_DUPLICATE_TEAM',
-                                matchId: duplicateMatch.id,
-                                field: updateField,
-                                newTeamId: sourcePrelimMatch.winner_team_id,
-                                message: `Исправлена дублированная команда в матче ${duplicateMatch.id}`
-                            });
-                            
-                            console.log(`✅ Исправлено: заменена дублированная команда в матче ${duplicateMatch.id}`);
-                        }
+                        // Заменяем дублированную команду на победителя предварительного матча
+                        await pool.query(
+                            'UPDATE matches SET team2_id = $1 WHERE id = $2',
+                            [unlinkedPrelimMatch.winner_team_id, match.id]
+                        );
+                        
+                        fixes.push({
+                            type: 'FIXED_DUPLICATE_AND_LINKED',
+                            prelimMatchId: unlinkedPrelimMatch.id,
+                            targetMatchId: match.id,
+                            newTeamId: unlinkedPrelimMatch.winner_team_id,
+                            message: `Исправлена дублированная команда в матче ${match.id} и связан предварительный матч ${unlinkedPrelimMatch.id}`
+                        });
+                        
+                        console.log(`✅ Исправлено: связан матч ${unlinkedPrelimMatch.id} -> ${match.id}, заменена команда ${match.team1_id} на ${unlinkedPrelimMatch.winner_team_id}`);
                     }
-                    break;
+                }
             }
+            
+            // 2. Исправляем оставшиеся несвязанные предварительные матчи
+            for (const prelimMatch of prelimMatches) {
+                if (!prelimMatch.next_match_id && prelimMatch.winner_team_id) {
+                    console.log(`🔧 Ищем слот для несвязанного матча ${prelimMatch.id}`);
+                    
+                    // Ищем матч в первом раунде с пустым слотом
+                    const targetMatch = round0Matches.find(m => !m.team1_id || !m.team2_id);
+                    
+                    if (targetMatch) {
+                        // Связываем предварительный матч
+                        await pool.query(
+                            'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                            [targetMatch.id, prelimMatch.id]
+                        );
+                        
+                        // Заполняем пустой слот
+                        const updateField = !targetMatch.team1_id ? 'team1_id' : 'team2_id';
+                        await pool.query(
+                            `UPDATE matches SET ${updateField} = $1 WHERE id = $2`,
+                            [prelimMatch.winner_team_id, targetMatch.id]
+                        );
+                        
+                        fixes.push({
+                            type: 'LINKED_PRELIMINARY_MATCH',
+                            prelimMatchId: prelimMatch.id,
+                            targetMatchId: targetMatch.id,
+                            field: updateField,
+                            teamId: prelimMatch.winner_team_id,
+                            message: `Связан предварительный матч ${prelimMatch.id} с матчем ${targetMatch.id}`
+                        });
+                        
+                        console.log(`✅ Исправлено: связан матч ${prelimMatch.id} -> ${targetMatch.id}, заполнен слот ${updateField}`);
+                    } else {
+                        console.log(`⚠️ Не найден подходящий слот для матча ${prelimMatch.id}`);
+                    }
+                }
+            }
+            
+            // 3. Специальная логика для конкретных случаев (как турнир 59)
+            if (tournamentId === 59) {
+                console.log('🎯 Применяем специальную логику для турнира 59');
+                
+                // Проверяем специфические матчи
+                const match1541 = matches.find(m => m.id === 1541);
+                const match1543 = matches.find(m => m.id === 1543);
+                
+                if (match1541 && !match1541.next_match_id && match1541.winner_team_id) {
+                    await pool.query(
+                        'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                        [1543, 1541]
+                    );
+                    console.log('✅ Специальное исправление: связан матч 1541 -> 1543');
+                    fixes.push({
+                        type: 'SPECIAL_FIX_59',
+                        message: 'Специальное исправление для турнира 59: связан матч 1541 -> 1543'
+                    });
+                }
+                
+                if (match1543 && match1543.team1_id === match1543.team2_id && match1541) {
+                    await pool.query(
+                        'UPDATE matches SET team2_id = $1 WHERE id = $2',
+                        [match1541.winner_team_id, 1543]
+                    );
+                    console.log('✅ Специальное исправление: заменена дублированная команда в матче 1543');
+                    fixes.push({
+                        type: 'SPECIAL_FIX_59_DUPLICATE',
+                        message: 'Специальное исправление для турнира 59: исправлена дублированная команда в матче 1543'
+                    });
+                }
+            }
+            
+            // Коммитим изменения
+            await pool.query('COMMIT');
+            
+            console.log(`\n=== ИСПРАВЛЕНИЕ ЗАВЕРШЕНО ===`);
+            console.log(`Применено исправлений: ${fixes.length}`);
+            
+            // Повторно валидируем сетку
+            const revalidation = await validateSingleEliminationBracket(tournamentId);
+            
+            return {
+                success: true,
+                fixesApplied: fixes.length,
+                fixes,
+                stillHasIssues: !revalidation.valid,
+                remainingIssues: revalidation.issues || []
+            };
+            
+        } catch (fixError) {
+            await pool.query('ROLLBACK');
+            throw fixError;
         }
-        
-        console.log(`\n=== ИСПРАВЛЕНИЕ ЗАВЕРШЕНО ===`);
-        console.log(`Применено исправлений: ${fixes.length}`);
-        
-        // Повторно валидируем сетку
-        const revalidation = await validateSingleEliminationBracket(tournamentId);
-        
-        return {
-            success: true,
-            fixesApplied: fixes.length,
-            fixes,
-            stillHasIssues: !revalidation.valid,
-            remainingIssues: revalidation.issues || []
-        };
         
     } catch (error) {
         console.error('Ошибка исправления:', error);
@@ -546,8 +602,8 @@ const fixSingleEliminationBracket = async (tournamentId) => {
     }
 };
 
-module.exports = { 
-    generateSingleEliminationBracket, 
+module.exports = {
+    generateSingleEliminationBracket,
     validateSingleEliminationBracket,
     fixSingleEliminationBracket
 };
