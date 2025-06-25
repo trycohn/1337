@@ -1,4 +1,4 @@
-.mix-tournament {
+﻿.mix-tournament {
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
@@ -17,7 +17,7 @@
     margin: 5px 0;
     color: #666;
 }
-/* Новый контейнер для элементов управления */
+/* РќРѕРІС‹Р№ РєРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ СЌР»РµРјРµРЅС‚РѕРІ СѓРїСЂР°РІР»РµРЅРёСЏ */
 .controls-container {
     display: flex;
     align-items: center;
@@ -29,7 +29,7 @@
     flex-wrap: wrap;
     gap: 15px;
 }
-/* Группа для лейбла и селектора типа рейтинга */
+/* Р“СЂСѓРїРїР° РґР»СЏ Р»РµР№Р±Р»Р° Рё СЃРµР»РµРєС‚РѕСЂР° С‚РёРїР° СЂРµР№С‚РёРЅРіР° */
 .rating-selector-group {
     display: flex;
     align-items: center;
@@ -142,7 +142,7 @@
     color: #e74c3c;
     font-size: 1.2em;
 }
-/* Добавляем стили для секции действий */
+/* Р”РѕР±Р°РІР»СЏРµРј СЃС‚РёР»Рё РґР»СЏ СЃРµРєС†РёРё РґРµР№СЃС‚РІРёР№ */
 .actions {
     display: flex;
     gap: 15px;

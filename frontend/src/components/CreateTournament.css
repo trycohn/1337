@@ -1,7 +1,7 @@
-/* =========================
-   СОЗДАНИЕ ТУРНИРА - МИНИМАЛИСТИЧНЫЙ ДИЗАЙН 
+﻿/* =========================
+   РЎРћР—Р”РђРќРР• РўРЈР РќРР Рђ - РњРРќРРњРђР›РРЎРўРР§РќР«Р™ Р”РР—РђР™Рќ 
    ========================= */
-/* CSS Variables - Черно-белая тема для создания турнира */
+/* CSS Variables - Р§РµСЂРЅРѕ-Р±РµР»Р°СЏ С‚РµРјР° РґР»СЏ СЃРѕР·РґР°РЅРёСЏ С‚СѓСЂРЅРёСЂР° */
 .create-tournament {
     --ct-bg-primary: #000000;
     --ct-bg-secondary: #111111;
@@ -23,7 +23,7 @@
     --ct-spacing-2xl: 48px;
     --ct-transition: all 0.2s ease;
 }
-/* Основной контейнер */
+/* РћСЃРЅРѕРІРЅРѕР№ РєРѕРЅС‚РµР№РЅРµСЂ */
 .create-tournament {
     margin: 0 auto;
     padding: var(--ct-spacing-2xl);
@@ -32,7 +32,7 @@
     color: var(--ct-text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-/* Заголовок страницы */
+/* Р—Р°РіРѕР»РѕРІРѕРє СЃС‚СЂР°РЅРёС†С‹ */
 .create-tournament h2 {
     font-size: 2.5rem;
     font-weight: 300;
@@ -44,9 +44,9 @@
     padding-bottom: var(--ct-spacing-lg);
     border-bottom: 1px solid var(--ct-border-color);
 }
-/* Основная форма */
+/* РћСЃРЅРѕРІРЅР°СЏ С„РѕСЂРјР° */
 .create-tournament form {
-    background-color: #00000000; /* transparent в HEX с альфа-каналом */
+    background-color: #00000000; /* transparent РІ HEX СЃ Р°Р»СЊС„Р°-РєР°РЅР°Р»РѕРј */
     border: none;
     border-radius: 0;
     padding: 0;
@@ -57,7 +57,7 @@
     align-items: center;
     margin: auto;
 }
-/* Общие стили для полей ввода */
+/* РћР±С‰РёРµ СЃС‚РёР»Рё РґР»СЏ РїРѕР»РµР№ РІРІРѕРґР° */
 .create-tournament input,
 .create-tournament select,
 .create-tournament textarea {
@@ -85,7 +85,7 @@
     color: var(--ct-text-disabled);
     font-weight: 300;
 }
-/* Стили для select */
+/* РЎС‚РёР»Рё РґР»СЏ select */
 .create-tournament select {
     cursor: pointer;
     appearance: none;
@@ -98,7 +98,7 @@
 .create-tournament select:hover {
     border-color: var(--ct-border-hover);
 }
-/* Секции формы */
+/* РЎРµРєС†РёРё С„РѕСЂРјС‹ */
 .create-tournament .form-section {
     border: 1px solid var(--ct-border-color);
     border-radius: 0;
@@ -119,13 +119,13 @@
     left: -100%;
     width: 100%;
     height: 2px;
-    background: linear-gradient(90deg, #00000000, var(--ct-text-primary), #00000000); /* transparent заменен на HEX */
+    background: linear-gradient(90deg, #00000000, var(--ct-text-primary), #00000000); /* transparent Р·Р°РјРµРЅРµРЅ РЅР° HEX */
     transition: left 0.6s ease;
 }
 .create-tournament .form-section:hover::before {
     left: 100%;
 }
-/* Заголовки секций */
+/* Р—Р°РіРѕР»РѕРІРєРё СЃРµРєС†РёР№ */
 .create-tournament .section-title {
     font-size: 1rem;
     font-weight: 300;
@@ -137,7 +137,7 @@
     border-bottom: 1px solid var(--ct-border-color);
     text-align: center;
 }
-/* Сетка формы */
+/* РЎРµС‚РєР° С„РѕСЂРјС‹ */
 .create-tournament .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -147,7 +147,7 @@
 .create-tournament .form-grid.single-column {
     grid-template-columns: 1fr;
 }
-/* Горизонтальная компоновка основной и дополнительной информации */
+/* Р“РѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅР°СЏ РєРѕРјРїРѕРЅРѕРІРєР° РѕСЃРЅРѕРІРЅРѕР№ Рё РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё */
 .create-tournament .form-main-layout {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -156,15 +156,15 @@
     min-height: 0;
 }
 .create-tournament .main-section {
-    min-width: 0; /* Предотвращает переполнение */
+    min-width: 0; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРїРѕР»РЅРµРЅРёРµ */
     animation-delay: 0.1s;
 }
 .create-tournament .additional-section {
-    min-width: 0; /* Предотвращает переполнение */
-    max-width: 450px; /* Ограничиваем максимальную ширину */
+    min-width: 0; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРїРѕР»РЅРµРЅРёРµ */
+    max-width: 450px; /* РћРіСЂР°РЅРёС‡РёРІР°РµРј РјР°РєСЃРёРјР°Р»СЊРЅСѓСЋ С€РёСЂРёРЅСѓ */
     animation-delay: 0.2s;
 }
-/* Группы полей формы */
+/* Р“СЂСѓРїРїС‹ РїРѕР»РµР№ С„РѕСЂРјС‹ */
 .create-tournament .form-group {
     display: flex;
     flex-direction: column;
@@ -191,13 +191,13 @@
     -webkit-appearance: none;
     margin: 0;
 }
-/* Textarea стили */
+/* Textarea СЃС‚РёР»Рё */
 .create-tournament textarea {
     resize: vertical;
     font-family: inherit;
     line-height: 1.5;
 }
-/* DatePicker стили */
+/* DatePicker СЃС‚РёР»Рё */
 .create-tournament .react-datepicker-wrapper {
     width: 100%;
 }
@@ -222,7 +222,7 @@
     border-color: var(--ct-border-hover);
     background-color: var(--ct-bg-primary);
 }
-/* Кнопки формы */
+/* РљРЅРѕРїРєРё С„РѕСЂРјС‹ */
 .create-tournament .form-buttons {
     display: flex;
     gap: var(--ct-spacing-md);
@@ -257,12 +257,12 @@
     background-color: var(--ct-bg-primary);
     color: var(--ct-text-primary);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px #FFFFFF1A; /* rgba(255, 255, 255, 0.1) в HEX */
+    box-shadow: 0 4px 12px #FFFFFF1A; /* rgba(255, 255, 255, 0.1) РІ HEX */
 }
 .create-tournament button:active {
     transform: translateY(0);
 }
-/* Кнопка отмены */
+/* РљРЅРѕРїРєР° РѕС‚РјРµРЅС‹ */
 .create-tournament button[type="button"] {
     background-color: var(--ct-bg-tertiary);
     color: var(--ct-text-secondary);
@@ -273,7 +273,7 @@
     color: var(--ct-text-primary);
     border-color: var(--ct-border-hover);
 }
-/* Анимации и эффекты */
+/* РђРЅРёРјР°С†РёРё Рё СЌС„С„РµРєС‚С‹ */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -287,14 +287,14 @@
 .create-tournament .form-section:nth-child(3) {
     animation-delay: 0.3s;
 }
-/* Стили для валидации */
+/* РЎС‚РёР»Рё РґР»СЏ РІР°Р»РёРґР°С†РёРё */
 .create-tournament input:invalid {
     border-color: var(--ct-accent-error);
 }
 .create-tournament input:valid {
     border-color: var(--ct-accent-success);
 }
-/* Индикатор загрузки */
+/* РРЅРґРёРєР°С‚РѕСЂ Р·Р°РіСЂСѓР·РєРё */
 .create-tournament .loading {
     position: relative;
     pointer-events: none;
@@ -317,8 +317,8 @@
         transform: rotate(360deg);
     }
 }
-/* Адаптивность */
-/* Hover эффекты для улучшения UX */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
+/* Hover СЌС„С„РµРєС‚С‹ РґР»СЏ СѓР»СѓС‡С€РµРЅРёСЏ UX */
 .create-tournament .form-group:hover label {
     color: var(--ct-text-primary);
     transition: var(--ct-transition);
@@ -328,7 +328,7 @@
 .create-tournament textarea:hover {
     border-color: var(--ct-border-hover);
 }
-/* Стили для фокуса клавиатуры */
+/* РЎС‚РёР»Рё РґР»СЏ С„РѕРєСѓСЃР° РєР»Р°РІРёР°С‚СѓСЂС‹ */
 .create-tournament button:focus-visible {
     outline: 2px solid var(--ct-text-primary);
     outline-offset: 2px;
@@ -340,9 +340,9 @@
     outline-offset: 2px;
 }
 /* =========================
-   REACT-DATEPICKER ТЕМНАЯ ТЕМА
+   REACT-DATEPICKER РўР•РњРќРђРЇ РўР•РњРђ
    ========================= */
-/* Основной контейнер календаря */
+/* РћСЃРЅРѕРІРЅРѕР№ РєРѕРЅС‚РµР№РЅРµСЂ РєР°Р»РµРЅРґР°СЂСЏ */
 .react-datepicker {
     background-color: var(--ct-bg-secondary) !important;
     border: 1px solid var(--ct-border-color) !important;
@@ -350,20 +350,20 @@
     color: var(--ct-text-primary) !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
-/* Заголовок календаря */
+/* Р—Р°РіРѕР»РѕРІРѕРє РєР°Р»РµРЅРґР°СЂСЏ */
 .react-datepicker__header {
     background-color: var(--ct-bg-tertiary) !important;
     border-bottom: 1px solid var(--ct-border-color) !important;
     border-radius: 0 !important;
 }
-/* Навигация месяца */
+/* РќР°РІРёРіР°С†РёСЏ РјРµСЃСЏС†Р° */
 .react-datepicker__current-month {
     color: var(--ct-text-primary) !important;
     font-weight: 300 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
 }
-/* Дни недели */
+/* Р”РЅРё РЅРµРґРµР»Рё */
 .react-datepicker__day-name {
     color: var(--ct-text-secondary) !important;
     font-weight: 300 !important;
@@ -371,7 +371,7 @@
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
 }
-/* Дни */
+/* Р”РЅРё */
 .react-datepicker__day {
     color: var(--ct-text-primary) !important;
     background-color: #00000000 !important; /* transparent in HEX */
@@ -396,7 +396,7 @@
 .react-datepicker__day--outside-month {
     color: var(--ct-text-disabled) !important;
 }
-/* Кнопки навигации */
+/* РљРЅРѕРїРєРё РЅР°РІРёРіР°С†РёРё */
 .react-datepicker__navigation {
     border: none !important;
     background: #00000000 !important; /* transparent in HEX */
@@ -411,7 +411,7 @@
 .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
     border-color: var(--ct-text-secondary) !important;
 }
-/* Время */
+/* Р’СЂРµРјСЏ */
 .react-datepicker__time-container {
     border-left: 1px solid var(--ct-border-color) !important;
     background-color: var(--ct-bg-secondary) !important;
@@ -431,7 +431,7 @@
     background-color: var(--ct-text-primary) !important;
     color: var(--ct-bg-primary) !important;
 }
-/* Заголовок времени */
+/* Р—Р°РіРѕР»РѕРІРѕРє РІСЂРµРјРµРЅРё */
 .react-datepicker__header--time {
     background-color: var(--ct-bg-tertiary) !important;
     border-bottom: 1px solid var(--ct-border-color) !important;
@@ -442,7 +442,7 @@
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
 }
-/* Треугольник указателя */
+/* РўСЂРµСѓРіРѕР»СЊРЅРёРє СѓРєР°Р·Р°С‚РµР»СЏ */
 .react-datepicker__triangle {
     border-bottom-color: var(--ct-bg-secondary) !important;
 }

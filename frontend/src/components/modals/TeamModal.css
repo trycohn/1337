@@ -1,4 +1,4 @@
-.team-modal {
+﻿.team-modal {
     background: #000000;
     border-radius: 16px;
     width: 95%;
@@ -19,7 +19,7 @@
     margin-top: 20px;
 }
 
-/* Левая секция - информация о команде */
+/* Р›РµРІР°СЏ СЃРµРєС†РёСЏ - РёРЅС„РѕСЂРјР°С†РёСЏ Рѕ РєРѕРјР°РЅРґРµ */
 .team-info-section {
     display: flex;
     flex-direction: column;
@@ -97,7 +97,7 @@
 }
 
 .change-avatar-btn:hover {
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: scale(1.1); */ */ */
+    /* REMOVED ANIMATION: transform: scale(1.1); */
 }
 
 .team-info-large {
@@ -144,7 +144,7 @@
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #e9ecef;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s; */ */ */ */ */ */
+    /* REMOVED ANIMATION: transition: all 0.2s; */
     color: #ffffff;
 }
 
@@ -217,7 +217,7 @@
     transform: scale(1.1);
 }
 
-/* Кнопки управления */
+/* РљРЅРѕРїРєРё СѓРїСЂР°РІР»РµРЅРёСЏ */
 .team-actions {
     display: flex;
     gap: 12px;
@@ -265,7 +265,7 @@
     cursor: not-allowed;
 }
 
-/* Правая секция - управление */
+/* РџСЂР°РІР°СЏ СЃРµРєС†РёСЏ - СѓРїСЂР°РІР»РµРЅРёРµ */
 .team-management-section {
     background: #000000;
     border-radius: 12px;
@@ -322,7 +322,7 @@
     border: 2px solid #e9ecef;
     border-radius: 8px;
     font-size: 14px;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: border-color 0.2s; */ */
+    /* REMOVED ANIMATION: transition: border-color 0.2s; */
     box-sizing: border-box;
 }
 
@@ -352,7 +352,7 @@
     align-items: center;
     padding: 12px;
     border-bottom: 1px solid #f8f9fa;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: background 0.2s; */ */
+    /* REMOVED ANIMATION: transition: background 0.2s; */
 }
 
 .search-result-item:last-child {
@@ -451,7 +451,7 @@
     border-color: #667eea;
 }
 
-/* Передача капитанства */
+/* РџРµСЂРµРґР°С‡Р° РєР°РїРёС‚Р°РЅСЃС‚РІР° */
 .transfer-captain-section {
     display: flex;
     flex-direction: column;
@@ -539,7 +539,7 @@
     cursor: not-allowed;
 }
 
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
     .team-modal {
         width: 98%;

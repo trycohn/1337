@@ -1,4 +1,4 @@
-.add-participant-modal {
+﻿.add-participant-modal {
     width: 90%;
     max-width: 500px;
     background-color: #1a1a1a;
@@ -18,7 +18,7 @@
     color: #ffffff;
     font-weight: 300;
     font-size: 1.2em;
-    text-/* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: uppercase; */ */ */
+    /* REMOVED ANIMATION: text-transform: uppercase; */
     letter-spacing: 0.5px;
 }
 .add-participant-modal .close-btn {
@@ -65,7 +65,7 @@
     background-color: #2a2a2a;
     color: #ffffff;
     font-size: 1em;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s ease; */ */
+    /* REMOVED ANIMATION: transition: all 0.2s ease; */
 }
 .add-participant-form .form-group input:focus {
     outline: none;

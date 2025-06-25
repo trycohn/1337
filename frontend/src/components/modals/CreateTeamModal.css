@@ -1,4 +1,4 @@
-.modal-overlay {
+﻿.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -58,7 +58,7 @@
     cursor: pointer;
     padding: 8px;
     border-radius: 8px;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s; */ */ */
+    /* REMOVED ANIMATION: transition: all 0.2s; */
     width: 40px;
     height: 40px;
     display: flex;
@@ -118,7 +118,7 @@
     border: 2px solid #e9ecef;
     border-radius: 8px;
     font-size: 16px;
-    transition: all 0.2s;
+    /* REMOVED ANIMATION: transition: all 0.2s; */
     font-family: inherit;
     box-sizing: border-box;
 }
@@ -200,7 +200,7 @@
     box-shadow: none;
 }
 
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 576px) {
     .create-team-modal {
         width: 95%;
@@ -223,7 +223,7 @@
     
     .form-group input,
     .form-group textarea {
-        font-size: 16px; /* Предотвращает зум на iOS */
+        font-size: 16px; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ Р·СѓРј РЅР° iOS */
     }
     
     .form-actions {
@@ -236,3 +236,4 @@
         width: 100%;
     }
 } 
+

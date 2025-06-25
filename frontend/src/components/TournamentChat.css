@@ -1,4 +1,4 @@
-.tournament-chat-panel {
+﻿.tournament-chat-panel {
     flex: 1;
     max-width: 300px;
     min-width: 250px;
@@ -195,7 +195,7 @@
     background-color: #6c757d;
     cursor: not-allowed;
 }
-/* Стили для модального окна участников */
+/* РЎС‚РёР»Рё РґР»СЏ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° СѓС‡Р°СЃС‚РЅРёРєРѕРІ */
 .participants-modal-overlay {
     position: fixed;
     top: 0;
@@ -320,7 +320,7 @@
     background-color: #4caf50;
     color: #ffffff;
 }
-/* Индикатор загрузки */
+/* РРЅРґРёРєР°С‚РѕСЂ Р·Р°РіСЂСѓР·РєРё */
 .loading-indicator {
     font-size: 12px;
     color: #888888;
@@ -331,13 +331,13 @@
     50% { opacity: 0.5; }
     100% { opacity: 1; }
 }
-/* Адаптивность модального окна */
-/* Стили для участников модального окна - особое внимание к создателю */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° */
+/* РЎС‚РёР»Рё РґР»СЏ СѓС‡Р°СЃС‚РЅРёРєРѕРІ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° - РѕСЃРѕР±РѕРµ РІРЅРёРјР°РЅРёРµ Рє СЃРѕР·РґР°С‚РµР»СЋ */
 .participants-modal .participant-item.creator {
     border: 2px solid #ff6b6b;
     background-color: #2a1a1a;
 }
-/* Анимация появления модального окна */
+/* РђРЅРёРјР°С†РёСЏ РїРѕСЏРІР»РµРЅРёСЏ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° */
 .participants-modal-overlay {
     animation: fadeInOverlay 0.2s ease-out;
 }
@@ -358,14 +358,14 @@
         transform: translateY(0);
     }
 }
-/* Улучшенные стили для собственных сообщений */
+/* РЈР»СѓС‡С€РµРЅРЅС‹Рµ СЃС‚РёР»Рё РґР»СЏ СЃРѕР±СЃС‚РІРµРЅРЅС‹С… СЃРѕРѕР±С‰РµРЅРёР№ */
 .tournament-chat-panel .chat-message.own-message .message-avatar {
     display: none;
 }
 .tournament-chat-panel .chat-message.own-message .message-content {
     align-items: flex-end;
 }
-/* Стили для hover эффектов */
+/* РЎС‚РёР»Рё РґР»СЏ hover СЌС„С„РµРєС‚РѕРІ */
 .tournament-chat-panel .chat-header:hover {
     background-color: #f0f0f0;
     transition: background-color 0.2s ease;
@@ -373,7 +373,7 @@
 .participants-modal .participant-item.creator:hover {
     background-color: #3a1a1a;
 }
-/* Стили для кликабельного заголовка чата */
+/* РЎС‚РёР»Рё РґР»СЏ РєР»РёРєР°Р±РµР»СЊРЅРѕРіРѕ Р·Р°РіРѕР»РѕРІРєР° С‡Р°С‚Р° */
 .tournament-chat-panel .chat-header {
     cursor: pointer;
     transition: background-color 0.2s ease;

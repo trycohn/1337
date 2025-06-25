@@ -1,7 +1,7 @@
-/* =========================
-   МОДУЛЬ ДОСТИЖЕНИЙ - СТИЛИ
+﻿/* =========================
+   РњРћР”РЈР›Р¬ Р”РћРЎРўРР–Р•РќРР™ - РЎРўРР›Р
    ========================= */
-/* Основная панель достижений */
+/* РћСЃРЅРѕРІРЅР°СЏ РїР°РЅРµР»СЊ РґРѕСЃС‚РёР¶РµРЅРёР№ */
 .achievements-panel {
     width: 100%;
     min-height: 600px;
@@ -10,7 +10,7 @@
     border-radius: 0;
     overflow: hidden;
 }
-/* Заголовок панели */
+/* Р—Р°РіРѕР»РѕРІРѕРє РїР°РЅРµР»Рё */
 .achievements-header {
     display: flex;
     justify-content: space-between;
@@ -25,7 +25,7 @@
     color: var(--text-primary);
     margin: 0;
 }
-/* Элементы управления */
+/* Р­Р»РµРјРµРЅС‚С‹ СѓРїСЂР°РІР»РµРЅРёСЏ */
 .achievements-controls {
     display: flex;
     gap: var(--spacing-md);
@@ -58,7 +58,7 @@
 .achievements-sort:hover {
     border-color: var(--border-hover);
 }
-/* Статистика игрока */
+/* РЎС‚Р°С‚РёСЃС‚РёРєР° РёРіСЂРѕРєР° */
 .achievements-player-stats {
     display: grid;
     grid-template-columns: 1fr 2fr;
@@ -126,7 +126,7 @@
     background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
     transition: width 0.5s ease;
 }
-/* Фильтры категорий */
+/* Р¤РёР»СЊС‚СЂС‹ РєР°С‚РµРіРѕСЂРёР№ */
 .achievements-filters {
     display: flex;
     gap: var(--spacing-sm);
@@ -176,7 +176,7 @@
     background: rgba(255, 255, 255, 0.2);
     color: var(--bg-primary);
 }
-/* Переключатели фильтров */
+/* РџРµСЂРµРєР»СЋС‡Р°С‚РµР»Рё С„РёР»СЊС‚СЂРѕРІ */
 .achievements-filter-toggles {
     display: flex;
     gap: var(--spacing-md);
@@ -213,7 +213,7 @@
     border-color: var(--accent-primary);
 }
 .filter-checkbox.checked::after {
-    content: '✓';
+    content: 'вњ“';
     position: absolute;
     top: 50%;
     left: 50%;
@@ -222,7 +222,7 @@
     font-size: 10px;
     font-weight: bold;
 }
-/* Сетка достижений */
+/* РЎРµС‚РєР° РґРѕСЃС‚РёР¶РµРЅРёР№ */
 .achievements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -230,7 +230,7 @@
     padding: var(--spacing-lg);
     background: var(--bg-primary);
 }
-/* Карточка достижения */
+/* РљР°СЂС‚РѕС‡РєР° РґРѕСЃС‚РёР¶РµРЅРёСЏ */
 .achievement-card {
     display: flex;
     flex-direction: column;
@@ -256,7 +256,7 @@
 .achievement-card.locked .achievement-icon {
     filter: grayscale(100%);
 }
-/* Заголовок карточки */
+/* Р—Р°РіРѕР»РѕРІРѕРє РєР°СЂС‚РѕС‡РєРё */
 .achievement-card-header {
     display: flex;
     align-items: center;
@@ -299,7 +299,7 @@
     align-items: center;
     gap: 4px;
 }
-/* Тело карточки */
+/* РўРµР»Рѕ РєР°СЂС‚РѕС‡РєРё */
 .achievement-card-body {
     padding: var(--spacing-md);
     flex: 1;
@@ -327,7 +327,7 @@
     color: var(--text-muted);
     font-style: italic;
 }
-/* Прогресс достижения */
+/* РџСЂРѕРіСЂРµСЃСЃ РґРѕСЃС‚РёР¶РµРЅРёСЏ */
 .achievement-progress {
     margin-top: var(--spacing-sm);
 }
@@ -350,7 +350,7 @@
     color: var(--text-muted);
     text-align: right;
 }
-/* Недавние достижения */
+/* РќРµРґР°РІРЅРёРµ РґРѕСЃС‚РёР¶РµРЅРёСЏ */
 .recent-achievements {
     padding: var(--spacing-lg);
     border-top: 1px solid var(--border-color);
@@ -402,7 +402,7 @@
     font-size: 0.8rem;
     color: var(--text-muted);
 }
-/* Пустое состояние */
+/* РџСѓСЃС‚РѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ */
 .achievements-empty {
     display: flex;
     flex-direction: column;
@@ -428,7 +428,7 @@
     color: var(--text-muted);
     margin: 0;
 }
-/* Состояние загрузки */
+/* РЎРѕСЃС‚РѕСЏРЅРёРµ Р·Р°РіСЂСѓР·РєРё */
 .achievements-loading {
     display: flex;
     align-items: center;
@@ -448,7 +448,7 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-/* Уведомления о достижениях */
+/* РЈРІРµРґРѕРјР»РµРЅРёСЏ Рѕ РґРѕСЃС‚РёР¶РµРЅРёСЏС… */
 .achievement-notifications-container {
     position: fixed;
     top: 20px;
@@ -574,8 +574,8 @@
     color: var(--text-muted);
     text-align: right;
 }
-/* Адаптивность */
-/* Пустые состояния достижений */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
+/* РџСѓСЃС‚С‹Рµ СЃРѕСЃС‚РѕСЏРЅРёСЏ РґРѕСЃС‚РёР¶РµРЅРёР№ */
 .empty-achievements {
     display: flex;
     flex-direction: column;
@@ -609,7 +609,7 @@
     margin-bottom: 20px;
     line-height: 1.6;
 }
-/* Специальные стили для нового пользователя */
+/* РЎРїРµС†РёР°Р»СЊРЅС‹Рµ СЃС‚РёР»Рё РґР»СЏ РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ */
 .empty-achievements.new-user {
     background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     border-color: #90caf9;
@@ -652,7 +652,7 @@
     transform: translateX(5px);
     transition: all 0.3s ease;
 }
-/* Стили для отфильтрованного состояния */
+/* РЎС‚РёР»Рё РґР»СЏ РѕС‚С„РёР»СЊС‚СЂРѕРІР°РЅРЅРѕРіРѕ СЃРѕСЃС‚РѕСЏРЅРёСЏ */
 .empty-achievements.filtered {
     background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%);
     border-color: #ffb74d;
@@ -680,7 +680,7 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
 }
-/* Стили для состояния "нет достижений" */
+/* РЎС‚РёР»Рё РґР»СЏ СЃРѕСЃС‚РѕСЏРЅРёСЏ "РЅРµС‚ РґРѕСЃС‚РёР¶РµРЅРёР№" */
 .empty-achievements.no-achievements {
     background: linear-gradient(135deg, #f3e5f5 0%, #ce93d8 100%);
     border-color: #ba68c8;
@@ -707,7 +707,7 @@
 .achievement-suggestions strong {
     color: #4a148c;
 }
-/* Анимация плавания */
+/* РђРЅРёРјР°С†РёСЏ РїР»Р°РІР°РЅРёСЏ */
 @keyframes float {
     0%, 100% {
         transform: translateY(0px);
@@ -716,7 +716,7 @@
         transform: translateY(-10px);
     }
 }
-/* Анимация появления */
+/* РђРЅРёРјР°С†РёСЏ РїРѕСЏРІР»РµРЅРёСЏ */
 .empty-achievements {
     animation: fadeInUp 0.6s ease-out;
 }
@@ -730,5 +730,5 @@
         transform: translateY(0);
     }
 }
-/* Адаптивность для мобильных устройств */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
  

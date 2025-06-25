@@ -1,4 +1,4 @@
-/* Административная панель - минималистичный темный дизайн */
+﻿/* РђРґРјРёРЅРёСЃС‚СЂР°С‚РёРІРЅР°СЏ РїР°РЅРµР»СЊ - РјРёРЅРёРјР°Р»РёСЃС‚РёС‡РЅС‹Р№ С‚РµРјРЅС‹Р№ РґРёР·Р°Р№РЅ */
 .admin-panel {
     max-width: 1400px;
     margin: 0 auto;
@@ -27,7 +27,7 @@
     margin: 0;
     font-weight: 400;
 }
-/* Навигация */
+/* РќР°РІРёРіР°С†РёСЏ */
 .admin-navigation {
     display: flex;
     gap: 0;
@@ -53,7 +53,7 @@
     color: #ffffff;
     border-bottom-color: #ffffff;
 }
-/* Состояния загрузки и ошибки */
+/* РЎРѕСЃС‚РѕСЏРЅРёСЏ Р·Р°РіСЂСѓР·РєРё Рё РѕС€РёР±РєРё */
 .admin-loading,
 .admin-error {
     text-align: center;
@@ -71,7 +71,7 @@
     background-color: #1a0e0e;
     border-color: #443333;
 }
-/* Вкладка статистики */
+/* Р’РєР»Р°РґРєР° СЃС‚Р°С‚РёСЃС‚РёРєРё */
 .stats-tab h2 {
     color: #ffffff;
     margin-bottom: 32px;
@@ -110,7 +110,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-/* Вкладка заявок */
+/* Р’РєР»Р°РґРєР° Р·Р°СЏРІРѕРє */
 .requests-tab h2 {
     color: #ffffff;
     margin-bottom: 32px;
@@ -144,7 +144,7 @@
     outline: none;
     border-color: #ffffff;
 }
-/* Список заявок */
+/* РЎРїРёСЃРѕРє Р·Р°СЏРІРѕРє */
 .requests-list {
     display: flex;
     flex-direction: column;
@@ -248,7 +248,7 @@
     border: 1px solid #333333;
     border-radius: 8px;
 }
-/* Пагинация */
+/* РџР°РіРёРЅР°С†РёСЏ */
 .pagination {
     display: flex;
     justify-content: center;
@@ -279,7 +279,7 @@
     color: #ffffff;
     font-weight: 500;
 }
-/* Модальные окна */
+/* РњРѕРґР°Р»СЊРЅС‹Рµ РѕРєРЅР° */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -348,7 +348,7 @@
     background-color: #222222;
     color: #ffffff;
 }
-/* Детали заявки */
+/* Р”РµС‚Р°Р»Рё Р·Р°СЏРІРєРё */
 .request-details {
     margin-bottom: 32px;
 }
@@ -420,7 +420,7 @@
 .admin-comment {
     margin-top: 16px;
 }
-/* Действия в модальном окне */
+/* Р”РµР№СЃС‚РІРёСЏ РІ РјРѕРґР°Р»СЊРЅРѕРј РѕРєРЅРµ */
 .modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -479,7 +479,7 @@
     border-color: #333333;
     cursor: not-allowed;
 }
-/* Формы в модальных окнах */
+/* Р¤РѕСЂРјС‹ РІ РјРѕРґР°Р»СЊРЅС‹С… РѕРєРЅР°С… */
 .form-group {
     margin-bottom: 24px;
 }
@@ -520,7 +520,7 @@
 .form-group textarea::placeholder {
     color: #666666;
 }
-/* Анимации */
+/* РђРЅРёРјР°С†РёРё */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -535,5 +535,5 @@
         transform: translateY(0);
     }
 }
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
  

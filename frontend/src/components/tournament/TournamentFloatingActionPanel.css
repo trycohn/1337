@@ -1,12 +1,12 @@
-/**
+﻿/**
  * TournamentFloatingActionPanel.css v1.0.0
- * Стили для плавающей панели управления турниром
+ * РЎС‚РёР»Рё РґР»СЏ РїР»Р°РІР°СЋС‰РµР№ РїР°РЅРµР»Рё СѓРїСЂР°РІР»РµРЅРёСЏ С‚СѓСЂРЅРёСЂРѕРј
  * 
- * @features Современный дизайн, анимации, градиенты, адаптивность
+ * @features РЎРѕРІСЂРµРјРµРЅРЅС‹Р№ РґРёР·Р°Р№РЅ, Р°РЅРёРјР°С†РёРё, РіСЂР°РґРёРµРЅС‚С‹, Р°РґР°РїС‚РёРІРЅРѕСЃС‚СЊ
  * @author 1337 Community Development Team
  * @created 2025-01-22
  */
-/* ===== ОСНОВНАЯ ПАНЕЛЬ ===== */
+/* ===== РћРЎРќРћР’РќРђРЇ РџРђРќР•Р›Р¬ ===== */
 .tournament-floating-panel {
     position: fixed;
     right: 20px;
@@ -19,7 +19,7 @@
 .tournament-floating-panel.animating {
     pointer-events: none;
 }
-/* ===== КНОПКА-ПЕРЕКЛЮЧАТЕЛЬ ===== */
+/* ===== РљРќРћРџРљРђ-РџР•Р Р•РљР›Р®Р§РђРўР•Р›Р¬ ===== */
 .floating-panel-toggle {
     position: relative;
     width: 64px;
@@ -45,7 +45,7 @@
 .floating-panel-toggle:active {
     transform: scale(0.95);
 }
-/* Иконка переключателя */
+/* РРєРѕРЅРєР° РїРµСЂРµРєР»СЋС‡Р°С‚РµР»СЏ */
 .toggle-icon {
     font-size: 20px;
     color: white;
@@ -55,7 +55,7 @@
 .tournament-floating-panel.expanded .toggle-icon {
     transform: rotate(180deg);
 }
-/* Индикатор статуса */
+/* РРЅРґРёРєР°С‚РѕСЂ СЃС‚Р°С‚СѓСЃР° */
 .status-indicator {
     position: absolute;
     top: -4px;
@@ -80,7 +80,7 @@
     text-overflow: ellipsis;
     max-width: 14px;
 }
-/* Счетчик действий */
+/* РЎС‡РµС‚С‡РёРє РґРµР№СЃС‚РІРёР№ */
 .actions-count {
     position: absolute;
     bottom: -4px;
@@ -98,7 +98,7 @@
     justify-content: center;
     box-shadow: 0 2px 8px rgba(238, 90, 36, 0.4);
 }
-/* ===== РАЗВЕРНУТАЯ ПАНЕЛЬ ===== */
+/* ===== Р РђР—Р’Р•Р РќРЈРўРђРЇ РџРђРќР•Р›Р¬ ===== */
 .floating-panel-content {
     position: absolute;
     bottom: 80px;
@@ -115,7 +115,7 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
-/* Заголовок панели */
+/* Р—Р°РіРѕР»РѕРІРѕРє РїР°РЅРµР»Рё */
 .panel-header {
     padding: 20px 20px 15px;
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -137,7 +137,7 @@
     text-overflow: ellipsis;
     max-width: 280px;
 }
-/* ===== ДЕЙСТВИЯ ===== */
+/* ===== Р”Р•Р™РЎРўР’РРЇ ===== */
 .panel-actions {
     padding: 10px;
     max-height: 300px;
@@ -165,7 +165,7 @@
 .floating-action-item:active {
     transform: translateX(2px) scale(0.98);
 }
-/* Цвета действий */
+/* Р¦РІРµС‚Р° РґРµР№СЃС‚РІРёР№ */
 .floating-action-item.primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 20%, #667eea 100%);
     color: white;
@@ -198,7 +198,7 @@
     background: linear-gradient(135deg, #d32f2f 0%, #c62828 20%, #d32f2f 100%);
     box-shadow: 0 6px 20px rgba(244, 67, 54, 0.3);
 }
-/* Иконка действия */
+/* РРєРѕРЅРєР° РґРµР№СЃС‚РІРёСЏ */
 .action-icon {
     font-size: 20px;
     margin-right: 12px;
@@ -206,7 +206,7 @@
     text-align: center;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
-/* Контент действия */
+/* РљРѕРЅС‚РµРЅС‚ РґРµР№СЃС‚РІРёСЏ */
 .action-content {
     flex: 1;
     min-width: 0;
@@ -226,7 +226,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-/* Стрелка действия */
+/* РЎС‚СЂРµР»РєР° РґРµР№СЃС‚РІРёСЏ */
 .action-arrow {
     font-size: 16px;
     opacity: 0.7;
@@ -237,7 +237,7 @@
     transform: translateX(2px);
     opacity: 1;
 }
-/* ===== ПОДВАЛ ПАНЕЛИ ===== */
+/* ===== РџРћР”Р’РђР› РџРђРќР•Р›Р ===== */
 .panel-footer {
     padding: 15px 20px;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -253,7 +253,7 @@
     color: #495057;
     font-weight: 600;
 }
-/* ===== АНИМАЦИИ ===== */
+/* ===== РђРќРРњРђР¦РР ===== */
 @keyframes slideInUp {
     from {
         opacity: 0;
@@ -274,7 +274,7 @@
         opacity: 0.8;
     }
 }
-/* Анимация появления действий */
+/* РђРЅРёРјР°С†РёСЏ РїРѕСЏРІР»РµРЅРёСЏ РґРµР№СЃС‚РІРёР№ */
 .floating-action-item {
     animation: fadeInAction 0.3s ease;
     animation-fill-mode: both;
@@ -294,15 +294,15 @@
         transform: translateX(0);
     }
 }
-/* ===== СОСТОЯНИЯ ПАНЕЛИ ===== */
+/* ===== РЎРћРЎРўРћРЇРќРРЇ РџРђРќР•Р›Р ===== */
 .tournament-floating-panel.collapsed .floating-panel-content {
     display: none;
 }
 .tournament-floating-panel.expanded .floating-panel-toggle {
     background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
-/* ===== АДАПТИВНОСТЬ ===== */
-/* ===== ДОПОЛНИТЕЛЬНЫЕ ЭФФЕКТЫ ===== */
+/* ===== РђР”РђРџРўРР’РќРћРЎРўР¬ ===== */
+/* ===== Р”РћРџРћР›РќРРўР•Р›Р¬РќР«Р• Р­Р¤Р¤Р•РљРўР« ===== */
 .floating-panel-content::before {
     content: '';
     position: absolute;
@@ -315,11 +315,11 @@
     border-top: 10px solid white;
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.1));
 }
-/* Эффект стеклянности */
+/* Р­С„С„РµРєС‚ СЃС‚РµРєР»СЏРЅРЅРѕСЃС‚Рё */
 .floating-panel-content {
     background: rgba(255, 255, 255, 0.95);
 }
-/* Скроллбар для действий */
+/* РЎРєСЂРѕР»Р»Р±Р°СЂ РґР»СЏ РґРµР№СЃС‚РІРёР№ */
 .panel-actions::-webkit-scrollbar {
     width: 4px;
 }
@@ -334,5 +334,5 @@
 .panel-actions::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
 }
-/* ===== ТЕМНАЯ ТЕМА (опционально) ===== */
+/* ===== РўР•РњРќРђРЇ РўР•РњРђ (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) ===== */
  

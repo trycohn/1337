@@ -1,4 +1,4 @@
-.dota-stats {
+﻿.dota-stats {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
@@ -69,7 +69,7 @@
     font-size: 1.2rem;
     color: #ccc;
 }
-/* Секция поиска */
+/* РЎРµРєС†РёСЏ РїРѕРёСЃРєР° */
 .search-section, .player-section, .match-section {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
@@ -120,7 +120,7 @@
     cursor: not-allowed;
     transform: none;
 }
-/* Результаты поиска */
+/* Р РµР·СѓР»СЊС‚Р°С‚С‹ РїРѕРёСЃРєР° */
 .search-results h4 {
     margin-bottom: 20px;
     color: #ff6600;
@@ -163,7 +163,7 @@
     color: #ccc;
     font-size: 0.9rem;
 }
-/* Статистика игрока */
+/* РЎС‚Р°С‚РёСЃС‚РёРєР° РёРіСЂРѕРєР° */
 .player-profile {
     display: flex;
     align-items: center;
@@ -209,7 +209,7 @@
     font-weight: 600;
     font-size: 1.1rem;
 }
-/* Последние матчи */
+/* РџРѕСЃР»РµРґРЅРёРµ РјР°С‚С‡Рё */
 .recent-matches, .top-heroes {
     margin-bottom: 30px;
 }
@@ -250,7 +250,7 @@
     border-radius: 8px;
     border-left: 4px solid #cc0000;
 }
-/* Информация о матче */
+/* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РјР°С‚С‡Рµ */
 .match-details {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
@@ -301,7 +301,7 @@
 .player-row.dire {
     background: rgba(217, 83, 79, 0.1);
 }
-/* Статистика героев */
+/* РЎС‚Р°С‚РёСЃС‚РёРєР° РіРµСЂРѕРµРІ */
 .heroes-section, .pro-matches-section, .distributions-section {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
@@ -331,7 +331,7 @@
     gap: 20px;
     font-size: 0.9rem;
 }
-/* Профессиональные матчи */
+/* РџСЂРѕС„РµСЃСЃРёРѕРЅР°Р»СЊРЅС‹Рµ РјР°С‚С‡Рё */
 .pro-matches-list {
     display: grid;
     gap: 10px;
@@ -359,7 +359,7 @@
     color: #4caf50;
     font-weight: 600;
 }
-/* Распределение рангов */
+/* Р Р°СЃРїСЂРµРґРµР»РµРЅРёРµ СЂР°РЅРіРѕРІ */
 .ranks-chart {
     display: grid;
     gap: 10px;
@@ -385,7 +385,7 @@
     color: #ccc;
     font-size: 0.9rem;
 }
-/* Иконки рангов */
+/* РРєРѕРЅРєРё СЂР°РЅРіРѕРІ */
 .rank-info {
     display: flex;
     align-items: center;
@@ -400,5 +400,5 @@
 .rank-icon:hover {
     transform: scale(1.1);
 }
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
  

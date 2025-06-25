@@ -1,4 +1,4 @@
-/* AttachmentModal.css */
+﻿/* AttachmentModal.css */
 .attachment-modal {
   position: fixed;
   top: 0;
@@ -10,7 +10,7 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  opacity: 0;
+  opacity: 1;
   /* REMOVED ANIMATION: animation: fadeIn 0.3s ease-in-out forwards; */
 }
 .attachment-modal.closing {
@@ -33,23 +33,23 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   text-align: center;
   color: #e0e0e5;
-  /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(20px); */ */ */
-  opacity: 0;
+  /* REMOVED ANIMATION: transform: translateY(20px); */
+  opacity: 1;
   /* REMOVED ANIMATION: animation: slideIn 0.3s ease-out 0.1s forwards; */
 }
 .closing .attachment-modal-content {
   /* REMOVED ANIMATION: animation: slideOut 0.3s ease-in forwards; */
 }
-@keyframes slideIn {
+/* REMOVED ANIMATION: @keyframes slideIn {
   from { 
     opacity: 0;
     transform: translateY(20px);
   }
   to { 
     opacity: 1;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(0); */ */
+    transform: translateY(0);
   }
-}
+} */
 /* REMOVED ANIMATION: @keyframes slideOut {
   from { 
     opacity: 1;
@@ -111,7 +111,7 @@
 }
 .attachment-send-btn:hover {
   background-color: #5a7de0;
-  /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-2px); */ */
+  /* REMOVED ANIMATION: transform: translateY(-2px); */
 }
 .attachment-cancel-btn {
   background-color: #bb4d4d;
@@ -119,5 +119,5 @@
 }
 .attachment-cancel-btn:hover {
   background-color: #cf5a5a;
-  transform: translateY(-2px);
+  /* REMOVED ANIMATION: transform: translateY(-2px); */
 } 

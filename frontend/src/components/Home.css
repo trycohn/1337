@@ -1,5 +1,5 @@
-/* frontend/src/Home.css */
-/* Общие стили */
+﻿/* frontend/src/Home.css */
+/* РћР±С‰РёРµ СЃС‚РёР»Рё */
 .home-container {
   width: 100%;
   min-height: 100vh;
@@ -9,14 +9,14 @@
 main {
   margin: 0 auto;
   flex: 1;
-  max-width: 80%; /* Ограничиваем ширину до 80% от видимого окна */
-  width: 80%; /* Устанавливаем ширину в 80% */
+  max-width: 80%; /* РћРіСЂР°РЅРёС‡РёРІР°РµРј С€РёСЂРёРЅСѓ РґРѕ 80% РѕС‚ РІРёРґРёРјРѕРіРѕ РѕРєРЅР° */
+  width: 80%; /* РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј С€РёСЂРёРЅСѓ РІ 80% */
 }
 main section {
   text-align: center;
   padding: 20px;
 }
-/* Стили для header */
+/* РЎС‚РёР»Рё РґР»СЏ header */
 header.header {
   width: 100%;
   padding: 10px 0;
@@ -54,7 +54,7 @@ header.header {
   display: flex;
   gap: 10px;
   transition: all 0.3s ease;
-  align-items: center; /* Добавляем вертикальное выравнивание */
+  align-items: center; /* Р”РѕР±Р°РІР»СЏРµРј РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ РІС‹СЂР°РІРЅРёРІР°РЅРёРµ */
 }
 .navigation a,
 .navigation button {
@@ -72,7 +72,7 @@ header.header {
     justify-content: center;
     height: 32px;
     box-sizing: border-box;
-    white-space: nowrap; /* Предотвращает перенос текста */
+    white-space: nowrap; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРЅРѕСЃ С‚РµРєСЃС‚Р° */
 }
 .navigation button {
   background-color: #ffffff;
@@ -82,7 +82,7 @@ header.header {
 .navigation button:hover {
     color: #ffffff;
 }
-/* Стили для авторизации и профиля */
+/* РЎС‚РёР»Рё РґР»СЏ Р°РІС‚РѕСЂРёР·Р°С†РёРё Рё РїСЂРѕС„РёР»СЏ */
 .auth-block {
   display: flex;
   align-items: center;
@@ -97,7 +97,7 @@ header.header {
   gap: 10px;
   align-items: center;
 }
-/* Стили для аватара в хедере */
+/* РЎС‚РёР»Рё РґР»СЏ Р°РІР°С‚Р°СЂР° РІ С…РµРґРµСЂРµ */
 .header-avatar-link {
   display: flex;
   align-items: center;
@@ -116,7 +116,7 @@ header.header {
 }
 .user-info span {
   margin-right: 10px;
-  white-space: nowrap; /* Предотвращает перенос имени пользователя */
+  white-space: nowrap; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРЅРѕСЃ РёРјРµРЅРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ */
 }
 .user-info button {
   padding: 2px 10px;
@@ -156,7 +156,7 @@ header.header {
   margin-left: 10px;
   font-size: 0.9em;
 }
-/* Стили для формы создания турнира */
+/* РЎС‚РёР»Рё РґР»СЏ С„РѕСЂРјС‹ СЃРѕР·РґР°РЅРёСЏ С‚СѓСЂРЅРёСЂР° */
 .create-tournament form {
   display: flex;
   flex-direction: column;
@@ -182,15 +182,15 @@ header.header {
 .create-tournament button:hover {
   background-color: #7b7b7b;
 }
-/* Стили для списка турниров - минималистичный черно-белый дизайн */
+/* РЎС‚РёР»Рё РґР»СЏ СЃРїРёСЃРєР° С‚СѓСЂРЅРёСЂРѕРІ - РјРёРЅРёРјР°Р»РёСЃС‚РёС‡РЅС‹Р№ С‡РµСЂРЅРѕ-Р±РµР»С‹Р№ РґРёР·Р°Р№РЅ */
 .tournaments-list {
   background-color: #000000;
   color: #ffffff;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  overflow: visible !important; /* Добавляем для видимости выпадающих списков */
-  position: relative; /* Для правильного позиционирования дочерних элементов */
+  overflow: visible !important; /* Р”РѕР±Р°РІР»СЏРµРј РґР»СЏ РІРёРґРёРјРѕСЃС‚Рё РІС‹РїР°РґР°СЋС‰РёС… СЃРїРёСЃРєРѕРІ */
+  position: relative; /* Р”Р»СЏ РїСЂР°РІРёР»СЊРЅРѕРіРѕ РїРѕР·РёС†РёРѕРЅРёСЂРѕРІР°РЅРёСЏ РґРѕС‡РµСЂРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
 }
 .tournaments-list h2 {
   color: #ffffff;
@@ -220,30 +220,30 @@ header.header {
   border-bottom: 1px solid #333333;
   transition: all 0.2s ease;
 }
-/* Устанавливаем ширину столбцов */
+/* РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј С€РёСЂРёРЅСѓ СЃС‚РѕР»Р±С†РѕРІ */
 .tournaments-list th:nth-child(1),
 .tournaments-list td:nth-child(1) {
-  width: 20%; /* Игра */
+  width: 20%; /* РРіСЂР° */
 }
 .tournaments-list th:nth-child(2),
 .tournaments-list td:nth-child(2) {
-  width: 25%; /* Название турнира */
+  width: 25%; /* РќР°Р·РІР°РЅРёРµ С‚СѓСЂРЅРёСЂР° */
 }
 .tournaments-list th:nth-child(3),
 .tournaments-list td:nth-child(3) {
-  width: 15%; /* Участники */
+  width: 15%; /* РЈС‡Р°СЃС‚РЅРёРєРё */
 }
 .tournaments-list th:nth-child(4),
 .tournaments-list td:nth-child(4) {
-  width: 15%; /* Формат */
+  width: 15%; /* Р¤РѕСЂРјР°С‚ */
 }
 .tournaments-list th:nth-child(5),
 .tournaments-list td:nth-child(5) {
-  width: 15%; /* Дата */
+  width: 15%; /* Р”Р°С‚Р° */
 }
 .tournaments-list th:nth-child(6),
 .tournaments-list td:nth-child(6) {
-  width: 10%; /* Статус */
+  width: 10%; /* РЎС‚Р°С‚СѓСЃ */
 }
 .tournaments-list th {
   position: relative;
@@ -299,7 +299,7 @@ header.header {
   color: #cccccc;
   border-bottom-color: #cccccc;
 }
-/* Стили для фильтров */
+/* РЎС‚РёР»Рё РґР»СЏ С„РёР»СЊС‚СЂРѕРІ */
 .tournaments-list th input,
 .tournaments-list th .react-datepicker-wrapper,
 .tournaments-list th .react-datepicker__input-container input {
@@ -379,7 +379,7 @@ header.header {
   background-color: #2a2a2a !important;
   color: #ffffff !important;
 }
-/* Кнопка сброса фильтра */
+/* РљРЅРѕРїРєР° СЃР±СЂРѕСЃР° С„РёР»СЊС‚СЂР° */
 .tournaments-list th .dropdown-item.clear-filter {
   background-color: #333333;
   color: #ffffff;
@@ -389,7 +389,7 @@ header.header {
 .tournaments-list th .dropdown-item.clear-filter:hover {
   background-color: #444444;
 }
-/* Индикатор активного фильтра */
+/* РРЅРґРёРєР°С‚РѕСЂ Р°РєС‚РёРІРЅРѕРіРѕ С„РёР»СЊС‚СЂР° */
 .tournaments-list th.filtered {
   background-color: #222222;
   border-bottom-color: #555555;
@@ -399,7 +399,7 @@ header.header {
   color: #ffffff;
   font-weight: bold;
 }
-/* Кнопка сброса всех фильтров */
+/* РљРЅРѕРїРєР° СЃР±СЂРѕСЃР° РІСЃРµС… С„РёР»СЊС‚СЂРѕРІ */
 .tournaments-list .clear-all-filters-btn {
   padding: 8px 16px;
   background-color: #333333;
@@ -417,7 +417,7 @@ header.header {
   border-color: #666666;
   transform: translateY(-1px);
 }
-/* Стили для статусов турниров */
+/* РЎС‚РёР»Рё РґР»СЏ СЃС‚Р°С‚СѓСЃРѕРІ С‚СѓСЂРЅРёСЂРѕРІ */
 .tournament-status-badge {
   display: inline-block;
   padding: 4px 8px;
@@ -442,7 +442,7 @@ header.header {
   color: #ff6666;
   border: 1px solid #7d2d2d;
 }
-/* Кнопки переключения вида */
+/* РљРЅРѕРїРєРё РїРµСЂРµРєР»СЋС‡РµРЅРёСЏ РІРёРґР° */
 .tournaments-view-controls {
   display: flex;
   justify-content: center;
@@ -469,7 +469,7 @@ header.header {
   border-color: #555555;
   color: #ffffff;
 }
-/* Сообщение об отсутствии турниров */
+/* РЎРѕРѕР±С‰РµРЅРёРµ РѕР± РѕС‚СЃСѓС‚СЃС‚РІРёРё С‚СѓСЂРЅРёСЂРѕРІ */
 .tournaments-list p {
   color: #888888;
   text-align: center;
@@ -485,7 +485,7 @@ header.header {
   border: 1px solid #4d2d2d;
   margin-bottom: 20px;
 }
-/* Стили для управления участием */
+/* РЎС‚РёР»Рё РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ СѓС‡Р°СЃС‚РёРµРј */
 .participation-controls {
   margin-top: 20px;
 }
@@ -576,7 +576,7 @@ header.header {
 .admin-request-actions button:last-child:hover {
   background-color: #c82333;
 }
-/* Стили для списка победителей */
+/* РЎС‚РёР»Рё РґР»СЏ СЃРїРёСЃРєР° РїРѕР±РµРґРёС‚РµР»РµР№ */
 .winners-list {
   margin-top: 20px;
 }
@@ -590,7 +590,7 @@ header.header {
 .winners-list li {
   margin: 5px 0;
 }
-/* Стили для ссылки на чаты */
+/* РЎС‚РёР»Рё РґР»СЏ СЃСЃС‹Р»РєРё РЅР° С‡Р°С‚С‹ */
 .messages-link {
   display: flex;
   align-items: center;
@@ -608,7 +608,7 @@ header.header {
 .messages-link:hover .messages-icon {
   color: #ffffff !important;
 }
-/* Стили для счетчика непрочитанных сообщений */
+/* РЎС‚РёР»Рё РґР»СЏ СЃС‡РµС‚С‡РёРєР° РЅРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹С… СЃРѕРѕР±С‰РµРЅРёР№ */
 .unread-badge {
   position: absolute;
   top: -8px;
@@ -638,7 +638,7 @@ header.header {
     box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
   }
 }
-/* Стили для страницы авторизации */
+/* РЎС‚РёР»Рё РґР»СЏ СЃС‚СЂР°РЅРёС†С‹ Р°РІС‚РѕСЂРёР·Р°С†РёРё */
 .auth-page {
   display: flex;
   justify-content: center;
@@ -675,7 +675,7 @@ header.header {
 }
 .auth-form-container {
   padding: 30px;
-  min-height: 420px; /* Фиксированная минимальная высота для форм */
+  min-height: 420px; /* Р¤РёРєСЃРёСЂРѕРІР°РЅРЅР°СЏ РјРёРЅРёРјР°Р»СЊРЅР°СЏ РІС‹СЃРѕС‚Р° РґР»СЏ С„РѕСЂРј */
   position: relative;
 }
 .auth-form {
@@ -687,7 +687,7 @@ header.header {
   transition: opacity 0.3s ease;
   display: flex;
   flex-direction: column;
-  width: calc(100% - 60px); /* Учитываем левый и правый отступы */
+  width: calc(100% - 60px); /* РЈС‡РёС‚С‹РІР°РµРј Р»РµРІС‹Р№ Рё РїСЂР°РІС‹Р№ РѕС‚СЃС‚СѓРїС‹ */
 }
 .auth-form.hidden {
   opacity: 0;
@@ -714,7 +714,7 @@ header.header {
   border-radius: 4px;
   font-size: 16px;
   transition: border-color 0.3s;
-  box-sizing: border-box; /* Важно! */
+  box-sizing: border-box; /* Р’Р°Р¶РЅРѕ! */
 }
 .form-group input:focus {
   outline: none;
@@ -732,7 +732,7 @@ header.header {
   cursor: pointer;
   transition: background-color 0.3s;
   margin-bottom: 5px;
-  box-sizing: border-box; /* Важно! */
+  box-sizing: border-box; /* Р’Р°Р¶РЅРѕ! */
   min-height: 40px;
 }
 .auth-button:hover {
@@ -757,7 +757,7 @@ header.header {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box; /* Важно! */
+  box-sizing: border-box; /* Р’Р°Р¶РЅРѕ! */
   min-height: 40px;
 }
 .steam-button:hover {
@@ -775,7 +775,7 @@ header.header {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box; /* Важно! */
+  box-sizing: border-box; /* Р’Р°Р¶РЅРѕ! */
   min-height: 40px;
   margin-bottom: 5px;
 }
@@ -802,7 +802,7 @@ header.header {
   background-color: rgba(40, 167, 69, 0.1);
   border-radius: 4px;
 }
-/* Стили для кнопки Войти в шапке */
+/* РЎС‚РёР»Рё РґР»СЏ РєРЅРѕРїРєРё Р’РѕР№С‚Рё РІ С€Р°РїРєРµ */
 .login-button-container {
   display: flex;
   align-items: center;
@@ -819,7 +819,7 @@ header.header {
 .login-button:hover {
   background-color: #0069d9;
 }
-/* Стили для уведомлений */
+/* РЎС‚РёР»Рё РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёР№ */
 .notification-dropdown {
     max-height: 300px;
     overflow-y: auto;
@@ -860,7 +860,7 @@ header.header {
     display: flex;
     gap: 5px;
 }
-/* Стили для участников турнира с аватарами */
+/* РЎС‚РёР»Рё РґР»СЏ СѓС‡Р°СЃС‚РЅРёРєРѕРІ С‚СѓСЂРЅРёСЂР° СЃ Р°РІР°С‚Р°СЂР°РјРё */
 .participants-list {
   margin-top: 15px;
 }
@@ -910,7 +910,7 @@ header.header {
   border-radius: 10px;
   margin-top: 4px;
 }
-/* Стили для уведомлений о запросах в друзья */
+/* РЎС‚РёР»Рё РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёР№ Рѕ Р·Р°РїСЂРѕСЃР°С… РІ РґСЂСѓР·СЊСЏ */
 .friend-request-status {
   margin-top: 10px;
   padding: 5px 10px;
@@ -963,7 +963,7 @@ header.header {
   background-color: #4682b4;
   color: white;
 }
-/* Стили для карточного представления турниров */
+/* РЎС‚РёР»Рё РґР»СЏ РєР°СЂС‚РѕС‡РЅРѕРіРѕ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёСЏ С‚СѓСЂРЅРёСЂРѕРІ */
 .tournaments-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -1053,7 +1053,7 @@ header.header {
   color: #ff6666;
   border: 1px solid #7d2d2d;
 }
-/* Мобильная фильтрация */
+/* РњРѕР±РёР»СЊРЅР°СЏ С„РёР»СЊС‚СЂР°С†РёСЏ */
 .tournaments-filter-bar {
   margin-bottom: 20px;
   display: none;
@@ -1077,7 +1077,7 @@ header.header {
 .mobile-filter-input::placeholder {
   color: #888888;
 }
-/* Улучшенные стили для выпадающих списков на планшетах */
+/* РЈР»СѓС‡С€РµРЅРЅС‹Рµ СЃС‚РёР»Рё РґР»СЏ РІС‹РїР°РґР°СЋС‰РёС… СЃРїРёСЃРєРѕРІ РЅР° РїР»Р°РЅС€РµС‚Р°С… */
 .forgot-password-link {
   text-align: right;
   margin-bottom: 15px;

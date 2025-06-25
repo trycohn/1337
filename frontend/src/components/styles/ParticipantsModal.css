@@ -1,4 +1,4 @@
-/* Модальное окно участников в Discord стиле */
+﻿/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ СѓС‡Р°СЃС‚РЅРёРєРѕРІ РІ Discord СЃС‚РёР»Рµ */
 .participants-modal-overlay {
     position: fixed;
     top: 0;
@@ -81,7 +81,7 @@
     color: #b9bbbe;
     font-size: 12px;
     font-weight: 600;
-    text-/* REMOVED ANIMATION: transform: uppercase; */
+    /* REMOVED ANIMATION: text-transform: uppercase; */
     letter-spacing: 0.02em;
     margin: 0;
     background: transparent;

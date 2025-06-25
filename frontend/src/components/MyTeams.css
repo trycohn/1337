@@ -1,4 +1,4 @@
-.my-teams {
+﻿.my-teams {
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
@@ -34,7 +34,7 @@
     margin-left: 10px;
 }
 
-/* Приглашения */
+/* РџСЂРёРіР»Р°С€РµРЅРёСЏ */
 .team-invitations {
     margin-bottom: 30px;
     padding: 20px;
@@ -124,7 +124,7 @@
     background: #c82333;
 }
 
-/* Заголовок */
+/* Р—Р°РіРѕР»РѕРІРѕРє */
 .teams-header {
     display: flex;
     justify-content: space-between;
@@ -154,7 +154,7 @@
     transform: translateY(-2px);
 }
 
-/* Сетка команд */
+/* РЎРµС‚РєР° РєРѕРјР°РЅРґ */
 .teams-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -176,7 +176,7 @@
     color: #666;
 }
 
-/* Карточка команды */
+/* РљР°СЂС‚РѕС‡РєР° РєРѕРјР°РЅРґС‹ */
 .team-card {
     background: rgb(0, 0, 0);
     border-radius: 12px;
@@ -260,7 +260,7 @@
     border: 1px solid #bbdefb;
 }
 
-/* Участники команды */
+/* РЈС‡Р°СЃС‚РЅРёРєРё РєРѕРјР°РЅРґС‹ */
 .team-members {
     margin-top: 15px;
 }
@@ -327,7 +327,7 @@
     border-radius: 8px;
 }
 
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
     .my-teams {
         padding: 15px;

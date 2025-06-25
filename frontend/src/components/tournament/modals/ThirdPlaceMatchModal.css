@@ -1,6 +1,6 @@
-/* =====================================================
-   СТИЛИ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО
-   Версия: 1.0 - 1337 Community Theme
+﻿/* =====================================================
+   РЎРўРР›Р РњРћР”РђР›Р¬РќРћР“Рћ РћРљРќРђ РњРђРўР§Рђ Р—Рђ 3-Р• РњР•РЎРўРћ
+   Р’РµСЂСЃРёСЏ: 1.0 - 1337 Community Theme
    ===================================================== */
 
 .modal-overlay {
@@ -32,20 +32,20 @@
 }
 
 /* REMOVED ANIMATION: @keyframes fadeIn {
-    from { opacity: 0; }
+    from { opacity: 0; */ }
     to { opacity: 1; }
 } */
 
-@keyframes slideUp {
+/* REMOVED ANIMATION: @keyframes slideUp {
     from {
-        opacity: 0;
-        /* REMOVED ANIMATION: transform: translateY(30px) scale(0.95); */
+        opacity: 0; */
+        transform: translateY(30px) scale(0.95);
     }
     to {
         opacity: 1;
-        /* REMOVED ANIMATION: transform: translateY(0) scale(1); */
+        transform: translateY(0) scale(1);
     }
-}
+} */
 
 /* Header */
 .modal-header {
@@ -62,7 +62,7 @@
     font-size: 24px;
     font-weight: 600;
     color: #ffffff;
-    text-/* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: uppercase; */ */ */ */
+    /* REMOVED ANIMATION: text-transform: uppercase; */
     letter-spacing: 1px;
 }
 
@@ -79,7 +79,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.3s ease; */ */
+    /* REMOVED ANIMATION: transition: all 0.3s ease; */
 }
 
 .modal-close:hover {
@@ -142,17 +142,17 @@
     /* REMOVED ANIMATION: animation: bounce 2s infinite; */
 }
 
-@keyframes bounce {
+/* REMOVED ANIMATION: @keyframes bounce {
     0%, 20%, 50%, 80%, 100% {
-        /* REMOVED ANIMATION: transform: translateY(0); */
+        transform: translateY(0); */
     }
     40% {
-        /* REMOVED ANIMATION: transform: translateY(-10px); */
+        transform: translateY(-10px);
     }
     60% {
-        /* REMOVED ANIMATION: transform: translateY(-5px); */
+        transform: translateY(-5px);
     }
-}
+} */
 
 .question-section h4 {
     margin: 0 0 10px 0;
@@ -208,7 +208,7 @@
 }
 
 .benefit-column li:before {
-    content: '▶';
+    content: 'в–¶';
     position: absolute;
     left: 0;
     color: #666666;
@@ -276,7 +276,7 @@
 
 .btn-success:hover {
     background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-2px); */ */ */
+    /* REMOVED ANIMATION: transform: translateY(-2px); */
     box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
 }
 
@@ -288,7 +288,7 @@
 
 .btn-secondary:hover {
     background: linear-gradient(135deg, #5a6268 0%, #545b62 100%);
-    transform: translateY(-2px);
+    /* REMOVED ANIMATION: transform: translateY(-2px); */
     box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
 }
 
@@ -301,7 +301,7 @@
 .btn-outline:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: #666666;
-    transform: translateY(-2px);
+    /* REMOVED ANIMATION: transform: translateY(-2px); */
 }
 
 /* Responsive Design */

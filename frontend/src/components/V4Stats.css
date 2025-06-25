@@ -1,21 +1,21 @@
-/* ✨ V4 ULTIMATE: Стили для революционного дашборда статистики */
+﻿/* вњЁ V4 ULTIMATE: РЎС‚РёР»Рё РґР»СЏ СЂРµРІРѕР»СЋС†РёРѕРЅРЅРѕРіРѕ РґР°С€Р±РѕСЂРґР° СЃС‚Р°С‚РёСЃС‚РёРєРё */
 /* =========================
-   ЦВЕТОВАЯ СХЕМА V4 
+   Р¦Р’Р•РўРћР’РђРЇ РЎРҐР•РњРђ V4 
    ========================= */
 :root {
-    /* V4 Градиенты */
+    /* V4 Р“СЂР°РґРёРµРЅС‚С‹ */
     --v4-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --v4-gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     --v4-gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     --v4-gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     --v4-gradient-info: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    /* V4 Цвета */
+    /* V4 Р¦РІРµС‚Р° */
     --v4-primary: #667eea;
     --v4-success: #4facfe;
     --v4-warning: #fa709a;
     --v4-danger: #ff6b6b;
     --v4-info: #667eea;
-    /* V4 Анимации */
+    /* V4 РђРЅРёРјР°С†РёРё */
     --v4-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --v4-glow: 0 0 20px rgba(102, 126, 234, 0.4);
     --v4-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);

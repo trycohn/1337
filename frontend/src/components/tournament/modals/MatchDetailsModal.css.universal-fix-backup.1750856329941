@@ -1,0 +1,616 @@
+/* MatchDetailsModal.css v1.0 - Стили для просмотра деталей матча */
+/* =================================================
+   ОСНОВНЫЕ СТИЛИ МОДАЛЬНОГО ОКНА ПРОСМОТРА
+   ================================================= */
+.match-details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    /* REMOVED ANIMATION: animation: overlayFadeIn 0.3s ease-out; */
+}
+/* REMOVED ANIMATION: @keyframes overlayFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0); }
+    to { opacity: 1; backdrop-filter: blur(4px); }
+} */
+.match-details-modal {
+    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    border: 2px solid #007acc;
+    border-radius: 16px;
+    max-width: 900px;
+    min-width: 700px;
+    overflow: hidden;
+    max-height: 85vh;
+    overflow-y: auto;
+    /* REMOVED ANIMATION: animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); */
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    position: relative;
+}
+@keyframes modalSlideIn {
+    from { 
+        opacity: 0;
+        /* REMOVED ANIMATION: transform: translateY(-30px) scale(0.95); */
+    }
+    to { 
+        opacity: 1;
+        /* REMOVED ANIMATION: transform: translateY(0) scale(1); */
+    }
+}
+/* =================================================
+   ЗАГОЛОВОК МОДАЛЬНОГО ОКНА
+   ================================================= */
+.match-details-modal .modal-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid #333333;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    z-index: 10;
+}
+.header-content {
+    flex: 1;
+}
+.header-content h3 {
+    margin: 0 0 8px 0;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.pending-badge, .completed-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    /* REMOVED ANIMATION: text-transform: uppercase; */
+    letter-spacing: 0.5px;
+}
+.pending-badge {
+    background: linear-gradient(135deg, #ffc107, #ffed4e);
+    color: #000000;
+}
+.completed-badge {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+    color: #ffffff;
+}
+.edit-blocked-notice {
+    color: #ffc107;
+    font-size: 14px;
+    background: rgba(255, 193, 7, 0.1);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    margin-top: 8px;
+}
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #cccccc;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    /* REMOVED ANIMATION: */ REMOVED ANIMATION: /* REMOVED ANIMATION: */ REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.3s ease; */ */ */
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.close-btn:hover {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    /* REMOVED ANIMATION: transform: scale(1.1); */
+}
+/* =================================================
+   ИНФОРМАЦИЯ О КОМАНДАХ
+   ================================================= */
+.match-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    gap: 10px;
+    background: linear-gradient(135deg, #2a2a2a, #1f1f1f);
+    margin: 0;
+}
+.team-card {
+    flex: 1;
+    background: linear-gradient(135deg, #2c2c2c, #3a3a3a);
+    border: 2px solid #444444;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.team-card:hover {
+    border-color: #007acc;
+    /* REMOVED ANIMATION: transform: translateY(-2px); */
+    box-shadow: 0 8px 20px rgba(0, 122, 204, 0.2);
+}
+.team-card.winner {
+    border-color: #28a745;
+    color: #000000;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+.match-details-modal .team-card {
+    padding: 0;
+}
+.team-card.has-tooltip {
+    position: relative;
+}
+.team-info {
+    text-align: center;
+}
+.team-info h4 {
+    margin: 0 0 12px 0;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+}
+.team-card.winner .team-info h4 {
+    color: #ffffff;
+}
+.team-card .team-info {
+    background: none;
+}
+.team-score {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+.team-card.winner .team-score {
+    color: #ffffff;
+}
+.match-details-modal .team-score {
+    background: none;
+}
+.winner-crown {
+    color: #ffd700;
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    /* REMOVED ANIMATION: animation: crownGlow 2s infinite alternate; */
+}
+/* REMOVED ANIMATION: @keyframes crownGlow {
+    from { box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3); }
+    to { box-shadow: 0 4px 16px rgba(255, 215, 0, 0.6); }
+} */
+.vs-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.vs-text {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffd700;
+    background: radial-gradient(circle, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+.match-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #cccccc;
+}
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    /* REMOVED ANIMATION: animation: pulse 2s infinite; */
+}
+.status-indicator.completed {
+    background: #28a745;
+}
+.status-indicator.pending {
+    background: #ffc107;
+}
+/* REMOVED ANIMATION: @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+} */
+/* =================================================
+   ТУЛТИПЫ ДЛЯ КОМАНД
+   ================================================= */
+.match-details-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    /* REMOVED ANIMATION: transform: translateX(-50%); */
+    margin-top: 12px;
+    z-index: 1000;
+}
+/* =================================================
+   МЕТАИНФОРМАЦИЯ О МАТЧЕ
+   ================================================= */
+.match-meta {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+}
+.meta-badge {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.round-badge {
+    background: linear-gradient(135deg, #007acc, #0099ff);
+    color: white;
+}
+.match-badge {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    color: white;
+}
+.bronze-badge {
+    background: linear-gradient(135deg, #cd7f32, #b8860b);
+    color: white;
+}
+.final-badge {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #000000;
+}
+.game-badge {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+    color: white;
+}
+/* =================================================
+   НАВИГАЦИЯ ПО ВКЛАДКАМ
+   ================================================= */
+.tab-navigation {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid #333333;
+    padding: 0 24px;
+}
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #cccccc;
+    padding: 16px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.tab-btn:hover {
+    color: #ffffff;
+    background: rgba(0, 122, 204, 0.1);
+}
+.tab-btn.active {
+    color: #007acc;
+    border-bottom-color: #007acc;
+    background: rgba(0, 122, 204, 0.1);
+}
+/* =================================================
+   КОНТЕНТ ВКЛАДОК
+   ================================================= */
+.tab-content {
+    padding: 24px;
+    min-height: 200px;
+}
+/* Обзор */
+.overview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+.stat-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444444;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+.stat-label {
+    display: block;
+    color: #cccccc;
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.stat-value {
+    display: block;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+}
+.extended-stats {
+    background: linear-gradient(135deg, #2a2a2a, #1f1f1f);
+    border: 1px solid #444444;
+    border-radius: 12px;
+    padding: 20px;
+}
+.extended-stats h5 {
+    margin: 0 0 16px 0;
+    color: #007acc;
+    font-size: 18px;
+    text-align: center;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+.stat-group {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 16px;
+}
+.stat-group h6 {
+    margin: 0 0 12px 0;
+    color: #ffd700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.stat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.stat-row span {
+    color: #ffffff;
+    font-size: 14px;
+    padding: 4px 8px;
+    background: rgba(0, 122, 204, 0.1);
+    border-radius: 4px;
+}
+/* Нет результатов */
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #cccccc;
+}
+.no-results-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.7;
+}
+.no-results h4 {
+    margin: 0 0 12px 0;
+    color: #ffffff;
+    font-size: 20px;
+}
+.no-results p {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+.teams-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #007acc;
+}
+.teams-preview .vs {
+    color: #ffd700;
+    font-size: 14px;
+}
+/* Карты */
+.maps-content h5 {
+    margin: 0 0 20px 0;
+    color: #007acc;
+    font-size: 18px;
+    text-align: center;
+}
+.maps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.map-card {
+    background: linear-gradient(135deg, #2c2c2c, #3a3a3a);
+    border: 1px solid #444444;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+.map-card:hover {
+    border-color: #007acc;
+    box-shadow: 0 4px 12px rgba(0, 122, 204, 0.1);
+}
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.map-header h6 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+.map-result {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.map-result.team1-win {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+    color: white;
+}
+.map-result.team2-win {
+    background: linear-gradient(135deg, #007acc, #0099ff);
+    color: white;
+}
+.map-result.draw {
+    background: linear-gradient(135deg, #ffc107, #ffed4e);
+    color: #000000;
+}
+.map-scores {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+.team-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.team-score .team-name {
+    font-size: 12px;
+    color: #cccccc;
+    font-weight: 600;
+}
+.custom-seed .team-score {
+    color: #000000;
+}
+.team-score .score {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffffff;
+}
+.score-separator {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffd700;
+}
+/* Детали */
+.details-content h5 {
+    margin: 0 0 20px 0;
+    color: #007acc;
+    font-size: 18px;
+    text-align: center;
+}
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+.detail-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444444;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.detail-label {
+    color: #cccccc;
+    font-size: 14px;
+    font-weight: 500;
+}
+.detail-value {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+}
+/* Нет карт */
+.no-maps {
+    text-align: center;
+    padding: 40px 20px;
+    color: #cccccc;
+}
+.no-maps-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.7;
+}
+.no-maps h4 {
+    margin: 0 0 12px 0;
+    color: #ffffff;
+    font-size: 20px;
+}
+.no-maps p {
+    margin: 0;
+    font-size: 16px;
+}
+/* =================================================
+   ДЕЙСТВИЯ
+   ================================================= */
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid #333333;
+    background: rgba(255, 255, 255, 0.02);
+}
+.close-action-btn, .edit-action-btn, .share-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.close-action-btn {
+    color: rgb(0, 0, 0);
+}
+.close-action-btn:hover {
+    background: linear-gradient(135deg, #5a6268, #495057);
+    /* REMOVED ANIMATION: */ REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-1px); */ */
+}
+.edit-action-btn {
+    color: #000000;
+}
+.edit-action-btn:hover {
+    background: linear-gradient(135deg, #5a6268, #495057);
+    transform: translateY(-1px);
+}
+.share-btn {
+    color: rgb(0, 0, 0);
+}
+.share-btn:hover {
+    background: linear-gradient(135deg, #5a6268, #495057);
+    transform: translateY(-1px);
+}
+/* =================================================
+   RESPONSIVE DESIGN
+   ================================================= */
+ 

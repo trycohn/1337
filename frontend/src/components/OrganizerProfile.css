@@ -1,7 +1,7 @@
-/* =========================
-   МИНИМАЛИСТИЧНЫЙ ПРОФИЛЬ ОРГАНИЗАЦИИ
+﻿/* =========================
+   РњРРќРРњРђР›РРЎРўРР§РќР«Р™ РџР РћР¤РР›Р¬ РћР Р“РђРќРР—РђР¦РР
    ========================= */
-/* CSS Variables - Черно-белая тема */
+/* CSS Variables - Р§РµСЂРЅРѕ-Р±РµР»Р°СЏ С‚РµРјР° */
 :root {
     --bg-primary: #000000;
     --bg-secondary: #111111;
@@ -23,7 +23,7 @@
     --spacing-2xl: 32px;
     --transition: all 0.2s ease;
 }
-/* Общие стили для профиля организатора */
+/* РћР±С‰РёРµ СЃС‚РёР»Рё РґР»СЏ РїСЂРѕС„РёР»СЏ РѕСЂРіР°РЅРёР·Р°С‚РѕСЂР° */
 .organizer-profile {
     max-width: 1400px;
     margin: 0 auto;
@@ -35,7 +35,7 @@
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-/* Заголовок профиля */
+/* Р—Р°РіРѕР»РѕРІРѕРє РїСЂРѕС„РёР»СЏ */
 .organizer-header {
     display: flex;
     align-items: center;
@@ -129,7 +129,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-/* Навигация по вкладкам */
+/* РќР°РІРёРіР°С†РёСЏ РїРѕ РІРєР»Р°РґРєР°Рј */
 .organizer-navigation {
     display: flex;
     gap: var(--spacing-sm);
@@ -158,14 +158,14 @@
     border-bottom-color: var(--text-primary);
     background-color: transparent;
 }
-/* Контент вкладок */
+/* РљРѕРЅС‚РµРЅС‚ РІРєР»Р°РґРѕРє */
 .organizer-content {
     background-color: transparent;
     border-radius: 0;
     padding: var(--spacing-xl);
     box-shadow: none;
 }
-/* Вкладка "О нас" */
+/* Р’РєР»Р°РґРєР° "Рћ РЅР°СЃ" */
 .about-tab h3 {
     color: var(--text-primary);
     margin-top: 0;
@@ -219,7 +219,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-/* Вкладка турниров */
+/* Р’РєР»Р°РґРєР° С‚СѓСЂРЅРёСЂРѕРІ */
 .tournaments-tab h3 {
     color: var(--text-primary);
     margin-top: 0;
@@ -403,7 +403,7 @@
     padding: var(--spacing-lg);
     font-weight: 300;
 }
-/* Вкладка команды */
+/* Р’РєР»Р°РґРєР° РєРѕРјР°РЅРґС‹ */
 .members-tab h3 {
     color: var(--text-primary);
     margin-top: 0;
@@ -474,7 +474,7 @@
     padding: var(--spacing-lg);
     font-weight: 300;
 }
-/* Вкладка контактов */
+/* Р’РєР»Р°РґРєР° РєРѕРЅС‚Р°РєС‚РѕРІ */
 .contacts-tab h3 {
     color: var(--text-primary);
     margin-top: 0;
@@ -524,7 +524,7 @@
     padding: var(--spacing-lg);
     font-weight: 300;
 }
-/* Состояния загрузки и ошибки */
+/* РЎРѕСЃС‚РѕСЏРЅРёСЏ Р·Р°РіСЂСѓР·РєРё Рё РѕС€РёР±РєРё */
 .organizer-loading,
 .organizer-error {
     text-align: center;
@@ -541,5 +541,5 @@
     background-color: rgba(255, 107, 107, 0.1);
     border: 1px solid rgba(255, 107, 107, 0.3);
 }
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
  

@@ -1,0 +1,266 @@
+/* Модальное окно подтверждения участия */
+.participation-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    /* /* /* REMOVED ANIMATION: animation: fadeIn 0.3s ease-out; */ */
+}
+
+.participation-confirm-modal {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    /* /* /* REMOVED ANIMATION: animation: slideIn 0.3s ease-out; */ */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* /* /* REMOVED ANIMATION: @keyframes fadeIn {
+    from { opacity: 0; */ */ }
+    to { opacity: 1; }
+} */
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        /* /* /* REMOVED ANIMATION: transform: translateY(-50px) scale(0.9); */ */
+    }
+    to {
+        opacity: 1;
+        /* /* /* REMOVED ANIMATION: transform: translateY(0) scale(1); */ */
+    }
+}
+
+.participation-confirm-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+
+.participation-confirm-modal .modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding-bottom: 0px !important;
+}
+
+.participation-confirm-modal .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    /* /* /* REMOVED ANIMATION: transition: all 0.2s ease; */ */
+}
+
+.participation-confirm-modal .close-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    /* /* /* REMOVED ANIMATION: transform: rotate(90deg); */ */
+}
+
+.participation-confirm-modal .close-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.participation-confirm-modal .modal-body {
+    padding: 24px;
+}
+
+.participation-info {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tournament-info h4 {
+    margin: 0 0 12px 0;
+    color: #ffffff !important;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.tournament-details {
+    background: #111111 !important;
+    padding: 16px;
+    border: none !important;
+    color: #ffffff !important;
+}
+
+.tournament-details p {
+    margin: 8px 0;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.tournament-details p:first-child {
+    margin-top: 0;
+}
+
+.tournament-details p:last-child {
+    margin-bottom: 0;
+}
+
+.tournament-details strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.confirmation-message {
+    text-align: center;
+}
+
+.confirmation-message > p {
+    font-size: 1.1rem;
+    color: #c5c5c5 !important;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+}
+
+.info-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #e3f2fd;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.9rem;
+    color: #1565c0;
+    line-height: 1.4;
+}
+
+.mix-info .info-note {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.team-info .info-note {
+    background: none !important;
+    color: #2e7d32;
+}
+
+.info-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.participation-confirm-modal .modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 20px 24px;
+    border: none !important;
+    background: none !important;
+}
+
+.btn-cancel,
+.btn-confirm-participation {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: #5a6268;
+    /* /* /* REMOVED ANIMATION: transform: translateY(-1px); */ */
+}
+
+.btn-confirm-participation {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-confirm-participation:hover:not(:disabled) {
+    background: linear-gradient(135deg, #218838, #17a2b8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-cancel:disabled,
+.btn-confirm-participation:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    /* /* /* REMOVED ANIMATION: transform: none !important; */ */
+}
+
+.loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    /* /* /* REMOVED ANIMATION: animation: spin 1s linear infinite; */ */
+}
+
+@keyframes spin {
+    0% { /* /* /* REMOVED ANIMATION: transform: rotate(0deg); */ */ }
+    100% { /* /* /* REMOVED ANIMATION: transform: rotate(360deg); */ */ }
+}
+
+/* Адаптивность */
+@media (max-width: 576px) {
+    .participation-confirm-modal {
+        width: 95%;
+        margin: 20px;
+    }
+
+    .participation-confirm-modal .modal-header,
+    .participation-confirm-modal .modal-body,
+    .participation-confirm-modal .modal-footer {
+        padding: 16px;
+    }
+
+    .participation-confirm-modal .modal-footer {
+        flex-direction: column;
+    }
+
+    .btn-cancel,
+    .btn-confirm-participation {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .tournament-details {
+        padding: 12px;
+    }
+
+    .tournament-details p {
+        font-size: 0.85rem;
+    }
+} 

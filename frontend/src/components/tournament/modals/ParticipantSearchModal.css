@@ -1,4 +1,4 @@
-/* Основной контейнер модального окна */
+﻿/* РћСЃРЅРѕРІРЅРѕР№ РєРѕРЅС‚РµР№РЅРµСЂ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° */
 .search-modal-overlay {
     position: fixed;
     top: 0;
@@ -25,7 +25,7 @@
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
-/* Заголовок модального окна */
+/* Р—Р°РіРѕР»РѕРІРѕРє РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° */
 .search-modal-header {
     display: flex;
     justify-content: space-between;
@@ -56,7 +56,7 @@
     opacity: 1;
     /* REMOVED ANIMATION: transform: scale(1.1); */
 }
-/* Контейнер поиска */
+/* РљРѕРЅС‚РµР№РЅРµСЂ РїРѕРёСЃРєР° */
 .search-input-container {
     padding: 20px;
     border-bottom: 1px solid #333333;
@@ -70,7 +70,7 @@
     border-radius: 6px;
     color: #ffffff;
     font-size: 16px;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.3s ease; */ */ */
+    /* REMOVED ANIMATION: transition: all 0.3s ease; */
 }
 .search-input-field:focus {
     outline: none;
@@ -81,7 +81,7 @@
 .search-input-field::placeholder {
     color: #888888;
 }
-/* Контейнер результатов */
+/* РљРѕРЅС‚РµР№РЅРµСЂ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ */
 .search-results-container {
     flex: 1;
     overflow-y: auto;
@@ -89,7 +89,7 @@
     min-height: 200px;
     max-height: 400px;
 }
-/* Состояния поиска */
+/* РЎРѕСЃС‚РѕСЏРЅРёСЏ РїРѕРёСЃРєР° */
 .search-placeholder,
 .search-loading,
 .search-no-results {
@@ -124,13 +124,13 @@
     font-size: 0.9rem;
     line-height: 1.4;
 }
-/* Список результатов */
+/* РЎРїРёСЃРѕРє СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ */
 .search-results-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
-/* Элемент результата поиска */
+/* Р­Р»РµРјРµРЅС‚ СЂРµР·СѓР»СЊС‚Р°С‚Р° РїРѕРёСЃРєР° */
 .search-result-item {
     display: flex;
     align-items: center;
@@ -145,10 +145,10 @@
 .search-result-item:hover {
     background: #333333;
     border-color: #555555;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-1px); */ */ */ */
+    /* REMOVED ANIMATION: transform: translateY(-1px); */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
-/* Информация о пользователе */
+/* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»Рµ */
 .user-info {
     display: flex;
     align-items: center;
@@ -202,14 +202,14 @@
     color: #888888;
     font-family: 'Courier New', monospace;
 }
-/* Действия пользователя */
+/* Р”РµР№СЃС‚РІРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ */
 .user-actions {
     display: flex;
     gap: 8px;
     align-items: center;
     flex-shrink: 0;
 }
-/* Улучшенные кнопки действий */
+/* РЈР»СѓС‡С€РµРЅРЅС‹Рµ РєРЅРѕРїРєРё РґРµР№СЃС‚РІРёР№ */
 .action-button {
     padding: 8px 16px;
     border: 1px solid;
@@ -225,7 +225,7 @@
     white-space: nowrap;
     min-width: auto;
 }
-/* Кнопка просмотра профиля */
+/* РљРЅРѕРїРєР° РїСЂРѕСЃРјРѕС‚СЂР° РїСЂРѕС„РёР»СЏ */
 .view-profile-btn {
     background: transparent;
     color: #17a2b8;
@@ -237,7 +237,7 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
 }
-/* Кнопка добавления участника */
+/* РљРЅРѕРїРєР° РґРѕР±Р°РІР»РµРЅРёСЏ СѓС‡Р°СЃС‚РЅРёРєР° */
 .add-participant-btn {
     background: transparent;
     color: #28a745;
@@ -249,7 +249,7 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
-/* Кнопка приглашения администратора */
+/* РљРЅРѕРїРєР° РїСЂРёРіР»Р°С€РµРЅРёСЏ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР° */
 .admin-invite-btn {
     background: transparent;
     color: #ff6b35;
@@ -261,7 +261,7 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
-/* Кнопка для уже участвующих */
+/* РљРЅРѕРїРєР° РґР»СЏ СѓР¶Рµ СѓС‡Р°СЃС‚РІСѓСЋС‰РёС… */
 .already-participant-btn {
     background: transparent;
     color: #888888;
@@ -269,8 +269,8 @@
     cursor: not-allowed;
     opacity: 0.6;
 }
-/* Адаптивность для мобильных устройств */
-/* Улучшенная анимация появления результатов */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
+/* РЈР»СѓС‡С€РµРЅРЅР°СЏ Р°РЅРёРјР°С†РёСЏ РїРѕСЏРІР»РµРЅРёСЏ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ */
 .search-result-item {
     /* REMOVED ANIMATION: animation: slideInFade 0.3s ease-out; */
 }
@@ -284,7 +284,7 @@
         /* REMOVED ANIMATION: transform: translateY(0); */
     }
 }
-/* Индикаторы загрузки */
+/* РРЅРґРёРєР°С‚РѕСЂС‹ Р·Р°РіСЂСѓР·РєРё */
 .search-loading .search-loading-icon {
     /* REMOVED ANIMATION: animation: spin 1s linear infinite; */
 }
@@ -292,7 +292,7 @@
     0% { /* REMOVED ANIMATION: transform: rotate(0deg); */ }
     100% { /* REMOVED ANIMATION: transform: rotate(360deg); */ }
 }
-/* Скроллбар для результатов */
+/* РЎРєСЂРѕР»Р»Р±Р°СЂ РґР»СЏ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ */
 .search-results-container::-webkit-scrollbar {
     width: 6px;
 }
@@ -308,7 +308,7 @@
 .search-results-container::-webkit-scrollbar-thumb:hover {
     background: #555555;
 }
-/* Фокус для доступности */
+/* Р¤РѕРєСѓСЃ РґР»СЏ РґРѕСЃС‚СѓРїРЅРѕСЃС‚Рё */
 .action-button:focus {
     outline: 2px solid rgba(0, 123, 255, 0.5);
     outline-offset: 2px;
@@ -316,7 +316,7 @@
 .search-input-field:focus {
     outline: none;
 }
-/* Стили для разных режимов модального окна */
+/* РЎС‚РёР»Рё РґР»СЏ СЂР°Р·РЅС‹С… СЂРµР¶РёРјРѕРІ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° */
 .search-modal-content.admin-mode .search-modal-header {
     background: linear-gradient(135deg, #ff6b35, #f7931e);
 }
@@ -327,7 +327,7 @@
 .search-modal-content.participant-mode .search-modal-header {
     background: linear-gradient(135deg, #28a745, #20c997);
 }
-/* Эффекты для кнопок */
+/* Р­С„С„РµРєС‚С‹ РґР»СЏ РєРЅРѕРїРѕРє */
 .action-button:active {
     /* REMOVED ANIMATION: transform: translateY(0) !important; */
 }

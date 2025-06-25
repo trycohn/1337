@@ -1,7 +1,7 @@
-/* =========================
-   МИНИМАЛИСТИЧНЫЙ ПРОФИЛЬ 
+﻿/* =========================
+   РњРРќРРњРђР›РРЎРўРР§РќР«Р™ РџР РћР¤РР›Р¬ 
    ========================= */
-/* CSS Variables - Черно-белая тема */
+/* CSS Variables - Р§РµСЂРЅРѕ-Р±РµР»Р°СЏ С‚РµРјР° */
 :root {
     --bg-primary: #000000;
     --bg-secondary: #111111;
@@ -210,7 +210,7 @@
     overflow: hidden;
 }
 
-/* Эффект мерцания для контейнера навигации */
+/* Р­С„С„РµРєС‚ РјРµСЂС†Р°РЅРёСЏ РґР»СЏ РєРѕРЅС‚РµР№РЅРµСЂР° РЅР°РІРёРіР°С†РёРё */
 .sidebar-nav-profile::before {
     content: '';
     position: absolute;
@@ -251,7 +251,7 @@
     overflow: hidden;
 }
 
-/* Эффект подсветки слева */
+/* Р­С„С„РµРєС‚ РїРѕРґСЃРІРµС‚РєРё СЃР»РµРІР° */
 .nav-tab-profile::before {
     content: '';
     position: absolute;
@@ -264,7 +264,7 @@
     transform: translateY(-50%);
 }
 
-/* Эффект фона при наведении */
+/* Р­С„С„РµРєС‚ С„РѕРЅР° РїСЂРё РЅР°РІРµРґРµРЅРёРё */
 .nav-tab-profile::after {
     content: '';
     position: absolute;
@@ -347,7 +347,7 @@
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
-/* Эффект пульсации для активной вкладки */
+/* Р­С„С„РµРєС‚ РїСѓР»СЊСЃР°С†РёРё РґР»СЏ Р°РєС‚РёРІРЅРѕР№ РІРєР»Р°РґРєРё */
 @keyframes pulse {
     0%, 100% { 
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -588,7 +588,7 @@
 /* Additional Responsive Adjustments */
 
 /* =========================
-   МОДАЛЬНЫЕ ОКНА
+   РњРћР”РђР›Р¬РќР«Р• РћРљРќРђ
    ========================= */
 .modal-overlay {
     position: fixed;
@@ -873,7 +873,7 @@
 }
 
 /* =========================
-   STEAM/FACEIT СЕКЦИИ
+   STEAM/FACEIT РЎР•РљР¦РР
    ========================= */
 .steam-section,
 .faceit-section {
@@ -1806,7 +1806,7 @@
     font-size: 1.1rem;
 }
 
-/* Последние матчи */
+/* РџРѕСЃР»РµРґРЅРёРµ РјР°С‚С‡Рё */
 .matches-list {
     display: flex;
     flex-direction: column;
@@ -1851,7 +1851,7 @@
     font-weight: 500;
 }
 
-/* Топ героев */
+/* РўРѕРї РіРµСЂРѕРµРІ */
 .heroes-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1908,7 +1908,7 @@
     font-weight: 300;
 }
 
-/* Иконки героев */
+/* РРєРѕРЅРєРё РіРµСЂРѕРµРІ */
 .hero-icon {
     width: 40px;
     height: 30px;
@@ -1935,7 +1935,7 @@
     border-radius: 8px;
 }
 
-/* Сообщения о отсутствии данных */
+/* РЎРѕРѕР±С‰РµРЅРёСЏ Рѕ РѕС‚СЃСѓС‚СЃС‚РІРёРё РґР°РЅРЅС‹С… */
 .no-dota-stats,
 .no-dota-profile {
     text-align: center;
@@ -2104,19 +2104,19 @@
     letter-spacing: 0.5px;
 }
 
-.tournament-result.победитель {
+.tournament-result.РїРѕР±РµРґРёС‚РµР»СЊ {
     color: var(--accent-success);
     background-color: rgba(76, 175, 80, 0.1);
     border: 1px solid var(--accent-success);
 }
 
-.tournament-result.призер {
+.tournament-result.РїСЂРёР·РµСЂ {
     color: var(--accent-warning);
     background-color: rgba(255, 204, 102, 0.1);
     border: 1px solid var(--accent-warning);
 }
 
-.tournament-result.участник {
+.tournament-result.СѓС‡Р°СЃС‚РЅРёРє {
     color: var(--text-muted);
     background-color: rgba(136, 136, 136, 0.1);
     border: 1px solid var(--text-muted);
@@ -2361,7 +2361,7 @@
     color: var(--text-primary);
 }
 
-/* Улучшенные индикаторы статуса пересчета статистики */
+/* РЈР»СѓС‡С€РµРЅРЅС‹Рµ РёРЅРґРёРєР°С‚РѕСЂС‹ СЃС‚Р°С‚СѓСЃР° РїРµСЂРµСЃС‡РµС‚Р° СЃС‚Р°С‚РёСЃС‚РёРєРё */
 .recalculation-status-container {
     display: flex;
     flex-direction: column;
@@ -2434,7 +2434,7 @@
     75% { transform: translateX(3px); }
 }
 
-/* ✨ V4 ULTIMATE SECTION STYLES */
+/* вњЁ V4 ULTIMATE SECTION STYLES */
 .v4-ultimate-section {
     background: linear-gradient(135deg, 
         rgba(102, 126, 234, 0.05) 0%, 
@@ -2510,7 +2510,7 @@
 }
 
 /* =========================
-   СИСТЕМА ДОСТИЖЕНИЙ
+   РЎРРЎРўР•РњРђ Р”РћРЎРўРР–Р•РќРР™
    ========================= */
 .achievements-summary {
     display: flex;
@@ -2547,7 +2547,7 @@
     letter-spacing: 0.5px;
 }
 
-/* Карточка прогресса игрока */
+/* РљР°СЂС‚РѕС‡РєР° РїСЂРѕРіСЂРµСЃСЃР° РёРіСЂРѕРєР° */
 .player-progress-card .card-content {
     padding: var(--spacing-xl);
 }
@@ -2650,7 +2650,7 @@
     text-align: center;
 }
 
-/* Фильтры категорий достижений */
+/* Р¤РёР»СЊС‚СЂС‹ РєР°С‚РµРіРѕСЂРёР№ РґРѕСЃС‚РёР¶РµРЅРёР№ */
 .achievement-filters {
     display: flex;
     flex-wrap: wrap;
@@ -2704,7 +2704,7 @@
     border-radius: 0;
 }
 
-/* Сетка достижений */
+/* РЎРµС‚РєР° РґРѕСЃС‚РёР¶РµРЅРёР№ */
 .achievements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -2784,7 +2784,7 @@
     color: var(--text-disabled);
 }
 
-/* Прогресс достижения */
+/* РџСЂРѕРіСЂРµСЃСЃ РґРѕСЃС‚РёР¶РµРЅРёСЏ */
 .achievement-progress {
     margin: var(--spacing-sm) 0;
 }
@@ -2811,7 +2811,7 @@
     text-align: right;
 }
 
-/* Метаданные достижения */
+/* РњРµС‚Р°РґР°РЅРЅС‹Рµ РґРѕСЃС‚РёР¶РµРЅРёСЏ */
 .achievement-meta {
     display: flex;
     flex-direction: column;
@@ -2882,7 +2882,7 @@
     50% { transform: scale(1.05); }
 }
 
-/* Недавние достижения */
+/* РќРµРґР°РІРЅРёРµ РґРѕСЃС‚РёР¶РµРЅРёСЏ */
 .recent-achievements-list {
     display: flex;
     flex-direction: column;

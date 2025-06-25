@@ -1,4 +1,4 @@
-.team-selection-modal {
+﻿.team-selection-modal {
     background: #000000;
     border-radius: 16px;
     width: 95%;
@@ -52,7 +52,7 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s; */ */ */ */
+    /* REMOVED ANIMATION: transition: all 0.2s; */
 }
 
 .tab-btn.active {
@@ -66,7 +66,7 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
-/* Существующие команды */
+/* РЎСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ РєРѕРјР°РЅРґС‹ */
 .existing-teams {
     display: flex;
     flex-direction: column;
@@ -176,7 +176,7 @@
     width: fit-content;
 }
 
-/* Создание разовой команды */
+/* РЎРѕР·РґР°РЅРёРµ СЂР°Р·РѕРІРѕР№ РєРѕРјР°РЅРґС‹ */
 .create-temp-team {
     display: flex;
     flex-direction: column;
@@ -332,7 +332,7 @@
     color: #ffffff;
 }
 
-/* Кнопки действий */
+/* РљРЅРѕРїРєРё РґРµР№СЃС‚РІРёР№ */
 .action-buttons {
     display: flex;
     justify-content: flex-end;
@@ -368,7 +368,7 @@
     box-shadow: none;
 }
 
-/* Адаптивность */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
     .team-selection-modal {
         width: 98%;
@@ -428,6 +428,6 @@
     }
     
     .form-group input {
-        font-size: 16px; /* Предотвращает зум на iOS */
+        font-size: 16px; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ Р·СѓРј РЅР° iOS */
     }
 } 

@@ -1,4 +1,4 @@
-/* V4 Enhanced Profile CSS - Ultimate Design для варианта 4 */
+﻿/* V4 Enhanced Profile CSS - Ultimate Design РґР»СЏ РІР°СЂРёР°РЅС‚Р° 4 */
 :root {
     --v4-primary: #ff6b35;
     --v4-secondary: #004e89;
@@ -453,7 +453,7 @@
     position: relative;
 }
 .v4-ai-section li::before {
-    content: '•';
+    content: 'вЂў';
     color: var(--v4-accent);
     position: absolute;
     left: -1rem;
