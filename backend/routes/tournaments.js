@@ -1464,6 +1464,129 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
     }
 });
 
+// 🆕 Перегенерация турнирной сетки
+router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, async (req, res) => {
+    const { id } = req.params;
+    const { thirdPlaceMatch } = req.body;
+    const userId = req.user.id;
+
+    console.log(`🔄 [regenerate-bracket] Начинаем перегенерацию сетки для турнира ${id}, пользователь ${userId}`);
+
+    try {
+        // Проверка турнира и прав доступа
+        const tournamentResult = await pool.query('SELECT * FROM tournaments WHERE id = $1', [id]);
+        if (tournamentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        const tournament = tournamentResult.rows[0];
+
+        console.log(`✅ [regenerate-bracket] Турнир найден: "${tournament.name}", статус: ${tournament.status}`);
+
+        // Проверка прав доступа
+        if (tournament.created_by !== userId) {
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [id, userId]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может перегенерировать сетку' });
+            }
+            console.log(`✅ [regenerate-bracket] Пользователь ${userId} имеет права администратора`);
+        } else {
+            console.log(`✅ [regenerate-bracket] Пользователь ${userId} является создателем турнира`);
+        }
+
+        // Проверка статуса турнира
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Перегенерация доступна только для активных турниров' });
+        }
+
+        // Проверка существования матчей для перегенерации
+        const existingMatches = await pool.query('SELECT * FROM matches WHERE tournament_id = $1', [id]);
+        
+        if (existingMatches.rows.length === 0) {
+            return res.status(400).json({ error: 'Нет сетки для перегенерации. Используйте генерацию сетки.' });
+        }
+
+        console.log(`🗑️ [regenerate-bracket] Удаляем ${existingMatches.rows.length} существующих матчей`);
+
+        // Удаляем все существующие матчи турнира
+        await pool.query('DELETE FROM matches WHERE tournament_id = $1', [id]);
+
+        // Очищаем кеш турнира чтобы принудительно обновить данные на клиентах
+        console.log(`🧹 [regenerate-bracket] Очищаем связанные данные и кеши`);
+
+        // Получение участников в зависимости от типа турнира
+        let participants;
+        if (tournament.participant_type === 'solo') {
+            const participantsResult = await pool.query(
+                'SELECT id, name FROM tournament_participants WHERE tournament_id = $1',
+                [id]
+            );
+            participants = participantsResult.rows;
+        } else {
+            const participantsResult = await pool.query(
+                'SELECT id, name FROM tournament_teams WHERE tournament_id = $1',
+                [id]
+            );
+            participants = participantsResult.rows;
+        }
+
+        console.log(`👥 [regenerate-bracket] Найдено ${participants.length} участников для перегенерации`);
+
+        if (participants.length < 2) {
+            return res.status(400).json({ error: 'Недостаточно участников для перегенерации сетки' });
+        }
+
+        // Определяем нужен ли матч за 3-е место (используем переданный параметр или сохраненную настройку)
+        const useThirdPlaceMatch = thirdPlaceMatch !== undefined ? thirdPlaceMatch : tournament.third_place_match_enabled;
+
+        console.log(`🎯 [regenerate-bracket] Генерируем новую сетку (матч за 3-е место: ${useThirdPlaceMatch})`);
+
+        // Генерация новой сетки с использованием модуля bracketGenerator
+        const matches = await generateBracket(tournament.format, id, participants, useThirdPlaceMatch);
+
+        console.log(`✅ [regenerate-bracket] Создано ${matches.length} новых матчей`);
+
+        // Получаем обновлённые данные турнира
+        const updatedTournamentResult = await pool.query(
+            'SELECT t.*, ' +
+            '(SELECT COALESCE(json_agg(to_jsonb(tp) || jsonb_build_object(\'avatar_url\', u.avatar_url)), \'[]\') FROM tournament_participants tp LEFT JOIN users u ON tp.user_id = u.id WHERE tp.tournament_id = t.id) as participants, ' +
+            '(SELECT COALESCE(json_agg(m.*), \'[]\') FROM matches m WHERE m.tournament_id = t.id) as matches ' +
+            'FROM tournaments t WHERE t.id = $1',
+            [id]
+        );
+
+        const tournamentData = updatedTournamentResult.rows[0];
+        tournamentData.matches = Array.isArray(tournamentData.matches) && tournamentData.matches[0] !== null 
+            ? tournamentData.matches 
+            : [];
+        tournamentData.participants = Array.isArray(tournamentData.participants) && tournamentData.participants[0] !== null 
+            ? tournamentData.participants 
+            : [];
+
+        // Отправляем обновления всем клиентам, просматривающим этот турнир
+        console.log(`📡 [regenerate-bracket] Отправляем WebSocket обновления`);
+        broadcastTournamentUpdate(id, tournamentData);
+        
+        // Отправляем объявление в чат турнира о перегенерации сетки
+        await sendTournamentChatAnnouncement(
+            id,
+            `Турнирная сетка перегенерирована для турнира "${tournament.name}". Все предыдущие результаты очищены.`
+        );
+
+        console.log(`🎉 [regenerate-bracket] Перегенерация завершена успешно для турнира ${id}`);
+        res.status(200).json({ 
+            success: true,
+            message: 'Турнирная сетка успешно перегенерирована', 
+            tournament: tournamentData 
+        });
+    } catch (err) {
+        console.error(`❌ [regenerate-bracket] Ошибка перегенерации сетки для турнира ${id}:`, err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Обновление результата матча
 router.post('/:id/update-match', authenticateToken, async (req, res) => {
     const { id } = req.params;
