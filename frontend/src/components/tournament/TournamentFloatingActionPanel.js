@@ -19,7 +19,6 @@ const TournamentFloatingActionPanel = ({
     onStartTournament,
     onEndTournament,
     onGenerateBracket,
-    onRegenerateBracket,
     onClearResults,
     hasMatches = false,
     hasBracket = false,
@@ -29,7 +28,9 @@ const TournamentFloatingActionPanel = ({
     showDisplayModeSelector = true, // Флаг для показа/скрытия селектора
     // 🆕 Новые пропсы для переформирования команд
     mixedTeams = [],
-    onReformTeams
+    onReformTeams,
+    // 🆕 Проп для перегенерации с перемешиванием
+    onRegenerateBracketWithShuffle
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -104,13 +105,13 @@ const TournamentFloatingActionPanel = ({
         }
 
         // "Перегенерация турнирной сетки" - при статусе "Активный", если сетка есть
-        if (status === 'active' && hasBracket) {
+        if (status === 'active' && hasBracket && onRegenerateBracketWithShuffle) {
             actions.push({
-                id: 'regenerate-bracket',
-                icon: '🔄',
-                title: 'Перегенерировать сетку',
-                description: 'Заново создать турнирную сетку',
-                onClick: onRegenerateBracket,
+                id: 'regenerate-bracket-shuffle',
+                icon: '🎲',
+                title: 'Перегенерация сетки',
+                description: 'Заново создать сетку со случайным порядком участников',
+                onClick: onRegenerateBracketWithShuffle,
                 color: 'warning',
                 priority: 2
             });
@@ -172,7 +173,7 @@ const TournamentFloatingActionPanel = ({
         return actions.sort((a, b) => a.priority - b.priority);
     }, [tournament, hasBracket, hasMatches, canReformTeams, 
         onStartTournament, onEndTournament, onGenerateBracket, 
-        onRegenerateBracket, onClearResults, onReformTeams]);
+        onClearResults, onReformTeams, onRegenerateBracketWithShuffle]);
 
     // Если нет прав или турнира - не показываем панель вообще
     if (!isAdminOrCreator || !tournament) {

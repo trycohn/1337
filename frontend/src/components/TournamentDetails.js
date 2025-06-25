@@ -1677,29 +1677,49 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
+    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С ПЕРЕМЕШИВАНИЕМ ПО УМОЛЧАНИЮ
     const handleRegenerateBracket = useCallback(async () => {
-        const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново\n• Действие необратимо\n\nПродолжить?`;
+        // Всегда используем перемешивание участников для сбалансированной сетки
+        const shuffleParticipants = true;
+        const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
+        
+        const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново${shuffleText}\n• Действие необратимо\n\nПродолжить?`;
         
         if (!window.confirm(confirmMessage)) return;
 
         try {
             setLoading(true);
-            const result = await tournamentManagement.regenerateBracket();
             
-            if (result.success) {
-                setMessage('✅ Турнирная сетка успешно перегенерирована!');
+            const token = localStorage.getItem('token');
+            const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
+                shuffleParticipants: shuffleParticipants,
+                thirdPlaceMatch: tournament?.third_place_match_enabled || false
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                setMessage('✅ Турнирная сетка успешно перегенерирована с перемешиванием участников!');
                 await fetchTournamentData();
             } else {
-                setMessage(`❌ ${result.error || 'Ошибка при перегенерации сетки'}`);
+                setMessage(`❌ ${response.data.message || 'Ошибка при перегенерации сетки'}`);
             }
         } catch (error) {
             console.error('❌ Ошибка при перегенерации сетки:', error);
-            setMessage('❌ Ошибка при перегенерации сетки');
+            let errorMessage = 'Ошибка при перегенерации сетки';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setMessage(`❌ ${errorMessage}`);
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [tournamentManagement, fetchTournamentData]);
+    }, [id, tournament?.third_place_match_enabled, fetchTournamentData]);
 
     // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
@@ -1951,7 +1971,7 @@ function TournamentDetails() {
                     onStartTournament={handleStartTournament}
                     onEndTournament={handleEndTournament}
                     onGenerateBracket={handleGenerateBracket}
-                    onRegenerateBracket={handleRegenerateBracket}
+                    onRegenerateBracketWithShuffle={handleRegenerateBracket}
                     onClearResults={resetMatchResults}
                     hasMatches={matches.length > 0}
                     hasBracket={games.length > 0}
