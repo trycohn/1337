@@ -17,8 +17,8 @@
     -webkit-backdrop-filter: blur(4px);
     /* REMOVED ANIMATION: animation: overlayFadeIn 0.3s ease-out; */
 }
-/* REMOVED ANIMATION: @keyframes overlayFadeIn { */
-    from { opacity: 0; */ backdrop-filter: blur(0); }
+/* REMOVED ANIMATION: @keyframes overlayFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0); }
     to { opacity: 1; backdrop-filter: blur(4px); }
 } */
 .match-details-modal {
@@ -190,7 +190,7 @@
     display: inline-block;
     /* REMOVED ANIMATION: animation: crownGlow 2s infinite alternate; */
 }
-/* /* REMOVED ANIMATION: @keyframes crownGlow { from { box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3); } to { box-shadow: 0 4px 16px rgba(255, 215, 0, 0.6); } } */
+/* REMOVED ANIMATION: @keyframes crownGlow { from { box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3); } to { box-shadow: 0 4px 16px rgba(255, 215, 0, 0.6); } } */
 .vs-section {
     display: flex;
     flex-direction: column;
@@ -225,7 +225,7 @@
 .status-indicator.pending {
     background: #ffc107;
 }
-/* /* REMOVED ANIMATION: @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } } */
+/* REMOVED ANIMATION: @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } } */
 /* =================================================
    ТУЛТИПЫ ДЛЯ КОМАНД
    ================================================= */

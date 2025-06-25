@@ -1,6 +1,6 @@
 ﻿/* =====================================================
    РЎРўРР›Р РњРћР”РђР›Р¬РќРћР“Рћ РћРљРќРђ РњРђРўР§Рђ Р—Рђ 3-Р• РњР•РЎРўРћ
-   Р’РµСЂСЃРёСЏ: 1.0 - 1337 Community Theme
+   Р’РµСЂСЏ: 1.0 - 1337 Community Theme
    ===================================================== */
 
 .modal-overlay {
@@ -32,13 +32,13 @@
 }
 
 /* REMOVED ANIMATION: @keyframes fadeIn {
-    from { opacity: 0; */ }
+    from { opacity: 0; }
     to { opacity: 1; }
 } */
 
 /* REMOVED ANIMATION: @keyframes slideUp {
     from {
-        opacity: 0; */
+        opacity: 0;
         transform: translateY(30px) scale(0.95);
     }
     to {
@@ -144,7 +144,7 @@
 
 /* REMOVED ANIMATION: @keyframes bounce {
     0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0); */
+        transform: translateY(0);
     }
     40% {
         transform: translateY(-10px);
