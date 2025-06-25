@@ -1,5 +1,5 @@
 // backend/bracketGenerator.js
-const { generateSingleEliminationBracket } = require('./bracketGenerators/singleElimination');
+const { generateSingleEliminationBracket } = require('./bracketGenerators/singleEliminationV2');
 const { generateDoubleEliminationBracket } = require('./bracketGenerators/doubleElimination');
 
 /**
@@ -11,6 +11,8 @@ const { generateDoubleEliminationBracket } = require('./bracketGenerators/double
  * @returns {Array} - Список сгенерированных матчей
  */
 const generateBracket = async (format, tournamentId, participants, thirdPlaceMatch) => {
+    console.log(`🎯 Генерация сетки: формат=${format}, участников=${participants.length}, матч за 3-е место=${thirdPlaceMatch}`);
+    
     switch (format.toLowerCase()) {
         case 'mix':
         case 'single_elimination':
@@ -22,4 +24,6 @@ const generateBracket = async (format, tournamentId, participants, thirdPlaceMat
     }
 };
 
-module.exports = { generateBracket };
+module.exports = {
+    generateBracket
+};

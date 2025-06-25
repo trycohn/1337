@@ -3,6 +3,7 @@
 // ✅ Убран блок достижений
 // ✅ Скрыт список участников микс-турнира после формирования команд
 // ✅ Добавлена система вкладок
+// ✅ Интеграция модального окна выбора матча за 3-е место
 
 // Импорты React и связанные
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
@@ -32,6 +33,7 @@ import MatchResultModal from './tournament/modals/MatchResultModal';
 import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
 import AddParticipantModal from './tournament/modals/AddParticipantModal';
+import ThirdPlaceMatchModal from './tournament/modals/ThirdPlaceMatchModal';
 import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
 import UnifiedParticipantsPanel from './tournament/UnifiedParticipantsPanel';
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
@@ -144,6 +146,10 @@ function TournamentDetails() {
 
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
+    
+    // 🆕 Состояния для модального окна матча за 3-е место
+    const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
+    const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     
     // Состояния для модальных окон (упрощенная версия без хука)
     const [modals, setModals] = useState({
@@ -1695,18 +1701,30 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
-    const handleGenerateBracket = useCallback(async () => {
+    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
+    const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
+        // Если параметр матча за 3-е место не передан, показываем модальное окно
+        if (useThirdPlace === null) {
+            console.log('🎯 Открываем модальное окно выбора матча за 3-е место');
+            setShowThirdPlaceModal(true);
+            return;
+        }
+
+        console.log(`🚀 Генерируем сетку с параметром thirdPlaceMatch: ${useThirdPlace}`);
+        
         try {
             setLoading(true);
             
-            // Пока что используем простой API-вызов для генерации сетки
             const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${id}/generate-bracket`, {}, {
+            const response = await api.post(`/api/tournaments/${id}/generate-bracket`, {
+                thirdPlaceMatch: useThirdPlace
+            }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             if (response.data.success) {
-                setMessage('✅ Турнирная сетка успешно сгенерирована!');
+                const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
+                setMessage(`✅ Турнирная сетка успешно сгенерирована ${matchText}!`);
                 await fetchTournamentData();
             } else {
                 setMessage(`❌ ${response.data.message || 'Ошибка при генерации сетки'}`);
@@ -1727,6 +1745,19 @@ function TournamentDetails() {
             setTimeout(() => setMessage(''), 5000);
         }
     }, [id, fetchTournamentData]);
+
+    // 🆕 ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО
+    const handleThirdPlaceModalConfirm = useCallback((needThirdPlace) => {
+        console.log(`🎯 Пользователь выбрал: ${needThirdPlace ? 'нужен' : 'не нужен'} матч за 3-е место`);
+        setThirdPlaceMatch(needThirdPlace);
+        setShowThirdPlaceModal(false);
+        handleGenerateBracket(needThirdPlace);
+    }, [handleGenerateBracket]);
+
+    const handleThirdPlaceModalClose = useCallback(() => {
+        console.log('❌ Пользователь отменил генерацию сетки');
+        setShowThirdPlaceModal(false);
+    }, []);
 
     // Обработка ошибок загрузки
     if (loading) {
@@ -1885,6 +1916,15 @@ function TournamentDetails() {
                         tournament={tournament}
                     />
                 )}
+
+                {/* 🆕 Модальное окно выбора матча за 3-е место */}
+                <ThirdPlaceMatchModal
+                    isOpen={showThirdPlaceModal}
+                    onClose={handleThirdPlaceModalClose}
+                    onConfirm={handleThirdPlaceModalConfirm}
+                    participantCount={tournament?.participants?.length || 0}
+                    tournamentName={tournament?.name || ''}
+                />
 
                 {/* 🆕 Модальное окно поиска администраторов */}
                 {adminSearchModal && (
