@@ -11,19 +11,19 @@
   align-items: center;
   z-index: 1000;
   opacity: 0;
-  /* REMOVED ANIMATION: animation: fadeIn 0.3s ease-in-out forwards; */
+  animation: fadeIn 0.3s ease-in-out forwards;
 }
 .attachment-modal.closing {
-  /* REMOVED ANIMATION: animation: fadeOut 0.3s ease-in-out forwards; */
+  animation: fadeOut 0.3s ease-in-out forwards;
 }
-/* REMOVED ANIMATION: @keyframes fadeIn {
+@keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
-} */
-/* REMOVED ANIMATION: @keyframes fadeOut {
+}
+@keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
-} */
+}
 .attachment-modal-content {
   background: #2c2c40;
   padding: 25px;
@@ -33,12 +33,12 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   text-align: center;
   color: #e0e0e5;
-  /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(20px); */ */ */
+  transform: translateY(20px);
   opacity: 0;
-  /* REMOVED ANIMATION: animation: slideIn 0.3s ease-out 0.1s forwards; */
+  animation: slideIn 0.3s ease-out 0.1s forwards;
 }
 .closing .attachment-modal-content {
-  /* REMOVED ANIMATION: animation: slideOut 0.3s ease-in forwards; */
+  animation: slideOut 0.3s ease-in forwards;
 }
 @keyframes slideIn {
   from { 
@@ -47,10 +47,10 @@
   }
   to { 
     opacity: 1;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(0); */ */
+    transform: translateY(0);
   }
 }
-/* REMOVED ANIMATION: @keyframes slideOut {
+@keyframes slideOut {
   from { 
     opacity: 1;
     transform: translateY(0);
@@ -59,7 +59,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
-} */
+}
 .attachment-modal-content h2 {
   margin-top: 0;
   margin-bottom: 15px;
@@ -87,7 +87,7 @@
   background-color: #34344a;
   color: #e0e0e5;
   font-size: 14px;
-  /* REMOVED ANIMATION: transition: border-color 0.3s; */
+  transition: border-color 0.3s;
 }
 .attachment-caption:focus {
   border-color: #7d8eff;
@@ -103,7 +103,7 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
-  /* REMOVED ANIMATION: transition: all 0.3s ease; */
+  transition: all 0.3s ease;
 }
 .attachment-send-btn {
   background-color: #4a6dce;
@@ -111,7 +111,7 @@
 }
 .attachment-send-btn:hover {
   background-color: #5a7de0;
-  /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-2px); */ */
+  transform: translateY(-2px);
 }
 .attachment-cancel-btn {
   background-color: #bb4d4d;

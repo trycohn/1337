@@ -5,7 +5,7 @@
     max-width: 700px;
     max-height: 90vh;
     overflow-y: auto;
-    /* REMOVED ANIMATION: animation: modalSlideIn 0.3s ease-out; */
+    animation: modalSlideIn 0.3s ease-out;
     border: solid 1px #ffffff !important;
 }
 
@@ -52,7 +52,7 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s; */ */ */ */
+    transition: all 0.2s;
 }
 
 .tab-btn.active {
@@ -200,7 +200,7 @@
     border: 2px solid #e9ecef;
     border-radius: 8px;
     font-size: 14px;
-    /* REMOVED ANIMATION: transition: border-color 0.2s; */
+    transition: border-color 0.2s;
 }
 
 .form-group input:focus {
@@ -231,7 +231,7 @@
     align-items: center;
     padding: 12px;
     border-bottom: 1px solid #f8f9fa;
-    /* REMOVED ANIMATION: transition: background 0.2s; */
+    transition: background 0.2s;
 }
 
 .search-result:last-child {
@@ -356,7 +356,7 @@
 
 .select-team-btn:hover:not(:disabled),
 .create-team-btn:hover:not(:disabled) {
-    /* REMOVED ANIMATION: transform: translateY(-2px); */
+    transform: translateY(-2px);
 
 }
 
@@ -364,7 +364,7 @@
 .create-team-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    /* REMOVED ANIMATION: transform: none; */
+    transform: none;
     box-shadow: none;
 }
 

@@ -22,16 +22,16 @@
     flex-direction: column;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     overflow: hidden;
-    /* REMOVED ANIMATION: animation: modalSlideIn 0.2s ease-out; */
+    animation: modalSlideIn 0.2s ease-out;
 }
 @keyframes modalSlideIn {
     from {
         opacity: 0;
-        /* REMOVED ANIMATION: transform: scale(0.95) translateY(-10px); */
+        transform: scale(0.95) translateY(-10px);
     }
     to {
         opacity: 1;
-        /* REMOVED ANIMATION: transform: scale(1) translateY(0); */
+        transform: scale(1) translateY(0);
     }
 }
 .modal-header {
@@ -61,7 +61,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* REMOVED ANIMATION: transition: color 0.15s ease, background-color 0.15s ease; */
+    transition: color 0.15s ease, background-color 0.15s ease;
 }
 .close-button:hover {
     color: #dcddde;
@@ -81,7 +81,7 @@
     color: #b9bbbe;
     font-size: 12px;
     font-weight: 600;
-    text-/* REMOVED ANIMATION: transform: uppercase; */
+    text-transform: uppercase;
     letter-spacing: 0.02em;
     margin: 0;
     background: transparent;
@@ -111,7 +111,7 @@
     margin: 0;
     border-radius: 0;
     cursor: pointer;
-    /* REMOVED ANIMATION: transition: background-color 0.15s ease; */
+    transition: background-color 0.15s ease;
     width: 100%;
     box-sizing: border-box;
 }
@@ -174,7 +174,7 @@
 .badge {
     font-size: 14px;
     opacity: 0.8;
-    /* REMOVED ANIMATION: transition: opacity 0.15s ease; */
+    transition: opacity 0.15s ease;
 }
 .badge:hover {
     opacity: 1;

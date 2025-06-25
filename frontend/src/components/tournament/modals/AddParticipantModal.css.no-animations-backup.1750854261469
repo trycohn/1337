@@ -18,7 +18,7 @@
     color: #ffffff;
     font-weight: 300;
     font-size: 1.2em;
-    text-/* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: uppercase; */ */ */
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 .add-participant-modal .close-btn {
@@ -34,7 +34,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 0;
-    /* REMOVED ANIMATION: transition: color 0.2s ease; */
+    transition: color 0.2s ease;
 }
 .add-participant-modal .close-btn:hover {
     color: #888888;
@@ -65,7 +65,7 @@
     background-color: #2a2a2a;
     color: #ffffff;
     font-size: 1em;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s ease; */ */
+    transition: all 0.2s ease;
 }
 .add-participant-form .form-group input:focus {
     outline: none;

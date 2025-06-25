@@ -10,7 +10,7 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    /* REMOVED ANIMATION: animation: fadeIn 0.3s ease-out; */
+    animation: fadeIn 0.3s ease-out;
 }
 
 .participation-confirm-modal {
@@ -20,23 +20,23 @@
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    /* REMOVED ANIMATION: animation: slideIn 0.3s ease-out; */
+    animation: slideIn 0.3s ease-out;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-/* REMOVED ANIMATION: @keyframes fadeIn {
+@keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-} */
+}
 
 @keyframes slideIn {
     from {
         opacity: 0;
-        /* REMOVED ANIMATION: transform: translateY(-50px) scale(0.9); */
+        transform: translateY(-50px) scale(0.9);
     }
     to {
         opacity: 1;
-        /* REMOVED ANIMATION: transform: translateY(0) scale(1); */
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -69,12 +69,12 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s ease; */ */
+    transition: all 0.2s ease;
 }
 
 .participation-confirm-modal .close-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.2);
-    /* REMOVED ANIMATION: transform: rotate(90deg); */
+    transform: rotate(90deg);
 }
 
 .participation-confirm-modal .close-btn:disabled {
@@ -197,7 +197,7 @@
 
 .btn-cancel:hover:not(:disabled) {
     background: #5a6268;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-1px); */ */
+    transform: translateY(-1px);
 }
 
 .btn-confirm-participation {
@@ -216,7 +216,7 @@
 .btn-confirm-participation:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    /* REMOVED ANIMATION: transform: none !important; */
+    transform: none !important;
 }
 
 .loading-spinner {
@@ -225,12 +225,12 @@
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top: 2px solid white;
     border-radius: 50%;
-    /* REMOVED ANIMATION: animation: spin 1s linear infinite; */
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    0% { /* REMOVED ANIMATION: transform: rotate(0deg); */ }
-    100% { /* REMOVED ANIMATION: transform: rotate(360deg); */ }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* Адаптивность */

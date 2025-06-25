@@ -5,14 +5,14 @@
 .enhanced-match-result-overlay {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    /* REMOVED ANIMATION: animation: overlayFadeIn 0.3s ease-out; */
+    animation: overlayFadeIn 0.3s ease-out;
 }
-/* REMOVED ANIMATION: @keyframes overlayFadeIn {
+@keyframes overlayFadeIn {
     from { opacity: 0; backdrop-filter: blur(0); }
     to { opacity: 1; backdrop-filter: blur(4px); }
-} */
+}
 .enhanced-match-result-modal {
-    /* REMOVED ANIMATION: animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); */
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
     border: 2px solid #444444;
     position: relative;
@@ -24,11 +24,11 @@
 @keyframes modalSlideIn {
     from { 
         opacity: 0;
-        /* REMOVED ANIMATION: transform: translateY(-30px) scale(0.95); */
+        transform: translateY(-30px) scale(0.95);
     }
     to { 
         opacity: 1;
-        /* REMOVED ANIMATION: transform: translateY(0) scale(1); */
+        transform: translateY(0) scale(1);
     }
 }
 .match-result-modal {
@@ -56,7 +56,7 @@
     color: #ffffff;
     font-weight: 300;
     font-size: 0.7em;
-    text-/* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: uppercase; */ */ */
+    text-transform: uppercase;
     letter-spacing: 0.5px;
     display: flex;
     align-items: center;
@@ -66,11 +66,11 @@
 .changes-indicator {
     color: #ffc107;
     font-size: 1.5em;
-    /* REMOVED ANIMATION: animation: changesPulse 2s infinite; */
+    animation: changesPulse 2s infinite;
 }
 @keyframes changesPulse {
-    0%, 100% { opacity: 1; /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: scale(1); */ */ */ */ */ }
-    50% { opacity: 0.7; /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: scale(1.1); */ */ */ }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
 }
 .match-result-modal .close-btn {
     background: none;
@@ -85,13 +85,13 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.3s ease; */ */ */ */ */ */ */ */ */ */ */ */ */ */
+    transition: all 0.3s ease;
 }
 .match-result-modal .close-btn:hover {
     color: #ffffff;
     border-color: #888888;
     background-color: rgba(255, 255, 255, 0.1);
-    /* REMOVED ANIMATION: transform: rotate(90deg) scale(1.1); */
+    transform: rotate(90deg) scale(1.1);
 }
 .match-result-form {
     padding: 20px;
@@ -133,7 +133,7 @@
 .team-display:hover {
     border-color: #007acc;
     background: linear-gradient(135deg, #007acc, #0099ff);
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-2px); */ */ */ */
+    transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(0, 122, 204, 0.3);
 }
 .team-display.winner-selected {
@@ -161,11 +161,11 @@
 .winner-crown {
     font-size: 20px;
     margin-left: 8px;
-    /* REMOVED ANIMATION: animation: crownBounce 2s infinite; */
+    animation: crownBounce 2s infinite;
 }
 @keyframes crownBounce {
-    0%, 20%, 50%, 80%, 100% { /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(0); */ */ */ */ }
-    40% { /* REMOVED ANIMATION: transform: translateY(-4px); */ }
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-4px); }
     60% { transform: translateY(-2px); }
 }
 .vs-separator {
@@ -194,7 +194,7 @@
 }
 .clear-winner-btn:hover {
     background: linear-gradient(135deg, #c82333, #a71e2a);
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateY(-1px); */ */ */ */ */ */
+    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 /* =================================================
@@ -204,7 +204,7 @@
     position: absolute;
     top: 100%;
     left: 50%;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: translateX(-50%); */ */
+    transform: translateX(-50%);
     background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
     color: #ffffff;
     border: 2px solid #ffffff;
@@ -215,7 +215,7 @@
     font-size: 24px;
     z-index: 1000;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-    /* REMOVED ANIMATION: animation: tooltipSlideDown 0.3s ease-out; */
+    animation: tooltipSlideDown 0.3s ease-out;
     margin-top: 8px;
     display: flex;
     flex-direction: column;
@@ -237,11 +237,11 @@
 @keyframes tooltipSlideDown {
     from {
         opacity: 0;
-        /* REMOVED ANIMATION: transform: translateX(-50%) translateY(-10px); */
+        transform: translateX(-50%) translateY(-10px);
     }
     to {
         opacity: 1;
-        /* REMOVED ANIMATION: transform: translateX(-50%) translateY(0); */
+        transform: translateX(-50%) translateY(0);
     }
 }
 .team-tooltip::before {
@@ -536,7 +536,7 @@
 }
 .remove-map-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #c82333, #a71e2a);
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: scale(1.05); */ */
+    transform: scale(1.05);
 }
 .map-scores {
     display: flex;
@@ -588,12 +588,12 @@
     border-radius: 8px;
     font-weight: 600;
     font-size: 14px;
-    /* REMOVED ANIMATION: animation: winnerGlow 2s infinite alternate; */
+    animation: winnerGlow 2s infinite alternate;
 }
-/* REMOVED ANIMATION: @keyframes winnerGlow {
+@keyframes winnerGlow {
     from { box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3); }
     to { box-shadow: 0 4px 16px rgba(40, 167, 69, 0.6); }
-} */
+}
 /* =================================================
    ВАЛИДАЦИЯ И УВЕДОМЛЕНИЯ
    ================================================= */
@@ -603,12 +603,12 @@
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 20px;
-    /* REMOVED ANIMATION: animation: errorShake 0.5s ease-in-out; */
+    animation: errorShake 0.5s ease-in-out;
 }
 @keyframes errorShake {
-    0%, 100% { /* REMOVED ANIMATION: transform: translateX(0); */ }
-    25% { /* REMOVED ANIMATION: transform: translateX(-4px); */ }
-    75% { /* REMOVED ANIMATION: transform: translateX(4px); */ }
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
 }
 .validation-error {
     color: #ffffff;
@@ -625,12 +625,12 @@
     color: #ffd700;
     font-size: 20px;
     margin-left: 8px;
-    /* REMOVED ANIMATION: animation: pulse 1.5s infinite; */
+    animation: pulse 1.5s infinite;
 }
-/* REMOVED ANIMATION: @keyframes pulse {
+@keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
-} */
+}
 /* =================================================
    КНОПКИ И ДЕЙСТВИЯ
    ================================================= */
@@ -679,11 +679,11 @@
     opacity: 0.6;
 }
 .loading-spinner {
-    /* REMOVED ANIMATION: animation: spin 1s linear infinite; */
+    animation: spin 1s linear infinite;
 }
 @keyframes spin {
-    from { /* REMOVED ANIMATION: transform: rotate(0deg); */ }
-    to { /* REMOVED ANIMATION: transform: rotate(360deg); */ }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 /* =================================================
    RESPONSIVE DESIGN
@@ -924,7 +924,7 @@
     background: linear-gradient(135deg, #6c757d, #5a6268);
     cursor: not-allowed;
     opacity: 0.6;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: none; */ */
+    transform: none;
     box-shadow: none;
 }
 .add-map-btn:active:not(:disabled) {
@@ -949,7 +949,7 @@
     font-weight: 500;
     color: #495057;
     user-select: none;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s ease; */ */ */
+    transition: all 0.2s ease;
 }
 
 .auto-calculate-checkbox:hover {
@@ -978,31 +978,31 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    /* REMOVED ANIMATION: animation: pulseIndicator 2s ease-in-out infinite; */
+    animation: pulseIndicator 2s ease-in-out infinite;
 }
 
-/* REMOVED ANIMATION: @keyframes pulseIndicator {
+@keyframes pulseIndicator {
     0%, 100% {
         background: rgba(0, 123, 255, 0.1);
     }
     50% {
         background: rgba(0, 123, 255, 0.15);
     }
-} */
+}
 
 .indicator-icon {
     font-size: 14px;
-    /* REMOVED ANIMATION: animation: sparkle 1.5s ease-in-out infinite; */
+    animation: sparkle 1.5s ease-in-out infinite;
 }
 
-/* REMOVED ANIMATION: @keyframes sparkle {
+@keyframes sparkle {
     0%, 100% {
         transform: scale(1);
     }
     50% {
         transform: scale(1.1);
     }
-} */
+}
 
 .indicator-text {
     font-size: 12px;
@@ -1040,12 +1040,12 @@
     border-radius: 10px;
     font-weight: bold;
     box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
-    /* REMOVED ANIMATION: animation: badgePulse 2s ease-in-out infinite; */
+    animation: badgePulse 2s ease-in-out infinite;
     pointer-events: none;
     z-index: 10;
 }
 
-/* REMOVED ANIMATION: @keyframes badgePulse {
+@keyframes badgePulse {
     0%, 100% {
         transform: scale(1);
         box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
@@ -1054,7 +1054,7 @@
         transform: scale(1.05);
         box-shadow: 0 3px 6px rgba(156, 39, 176, 0.4);
     }
-} */
+}
 
 .auto-calculate-help {
     margin-top: 12px;
@@ -1100,7 +1100,7 @@
 
 /* Анимация при включении автоматического расчета */
 .score-inputs:has(.auto-calculated) {
-    /* REMOVED ANIMATION: animation: autoCalculateActivated 0.5s ease-out; */
+    animation: autoCalculateActivated 0.5s ease-out;
 }
 
 @keyframes autoCalculateActivated {
@@ -1109,7 +1109,7 @@
         box-shadow: none;
     }
     50% {
-        /* REMOVED ANIMATION: transform: scale(1.02); */
+        transform: scale(1.02);
         box-shadow: 0 4px 12px rgba(156, 39, 176, 0.2);
     }
     100% {
@@ -1201,7 +1201,7 @@
     
     .vs-separator {
         margin: 8px 0;
-        /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: rotate(90deg); */ */ */
+        transform: rotate(90deg);
     }
     
     .stats-grid {
@@ -1221,7 +1221,7 @@
         position: fixed;
         top: 50%;
         left: 50%;
-        /* REMOVED ANIMATION: transform: translate(-50%, -50%); */
+        transform: translate(-50%, -50%);
         width: 90vw;
         max-width: 350px;
     }

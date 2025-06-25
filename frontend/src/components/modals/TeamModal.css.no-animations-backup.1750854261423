@@ -5,7 +5,7 @@
     max-width: 1000px;
     max-height: 90vh;
     overflow-y: auto;
-    /* REMOVED ANIMATION: animation: modalSlideIn 0.3s ease-out; */
+    animation: modalSlideIn 0.3s ease-out;
 }
 
 .team-modal-content {
@@ -78,7 +78,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    /* REMOVED ANIMATION: transition: opacity 0.2s; */
+    transition: opacity 0.2s;
 }
 
 .team-avatar-container-large:hover .avatar-overlay {
@@ -93,11 +93,11 @@
     cursor: pointer;
     padding: 8px;
     border-radius: 8px;
-    /* REMOVED ANIMATION: transition: transform 0.2s; */
+    transition: transform 0.2s;
 }
 
 .change-avatar-btn:hover {
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transform: scale(1.1); */ */ */
+    transform: scale(1.1);
 }
 
 .team-info-large {
@@ -144,7 +144,7 @@
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #e9ecef;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: all 0.2s; */ */ */ */ */ */
+    transition: all 0.2s;
     color: #ffffff;
 }
 
@@ -322,7 +322,7 @@
     border: 2px solid #e9ecef;
     border-radius: 8px;
     font-size: 14px;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: border-color 0.2s; */ */
+    transition: border-color 0.2s;
     box-sizing: border-box;
 }
 
@@ -352,7 +352,7 @@
     align-items: center;
     padding: 12px;
     border-bottom: 1px solid #f8f9fa;
-    /* REMOVED ANIMATION: /* REMOVED ANIMATION: transition: background 0.2s; */ */
+    transition: background 0.2s;
 }
 
 .search-result-item:last-child {
