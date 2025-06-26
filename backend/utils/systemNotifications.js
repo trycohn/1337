@@ -180,6 +180,36 @@ async function sendAdminRequestRejectedNotification(recipientId, tournamentName)
     return await sendSystemNotification(recipientId, message, 'admin_rejected');
 }
 
+/**
+ * Отправляет приглашение стать администратором турнира
+ */
+async function sendAdminInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId, invitationId) {
+    const message = `🛡️ Вас пригласили стать администратором турнира "${tournamentName}" пользователем ${inviterUsername}.\n\n` +
+        `💼 Как администратор вы сможете:\n` +
+        `• Управлять матчами и результатами\n` +
+        `• Добавлять и удалять участников\n` +
+        `• Модерировать чат турнира\n\n` +
+        `⏰ Приглашение действительно 7 дней.\n\n` +
+        `Перейдите в турнир для принятия или отклонения приглашения: /tournaments/${tournamentId}`;
+    return await sendSystemNotification(recipientId, message, 'admin_invitation');
+}
+
+/**
+ * Отправляет уведомление о принятии приглашения администратора
+ */
+async function sendAdminInviteAcceptedNotification(recipientId, username, tournamentName) {
+    const message = `✅ Пользователь ${username} принял приглашение стать администратором турнира "${tournamentName}".`;
+    return await sendSystemNotification(recipientId, message, 'admin_invite_accepted');
+}
+
+/**
+ * Отправляет уведомление об отклонении приглашения администратора
+ */
+async function sendAdminInviteRejectedNotification(recipientId, username, tournamentName) {
+    const message = `❌ Пользователь ${username} отклонил приглашение стать администратором турнира "${tournamentName}".`;
+    return await sendSystemNotification(recipientId, message, 'admin_invite_rejected');
+}
+
 module.exports = {
     sendSystemNotification,
     sendTournamentInviteNotification,
@@ -190,6 +220,9 @@ module.exports = {
     sendAdminRequestNotification,
     sendAdminRequestAcceptedNotification,
     sendAdminRequestRejectedNotification,
+    sendAdminInviteNotification,
+    sendAdminInviteAcceptedNotification,
+    sendAdminInviteRejectedNotification,
     ensureSystemUser,
     getOrCreateSystemChat
 }; 
