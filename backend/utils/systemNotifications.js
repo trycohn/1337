@@ -54,23 +54,23 @@ async function getOrCreateSystemChat(recipientId) {
     try {
         const systemUserId = await ensureSystemUser();
         
-        // Ищем существующий чат
+        // Ищем существующий индивидуальный чат
         const chatCheck = await pool.query(`
             SELECT c.id 
             FROM chats c
             JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = $1
             JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = $2
-            WHERE c.is_group = false
+            WHERE c.type = 'private'
         `, [systemUserId, recipientId]);
         
         if (chatCheck.rows.length > 0) {
             return chatCheck.rows[0].id;
         }
         
-        // Создаем новый чат
+        // Создаем новый индивидуальный чат
         const chatResult = await pool.query(
-            'INSERT INTO chats (name, is_group, created_by, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
-            [`Системные уведомления`, false, systemUserId]
+            'INSERT INTO chats (name, type, created_by, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
+            [`Системные уведомления`, 'private', systemUserId]
         );
         
         const chatId = chatResult.rows[0].id;

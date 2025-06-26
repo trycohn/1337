@@ -328,8 +328,8 @@ class AdminService {
         // Отправляем обычное уведомление (для совместимости)
         const notificationMessage = `Вас пригласили стать администратором турнира "${tournament.name}". Приглашение действительно 7 дней.`;
         await pool.query(
-            'INSERT INTO notifications (user_id, message, type, tournament_id, admin_invitation_id) VALUES ($1, $2, $3, $4, $5)',
-            [inviteeId, notificationMessage, 'admin_invitation', tournamentId, invitationId]
+            'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+            [inviteeId, notificationMessage, 'admin_invitation', tournamentId]
         );
 
         // Отправляем уведомление через WebSocket
@@ -338,7 +338,6 @@ class AdminService {
             message: notificationMessage,
             type: 'admin_invitation',
             tournament_id: tournamentId,
-            admin_invitation_id: invitationId,
             created_at: new Date().toISOString()
         });
 
