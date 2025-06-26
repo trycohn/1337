@@ -14,7 +14,7 @@ class ParticipantRepository {
                 tp.faceit_elo,
                 tp.cs2_premier_rank,
                 tp.in_team,
-                tp.invited_at,
+                tp.created_at,
                 u.username,
                 u.avatar_url,
                 u.faceit_elo as user_faceit_elo,
@@ -44,12 +44,12 @@ class ParticipantRepository {
      * Создание нового участника
      */
     static async create(participantData) {
-        const { tournament_id, user_id, name } = participantData;
+        const { tournament_id, user_id, name, faceit_elo, cs2_premier_rank, in_team } = participantData;
 
         const result = await pool.query(
-            `INSERT INTO tournament_participants (tournament_id, user_id, name, invited_at)
-             VALUES ($1, $2, $3, NOW()) RETURNING *`,
-            [tournament_id, user_id, name]
+            `INSERT INTO tournament_participants (tournament_id, user_id, name, faceit_elo, cs2_premier_rank, in_team)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [tournament_id, user_id, name, faceit_elo || null, cs2_premier_rank || null, in_team || false]
         );
 
         return result.rows[0];
@@ -135,7 +135,7 @@ class ParticipantRepository {
             FROM tournament_participants tp
             LEFT JOIN tournaments t ON tp.tournament_id = t.id
             WHERE tp.user_id = $1
-            ORDER BY tp.invited_at DESC
+            ORDER BY tp.created_at DESC
         `, [userId]);
 
         return result.rows;
