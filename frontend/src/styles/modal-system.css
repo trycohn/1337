@@ -1,0 +1,602 @@
+/* 🎯 ЕДИНАЯ ДИЗАЙН-СИСТЕМА МОДАЛЬНЫХ ОКОН
+ * Создано опытным UI/UX разработчиком
+ * Минималистичный черно-белый дизайн для всех модальных окон
+ * Версия: 1.0 - Унифицированная система
+ */
+
+/* === ОСНОВА МОДАЛЬНОЙ СИСТЕМЫ === */
+.modal-system-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.modal-system-overlay.modal-system-hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* === КОНТЕЙНЕР МОДАЛЬНОГО ОКНА === */
+.modal-system-container {
+    background: #000000;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-system-container.modal-system-small {
+    max-width: 500px;
+}
+
+.modal-system-container.modal-system-medium {
+    max-width: 700px;
+}
+
+.modal-system-container.modal-system-large {
+    max-width: 1200px;
+}
+
+/* === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА === */
+.modal-system-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #ffffff;
+    background: #000000;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modal-system-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-system-subtitle {
+    margin: 8px 0 0 0;
+    color: #cccccc;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.modal-system-close {
+    background: none;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px 16px;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-system-close:hover {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* === ТЕЛО МОДАЛЬНОГО ОКНА === */
+.modal-system-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.modal-system-body.modal-system-no-padding {
+    padding: 0;
+}
+
+/* === ПОДВАЛ МОДАЛЬНОГО ОКНА === */
+.modal-system-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid #ffffff;
+    background: #000000;
+}
+
+.modal-system-footer.modal-system-center {
+    justify-content: center;
+}
+
+.modal-system-footer.modal-system-space-between {
+    justify-content: space-between;
+}
+
+/* === КНОПКИ МОДАЛЬНОЙ СИСТЕМЫ === */
+.modal-system-btn {
+    padding: 10px 20px;
+    border: 1px solid #ffffff;
+    background: #000000;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.modal-system-btn:hover {
+    background: #ffffff;
+    color: #000000;
+}
+
+.modal-system-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modal-system-btn:disabled:hover {
+    background: #000000;
+    color: #ffffff;
+}
+
+.modal-system-btn-primary {
+    background: #ffffff;
+    color: #000000;
+}
+
+.modal-system-btn-primary:hover {
+    background: #000000;
+    color: #ffffff;
+}
+
+.modal-system-btn-danger {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.modal-system-btn-danger:hover {
+    background: #ff0000;
+    color: #ffffff;
+}
+
+.modal-system-btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-width: 60px;
+}
+
+.modal-system-btn-large {
+    padding: 14px 28px;
+    font-size: 16px;
+    min-width: 120px;
+}
+
+/* === БЕЙДЖИ И ИНДИКАТОРЫ === */
+.modal-system-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: 1px solid #ffffff;
+    background: #000000;
+    color: #ffffff;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.modal-system-badge-success {
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.modal-system-badge-warning {
+    border-color: #ffff00;
+    color: #ffff00;
+}
+
+.modal-system-badge-error {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+/* === РАЗДЕЛИТЕЛИ === */
+.modal-system-divider {
+    border: none;
+    border-top: 1px solid #ffffff;
+    margin: 20px 0;
+    opacity: 0.3;
+}
+
+.modal-system-spacer {
+    height: 20px;
+}
+
+.modal-system-spacer-small {
+    height: 10px;
+}
+
+.modal-system-spacer-large {
+    height: 40px;
+}
+
+/* === КОНТЕНТ СЕКЦИИ === */
+.modal-system-section {
+    margin-bottom: 30px;
+}
+
+.modal-system-section:last-child {
+    margin-bottom: 0;
+}
+
+.modal-system-section-title {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    border-bottom: 1px solid #ffffff;
+    padding-bottom: 8px;
+}
+
+.modal-system-section-content {
+    color: #cccccc;
+    line-height: 1.5;
+}
+
+/* === GRID СИСТЕМЫ === */
+.modal-system-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.modal-system-grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.modal-system-grid-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.modal-system-grid-4 {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+/* === FLEX СИСТЕМЫ === */
+.modal-system-flex {
+    display: flex;
+    gap: 20px;
+}
+
+.modal-system-flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.modal-system-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-system-flex-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* === ИНФОРМАЦИОННЫЕ БЛОКИ === */
+.modal-system-info {
+    padding: 15px;
+    border: 1px solid #ffffff;
+    background: #111111;
+    margin: 15px 0;
+}
+
+.modal-system-info-success {
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.modal-system-info-warning {
+    border-color: #ffff00;
+    color: #ffff00;
+}
+
+.modal-system-info-error {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+/* === ТУЛТИПЫ === */
+.modal-system-tooltip {
+    position: absolute;
+    background: #000000;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    padding: 6px 12px;
+    font-size: 11px;
+    z-index: 1001;
+    max-width: 180px;
+    opacity: 0.9;
+    word-wrap: break-word;
+}
+
+.modal-system-tooltip-bottom {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+}
+
+.modal-system-tooltip-top {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+}
+
+/* === СПИСКИ === */
+.modal-system-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modal-system-list-item {
+    padding: 10px;
+    border-bottom: 1px solid #333333;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-system-list-item:last-child {
+    border-bottom: none;
+}
+
+.modal-system-list-item:hover {
+    background: #111111;
+}
+
+/* === ТАБЛИЦЫ === */
+.modal-system-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.modal-system-table th,
+.modal-system-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #333333;
+}
+
+.modal-system-table th {
+    background: #111111;
+    color: #ffffff;
+    font-weight: 600;
+    border-bottom: 1px solid #ffffff;
+}
+
+.modal-system-table td {
+    color: #cccccc;
+}
+
+.modal-system-table tr:hover td {
+    background: #111111;
+}
+
+/* === ФОРМЫ === */
+.modal-system-form-group {
+    margin-bottom: 20px;
+}
+
+.modal-system-label {
+    display: block;
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.modal-system-input,
+.modal-system-textarea,
+.modal-system-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ffffff;
+    background: #000000;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.modal-system-input:focus,
+.modal-system-textarea:focus,
+.modal-system-select:focus {
+    outline: none;
+    border-color: #cccccc;
+    background: #111111;
+}
+
+.modal-system-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* === ЧЕКБОКСЫ И РАДИО === */
+.modal-system-checkbox-group,
+.modal-system-radio-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.modal-system-checkbox,
+.modal-system-radio {
+    width: 18px;
+    height: 18px;
+    accent-color: #ffffff;
+}
+
+/* === АДАПТИВНОСТЬ === */
+@media (max-width: 768px) {
+    .modal-system-container {
+        width: 95%;
+        max-height: 95vh;
+        min-width: auto;
+    }
+    
+    .modal-system-header,
+    .modal-system-body,
+    .modal-system-footer {
+        padding: 15px;
+    }
+    
+    .modal-system-title {
+        font-size: 20px;
+    }
+    
+    .modal-system-grid-2,
+    .modal-system-grid-3,
+    .modal-system-grid-4 {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .modal-system-flex {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .modal-system-footer {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-system-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-system-header,
+    .modal-system-body,
+    .modal-system-footer {
+        padding: 12px;
+    }
+    
+    .modal-system-title {
+        font-size: 18px;
+    }
+    
+    .modal-system-close {
+        padding: 6px 12px;
+        font-size: 16px;
+    }
+}
+
+/* === ACCESSIBILITY === */
+.modal-system-overlay[aria-hidden="true"] {
+    display: none;
+}
+
+.modal-system-container:focus {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+.modal-system-btn:focus,
+.modal-system-close:focus,
+.modal-system-input:focus,
+.modal-system-textarea:focus,
+.modal-system-select:focus {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* === PERFORMANCE === */
+.modal-system-overlay {
+    contain: layout;
+    will-change: opacity;
+}
+
+.modal-system-container {
+    contain: layout style;
+    will-change: transform;
+}
+
+/* === УТИЛИТЫ === */
+.modal-system-text-center {
+    text-align: center;
+}
+
+.modal-system-text-left {
+    text-align: left;
+}
+
+.modal-system-text-right {
+    text-align: right;
+}
+
+.modal-system-hidden {
+    display: none !important;
+}
+
+.modal-system-visible {
+    display: block !important;
+}
+
+.modal-system-bold {
+    font-weight: 700;
+}
+
+.modal-system-italic {
+    font-style: italic;
+}
+
+.modal-system-uppercase {
+    text-transform: uppercase;
+}
+
+.modal-system-mb-10 {
+    margin-bottom: 10px;
+}
+
+.modal-system-mb-20 {
+    margin-bottom: 20px;
+}
+
+.modal-system-mt-10 {
+    margin-top: 10px;
+}
+
+.modal-system-mt-20 {
+    margin-top: 20px;
+}

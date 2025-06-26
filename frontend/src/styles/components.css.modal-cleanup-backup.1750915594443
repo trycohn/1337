@@ -183,6 +183,43 @@ nav a:hover, nav button:hover {
   width: 64px;
   height: 64px;
 }
+/* Модальные окна */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background-color: var(--card-background);
+  border-radius: var(--border-radius-md);
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--light-gray);
+}
+.modal-title {
+  margin: 0;
+  color: var(--text-color);
+}
+.modal-body {
+  padding: var(--spacing-md);
+}
+.modal-footer {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--light-gray);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
 /* Списки */
 .list-group {
   border-radius: var(--border-radius-sm);

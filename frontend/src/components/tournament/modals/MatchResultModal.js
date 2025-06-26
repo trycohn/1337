@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { isCounterStrike2, getDefaultCS2Maps } from '../../../utils/mapHelpers';
+import { useMatchResultModal } from '../../../hooks/useModalSystem';
+import '../../../styles/modal-system.css';
 import './MatchResultModal.css';
 
 /**
- * MatchResultModal v4.0 - Комплексное управление результатами матчей
+ * 🎯 MatchResultModal v5.0 - Унифицированная модальная система
+ * Создано опытным UI/UX разработчиком
+ * Использует единую дизайн-систему модальных окон
  * 
- * @version 4.0 (Полная реализация с выбором победителя и тултипами)
- * @features Выбор победителя, тултипы команд, расширенная статистика, валидация
+ * @version 5.0 (Использует modal-system + сохранена вся функциональность)
+ * @features Выбор победителя, тултипы команд, расширенная статистика, валидация, карты CS2
  */
 const MatchResultModal = ({
     isOpen,
@@ -27,6 +31,23 @@ const MatchResultModal = ({
     // 🎯 СОСТОЯНИЯ ДЛЯ ТУЛТИПОВ
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
+
+    // Используем унифицированный хук модальной системы
+    const modalSystem = useMatchResultModal({
+        onClose: () => {
+            if (hasChanges && !isLoading) {
+                const confirmed = window.confirm(
+                    '⚠️ У вас есть несохраненные изменения. Закрыть без сохранения?'
+                );
+                if (!confirmed) return;
+            }
+            setShowTeam1Tooltip(false);
+            setShowTeam2Tooltip(false);
+            setSelectedWinner(null);
+            setHasChanges(false);
+            onClose();
+        }
+    });
 
     // 🎯 УЛУЧШЕННОЕ: Определение игры турнира
     const getTournamentGame = useCallback(() => {
@@ -295,26 +316,28 @@ const MatchResultModal = ({
         }
     }, [matchResultData.maps_data, calculateOverallScoreFromMaps, autoCalculateScore]);
 
-    // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ (МИНИМАЛИСТИЧНЫЙ)
+    // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ (ОБНОВЛЕННЫЙ ДЛЯ МОДАЛЬНОЙ СИСТЕМЫ)
     const TeamTooltip = ({ team, composition, show }) => {
         if (!show || !composition) return null;
 
         return (
-            <div className="team-tooltip">
-                <div className="tooltip-header">
-                    <h5>{composition.name}</h5>
-                </div>
-                <div className="tooltip-content">
-                    <ul className="team-members-tooltip">
+            <div className="modal-system-tooltip modal-system-tooltip-bottom">
+                <div className="modal-system-section">
+                    <h5 className="modal-system-bold modal-system-text-center modal-system-mb-10">
+                        {composition.name}
+                    </h5>
+                    <div className="modal-system-list">
                         {composition.members.map((member, index) => (
-                            <li key={index} className="tooltip-member">
-                                <span className="member-name">{member.name}</span>
+                            <div key={index} className="modal-system-list-item">
+                                <span className="modal-system-bold">{member.name}</span>
                                 {member.rating && (
-                                    <span className="member-rating">({member.rating})</span>
+                                    <span className="modal-system-badge modal-system-badge-success">
+                                        ({member.rating})
+                                    </span>
                                 )}
-                            </li>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
             </div>
         );
@@ -465,12 +488,7 @@ const MatchResultModal = ({
     };
 
     const handleClose = () => {
-        if (hasChanges && !isLoading) {
-            const confirmed = window.confirm(
-                '⚠️ У вас есть несохраненные изменения. Закрыть без сохранения?'
-            );
-            if (!confirmed) return;
-        }
+        modalSystem.closeModal();
         onClose();
     };
 
@@ -480,7 +498,7 @@ const MatchResultModal = ({
     const mapStats = getMapStatistics();
 
     // 🔧 УЛУЧШЕННАЯ ОТЛАДКА ДЛЯ ДИАГНОСТИКИ ПРОБЛЕМ С КАРТАМИ
-    console.log('🗺️ Диагностика карт в MatchResultModal:', {
+    console.log('🗺️ Диагностика карт в MatchResultModal v5.0:', {
         tournamentGame: getTournamentGame(),
         isCS2,
         availableMapsCount: availableMaps.length,
@@ -492,373 +510,391 @@ const MatchResultModal = ({
     });
 
     return (
-        <div className="modal-overlay enhanced-match-result-overlay" onClick={handleClose}>
-            <div className="modal-content match-result-modal enhanced-match-result-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h3>
-                        ✏️ Редактирование результата матча
-                        {hasChanges && <span className="changes-indicator">*</span>}
-                    </h3>
-                    <button className="close-btn" onClick={handleClose} title="Закрыть">✕</button>
+        <div className="modal-system-overlay" onClick={handleClose}>
+            <div className={modalSystem.getModalClasses('large')} onClick={(e) => e.stopPropagation()}>
+                
+                {/* === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА === */}
+                <div className="modal-system-header">
+                    <div>
+                        <h2 className="modal-system-title">
+                            ✏️ Редактирование результата матча
+                            {hasChanges && (
+                                <span className="modal-system-badge modal-system-badge-warning modal-system-ml-10">
+                                    *
+                                </span>
+                            )}
+                        </h2>
+                    </div>
+                    <button 
+                        className="modal-system-close" 
+                        onClick={handleClose} 
+                        aria-label="Закрыть модальное окно"
+                    >
+                        ✕
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="match-result-form">
-                    {/* Информация о матче с выбором победителя */}
-                    <div className="match-info">
-                        <div className="teams-display">
-                            <div 
-                                className={`team-display ${selectedWinner === 'team1' ? 'winner-selected' : ''} ${selectedMatch.team1_composition ? 'has-tooltip' : ''}`}
-                                onClick={() => selectWinner('team1')}
-                                onMouseEnter={() => setShowTeam1Tooltip(true)}
-                                onMouseLeave={() => setShowTeam1Tooltip(false)}
-                                title="Выбрать победителем"
-                            >
-                                <span className="team-name">{selectedMatch.team1_name || 'Команда 1'}</span>
-                                {selectedWinner === 'team1' && <span className="winner-crown">👑</span>}
-                                
-                                <TeamTooltip 
-                                    team="team1"
-                                    composition={selectedMatch.team1_composition}
-                                    show={showTeam1Tooltip}
-                                />
-                            </div>
-                            <div className="vs-separator">VS</div>
-                            <div 
-                                className={`team-display ${selectedWinner === 'team2' ? 'winner-selected' : ''} ${selectedMatch.team2_composition ? 'has-tooltip' : ''}`}
-                                onClick={() => selectWinner('team2')}
-                                onMouseEnter={() => setShowTeam2Tooltip(true)}
-                                onMouseLeave={() => setShowTeam2Tooltip(false)}
-                                title="Выбрать победителем"
-                            >
-                                <span className="team-name">{selectedMatch.team2_name || 'Команда 2'}</span>
-                                {selectedWinner === 'team2' && <span className="winner-crown">👑</span>}
-                                
-                                <TeamTooltip 
-                                    team="team2"
-                                    composition={selectedMatch.team2_composition}
-                                    show={showTeam2Tooltip}
-                                />
-                            </div>
-                        </div>
+                {/* === ТЕЛО МОДАЛЬНОГО ОКНА === */}
+                <div className="modal-system-body">
+                    <form onSubmit={handleSubmit} className="modal-system-flex-column">
                         
-                        {/* Кнопка сброса выбора победителя */}
-                        {selectedWinner && (
-                            <div className="winner-reset">
-                                <button 
-                                    type="button"
-                                    className="reset-winner-btn"
-                                    onClick={() => setSelectedWinner(null)}
-                                    title="Сбросить выбор победителя"
-                                >
-                                    🔄 Сбросить выбор победителя
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Основной счет матча */}
-                    <div className="match-scores">
-                        <h4>📊 Счет матча</h4>
-                        
-                        {/* 🆕 Настройки автоматического расчета */}
-                        {isCS2 && availableMaps.length > 0 && (
-                            <div className="auto-calculate-section">
-                                <label className="auto-calculate-checkbox">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoCalculateScore}
-                                        onChange={(e) => setAutoCalculateScore(e.target.checked)}
-                                        disabled={isLoading}
-                                    />
-                                    <span className="checkmark"></span>
-                                    🔄 Автоматически рассчитывать общий счет по картам
-                                </label>
-                                {autoCalculateScore && mapsData.length > 0 && (
-                                    <div className="auto-calculate-indicator">
-                                        <span className="indicator-icon">⚡</span>
-                                        <span className="indicator-text">Счет обновляется автоматически на основе побед на картах</span>
-                                        <button
-                                            type="button"
-                                            className="recalculate-btn"
-                                            onClick={calculateOverallScoreFromMaps}
-                                            title="Пересчитать счет сейчас"
-                                            disabled={isLoading}
-                                        >
-                                            🔄
-                                        </button>
-                                    </div>
-                                )}
-                                {!autoCalculateScore && mapsData.length > 0 && (
-                                    <div className="manual-calculate-section">
-                                        <p className="manual-hint">
-                                            💡 Автоматический расчет отключен. Вы можете пересчитать общий счет вручную:
-                                        </p>
-                                        <button
-                                            type="button"
-                                            className="manual-recalculate-btn"
-                                            onClick={calculateOverallScoreFromMaps}
-                                            disabled={isLoading}
-                                        >
-                                            🧮 Рассчитать счет по картам
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        
-                        <div className="score-inputs">
-                            <div className="score-container">
-                                <label htmlFor="score1">{selectedMatch.team1_name || 'Команда 1'}</label>
-                                <div className="score-input-wrapper">
-                                    <input
-                                        id="score1"
-                                        type="number"
-                                        value={matchResultData.score1}
-                                        onChange={(e) => handleScoreChange(1, e.target.value)}
-                                        disabled={isLoading || (autoCalculateScore && mapsData.length > 0)}
-                                        className={`${validationErrors.scores ? 'error' : ''} ${autoCalculateScore && mapsData.length > 0 ? 'auto-calculated' : ''}`}
-                                        title={autoCalculateScore && mapsData.length > 0 ? 'Счет рассчитывается автоматически на основе побед на картах' : ''}
-                                    />
-                                    {autoCalculateScore && mapsData.length > 0 && (
-                                        <div className="auto-calculated-badge">🤖</div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="score-separator">:</div>
-                            <div className="score-container">
-                                <label htmlFor="score2">{selectedMatch.team2_name || 'Команда 2'}</label>
-                                <div className="score-input-wrapper">
-                                    <input
-                                        id="score2"
-                                        type="number"
-                                        value={matchResultData.score2}
-                                        onChange={(e) => handleScoreChange(2, e.target.value)}
-                                        disabled={isLoading || (autoCalculateScore && mapsData.length > 0)}
-                                        className={`${validationErrors.scores ? 'error' : ''} ${autoCalculateScore && mapsData.length > 0 ? 'auto-calculated' : ''}`}
-                                        title={autoCalculateScore && mapsData.length > 0 ? 'Счет рассчитывается автоматически на основе побед на картах' : ''}
-                                    />
-                                    {autoCalculateScore && mapsData.length > 0 && (
-                                        <div className="auto-calculated-badge">🤖</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        {validationErrors.scores && (
-                            <div className="validation-error">{validationErrors.scores}</div>
-                        )}
-                        
-                        {/* Подсказка для автоматического расчета */}
-                        {autoCalculateScore && mapsData.length > 0 && (
-                            <div className="auto-calculate-help">
-                                <p>💡 <strong>Как работает автоматический расчет:</strong></p>
-                                <ul>
-                                    <li>Каждая выигранная карта = +1 к общему счету команды</li>
-                                    <li>Ничьи на картах не засчитываются в общий счет</li>
-                                    <li>Победитель определяется автоматически по большему количеству выигранных карт</li>
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 🔧 ИСПРАВЛЕННАЯ СЕКЦИЯ КАРТ */}
-                    {isCS2 && availableMaps.length > 0 && (
-                        <div className="maps-section">
-                            <div className="maps-header">
-                                <h4>🗺️ Результаты по картам ({mapsData.length}/7)</h4>
-                                <p className="maps-hint">
-                                    🎯 Укажите результаты на каждой карте для детальной статистики
-                                </p>
-                            </div>
+                        {/* Информация о матче с выбором победителя */}
+                        <div className="modal-system-section">
+                            <h3 className="modal-system-section-title">🏆 Выбор победителя</h3>
                             
-                            {/* 🔧 УЛУЧШЕННАЯ ОТЛАДОЧНАЯ ИНФОРМАЦИЯ */}
-                            <div className="debug-maps-info" style={{padding: '10px', background: '#f0f0f0', margin: '10px 0', fontSize: '12px'}}>
-                                <details>
-                                    <summary>🔍 Отладка карт (разработка)</summary>
-                                    <ul>
-                                        <li>Игра турнира: {getTournamentGame() || 'не определена'}</li>
-                                        <li>Поддержка CS2: {isCS2 ? 'Да' : 'Нет'}</li>
-                                        <li>Доступно карт: {availableMaps.length}</li>
-                                        <li>Названия карт: {availableMaps.join(', ')}</li>
-                                        <li>Текущих карт в матче: {mapsData.length}</li>
-                                        <li>ID матча: {selectedMatch?.id}</li>
-                                        <li>Секция карт показана: {isCS2 && availableMaps.length > 0 ? 'Да' : 'Нет'}</li>
-                                    </ul>
-                                </details>
-                            </div>
-
-                            <div className="maps-container">
-                                {mapsData.map((mapData, index) => (
-                                    <div key={index} className="map-entry">
-                                        <div className="map-select-container">
-                                            <select
-                                                className="map-select"
-                                                value={mapData.map || ''}
-                                                onChange={(e) => handleMapNameChange(index, e.target.value)}
-                                                disabled={isLoading}
-                                            >
-                                                <option value="">Выберите карту</option>
-                                                {availableMaps.map((mapName) => (
-                                                    <option key={mapName} value={mapName}>{mapName}</option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                type="button"
-                                                className="remove-map-btn"
-                                                onClick={() => removeMap(index)}
-                                                disabled={isLoading}
-                                                title="Удалить карту"
-                                            >
-                                                🗑️
-                                            </button>
+                            <div className="modal-system-grid-3">
+                                <div 
+                                    className={`modal-system-info ${selectedWinner === 'team1' ? 'modal-system-info-success' : ''}`}
+                                    onClick={() => selectWinner('team1')}
+                                    onMouseEnter={() => selectedMatch.team1_composition && setShowTeam1Tooltip(true)}
+                                    onMouseLeave={() => setShowTeam1Tooltip(false)}
+                                    style={{ cursor: 'pointer', position: 'relative' }}
+                                    title="Выбрать победителем"
+                                >
+                                    <div className="modal-system-text-center">
+                                        <div className="modal-system-bold modal-system-mb-10">
+                                            {selectedMatch.team1_name || 'Команда 1'}
                                         </div>
-                                        
-                                        <div className="map-scores">
-                                            <div className="map-score-input">
-                                                <label>{selectedMatch.team1_name || 'Команда 1'}</label>
-                                                <input
-                                                    type="number"
-                                                    value={mapData.score1 || 0}
-                                                    onChange={(e) => handleMapScoreChange(index, 1, e.target.value)}
-                                                    disabled={isLoading}
-                                                    className={validationErrors[`map_${index}_scores`] ? 'error' : ''}
-                                                />
+                                        {selectedWinner === 'team1' && (
+                                            <div className="modal-system-badge modal-system-badge-success">
+                                                👑 Победитель
                                             </div>
-                                            <div className="map-score-separator">:</div>
-                                            <div className="map-score-input">
-                                                <label>{selectedMatch.team2_name || 'Команда 2'}</label>
-                                                <input
-                                                    type="number"
-                                                    value={mapData.score2 || 0}
-                                                    onChange={(e) => handleMapScoreChange(index, 2, e.target.value)}
-                                                    disabled={isLoading}
-                                                    className={validationErrors[`map_${index}_scores`] ? 'error' : ''}
-                                                />
-                                            </div>
-                                        </div>
-                                        {validationErrors[`map_${index}_scores`] && (
-                                            <div className="validation-error">{validationErrors[`map_${index}_scores`]}</div>
                                         )}
                                     </div>
-                                ))}
-                                
-                                <button 
-                                    type="button"
-                                    className="add-map-btn"
-                                    onClick={addMap}
-                                    disabled={isLoading || mapsData.length >= 7}
-                                >
-                                    ➕ Добавить карту ({mapsData.length}/7)
-                                </button>
-                            </div>
+                                    
+                                    <TeamTooltip 
+                                        team="team1"
+                                        composition={selectedMatch.team1_composition}
+                                        show={showTeam1Tooltip}
+                                    />
+                                </div>
 
-                            {/* Расширенная статистика по картам */}
-                            {mapStats && (
-                                <div className="maps-summary enhanced-stats">
-                                    <h5>📊 Расширенная статистика</h5>
-                                    <div className="maps-summary-content">
-                                        <div className="stats-grid">
-                                            <div className="stat-group">
-                                                <h6>🏆 Победы по картам</h6>
-                                                <div className="maps-won">
-                                                    <span className="team-maps-won">
-                                                        {selectedMatch.team1_name}: {mapStats.team1Wins}
-                                                    </span>
-                                                    <span className="team-maps-won">
-                                                        {selectedMatch.team2_name}: {mapStats.team2Wins}
-                                                    </span>
-                                                    {mapStats.draws > 0 && (
-                                                        <span className="team-maps-won draws">
-                                                            Ничьи: {mapStats.draws}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="stat-group">
-                                                <h6>🎯 Общий счет по очкам</h6>
-                                                <div className="total-scores">
-                                                    <span className="total-score">
-                                                        {selectedMatch.team1_name}: {mapStats.team1TotalScore}
-                                                    </span>
-                                                    <span className="total-score">
-                                                        {selectedMatch.team2_name}: {mapStats.team2TotalScore}
-                                                    </span>
-                                                    <span className="score-difference">
-                                                        Разность: ±{mapStats.scoreDifference}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="stat-group">
-                                                <h6>📈 Эффективность</h6>
-                                                <div className="performance-stats">
-                                                    <span className="performance-stat">
-                                                        Карт сыграно: {mapStats.mapsCount}
-                                                    </span>
-                                                    <span className="performance-stat">
-                                                        Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
-                                                                 mapStats.mapsCount <= 3 ? 'BO3' : 
-                                                                 mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}
-                                                    </span>
-                                                    <span className="performance-stat">
-                                                        Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount / 2)}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                <div className="modal-system-text-center">
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '20px 0' }}>VS</div>
+                                </div>
+
+                                <div 
+                                    className={`modal-system-info ${selectedWinner === 'team2' ? 'modal-system-info-success' : ''}`}
+                                    onClick={() => selectWinner('team2')}
+                                    onMouseEnter={() => selectedMatch.team2_composition && setShowTeam2Tooltip(true)}
+                                    onMouseLeave={() => setShowTeam2Tooltip(false)}
+                                    style={{ cursor: 'pointer', position: 'relative' }}
+                                    title="Выбрать победителем"
+                                >
+                                    <div className="modal-system-text-center">
+                                        <div className="modal-system-bold modal-system-mb-10">
+                                            {selectedMatch.team2_name || 'Команда 2'}
                                         </div>
+                                        {selectedWinner === 'team2' && (
+                                            <div className="modal-system-badge modal-system-badge-success">
+                                                👑 Победитель
+                                            </div>
+                                        )}
                                     </div>
+                                    
+                                    <TeamTooltip 
+                                        team="team2"
+                                        composition={selectedMatch.team2_composition}
+                                        show={showTeam2Tooltip}
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Кнопка сброса выбора победителя */}
+                            {selectedWinner && (
+                                <div className="modal-system-text-center modal-system-mt-20">
+                                    <button 
+                                        type="button"
+                                        className="modal-system-btn"
+                                        onClick={() => setSelectedWinner(null)}
+                                        title="Сбросить выбор победителя"
+                                    >
+                                        🔄 Сбросить выбор победителя
+                                    </button>
                                 </div>
                             )}
                         </div>
-                    )}
 
-                    {/* Сообщение если карты не поддерживаются */}
-                    {!isCS2 && (
-                        <div className="no-maps-section">
-                            <p>ℹ️ Игра "{getTournamentGame() || 'неизвестна'}" не поддерживает выбор карт</p>
+                        {/* Основной счет матча */}
+                        <div className="modal-system-section">
+                            <h3 className="modal-system-section-title">📊 Счет матча</h3>
+                            
+                            {/* 🆕 Настройки автоматического расчета */}
+                            {isCS2 && availableMaps.length > 0 && (
+                                <div className="modal-system-info modal-system-mb-20">
+                                    <div className="modal-system-checkbox-group">
+                                        <input
+                                            type="checkbox"
+                                            className="modal-system-checkbox"
+                                            checked={autoCalculateScore}
+                                            onChange={(e) => setAutoCalculateScore(e.target.checked)}
+                                            disabled={isLoading}
+                                        />
+                                        <span className="modal-system-bold">
+                                            🔄 Автоматически рассчитывать общий счет по картам
+                                        </span>
+                                    </div>
+                                    
+                                    {autoCalculateScore && mapsData.length > 0 && (
+                                        <div className="modal-system-flex-between modal-system-mt-10">
+                                            <span>⚡ Счет обновляется автоматически на основе побед на картах</span>
+                                            <button
+                                                type="button"
+                                                className="modal-system-btn modal-system-btn-small"
+                                                onClick={calculateOverallScoreFromMaps}
+                                                title="Пересчитать счет сейчас"
+                                                disabled={isLoading}
+                                            >
+                                                🔄 Пересчитать
+                                            </button>
+                                        </div>
+                                    )}
+                                    
+                                    {!autoCalculateScore && mapsData.length > 0 && (
+                                        <div className="modal-system-mt-10">
+                                            <p>💡 Автоматический расчет отключен. Вы можете пересчитать общий счет вручную:</p>
+                                            <button
+                                                type="button"
+                                                className="modal-system-btn"
+                                                onClick={calculateOverallScoreFromMaps}
+                                                disabled={isLoading}
+                                            >
+                                                🧮 Рассчитать счет по картам
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            
+                            <div className="modal-system-grid-3">
+                                <div className="modal-system-form-group">
+                                    <label className="modal-system-label">
+                                        {selectedMatch.team1_name || 'Команда 1'}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className={`modal-system-input ${validationErrors.scores ? 'modal-system-input-error' : ''} ${autoCalculateScore && mapsData.length > 0 ? 'modal-system-input-disabled' : ''}`}
+                                        value={matchResultData.score1}
+                                        onChange={(e) => handleScoreChange(1, e.target.value)}
+                                        disabled={isLoading || (autoCalculateScore && mapsData.length > 0)}
+                                        title={autoCalculateScore && mapsData.length > 0 ? 'Счет рассчитывается автоматически на основе побед на картах' : ''}
+                                    />
+                                    {autoCalculateScore && mapsData.length > 0 && (
+                                        <div className="modal-system-badge modal-system-mt-10">🤖 Авто</div>
+                                    )}
+                                </div>
+
+                                <div className="modal-system-text-center modal-system-flex-center">
+                                    <div style={{ fontSize: '32px', fontWeight: 'bold' }}>:</div>
+                                </div>
+
+                                <div className="modal-system-form-group">
+                                    <label className="modal-system-label">
+                                        {selectedMatch.team2_name || 'Команда 2'}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className={`modal-system-input ${validationErrors.scores ? 'modal-system-input-error' : ''} ${autoCalculateScore && mapsData.length > 0 ? 'modal-system-input-disabled' : ''}`}
+                                        value={matchResultData.score2}
+                                        onChange={(e) => handleScoreChange(2, e.target.value)}
+                                        disabled={isLoading || (autoCalculateScore && mapsData.length > 0)}
+                                        title={autoCalculateScore && mapsData.length > 0 ? 'Счет рассчитывается автоматически на основе побед на картах' : ''}
+                                    />
+                                    {autoCalculateScore && mapsData.length > 0 && (
+                                        <div className="modal-system-badge modal-system-mt-10">🤖 Авто</div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {validationErrors.scores && (
+                                <div className="modal-system-info modal-system-info-error modal-system-mt-10">
+                                    {validationErrors.scores}
+                                </div>
+                            )}
+                            
+                            {/* Подсказка для автоматического расчета */}
+                            {autoCalculateScore && mapsData.length > 0 && (
+                                <div className="modal-system-info modal-system-mt-20">
+                                    <p className="modal-system-bold">💡 Как работает автоматический расчет:</p>
+                                    <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                                        <li>Каждая выигранная карта = +1 к общему счету команды</li>
+                                        <li>Ничьи на картах не засчитываются в общий счет</li>
+                                        <li>Победитель определяется автоматически по большему количеству выигранных карт</li>
+                                    </ul>
+                                </div>
+                            )}
                         </div>
-                    )}
 
-                    {/* Сообщение если CS2 но нет доступных карт */}
-                    {isCS2 && availableMaps.length === 0 && (
-                        <div className="no-maps-section">
-                            <p>⚠️ Карты для Counter-Strike 2 не загружены</p>
-                        </div>
-                    )}
+                        {/* 🔧 ИСПРАВЛЕННАЯ СЕКЦИЯ КАРТ */}
+                        {isCS2 && availableMaps.length > 0 && (
+                            <div className="modal-system-section">
+                                <h3 className="modal-system-section-title">
+                                    🗺️ Результаты по картам ({mapsData.length}/7)
+                                </h3>
+                                <p className="modal-system-section-content modal-system-mb-20">
+                                    🎯 Укажите результаты на каждой карте для детальной статистики
+                                </p>
+                                
+                                <div className="modal-system-flex-column">
+                                    {mapsData.map((mapData, index) => (
+                                        <div key={index} className="modal-system-info">
+                                            <div className="modal-system-flex-between modal-system-mb-10">
+                                                <select
+                                                    className="modal-system-select"
+                                                    value={mapData.map || ''}
+                                                    onChange={(e) => handleMapNameChange(index, e.target.value)}
+                                                    disabled={isLoading}
+                                                    style={{ flex: 1, marginRight: '10px' }}
+                                                >
+                                                    <option value="">Выберите карту</option>
+                                                    {availableMaps.map((mapName) => (
+                                                        <option key={mapName} value={mapName}>{mapName}</option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    type="button"
+                                                    className="modal-system-btn modal-system-btn-danger modal-system-btn-small"
+                                                    onClick={() => removeMap(index)}
+                                                    disabled={isLoading}
+                                                    title="Удалить карту"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="modal-system-grid-3">
+                                                <div className="modal-system-form-group">
+                                                    <label className="modal-system-label">
+                                                        {selectedMatch.team1_name || 'Команда 1'}
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        className={`modal-system-input ${validationErrors[`map_${index}_scores`] ? 'modal-system-input-error' : ''}`}
+                                                        value={mapData.score1 || 0}
+                                                        onChange={(e) => handleMapScoreChange(index, 1, e.target.value)}
+                                                        disabled={isLoading}
+                                                    />
+                                                </div>
+                                                <div className="modal-system-text-center modal-system-flex-center">
+                                                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>:</div>
+                                                </div>
+                                                <div className="modal-system-form-group">
+                                                    <label className="modal-system-label">
+                                                        {selectedMatch.team2_name || 'Команда 2'}
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        className={`modal-system-input ${validationErrors[`map_${index}_scores`] ? 'modal-system-input-error' : ''}`}
+                                                        value={mapData.score2 || 0}
+                                                        onChange={(e) => handleMapScoreChange(index, 2, e.target.value)}
+                                                        disabled={isLoading}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {validationErrors[`map_${index}_scores`] && (
+                                                <div className="modal-system-info modal-system-info-error modal-system-mt-10">
+                                                    {validationErrors[`map_${index}_scores`]}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    
+                                    <button 
+                                        type="button"
+                                        className="modal-system-btn"
+                                        onClick={addMap}
+                                        disabled={isLoading || mapsData.length >= 7}
+                                    >
+                                        ➕ Добавить карту ({mapsData.length}/7)
+                                    </button>
+                                </div>
 
-                    {/* Валидационные ошибки */}
-                    {hasValidationErrors && (
-                        <div className="validation-summary">
-                            <h5>⚠️ Ошибки валидации:</h5>
-                            <ul>
-                                {Object.entries(validationErrors).map(([field, error]) => (
-                                    <li key={field} className="validation-error">
-                                        {error}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                                {/* Расширенная статистика по картам */}
+                                {mapStats && (
+                                    <div className="modal-system-section modal-system-mt-20">
+                                        <h4 className="modal-system-bold modal-system-mb-10">📊 Расширенная статистика</h4>
+                                        <div className="modal-system-grid-3">
+                                            <div className="modal-system-info">
+                                                <h5 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h5>
+                                                <div className="modal-system-flex-column">
+                                                    <span>{selectedMatch.team1_name}: {mapStats.team1Wins}</span>
+                                                    <span>{selectedMatch.team2_name}: {mapStats.team2Wins}</span>
+                                                    {mapStats.draws > 0 && <span>Ничьи: {mapStats.draws}</span>}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="modal-system-info">
+                                                <h5 className="modal-system-bold modal-system-mb-10">🎯 Общий счет по очкам</h5>
+                                                <div className="modal-system-flex-column">
+                                                    <span>{selectedMatch.team1_name}: {mapStats.team1TotalScore}</span>
+                                                    <span>{selectedMatch.team2_name}: {mapStats.team2TotalScore}</span>
+                                                    <span>Разность: ±{mapStats.scoreDifference}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="modal-system-info">
+                                                <h5 className="modal-system-bold modal-system-mb-10">📈 Эффективность</h5>
+                                                <div className="modal-system-flex-column">
+                                                    <span>Карт сыграно: {mapStats.mapsCount}</span>
+                                                    <span>Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
+                                                                 mapStats.mapsCount <= 3 ? 'BO3' : 
+                                                                 mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}</span>
+                                                    <span>Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount / 2)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Кнопки управления */}
-                    <div className="modal-actions">
-                        <button 
-                            type="button"
-                            className="cancel-btn"
-                            onClick={handleClose}
-                            disabled={isLoading}
-                        >
-                            ❌ Отмена
-                        </button>
-                        <button 
-                            type="submit"
-                            className="confirm-btn"
-                            disabled={isLoading || hasValidationErrors}
-                        >
-                            {isLoading ? '⏳ Сохранение...' : '💾 Сохранить результат'}
-                        </button>
-                    </div>
-                </form>
+                        {/* Сообщение если карты не поддерживаются */}
+                        {!isCS2 && (
+                            <div className="modal-system-info modal-system-info-warning">
+                                <p>ℹ️ Игра "{getTournamentGame() || 'неизвестна'}" не поддерживает выбор карт</p>
+                            </div>
+                        )}
+
+                        {/* Сообщение если CS2 но нет доступных карт */}
+                        {isCS2 && availableMaps.length === 0 && (
+                            <div className="modal-system-info modal-system-info-error">
+                                <p>⚠️ Карты для Counter-Strike 2 не загружены</p>
+                            </div>
+                        )}
+
+                        {/* Валидационные ошибки */}
+                        {hasValidationErrors && (
+                            <div className="modal-system-info modal-system-info-error">
+                                <h5 className="modal-system-bold">⚠️ Ошибки валидации:</h5>
+                                <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                                    {Object.entries(validationErrors).map(([field, error]) => (
+                                        <li key={field}>{error}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </form>
+                </div>
+
+                {/* === ПОДВАЛ МОДАЛЬНОГО ОКНА === */}
+                <div className="modal-system-footer modal-system-space-between">
+                    <button 
+                        type="button"
+                        className="modal-system-btn"
+                        onClick={handleClose}
+                        disabled={isLoading}
+                    >
+                        ❌ Отмена
+                    </button>
+                    <button 
+                        type="submit"
+                        className="modal-system-btn modal-system-btn-primary"
+                        onClick={handleSubmit}
+                        disabled={isLoading || hasValidationErrors}
+                    >
+                        {isLoading ? '⏳ Сохранение...' : '💾 Сохранить результат'}
+                    </button>
+                </div>
             </div>
         </div>
     );
