@@ -213,7 +213,7 @@
     border-color: var(--accent-primary);
 }
 .filter-checkbox.checked::after {
-    content: 'вњ“';
+    content: '';
     position: absolute;
     top: 50%;
     left: 50%;

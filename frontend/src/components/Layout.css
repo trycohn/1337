@@ -1,5 +1,4 @@
-﻿/* РЎС‚РёР»Рё РґР»СЏ РєРѕРјРїРѕРЅРµРЅС‚Р° Layout */
-/* РЎС‚РёР»СЊ РґР»СЏ Р°РІР°С‚Р°СЂР° РІ С…РµРґРµСЂРµ */
+﻿
 .header-avatar-link .profile-avatar {
     width: 30px;
     height: 30px;
@@ -7,21 +6,19 @@
     object-fit: cover;
     border: 2px solid #4a76a8;
 }
-/* РЎС‚РёР»Рё РґР»СЏ Р°РґРјРёРЅ СЃСЃС‹Р»РєРё */
+
 .admin-link {
     color: #ff6b6b !important;
     font-weight: 600 !important;
     position: relative;
 }
 .admin-link::before {
-    content: 'вљ™пёЏ';
+    content: '';
     margin-right: 5px;
 }
 .admin-link:hover {
     color: #ff8e8e !important;
     text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
 } 
-/* РњРµРґРёР°-Р·Р°РїСЂРѕСЃС‹ СѓРґР°Р»РµРЅС‹ */
-/* Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ СЃС‚РёР»Рё РґР»СЏ РјРѕР±РёР»СЊРЅРѕРіРѕ РјРµРЅСЋ */
-/* Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ СЃС‚РёР»Рё РґР»СЏ СЃС‚СЂР°РЅРёС†С‹ РјРµСЃСЃРµРЅРґР¶РµСЂР° РЅР° РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІР°С… */
+
  

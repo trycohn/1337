@@ -1044,7 +1044,7 @@
     transform: translateX(4px);
 }
 .new-participants-list li::before {
-    content: 'рџ†•';
+    content: '';
     position: absolute;
     left: -20px;
     top: 50%;

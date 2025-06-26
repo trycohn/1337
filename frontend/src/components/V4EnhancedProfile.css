@@ -453,7 +453,7 @@
     position: relative;
 }
 .v4-ai-section li::before {
-    content: 'вЂў';
+    content: '';
     color: var(--v4-accent);
     position: absolute;
     left: -1rem;
