@@ -85,13 +85,6 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    /* REMOVED ANIMATION: transition: all 0.3s ease; */
-}
-.match-result-modal .close-btn:hover {
-    color: #ffffff;
-    border-color: #888888;
-    background-color: rgba(255, 255, 255, 0.1);
-    /* REMOVED ANIMATION: transform: rotate(90deg) scale(1.1); */
 }
 .match-result-form {
     padding: 20px;
@@ -122,7 +115,6 @@
     border: 2px solid #444444;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
     position: relative;
     min-height: 60px;
     display: flex;
@@ -130,21 +122,12 @@
     align-items: center;
     justify-content: center;
 }
-.team-display:hover {
-    border-color: #6c63ff;
-    background: rgba(108, 99, 255, 0.1);
-    box-shadow: 0 8px 25px rgba(108, 99, 255, 0.15);
-}
 .team-display.winner-selected {
     background: linear-gradient(135deg, #28a745, #34ce57);
     border-color: #28a745;
     color: white;
     font-weight: bold;
     box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-}
-.team-display.winner-selected:hover {
-    background: linear-gradient(135deg, #218838, #28a745);
-    border-color: #1e7e34;
 }
 .team-display.has-tooltip {
     position: relative;
@@ -160,7 +143,6 @@
 .winner-crown {
     font-size: 20px;
     margin-left: 8px;
-    /* REMOVED ANIMATION: animation: crownBounce 2s infinite; */
 }
 @keyframes crownBounce {
     /* REMOVED ANIMATION: 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } */
@@ -189,9 +171,63 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.3s ease;
 }
-.clear-winner-btn:hover {
-    background: linear-gradient(135deg, #c82333, #a71e2a);
-    /* REMOVED ANIMATION: transform: translateY(-1px); */
+
+/* =================================================
+   МИНИМАЛИСТИЧНЫЙ ТУЛТИП
+   ================================================= */
+.team-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #000000;
+    border: 1px solid #333333;
+    padding: 6px;
+    margin-top: 2px;
+    max-width: 180px;
+    font-size: 11px;
+    color: #ffffff;
+    opacity: 0.9;
+}
+
+.tooltip-header {
+    margin-bottom: 3px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #333333;
+}
+
+.tooltip-header h5 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.tooltip-content {
+    padding: 0;
+}
+
+.team-members-tooltip {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tooltip-member {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+    font-size: 10px;
+}
+
+.member-name {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.member-rating {
+    color: #888;
+    font-size: 9px;
 }

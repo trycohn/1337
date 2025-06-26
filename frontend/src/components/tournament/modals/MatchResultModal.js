@@ -22,8 +22,6 @@ const MatchResultModal = ({
     const [validationErrors, setValidationErrors] = useState({});
     const [hasChanges, setHasChanges] = useState(false);
     const [selectedWinner, setSelectedWinner] = useState(null); // null, 'team1', 'team2'
-    const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
-    const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
     const [autoCalculateScore, setAutoCalculateScore] = useState(true); // 🆕 Автоматический расчет
 
     // 🎯 УЛУЧШЕННОЕ: Определение игры турнира
@@ -293,15 +291,14 @@ const MatchResultModal = ({
         }
     }, [matchResultData.maps_data, calculateOverallScoreFromMaps, autoCalculateScore]);
 
-    // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ
-    const TeamTooltip = ({ team, composition, show, onClose }) => {
+    // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ (МИНИМАЛИСТИЧНЫЙ)
+    const TeamTooltip = ({ team, composition, show }) => {
         if (!show || !composition) return null;
 
         return (
             <div className="team-tooltip">
                 <div className="tooltip-header">
                     <h5>{composition.name}</h5>
-                    <button onClick={onClose} className="tooltip-close">✕</button>
                 </div>
                 <div className="tooltip-content">
                     <ul className="team-members-tooltip">
@@ -309,7 +306,7 @@ const MatchResultModal = ({
                             <li key={index} className="tooltip-member">
                                 <span className="member-name">{member.name}</span>
                                 {member.rating && (
-                                    <span className="member-rating">({member.rating} ELO)</span>
+                                    <span className="member-rating">({member.rating})</span>
                                 )}
                             </li>
                         ))}
@@ -508,9 +505,7 @@ const MatchResultModal = ({
                             <div 
                                 className={`team-display ${selectedWinner === 'team1' ? 'winner-selected' : ''} ${selectedMatch.team1_composition ? 'has-tooltip' : ''}`}
                                 onClick={() => selectWinner('team1')}
-                                onMouseEnter={() => setShowTeam1Tooltip(true)}
-                                onMouseLeave={() => setShowTeam1Tooltip(false)}
-                                title={selectedMatch.team1_composition ? 'Нажмите для выбора победителя' : 'Выбрать победителем'}
+                                title="Выбрать победителем"
                             >
                                 <span className="team-name">{selectedMatch.team1_name || 'Команда 1'}</span>
                                 {selectedWinner === 'team1' && <span className="winner-crown">👑</span>}
@@ -518,17 +513,14 @@ const MatchResultModal = ({
                                 <TeamTooltip 
                                     team="team1"
                                     composition={selectedMatch.team1_composition}
-                                    show={showTeam1Tooltip}
-                                    onClose={() => setShowTeam1Tooltip(false)}
+                                    show={true}
                                 />
                             </div>
                             <div className="vs-separator">VS</div>
                             <div 
                                 className={`team-display ${selectedWinner === 'team2' ? 'winner-selected' : ''} ${selectedMatch.team2_composition ? 'has-tooltip' : ''}`}
                                 onClick={() => selectWinner('team2')}
-                                onMouseEnter={() => setShowTeam2Tooltip(true)}
-                                onMouseLeave={() => setShowTeam2Tooltip(false)}
-                                title={selectedMatch.team2_composition ? 'Нажмите для выбора победителя' : 'Выбрать победителем'}
+                                title="Выбрать победителем"
                             >
                                 <span className="team-name">{selectedMatch.team2_name || 'Команда 2'}</span>
                                 {selectedWinner === 'team2' && <span className="winner-crown">👑</span>}
@@ -536,8 +528,7 @@ const MatchResultModal = ({
                                 <TeamTooltip 
                                     team="team2"
                                     composition={selectedMatch.team2_composition}
-                                    show={showTeam2Tooltip}
-                                    onClose={() => setShowTeam2Tooltip(false)}
+                                    show={true}
                                 />
                             </div>
                         </div>
