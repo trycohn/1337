@@ -86,10 +86,10 @@ router.put('/:id/team-size', authenticateToken, TournamentController.updateTeamS
 router.post('/:id/participate', authenticateToken, ParticipantController.participateInTournament);
 
 // Отмена участия
-router.delete('/:id/participate', authenticateToken, ParticipantController.cancelParticipation);
+router.delete('/:id/participate', authenticateToken, ParticipantController.withdrawFromTournament);
 
 // Получение участников турнира
-router.get('/:id/participants', ParticipantController.getParticipants);
+router.get('/:id/participants', TournamentController.getOriginalParticipants);
 
 // Удаление участника (для администраторов)
 router.delete('/:id/participants/:participantId', authenticateToken, ParticipantController.removeParticipant);
@@ -117,7 +117,7 @@ router.post('/:id/request-admin', authenticateToken, AdminController.requestAdmi
 router.post('/:id/respond-admin-request', authenticateToken, AdminController.respondToAdminRequest);
 
 // Удаление администратора
-router.delete('/:id/admins/:adminId', authenticateToken, AdminController.removeAdmin);
+router.delete('/:id/admins/:userId', authenticateToken, AdminController.removeAdmin);
 
 // 💬 **ЧАТ ТУРНИРА**
 

@@ -398,29 +398,100 @@ class AdminService {
     }
 
     /**
-     * Проверка прав на удаление администраторов
+     * Проверка прав на удаление администратора
      * @private
      */
     static async _checkRemoveAdminAccess(tournamentId, requesterId, adminUserId) {
-        const tournament = await TournamentRepository.getById(tournamentId);
-        if (!tournament) {
-            throw new Error('Турнир не найден');
+        if (requesterId === adminUserId) {
+            throw new Error('Нельзя удалить самого себя из администраторов');
         }
 
-        // Создатель не может удалить самого себя
-        if (tournament.created_by === requesterId && requesterId === adminUserId) {
-            throw new Error('Создатель турнира не может удалить себя из администраторов');
-        }
+        await this._checkInviteAdminAccess(tournamentId, requesterId);
+    }
 
-        // Только создатель может удалять администраторов
-        if (tournament.created_by !== requesterId) {
-            throw new Error('Только создатель турнира может удалять администраторов');
+    /**
+     * Получение статуса запроса на администрирование
+     */
+    static async getAdminRequestStatus(tournamentId, userId) {
+        console.log(`📊 AdminService: Получение статуса запроса администрирования для турнира ${tournamentId}, пользователь ${userId}`);
+        
+        // Проверяем, является ли пользователь уже администратором
+        const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+        if (isAdmin) {
+            return 'accepted';
         }
+        
+        // Проверяем запрос на администрирование
+        const requestResult = await pool.query(
+            'SELECT status FROM admin_requests WHERE tournament_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 1',
+            [tournamentId, userId]
+        );
+        
+        if (requestResult.rows.length > 0) {
+            return requestResult.rows[0].status;
+        }
+        
+        return null;
+    }
 
-        // Нельзя удалить создателя турнира
-        if (tournament.created_by === adminUserId) {
-            throw new Error('Нельзя удалить создателя турнира из администраторов');
-        }
+    /**
+     * Очистка истекших приглашений
+     */
+    static async cleanupExpiredInvitations() {
+        console.log(`🧹 AdminService: Очистка истекших приглашений администраторов`);
+        
+        const result = await pool.query(
+            'UPDATE admin_invitations SET status = $1 WHERE status = $2 AND expires_at <= NOW()',
+            ['expired', 'pending']
+        );
+        
+        const expiredCount = result.rowCount;
+        console.log(`✅ Очищено ${expiredCount} истекших приглашений`);
+        
+        return {
+            success: true,
+            message: `Очищено ${expiredCount} истекших приглашений`,
+            expiredCount: expiredCount
+        };
+    }
+
+    /**
+     * Получение статистики приглашений администраторов
+     */
+    static async getInvitationStats() {
+        console.log(`📈 AdminService: Получение статистики приглашений администраторов`);
+        
+        // Статистика по статусам
+        const statsResult = await pool.query(`
+            SELECT 
+                status,
+                COUNT(*) as count,
+                COUNT(CASE WHEN expires_at <= NOW() THEN 1 END) as expired_count
+            FROM admin_invitations 
+            GROUP BY status
+            ORDER BY status
+        `);
+        
+        // Общая статистика
+        const totalResult = await pool.query('SELECT COUNT(*) as total FROM admin_invitations');
+        const activeResult = await pool.query(`
+            SELECT COUNT(*) as active 
+            FROM admin_invitations 
+            WHERE status = 'pending' AND expires_at > NOW()
+        `);
+        
+        return {
+            success: true,
+            stats: {
+                total: parseInt(totalResult.rows[0].total),
+                active: parseInt(activeResult.rows[0].active),
+                by_status: statsResult.rows.map(row => ({
+                    status: row.status,
+                    count: parseInt(row.count),
+                    expired_count: parseInt(row.expired_count)
+                }))
+            }
+        };
     }
 }
 

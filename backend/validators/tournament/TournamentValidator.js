@@ -270,6 +270,119 @@ class TournamentValidator {
             value: value ? value.trim() : value
         };
     }
+
+    /**
+     * Валидация ответа на запрос администрирования
+     */
+    static validateAdminResponse(data) {
+        const errors = [];
+
+        if (!data.requesterId) {
+            errors.push('ID запрашивающего обязателен');
+        } else {
+            const requesterId = parseInt(data.requesterId);
+            if (isNaN(requesterId) || requesterId <= 0) {
+                errors.push('Неверный ID запрашивающего');
+            }
+        }
+
+        if (!data.action) {
+            errors.push('Действие обязательно');
+        } else if (!['accept', 'reject'].includes(data.action)) {
+            errors.push('Действие должно быть "accept" или "reject"');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+
+    /**
+     * Валидация приглашения администратора
+     */
+    static validateAdminInvitation(data) {
+        const errors = [];
+
+        if (!data.inviteeId) {
+            errors.push('ID приглашаемого обязателен');
+        } else {
+            const inviteeId = parseInt(data.inviteeId);
+            if (isNaN(inviteeId) || inviteeId <= 0) {
+                errors.push('Неверный ID приглашаемого');
+            }
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+
+    /**
+     * Валидация добавления участника
+     */
+    static validateAddParticipant(data) {
+        const errors = [];
+
+        if (!data.participantName || data.participantName.trim().length === 0) {
+            errors.push('Имя участника обязательно');
+        } else if (data.participantName.trim().length < 2) {
+            errors.push('Имя участника должно содержать минимум 2 символа');
+        } else if (data.participantName.trim().length > 50) {
+            errors.push('Имя участника не должно превышать 50 символов');
+        }
+
+        if (data.userId) {
+            const userId = parseInt(data.userId);
+            if (isNaN(userId) || userId <= 0) {
+                errors.push('Неверный ID пользователя');
+            }
+        }
+
+        if (data.faceit_elo) {
+            const faceItElo = parseInt(data.faceit_elo);
+            if (isNaN(faceItElo) || faceItElo < 0 || faceItElo > 10000) {
+                errors.push('FACEIT ELO должен быть числом от 0 до 10000');
+            }
+        }
+
+        if (data.cs2_premier_rank) {
+            const premierRank = parseInt(data.cs2_premier_rank);
+            if (isNaN(premierRank) || premierRank < 1 || premierRank > 40000) {
+                errors.push('CS2 Premier ранг должен быть числом от 1 до 40000');
+            }
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+
+    /**
+     * Валидация приглашения в турнир
+     */
+    static validateInvitation(data) {
+        const errors = [];
+
+        if (!data.username && !data.email) {
+            errors.push('Необходимо указать никнейм или email');
+        }
+
+        if (data.username && (data.username.trim().length < 3 || data.username.trim().length > 50)) {
+            errors.push('Никнейм должен содержать от 3 до 50 символов');
+        }
+
+        if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+            errors.push('Неверный формат email');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
 }
 
 module.exports = TournamentValidator; 

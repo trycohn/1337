@@ -89,8 +89,32 @@ class ParticipantService {
      * Получение участников турнира
      */
     static async getParticipants(tournamentId) {
-        console.log(`📋 ParticipantService: Получение участников турнира ${tournamentId}`);
         return await ParticipantRepository.getByTournamentId(tournamentId);
+    }
+
+    /**
+     * Получение оригинальных участников турнира (включая тех, кто не в командах)
+     */
+    static async getOriginalParticipants(tournamentId) {
+        console.log(`👥 ParticipantService: Получение оригинальных участников турнира ${tournamentId}`);
+        
+        const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+        
+        // Разделяем участников на группы
+        const allParticipants = participants;
+        const inTeam = participants.filter(p => p.in_team);
+        const notInTeam = participants.filter(p => !p.in_team);
+        
+        console.log(`📊 Статистика участников: всего ${allParticipants.length}, в командах ${inTeam.length}, не в командах ${notInTeam.length}`);
+        
+        return {
+            all: allParticipants,
+            inTeam: inTeam,
+            notInTeam: notInTeam,
+            total: allParticipants.length,
+            inTeamCount: inTeam.length,
+            notInTeamCount: notInTeam.length
+        };
     }
 
     /**
@@ -240,7 +264,7 @@ class ParticipantService {
     }
 
     /**
-     * Проверка прав администратора
+     * Проверка прав доступа администратора
      * @private
      */
     static async _checkAdminAccess(tournamentId, userId) {
@@ -252,9 +276,71 @@ class ParticipantService {
         if (tournament.created_by !== userId) {
             const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
             if (!isAdmin) {
-                throw new Error('Недостаточно прав для выполнения операции');
+                throw new Error('Только создатель или администратор турнира может выполнить это действие');
             }
         }
+    }
+
+    /**
+     * Ручное добавление участника в турнир (для администраторов)
+     */
+    static async addParticipant(tournamentId, adminUserId, participantData) {
+        console.log(`➕ ParticipantService: Добавление участника в турнир ${tournamentId} администратором ${adminUserId}`);
+        
+        // Проверяем права доступа
+        await this._checkAdminAccess(tournamentId, adminUserId);
+        
+        const { participantName, userId, faceit_elo, cs2_premier_rank } = participantData;
+        
+        if (!participantName) {
+            throw new Error('Укажите имя участника');
+        }
+        
+        // Проверяем, не участвует ли уже пользователь (если указан userId)
+        if (userId) {
+            const existingParticipant = await ParticipantRepository.getUserParticipation(tournamentId, userId);
+            if (existingParticipant) {
+                throw new Error('Этот пользователь уже участвует в турнире');
+            }
+        }
+        
+        // Создаем участника
+        const newParticipant = await ParticipantRepository.create({
+            tournament_id: tournamentId,
+            user_id: userId || null,
+            name: participantName,
+            faceit_elo: faceit_elo || null,
+            cs2_premier_rank: cs2_premier_rank || null
+        });
+        
+        // Логируем событие
+        await logTournamentEvent(tournamentId, adminUserId, 'participant_added', {
+            participantId: newParticipant.id,
+            participantName: participantName,
+            addedByAdmin: true
+        });
+        
+        console.log(`✅ Участник ${participantName} добавлен в турнир ${tournamentId}`);
+        return newParticipant;
+    }
+
+    /**
+     * Генерация команд для микс-турнира (заглушка)
+     */
+    static async generateMixTeams(tournamentId, userId, username, ratingType = 'faceit') {
+        console.log(`🎲 ParticipantService: Генерация команд для микс-турнира ${tournamentId} пользователем ${username}`);
+        
+        // Проверяем права доступа
+        await this._checkAdminAccess(tournamentId, userId);
+        
+        // TODO: Реализовать логику генерации команд для микс-турниров
+        // Это сложная функция, которая должна:
+        // 1. Получить всех участников турнира
+        // 2. Разделить их по рейтингу
+        // 3. Создать сбалансированные команды
+        // 4. Обновить тип турнира на командный
+        
+        throw new Error('Генерация команд для микс-турниров временно недоступна. Используйте старый интерфейс.');
     }
 }
 
