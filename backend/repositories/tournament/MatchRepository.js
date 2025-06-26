@@ -8,7 +8,7 @@ class MatchRepository {
         const result = await pool.query(`
             SELECT * FROM matches 
             WHERE tournament_id = $1 
-            ORDER BY round, position
+            ORDER BY round, match_number
         `, [tournamentId]);
 
         return result.rows;
