@@ -23,6 +23,10 @@ const MatchResultModal = ({
     const [hasChanges, setHasChanges] = useState(false);
     const [selectedWinner, setSelectedWinner] = useState(null); // null, 'team1', 'team2'
     const [autoCalculateScore, setAutoCalculateScore] = useState(true); // 🆕 Автоматический расчет
+    
+    // 🎯 СОСТОЯНИЯ ДЛЯ ТУЛТИПОВ
+    const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
+    const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
 
     // 🎯 УЛУЧШЕННОЕ: Определение игры турнира
     const getTournamentGame = useCallback(() => {
@@ -505,6 +509,8 @@ const MatchResultModal = ({
                             <div 
                                 className={`team-display ${selectedWinner === 'team1' ? 'winner-selected' : ''} ${selectedMatch.team1_composition ? 'has-tooltip' : ''}`}
                                 onClick={() => selectWinner('team1')}
+                                onMouseEnter={() => setShowTeam1Tooltip(true)}
+                                onMouseLeave={() => setShowTeam1Tooltip(false)}
                                 title="Выбрать победителем"
                             >
                                 <span className="team-name">{selectedMatch.team1_name || 'Команда 1'}</span>
@@ -513,13 +519,15 @@ const MatchResultModal = ({
                                 <TeamTooltip 
                                     team="team1"
                                     composition={selectedMatch.team1_composition}
-                                    show={true}
+                                    show={showTeam1Tooltip}
                                 />
                             </div>
                             <div className="vs-separator">VS</div>
                             <div 
                                 className={`team-display ${selectedWinner === 'team2' ? 'winner-selected' : ''} ${selectedMatch.team2_composition ? 'has-tooltip' : ''}`}
                                 onClick={() => selectWinner('team2')}
+                                onMouseEnter={() => setShowTeam2Tooltip(true)}
+                                onMouseLeave={() => setShowTeam2Tooltip(false)}
                                 title="Выбрать победителем"
                             >
                                 <span className="team-name">{selectedMatch.team2_name || 'Команда 2'}</span>
@@ -528,7 +536,7 @@ const MatchResultModal = ({
                                 <TeamTooltip 
                                     team="team2"
                                     composition={selectedMatch.team2_composition}
-                                    show={true}
+                                    show={showTeam2Tooltip}
                                 />
                             </div>
                         </div>
