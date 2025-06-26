@@ -305,7 +305,7 @@
     line-height: 1.5;
 }
 
-/* РџР°РЅРµР»СЊ СѓРїСЂР°РІР»РµРЅРёСЏ СѓС‡Р°СЃС‚РЅРёРєР°РјРё */
+/* Панель управления участниками */
 .participants-admin-panel {
     margin-top: 32px;
     padding-top: 24px;
@@ -348,7 +348,7 @@
     box-shadow: 0 2px 8px rgba(255, 255, 255, 0.05);
 }
 
-/* РњРѕРґР°Р»СЊРЅС‹Рµ РѕРєРЅР° */
+/* Модальные окна */
 .modal-overlay {
     position: fixed;
     top: 0;
