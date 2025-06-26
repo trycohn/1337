@@ -1,4 +1,4 @@
-// backend/routes/tournaments.js
+﻿// backend/routes/tournaments.js
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
@@ -4185,7 +4185,7 @@ async function safeUpdateMatchResult(matchId, winnerId, score1, score2, mapsData
             }
             
             matchData = matchResult.rows[0];
-            console.log(`⚠️ [safeUpdateMatchResult] Работаем без блокировки (может быть race condition)`);
+            console.log(`⚠️ [safeUpdateMatchResult] ОПЕРАЦИЯ ПРЕРВАНА - блокировка не удалась (безопасность)`);
         }
         
         // Сбрасываем таймаут
