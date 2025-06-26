@@ -1,0 +1,335 @@
+const pool = require('../../db');
+const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
+const MatchRepository = require('../../repositories/tournament/MatchRepository');
+const { logTournamentEvent } = require('../../utils/tournament/logger');
+const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
+const { broadcastTournamentUpdate } = require('../../notifications');
+
+class TournamentService {
+    /**
+     * Получение всех турниров с количеством участников
+     */
+    static async getAllTournaments() {
+        console.log('🔍 TournamentService: Получение всех турниров');
+        return await TournamentRepository.getAllWithParticipantCount();
+    }
+
+    /**
+     * Получение турнира по ID с полной информацией
+     */
+    static async getTournamentById(tournamentId) {
+        const startTime = Date.now();
+        console.log(`🔍 [TournamentService] Получение турнира ${tournamentId}`);
+
+        try {
+            // Получаем основную информацию о турнире
+            const tournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+            if (!tournament) {
+                return null;
+            }
+
+            // Получаем администраторов
+            const admins = await TournamentRepository.getAdmins(tournamentId);
+
+            // Получаем участников
+            const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+
+            // Получаем матчи
+            const matches = await MatchRepository.getByTournamentId(tournamentId);
+
+            // Получаем команды для командных турниров
+            let teams = [];
+            if (tournament.format === 'mix' || tournament.participant_type === 'team') {
+                teams = await TournamentRepository.getTeamsWithMembers(tournamentId);
+            }
+
+            const result = {
+                ...tournament,
+                creator_name: tournament.creator_username,
+                creator_avatar_url: tournament.creator_avatar_url,
+                participants: participants,
+                participant_count: participants.length,
+                matches: matches,
+                teams: teams,
+                mixed_teams: teams,
+                admins: admins
+            };
+
+            const endTime = Date.now();
+            console.log(`✅ [TournamentService] Турнир ${tournamentId} получен за ${endTime - startTime}ms`);
+
+            return result;
+
+        } catch (error) {
+            console.error(`❌ [TournamentService] Ошибка получения турнира ${tournamentId}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Создание нового турнира
+     */
+    static async createTournament(tournamentData, userId) {
+        console.log('➕ TournamentService: Создание турнира', tournamentData);
+
+        const {
+            name, game, format, participant_type, max_participants,
+            start_date, description, bracket_type, team_size
+        } = tournamentData;
+
+        const tournament = await TournamentRepository.create({
+            name,
+            game,
+            format,
+            created_by: userId,
+            status: 'active',
+            participant_type,
+            max_participants: max_participants || null,
+            start_date: start_date || null,
+            description: description || null,
+            bracket_type: bracket_type || null,
+            team_size: team_size || 1
+        });
+
+        // Логируем создание турнира
+        await logTournamentEvent(tournament.id, userId, 'tournament_created', {
+            name: tournament.name,
+            game: tournament.game,
+            format: tournament.format
+        });
+
+        console.log('✅ TournamentService: Турнир создан', tournament);
+        return tournament;
+    }
+
+    /**
+     * Обновление турнира
+     */
+    static async updateTournament(tournamentId, updateData, userId) {
+        console.log(`✏️ TournamentService: Обновление турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.status !== 'active') {
+            throw new Error('Турнир неактивен');
+        }
+
+        const updatedTournament = await TournamentRepository.update(tournamentId, updateData);
+
+        console.log('✅ TournamentService: Турнир обновлен');
+        return updatedTournament;
+    }
+
+    /**
+     * Удаление турнира
+     */
+    static async deleteTournament(tournamentId, userId) {
+        console.log(`🗑️ TournamentService: Удаление турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.status !== 'active') {
+            throw new Error('Турнир неактивен');
+        }
+
+        await TournamentRepository.delete(tournamentId);
+
+        console.log('✅ TournamentService: Турнир удален');
+    }
+
+    /**
+     * Начало турнира
+     */
+    static async startTournament(tournamentId, userId) {
+        console.log(`🚀 TournamentService: Начало турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.status !== 'active') {
+            throw new Error('Можно начать только активный турнир');
+        }
+
+        // Проверка наличия сгенерированной сетки
+        const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
+        if (matchesCount === 0) {
+            throw new Error('Перед началом турнира необходимо сгенерировать сетку');
+        }
+
+        // Изменение статуса турнира
+        await TournamentRepository.updateStatus(tournamentId, 'in_progress');
+
+        // Получаем обновленные данные турнира
+        const updatedTournament = await this.getTournamentById(tournamentId);
+
+        // Отправляем обновление через WebSocket
+        broadcastTournamentUpdate(tournamentId, updatedTournament);
+
+        // Логируем старт турнира
+        await logTournamentEvent(tournamentId, userId, 'tournament_started', {
+            participantCount: updatedTournament.participant_count
+        });
+
+        // Отправляем объявление в чат турнира
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `Турнир "${updatedTournament.name}" начат`
+        );
+
+        console.log('✅ TournamentService: Турнир начат');
+        return updatedTournament;
+    }
+
+    /**
+     * Получение списка игр
+     */
+    static async getGames() {
+        console.log('🎮 TournamentService: Получение списка игр');
+        return await TournamentRepository.getGames();
+    }
+
+    /**
+     * Сброс результатов матчей турнира
+     */
+    static async resetMatchResults(tournamentId, userId) {
+        console.log(`🔄 TournamentService: Сброс результатов турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const result = await TournamentRepository.resetMatchResults(tournamentId, userId);
+
+        // Отправляем уведомление в чат
+        const tournament = await TournamentRepository.getById(tournamentId);
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `🔄 Администратор сбросил результаты матчей и восстановил изначальную структуру турнирной сетки. Статус турнира изменен на "Активный".`
+        );
+
+        console.log('✅ TournamentService: Результаты матчей сброшены');
+        return result;
+    }
+
+    /**
+     * Получение команд турнира
+     */
+    static async getTeams(tournamentId) {
+        console.log(`🏆 TournamentService: Получение команд турнира ${tournamentId}`);
+        return await TournamentRepository.getTeamsWithMembers(tournamentId);
+    }
+
+    /**
+     * Обновление описания турнира
+     */
+    static async updateDescription(tournamentId, description, userId) {
+        console.log(`📝 TournamentService: Обновление описания турнира ${tournamentId}`);
+
+        await this._checkTournamentAccess(tournamentId, userId);
+        return await TournamentRepository.updateDescription(tournamentId, description);
+    }
+
+    /**
+     * Обновление полного описания турнира
+     */
+    static async updateFullDescription(tournamentId, fullDescription, userId) {
+        console.log(`📜 TournamentService: Обновление полного описания турнира ${tournamentId}`);
+
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.status !== 'active') {
+            throw new Error('Турнир неактивен');
+        }
+
+        return await TournamentRepository.updateFullDescription(tournamentId, fullDescription);
+    }
+
+    /**
+     * Обновление регламента турнира
+     */
+    static async updateRules(tournamentId, rules, userId) {
+        console.log(`⚖️ TournamentService: Обновление регламента турнира ${tournamentId}`);
+
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.status !== 'active') {
+            throw new Error('Турнир неактивен');
+        }
+
+        return await TournamentRepository.updateRules(tournamentId, rules);
+    }
+
+    /**
+     * Обновление призового фонда турнира
+     */
+    static async updatePrizePool(tournamentId, prizePool, userId) {
+        console.log(`💰 TournamentService: Обновление призового фонда турнира ${tournamentId}`);
+
+        await this._checkTournamentAccess(tournamentId, userId);
+        return await TournamentRepository.updatePrizePool(tournamentId, prizePool);
+    }
+
+    /**
+     * Обновление размера команды
+     */
+    static async updateTeamSize(tournamentId, teamSize, userId) {
+        console.log(`📏 TournamentService: Обновление размера команды турнира ${tournamentId}`);
+
+        if (!teamSize || ![2, 5].includes(parseInt(teamSize, 10))) {
+            throw new Error('Неверный размер команды. Допустимые значения: 2 или 5');
+        }
+
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.format !== 'mix') {
+            throw new Error('Изменение размера команды доступно только для mix-турниров');
+        }
+
+        if (!['active', 'pending'].includes(tournament.status)) {
+            throw new Error('Изменение размера команды доступно только для турниров в статусе active или pending');
+        }
+
+        // Проверяем, не сгенерирована ли уже сетка
+        const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
+        if (matchesCount > 0) {
+            throw new Error('Нельзя изменить размер команды после генерации сетки турнира');
+        }
+
+        // Проверяем, не созданы ли уже команды
+        const teamsCount = await TournamentRepository.getTeamsCount(tournamentId);
+        if (teamsCount > 0) {
+            // Удаляем существующие команды
+            await TournamentRepository.deleteTeams(tournamentId);
+        }
+
+        return await TournamentRepository.updateTeamSize(tournamentId, teamSize);
+    }
+
+    /**
+     * Проверка прав доступа к турниру
+     * @private
+     */
+    static async _checkTournamentAccess(tournamentId, userId) {
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.created_by !== userId) {
+            const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+            if (!isAdmin) {
+                throw new Error('Только создатель или администратор может выполнить это действие');
+            }
+        }
+    }
+}
+
+module.exports = TournamentService; 

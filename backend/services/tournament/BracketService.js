@@ -1,0 +1,377 @@
+// backend/services/tournament/BracketService.js
+
+const { generateBracket } = require('../../bracketGenerator');
+const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
+const MatchRepository = require('../../repositories/tournament/MatchRepository');
+const { logTournamentEvent } = require('../../utils/tournament/logger');
+const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
+const { broadcastTournamentUpdate } = require('../../notifications');
+const pool = require('../../db');
+
+class BracketService {
+    /**
+     * Генерация турнирной сетки
+     */
+    static async generateBracket(tournamentId, userId, thirdPlaceMatch = false) {
+        console.log(`🥊 BracketService: Генерация турнирной сетки для турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkBracketAccess(tournamentId, userId);
+
+        // Получаем турнир
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.status !== 'active') {
+            throw new Error('Можно генерировать сетку только для активных турниров');
+        }
+
+        // Проверяем наличие участников
+        const participantCount = await ParticipantRepository.getCountByTournamentId(tournamentId);
+        if (participantCount < 2) {
+            throw new Error('Для генерации сетки необходимо минимум 2 участника');
+        }
+
+        // Проверяем, есть ли уже матчи
+        const existingMatchCount = await MatchRepository.getCountByTournamentId(tournamentId);
+        if (existingMatchCount > 0) {
+            throw new Error('Сетка уже сгенерирована. Используйте регенерацию для создания новой сетки');
+        }
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Получаем участников
+            const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+            console.log(`📊 Участников в турнире: ${participants.length}`);
+
+            // Генерируем сетку с помощью bracketGenerator
+            const bracketData = await generateBracket(
+                tournament.format,
+                participants,
+                tournament.participant_type,
+                thirdPlaceMatch
+            );
+
+            console.log(`🎯 Сгенерирована сетка: ${bracketData.matches.length} матчей`);
+
+            // Сохраняем матчи в базу данных
+            const savedMatches = [];
+            for (const match of bracketData.matches) {
+                const matchResult = await client.query(`
+                    INSERT INTO matches (
+                        tournament_id, round, position, match_number,
+                        team1_id, team2_id, next_match_id, loser_next_match_id,
+                        is_third_place_match, requires_all_previous
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    RETURNING *
+                `, [
+                    tournamentId,
+                    match.round,
+                    match.position,
+                    match.match_number,
+                    match.team1_id || null,
+                    match.team2_id || null,
+                    match.next_match_id || null,
+                    match.loser_next_match_id || null,
+                    match.is_third_place_match || false,
+                    match.requires_all_previous || false
+                ]);
+
+                savedMatches.push(matchResult.rows[0]);
+            }
+
+            // Обновляем связи между матчами
+            await this._updateMatchLinks(client, savedMatches, bracketData.matches);
+
+            await client.query('COMMIT');
+
+            // Отправляем объявление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🏆 Турнирная сетка сгенерирована! ${bracketData.matches.length} матчей готово к проведению. Ссылка на сетку: /tournaments/${tournamentId}`
+            );
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'bracket_generated', {
+                format: tournament.format,
+                participants_count: participants.length,
+                matches_count: bracketData.matches.length,
+                third_place_match: thirdPlaceMatch
+            });
+
+            // Получаем обновленные данные турнира
+            const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+
+            // Отправляем обновления через WebSocket
+            broadcastTournamentUpdate(tournamentId, updatedTournament);
+
+            console.log('✅ BracketService: Турнирная сетка успешно сгенерирована');
+            return {
+                message: 'Турнирная сетка успешно сгенерирована',
+                tournament: updatedTournament,
+                matches: savedMatches,
+                bracket_info: {
+                    format: tournament.format,
+                    participants_count: participants.length,
+                    matches_count: savedMatches.length,
+                    third_place_match: thirdPlaceMatch
+                }
+            };
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ BracketService: Ошибка генерации сетки:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Регенерация турнирной сетки (с перемешиванием)
+     */
+    static async regenerateBracket(tournamentId, userId, shuffle = false, thirdPlaceMatch = false) {
+        console.log(`🔄 BracketService: Регенерация турнирной сетки для турнира ${tournamentId} (shuffle: ${shuffle})`);
+
+        // Проверка прав доступа
+        await this._checkBracketAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.status !== 'active') {
+            throw new Error('Можно регенерировать сетку только для активных турниров');
+        }
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Удаляем существующие матчи
+            const deletedMatches = await client.query(
+                'DELETE FROM matches WHERE tournament_id = $1 RETURNING id',
+                [tournamentId]
+            );
+
+            console.log(`🗑️ Удалено ${deletedMatches.rows.length} старых матчей`);
+
+            await client.query('COMMIT');
+
+            // Генерируем новую сетку
+            const result = await this.generateBracket(tournamentId, userId, thirdPlaceMatch);
+
+            // Отправляем объявление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🔄 Турнирная сетка перегенерирована! ${shuffle ? 'Участники перемешаны. ' : ''}Ссылка на сетку: /tournaments/${tournamentId}`
+            );
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'bracket_regenerated', {
+                shuffle: shuffle,
+                deleted_matches: deletedMatches.rows.length,
+                new_matches: result.matches.length
+            });
+
+            console.log('✅ BracketService: Турнирная сетка успешно регенерирована');
+            return {
+                ...result,
+                message: `Турнирная сетка перегенерирована${shuffle ? ' с перемешиванием участников' : ''}`
+            };
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ BracketService: Ошибка регенерации сетки:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Очистка результатов матчей (сброс турнира)
+     */
+    static async clearMatchResults(tournamentId, userId) {
+        console.log(`🧹 BracketService: Очистка результатов матчей турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkBracketAccess(tournamentId, userId);
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Сбрасываем результаты всех матчей
+            const resetResult = await client.query(`
+                UPDATE matches 
+                SET winner_team_id = NULL, score1 = NULL, score2 = NULL, maps_data = NULL 
+                WHERE tournament_id = $1
+                RETURNING id
+            `, [tournamentId]);
+
+            // Возвращаем участников в начальные позиции
+            await this._resetMatchParticipants(client, tournamentId);
+
+            await client.query('COMMIT');
+
+            // Отправляем объявление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🧹 Результаты всех матчей сброшены. Турнир готов к перепроведению. Ссылка: /tournaments/${tournamentId}`
+            );
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'match_results_cleared', {
+                cleared_matches: resetResult.rows.length
+            });
+
+            // Получаем обновленные данные
+            const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+            broadcastTournamentUpdate(tournamentId, updatedTournament);
+
+            console.log('✅ BracketService: Результаты матчей очищены');
+            return {
+                message: 'Результаты всех матчей успешно сброшены',
+                tournament: updatedTournament,
+                cleared_matches: resetResult.rows.length
+            };
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ BracketService: Ошибка очистки результатов:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Получение турнирной сетки
+     */
+    static async getBracket(tournamentId) {
+        console.log(`📋 BracketService: Получение турнирной сетки ${tournamentId}`);
+
+        const matches = await MatchRepository.getByTournamentId(tournamentId);
+        
+        // Группируем матчи по раундам
+        const bracket = matches.reduce((acc, match) => {
+            if (!acc[match.round]) {
+                acc[match.round] = [];
+            }
+            acc[match.round].push(match);
+            return acc;
+        }, {});
+
+        // Сортируем матчи внутри каждого раунда
+        Object.keys(bracket).forEach(round => {
+            bracket[round].sort((a, b) => a.position - b.position);
+        });
+
+        return bracket;
+    }
+
+    /**
+     * Обновление связей между матчами после генерации
+     * @private
+     */
+    static async _updateMatchLinks(client, savedMatches, originalMatches) {
+        console.log('🔗 Обновление связей между матчами...');
+
+        // Создаем мапинг старых ID на новые
+        const idMapping = {};
+        originalMatches.forEach((original, index) => {
+            if (original.temp_id) {
+                idMapping[original.temp_id] = savedMatches[index].id;
+            }
+        });
+
+        // Обновляем связи
+        for (let i = 0; i < savedMatches.length; i++) {
+            const match = savedMatches[i];
+            const original = originalMatches[i];
+
+            let nextMatchId = null;
+            let loserNextMatchId = null;
+
+            if (original.next_match_temp_id && idMapping[original.next_match_temp_id]) {
+                nextMatchId = idMapping[original.next_match_temp_id];
+            }
+
+            if (original.loser_next_match_temp_id && idMapping[original.loser_next_match_temp_id]) {
+                loserNextMatchId = idMapping[original.loser_next_match_temp_id];
+            }
+
+            if (nextMatchId || loserNextMatchId) {
+                await client.query(
+                    'UPDATE matches SET next_match_id = $1, loser_next_match_id = $2 WHERE id = $3',
+                    [nextMatchId, loserNextMatchId, match.id]
+                );
+            }
+        }
+    }
+
+    /**
+     * Сброс участников матчей в начальные позиции
+     * @private
+     */
+    static async _resetMatchParticipants(client, tournamentId) {
+        console.log('🔄 Сброс участников в начальные позиции...');
+
+        // Получаем участников турнира
+        const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+        
+        // Получаем матчи первого раунда
+        const firstRoundMatches = await client.query(
+            'SELECT * FROM matches WHERE tournament_id = $1 AND round = 1 ORDER BY position',
+            [tournamentId]
+        );
+
+        // Очищаем все матчи от участников кроме первого раунда
+        await client.query(
+            'UPDATE matches SET team1_id = NULL, team2_id = NULL WHERE tournament_id = $1 AND round > 1',
+            [tournamentId]
+        );
+
+        // Заполняем первый раунд участниками
+        for (let i = 0; i < firstRoundMatches.rows.length && i * 2 < participants.length; i++) {
+            const match = firstRoundMatches.rows[i];
+            const participant1 = participants[i * 2];
+            const participant2 = participants[i * 2 + 1] || null;
+
+            await client.query(
+                'UPDATE matches SET team1_id = $1, team2_id = $2 WHERE id = $3',
+                [participant1.id, participant2?.id, match.id]
+            );
+        }
+    }
+
+    /**
+     * Проверка прав доступа для операций с сеткой
+     * @private
+     */
+    static async _checkBracketAccess(tournamentId, userId) {
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.created_by !== userId) {
+            const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+            if (!isAdmin) {
+                throw new Error('Только создатель или администратор может управлять турнирной сеткой');
+            }
+        }
+    }
+}
+
+module.exports = BracketService; 
