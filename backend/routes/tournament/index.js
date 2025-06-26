@@ -113,11 +113,29 @@ router.get('/:id/matches', MatchController.getMatches);
 // Запрос на администрирование
 router.post('/:id/request-admin', authenticateToken, AdminController.requestAdmin);
 
+// Получение статуса запроса на администрирование
+router.get('/:id/admin-request-status', authenticateToken, AdminController.getAdminRequestStatus);
+
 // Ответ на запрос администрирования
 router.post('/:id/respond-admin-request', authenticateToken, AdminController.respondToAdminRequest);
 
+// Приглашение администратора
+router.post('/:id/invite-admin', authenticateToken, AdminController.inviteAdmin);
+
+// Принятие приглашения администратора
+router.post('/:id/accept-admin-invitation', authenticateToken, AdminController.acceptAdminInvitation);
+
+// Отклонение приглашения администратора
+router.post('/:id/decline-admin-invitation', authenticateToken, AdminController.declineAdminInvitation);
+
 // Удаление администратора
 router.delete('/:id/admins/:userId', authenticateToken, AdminController.removeAdmin);
+
+// Очистка истекших приглашений (глобальная операция)
+router.post('/admin-invitations/cleanup-expired', authenticateToken, AdminController.cleanupExpiredInvitations);
+
+// Получение статистики приглашений (глобальная операция)
+router.get('/admin-invitations/stats', authenticateToken, AdminController.getInvitationStats);
 
 // 💬 **ЧАТ ТУРНИРА**
 

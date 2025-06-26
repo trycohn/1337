@@ -383,6 +383,22 @@ class TournamentValidator {
             errors: errors
         };
     }
+
+    // 🔧 АЛИАСЫ ДЛЯ КОНСИСТЕНТНОСТИ API
+
+    /**
+     * Алиас для validateCreateTournament
+     */
+    static validateCreate(data) {
+        return this.validateCreateTournament(data);
+    }
+
+    /**
+     * Алиас для validateUpdateTournament
+     */
+    static validateUpdate(data) {
+        return this.validateUpdateTournament(data);
+    }
 }
 
 module.exports = TournamentValidator; 

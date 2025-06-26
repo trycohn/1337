@@ -13,18 +13,163 @@ class AdminService {
     static async requestAdmin(tournamentId, userId, username) {
         console.log(`🛡️ AdminService: Запрос админки для турнира ${tournamentId} от пользователя ${userId}`);
         
-        // TODO: Реализовать запрос администрирования
-        throw new Error('AdminService временно недоступен. Используйте старый API.');
+        // Проверяем существование турнира
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        // Проверяем, не является ли уже создателем
+        if (tournament.created_by === userId) {
+            throw new Error('Вы уже являетесь создателем турнира');
+        }
+
+        // Проверяем, не является ли уже администратором
+        const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+        if (isAdmin) {
+            throw new Error('Вы уже администратор этого турнира');
+        }
+
+        // Проверяем, нет ли активного запроса
+        const existingRequest = await pool.query(
+            'SELECT * FROM admin_requests WHERE tournament_id = $1 AND user_id = $2 AND status = $3',
+            [tournamentId, userId, 'pending']
+        );
+
+        if (existingRequest.rows.length > 0) {
+            throw new Error('Запрос на администрирование уже отправлен');
+        }
+
+        // Создаем запрос
+        await pool.query(
+            'INSERT INTO admin_requests (tournament_id, user_id) VALUES ($1, $2)',
+            [tournamentId, userId]
+        );
+
+        // Отправляем уведомление создателю турнира
+        const notificationMessage = `Пользователь ${username} запросил права администратора для турнира "${tournament.name}"`;
+        await pool.query(
+            'INSERT INTO notifications (user_id, message, type, tournament_id, requester_id) VALUES ($1, $2, $3, $4, $5)',
+            [tournament.created_by, notificationMessage, 'admin_request', tournamentId, userId]
+        );
+
+        sendNotification(tournament.created_by, {
+            user_id: tournament.created_by,
+            message: notificationMessage,
+            type: 'admin_request',
+            tournament_id: tournamentId,
+            requester_id: userId,
+            created_at: new Date().toISOString()
+        });
+
+        // Логируем событие
+        await logTournamentEvent(tournamentId, userId, 'admin_request_sent', {
+            username: username
+        });
+
+        console.log('✅ AdminService: Запрос на администрирование отправлен');
     }
 
     /**
      * Ответ на запрос администрирования
      */
-    static async respondToAdminRequest(tournamentId, requesterId, action, userId) {
-        console.log(`✅ AdminService: Ответ на запрос админки для турнира ${tournamentId}`);
+    static async respondToAdminRequest(tournamentId, userId, username, { requesterId, action }) {
+        console.log(`✅ AdminService: Ответ на запрос админки для турнира ${tournamentId}, action: ${action}`);
         
-        // TODO: Реализовать ответ на запрос
-        throw new Error('AdminService временно недоступен. Используйте старый API.');
+        // Проверяем права на ответ (только создатель турнира)
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.created_by !== userId) {
+            throw new Error('Только создатель турнира может отвечать на запросы');
+        }
+
+        // Находим запрос
+        const requestResult = await pool.query(
+            'SELECT * FROM admin_requests WHERE tournament_id = $1 AND user_id = $2 AND status = $3',
+            [tournamentId, requesterId, 'pending']
+        );
+
+        if (requestResult.rows.length === 0) {
+            throw new Error('Запрос не найден или уже обработан');
+        }
+
+        // Получаем данные запрашивающего
+        const requesterResult = await pool.query('SELECT username FROM users WHERE id = $1', [requesterId]);
+        const requesterUsername = requesterResult.rows[0]?.username || 'Неизвестный';
+
+        if (action === 'accept') {
+            // Принимаем запрос - добавляем в администраторы
+            await pool.query(
+                'INSERT INTO tournament_admins (tournament_id, user_id, assigned_by) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+                [tournamentId, requesterId, userId]
+            );
+
+            // Обновляем статус запроса
+            await pool.query(
+                'UPDATE admin_requests SET status = $1, updated_at = NOW() WHERE tournament_id = $2 AND user_id = $3',
+                ['accepted', tournamentId, requesterId]
+            );
+
+            // Уведомляем запрашивающего
+            const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" принят создателем ${username}`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [requesterId, notificationMessage, 'admin_request_accepted', tournamentId]
+            );
+
+            sendNotification(requesterId, {
+                user_id: requesterId,
+                message: notificationMessage,
+                type: 'admin_request_accepted',
+                tournament_id: tournamentId,
+                created_at: new Date().toISOString()
+            });
+
+            // Отправляем объявление в чат турнира
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `${requesterUsername} стал администратором турнира "${tournament.name}"`
+            );
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'admin_request_accepted', {
+                new_admin_id: requesterId,
+                new_admin_username: requesterUsername
+            });
+
+        } else if (action === 'reject') {
+            // Отклоняем запрос
+            await pool.query(
+                'UPDATE admin_requests SET status = $1, updated_at = NOW() WHERE tournament_id = $2 AND user_id = $3',
+                ['rejected', tournamentId, requesterId]
+            );
+
+            // Уведомляем запрашивающего
+            const notificationMessage = `Ваш запрос на администрирование турнира "${tournament.name}" отклонён создателем ${username}`;
+            await pool.query(
+                'INSERT INTO notifications (user_id, message, type, tournament_id) VALUES ($1, $2, $3, $4)',
+                [requesterId, notificationMessage, 'admin_request_rejected', tournamentId]
+            );
+
+            sendNotification(requesterId, {
+                user_id: requesterId,
+                message: notificationMessage,
+                type: 'admin_request_rejected',
+                tournament_id: tournamentId,
+                created_at: new Date().toISOString()
+            });
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'admin_request_rejected', {
+                rejected_user_id: requesterId,
+                rejected_username: requesterUsername
+            });
+        }
+
+        console.log(`✅ AdminService: Запрос на администрирование ${action === 'accept' ? 'принят' : 'отклонён'}`);
     }
 
     /**
