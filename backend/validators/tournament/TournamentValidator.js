@@ -158,10 +158,18 @@ class TournamentValidator {
     static validateMatchResult(data) {
         const errors = [];
 
-        if (!data.winnerTeamId) {
-            errors.push('Необходимо указать команду-победителя');
+        // Проверяем winner_team_id (новый формат) или winnerTeamId (старый формат)
+        const winnerId = data.winner_team_id || data.winnerTeamId;
+        if (!winnerId) {
+            errors.push('Необходимо указать команду-победителя (winner_team_id)');
+        } else {
+            const winnerIdNum = parseInt(winnerId);
+            if (isNaN(winnerIdNum) || winnerIdNum <= 0) {
+                errors.push('ID команды-победителя должен быть положительным числом');
+            }
         }
 
+        // Проверяем score1
         if (data.score1 !== undefined && data.score1 !== null) {
             const score1 = parseInt(data.score1);
             if (isNaN(score1) || score1 < 0) {
@@ -169,6 +177,7 @@ class TournamentValidator {
             }
         }
 
+        // Проверяем score2
         if (data.score2 !== undefined && data.score2 !== null) {
             const score2 = parseInt(data.score2);
             if (isNaN(score2) || score2 < 0) {
@@ -176,26 +185,41 @@ class TournamentValidator {
             }
         }
 
-        // Проверка данных карт
-        if (data.mapsData) {
-            if (!Array.isArray(data.mapsData)) {
+        // Проверяем matchId если он передан
+        if (data.matchId !== undefined) {
+            const matchId = parseInt(data.matchId);
+            if (isNaN(matchId) || matchId <= 0) {
+                errors.push('ID матча должен быть положительным числом');
+            }
+        }
+
+        // Проверка данных карт (maps_data или maps)
+        const mapsData = data.maps_data || data.maps || data.mapsData;
+        if (mapsData) {
+            if (!Array.isArray(mapsData)) {
                 errors.push('Данные карт должны быть массивом');
             } else {
-                data.mapsData.forEach((map, index) => {
-                    if (!map.mapName || map.mapName.trim().length === 0) {
+                mapsData.forEach((map, index) => {
+                    // Проверяем название карты (разные варианты полей)
+                    const mapName = map.mapName || map.map_name || map.name;
+                    if (!mapName || mapName.trim().length === 0) {
                         errors.push(`Название карты ${index + 1} обязательно`);
                     }
                     
-                    if (map.team1Score !== undefined && map.team1Score !== null) {
-                        const team1Score = parseInt(map.team1Score);
-                        if (isNaN(team1Score) || team1Score < 0) {
+                    // Проверяем счет первой команды (разные варианты полей)
+                    const team1Score = map.team1Score || map.score1;
+                    if (team1Score !== undefined && team1Score !== null) {
+                        const score = parseInt(team1Score);
+                        if (isNaN(score) || score < 0) {
                             errors.push(`Счет первой команды на карте ${index + 1} должен быть неотрицательным числом`);
                         }
                     }
                     
-                    if (map.team2Score !== undefined && map.team2Score !== null) {
-                        const team2Score = parseInt(map.team2Score);
-                        if (isNaN(team2Score) || team2Score < 0) {
+                    // Проверяем счет второй команды (разные варианты полей)
+                    const team2Score = map.team2Score || map.score2;
+                    if (team2Score !== undefined && team2Score !== null) {
+                        const score = parseInt(team2Score);
+                        if (isNaN(score) || score < 0) {
                             errors.push(`Счет второй команды на карте ${index + 1} должен быть неотрицательным числом`);
                         }
                     }

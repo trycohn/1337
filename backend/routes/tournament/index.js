@@ -102,11 +102,17 @@ router.post('/:id/generate-bracket', authenticateToken, MatchController.generate
 // Регенерация турнирной сетки
 router.post('/:id/regenerate-bracket', authenticateToken, MatchController.regenerateBracket);
 
-// Обновление результата матча
+// Обновление результата матча в рамках турнира
 router.put('/:id/matches/:matchId/result', authenticateToken, MatchController.updateMatchResult);
+
+// 🆕 Прямое обновление результата матча по ID матча (для совместимости с фронтендом)
+router.post('/matches/:matchId/result', authenticateToken, MatchController.updateSpecificMatchResult);
 
 // Получение матчей турнира
 router.get('/:id/matches', MatchController.getMatches);
+
+// Получение конкретного матча
+router.get('/matches/:matchId', MatchController.getMatchById);
 
 // 🛡️ **АДМИНИСТРАТИВНЫЕ ФУНКЦИИ**
 

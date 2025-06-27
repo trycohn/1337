@@ -41,15 +41,15 @@
 }
 
 .modal-system-container.modal-system-small {
-    max-width: 500px;
+    max-width: 400px;
 }
 
 .modal-system-container.modal-system-medium {
-    max-width: 700px;
+    max-width: 500px;
 }
 
 .modal-system-container.modal-system-large {
-    max-width: 1200px;
+    max-width: 600px;
 }
 
 /* === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА === */
@@ -276,7 +276,10 @@
 }
 
 .modal-system-grid-3 {
+    display: grid;
     grid-template-columns: 1fr 1fr 1fr;
+    justify-items: center;
+    align-items: center;
 }
 
 .modal-system-grid-4 {
@@ -427,7 +430,7 @@
 .modal-system-input,
 .modal-system-textarea,
 .modal-system-select {
-    width: 100%;
+    width: 48px;
     padding: 10px;
     border: 1px solid #ffffff;
     background: #000000;

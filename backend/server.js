@@ -297,8 +297,9 @@ const usersRouter = require('./routes/users');
 const teamsRouter = require('./routes/teams');
 const gamesRouter = require('./routes/games');
 const mapsRouter = require('./routes/maps');
-const tournamentsRouter = require('./routes/tournament'); // ✨ НОВЫЙ МОДУЛЬНЫЙ РОУТЕР
+const modularTournamentsRouter = require('./routes/tournament'); // ✨ МОДУЛЬНЫЙ РОУТЕР V4.4.0
 const tournamentsFixRouter = require('./routes/tournaments-fix'); // Исправленный роутер для критических fix'ов
+const tournamentsLegacyRouter = require('./routes/tournaments'); // 💾 ЛЕГАСИ РОУТЕР (backup)
 const tournamentPlayersRouter = require('./routes/tournamentPlayers');
 const matchesRouter = require('./routes/matches');
 const statisticsRouter = require('./routes/statistics');
@@ -317,8 +318,9 @@ const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/teams', teamsRouter);
-app.use('/api/tournaments', tournamentsFixRouter); // ПЕРВЫЙ приоритет: исправленные endpoint'ы
-app.use('/api/tournaments', tournamentsRouter); // ВТОРОЙ приоритет: основные endpoint'ы
+app.use('/api/tournaments', modularTournamentsRouter); // 🥇 ПЕРВЫЙ приоритет: МОДУЛЬНАЯ АРХИТЕКТУРА V4.4.0
+app.use('/api/tournaments', tournamentsFixRouter); // 🥈 ВТОРОЙ приоритет: исправленные endpoint'ы
+app.use('/api/tournaments', tournamentsLegacyRouter); // 🥉 ТРЕТИЙ приоритет: легаси endpoint'ы (backup)
 app.use('/api/tournamentPlayers', tournamentPlayersRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/statistics', statisticsRouter);
