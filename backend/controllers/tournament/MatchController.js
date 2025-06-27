@@ -63,18 +63,60 @@ class MatchController {
         const { matchId } = req.params;
         const { winner_team_id, score1, score2, maps_data } = req.body;
         
+        // 🔍 ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
+        console.log(`🎯 [updateSpecificMatchResult] НАЧАЛО ОБРАБОТКИ ЗАПРОСА:`);
+        console.log(`   - Match ID (params): ${matchId}`);
+        console.log(`   - User ID: ${req.user.id}`);
+        console.log(`   - Username: ${req.user.username}`);
+        console.log(`   - Request Body:`, JSON.stringify(req.body, null, 2));
+        console.log(`   - Winner Team ID: ${winner_team_id}`);
+        console.log(`   - Score1: ${score1}`);
+        console.log(`   - Score2: ${score2}`);
+        console.log(`   - Maps data:`, maps_data);
+        
+        // 🔍 ВАЛИДАЦИЯ С ДЕТАЛЬНЫМ ЛОГИРОВАНИЕМ
+        console.log(`📝 [updateSpecificMatchResult] Запускаем валидацию с данными:`, {
+            winner_team_id,
+            score1, 
+            score2,
+            maps_data,
+            matchId
+        });
+        
         const validationResult = TournamentValidator.validateMatchResult(req.body);
+        
+        console.log(`📝 [updateSpecificMatchResult] Результат валидации:`, {
+            isValid: validationResult.isValid,
+            errors: validationResult.errors
+        });
+        
         if (!validationResult.isValid) {
-            return res.status(400).json({ error: validationResult.errors });
+            console.log(`❌ [updateSpecificMatchResult] ВАЛИДАЦИЯ НЕ ПРОШЛА:`);
+            validationResult.errors.forEach((error, index) => {
+                console.log(`   ${index + 1}. ${error}`);
+            });
+            return res.status(400).json({ 
+                error: 'Ошибка валидации данных',
+                message: validationResult.errors 
+            });
         }
         
-        const result = await MatchService.updateSpecificMatchResult(
-            parseInt(matchId),
-            { winner_team_id, score1, score2, maps_data },
-            req.user.id
-        );
+        console.log(`✅ [updateSpecificMatchResult] Валидация прошла успешно, вызываем MatchService...`);
         
-        res.json(result);
+        try {
+            const result = await MatchService.updateSpecificMatchResult(
+                parseInt(matchId),
+                { winner_team_id, score1, score2, maps_data },
+                req.user.id
+            );
+            
+            console.log(`🎉 [updateSpecificMatchResult] УСПЕШНОЕ ЗАВЕРШЕНИЕ`);
+            res.json(result);
+        } catch (serviceError) {
+            console.error(`❌ [updateSpecificMatchResult] ОШИБКА В СЕРВИСЕ:`, serviceError.message);
+            console.error(`❌ [updateSpecificMatchResult] Stack trace:`, serviceError.stack);
+            throw serviceError; // Re-throw для asyncHandler
+        }
     });
 
     // 📋 Получение матчей турнира
