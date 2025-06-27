@@ -339,9 +339,31 @@ class MatchService {
                     console.log(`✅ [safeAdvanceWinner] Победитель ${winnerId} уже находится в матче ${nextMatch.id} (team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id})`);
                     return { advanced: false, reason: 'already_advanced' };
                 } else {
-                    // Все позиции заняты И наш победитель не находится в матче - это проблема
-                    console.log(`❌ [safeAdvanceWinner] КОНФЛИКТ: Все позиции заняты (team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}), но победитель ${winnerId} не находится в матче ${nextMatch.id}`);
-                    throw new Error(`Все позиции в следующем матче ${nextMatch.id} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
+                    // 🆕 УЛУЧШЕННАЯ ОБРАБОТКА: Проверяем проблему структуры сетки
+                    console.log(`❌ [safeAdvanceWinner] КОНФЛИКТ СТРУКТУРЫ СЕТКИ: Все позиции заняты (team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}), но победитель ${winnerId} не находится в матче ${nextMatch.id}`);
+                    
+                    // Проверяем сколько матчей ведут в этот матч
+                    const incomingMatchesResult = await client.query(
+                        'SELECT COUNT(*) as count FROM matches WHERE next_match_id = $1 AND tournament_id = $2',
+                        [nextMatch.id, match.tournament_id]
+                    );
+                    
+                    const incomingCount = parseInt(incomingMatchesResult.rows[0].count);
+                    console.log(`🔍 [safeAdvanceWinner] В матч ${nextMatch.id} ведут ${incomingCount} матчей`);
+                    
+                    if (incomingCount > 2) {
+                        // Проблема структуры сетки - слишком много входящих матчей
+                        throw new Error(
+                            `ПРОБЛЕМА СТРУКТУРЫ СЕТКИ: В матч ${nextMatch.id} ведут ${incomingCount} матчей, но максимум может быть 2. ` +
+                            `Требуется исправление структуры турнирной сетки. ` +
+                            `Команды в матче: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}. ` +
+                            `Попытка добавить команду: ${winnerId}. ` +
+                            `РЕШЕНИЕ: Выполните SQL скрипт 'quick_fix_tournament_${match.tournament_id}.sql' или обратитесь к администратору.`
+                        );
+                    } else {
+                        // Обычная ошибка переполнения
+                        throw new Error(`Все позиции в следующем матче ${nextMatch.id} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
+                    }
                 }
             }
             
