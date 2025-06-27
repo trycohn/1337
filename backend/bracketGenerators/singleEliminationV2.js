@@ -161,6 +161,19 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
     
     console.log(`🥊 ГЕНЕРАЦИЯ ПРЕДВАРИТЕЛЬНОГО РАУНДА: ${preliminaryMatches} матчей`);
     
+    // 🔍 ДОБАВЛЯЕМ ДИАГНОСТИКУ УЧАСТНИКОВ ПЕРЕД ГЕНЕРАЦИЕЙ
+    console.log(`🔍 ДИАГНОСТИКА УЧАСТНИКОВ ПРЕДВАРИТЕЛЬНОГО РАУНДА:`);
+    console.log(`   - Количество участников: ${preliminaryParticipants.length}`);
+    console.log(`   - Ожидается матчей: ${preliminaryMatches}`);
+    
+    preliminaryParticipants.forEach((participant, index) => {
+        console.log(`   ${index + 1}. ID: ${participant.id} (тип: ${typeof participant.id}), Name: "${participant.name}"`);
+        if (typeof participant.id !== 'number' || isNaN(participant.id)) {
+            console.log(`      ❌ НЕКОРРЕКТНЫЙ ID В ПРЕДВАРИТЕЛЬНОМ РАУНДЕ!`);
+            throw new Error(`Участник ${index + 1} в предварительном раунде имеет некорректный ID: ${participant.id} (${typeof participant.id})`);
+        }
+    });
+    
     // Генерируем пары для предварительного раунда
     for (let i = 0; i < preliminaryMatches; i++) {
         const team1Index = i * 2;
@@ -170,7 +183,24 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
             const team1 = preliminaryParticipants[team1Index];
             const team2 = preliminaryParticipants[team2Index];
             
+            // 🔍 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА ПЕРЕД ВСТАВКОЙ В БД
+            console.log(`🔍 Проверяем участников матча ${i + 1}:`);
+            console.log(`   Team 1: ID=${team1.id} (${typeof team1.id}), Name="${team1.name}"`);
+            console.log(`   Team 2: ID=${team2.id} (${typeof team2.id}), Name="${team2.name}"`);
+            
+            if (typeof team1.id !== 'number' || isNaN(team1.id)) {
+                throw new Error(`TEAM1 имеет некорректный ID: ${team1.id} (${typeof team1.id})`);
+            }
+            if (typeof team2.id !== 'number' || isNaN(team2.id)) {
+                throw new Error(`TEAM2 имеет некорректный ID: ${team2.id} (${typeof team2.id})`);
+            }
+            
             const roundNames = generateRoundNames(0, 0, true, false);
+            
+            console.log(`🔧 Вставляем матч в БД с параметрами:`);
+            console.log(`   - Tournament ID: ${tournamentId}`);
+            console.log(`   - Team1 ID: ${team1.id}`);
+            console.log(`   - Team2 ID: ${team2.id}`);
             
             const match = await pool.query(`
                 INSERT INTO matches (
@@ -194,7 +224,7 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
             
             matches.push(match.rows[0]);
             
-            console.log(`   ✅ Матч ${i + 1}: ${team1.name} vs ${team2.name}`);
+            console.log(`   ✅ Матч ${i + 1}: ${team1.name} vs ${team2.name} (ID ${match.rows[0].id})`);
         }
     }
     
@@ -475,6 +505,38 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
 const generateSingleEliminationBracket = async (tournamentId, participants, thirdPlaceMatch = false) => {
     console.log('🚀 ЗАПУСК ГЕНЕРАТОРА SINGLE ELIMINATION V2.0');
     console.log('='.repeat(60));
+    
+    // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ
+    console.log(`🔍 ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ:`);
+    console.log(`   - Tournament ID: ${tournamentId} (тип: ${typeof tournamentId})`);
+    console.log(`   - Количество участников: ${participants.length}`);
+    console.log(`   - Матч за 3-е место: ${thirdPlaceMatch}`);
+    console.log(`   - Первые 5 участников:`);
+    
+    participants.slice(0, 5).forEach((participant, index) => {
+        console.log(`     ${index + 1}. ID: ${participant.id} (тип: ${typeof participant.id}), Name: "${participant.name}"`);
+        console.log(`        Объект:`, JSON.stringify(participant));
+        
+        // Критическая проверка ID
+        if (typeof participant.id !== 'number' || isNaN(participant.id)) {
+            console.log(`        ❌ КРИТИЧЕСКАЯ ОШИБКА: Некорректный ID!`);
+            throw new Error(`УЧАСТНИК ${index + 1} ИМЕЕТ НЕКОРРЕКТНЫЙ ID: ${participant.id} (тип: ${typeof participant.id}). Ожидается число.`);
+        } else {
+            console.log(`        ✅ ID корректен`);
+        }
+    });
+    
+    // Общая проверка всех участников
+    const invalidParticipants = participants.filter(p => typeof p.id !== 'number' || isNaN(p.id));
+    if (invalidParticipants.length > 0) {
+        console.log(`❌ НАЙДЕНО ${invalidParticipants.length} УЧАСТНИКОВ С НЕКОРРЕКТНЫМИ ID:`);
+        invalidParticipants.forEach((p, index) => {
+            console.log(`   ${index + 1}. ID: ${p.id} (${typeof p.id}), Name: ${p.name}`);
+        });
+        throw new Error(`БЛОКИРОВКА ГЕНЕРАЦИИ: ${invalidParticipants.length} участников имеют некорректные ID. Требуются числовые значения.`);
+    }
+    
+    console.log(`✅ ВСЕ ${participants.length} УЧАСТНИКОВ ПРОШЛИ ВАЛИДАЦИЮ ID`);
     
     try {
         // 1. Математические расчеты
