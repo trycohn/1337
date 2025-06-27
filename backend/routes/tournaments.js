@@ -5,6 +5,7 @@ const pool = require('../db');
 const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator } = require('../middleware/auth');
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
+const { getSafeParticipants } = require('../fix_regenerate_participants');
 
 // 🔧 ФУНКЦИИ ЧАТА ТУРНИРА - ПЕРЕРАБОТАННЫЕ ДЛЯ ОСНОВНОЙ СИСТЕМЫ ЧАТОВ
 async function getTournamentChatId(tournamentId) {
@@ -1517,20 +1518,9 @@ router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, a
         console.log(`🧹 [regenerate-bracket] Очищаем связанные данные и кеши`);
 
         // Получение участников в зависимости от типа турнира
-        let participants;
-        if (tournament.participant_type === 'solo') {
-            const participantsResult = await pool.query(
-                'SELECT id, name FROM tournament_participants WHERE tournament_id = $1',
-                [id]
-            );
-            participants = participantsResult.rows;
-        } else {
-            const participantsResult = await pool.query(
-                'SELECT id, name FROM tournament_teams WHERE tournament_id = $1',
-                [id]
-            );
-            participants = participantsResult.rows;
-        }
+        // 🔧 ИСПОЛЬЗУЕМ БЕЗОПАСНУЮ ФУНКЦИЮ ПОЛУЧЕНИЯ УЧАСТНИКОВ
+        console.log(`🔧 [regenerate-bracket] Используем безопасную функцию получения участников...`);
+        const participants = await getSafeParticipants(id, tournament.participant_type);
 
         console.log(`👥 [regenerate-bracket] Найдено ${participants.length} участников для перегенерации`);
 
