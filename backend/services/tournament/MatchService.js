@@ -297,6 +297,7 @@ class MatchService {
             }
             
             const match = matchResult.rows[0];
+            console.log(`✅ [safeAdvanceWinner] Матч получен, next_match_id: ${match.next_match_id}`);
             
             // 2. Валидация: проверяем, что победитель является участником матча
             if (![match.team1_id, match.team2_id].includes(winnerId)) {
@@ -310,6 +311,7 @@ class MatchService {
             }
             
             // 4. Получаем следующий матч с блокировкой
+            console.log(`🔍 [safeAdvanceWinner] Получаем следующий матч ${match.next_match_id}...`);
             const nextMatchResult = await client.query(
                 'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
                 [match.next_match_id]
@@ -320,23 +322,30 @@ class MatchService {
             }
             
             const nextMatch = nextMatchResult.rows[0];
+            console.log(`🔧 [safeAdvanceWinner] Следующий матч ${nextMatch.id}: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
             
-            // 5. Проверяем, не занят ли уже победитель в следующем матче
-            if (nextMatch.team1_id === winnerId || nextMatch.team2_id === winnerId) {
-                console.log(`✅ [safeAdvanceWinner] Победитель ${winnerId} уже находится в матче ${nextMatch.id}`);
-                return { advanced: false, reason: 'already_advanced' };
-            }
-            
-            // 6. Определяем свободную позицию в следующем матче
+            // 5. ИСПРАВЛЕННАЯ ЛОГИКА: Определяем свободную позицию в следующем матче
             let updateField = null;
             
             if (!nextMatch.team1_id) {
                 updateField = 'team1_id';
+                console.log(`📍 [safeAdvanceWinner] Найдена свободная позиция: team1_id`);
             } else if (!nextMatch.team2_id) {
                 updateField = 'team2_id';
+                console.log(`📍 [safeAdvanceWinner] Найдена свободная позиция: team2_id`);
             } else {
-                throw new Error(`Все позиции в следующем матче ${nextMatch.id} уже заняты`);
+                // 6. Все позиции заняты - проверяем, не находится ли уже наш победитель там
+                if (nextMatch.team1_id === winnerId || nextMatch.team2_id === winnerId) {
+                    console.log(`✅ [safeAdvanceWinner] Победитель ${winnerId} уже находится в матче ${nextMatch.id} (team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id})`);
+                    return { advanced: false, reason: 'already_advanced' };
+                } else {
+                    // Все позиции заняты И наш победитель не находится в матче - это проблема
+                    console.log(`❌ [safeAdvanceWinner] КОНФЛИКТ: Все позиции заняты (team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}), но победитель ${winnerId} не находится в матче ${nextMatch.id}`);
+                    throw new Error(`Все позиции в следующем матче ${nextMatch.id} уже заняты: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
+                }
             }
+            
+            console.log(`💾 [safeAdvanceWinner] Обновляем позицию ${updateField} в матче ${nextMatch.id}...`);
             
             // 7. Атомарно обновляем следующий матч
             const updateResult = await client.query(
@@ -345,6 +354,7 @@ class MatchService {
             );
             
             if (updateResult.rows.length === 0) {
+                // Кто-то другой уже занял эту позицию
                 throw new Error(`Позиция ${updateField} в матче ${nextMatch.id} была занята другим процессом`);
             }
             
@@ -354,7 +364,11 @@ class MatchService {
             return {
                 advanced: true,
                 nextMatchId: nextMatch.id,
-                position: updateField
+                position: updateField,
+                previousTeam1: nextMatch.team1_id,
+                previousTeam2: nextMatch.team2_id,
+                newTeam1: updateField === 'team1_id' ? winnerId : nextMatch.team1_id,
+                newTeam2: updateField === 'team2_id' ? winnerId : nextMatch.team2_id
             };
             
         } catch (error) {
