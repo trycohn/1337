@@ -24,8 +24,15 @@ const CRITICAL_ENDPOINTS = [
 
 // Функция для определения, нужно ли повторить запрос
 const shouldRetry = (error, config) => {
+    // 🔧 БЕЗОПАСНАЯ ПРОВЕРКА: Если config undefined, не повторяем
+    if (!config) {
+        console.warn('⚠️ shouldRetry: config is undefined');
+        return false;
+    }
+    
     // Не повторяем, если это уже повторный запрос
-    if (config.__retryCount >= 2) return false;
+    const retryCount = config.__retryCount || 0;
+    if (retryCount >= 2) return false;
     
     // Повторяем для критических endpoints
     const isCriticalEndpoint = CRITICAL_ENDPOINTS.some(endpoint => 
@@ -45,6 +52,12 @@ const shouldRetry = (error, config) => {
 
 // Функция для retry с экспоненциальной задержкой
 const retryRequest = async (config) => {
+    // 🔧 БЕЗОПАСНАЯ ПРОВЕРКА: Если config undefined, отклоняем
+    if (!config) {
+        console.error('❌ retryRequest: config is undefined');
+        return Promise.reject(new Error('Config is undefined'));
+    }
+    
     config.__retryCount = (config.__retryCount || 0) + 1;
     const delay = Math.pow(2, config.__retryCount) * 1000; // 2s, 4s, 8s
     
@@ -85,10 +98,10 @@ api.interceptors.response.use(
         return response;
     },
     async (error) => {
-        const config = error.config;
+        const config = error?.config; // 🔧 БЕЗОПАСНОЕ ПОЛУЧЕНИЕ CONFIG
         
-        // Пытаемся повторить критические запросы
-        if (shouldRetry(error, config)) {
+        // Пытаемся повторить критические запросы только если config существует
+        if (config && shouldRetry(error, config)) {
             try {
                 return await retryRequest(config);
             } catch (retryError) {

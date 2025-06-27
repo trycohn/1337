@@ -330,6 +330,49 @@ class TournamentService {
             }
         }
     }
+
+    /**
+     * Получение турнира по ID (простая версия без дополнительных данных)
+     */
+    static async getTournament(tournamentId) {
+        console.log(`🔍 [TournamentService] Получение базовой информации о турнире ${tournamentId}`);
+        return await TournamentRepository.getById(tournamentId);
+    }
+
+    /**
+     * Проверка разрешений пользователя на действия с турниром
+     */
+    static async checkUserPermission(tournamentId, userId, permission = 'general') {
+        console.log(`🔒 [TournamentService] Проверка разрешения "${permission}" для пользователя ${userId} в турнире ${tournamentId}`);
+        
+        try {
+            const tournament = await TournamentRepository.getById(tournamentId);
+            if (!tournament) {
+                console.log(`❌ [checkUserPermission] Турнир ${tournamentId} не найден`);
+                return false;
+            }
+
+            // Создатель турнира имеет все права
+            if (tournament.created_by === userId) {
+                console.log(`✅ [checkUserPermission] Пользователь ${userId} - создатель турнира`);
+                return true;
+            }
+
+            // Проверяем администраторов турнира
+            const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+            if (isAdmin) {
+                console.log(`✅ [checkUserPermission] Пользователь ${userId} - администратор турнира`);
+                return true;
+            }
+
+            console.log(`❌ [checkUserPermission] Пользователь ${userId} не имеет прав на "${permission}" в турнире ${tournamentId}`);
+            return false;
+
+        } catch (error) {
+            console.error(`❌ [checkUserPermission] Ошибка проверки разрешений:`, error);
+            return false;
+        }
+    }
 }
 
 module.exports = TournamentService; 
