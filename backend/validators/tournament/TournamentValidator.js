@@ -201,7 +201,7 @@ class TournamentValidator {
             } else {
                 mapsData.forEach((map, index) => {
                     // Проверяем название карты (разные варианты полей)
-                    const mapName = map.mapName || map.map_name || map.name;
+                    const mapName = map.mapName || map.map_name || map.name || map.map;
                     if (!mapName || mapName.trim().length === 0) {
                         errors.push(`Название карты ${index + 1} обязательно`);
                     }
