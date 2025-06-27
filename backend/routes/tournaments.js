@@ -1383,6 +1383,14 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
     console.log('❌ [OLD tournaments.js] Request body:', req.body);
     console.log('❌ [OLD tournaments.js] ЭТО ОЗНАЧАЕТ ЧТО МОДУЛЬНЫЙ РОУТЕР НЕ РАБОТАЕТ!');
     
+    // 🚫 СТАРЫЙ ENDPOINT ОТКЛЮЧЕН - используйте модульную архитектуру
+    // См. backend/routes/tournament/index.js -> MatchController.generateBracket
+    return res.status(410).json({ 
+        error: 'Этот endpoint отключен. Используется новая модульная архитектура.',
+        redirect: 'Используйте /api/tournaments/:id/generate-bracket через модульный роутер'
+    });
+    
+    /* СТАРЫЙ КОД ЗАКОММЕНТИРОВАН
     const { id } = req.params;
     const { thirdPlaceMatch } = req.body;
     const userId = req.user.id;
@@ -1468,6 +1476,7 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, asy
         console.error('❌ Ошибка генерации сетки:', err);
         res.status(500).json({ error: err.message });
     }
+    КОНЕЦ СТАРОГО КОДА */
 });
 
 // Перегенерация турнирной сетки
