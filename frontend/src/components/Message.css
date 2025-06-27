@@ -376,4 +376,154 @@
     margin-right: 42px;
 }
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
+
+/* Адаптивность для мобильных устройств */
+
+/* 🆕 Стили для интерактивных сообщений */
+.message.interactive-wrapper {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    max-width: 80%;
+}
+
+/* Адаптация для турнирных чатов */
+.tournament-container .interactive-wrapper {
+    margin-left: 42px;
+    margin-right: 0;
+}
+
+.tournament-container.own-container .interactive-wrapper {
+    margin-left: 0;
+    margin-right: 42px;
+}
+
+/* Интеграция с существующими стилями */
+.message-container .interactive-message {
+    max-width: 100%;
+    background-color: #1a1a1a;
+    border-color: #333333;
+    color: #ffffff;
+}
+
+.message-container .interactive-message .message-text {
+    color: #ffffff;
+}
+
+.message-container .interactive-message .message-text strong {
+    color: #ffffff;
+}
+
+.message-container .interactive-message .message-text a {
+    color: #66aaff;
+}
+
+.message-container .interactive-message .message-text a:hover {
+    border-bottom-color: #66aaff;
+}
+
+/* Адаптация кнопок для темной темы */
+.message-container .interactive-message .action-btn {
+    background-color: #333333;
+    color: #ffffff;
+    border-color: #555555;
+}
+
+.message-container .interactive-message .action-btn:hover:not(:disabled) {
+    background-color: #444444;
+    border-color: #666666;
+}
+
+.message-container .interactive-message .action-btn.success {
+    background-color: #2a5c2a;
+    border-color: #4d7d4d;
+    color: #66ff66;
+}
+
+.message-container .interactive-message .action-btn.success:hover:not(:disabled) {
+    background-color: #3d6d3d;
+    border-color: #66ff66;
+}
+
+.message-container .interactive-message .action-btn.danger {
+    background-color: #5c2a2a;
+    border-color: #7d4d4d;
+    color: #ff6666;
+}
+
+.message-container .interactive-message .action-btn.danger:hover:not(:disabled) {
+    background-color: #6d3d3d;
+    border-color: #ff6666;
+}
+
+.message-container .interactive-message .action-btn.primary {
+    background-color: #2a3d5c;
+    border-color: #4d5d7d;
+    color: #66aaff;
+}
+
+.message-container .interactive-message .action-btn.primary:hover:not(:disabled) {
+    background-color: #3d4d6d;
+    border-color: #66aaff;
+}
+
+.message-container .interactive-message .action-btn.info {
+    background-color: #2a5c5c;
+    border-color: #4d7d7d;
+    color: #66ffcc;
+}
+
+.message-container .interactive-message .action-btn.info:hover:not(:disabled) {
+    background-color: #3d6d6d;
+    border-color: #66ffcc;
+}
+
+/* Результаты действий для темной темы */
+.message-container .interactive-message .action-result.success {
+    background-color: rgba(102, 255, 102, 0.1);
+    color: #66ff66;
+    border-color: rgba(102, 255, 102, 0.3);
+}
+
+.message-container .interactive-message .action-result.error {
+    background-color: rgba(255, 102, 102, 0.1);
+    color: #ff6666;
+    border-color: rgba(255, 102, 102, 0.3);
+}
+
+/* Уведомления об истечении срока для темной темы */
+.message-container .interactive-message .expiration-notice {
+    background-color: rgba(255, 204, 102, 0.1);
+    color: #ffcc66;
+    border-color: rgba(255, 204, 102, 0.3);
+}
+
+.message-container .interactive-message .expiration-info {
+    color: #888888;
+    border-top-color: #333333;
+}
+
+/* Мобильная адаптация для интерактивных сообщений */
+@media (max-width: 768px) {
+    .message.interactive-wrapper {
+        max-width: 95%;
+    }
+    
+    .tournament-container .interactive-wrapper {
+        margin-left: 10px;
+    }
+    
+    .tournament-container.own-container .interactive-wrapper {
+        margin-right: 10px;
+        margin-left: 0;
+    }
+    
+    /* Отключаем отступы от аватаров на мобильных */
+    .tournament-container .interactive-wrapper,
+    .tournament-container.own-container .interactive-wrapper {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
  

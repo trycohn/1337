@@ -3,6 +3,7 @@ import './Message.css';
 import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 import axios from 'axios';
+import InteractiveMessage from './InteractiveMessage';
 
 function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
     const [showContextMenu, setShowContextMenu] = useState(false);
@@ -22,6 +23,9 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
             baseClass = 'message announcement-wrapper';
         } else if (message.message_type === 'image') {
             baseClass += ' image-message';
+        } else if (message.message_type === 'admin_invitation_interactive' || 
+                   message.message_type === 'tournament_invite_interactive') {
+            baseClass = 'message interactive-wrapper';
         }
         
         // Для турнирных чатов добавляем специальный класс
@@ -215,6 +219,39 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
     // Рендер содержимого сообщения в зависимости от его типа
     const renderMessageContent = () => {
         switch (message.message_type) {
+            case 'admin_invitation_interactive':
+            case 'tournament_invite_interactive':
+                // 🆕 Интерактивные сообщения с кнопками
+                return (
+                    <InteractiveMessage 
+                        message={message.content}
+                        metadata={message.metadata ? 
+                            (typeof message.metadata === 'string' ? 
+                                JSON.parse(message.metadata) : 
+                                message.metadata
+                            ) : null
+                        }
+                        onActionComplete={(actionType, result) => {
+                            console.log('Действие выполнено:', actionType, result);
+                            // Можно добавить дополнительную логику после выполнения действия
+                            if (actionType === 'accept' || actionType === 'decline') {
+                                // Помечаем сообщение как обработанное
+                                if (message.metadata) {
+                                    if (typeof message.metadata === 'string') {
+                                        const metadata = JSON.parse(message.metadata);
+                                        metadata.processed = true;
+                                        metadata.action = actionType;
+                                        message.metadata = JSON.stringify(metadata);
+                                    } else {
+                                        message.metadata.processed = true;
+                                        message.metadata.action = actionType;
+                                    }
+                                }
+                            }
+                        }}
+                    />
+                );
+                
             case 'image':
                 return (
                     <div className="message-image">

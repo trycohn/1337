@@ -1,0 +1,239 @@
+/* Интерактивные сообщения */
+.interactive-message {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.message-text {
+    color: #333333;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.message-text strong {
+    font-weight: 600;
+    color: #000000;
+}
+
+.message-text a {
+    color: #007bff;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.message-text a:hover {
+    border-bottom-color: #007bff;
+}
+
+/* Кнопки действий */
+.message-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #333333;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    min-height: 36px;
+}
+
+.action-btn:hover {
+    background: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Стили кнопок по типам */
+.action-btn.success {
+    background: #28a745;
+    color: #ffffff;
+    border-color: #28a745;
+}
+
+.action-btn.success:hover:not(:disabled) {
+    background: #218838;
+    border-color: #1e7e34;
+}
+
+.action-btn.danger {
+    background: #dc3545;
+    color: #ffffff;
+    border-color: #dc3545;
+}
+
+.action-btn.danger:hover:not(:disabled) {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+.action-btn.primary {
+    background: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
+}
+
+.action-btn.primary:hover:not(:disabled) {
+    background: #0056b3;
+    border-color: #004085;
+}
+
+.action-btn.info {
+    background: #17a2b8;
+    color: #ffffff;
+    border-color: #17a2b8;
+}
+
+.action-btn.info:hover:not(:disabled) {
+    background: #138496;
+    border-color: #117a8b;
+}
+
+/* Результат действия */
+.action-result {
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.action-result.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.action-result.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Уведомления об истечении срока */
+.expiration-notice {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.expiration-info {
+    font-size: 12px;
+    color: #666666;
+    text-align: center;
+    padding: 4px 0;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+/* Анимация загрузки */
+.loading-spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .interactive-message {
+        margin: 6px 0;
+        padding: 12px;
+        border-radius: 6px;
+    }
+    
+    .message-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 16px;
+        min-height: 40px;
+    }
+    
+    .message-text {
+        font-size: 13px;
+    }
+}
+
+/* Темная тема (если используется) */
+@media (prefers-color-scheme: dark) {
+    .interactive-message {
+        background: #1e1e1e;
+        border-color: #333333;
+        color: #ffffff;
+    }
+    
+    .message-text {
+        color: #e0e0e0;
+    }
+    
+    .message-text strong {
+        color: #ffffff;
+    }
+    
+    .action-btn {
+        background: #333333;
+        color: #ffffff;
+        border-color: #555555;
+    }
+    
+    .action-btn:hover:not(:disabled) {
+        background: #444444;
+    }
+    
+    .expiration-info {
+        color: #aaaaaa;
+        border-top-color: #333333;
+    }
+} 

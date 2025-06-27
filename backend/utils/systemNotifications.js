@@ -91,15 +91,15 @@ async function getOrCreateSystemChat(recipientId) {
 /**
  * Отправляет системное уведомление в чат
  */
-async function sendSystemNotification(recipientId, message, type = 'system') {
+async function sendSystemNotification(recipientId, message, type = 'system', metadata = null) {
     try {
         const systemUserId = await ensureSystemUser();
         const chatId = await getOrCreateSystemChat(recipientId);
         
-        // Отправляем сообщение
+        // Отправляем сообщение с метаданными
         const messageResult = await pool.query(
-            'INSERT INTO messages (chat_id, sender_id, content, message_type, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *',
-            [chatId, systemUserId, message, type]
+            'INSERT INTO messages (chat_id, sender_id, content, message_type, metadata, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
+            [chatId, systemUserId, message, type, metadata ? JSON.stringify(metadata) : null]
         );
         
         // Помечаем сообщение как непрочитанное для получателя
@@ -109,6 +109,10 @@ async function sendSystemNotification(recipientId, message, type = 'system') {
         );
         
         console.log(`Системное уведомление отправлено пользователю ${recipientId}: ${message}`);
+        if (metadata) {
+            console.log(`Метаданные сообщения:`, metadata);
+        }
+        
         return messageResult.rows[0];
     } catch (error) {
         console.error('Ошибка отправки системного уведомления:', error);
@@ -120,8 +124,30 @@ async function sendSystemNotification(recipientId, message, type = 'system') {
  * Отправляет уведомление о приглашении в турнир
  */
 async function sendTournamentInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId) {
-    const message = `🏆 Вы приглашены в турнир "${tournamentName}" пользователем ${inviterUsername}.\n\nПерейдите в турнир для принятия приглашения: /tournaments/${tournamentId}`;
-    return await sendSystemNotification(recipientId, message, 'tournament_invite');
+    const tournamentUrl = process.env.NODE_ENV === 'production'
+        ? `https://1337community.com/tournaments/${tournamentId}`
+        : `http://localhost:3000/tournaments/${tournamentId}`;
+        
+    const message = `🏆 Вы приглашены в турнир **[${tournamentName}](${tournamentUrl})** пользователем ${inviterUsername}.\n\nПерейдите в турнир для принятия приглашения.`;
+    
+    const metadata = {
+        type: 'tournament_invitation',
+        tournament_id: tournamentId,
+        tournament_name: tournamentName,
+        inviter_username: inviterUsername,
+        actions: [
+            {
+                type: 'view_tournament',
+                label: '🏆 Перейти к турниру',
+                action: 'open_tournament',
+                style: 'primary',
+                url: tournamentUrl,
+                target: '_blank'
+            }
+        ]
+    };
+    
+    return await sendSystemNotification(recipientId, message, 'tournament_invite', metadata);
 }
 
 /**
@@ -181,17 +207,64 @@ async function sendAdminRequestRejectedNotification(recipientId, tournamentName)
 }
 
 /**
- * Отправляет приглашение стать администратором турнира
+ * Отправляет приглашение стать администратором турнира с интерактивными кнопками
  */
 async function sendAdminInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId, invitationId) {
-    const message = `🛡️ Вас пригласили стать администратором турнира "${tournamentName}" пользователем ${inviterUsername}.\n\n` +
-        `💼 Как администратор вы сможете:\n` +
-        `• Управлять матчами и результатами\n` +
-        `• Добавлять и удалять участников\n` +
-        `• Модерировать чат турнира\n\n` +
-        `⏰ Приглашение действительно 7 дней.\n\n` +
-        `Перейдите в турнир для принятия или отклонения приглашения: /tournaments/${tournamentId}`;
-    return await sendSystemNotification(recipientId, message, 'admin_invitation');
+    // Формируем URL турнира
+    const tournamentUrl = process.env.NODE_ENV === 'production'
+        ? `https://1337community.com/tournaments/${tournamentId}`
+        : `http://localhost:3000/tournaments/${tournamentId}`;
+    
+    // Создаем расширенное сообщение с интерактивными элементами
+    const message = `🛡️ Вас пригласили стать администратором турнира!
+
+🏆 **Турнир:** [${tournamentName}](${tournamentUrl})
+👤 **Пригласил:** ${inviterUsername}
+
+💼 **Как администратор вы сможете:**
+• Управлять матчами и результатами
+• Добавлять и удалять участников  
+• Модерировать чат турнира
+• Приглашать других администраторов
+
+⏰ **Срок действия:** 7 дней
+
+🎯 **Действия:**`;
+
+    // Метаданные для интерактивных кнопок
+    const messageMetadata = {
+        type: 'admin_invitation',
+        tournament_id: tournamentId,
+        invitation_id: invitationId,
+        inviter_username: inviterUsername,
+        actions: [
+            {
+                type: 'accept',
+                label: '✅ Принять',
+                action: 'accept_admin_invitation',
+                style: 'success',
+                endpoint: `/api/tournaments/admin-invitations/${invitationId}/accept`
+            },
+            {
+                type: 'decline', 
+                label: '❌ Отклонить',
+                action: 'decline_admin_invitation',
+                style: 'danger',
+                endpoint: `/api/tournaments/admin-invitations/${invitationId}/decline`
+            },
+            {
+                type: 'view_tournament',
+                label: '👁️ Просмотр турнира',
+                action: 'open_tournament',
+                style: 'info',
+                url: tournamentUrl,
+                target: '_blank'
+            }
+        ],
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 дней
+    };
+
+    return await sendSystemNotification(recipientId, message, 'admin_invitation_interactive', messageMetadata);
 }
 
 /**
@@ -199,7 +272,14 @@ async function sendAdminInviteNotification(recipientId, tournamentName, inviterU
  */
 async function sendAdminInviteAcceptedNotification(recipientId, username, tournamentName) {
     const message = `✅ Пользователь ${username} принял приглашение стать администратором турнира "${tournamentName}".`;
-    return await sendSystemNotification(recipientId, message, 'admin_invite_accepted');
+    
+    const metadata = {
+        type: 'admin_invite_accepted',
+        admin_username: username,
+        tournament_name: tournamentName
+    };
+    
+    return await sendSystemNotification(recipientId, message, 'tournament_accepted', metadata);
 }
 
 /**
@@ -207,7 +287,14 @@ async function sendAdminInviteAcceptedNotification(recipientId, username, tourna
  */
 async function sendAdminInviteRejectedNotification(recipientId, username, tournamentName) {
     const message = `❌ Пользователь ${username} отклонил приглашение стать администратором турнира "${tournamentName}".`;
-    return await sendSystemNotification(recipientId, message, 'admin_invite_rejected');
+    
+    const metadata = {
+        type: 'admin_invite_rejected',
+        declined_username: username,
+        tournament_name: tournamentName
+    };
+    
+    return await sendSystemNotification(recipientId, message, 'tournament_rejected', metadata);
 }
 
 module.exports = {
