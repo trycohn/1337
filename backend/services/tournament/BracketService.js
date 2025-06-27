@@ -53,8 +53,8 @@ class BracketService {
             // Генерируем сетку с помощью bracketGenerator
             const bracketData = await generateBracket(
                 tournament.format,
+                tournamentId,
                 participants,
-                tournament.participant_type,
                 thirdPlaceMatch
             );
 
