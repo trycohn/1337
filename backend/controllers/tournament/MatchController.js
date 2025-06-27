@@ -6,14 +6,23 @@ const { asyncHandler } = require('../../utils/asyncHandler');
 class MatchController {
     // 🥊 Генерация турнирной сетки
     static generateBracket = asyncHandler(async (req, res) => {
+        console.log('🚀 [MatchController.generateBracket] МОДУЛЬНЫЙ РОУТЕР ПОЛУЧИЛ ЗАПРОС!');
+        console.log('🚀 [MatchController.generateBracket] Tournament ID:', req.params.id);
+        console.log('🚀 [MatchController.generateBracket] User ID:', req.user.id);
+        console.log('🚀 [MatchController.generateBracket] Request body:', req.body);
+        
         const { id } = req.params;
         const { thirdPlaceMatch } = req.body;
+        
+        console.log('🚀 [MatchController.generateBracket] Вызываем BracketService.generateBracket...');
         
         const result = await BracketService.generateBracket(
             parseInt(id),
             req.user.id,
             thirdPlaceMatch
         );
+        
+        console.log('🚀 [MatchController.generateBracket] BracketService завершился успешно');
         
         res.json({
             message: 'Сетка успешно сгенерирована',

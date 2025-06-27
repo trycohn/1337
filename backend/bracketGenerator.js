@@ -11,6 +11,20 @@ const { generateDoubleEliminationBracket } = require('./bracketGenerators/double
  * @returns {Array} - Список сгенерированных матчей
  */
 const generateBracket = async (format, tournamentId, participants, thirdPlaceMatch) => {
+    console.log('🚨 [bracketGenerator.js] ДЕТАЛЬНАЯ ОТЛАДКА:');
+    console.log('🚨 format:', format, '(type:', typeof format, ')');
+    console.log('🚨 tournamentId:', tournamentId, '(type:', typeof tournamentId, ')');
+    console.log('🚨 participants:', typeof participants === 'object' ? 'IS OBJECT' : typeof participants);
+    console.log('🚨 participants.length:', Array.isArray(participants) ? participants.length : 'NOT ARRAY!');
+    console.log('🚨 participants[0]:', Array.isArray(participants) && participants[0] ? participants[0] : 'UNDEFINED');
+    console.log('🚨 thirdPlaceMatch:', thirdPlaceMatch, '(type:', typeof thirdPlaceMatch, ')');
+    
+    if (!Array.isArray(participants)) {
+        console.error('🚨 КРИТИЧЕСКАЯ ОШИБКА: participants НЕ ЯВЛЯЕТСЯ МАССИВОМ!');
+        console.error('🚨 Значение participants:', participants);
+        throw new Error(`participants должен быть массивом, получен: ${typeof participants}`);
+    }
+    
     console.log(`🎯 Генерация сетки: формат=${format}, участников=${participants.length}, матч за 3-е место=${thirdPlaceMatch}`);
     
     switch (format.toLowerCase()) {

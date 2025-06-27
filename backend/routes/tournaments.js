@@ -1377,6 +1377,12 @@ router.get('/:id/admin-request-status', authenticateToken, async (req, res) => {
 
 // Генерация турнирной сетки
 router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, async (req, res) => {
+    console.log('❌ [OLD tournaments.js] СТАРЫЙ РОУТЕР ПОЛУЧИЛ ЗАПРОС GENERATE-BRACKET!');
+    console.log('❌ [OLD tournaments.js] Tournament ID:', req.params.id);
+    console.log('❌ [OLD tournaments.js] User ID:', req.user.id);
+    console.log('❌ [OLD tournaments.js] Request body:', req.body);
+    console.log('❌ [OLD tournaments.js] ЭТО ОЗНАЧАЕТ ЧТО МОДУЛЬНЫЙ РОУТЕР НЕ РАБОТАЕТ!');
+    
     const { id } = req.params;
     const { thirdPlaceMatch } = req.body;
     const userId = req.user.id;
