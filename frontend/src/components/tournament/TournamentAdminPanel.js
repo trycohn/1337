@@ -338,7 +338,7 @@ const TournamentAdminPanel = ({
                         {tournament?.status === 'active' && !hasBracket && participants?.length >= 2 && (
                             <button 
                                 className="action-btn-v2 generate-btn"
-                                onClick={onGenerateBracket}
+                                onClick={() => onGenerateBracket()}
                                 disabled={isLoading}
                                 title="Создать турнирную сетку"
                             >

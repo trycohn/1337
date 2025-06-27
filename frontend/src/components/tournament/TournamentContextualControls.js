@@ -57,7 +57,7 @@ const TournamentContextualControls = ({
                     {participantsCount >= 2 && (
                         <button 
                             className="control-btn generate-btn"
-                            onClick={onGenerateBracket}
+                            onClick={() => onGenerateBracket()}
                             disabled={isLoading}
                             title="Создать турнирную сетку"
                         >
@@ -96,7 +96,7 @@ const TournamentContextualControls = ({
                     {tournament?.status === 'active' && !hasMatches && participantsCount >= 2 && (
                         <button 
                             className="control-btn generate-btn"
-                            onClick={onGenerateBracket}
+                            onClick={() => onGenerateBracket()}
                             disabled={isLoading}
                             title="Создать турнирную сетку"
                         >

@@ -1057,7 +1057,7 @@ function TournamentDetails() {
                                 {canGenerateBracket && (
                                     <button 
                                         className="generate-bracket-button"
-                                        onClick={handleGenerateBracket}
+                                        onClick={() => handleGenerateBracket()}
                                     >
                                         🎯 Сгенерировать сетку
                                     </button>
