@@ -106,22 +106,22 @@ class BracketService {
             for (const match of bracketData.matches) {
                 const matchResult = await client.query(`
                     INSERT INTO matches (
-                        tournament_id, round, position, match_number,
+                        tournament_id, round, match_number,
                         team1_id, team2_id, next_match_id, loser_next_match_id,
-                        is_third_place_match, requires_all_previous
+                        is_third_place_match, bracket_type, target_slot
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                     RETURNING *
                 `, [
                     tournamentId,
                     match.round,
-                    match.position,
                     match.match_number,
                     match.team1_id || null,
                     match.team2_id || null,
                     match.next_match_id || null,
                     match.loser_next_match_id || null,
                     match.is_third_place_match || false,
-                    match.requires_all_previous || false
+                    match.bracket_type || 'main',
+                    match.target_slot || null
                 ]);
 
                 savedMatches.push(matchResult.rows[0]);
@@ -306,9 +306,9 @@ class BracketService {
             return acc;
         }, {});
 
-        // Сортируем матчи внутри каждого раунда
+        // Сортируем матчи внутри каждого раунда по match_number
         Object.keys(bracket).forEach(round => {
-            bracket[round].sort((a, b) => a.position - b.position);
+            bracket[round].sort((a, b) => (a.match_number || 0) - (b.match_number || 0));
         });
 
         return bracket;
