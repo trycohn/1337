@@ -42,9 +42,6 @@ class BracketService {
     static async generateBracket(tournamentId, userId, thirdPlaceMatch = false) {
         console.log(`🥊 BracketService: Генерация турнирной сетки для турнира ${tournamentId}`);
 
-        // 🔒 Проверка debounce защиты от частых генераций
-        this._checkRegenerationDebounce(tournamentId);
-
         // Проверка прав доступа
         await this._checkBracketAccess(tournamentId, userId);
 
@@ -100,7 +97,20 @@ class BracketService {
         // Проверяем, есть ли уже матчи
         const existingMatchCount = await MatchRepository.getCountByTournamentId(tournamentId);
         if (existingMatchCount > 0) {
-            throw new Error('Сетка уже сгенерирована. Используйте регенерацию для создания новой сетки');
+            console.log(`🔍 [generateBracket] Сетка уже существует для турнира ${tournamentId} (${existingMatchCount} матчей). Возвращаем существующую сетку.`);
+            
+            // Получаем существующие матчи
+            const existingMatches = await MatchRepository.getByTournamentId(tournamentId);
+            const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+            
+            return {
+                success: true,
+                matches: existingMatches,
+                totalMatches: existingMatches.length,
+                message: `Турнирная сетка уже сгенерирована: ${existingMatches.length} матчей`,
+                tournament: updatedTournament,
+                existing: true // Флаг что сетка уже существовала
+            };
         }
 
         const client = await pool.connect();
@@ -296,7 +306,7 @@ class BracketService {
             // Отправляем объявление в чат
             await sendTournamentChatAnnouncement(
                 tournamentId,
-                `�� Результаты всех матчей сброшены. Турнир готов к перепроведению. Ссылка: /tournaments/${tournamentId}`,
+                `🧹 Результаты всех матчей сброшены. Турнир готов к перепроведению. Ссылка: /tournaments/${tournamentId}`,
                 'system',
                 userId
             );

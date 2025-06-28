@@ -105,6 +105,22 @@ class TournamentService {
                 teams_count: result.teams.length,
                 admins_count: result.admins.length
             });
+            
+            // 🔍 ДОПОЛНИТЕЛЬНАЯ ДИАГНОСТИКА ВОЗВРАЩАЕМЫХ МАТЧЕЙ
+            console.log(`🔍 [getTournamentById] ДЕТАЛЬНАЯ ПРОВЕРКА МАТЧЕЙ для турнира ${tournamentId}:`);
+            console.log(`   📊 result.matches is Array: ${Array.isArray(result.matches)}`);
+            console.log(`   📊 result.matches length: ${result.matches ? result.matches.length : 'undefined'}`);
+            if (result.matches && result.matches.length > 0) {
+                console.log(`   🎯 Первый матч в result:`, {
+                    id: result.matches[0].id,
+                    tournament_id: result.matches[0].tournament_id,
+                    team1_id: result.matches[0].team1_id,
+                    team2_id: result.matches[0].team2_id,
+                    round: result.matches[0].round
+                });
+            } else {
+                console.log(`   ⚠️ result.matches пустой или undefined!`);
+            }
 
             return result;
 
