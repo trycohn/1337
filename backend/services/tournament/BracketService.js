@@ -95,7 +95,7 @@ class BracketService {
             }
 
             // Логируем событие создания сетки
-            await logTournamentEvent(tournamentId, 'bracket_generated', {
+            await logTournamentEvent(tournamentId, userId, 'bracket_generated', {
                 matchesCount: bracketData.matches.length,
                 format: tournament.format,
                 thirdPlaceMatch
@@ -137,8 +137,8 @@ class BracketService {
                 await broadcastTournamentUpdate(tournamentId);
                 await sendTournamentChatAnnouncement(
                     tournamentId, 
-                    'system', 
-                    `🥊 Турнирная сетка сгенерирована! Создано ${bracketData.matches.length} матчей.`
+                    `🥊 Турнирная сетка сгенерирована! Создано ${bracketData.matches.length} матчей.`,
+                    'system'
                 );
             } catch (notificationError) {
                 console.error('⚠️ Ошибка отправки уведомлений:', notificationError.message);
@@ -206,7 +206,8 @@ class BracketService {
             // Отправляем объявление в чат
             await sendTournamentChatAnnouncement(
                 tournamentId,
-                `🔄 Турнирная сетка перегенерирована! ${shuffle ? 'Участники перемешаны. ' : ''}Ссылка на сетку: /tournaments/${tournamentId}`
+                `🔄 Турнирная сетка перегенерирована! ${shuffle ? 'Участники перемешаны. ' : ''}Ссылка на сетку: /tournaments/${tournamentId}`,
+                'system'
             );
 
             // Логируем событие
@@ -261,7 +262,8 @@ class BracketService {
             // Отправляем объявление в чат
             await sendTournamentChatAnnouncement(
                 tournamentId,
-                `🧹 Результаты всех матчей сброшены. Турнир готов к перепроведению. Ссылка: /tournaments/${tournamentId}`
+                `🧹 Результаты всех матчей сброшены. Турнир готов к перепроведению. Ссылка: /tournaments/${tournamentId}`,
+                'system'
             );
 
             // Логируем событие

@@ -37,17 +37,22 @@ async function sendTournamentChatAnnouncement(tournamentId, message, messageType
 
         // Отправляем сообщение
         const result = await pool.query(
-            `INSERT INTO tournament_messages (tournament_id, sender_id, message, message_type, created_at) 
-             VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
-            [tournamentId, systemUserId, message, messageType]
+            `INSERT INTO tournament_messages (tournament_id, sender_id, content, created_at) 
+             VALUES ($1, $2, $3, NOW()) RETURNING *`,
+            [tournamentId, systemUserId, message]
         );
 
-        console.log(`💬 Системное сообщение отправлено в чат турнира ${tournamentId}: ${message}`);
-        return result.rows[0];
+        if (result.rows.length > 0) {
+            const newMessage = result.rows[0];
+            console.log(`✅ Системное сообщение отправлено в турнир ${tournamentId}:`, newMessage.content);
+            
+            return newMessage;
+        }
+
+        return null;
 
     } catch (error) {
-        // Отправка сообщений не должна прерывать основной процесс
-        console.warn('⚠️ Ошибка отправки системного сообщения в чат турнира:', error.message);
+        console.error('⚠️ Ошибка отправки системного сообщения в чат турнира:', error.message);
         return null;
     }
 }
@@ -103,34 +108,22 @@ async function getTournamentChatParticipants(tournamentId, requestingUserId) {
 /**
  * Получение сообщений чата турнира
  * @param {number} tournamentId - ID турнира
- * @param {number} requestingUserId - ID пользователя, запрашивающего сообщения
- * @param {object} options - Опции запроса
+ * @param {number} limit - Лимит сообщений
+ * @param {number} offset - Смещение
  */
-async function getTournamentChatMessages(tournamentId, requestingUserId, options = {}) {
+async function getTournamentChatMessages(tournamentId, limit = 50, offset = 0) {
     try {
-        // Проверяем, участвует ли пользователь в турнире
-        const isParticipant = await checkTournamentParticipation(tournamentId, requestingUserId);
-        
-        if (!isParticipant) {
-            throw new Error('Доступ к чату только для участников турнира');
-        }
-
-        const { limit = 50, offset = 0 } = options;
-
         const result = await pool.query(`
             SELECT 
                 tm.id,
                 tm.tournament_id,
                 tm.sender_id,
-                tm.message,
-                tm.message_type,
+                tm.content,
                 tm.created_at,
-                u.username,
-                u.avatar_url,
-                tp.name as participant_name
+                u.username as sender_username,
+                u.avatar_url as sender_avatar
             FROM tournament_messages tm
             LEFT JOIN users u ON tm.sender_id = u.id
-            LEFT JOIN tournament_participants tp ON tp.tournament_id = tm.tournament_id AND tp.user_id = tm.sender_id
             WHERE tm.tournament_id = $1
             ORDER BY tm.created_at DESC
             LIMIT $2 OFFSET $3
