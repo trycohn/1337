@@ -8,7 +8,7 @@ const { generateDoubleEliminationBracket } = require('./bracketGenerators/double
  * @param {number} tournamentId - ID турнира
  * @param {Array} participants - Массив участников [{ id, name }]
  * @param {boolean} thirdPlaceMatch - Нужен ли матч за 3-е место
- * @returns {Array} - Список сгенерированных матчей
+ * @returns {Object} - Объект с полем matches: { matches: Array, totalMatches: Number }
  */
 const generateBracket = async (format, tournamentId, participants, thirdPlaceMatch) => {
     console.log('🚨 [bracketGenerator.js] ДЕТАЛЬНАЯ ОТЛАДКА:');
@@ -27,15 +27,33 @@ const generateBracket = async (format, tournamentId, participants, thirdPlaceMat
     
     console.log(`🎯 Генерация сетки: формат=${format}, участников=${participants.length}, матч за 3-е место=${thirdPlaceMatch}`);
     
+    let matches;
+    
     switch (format.toLowerCase()) {
         case 'mix':
         case 'single_elimination':
-            return await generateSingleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
+            matches = await generateSingleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
+            break;
         case 'double_elimination':
-            return await generateDoubleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
+            matches = await generateDoubleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
+            break;
         default:
             throw new Error(`Неподдерживаемый формат турнира: ${format}`);
     }
+    
+    console.log('🚨 [bracketGenerator.js] ГЕНЕРАЦИЯ ЗАВЕРШЕНА УСПЕШНО!');
+    console.log('🚨 [bracketGenerator.js] Создано матчей:', matches ? matches.length : 'UNDEFINED');
+    
+    // Возвращаем объект с полем matches для совместимости с BracketService
+    const result = {
+        matches: matches || [],
+        totalMatches: matches ? matches.length : 0,
+        success: true
+    };
+    
+    console.log('🚨 [bracketGenerator.js] Возвращаем объект:', result);
+    
+    return result;
 };
 
 module.exports = {

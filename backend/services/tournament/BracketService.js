@@ -88,6 +88,18 @@ class BracketService {
             );
 
             console.log(`🎯 Сгенерирована сетка: ${bracketData.matches.length} матчей`);
+            
+            // Проверяем, что сетка была сгенерирована корректно
+            if (!bracketData.matches || bracketData.matches.length === 0) {
+                throw new Error('Не удалось создать турнирную сетку - сгенерировано 0 матчей');
+            }
+
+            // Логируем событие создания сетки
+            await logTournamentEvent(tournamentId, 'bracket_generated', {
+                matchesCount: bracketData.matches.length,
+                format: tournament.format,
+                thirdPlaceMatch
+            });
 
             // Сохраняем матчи в базу данных
             const savedMatches = [];
@@ -120,37 +132,30 @@ class BracketService {
 
             await client.query('COMMIT');
 
-            // Отправляем объявление в чат
-            await sendTournamentChatAnnouncement(
-                tournamentId,
-                `🏆 Турнирная сетка сгенерирована! ${bracketData.matches.length} матчей готово к проведению. Ссылка на сетку: /tournaments/${tournamentId}`
-            );
-
-            // Логируем событие
-            await logTournamentEvent(tournamentId, userId, 'bracket_generated', {
-                format: tournament.format,
-                participants_count: participantCount,
-                matches_count: bracketData.matches.length,
-                third_place_match: thirdPlaceMatch
-            });
+            // Отправляем уведомления
+            try {
+                await broadcastTournamentUpdate(tournamentId);
+                await sendTournamentChatAnnouncement(
+                    tournamentId, 
+                    'system', 
+                    `🥊 Турнирная сетка сгенерирована! Создано ${bracketData.matches.length} матчей.`
+                );
+            } catch (notificationError) {
+                console.error('⚠️ Ошибка отправки уведомлений:', notificationError.message);
+                // Не прерываем выполнение из-за ошибок уведомлений
+            }
 
             // Получаем обновленные данные турнира
             const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
 
-            // Отправляем обновления через WebSocket
-            broadcastTournamentUpdate(tournamentId, updatedTournament);
+            console.log(`✅ BracketService: Турнирная сетка успешно сгенерирована для турнира ${tournamentId}`);
 
-            console.log('✅ BracketService: Турнирная сетка успешно сгенерирована');
             return {
-                message: 'Турнирная сетка успешно сгенерирована',
-                tournament: updatedTournament,
-                matches: savedMatches,
-                bracket_info: {
-                    format: tournament.format,
-                    participants_count: participantCount,
-                    matches_count: savedMatches.length,
-                    third_place_match: thirdPlaceMatch
-                }
+                success: true,
+                matches: bracketData.matches,
+                totalMatches: bracketData.matches.length,
+                message: `Турнирная сетка успешно сгенерирована: ${bracketData.matches.length} матчей`,
+                tournament: updatedTournament
             };
 
         } catch (error) {
