@@ -4,10 +4,10 @@ const pool = require('../../db');
  * Логирование событий турнира
  * @param {number} tournamentId - ID турнира
  * @param {number} userId - ID пользователя
- * @param {string} action - Тип действия
- * @param {object} metadata - Дополнительные данные
+ * @param {string} event_type - Тип события
+ * @param {object} event_data - Дополнительные данные
  */
-async function logTournamentEvent(tournamentId, userId, action, metadata = {}) {
+async function logTournamentEvent(tournamentId, userId, event_type, event_data = {}) {
     try {
         // Проверяем, существует ли таблица tournament_logs
         const tableExists = await pool.query(`
@@ -24,12 +24,12 @@ async function logTournamentEvent(tournamentId, userId, action, metadata = {}) {
         }
 
         await pool.query(
-            `INSERT INTO tournament_logs (tournament_id, user_id, action, metadata, created_at) 
+            `INSERT INTO tournament_logs (tournament_id, user_id, event_type, event_data, created_at) 
              VALUES ($1, $2, $3, $4, NOW())`,
-            [tournamentId, userId, action, JSON.stringify(metadata)]
+            [tournamentId, userId, event_type, JSON.stringify(event_data)]
         );
 
-        console.log(`📝 Событие турнира зарегистрировано: ${action} для турнира ${tournamentId} пользователем ${userId}`);
+        console.log(`📝 Событие турнира зарегистрировано: ${event_type} для турнира ${tournamentId} пользователем ${userId}`);
     } catch (error) {
         // Логирование не должно прерывать основной процесс
         console.warn('⚠️ Ошибка логирования события турнира:', error.message);
@@ -50,8 +50,8 @@ async function getTournamentLogs(tournamentId, options = {}) {
                 tl.id,
                 tl.tournament_id,
                 tl.user_id,
-                tl.action,
-                tl.metadata,
+                tl.event_type,
+                tl.event_data,
                 tl.created_at,
                 u.username
             FROM tournament_logs tl
@@ -63,7 +63,7 @@ async function getTournamentLogs(tournamentId, options = {}) {
 
         return result.rows.map(log => ({
             ...log,
-            metadata: typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata
+            event_data: typeof log.event_data === 'string' ? JSON.parse(log.event_data) : log.event_data
         }));
     } catch (error) {
         console.error('❌ Ошибка получения логов турнира:', error);

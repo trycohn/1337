@@ -37,7 +37,7 @@ async function sendTournamentChatAnnouncement(tournamentId, message, messageType
 
         // Отправляем сообщение
         const result = await pool.query(
-            `INSERT INTO tournament_messages (tournament_id, user_id, message, message_type, created_at) 
+            `INSERT INTO tournament_messages (tournament_id, sender_id, message, message_type, created_at) 
              VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
             [tournamentId, systemUserId, message, messageType]
         );
@@ -121,7 +121,7 @@ async function getTournamentChatMessages(tournamentId, requestingUserId, options
             SELECT 
                 tm.id,
                 tm.tournament_id,
-                tm.user_id,
+                tm.sender_id,
                 tm.message,
                 tm.message_type,
                 tm.created_at,
@@ -129,8 +129,8 @@ async function getTournamentChatMessages(tournamentId, requestingUserId, options
                 u.avatar_url,
                 tp.name as participant_name
             FROM tournament_messages tm
-            LEFT JOIN users u ON tm.user_id = u.id
-            LEFT JOIN tournament_participants tp ON tp.tournament_id = tm.tournament_id AND tp.user_id = tm.user_id
+            LEFT JOIN users u ON tm.sender_id = u.id
+            LEFT JOIN tournament_participants tp ON tp.tournament_id = tm.tournament_id AND tp.user_id = tm.sender_id
             WHERE tm.tournament_id = $1
             ORDER BY tm.created_at DESC
             LIMIT $2 OFFSET $3
