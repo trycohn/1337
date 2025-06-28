@@ -5,6 +5,7 @@ const pool = require('../db');
 const { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator } = require('../middleware/auth');
 const { sendNotification, broadcastTournamentUpdate } = require('../notifications');
 const { generateBracket } = require('../bracketGenerator');
+const { sendTournamentChatAnnouncement } = require('../utils/tournament/chatHelpers');
 
 // 🔧 ФУНКЦИИ ЧАТА ТУРНИРА - ПЕРЕРАБОТАННЫЕ ДЛЯ ОСНОВНОЙ СИСТЕМЫ ЧАТОВ
 async function getTournamentChatId(tournamentId) {
@@ -60,35 +61,6 @@ async function addUserToTournamentChat(tournamentId, userId, isAdmin = false) {
         console.log(`✅ Пользователь ${userId} добавлен в чат турнира ${tournamentId}`);
     } catch (err) {
         console.error('❌ Ошибка добавления пользователя в чат турнира:', err);
-    }
-}
-
-async function sendTournamentChatAnnouncement(tournamentId, announcement) {
-    try {
-        const chatId = await getTournamentChatId(tournamentId);
-        if (!chatId) {
-            console.log(`⚠️ Чат для турнира ${tournamentId} не найден`);
-            return;
-        }
-        
-        const contentMeta = { tournament_id: tournamentId };
-        const msgRes = await pool.query(
-            'INSERT INTO messages (chat_id, sender_id, content, message_type, content_meta) VALUES ($1, NULL, $2, $3, $4) RETURNING *',
-            [chatId, announcement, 'announcement', contentMeta]
-        );
-        
-        // Отправляем через WebSocket
-        const app = global.app;
-        if (app) {
-            const io = app.get('io');
-            if (io) {
-                io.to(`chat_${chatId}`).emit('message', msgRes.rows[0]);
-            }
-        }
-        
-        console.log(`✅ Объявление отправлено в чат турнира ${tournamentId}`);
-    } catch (err) {
-        console.error('❌ Ошибка отправки объявления в чат турнира:', err);
     }
 }
 
@@ -1506,10 +1478,13 @@ router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, a
         console.log(`✅ [regenerate-bracket] Права проверены, начинаем перегенерацию сетки...`);
         
         // Перегенерируем сетку через модульный сервис
+        const shuffle = req.body.shuffleParticipants || false; // Читаем параметр shuffle из запроса
+        console.log(`🔄 [regenerate-bracket] Параметр shuffle: ${shuffle}`);
+        
         const result = await BracketService.regenerateBracket(
             id, 
             userId, 
-            false, // shuffle = false
+            shuffle, // Используем значение из запроса
             req.body.thirdPlaceMatch
         );
         
@@ -1521,7 +1496,9 @@ router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, a
         // Отправляем объявление в чат турнира
         await sendTournamentChatAnnouncement(
             id,
-            `Турнирная сетка перегенерирована для турнира "${tournament.name}". Все предыдущие результаты очищены.`
+            `Турнирная сетка перегенерирована для турнира "${tournament.name}". Все предыдущие результаты очищены.`,
+            'system',
+            userId
         );
         
         res.status(200).json({
@@ -1725,7 +1702,7 @@ router.post('/:id/update-match', authenticateToken, async (req, res) => {
             }
             const winName = winner_team_id ? (winner_team_id === match.team1_id ? team1Name : team2Name) : '';
             const announcement = `Матч ${match.match_number} ${team1Name} vs ${team2Name} завершен со счетом ${score1}:${score2}${winName ? `, победил ${winName}` : ''}. Ссылка на сетку: /tournaments/${id}`;
-            await sendTournamentChatAnnouncement(id, announcement);
+            await sendTournamentChatAnnouncement(id, announcement, 'system', userId);
         }
         
         console.log('🔍 Match updated for tournament:', tournamentData);

@@ -5,8 +5,9 @@ const pool = require('../../db');
  * @param {number} tournamentId - ID турнира
  * @param {string} message - Текст сообщения
  * @param {string} messageType - Тип сообщения ('announcement', 'system', 'warning')
+ * @param {number} senderId - ID отправителя (опционально, по умолчанию создатель турнира)
  */
-async function sendTournamentChatAnnouncement(tournamentId, message, messageType = 'announcement') {
+async function sendTournamentChatAnnouncement(tournamentId, message, messageType = 'announcement', senderId = null) {
     try {
         // Проверяем, существует ли таблица tournament_messages
         const tableExists = await pool.query(`
@@ -22,24 +23,29 @@ async function sendTournamentChatAnnouncement(tournamentId, message, messageType
             return null;
         }
 
-        // Получаем ID системного пользователя (если существует)
-        let systemUserId = null;
-        try {
-            const systemUserResult = await pool.query(
-                "SELECT id FROM users WHERE username = 'system' OR username = '1337' LIMIT 1"
+        // Если senderId не указан, используем создателя турнира
+        let finalSenderId = senderId;
+        if (!finalSenderId) {
+            const tournamentQuery = await pool.query(
+                'SELECT created_by FROM tournaments WHERE id = $1',
+                [tournamentId]
             );
-            if (systemUserResult.rows.length > 0) {
-                systemUserId = systemUserResult.rows[0].id;
+            
+            if (tournamentQuery.rows.length > 0) {
+                finalSenderId = tournamentQuery.rows[0].created_by;
+            } else {
+                console.error('⚠️ Турнир не найден для отправки сообщения:', tournamentId);
+                return null;
             }
-        } catch (error) {
-            console.warn('⚠️ Не удалось найти системного пользователя:', error.message);
         }
+
+        console.log(`📨 Отправляем системное сообщение в турнир ${tournamentId} от пользователя ${finalSenderId}: "${message}"`);
 
         // Отправляем сообщение
         const result = await pool.query(
             `INSERT INTO tournament_messages (tournament_id, sender_id, content, created_at) 
              VALUES ($1, $2, $3, NOW()) RETURNING *`,
-            [tournamentId, systemUserId, message]
+            [tournamentId, finalSenderId, message]
         );
 
         if (result.rows.length > 0) {
