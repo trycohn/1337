@@ -33,12 +33,18 @@ class MatchController {
     // 🔄 Перегенерация турнирной сетки
     static regenerateBracket = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const { thirdPlaceMatch } = req.body;
+        const { shuffleParticipants, thirdPlaceMatch } = req.body;
+        
+        console.log(`🔄 [MatchController.regenerateBracket] Tournament ID: ${id}`);
+        console.log(`🔄 [MatchController.regenerateBracket] User ID: ${req.user.id}`);
+        console.log(`🔄 [MatchController.regenerateBracket] shuffleParticipants: ${shuffleParticipants}`);
+        console.log(`🔄 [MatchController.regenerateBracket] thirdPlaceMatch: ${thirdPlaceMatch}`);
         
         const result = await BracketService.regenerateBracket(
             parseInt(id),
             req.user.id,
-            thirdPlaceMatch
+            shuffleParticipants || false,  // Правильный третий параметр - shuffle
+            thirdPlaceMatch || false       // Правильный четвертый параметр - thirdPlaceMatch
         );
         
         res.json({

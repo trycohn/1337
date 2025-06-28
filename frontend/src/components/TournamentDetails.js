@@ -147,7 +147,7 @@ function TournamentDetails() {
     // 🔒 Debounce защита для регенерации сетки
     const [lastRegenerationTime, setLastRegenerationTime] = useState(0);
     const [regenerationCooldown, setRegenerationCooldown] = useState(0);
-    const REGENERATION_COOLDOWN_MS = 10000; // 10 секунд
+    const REGENERATION_COOLDOWN_MS = 2000; // 2 секунды (соответствует backend)
 
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
