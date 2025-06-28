@@ -387,23 +387,23 @@ class BracketService {
 
         const teamsQuery = await pool.query(`
             SELECT 
-                t.id,
-                t.name,
-                t.created_at,
-                COUNT(tm.user_id) as members_count,
+                tt.id,
+                tt.name,
+                tt.created_at,
+                COUNT(ttm.user_id) as members_count,
                 ARRAY_AGG(
                     JSON_BUILD_OBJECT(
                         'id', u.id,
                         'username', u.username,
                         'avatar_url', u.avatar_url
-                    ) ORDER BY tm.created_at
+                    ) ORDER BY ttm.created_at
                 ) as members
-            FROM teams t
-            LEFT JOIN team_members tm ON t.id = tm.team_id
-            LEFT JOIN users u ON tm.user_id = u.id
-            WHERE t.tournament_id = $1
-            GROUP BY t.id, t.name, t.created_at
-            ORDER BY t.created_at
+            FROM tournament_teams tt
+            LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+            LEFT JOIN users u ON ttm.user_id = u.id
+            WHERE tt.tournament_id = $1
+            GROUP BY tt.id, tt.name, tt.created_at
+            ORDER BY tt.created_at
         `, [tournamentId]);
 
         const teams = teamsQuery.rows.map(team => ({
