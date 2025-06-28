@@ -35,7 +35,22 @@ class BracketService {
         
         if (tournament.format === 'mix') {
             // Для микс турниров получаем команды
+            console.log(`🎯 [generateBracket] Получаем команды для микс турнира ${tournamentId}`);
             const teams = await this._getMixTeams(tournamentId);
+            
+            // Добавляем защиту от undefined
+            if (!teams) {
+                console.error(`❌ [generateBracket] Метод _getMixTeams вернул undefined для турнира ${tournamentId}`);
+                throw new Error('Не удалось получить команды микс турнира. Возможно команды еще не сформированы.');
+            }
+            
+            if (!Array.isArray(teams)) {
+                console.error(`❌ [generateBracket] _getMixTeams вернул не массив:`, typeof teams, teams);
+                throw new Error('Некорректный формат данных команд микс турнира');
+            }
+            
+            console.log(`📊 [generateBracket] Получено команд: ${teams.length}`);
+            
             if (teams.length < 2) {
                 throw new Error('Для генерации сетки микс турнира необходимо минимум 2 команды. Сначала сформируйте команды.');
             }
@@ -383,36 +398,53 @@ class BracketService {
      * @private
      */
     static async _getMixTeams(tournamentId) {
-        console.log(`🏆 Получение команд микс турнира ${tournamentId}`);
+        console.log(`🏆 [_getMixTeams] Получение команд микс турнира ${tournamentId}`);
 
-        const teamsQuery = await pool.query(`
-            SELECT 
-                tt.id,
-                tt.name,
-                COUNT(ttm.user_id) as members_count,
-                ARRAY_AGG(
-                    JSON_BUILD_OBJECT(
-                        'id', u.id,
-                        'username', u.username,
-                        'avatar_url', u.avatar_url
-                    ) ORDER BY ttm.id
-                ) as members
-            FROM tournament_teams tt
-            LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
-            LEFT JOIN users u ON ttm.user_id = u.id
-            WHERE tt.tournament_id = $1
-            GROUP BY tt.id, tt.name
-            ORDER BY tt.id
-        `, [tournamentId]);
+        try {
+            const teamsQuery = await pool.query(`
+                SELECT 
+                    tt.id,
+                    tt.name,
+                    COUNT(ttm.user_id) as members_count,
+                    ARRAY_AGG(
+                        JSON_BUILD_OBJECT(
+                            'id', u.id,
+                            'username', u.username,
+                            'avatar_url', u.avatar_url
+                        ) ORDER BY ttm.id
+                    ) as members
+                FROM tournament_teams tt
+                LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                LEFT JOIN users u ON ttm.user_id = u.id
+                WHERE tt.tournament_id = $1
+                GROUP BY tt.id, tt.name
+                ORDER BY tt.id
+            `, [tournamentId]);
 
-        const teams = teamsQuery.rows.map(team => ({
-            id: team.id,
-            name: team.name,
-            members: team.members.filter(member => member.id !== null)
-        }));
+            console.log(`🔍 [_getMixTeams] SQL запрос выполнен, найдено строк: ${teamsQuery.rows.length}`);
+            
+            if (teamsQuery.rows.length === 0) {
+                console.warn(`⚠️ [_getMixTeams] Не найдено команд для турнира ${tournamentId}`);
+                return [];
+            }
 
-        console.log(`✅ Получено ${teams.length} команд микс турнира`);
-        return teams;
+            const teams = teamsQuery.rows.map(team => ({
+                id: team.id,
+                name: team.name,
+                members: team.members.filter(member => member.id !== null)
+            }));
+
+            console.log(`✅ [_getMixTeams] Обработано команд: ${teams.length}`);
+            teams.forEach((team, index) => {
+                console.log(`   📋 Команда ${index + 1}: "${team.name}" (ID: ${team.id}, участников: ${team.members.length})`);
+            });
+
+            return teams;
+
+        } catch (error) {
+            console.error(`❌ [_getMixTeams] Ошибка при получении команд турнира ${tournamentId}:`, error);
+            throw error;
+        }
     }
 
     /**
