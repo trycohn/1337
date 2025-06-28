@@ -129,6 +129,12 @@ router.get('/:id/matches', MatchController.getMatches);
 // Получение конкретного матча
 router.get('/matches/:matchId', MatchController.getMatchById);
 
+// 🧹 Проверка дублирующихся матчей
+router.get('/:id/matches/check-duplicates', authenticateToken, MatchController.checkDuplicateMatches);
+
+// 🧹 Очистка дублирующихся матчей
+router.post('/:id/matches/cleanup-duplicates', authenticateToken, MatchController.cleanupDuplicateMatches);
+
 // 🛡️ **АДМИНИСТРАТИВНЫЕ ФУНКЦИИ**
 
 // Запрос на администрирование

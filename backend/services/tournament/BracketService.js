@@ -45,78 +45,93 @@ class BracketService {
         // Проверка прав доступа
         await this._checkBracketAccess(tournamentId, userId);
 
-        // Получаем турнир
-        const tournament = await TournamentRepository.getById(tournamentId);
-        if (!tournament) {
-            throw new Error('Турнир не найден');
-        }
-
-        if (tournament.status !== 'active') {
-            throw new Error('Можно генерировать сетку только для активных турниров');
-        }
-
-        // Получаем участников или команды в зависимости от формата турнира
-        let participantsForBracket;
-        let participantCount;
-        
-        if (tournament.format === 'mix') {
-            // Для микс турниров получаем команды
-            console.log(`🎯 [generateBracket] Получаем команды для микс турнира ${tournamentId}`);
-            const teams = await this._getMixTeams(tournamentId);
-            
-            // Добавляем защиту от undefined
-            if (!teams) {
-                console.error(`❌ [generateBracket] Метод _getMixTeams вернул undefined для турнира ${tournamentId}`);
-                throw new Error('Не удалось получить команды микс турнира. Возможно команды еще не сформированы.');
-            }
-            
-            if (!Array.isArray(teams)) {
-                console.error(`❌ [generateBracket] _getMixTeams вернул не массив:`, typeof teams, teams);
-                throw new Error('Некорректный формат данных команд микс турнира');
-            }
-            
-            console.log(`📊 [generateBracket] Получено команд: ${teams.length}`);
-            
-            if (teams.length < 2) {
-                throw new Error('Для генерации сетки микс турнира необходимо минимум 2 команды. Сначала сформируйте команды.');
-            }
-            participantsForBracket = teams;
-            participantCount = teams.length;
-            console.log(`📊 Команд в микс турнире: ${teams.length}`);
-        } else {
-            // Для обычных турниров получаем участников
-            const participants = await ParticipantRepository.getByTournamentId(tournamentId);
-            if (participants.length < 2) {
-                throw new Error('Для генерации сетки необходимо минимум 2 участника');
-            }
-            participantsForBracket = participants;
-            participantCount = participants.length;
-            console.log(`📊 Участников в турнире: ${participants.length}`);
-        }
-
-        // Проверяем, есть ли уже матчи
-        const existingMatchCount = await MatchRepository.getCountByTournamentId(tournamentId);
-        if (existingMatchCount > 0) {
-            console.log(`🔍 [generateBracket] Сетка уже существует для турнира ${tournamentId} (${existingMatchCount} матчей). Возвращаем существующую сетку.`);
-            
-            // Получаем существующие матчи
-            const existingMatches = await MatchRepository.getByTournamentId(tournamentId);
-            const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
-            
-            return {
-                success: true,
-                matches: existingMatches,
-                totalMatches: existingMatches.length,
-                message: `Турнирная сетка уже сгенерирована: ${existingMatches.length} матчей`,
-                tournament: updatedTournament,
-                existing: true // Флаг что сетка уже существовала
-            };
-        }
-
         const client = await pool.connect();
         
         try {
             await client.query('BEGIN');
+            
+            // 🔒 ТРАНЗАКЦИОННАЯ ЗАЩИТА: Блокируем турнир для предотвращения одновременной генерации
+            console.log(`🔒 [generateBracket] Блокируем турнир ${tournamentId} для безопасной генерации`);
+            const tournamentResult = await client.query(
+                'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE',
+                [tournamentId]
+            );
+            
+            if (tournamentResult.rows.length === 0) {
+                throw new Error('Турнир не найден');
+            }
+            
+            const tournament = tournamentResult.rows[0];
+            
+            if (tournament.status !== 'active') {
+                throw new Error('Можно генерировать сетку только для активных турниров');
+            }
+
+            // 🔒 ПРОВЕРЯЕМ СУЩЕСТВУЮЩИЕ МАТЧИ В РАМКАХ ТРАНЗАКЦИИ
+            const existingMatchesResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            const existingMatchCount = parseInt(existingMatchesResult.rows[0].count);
+            
+            if (existingMatchCount > 0) {
+                console.log(`🔍 [generateBracket] Сетка уже существует для турнира ${tournamentId} (${existingMatchCount} матчей). Возвращаем существующую сетку.`);
+                
+                // Получаем существующие матчи
+                const existingMatches = await MatchRepository.getByTournamentId(tournamentId);
+                const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+                
+                await client.query('COMMIT');
+                
+                return {
+                    success: true,
+                    matches: existingMatches,
+                    totalMatches: existingMatches.length,
+                    message: `Турнирная сетка уже сгенерирована: ${existingMatches.length} матчей`,
+                    tournament: updatedTournament,
+                    existing: true // Флаг что сетка уже существовала
+                };
+            }
+
+            // Получаем участников или команды в зависимости от формата турнира
+            let participantsForBracket;
+            let participantCount;
+            
+            if (tournament.format === 'mix') {
+                // Для микс турниров получаем команды
+                console.log(`🎯 [generateBracket] Получаем команды для микс турнира ${tournamentId}`);
+                const teams = await this._getMixTeams(tournamentId);
+                
+                // Добавляем защиту от undefined
+                if (!teams) {
+                    console.error(`❌ [generateBracket] Метод _getMixTeams вернул undefined для турнира ${tournamentId}`);
+                    throw new Error('Не удалось получить команды микс турнира. Возможно команды еще не сформированы.');
+                }
+                
+                if (!Array.isArray(teams)) {
+                    console.error(`❌ [generateBracket] _getMixTeams вернул не массив:`, typeof teams, teams);
+                    throw new Error('Некорректный формат данных команд микс турнира');
+                }
+                
+                console.log(`📊 [generateBracket] Получено команд: ${teams.length}`);
+                
+                if (teams.length < 2) {
+                    throw new Error('Для генерации сетки микс турнира необходимо минимум 2 команды. Сначала сформируйте команды.');
+                }
+                participantsForBracket = teams;
+                participantCount = teams.length;
+                console.log(`📊 Команд в микс турнире: ${teams.length}`);
+            } else {
+                // Для обычных турниров получаем участников
+                const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+                if (participants.length < 2) {
+                    throw new Error('Для генерации сетки необходимо минимум 2 участника');
+                }
+                participantsForBracket = participants;
+                participantCount = participants.length;
+                console.log(`📊 Участников в турнире: ${participants.length}`);
+            }
 
             // Генерируем сетку с помощью bracketGenerator
             const bracketData = await generateBracket(
@@ -131,6 +146,32 @@ class BracketService {
             // Проверяем, что сетка была сгенерирована корректно
             if (!bracketData.matches || bracketData.matches.length === 0) {
                 throw new Error('Не удалось создать турнирную сетку - сгенерировано 0 матчей');
+            }
+
+            // 🔒 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: убеждаемся что никто не создал матчи пока мы генерировали
+            const doubleCheckResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            if (parseInt(doubleCheckResult.rows[0].count) > 0) {
+                console.log(`⚠️ [generateBracket] Матчи были созданы другим процессом во время генерации для турнира ${tournamentId}`);
+                
+                // Получаем уже созданные матчи
+                const existingMatches = await MatchRepository.getByTournamentId(tournamentId);
+                const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+                
+                await client.query('COMMIT');
+                
+                return {
+                    success: true,
+                    matches: existingMatches,
+                    totalMatches: existingMatches.length,
+                    message: `Турнирная сетка была создана другим процессом: ${existingMatches.length} матчей`,
+                    tournament: updatedTournament,
+                    existing: true,
+                    concurrent: true // Флаг что была конкуренция
+                };
             }
 
             // Логируем событие создания сетки
@@ -170,6 +211,8 @@ class BracketService {
             await this._updateMatchLinks(client, savedMatches, bracketData.matches);
 
             await client.query('COMMIT');
+            
+            console.log(`✅ [generateBracket] Транзакция успешно завершена для турнира ${tournamentId}`);
 
             // Отправляем уведомления
             try {
@@ -515,6 +558,136 @@ class BracketService {
                 throw new Error('Только создатель или администратор может управлять турнирной сеткой');
             }
         }
+    }
+
+    /**
+     * Очистка дублирующихся матчей в турнире
+     * @param {number} tournamentId - ID турнира
+     * @param {number} userId - ID пользователя
+     */
+    static async cleanupDuplicateMatches(tournamentId, userId) {
+        console.log(`🧹 BracketService: Очистка дублирующихся матчей для турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkBracketAccess(tournamentId, userId);
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            // Находим дублирующиеся матчи (одинаковые по tournament_id, match_number, round, team1_id, team2_id)
+            const duplicatesQuery = `
+                SELECT 
+                    array_agg(id ORDER BY id DESC) as ids,
+                    COUNT(*) as count,
+                    tournament_id, 
+                    match_number, 
+                    round, 
+                    COALESCE(team1_id, -1) as team1_id, 
+                    COALESCE(team2_id, -1) as team2_id
+                FROM matches 
+                WHERE tournament_id = $1
+                GROUP BY tournament_id, match_number, round, COALESCE(team1_id, -1), COALESCE(team2_id, -1)
+                HAVING COUNT(*) > 1
+                ORDER BY match_number, round
+            `;
+            
+            const duplicatesResult = await client.query(duplicatesQuery, [tournamentId]);
+            
+            if (duplicatesResult.rows.length === 0) {
+                console.log(`✅ [cleanupDuplicateMatches] Дубликаты не найдены для турнира ${tournamentId}`);
+                await client.query('COMMIT');
+                return {
+                    success: true,
+                    removed: 0,
+                    message: 'Дублирующиеся матчи не найдены'
+                };
+            }
+            
+            let totalRemoved = 0;
+            
+            for (const duplicate of duplicatesResult.rows) {
+                const matchIds = duplicate.ids;
+                const keepId = matchIds[0]; // Оставляем самый новый (первый в массиве после сортировки по id DESC)
+                const removeIds = matchIds.slice(1); // Удаляем остальные
+                
+                console.log(`🗑️ [cleanupDuplicateMatches] Матч ${duplicate.match_number} (раунд ${duplicate.round}): оставляем ID ${keepId}, удаляем [${removeIds.join(', ')}]`);
+                
+                // Удаляем дублирующиеся матчи
+                if (removeIds.length > 0) {
+                    const deleteResult = await client.query(
+                        'DELETE FROM matches WHERE id = ANY($1::int[])',
+                        [removeIds]
+                    );
+                    totalRemoved += deleteResult.rowCount;
+                }
+            }
+            
+            await client.query('COMMIT');
+            
+            console.log(`✅ [cleanupDuplicateMatches] Удалено ${totalRemoved} дублирующихся матчей для турнира ${tournamentId}`);
+            
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'duplicate_matches_cleaned', {
+                removedCount: totalRemoved,
+                duplicateGroups: duplicatesResult.rows.length
+            });
+            
+            return {
+                success: true,
+                removed: totalRemoved,
+                duplicateGroups: duplicatesResult.rows.length,
+                message: `Удалено ${totalRemoved} дублирующихся матчей из ${duplicatesResult.rows.length} групп`
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ BracketService: Ошибка очистки дублей:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Проверка существования дублирующихся матчей в турнире
+     * @param {number} tournamentId - ID турнира
+     */
+    static async checkForDuplicateMatches(tournamentId) {
+        console.log(`🔍 BracketService: Проверка дублирующихся матчей для турнира ${tournamentId}`);
+        
+        const duplicatesQuery = `
+            SELECT 
+                COUNT(*) as total_duplicates,
+                array_agg(DISTINCT match_number ORDER BY match_number) as duplicate_match_numbers
+            FROM (
+                SELECT 
+                    match_number,
+                    COUNT(*) as count
+                FROM matches 
+                WHERE tournament_id = $1
+                GROUP BY tournament_id, match_number, round, COALESCE(team1_id, -1), COALESCE(team2_id, -1)
+                HAVING COUNT(*) > 1
+            ) duplicates
+        `;
+        
+        const result = await pool.query(duplicatesQuery, [tournamentId]);
+        const duplicateInfo = result.rows[0];
+        
+        const hasDuplicates = parseInt(duplicateInfo.total_duplicates) > 0;
+        
+        if (hasDuplicates) {
+            console.log(`⚠️ [checkForDuplicateMatches] Найдены дубликаты в турнире ${tournamentId}: ${duplicateInfo.total_duplicates} групп дублей в матчах ${duplicateInfo.duplicate_match_numbers.join(', ')}`);
+        } else {
+            console.log(`✅ [checkForDuplicateMatches] Дубликаты не найдены в турнире ${tournamentId}`);
+        }
+        
+        return {
+            hasDuplicates,
+            duplicateCount: parseInt(duplicateInfo.total_duplicates),
+            duplicateMatchNumbers: duplicateInfo.duplicate_match_numbers || []
+        };
     }
 }
 

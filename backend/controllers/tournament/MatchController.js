@@ -155,6 +155,42 @@ class MatchController {
         
         res.json(match);
     });
+
+    // 🧹 Очистка дублирующихся матчей
+    static cleanupDuplicateMatches = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        console.log(`🧹 [MatchController.cleanupDuplicateMatches] Tournament ID: ${id}`);
+        console.log(`🧹 [MatchController.cleanupDuplicateMatches] User ID: ${req.user.id}`);
+        
+        const result = await BracketService.cleanupDuplicateMatches(
+            parseInt(id),
+            req.user.id
+        );
+        
+        res.status(200).json({
+            success: true,
+            message: result.message,
+            data: {
+                removed: result.removed,
+                duplicateGroups: result.duplicateGroups
+            }
+        });
+    });
+
+    // 🔍 Проверка дублирующихся матчей
+    static checkDuplicateMatches = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        console.log(`🔍 [MatchController.checkDuplicateMatches] Tournament ID: ${id}`);
+        
+        const result = await BracketService.checkForDuplicateMatches(parseInt(id));
+        
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    });
 }
 
 module.exports = MatchController; 
