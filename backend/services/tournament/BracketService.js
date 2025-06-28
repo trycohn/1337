@@ -29,10 +29,28 @@ class BracketService {
             throw new Error('Можно генерировать сетку только для активных турниров');
         }
 
-        // Проверяем наличие участников
-        const participantCount = await ParticipantRepository.getCountByTournamentId(tournamentId);
-        if (participantCount < 2) {
-            throw new Error('Для генерации сетки необходимо минимум 2 участника');
+        // Получаем участников или команды в зависимости от формата турнира
+        let participantsForBracket;
+        let participantCount;
+        
+        if (tournament.format === 'mix') {
+            // Для микс турниров получаем команды
+            const teams = await this._getMixTeams(tournamentId);
+            if (teams.length < 2) {
+                throw new Error('Для генерации сетки микс турнира необходимо минимум 2 команды. Сначала сформируйте команды.');
+            }
+            participantsForBracket = teams;
+            participantCount = teams.length;
+            console.log(`📊 Команд в микс турнире: ${teams.length}`);
+        } else {
+            // Для обычных турниров получаем участников
+            const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+            if (participants.length < 2) {
+                throw new Error('Для генерации сетки необходимо минимум 2 участника');
+            }
+            participantsForBracket = participants;
+            participantCount = participants.length;
+            console.log(`📊 Участников в турнире: ${participants.length}`);
         }
 
         // Проверяем, есть ли уже матчи
@@ -46,15 +64,11 @@ class BracketService {
         try {
             await client.query('BEGIN');
 
-            // Получаем участников
-            const participants = await ParticipantRepository.getByTournamentId(tournamentId);
-            console.log(`📊 Участников в турнире: ${participants.length}`);
-
             // Генерируем сетку с помощью bracketGenerator
             const bracketData = await generateBracket(
                 tournament.format,
                 tournamentId,
-                participants,
+                participantsForBracket,
                 thirdPlaceMatch
             );
 
@@ -100,7 +114,7 @@ class BracketService {
             // Логируем событие
             await logTournamentEvent(tournamentId, userId, 'bracket_generated', {
                 format: tournament.format,
-                participants_count: participants.length,
+                participants_count: participantCount,
                 matches_count: bracketData.matches.length,
                 third_place_match: thirdPlaceMatch
             });
@@ -118,7 +132,7 @@ class BracketService {
                 matches: savedMatches,
                 bracket_info: {
                     format: tournament.format,
-                    participants_count: participants.length,
+                    participants_count: participantCount,
                     matches_count: savedMatches.length,
                     third_place_match: thirdPlaceMatch
                 }
@@ -327,8 +341,17 @@ class BracketService {
     static async _resetMatchParticipants(client, tournamentId) {
         console.log('🔄 Сброс участников в начальные позиции...');
 
-        // Получаем участников турнира
-        const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+        // Получаем турнир для определения формата
+        const tournament = await TournamentRepository.getById(tournamentId);
+        
+        let participants;
+        if (tournament.format === 'mix') {
+            // Для микс турниров получаем команды
+            participants = await this._getMixTeams(tournamentId);
+        } else {
+            // Для обычных турниров получаем участников
+            participants = await ParticipantRepository.getByTournamentId(tournamentId);
+        }
         
         // Получаем матчи первого раунда
         const firstRoundMatches = await client.query(
@@ -353,6 +376,45 @@ class BracketService {
                 [participant1.id, participant2?.id, match.id]
             );
         }
+    }
+
+    /**
+     * Получение команд микс турнира в формате, совместимом с генератором сетки
+     * @private
+     */
+    static async _getMixTeams(tournamentId) {
+        console.log(`🏆 Получение команд микс турнира ${tournamentId}`);
+
+        const teamsQuery = await pool.query(`
+            SELECT 
+                t.id,
+                t.name,
+                t.created_at,
+                COUNT(tm.user_id) as members_count,
+                ARRAY_AGG(
+                    JSON_BUILD_OBJECT(
+                        'id', u.id,
+                        'username', u.username,
+                        'avatar_url', u.avatar_url
+                    ) ORDER BY tm.created_at
+                ) as members
+            FROM teams t
+            LEFT JOIN team_members tm ON t.id = tm.team_id
+            LEFT JOIN users u ON tm.user_id = u.id
+            WHERE t.tournament_id = $1
+            GROUP BY t.id, t.name, t.created_at
+            ORDER BY t.created_at
+        `, [tournamentId]);
+
+        const teams = teamsQuery.rows.map(team => ({
+            id: team.id,
+            name: team.name,
+            members_count: team.members_count,
+            members: team.members.filter(member => member.id !== null) // Убираем null значения
+        }));
+
+        console.log(`✅ Получено ${teams.length} команд для микс турнира`);
+        return teams;
     }
 
     /**

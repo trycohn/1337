@@ -30,6 +30,7 @@ const ParticipantController = require('../../controllers/tournament/ParticipantC
 const MatchController = require('../../controllers/tournament/MatchController');
 const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
+const MixTeamController = require('../../controllers/tournament/MixTeamController');
 const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
@@ -79,6 +80,20 @@ router.put('/:id/prize-pool', authenticateToken, TournamentController.updatePriz
 
 // Обновление размера команды
 router.put('/:id/team-size', authenticateToken, TournamentController.updateTeamSize);
+
+// 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ**
+
+// Генерация микс команд
+router.post('/:id/mix-generate-teams', authenticateToken, MixTeamController.generateMixTeams);
+
+// Переформирование микс команд  
+router.post('/:id/mix-regenerate-teams', authenticateToken, MixTeamController.regenerateMixTeams);
+
+// Получение оригинальных участников для микс турниров (группированные по статусу в командах)
+router.get('/:id/mix-original-participants', MixTeamController.getOriginalParticipants);
+
+// Обновление размера команды специально для микс турниров
+router.patch('/:id/mix-team-size', authenticateToken, MixTeamController.updateTeamSize);
 
 // 👥 **УПРАВЛЕНИЕ УЧАСТНИКАМИ**
 
