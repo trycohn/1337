@@ -389,31 +389,29 @@ class BracketService {
             SELECT 
                 tt.id,
                 tt.name,
-                tt.created_at,
                 COUNT(ttm.user_id) as members_count,
                 ARRAY_AGG(
                     JSON_BUILD_OBJECT(
                         'id', u.id,
                         'username', u.username,
                         'avatar_url', u.avatar_url
-                    ) ORDER BY ttm.created_at
+                    ) ORDER BY ttm.id
                 ) as members
             FROM tournament_teams tt
             LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
             LEFT JOIN users u ON ttm.user_id = u.id
             WHERE tt.tournament_id = $1
-            GROUP BY tt.id, tt.name, tt.created_at
-            ORDER BY tt.created_at
+            GROUP BY tt.id, tt.name
+            ORDER BY tt.id
         `, [tournamentId]);
 
         const teams = teamsQuery.rows.map(team => ({
             id: team.id,
             name: team.name,
-            members_count: team.members_count,
-            members: team.members.filter(member => member.id !== null) // Убираем null значения
+            members: team.members.filter(member => member.id !== null)
         }));
 
-        console.log(`✅ Получено ${teams.length} команд для микс турнира`);
+        console.log(`✅ Получено ${teams.length} команд микс турнира`);
         return teams;
     }
 
