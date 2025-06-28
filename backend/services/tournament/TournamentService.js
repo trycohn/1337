@@ -28,20 +28,58 @@ class TournamentService {
             if (!tournament) {
                 return null;
             }
+            console.log(`🏆 [getTournamentById] Турнир ${tournamentId}: ${tournament.name}, формат: ${tournament.format}, статус: ${tournament.status}`);
 
             // Получаем администраторов
             const admins = await TournamentRepository.getAdmins(tournamentId);
+            console.log(`👥 [getTournamentById] Турнир ${tournamentId}: найдено ${admins.length} администраторов`);
 
             // Получаем участников
             const participants = await ParticipantRepository.getByTournamentId(tournamentId);
+            console.log(`🎯 [getTournamentById] Турнир ${tournamentId}: найдено ${participants.length} участников`);
 
             // Получаем матчи
             const matches = await MatchRepository.getByTournamentId(tournamentId);
+            console.log(`⚔️ [getTournamentById] Турнир ${tournamentId}: найдено ${matches.length} матчей`);
+            
+            // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ДЛЯ МИКС ТУРНИРОВ
+            if (tournament.format === 'mix') {
+                console.log(`🧩 [getTournamentById] МИКС ТУРНИР ${tournamentId} - детальная диагностика:`);
+                console.log(`   📊 Участников: ${participants.length}`);
+                console.log(`   ⚔️ Матчей в базе: ${matches.length}`);
+                
+                if (matches.length > 0) {
+                    console.log(`   🎯 Первый матч:`, {
+                        id: matches[0].id,
+                        team1_id: matches[0].team1_id,
+                        team2_id: matches[0].team2_id,
+                        round: matches[0].round,
+                        bracket_type: matches[0].bracket_type
+                    });
+                    console.log(`   🎯 Последний матч:`, {
+                        id: matches[matches.length - 1].id,
+                        team1_id: matches[matches.length - 1].team1_id,
+                        team2_id: matches[matches.length - 1].team2_id,
+                        round: matches[matches.length - 1].round,
+                        bracket_type: matches[matches.length - 1].bracket_type
+                    });
+                }
+            }
 
             // Получаем команды для командных турниров
             let teams = [];
             if (tournament.format === 'mix' || tournament.participant_type === 'team') {
                 teams = await TournamentRepository.getTeamsWithMembers(tournamentId);
+                console.log(`🏆 [getTournamentById] Турнир ${tournamentId}: найдено ${teams.length} команд`);
+                
+                // 🔍 ДОПОЛНИТЕЛЬНАЯ ДИАГНОСТИКА ДЛЯ КОМАНД
+                if (tournament.format === 'mix' && teams.length > 0) {
+                    console.log(`   🧩 Первая команда:`, {
+                        id: teams[0].id,
+                        name: teams[0].name,
+                        members_count: teams[0].members ? teams[0].members.length : 0
+                    });
+                }
             }
 
             const result = {
@@ -58,6 +96,15 @@ class TournamentService {
 
             const endTime = Date.now();
             console.log(`✅ [TournamentService] Турнир ${tournamentId} получен за ${endTime - startTime}ms`);
+            console.log(`📋 [getTournamentById] Итоговые данные турнира ${tournamentId}:`, {
+                name: result.name,
+                format: result.format,
+                status: result.status,
+                participants_count: result.participants.length,
+                matches_count: result.matches.length,
+                teams_count: result.teams.length,
+                admins_count: result.admins.length
+            });
 
             return result;
 
