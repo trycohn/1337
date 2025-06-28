@@ -30,7 +30,10 @@ const TournamentFloatingActionPanel = ({
     mixedTeams = [],
     onReformTeams,
     // 🆕 Проп для перегенерации с перемешиванием
-    onRegenerateBracketWithShuffle
+    onRegenerateBracketWithShuffle,
+    // 🔒 Пропсы для cooldown защиты
+    regenerationCooldown = 0,
+    isRegenerationBlocked = false
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -106,14 +109,20 @@ const TournamentFloatingActionPanel = ({
 
         // "Перегенерация турнирной сетки" - при статусе "Активный", если сетка есть
         if (status === 'active' && hasBracket && onRegenerateBracketWithShuffle) {
+            const cooldownSeconds = Math.ceil(regenerationCooldown / 1000);
+            const isBlocked = isRegenerationBlocked || regenerationCooldown > 0;
+            
             actions.push({
                 id: 'regenerate-bracket-shuffle',
-                icon: '🎲',
-                title: 'Перегенерация сетки',
-                description: 'Заново создать сетку со случайным порядком участников',
-                onClick: onRegenerateBracketWithShuffle,
-                color: 'warning',
-                priority: 2
+                icon: isBlocked ? '⏱️' : '🎲',
+                title: isBlocked ? `Подождите ${cooldownSeconds}с` : 'Перегенерация сетки',
+                description: isBlocked 
+                    ? `Защита от частых регенераций. Осталось ${cooldownSeconds} секунд`
+                    : 'Заново создать сетку со случайным порядком участников',
+                onClick: isBlocked ? null : onRegenerateBracketWithShuffle,
+                color: isBlocked ? 'disabled' : 'warning',
+                priority: 2,
+                disabled: isBlocked
             });
         }
 
@@ -198,9 +207,12 @@ const TournamentFloatingActionPanel = ({
 
     // Обработчик клика по действию
     const handleActionClick = (action) => {
-        if (action.onClick && typeof action.onClick === 'function') {
-            action.onClick();
+        // Игнорируем клики по заблокированным действиям
+        if (action.disabled || !action.onClick || typeof action.onClick !== 'function') {
+            return;
         }
+        
+        action.onClick();
     };
 
     // 🎨 Обработчик изменения вида отображения участников
@@ -288,9 +300,10 @@ const TournamentFloatingActionPanel = ({
                         {availableActions.map((action) => (
                             <div 
                                 key={action.id}
-                                className={`floating-action-item ${action.color}`}
+                                className={`floating-action-item ${action.color} ${action.disabled ? 'disabled' : ''}`}
                                 onClick={() => handleActionClick(action)}
                                 title={action.description}
+                                style={action.disabled ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
                             >
                                 <div className="action-icon">
                                     {action.icon}
@@ -304,7 +317,7 @@ const TournamentFloatingActionPanel = ({
                                     </div>
                                 </div>
                                 <div className="action-arrow">
-                                    →
+                                    {action.disabled ? '⏸️' : '→'}
                                 </div>
                             </div>
                         ))}

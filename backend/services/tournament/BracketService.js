@@ -9,12 +9,41 @@ const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatH
 const { broadcastTournamentUpdate } = require('../../notifications');
 const pool = require('../../db');
 
+// 🔒 Хранилище времени последних регенераций для debounce защиты
+const lastRegenerationTimes = new Map();
+const REGENERATION_DEBOUNCE_MS = 10000; // 10 секунд между регенерациями
+
 class BracketService {
+    /**
+     * Проверка debounce для регенерации
+     * @param {number} tournamentId - ID турнира
+     * @returns {boolean} - можно ли выполнить регенерацию
+     */
+    static _checkRegenerationDebounce(tournamentId) {
+        const now = Date.now();
+        const lastTime = lastRegenerationTimes.get(tournamentId) || 0;
+        const timePassed = now - lastTime;
+        
+        if (timePassed < REGENERATION_DEBOUNCE_MS) {
+            const timeLeft = Math.ceil((REGENERATION_DEBOUNCE_MS - timePassed) / 1000);
+            throw new Error(`Слишком частая регенерация! Попробуйте через ${timeLeft} секунд.`);
+        }
+        
+        // Обновляем время последней регенерации
+        lastRegenerationTimes.set(tournamentId, now);
+        
+        console.log(`✅ [BracketService] Debounce проверка пройдена для турнира ${tournamentId}`);
+        return true;
+    }
+
     /**
      * Генерация турнирной сетки
      */
     static async generateBracket(tournamentId, userId, thirdPlaceMatch = false) {
         console.log(`🥊 BracketService: Генерация турнирной сетки для турнира ${tournamentId}`);
+
+        // 🔒 Проверка debounce защиты от частых генераций
+        this._checkRegenerationDebounce(tournamentId);
 
         // Проверка прав доступа
         await this._checkBracketAccess(tournamentId, userId);
@@ -173,6 +202,9 @@ class BracketService {
      */
     static async regenerateBracket(tournamentId, userId, shuffle = false, thirdPlaceMatch = false) {
         console.log(`🔄 BracketService: Регенерация турнирной сетки для турнира ${tournamentId} (shuffle: ${shuffle})`);
+
+        // 🔒 Проверка debounce защиты от частых регенераций
+        this._checkRegenerationDebounce(tournamentId);
 
         // Проверка прав доступа
         await this._checkBracketAccess(tournamentId, userId);

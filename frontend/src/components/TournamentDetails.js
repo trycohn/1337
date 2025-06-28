@@ -139,10 +139,15 @@ function TournamentDetails() {
     const [maps, setMaps] = useState([]);
     const [availableMaps, setAvailableMaps] = useState({});
     const [originalParticipants, setOriginalParticipants] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
+
+    // 🔒 Debounce защита для регенерации сетки
+    const [lastRegenerationTime, setLastRegenerationTime] = useState(0);
+    const [regenerationCooldown, setRegenerationCooldown] = useState(0);
+    const REGENERATION_COOLDOWN_MS = 10000; // 10 секунд
 
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
@@ -1677,8 +1682,30 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
-    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С ПЕРЕМЕШИВАНИЕМ ПО УМОЛЧАНИЮ
+    // 🔒 Обновление cooldown счетчика
+    useEffect(() => {
+        let interval;
+        if (regenerationCooldown > 0) {
+            interval = setInterval(() => {
+                setRegenerationCooldown(prev => Math.max(0, prev - 100));
+            }, 100);
+        }
+        return () => clearInterval(interval);
+    }, [regenerationCooldown]);
+
+    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С ЗАЩИТОЙ ОТ ЧАСТЫХ КЛИКОВ
     const handleRegenerateBracket = useCallback(async () => {
+        // 🔒 Проверка debounce защиты
+        const now = Date.now();
+        const timePassed = now - lastRegenerationTime;
+        
+        if (timePassed < REGENERATION_COOLDOWN_MS) {
+            const timeLeft = Math.ceil((REGENERATION_COOLDOWN_MS - timePassed) / 1000);
+            setMessage(`⏱️ Подождите ${timeLeft} секунд перед следующей регенерацией сетки`);
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
         // Всегда используем перемешивание участников для сбалансированной сетки
         const shuffleParticipants = true;
         const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
@@ -1689,6 +1716,9 @@ function TournamentDetails() {
 
         try {
             setLoading(true);
+            // 🔒 Устанавливаем время последней регенерации и запускаем cooldown
+            setLastRegenerationTime(now);
+            setRegenerationCooldown(REGENERATION_COOLDOWN_MS);
             
             const token = localStorage.getItem('token');
             const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
@@ -1719,7 +1749,7 @@ function TournamentDetails() {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [id, tournament?.third_place_match_enabled, fetchTournamentData]);
+    }, [id, tournament?.third_place_match_enabled, fetchTournamentData, lastRegenerationTime, REGENERATION_COOLDOWN_MS]);
 
     // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
@@ -1975,6 +2005,8 @@ function TournamentDetails() {
                     onClearResults={resetMatchResults}
                     hasMatches={matches.length > 0}
                     hasBracket={games.length > 0}
+                    regenerationCooldown={regenerationCooldown}
+                    isRegenerationBlocked={regenerationCooldown > 0}
                 />
 
                 {/* Сообщения */}
