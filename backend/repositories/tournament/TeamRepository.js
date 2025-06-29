@@ -79,6 +79,40 @@ class TeamRepository {
 
         return result.rows[0] || null;
     }
+
+    /**
+     * Удаление всех команд турнира
+     * @param {number} tournamentId - ID турнира
+     * @param {object} client - подключение к БД (опционально)
+     */
+    static async deleteAllByTournamentId(tournamentId, client = pool) {
+        console.log(`🗑️ TeamRepository: Удаление всех команд турнира ${tournamentId}`);
+        
+        try {
+            // Сначала удаляем участников команд (связанные записи)
+            await client.query(
+                'DELETE FROM tournament_team_members ttm USING tournament_teams tt WHERE ttm.team_id = tt.id AND tt.tournament_id = $1',
+                [tournamentId]
+            );
+            
+            // Затем удаляем сами команды
+            const result = await client.query(
+                'DELETE FROM tournament_teams WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            console.log(`✅ TeamRepository: Удалено ${result.rowCount} команд из турнира ${tournamentId}`);
+            return result.rowCount;
+            
+        } catch (error) {
+            console.error(`❌ TeamRepository: Ошибка удаления команд турнира ${tournamentId}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Получение всех команд турнира с участниками
+     */
 }
 
 module.exports = TeamRepository; 
