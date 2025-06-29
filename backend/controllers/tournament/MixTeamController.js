@@ -170,11 +170,13 @@ class MixTeamController {
     });
 
     /**
-     * 🆕 ALIAS для обратной совместимости с фронтендом
+     * 🆕 Алиас для generateMixTeams (обратная совместимость с фронтендом)
      * POST /api/tournaments/:id/form-teams
      */
     static formTeamsAlias = asyncHandler(async (req, res) => {
-        console.log(`🔄 [MixTeamController] Вызов через алиас /form-teams -> перенаправляем на generateMixTeams`);
+        console.log(`🔄 [MixTeamController] Алиас form-teams перенаправляет на mix-generate-teams`);
+        
+        // Просто вызываем основной метод генерации команд
         return MixTeamController.generateMixTeams(req, res);
     });
 
@@ -396,6 +398,25 @@ class MixTeamController {
             console.error(`❌ [MixTeamController] Ошибка очистки команд:`, error);
             res.status(500).json({ 
                 error: error.message || 'Ошибка при очистке команд' 
+            });
+        }
+    });
+
+    /**
+     * 📊 Статистика микс команд
+     * GET /api/tournaments/:id/mix-stats
+     */
+    static getMixStats = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        
+        try {
+            const stats = await MixTeamService.getMixStats(tournamentId);
+            res.json(stats);
+        } catch (error) {
+            console.error(`❌ [getMixStats] Ошибка получения статистики:`, error);
+            res.status(500).json({ 
+                error: 'Ошибка получения статистики микс команд',
+                details: error.message 
             });
         }
     });

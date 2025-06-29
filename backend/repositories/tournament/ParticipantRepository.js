@@ -29,6 +29,13 @@ class ParticipantRepository {
     }
 
     /**
+     * 🆕 Алиас для обратной совместимости с MixTeamService
+     */
+    static async getAllByTournamentId(tournamentId) {
+        return this.getByTournamentId(tournamentId);
+    }
+
+    /**
      * Получение участия пользователя в турнире
      */
     static async getUserParticipation(tournamentId, userId) {
