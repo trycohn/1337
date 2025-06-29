@@ -77,6 +77,7 @@ class MixTeamService {
      */
     static generatePairedTeams(participants, ratingType) {
         console.log(`🎯 Используем оптимизированный попарный алгоритм для команд из 2 игроков`);
+        console.log(`🔍 [DEBUG] Данные первого участника:`, JSON.stringify(participants[0], null, 2));
         
         const averageRating = participants.reduce((sum, p) => {
             return sum + this.normalizeParticipantRating(p, ratingType);
@@ -116,25 +117,41 @@ class MixTeamService {
         const usedPlayers = new Set();
         const fullTeams = Math.floor(participants.length / 2);
         
+        console.log(`📊 [DEBUG] Целевое количество команд: ${fullTeams}`);
+        console.log(`📊 [DEBUG] Доступно участников: ${participants.length}`);
+        
         for (const pair of allPairs) {
-            if (teams.length >= fullTeams) break;
+            if (teams.length >= fullTeams) {
+                console.log(`⏹️ [DEBUG] Достигнуто максимальное количество команд: ${teams.length}`);
+                break;
+            }
+            
+            // 🆕 ИСПРАВЛЕНИЕ: используем правильные поля для ID участников
+            const player1Id = pair.player1.id || pair.player1.participant_id;
+            const player2Id = pair.player2.id || pair.player2.participant_id;
+            
+            console.log(`🔍 [DEBUG] Проверяем пару: ${pair.player1.name} (ID: ${player1Id}) + ${pair.player2.name} (ID: ${player2Id})`);
+            console.log(`🔍 [DEBUG] Используемые игроки: [${Array.from(usedPlayers).join(', ')}]`);
             
             // Проверяем, что оба игрока не использованы
-            if (!usedPlayers.has(pair.player1.participant_id) && 
-                !usedPlayers.has(pair.player2.participant_id)) {
+            if (!usedPlayers.has(player1Id) && !usedPlayers.has(player2Id)) {
                 
                 teams.push({
                     name: `Команда ${teams.length + 1}`,
                     members: [pair.player1, pair.player2]
                 });
                 
-                usedPlayers.add(pair.player1.participant_id);
-                usedPlayers.add(pair.player2.participant_id);
+                usedPlayers.add(player1Id);
+                usedPlayers.add(player2Id);
                 
                 console.log(`✅ Команда ${teams.length}: ${pair.player1.name} + ${pair.player2.name} = ${Math.round(pair.pairAverage)} avg`);
+                console.log(`🔍 [DEBUG] Добавлены игроки в использованные: ${player1Id}, ${player2Id}`);
+            } else {
+                console.log(`⏭️ [DEBUG] Пара пропущена - игроки уже использованы`);
             }
         }
         
+        console.log(`📊 [DEBUG] Финальный результат: создано ${teams.length} команд из ${fullTeams} возможных`);
         return teams;
     }
 
@@ -231,17 +248,23 @@ class MixTeamService {
                         if (index === strongestTeam.index) {
                             return {
                                 ...team,
-                                members: team.members.map(m => 
-                                    m.participant_id === strongMember.participant_id ? weakMember : m
-                                )
+                                members: team.members.map(m => {
+                                    // 🆕 ИСПРАВЛЕНИЕ: правильное сравнение ID участников
+                                    const mId = m.id || m.participant_id;
+                                    const strongMemberId = strongMember.id || strongMember.participant_id;
+                                    return mId === strongMemberId ? weakMember : m;
+                                })
                             };
                         }
                         if (index === weakestTeam.index) {
                             return {
                                 ...team,
-                                members: team.members.map(m => 
-                                    m.participant_id === weakMember.participant_id ? strongMember : m
-                                )
+                                members: team.members.map(m => {
+                                    // 🆕 ИСПРАВЛЕНИЕ: правильное сравнение ID участников
+                                    const mId = m.id || m.participant_id;
+                                    const weakMemberId = weakMember.id || weakMember.participant_id;
+                                    return mId === weakMemberId ? strongMember : m;
+                                })
                             };
                         }
                         return team;
@@ -375,6 +398,8 @@ class MixTeamService {
             const createdTeams = [];
             const participantIdsInTeams = [];
             
+            console.log(`💾 [DEBUG] Сохраняем ${teams.length} команд в БД...`);
+            
             for (const team of teams) {
                 const teamResult = await client.query(
                     'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
@@ -384,17 +409,25 @@ class MixTeamService {
                 const teamId = teamResult.rows[0].id;
                 const members = [];
                 
+                console.log(`💾 [DEBUG] Команда "${team.name}" создана с ID: ${teamId}`);
+                
                 for (const member of team.members) {
+                    // 🆕 ИСПРАВЛЕНИЕ: используем правильные поля для ID участников
+                    const memberId = member.id || member.participant_id;
+                    const memberUserId = member.user_id;
+                    
+                    console.log(`👤 [DEBUG] Добавляем участника: ${member.name} (ID: ${memberId}, User ID: ${memberUserId})`);
+                    
                     await client.query(
                         'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
-                        [teamId, member.user_id, member.participant_id]
+                        [teamId, memberUserId, memberId]
                     );
                     
-                    participantIdsInTeams.push(member.participant_id);
+                    participantIdsInTeams.push(memberId);
                     members.push({
-                        participant_id: member.participant_id,
-                        user_id: member.user_id,
-                        name: member.name,
+                        participant_id: memberId,
+                        user_id: memberUserId,
+                        name: member.name || `Участник ${memberId}`, // 🆕 Защита от null names
                         faceit_elo: member.faceit_elo || member.user_faceit_elo,
                         cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank,
                         normalized_faceit_rating: member.normalized_faceit_rating,
@@ -409,7 +442,11 @@ class MixTeamService {
                     averageRating: balanceResult.balanceStats.teamAverages ? 
                         Math.round(balanceResult.balanceStats.teamAverages[createdTeams.length]) : 0
                 });
+                
+                console.log(`✅ [DEBUG] Команда "${team.name}" сохранена с ${members.length} участниками`);
             }
+            
+            console.log(`📊 [DEBUG] participantIdsInTeams: [${participantIdsInTeams.join(', ')}]`);
             
             // Обновляем флаги участников
             if (participantIdsInTeams.length > 0) {
@@ -417,17 +454,21 @@ class MixTeamService {
                     'UPDATE tournament_participants SET in_team = TRUE WHERE id = ANY($1::int[])',
                     [participantIdsInTeams]
                 );
+                console.log(`✅ [DEBUG] Обновлены флаги in_team для ${participantIdsInTeams.length} участников`);
             }
             
             const participantIdsNotInTeams = sortedParticipants
                 .slice(playersInTeams)
-                .map(p => p.participant_id);
+                .map(p => p.id || p.participant_id); // 🆝 ИСПРАВЛЕНИЕ: правильные ID
+            
+            console.log(`📊 [DEBUG] participantIdsNotInTeams: [${participantIdsNotInTeams.join(', ')}]`);
             
             if (participantIdsNotInTeams.length > 0) {
                 await client.query(
                     'UPDATE tournament_participants SET in_team = FALSE WHERE id = ANY($1::int[])',
                     [participantIdsNotInTeams]
                 );
+                console.log(`✅ [DEBUG] Обновлены флаги in_team=FALSE для ${participantIdsNotInTeams.length} участников`);
             }
             
             // Обновляем тип турнира на командный
