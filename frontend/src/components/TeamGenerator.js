@@ -78,25 +78,43 @@ const TeamGenerator = ({
         const ratings = team.members.map(member => {
             let rating;
             if (ratingType === 'faceit') {
-                // Приоритет: поле напрямую -> кастомное поле -> поле пользователя -> дефолт
-                rating = parseInt(member.faceit_elo) || 
-                        parseInt(member.faceit_rating) || 
-                        parseInt(member.user_faceit_elo) || 
-                        1000;
+                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в TeamCard.js и MixTeamService.js
+                if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
+                    rating = parseInt(member.faceit_elo);
+                } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
+                    rating = parseInt(member.user_faceit_elo);
+                } else if (member.faceit_rating && !isNaN(parseInt(member.faceit_rating)) && parseInt(member.faceit_rating) > 0) {
+                    rating = parseInt(member.faceit_rating);
+                } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
+                    rating = parseInt(member.user_faceit_rating);
+                } else {
+                    rating = 1000; // дефолт
+                }
             } else {
-                // Приоритет: поле напрямую -> кастомное поле -> поле пользователя -> дефолт  
-                rating = parseInt(member.cs2_premier_rank) || 
-                        parseInt(member.premier_rank) || 
-                        parseInt(member.premier_rating) || 
-                        parseInt(member.user_premier_rank) || 
-                        5;
+                // 🔧 ИСПРАВЛЕНО: используем ту же логику для Premier
+                if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
+                    rating = parseInt(member.cs2_premier_rank);
+                } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
+                    rating = parseInt(member.user_premier_rank);
+                } else if (member.premier_rank && !isNaN(parseInt(member.premier_rank)) && parseInt(member.premier_rank) > 0) {
+                    rating = parseInt(member.premier_rank);
+                } else if (member.premier_rating && !isNaN(parseInt(member.premier_rating)) && parseInt(member.premier_rating) > 0) {
+                    rating = parseInt(member.premier_rating);
+                } else if (member.user_premier_rating && !isNaN(parseInt(member.user_premier_rating)) && parseInt(member.user_premier_rating) > 0) {
+                    rating = parseInt(member.user_premier_rating);
+                } else {
+                    rating = 1; // дефолт для Premier
+                }
             }
+            
+            console.log(`📊 [calculateTeamAverageRating] Участник ${member.name}: рейтинг ${rating} (тип: ${ratingType})`);
             return rating;
         }).filter(rating => !isNaN(rating) && rating > 0);
         
-        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 5;
+        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 1;
         
         const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+        console.log(`📊 [calculateTeamAverageRating] Команда ${team.name}: рейтинги [${ratings.join(', ')}], средний = ${Math.round(average)}`);
         return Math.round(average);
     }, [ratingType]);
 
@@ -227,15 +245,40 @@ const TeamGenerator = ({
                         
                         const ratings = team.members.map(member => {
                             if (ratingType === 'faceit') {
-                                return parseInt(member.faceit_elo) || 1000;
+                                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в calculateTeamAverageRating
+                                if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
+                                    return parseInt(member.faceit_elo);
+                                } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
+                                    return parseInt(member.user_faceit_elo);
+                                } else if (member.faceit_rating && !isNaN(parseInt(member.faceit_rating)) && parseInt(member.faceit_rating) > 0) {
+                                    return parseInt(member.faceit_rating);
+                                } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
+                                    return parseInt(member.user_faceit_rating);
+                                } else {
+                                    return 1000;
+                                }
                             } else {
-                                return parseInt(member.cs2_premier_rank || member.premier_rank) || 5;
+                                // 🔧 ИСПРАВЛЕНО: используем ту же логику для Premier
+                                if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
+                                    return parseInt(member.cs2_premier_rank);
+                                } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
+                                    return parseInt(member.user_premier_rank);
+                                } else if (member.premier_rank && !isNaN(parseInt(member.premier_rank)) && parseInt(member.premier_rank) > 0) {
+                                    return parseInt(member.premier_rank);
+                                } else if (member.premier_rating && !isNaN(parseInt(member.premier_rating)) && parseInt(member.premier_rating) > 0) {
+                                    return parseInt(member.premier_rating);
+                                } else if (member.user_premier_rating && !isNaN(parseInt(member.user_premier_rating)) && parseInt(member.user_premier_rating) > 0) {
+                                    return parseInt(member.user_premier_rating);
+                                } else {
+                                    return 1;
+                                }
                             }
                         }).filter(rating => rating > 0);
                         
                         if (ratings.length === 0) return 0;
                         
                         const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+                        console.log(`📊 [fetchTeams] Команда ${team.name}: рейтинги [${ratings.join(', ')}], средний = ${Math.round(average)}`);
                         return Math.round(average);
                     })()
                 }));
@@ -577,8 +620,36 @@ const TeamGenerator = ({
                                     <div className="participant-info">
                                         <span className="participant-rating">
                                             {ratingType === 'faceit' 
-                                                ? `FACEIT: ${participant.faceit_elo || 1000}`
-                                                : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
+                                                ? `FACEIT: ${(() => {
+                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                    if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
+                                                        return parseInt(participant.faceit_elo);
+                                                    } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
+                                                        return parseInt(participant.user_faceit_elo);
+                                                    } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
+                                                        return parseInt(participant.faceit_rating);
+                                                    } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
+                                                        return parseInt(participant.user_faceit_rating);
+                                                    } else {
+                                                        return 1000;
+                                                    }
+                                                })()}`
+                                                : `Premier: ${(() => {
+                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                    if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
+                                                        return parseInt(participant.cs2_premier_rank);
+                                                    } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
+                                                        return parseInt(participant.user_premier_rank);
+                                                    } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
+                                                        return parseInt(participant.premier_rank);
+                                                    } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+                                                        return parseInt(participant.premier_rating);
+                                                    } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
+                                                        return parseInt(participant.user_premier_rating);
+                                                    } else {
+                                                        return 1;
+                                                    }
+                                                })()}`
                                             }
                                         </span>
                                         <span className="participant-status">Свободен</span>
@@ -621,9 +692,36 @@ const TeamGenerator = ({
                                         
                                         <span className="participant-rating">
                                             {ratingType === 'faceit' 
-                                                ? `FACEIT: ${participant.faceit_elo || 1000}`
-                                                : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
-                                            }
+                                                ? `FACEIT: ${(() => {
+                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                    if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
+                                                        return parseInt(participant.faceit_elo);
+                                                    } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
+                                                        return parseInt(participant.user_faceit_elo);
+                                                    } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
+                                                        return parseInt(participant.faceit_rating);
+                                                    } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
+                                                        return parseInt(participant.user_faceit_rating);
+                                                    } else {
+                                                        return 1000;
+                                                    }
+                                                })()} ELO`
+                                                : `Premier: ${(() => {
+                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                    if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
+                                                        return parseInt(participant.cs2_premier_rank);
+                                                    } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
+                                                        return parseInt(participant.user_premier_rank);
+                                                    } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
+                                                        return parseInt(participant.premier_rank);
+                                                    } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+                                                        return parseInt(participant.premier_rating);
+                                                    } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
+                                                        return parseInt(participant.user_premier_rating);
+                                                    } else {
+                                                        return 1;
+                                                    }
+                                                })()} Ранг`}
                                         </span>
                                         <span className="participant-status">В команде</span>
                                     </div>
@@ -657,9 +755,36 @@ const TeamGenerator = ({
                                             
                                             <span className="participant-rating">
                                                 {ratingType === 'faceit' 
-                                                    ? `FACEIT: ${participant.faceit_elo || 1000}`
-                                                    : `Premier: ${participant.premier_rank || participant.cs2_premier_rank || 5}`
-                                                }
+                                                    ? `FACEIT: ${(() => {
+                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                        if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
+                                                            return parseInt(participant.faceit_elo);
+                                                        } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
+                                                            return parseInt(participant.user_faceit_elo);
+                                                        } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
+                                                            return parseInt(participant.faceit_rating);
+                                                        } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
+                                                            return parseInt(participant.user_faceit_rating);
+                                                        } else {
+                                                            return 1000;
+                                                        }
+                                                    })()} ELO`
+                                                    : `Premier: ${(() => {
+                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                        if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
+                                                            return parseInt(participant.cs2_premier_rank);
+                                                        } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
+                                                            return parseInt(participant.user_premier_rank);
+                                                        } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
+                                                            return parseInt(participant.premier_rank);
+                                                        } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+                                                            return parseInt(participant.premier_rating);
+                                                        } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
+                                                            return parseInt(participant.user_premier_rating);
+                                                        } else {
+                                                            return 1;
+                                                        }
+                                                    })()} Ранг`}
                                             </span>
                                         </div>
                                         {isAdminOrCreator && tournament.participant_type === 'solo' && (
@@ -948,9 +1073,36 @@ const TeamGenerator = ({
                                                             {participant.name} 
                                                             <span className="participant-rating-preview">
                                                                 ({ratingType === 'faceit' 
-                                                                    ? `${participant.faceit_elo || 1000} ELO`
-                                                                    : `${participant.cs2_premier_rank || participant.premier_rank || 5} Ранг`
-                                                                })
+                                                                    ? `${(() => {
+                                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                                        if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
+                                                                            return parseInt(participant.faceit_elo);
+                                                                        } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
+                                                                            return parseInt(participant.user_faceit_elo);
+                                                                        } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
+                                                                            return parseInt(participant.faceit_rating);
+                                                                        } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
+                                                                            return parseInt(participant.user_faceit_rating);
+                                                                        } else {
+                                                                            return 1000;
+                                                                        }
+                                                                    })()} ELO`
+                                                                    : `${(() => {
+                                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
+                                                                        if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
+                                                                            return parseInt(participant.cs2_premier_rank);
+                                                                        } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
+                                                                            return parseInt(participant.user_premier_rank);
+                                                                        } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
+                                                                            return parseInt(participant.premier_rank);
+                                                                        } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+                                                                            return parseInt(participant.premier_rating);
+                                                                        } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
+                                                                            return parseInt(participant.user_premier_rating);
+                                                                        } else {
+                                                                            return 1;
+                                                                        }
+                                                                    })()} Ранг`})
                                                             </span>
                                                         </li>
                                                     ))}
