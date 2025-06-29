@@ -153,6 +153,14 @@ class MatchService {
     }
 
     /**
+     * 🔄 Алиас для getMatches (обратная совместимость)
+     */
+    static async getMatchesByTournament(tournamentId) {
+        console.log(`🔄 MatchService: Алиас getMatchesByTournament перенаправляет на getMatches для турнира ${tournamentId}`);
+        return await this.getMatches(tournamentId);
+    }
+
+    /**
      * Получение конкретного матча
      */
     static async getMatchById(matchId) {
