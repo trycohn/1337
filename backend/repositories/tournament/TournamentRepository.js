@@ -364,6 +364,21 @@ class TournamentRepository {
             client.release();
         }
     }
+
+    /**
+     * 🆕 Обновление типа участников турнира
+     */
+    static async updateParticipantType(tournamentId, participantType) {
+        console.log(`🔄 TournamentRepository: обновляем тип участников турнира ${tournamentId} на '${participantType}'`);
+        
+        const result = await pool.query(
+            'UPDATE tournaments SET participant_type = $1 WHERE id = $2 RETURNING *',
+            [participantType, tournamentId]
+        );
+        
+        console.log(`✅ TournamentRepository: тип участников турнира ${tournamentId} обновлен на '${participantType}'`);
+        return result.rows[0];
+    }
 }
 
 module.exports = TournamentRepository; 
