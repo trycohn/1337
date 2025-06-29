@@ -409,10 +409,11 @@ class MixTeamService {
                 // Добавляем участников в команду
                 const teamMembers = [];
                 for (const member of team.members) {
-                    await TeamRepository.addMember(createdTeam.id, {
-                        user_id: member.user_id,
-                        participant_id: member.id || member.participant_id
-                    });
+                    await TeamRepository.addMember(
+                        createdTeam.id, 
+                        member.user_id, 
+                        member.id || member.participant_id
+                    );
 
                     teamMembers.push({
                         ...member,
