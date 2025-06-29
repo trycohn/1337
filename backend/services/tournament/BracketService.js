@@ -689,6 +689,89 @@ class BracketService {
             duplicateMatchNumbers: duplicateInfo.duplicate_match_numbers || []
         };
     }
+
+    /**
+     * Очистка турнирной сетки (удаление всех матчей)
+     * 🆕 Метод для поддержки переформирования команд
+     */
+    static async clearBracket(tournamentId, userId) {
+        console.log(`🗑️ BracketService: Удаление турнирной сетки для турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkBracketAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.status !== 'active') {
+            throw new Error('Можно удалять сетку только для активных турниров');
+        }
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Проверяем есть ли матчи для удаления
+            const existingMatchesResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            const existingMatchCount = parseInt(existingMatchesResult.rows[0].count);
+            
+            if (existingMatchCount === 0) {
+                await client.query('COMMIT');
+                console.log(`ℹ️ [clearBracket] Турнир ${tournamentId} не имеет матчей для удаления`);
+                return {
+                    success: true,
+                    message: 'Турнирная сетка уже отсутствует',
+                    deletedMatches: 0
+                };
+            }
+
+            // Удаляем все матчи турнира
+            const deletedMatches = await client.query(
+                'DELETE FROM matches WHERE tournament_id = $1 RETURNING id',
+                [tournamentId]
+            );
+
+            console.log(`🗑️ [clearBracket] Удалено ${deletedMatches.rows.length} матчей из турнира ${tournamentId}`);
+
+            await client.query('COMMIT');
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'bracket_cleared', {
+                deletedMatches: deletedMatches.rows.length,
+                reason: 'team_regeneration'
+            });
+
+            // Отправляем объявление в чат (необязательно, так как это внутренняя операция)
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🗑️ Турнирная сетка удалена для переформирования команд`,
+                'system',
+                userId
+            );
+
+            console.log(`✅ [clearBracket] Турнирная сетка успешно удалена для турнира ${tournamentId}`);
+
+            return {
+                success: true,
+                message: `Турнирная сетка удалена: ${deletedMatches.rows.length} матчей`,
+                deletedMatches: deletedMatches.rows.length
+            };
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ [clearBracket] Ошибка удаления сетки турнира ${tournamentId}:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = BracketService; 

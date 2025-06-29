@@ -1,5 +1,6 @@
 const MixTeamService = require('../../services/tournament/MixTeamService');
 const TournamentService = require('../../services/tournament/TournamentService');
+const BracketService = require('../../services/tournament/BracketService');
 const { asyncHandler } = require('../../utils/tournament/asyncHandler');
 const { broadcastTournamentUpdate } = require('../../notifications');
 
@@ -83,7 +84,7 @@ class MixTeamController {
     });
 
     /**
-     * Переформирование микс команд (регенерация с теми же участниками)
+     * Переформирование микс команд с удалением сетки если она есть
      * POST /api/tournaments/:id/mix-regenerate-teams
      */
     static regenerateMixTeams = asyncHandler(async (req, res) => {
@@ -101,7 +102,37 @@ class MixTeamController {
             });
         }
 
+        // Проверяем турнир
+        const tournament = await TournamentService.getTournament(tournamentId);
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        if (tournament.format !== 'mix') {
+            return res.status(400).json({ 
+                error: 'Переформирование команд доступно только для микс турниров' 
+            });
+        }
+
+        // 🆕 ОБНОВЛЕННАЯ ЛОГИКА: разрешаем переформирование только для активных турниров
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ 
+                error: 'Переформирование команд доступно только для активных турниров' 
+            });
+        }
+
         try {
+            // 🆕 ПРОВЕРЯЕМ ЕСТЬ ЛИ СЕТКА И УДАЛЯЕМ ЕЁ ПЕРЕД ПЕРЕФОРМИРОВАНИЕМ
+            const hasMatches = await TournamentService.hasMatches(tournamentId);
+            if (hasMatches) {
+                console.log(`🗑️ [MixTeamController] Удаляем существующую сетку перед переформированием команд`);
+                
+                // Удаляем все матчи турнира
+                await BracketService.clearBracket(tournamentId, userId);
+                
+                console.log(`✅ [MixTeamController] Сетка удалена, продолжаем переформирование команд`);
+            }
+
             // Переформировываем команды с перемешиванием
             const result = await MixTeamService.generateMixTeams(
                 tournamentId, 
@@ -120,11 +151,14 @@ class MixTeamController {
 
             res.status(200).json({
                 success: true,
-                message: `Команды успешно переформированы`,
+                message: hasMatches ? 
+                    `Команды успешно переформированы. Турнирная сетка была удалена и должна быть создана заново.` :
+                    `Команды успешно переформированы`,
                 teams: result.teams,
                 summary: result.summary,
                 tournament: updatedTournament,
-                isRegeneration: true
+                isRegeneration: true,
+                bracketDeleted: hasMatches
             });
 
         } catch (error) {
@@ -133,6 +167,15 @@ class MixTeamController {
                 error: error.message || 'Ошибка при переформировании команд' 
             });
         }
+    });
+
+    /**
+     * 🆕 ALIAS для обратной совместимости с фронтендом
+     * POST /api/tournaments/:id/form-teams
+     */
+    static formTeamsAlias = asyncHandler(async (req, res) => {
+        console.log(`🔄 [MixTeamController] Вызов через алиас /form-teams -> перенаправляем на generateMixTeams`);
+        return MixTeamController.generateMixTeams(req, res);
     });
 
     /**
@@ -211,17 +254,8 @@ class MixTeamController {
                 });
             }
 
-            // Обновляем размер команды
-            const updatedTournament = await TournamentService.updateTournament(tournamentId, {
-                team_size: parseInt(teamSize, 10)
-            }, userId);
-
-            // Если есть команды, удаляем их (так как размер изменился)
-            const hasTeams = await TournamentService.hasTeams(tournamentId);
-            if (hasTeams) {
-                console.log(`🗑️ [MixTeamController] Удаляем существующие команды из-за изменения размера`);
-                // TODO: Добавить метод в TeamService для удаления команд
-            }
+            // Используем специальный метод для обновления размера команды
+            const updatedTournament = await TournamentService.updateTeamSize(tournamentId, teamSize, userId);
 
             console.log(`✅ [MixTeamController] Размер команды обновлен на ${teamSize}`);
 
@@ -249,7 +283,7 @@ class MixTeamController {
         console.log(`🏆 [MixTeamController] Получение команд турнира ${tournamentId}`);
 
         try {
-            const teams = await TournamentService.getTeamsWithMembers(tournamentId);
+            const teams = await TournamentService.getTeams(tournamentId);
 
             console.log(`✅ [MixTeamController] Получено команд: ${teams.length}`);
 
@@ -259,6 +293,109 @@ class MixTeamController {
             console.error(`❌ [MixTeamController] Ошибка получения команд:`, error);
             res.status(500).json({ 
                 error: error.message || 'Ошибка при получении команд турнира' 
+            });
+        }
+    });
+
+    /**
+     * Проверка баланса команд
+     * POST /api/tournaments/:id/mix-balance-check
+     */
+    static checkTeamBalance = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const { ratingType = 'faceit' } = req.body;
+
+        console.log(`⚖️ [MixTeamController] Проверка баланса команд турнира ${tournamentId}`);
+
+        try {
+            const teams = await TournamentService.getTeams(tournamentId);
+            
+            if (teams.length === 0) {
+                return res.status(400).json({ 
+                    error: 'В турнире нет команд для проверки баланса' 
+                });
+            }
+
+            // Используем метод из MixTeamService для проверки баланса
+            const balanceCheck = MixTeamService.checkTeamBalance(teams, ratingType);
+
+            console.log(`✅ [MixTeamController] Баланс проверен: ${Math.round(balanceCheck.percentageDiff)}%`);
+
+            res.json({
+                success: true,
+                balanceCheck,
+                teams: teams.length,
+                message: balanceCheck.isBalanced ? 
+                    `Команды сбалансированы (расхождение: ${Math.round(balanceCheck.percentageDiff)}%)` :
+                    `Команды не сбалансированы (расхождение: ${Math.round(balanceCheck.percentageDiff)}%)`
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка проверки баланса:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при проверке баланса команд' 
+            });
+        }
+    });
+
+    /**
+     * Очистка всех команд турнира
+     * POST /api/tournaments/:id/mix-clear-teams
+     */
+    static clearMixTeams = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const userId = req.user.id;
+
+        console.log(`🗑️ [MixTeamController] Очистка команд турнира ${tournamentId}`);
+
+        // Проверяем права доступа
+        const hasPermission = await TournamentService.checkUserPermission(tournamentId, userId, 'manage_teams');
+        if (!hasPermission) {
+            return res.status(403).json({ 
+                error: 'Недостаточно прав для очистки команд' 
+            });
+        }
+
+        try {
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Очистка команд доступна только для микс турниров' 
+                });
+            }
+
+            if (tournament.status !== 'active') {
+                return res.status(400).json({ 
+                    error: 'Очистка команд доступна только для активных турниров' 
+                });
+            }
+
+            // Проверяем, не создана ли уже сетка
+            const hasMatches = await TournamentService.hasMatches(tournamentId);
+            if (hasMatches) {
+                return res.status(400).json({ 
+                    error: 'Нельзя очищать команды после создания турнирной сетки' 
+                });
+            }
+
+            // Очищаем команды через специальный метод
+            await MixTeamService.clearTeams(tournamentId, userId);
+
+            console.log(`✅ [MixTeamController] Команды очищены для турнира ${tournamentId}`);
+
+            res.status(200).json({
+                success: true,
+                message: 'Команды успешно очищены'
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка очистки команд:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при очистке команд' 
             });
         }
     });

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api';
 import { ensureHttps } from '../utils/userHelpers';
 import './TeamGenerator.css';
+import TeamCard from './TeamCard';
 
 /**
  * Компонент для генерации команд в турнире
@@ -112,11 +113,23 @@ const TeamGenerator = ({
 
     // 🆕 ФУНКЦИЯ ПРОВЕРКИ ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ
     const canReformTeams = useCallback(() => {
-        return isAdminOrCreator && 
-               tournament?.status === 'active' && 
-               mixedTeams.length > 0 && 
-               displayParticipants.length >= 2;
-    }, [isAdminOrCreator, tournament?.status, mixedTeams.length, displayParticipants.length]);
+        // 🆕 Проверяем что пользователь админ или создатель
+        if (!isAdminOrCreator) return false;
+        
+        // 🆕 Проверяем статус турнира - только active
+        if (tournament?.status !== 'active') return false;
+        
+        // 🆕 Проверяем что есть команды для переформирования
+        if (mixedTeams.length === 0) return false;
+        
+        // 🆕 Проверяем что есть достаточно участников
+        if (displayParticipants.length < 2) return false;
+        
+        // 🆕 Проверяем что турнирная сетка не создана
+        if (tournament?.matches && tournament.matches.length > 0) return false;
+        
+        return true;
+    }, [isAdminOrCreator, tournament?.status, tournament?.matches, mixedTeams.length, displayParticipants.length]);
 
     // 🆕 ФУНКЦИЯ ПОЛУЧЕНИЯ ТЕКСТА О СОСТОЯНИИ УЧАСТНИКОВ
     const getParticipantsStatusText = useCallback(() => {
@@ -764,8 +777,26 @@ const TeamGenerator = ({
 
     // 🔧 ФУНКЦИЯ ПЕРЕФОРМИРОВАНИЯ КОМАНД
     const handleReformTeams = async () => {
+        // 🆕 ПРОВЕРКА СТАТУСА ТУРНИРА ПЕРЕД ПЕРЕФОРМИРОВАНИЕМ
+        if (tournament.status !== 'active') {
+            if (toast) {
+                toast.error('Переформирование команд доступно только для активных турниров');
+            }
+            setShowReformModal(false);
+            return;
+        }
+
+        if (tournament.status === 'in_progress') {
+            if (toast) {
+                toast.error('Переформирование команд недоступно - турнир уже начался');
+            }
+            setShowReformModal(false);
+            return;
+        }
+
         // Устанавливаем флаг переформирования для предотвращения перезаписи
         setIsReforming(true);
+        setReformLoading(true);
         
         try {
             const teamSizeNumber = parseInt(teamSize);
@@ -777,10 +808,10 @@ const TeamGenerator = ({
                 tournamentId: tournament.id
             });
 
-            // 🆕 ПЕРЕДАЕМ ПАРАМЕТРЫ ПЕРЕФОРМИРОВАНИЯ
-            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {
-                ratingType: ratingType, // 🆕 ПЕРЕДАЕМ ТИП РЕЙТИНГА
-                teamSize: teamSizeNumber // 🆕 ПЕРЕДАЕМ РАЗМЕР КОМАНДЫ
+            // 🆕 ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЙ ENDPOINT ДЛЯ ПЕРЕФОРМИРОВАНИЯ
+            const response = await api.post(`/api/tournaments/${tournament.id}/mix-regenerate-teams`, {
+                ratingType: ratingType,
+                shuffle: true  // 🆕 Всегда перемешиваем при переформировании
             });
 
             if (response.data && response.data.teams) {
@@ -801,32 +832,43 @@ const TeamGenerator = ({
                     console.log('✅ Уведомляем родительский компонент о переформированных командах');
                     onTeamsGenerated(enrichedTeams);
                 }
-                
-                // 🎯 НЕ ВЫЗЫВАЕМ onTeamsUpdated чтобы избежать перезагрузки турнира
-                // if (onTeamsUpdated) {
-                //     onTeamsUpdated();
-                // }
+
+                // 🆕 ПОКАЗЫВАЕМ СООБЩЕНИЕ О РЕЗУЛЬТАТЕ ПЕРЕФОРМИРОВАНИЯ
+                if (toast) {
+                    if (response.data.bracketDeleted) {
+                        toast.success(`${response.data.message} Для продолжения турнира необходимо заново сгенерировать турнирную сетку.`);
+                    } else {
+                        toast.success(response.data.message || 'Команды успешно переформированы');
+                    }
+                }
                 
                 console.log('✅ Команды успешно переформированы с учетом рейтингов');
                 setShowReformModal(false);
                 setShowAllNewParticipants(false); // Сброс состояния раскрытия списка
             } else {
                 console.error('❌ Некорректный ответ сервера при переформировании команд');
+                if (toast) {
+                    toast.error('Некорректный ответ сервера при переформировании команд');
+                }
             }
         } catch (error) {
             console.error('❌ Ошибка при переформировании команд:', error);
             
             // При ошибке также показываем подробности
-            if (error.response?.data?.message) {
-                console.error('Сообщение об ошибке:', error.response.data.message);
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при переформировании команд';
+            
+            if (toast) {
+                toast.error(errorMessage);
             }
+            
+            console.error('Сообщение об ошибке:', errorMessage);
             
             // Если произошла ошибка, не закрываем модальное окно
             // чтобы пользователь мог попробовать снова
         } finally {
             // Снимаем флаг переформирования в любом случае
             setIsReforming(false);
-            setLoading(false);
+            setReformLoading(false);
         }
     };
 

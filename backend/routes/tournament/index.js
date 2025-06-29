@@ -95,6 +95,17 @@ router.get('/:id/mix-original-participants', MixTeamController.getOriginalPartic
 // Обновление размера команды специально для микс турниров
 router.patch('/:id/mix-team-size', authenticateToken, MixTeamController.updateTeamSize);
 
+// 🏆 Команды микс турниров
+router.post('/:id/mix-generate-teams', MixTeamController.generateMixTeams);
+router.post('/:id/mix-regenerate-teams', MixTeamController.regenerateMixTeams);
+router.get('/:id/mix-original-participants', MixTeamController.getOriginalParticipants);
+router.post('/:id/mix-balance-check', MixTeamController.checkTeamBalance);
+router.post('/:id/mix-clear-teams', MixTeamController.clearMixTeams);
+
+// 🆕 АЛИАСЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ с фронтендом
+router.post('/:id/form-teams', MixTeamController.formTeamsAlias);  // Алиас для mix-generate-teams
+router.get('/:id/original-participants', MixTeamController.getOriginalParticipants);  // Алиас для mix-original-participants
+
 // 👥 **УПРАВЛЕНИЕ УЧАСТНИКАМИ**
 
 // Участие в турнире

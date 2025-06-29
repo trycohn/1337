@@ -436,6 +436,34 @@ class TournamentService {
             return false;
         }
     }
+
+    /**
+     * Проверка наличия матчей в турнире
+     * @param {number} tournamentId - ID турнира
+     * @returns {boolean} - есть ли матчи в турнире
+     */
+    static async hasMatches(tournamentId) {
+        console.log(`🔍 [TournamentService] Проверка наличия матчей в турнире ${tournamentId}`);
+        
+        try {
+            const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
+            const hasMatches = matchesCount > 0;
+            
+            console.log(`📊 [hasMatches] Турнир ${tournamentId}: ${matchesCount} матчей, hasMatches: ${hasMatches}`);
+            return hasMatches;
+            
+        } catch (error) {
+            console.error(`❌ [hasMatches] Ошибка проверки матчей турнира ${tournamentId}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Получение подробных данных турнира (алиас для getTournamentById)
+     */
+    static async getTournamentDetails(tournamentId) {
+        return await this.getTournamentById(tournamentId);
+    }
 }
 
 module.exports = TournamentService; 

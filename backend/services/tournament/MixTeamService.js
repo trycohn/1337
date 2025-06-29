@@ -494,6 +494,83 @@ class MixTeamService {
             notInTeamCount: notInTeam.length
         };
     }
+
+    /**
+     * Очистка всех команд турнира
+     * @param {number} tournamentId - ID турнира
+     * @param {number} userId - ID пользователя
+     */
+    static async clearTeams(tournamentId, userId) {
+        console.log(`🗑️ MixTeamService: Очистка команд для турнира ${tournamentId}`);
+        
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Получаем количество команд для логирования
+            const teamsCountResult = await client.query(
+                'SELECT COUNT(*) as count FROM tournament_teams WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            const teamsCount = parseInt(teamsCountResult.rows[0].count);
+            
+            if (teamsCount === 0) {
+                await client.query('COMMIT');
+                console.log(`ℹ️ [clearTeams] Турнир ${tournamentId} не имеет команд для удаления`);
+                return {
+                    success: true,
+                    message: 'Команды уже отсутствуют',
+                    deletedTeams: 0
+                };
+            }
+            
+            // Удаляем все команды турнира (каскадное удаление удалит и участников команд)
+            await client.query(
+                'DELETE FROM tournament_teams WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            // Сбрасываем флаги участников
+            await client.query(
+                'UPDATE tournament_participants SET in_team = FALSE WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            // Возвращаем тип турнира на индивидуальный
+            await client.query(
+                'UPDATE tournaments SET participant_type = $1 WHERE id = $2',
+                ['individual', tournamentId]
+            );
+            
+            await client.query('COMMIT');
+            
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'teams_cleared', {
+                deletedTeams: teamsCount
+            });
+            
+            // Отправляем объявление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🗑️ Все команды турнира удалены. Участники возвращены к индивидуальному формату.`
+            );
+            
+            console.log(`✅ [clearTeams] Удалено ${teamsCount} команд из турнира ${tournamentId}`);
+            
+            return {
+                success: true,
+                message: `Удалено команд: ${teamsCount}`,
+                deletedTeams: teamsCount
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ [clearTeams] Ошибка очистки команд турнира ${tournamentId}:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = MixTeamService; 
