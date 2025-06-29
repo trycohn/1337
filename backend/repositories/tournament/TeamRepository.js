@@ -130,10 +130,13 @@ class TeamRepository {
                                 'avatar_url', u.avatar_url,
                                 'name', COALESCE(tp.name, u.username),
                                 'faceit_elo', tp.faceit_elo,
-                                'user_faceit_elo', tp.user_faceit_elo,
-                                'faceit_rating', tp.faceit_rating,
-                                'steam_rating', tp.steam_rating,
-                                'user_steam_rating', tp.user_steam_rating
+                                'cs2_premier_rank', tp.cs2_premier_rank,
+                                'user_faceit_elo', u.faceit_elo,
+                                'user_cs2_premier_rank', u.cs2_premier_rank,
+                                'faceit_rating', tp.faceit_elo,
+                                'premier_rating', tp.cs2_premier_rank,
+                                'user_faceit_rating', u.faceit_elo,
+                                'user_premier_rating', u.cs2_premier_rank
                             )
                         ) FILTER (WHERE ttm.id IS NOT NULL), 
                         '[]'
