@@ -83,11 +83,11 @@ router.put('/:id/team-size', authenticateToken, TournamentController.updateTeamS
 
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ**
 
-// Генерация микс команд
-router.post('/:id/mix-generate-teams', authenticateToken, MixTeamController.generateMixTeams);
+// Генерация микс команд (основной метод)
+router.post('/:id/mix-generate-teams', authenticateToken, MixTeamController.formTeams);
 
-// Переформирование микс команд  
-router.post('/:id/mix-regenerate-teams', authenticateToken, MixTeamController.regenerateMixTeams);
+// Переформирование микс команд (основной метод)
+router.post('/:id/mix-regenerate-teams', authenticateToken, MixTeamController.regenerateTeams);
 
 // Получение оригинальных участников для микс турниров (группированные по статусу в командах)
 router.get('/:id/mix-original-participants', MixTeamController.getOriginalParticipants);
@@ -95,15 +95,15 @@ router.get('/:id/mix-original-participants', MixTeamController.getOriginalPartic
 // Обновление размера команды специально для микс турниров
 router.patch('/:id/mix-team-size', authenticateToken, MixTeamController.updateTeamSize);
 
-// Проверка баланса команд
-router.post('/:id/mix-balance-check', authenticateToken, MixTeamController.checkTeamBalance);
-
 // Очистка команд микс турнира
 router.post('/:id/mix-clear-teams', authenticateToken, MixTeamController.clearMixTeams);
 
 // 🆕 АЛИАСЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ с фронтендом
 router.post('/:id/form-teams', authenticateToken, MixTeamController.formTeamsAlias);  // Алиас для mix-generate-teams
-router.get('/:id/original-participants', MixTeamController.getOriginalParticipants);  // Алиас для mix-original-participants
+router.get('/:id/original-participants', MixTeamController.getOriginalParticipantsAlias);  // Алиас для mix-original-participants
+
+// 🆕 ДОПОЛНИТЕЛЬНЫЕ АЛИАСЫ ДЛЯ СТАРЫХ МЕТОДОВ
+router.post('/:id/generate-teams', authenticateToken, MixTeamController.generateMixTeams);  // Старый алиас для генерации
 
 // 👥 **УПРАВЛЕНИЕ УЧАСТНИКАМИ**
 

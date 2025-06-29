@@ -7,13 +7,33 @@ const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatH
 
 class MixTeamService {
     /**
-     * Нормализация рейтинга участника с приоритетами
+     * 🎯 РАСЧЕТ СРЕДНЕГО РЕЙТИНГА КОМАНДЫ
+     */
+    static calculateTeamAverageRating(members, ratingType) {
+        if (!members || members.length === 0) return 0;
+        
+        const ratings = members.map(member => this.normalizeParticipantRating(member, ratingType))
+                              .filter(rating => !isNaN(rating) && rating > 0);
+        
+        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 5;
+        
+        const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+        return Math.round(average);
+    }
+
+    /**
+     * Нормализация рейтинга участника с консистентными приоритетами
      */
     static normalizeParticipantRating(participant, ratingType) {
         let rating;
         
         if (ratingType === 'faceit') {
-            // Приоритет для FACEIT: кастомный ELO → пользовательский ELO → дефолт
+            // 🎯 ПРИОРИТЕТ ДЛЯ FACEIT (согласно требованиям):
+            // 1. Кастомный ELO участника турнира (если был указан при формировании команд)
+            // 2. ELO зарегистрированного пользователя
+            // 3. FACEIT рейтинг пользователя (резервный)
+            // 4. Дефолт 1000
+            
             if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
                 rating = parseInt(participant.faceit_elo);
             } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
@@ -26,20 +46,27 @@ class MixTeamService {
                 rating = 1000; // Дефолт для FACEIT
             }
         } else if (ratingType === 'premier') {
-            // Приоритет для CS2 Premier: кастомный ранг → пользовательский ранг → дефолт
+            // 🎯 ПРИОРИТЕТ ДЛЯ CS2 PREMIER (согласно требованиям):
+            // 1. Кастомный ранг участника турнира (если был указан при формировании команд)
+            // 2. Premier ранг зарегистрированного пользователя
+            // 3. Дефолт 5
+            
             if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
                 rating = parseInt(participant.cs2_premier_rank);
             } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
                 rating = parseInt(participant.user_premier_rank);
             } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
                 rating = parseInt(participant.premier_rank);
+            } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+                rating = parseInt(participant.premier_rating);
             } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
                 rating = parseInt(participant.user_premier_rating);
             } else {
-                rating = 1; // Дефолт для Premier
+                rating = 5; // Дефолт для Premier
             }
         } else {
-            rating = 1000; // Fallback
+            // Fallback на faceit если тип не определен
+            rating = 1000;
         }
         
         console.log(`📊 Рейтинг участника ${participant.name}: ${rating} (тип: ${ratingType})`);
@@ -47,119 +74,117 @@ class MixTeamService {
     }
 
     /**
-     * Проверка баланса команд
+     * 🆕 УЛУЧШЕННЫЙ МАТЕМАТИЧЕСКИЙ АЛГОРИТМ ФОРМИРОВАНИЯ КОМАНД
+     * Принципы:
+     * 1. Минимизация расхождения между командами  
+     * 2. Сильный + слабый игрок в одной команде
+     * 3. Допустимое отклонение +-20% от среднего
      */
-    static checkTeamBalance(teams, ratingType) {
-        if (teams.length < 2) return { isBalanced: true, percentageDiff: 0 };
-
-        const teamAverages = teams.map(team => {
-            const ratings = team.members.map(member => 
-                this.normalizeParticipantRating(member, ratingType)
-            );
-            return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+    static generateOptimalTeams(participants, teamSize, ratingType) {
+        console.log(`🎯 [generateOptimalTeams] Запуск улучшенного алгоритма для ${participants.length} участников, размер команды: ${teamSize}`);
+        
+        // 1. Сортируем участников по рейтингу (по убыванию)
+        const sortedParticipants = [...participants].sort((a, b) => {
+            const ratingA = this.normalizeParticipantRating(a, ratingType);
+            const ratingB = this.normalizeParticipantRating(b, ratingType);
+            return ratingB - ratingA; // По убыванию (сильнейшие первыми)
         });
-
-        const minAvg = Math.min(...teamAverages);
-        const maxAvg = Math.max(...teamAverages);
-        const percentageDiff = ((maxAvg - minAvg) / minAvg) * 100;
-
-        return {
-            teamAverages,
-            minAvg,
-            maxAvg,
-            percentageDiff,
-            isBalanced: percentageDiff <= 15
-        };
-    }
-
-    /**
-     * Оптимизированный попарный алгоритм для команд из 2 игроков
-     */
-    static generatePairedTeams(participants, ratingType) {
-        console.log(`🎯 Используем оптимизированный попарный алгоритм для команд из 2 игроков`);
-        console.log(`🔍 [DEBUG] Данные первого участника:`, JSON.stringify(participants[0], null, 2));
         
-        const averageRating = participants.reduce((sum, p) => {
-            return sum + this.normalizeParticipantRating(p, ratingType);
-        }, 0) / participants.length;
+        // 2. Рассчитываем общий средний рейтинг
+        const totalRating = sortedParticipants.reduce((sum, p) => 
+            sum + this.normalizeParticipantRating(p, ratingType), 0
+        );
+        const averageRating = totalRating / sortedParticipants.length;
+        const targetTeamRating = averageRating * teamSize; // Целевой рейтинг команды
         
-        console.log(`📊 Общий средний рейтинг: ${Math.round(averageRating)}`);
+        console.log(`📊 [generateOptimalTeams] Средний рейтинг: ${Math.round(averageRating)}, целевой рейтинг команды: ${Math.round(targetTeamRating)}`);
         
-        // Создаем все возможные пары и оцениваем их близость к среднему
-        const allPairs = [];
-        for (let i = 0; i < participants.length; i++) {
-            for (let j = i + 1; j < participants.length; j++) {
-                const player1 = participants[i];
-                const player2 = participants[j];
-                
-                const rating1 = this.normalizeParticipantRating(player1, ratingType);
-                const rating2 = this.normalizeParticipantRating(player2, ratingType);
-                
-                const pairAverage = (rating1 + rating2) / 2;
-                const distanceFromAverage = Math.abs(pairAverage - averageRating);
-                
-                allPairs.push({
-                    player1,
-                    player2,
-                    pairAverage,
-                    distanceFromAverage
-                });
-            }
+        const fullTeams = Math.floor(sortedParticipants.length / teamSize);
+        const playersInTeams = fullTeams * teamSize;
+        const participantsForTeams = sortedParticipants.slice(0, playersInTeams);
+        
+        let teams = [];
+        
+        if (teamSize === 2) {
+            teams = this.generateOptimalPairs(participantsForTeams, ratingType, averageRating);
+        } else {
+            teams = this.generateOptimalLargeTeams(participantsForTeams, teamSize, ratingType, averageRating);
         }
         
-        // Сортируем пары по близости к среднему
-        allPairs.sort((a, b) => a.distanceFromAverage - b.distanceFromAverage);
+        // 3. Проверяем и улучшаем баланс команд
+        const balanceResult = this.optimizeTeamBalance(teams, ratingType, averageRating);
         
-        console.log(`📊 Создано ${allPairs.length} возможных пар`);
-        
-        // Жадно выбираем лучшие непересекающиеся пары
-        const teams = [];
-        const usedPlayers = new Set();
-        const fullTeams = Math.floor(participants.length / 2);
-        
-        console.log(`📊 [DEBUG] Целевое количество команд: ${fullTeams}`);
-        console.log(`📊 [DEBUG] Доступно участников: ${participants.length}`);
-        
-        for (const pair of allPairs) {
-            if (teams.length >= fullTeams) {
-                console.log(`⏹️ [DEBUG] Достигнуто максимальное количество команд: ${teams.length}`);
-                break;
-            }
-            
-            // 🆕 ИСПРАВЛЕНИЕ: используем правильные поля для ID участников
-            const player1Id = pair.player1.id || pair.player1.participant_id;
-            const player2Id = pair.player2.id || pair.player2.participant_id;
-            
-            console.log(`🔍 [DEBUG] Проверяем пару: ${pair.player1.name} (ID: ${player1Id}) + ${pair.player2.name} (ID: ${player2Id})`);
-            console.log(`🔍 [DEBUG] Используемые игроки: [${Array.from(usedPlayers).join(', ')}]`);
-            
-            // Проверяем, что оба игрока не использованы
-            if (!usedPlayers.has(player1Id) && !usedPlayers.has(player2Id)) {
-                
-                teams.push({
-                    name: `Команда ${teams.length + 1}`,
-                    members: [pair.player1, pair.player2]
-                });
-                
-                usedPlayers.add(player1Id);
-                usedPlayers.add(player2Id);
-                
-                console.log(`✅ Команда ${teams.length}: ${pair.player1.name} + ${pair.player2.name} = ${Math.round(pair.pairAverage)} avg`);
-                console.log(`🔍 [DEBUG] Добавлены игроки в использованные: ${player1Id}, ${player2Id}`);
-            } else {
-                console.log(`⏭️ [DEBUG] Пара пропущена - игроки уже использованы`);
-            }
-        }
-        
-        console.log(`📊 [DEBUG] Финальный результат: создано ${teams.length} команд из ${fullTeams} возможных`);
+        console.log(`✅ [generateOptimalTeams] Создано ${teams.length} команд с балансом ${Math.round(balanceResult.finalBalance)}%`);
         return teams;
     }
 
     /**
-     * Алгоритм "змейка" для команд из 5+ игроков
+     * 🎯 ОПТИМАЛЬНОЕ ПОПАРНОЕ РАСПРЕДЕЛЕНИЕ (для команд из 2 игроков)
      */
-    static generateSnakeTeams(participants, teamSize, ratingType) {
-        console.log(`🎯 Используем классический алгоритм "змейка" для команд из ${teamSize} игроков`);
+    static generateOptimalPairs(participants, ratingType, averageRating) {
+        console.log(`💫 [generateOptimalPairs] Создаем оптимальные пары из ${participants.length} участников`);
+        
+        const teams = [];
+        const used = new Set();
+        const targetPairRating = averageRating * 2;
+        
+        // Список всех возможных пар с их отклонением от целевого рейтинга
+        const allPairs = [];
+        
+        for (let i = 0; i < participants.length; i++) {
+            for (let j = i + 1; j < participants.length; j++) {
+                const player1 = participants[i];
+                const player2 = participants[j];
+                const rating1 = this.normalizeParticipantRating(player1, ratingType);
+                const rating2 = this.normalizeParticipantRating(player2, ratingType);
+                const pairRating = rating1 + rating2;
+                const deviation = Math.abs(pairRating - targetPairRating);
+                
+                allPairs.push({
+                    player1,
+                    player2,
+                    rating1,
+                    rating2,
+                    pairRating,
+                    deviation,
+                    averageRating: pairRating / 2
+                });
+            }
+        }
+        
+        // Сортируем пары по отклонению (лучшие первыми)
+        allPairs.sort((a, b) => a.deviation - b.deviation);
+        
+        // Жадно выбираем лучшие непересекающиеся пары
+        for (const pair of allPairs) {
+            if (teams.length >= Math.floor(participants.length / 2)) break;
+            
+            const player1Id = pair.player1.id || pair.player1.participant_id;
+            const player2Id = pair.player2.id || pair.player2.participant_id;
+            
+            if (!used.has(player1Id) && !used.has(player2Id)) {
+                teams.push({
+                    name: `Команда ${teams.length + 1}`,
+                    members: [pair.player1, pair.player2],
+                    totalRating: pair.pairRating,
+                    averageRating: pair.averageRating
+                });
+                
+                used.add(player1Id);
+                used.add(player2Id);
+                
+                console.log(`✅ Пара ${teams.length}: ${pair.player1.name} (${pair.rating1}) + ${pair.player2.name} (${pair.rating2}) = ${Math.round(pair.averageRating)} средний`);
+            }
+        }
+        
+        return teams;
+    }
+
+    /**
+     * 🎯 ОПТИМАЛЬНОЕ РАСПРЕДЕЛЕНИЕ ДЛЯ БОЛЬШИХ КОМАНД (5+ игроков)
+     */
+    static generateOptimalLargeTeams(participants, teamSize, ratingType, averageRating) {
+        console.log(`🏆 [generateOptimalLargeTeams] Создаем команды из ${teamSize} игроков`);
         
         const fullTeams = Math.floor(participants.length / teamSize);
         const teams = [];
@@ -168,352 +193,295 @@ class MixTeamService {
         for (let i = 0; i < fullTeams; i++) {
             teams.push({
                 name: `Команда ${i + 1}`,
-                members: []
+                members: [],
+                totalRating: 0,
+                averageRating: 0
             });
         }
         
-        // Распределяем участников змейкой
+        // 🎯 НОВЫЙ АЛГОРИТМ: "УМНАЯ ЗМЕЙКА"
+        // Принцип: распределяем игроков так, чтобы в каждой команде были и сильные, и слабые
+        
         let participantIndex = 0;
         
-        for (let round = 0; round < teamSize; round++) {
+        // Раунд 1: Самые сильные игроки распределяются равномерно
+        for (let teamIndex = 0; teamIndex < fullTeams && participantIndex < participants.length; teamIndex++) {
+            const participant = participants[participantIndex];
+            const rating = this.normalizeParticipantRating(participant, ratingType);
+            
+            teams[teamIndex].members.push(participant);
+            teams[teamIndex].totalRating += rating;
+            
+            console.log(`🏅 Сильный игрок: ${participant.name} (${rating}) → Команда ${teamIndex + 1}`);
+            participantIndex++;
+        }
+        
+        // Раунды 2-N: Распределяем оставшихся игроков в обратном порядке для баланса
+        for (let round = 1; round < teamSize; round++) {
             const isEvenRound = round % 2 === 0;
             
             for (let i = 0; i < fullTeams && participantIndex < participants.length; i++) {
+                // В четных раундах идем прямо, в нечетных - обратно
                 const teamIndex = isEvenRound ? i : (fullTeams - 1 - i);
                 const participant = participants[participantIndex];
+                const rating = this.normalizeParticipantRating(participant, ratingType);
                 
                 teams[teamIndex].members.push(participant);
+                teams[teamIndex].totalRating += rating;
                 
-                const participantRating = this.normalizeParticipantRating(participant, ratingType);
-                console.log(`👤 Раунд ${round + 1}, игрок ${participant.name} (рейтинг: ${participantRating}) → Команда ${teamIndex + 1}`);
-                
+                console.log(`👤 Раунд ${round + 1}: ${participant.name} (${rating}) → Команда ${teamIndex + 1}`);
                 participantIndex++;
             }
         }
+        
+        // Обновляем средние рейтинги команд
+        teams.forEach(team => {
+            team.averageRating = team.totalRating / team.members.length;
+        });
         
         return teams;
     }
 
     /**
-     * Перебалансировка команд для достижения 15% расхождения
+     * 🎯 ОПТИМИЗАЦИЯ БАЛАНСА КОМАНД (целевое отклонение +-20%)
      */
-    static async rebalanceTeams(teams, ratingType, maxAttempts = 100) {
-        console.log(`⚖️ НАЧИНАЕМ ПРОВЕРКУ БАЛАНСА КОМАНД (макс. расхождение 15%)`);
+    static optimizeTeamBalance(teams, ratingType, globalAverageRating, maxIterations = 50) {
+        console.log(`⚖️ [optimizeTeamBalance] Оптимизируем баланс ${teams.length} команд (цель: ±20%)`);
         
-        let balanceCheck = this.checkTeamBalance(teams, ratingType);
-        let rebalanceAttempts = 0;
+        let iteration = 0;
+        let improved = true;
         
-        console.log(`📊 Изначальный баланс: ${Math.round(balanceCheck.percentageDiff)}%`);
-        
-        while (!balanceCheck.isBalanced && rebalanceAttempts < maxAttempts) {
-            rebalanceAttempts++;
+        while (improved && iteration < maxIterations) {
+            improved = false;
+            iteration++;
+            
+            // Рассчитываем текущий баланс
+            const teamAverages = teams.map(team => 
+                team.members.reduce((sum, member) => 
+                    sum + this.normalizeParticipantRating(member, ratingType), 0
+                ) / team.members.length
+            );
+            
+            const minAvg = Math.min(...teamAverages);
+            const maxAvg = Math.max(...teamAverages);
+            const currentBalance = ((maxAvg - minAvg) / globalAverageRating) * 100;
+            
+            console.log(`🔄 Итерация ${iteration}: баланс ${Math.round(currentBalance)}%`);
+            
+            // Если баланс уже хороший (<=20%), завершаем
+            if (currentBalance <= 20) {
+                console.log(`✅ Достигнут хороший баланс: ${Math.round(currentBalance)}%`);
+                break;
+            }
             
             // Находим самую сильную и самую слабую команды
-            const teamAverages = teams.map((team, index) => ({
-                index,
-                average: team.members.reduce((sum, member) => 
-                    sum + this.normalizeParticipantRating(member, ratingType), 0) / team.members.length,
-                team
-            }));
+            const strongestTeamIndex = teamAverages.indexOf(maxAvg);
+            const weakestTeamIndex = teamAverages.indexOf(minAvg);
             
-            teamAverages.sort((a, b) => b.average - a.average);
-            const strongestTeam = teamAverages[0];
-            const weakestTeam = teamAverages[teamAverages.length - 1];
+            // Пытаемся найти выгодный обмен
+            const strongestTeam = teams[strongestTeamIndex];
+            const weakestTeam = teams[weakestTeamIndex];
             
-            // Ищем оптимальный обмен игроками
-            let swapMade = false;
-            
-            const strongTeamMembers = [...strongestTeam.team.members].sort((a, b) => {
-                const ratingA = this.normalizeParticipantRating(a, ratingType);
-                const ratingB = this.normalizeParticipantRating(b, ratingType);
-                return ratingA - ratingB; // Слабейшие первыми
+            // Ищем самого слабого в сильной команде и самого сильного в слабой команде
+            const strongTeamWeakest = strongestTeam.members.reduce((weakest, member) => {
+                const memberRating = this.normalizeParticipantRating(member, ratingType);
+                const weakestRating = this.normalizeParticipantRating(weakest, ratingType);
+                return memberRating < weakestRating ? member : weakest;
             });
             
-            const weakTeamMembers = [...weakestTeam.team.members].sort((a, b) => {
-                const ratingA = this.normalizeParticipantRating(a, ratingType);
-                const ratingB = this.normalizeParticipantRating(b, ratingType);
-                return ratingB - ratingA; // Сильнейшие первыми
+            const weakTeamStrongest = weakestTeam.members.reduce((strongest, member) => {
+                const memberRating = this.normalizeParticipantRating(member, ratingType);
+                const strongestRating = this.normalizeParticipantRating(strongest, ratingType);
+                return memberRating > strongestRating ? member : strongest;
             });
             
-            // Пробуем обмены
-            outerLoop: for (const strongMember of strongTeamMembers) {
-                for (const weakMember of weakTeamMembers) {
-                    const strongRating = this.normalizeParticipantRating(strongMember, ratingType);
-                    const weakRating = this.normalizeParticipantRating(weakMember, ratingType);
+            const strongTeamWeakestRating = this.normalizeParticipantRating(strongTeamWeakest, ratingType);
+            const weakTeamStrongestRating = this.normalizeParticipantRating(weakTeamStrongest, ratingType);
+            
+            // Проверяем, улучшит ли обмен баланс
+            if (strongTeamWeakestRating < weakTeamStrongestRating) {
+                const ratingDiff = weakTeamStrongestRating - strongTeamWeakestRating;
+                
+                // Рассчитываем новые средние после обмена
+                const newStrongAvg = (teamAverages[strongestTeamIndex] * strongestTeam.members.length - strongTeamWeakestRating + weakTeamStrongestRating) / strongestTeam.members.length;
+                const newWeakAvg = (teamAverages[weakestTeamIndex] * weakestTeam.members.length - weakTeamStrongestRating + strongTeamWeakestRating) / weakestTeam.members.length;
+                
+                const newMaxAvg = Math.max(newStrongAvg, newWeakAvg, ...teamAverages.filter((_, i) => i !== strongestTeamIndex && i !== weakestTeamIndex));
+                const newMinAvg = Math.min(newStrongAvg, newWeakAvg, ...teamAverages.filter((_, i) => i !== strongestTeamIndex && i !== weakestTeamIndex));
+                const newBalance = ((newMaxAvg - newMinAvg) / globalAverageRating) * 100;
+                
+                // Если обмен улучшает баланс
+                if (newBalance < currentBalance) {
+                    console.log(`🔄 Обмен: ${strongTeamWeakest.name} (${strongTeamWeakestRating}) ↔ ${weakTeamStrongest.name} (${weakTeamStrongestRating})`);
                     
-                    if (Math.abs(strongRating - weakRating) < 50) continue;
+                    // Выполняем обмен
+                    const strongIndex = strongestTeam.members.findIndex(m => (m.id || m.participant_id) === (strongTeamWeakest.id || strongTeamWeakest.participant_id));
+                    const weakIndex = weakestTeam.members.findIndex(m => (m.id || m.participant_id) === (weakTeamStrongest.id || weakTeamStrongest.participant_id));
                     
-                    // Создаем тестовые команды
-                    const testTeams = teams.map((team, index) => {
-                        if (index === strongestTeam.index) {
-                            return {
-                                ...team,
-                                members: team.members.map(m => {
-                                    // 🆕 ИСПРАВЛЕНИЕ: правильное сравнение ID участников
-                                    const mId = m.id || m.participant_id;
-                                    const strongMemberId = strongMember.id || strongMember.participant_id;
-                                    return mId === strongMemberId ? weakMember : m;
-                                })
-                            };
-                        }
-                        if (index === weakestTeam.index) {
-                            return {
-                                ...team,
-                                members: team.members.map(m => {
-                                    // 🆕 ИСПРАВЛЕНИЕ: правильное сравнение ID участников
-                                    const mId = m.id || m.participant_id;
-                                    const weakMemberId = weakMember.id || weakMember.participant_id;
-                                    return mId === weakMemberId ? strongMember : m;
-                                })
-                            };
-                        }
-                        return team;
-                    });
+                    strongestTeam.members[strongIndex] = weakTeamStrongest;
+                    weakestTeam.members[weakIndex] = strongTeamWeakest;
                     
-                    const testBalance = this.checkTeamBalance(testTeams, ratingType);
-                    
-                    if (testBalance.percentageDiff < balanceCheck.percentageDiff) {
-                        console.log(`✅ Выгодный обмен: ${strongMember.name} ↔ ${weakMember.name}`);
-                        
-                        // Применяем обмен
-                        teams[strongestTeam.index] = testTeams[strongestTeam.index];
-                        teams[weakestTeam.index] = testTeams[weakestTeam.index];
-                        
-                        swapMade = true;
-                        break outerLoop;
-                    }
+                    improved = true;
                 }
             }
-            
-            // Если обмен не найден, пробуем случайную перестановку
-            if (!swapMade && rebalanceAttempts % 10 === 0) {
-                const team1Index = Math.floor(Math.random() * teams.length);
-                let team2Index = Math.floor(Math.random() * teams.length);
-                while (team2Index === team1Index) {
-                    team2Index = Math.floor(Math.random() * teams.length);
-                }
-                
-                const member1Index = Math.floor(Math.random() * teams[team1Index].members.length);
-                const member2Index = Math.floor(Math.random() * teams[team2Index].members.length);
-                
-                const member1 = teams[team1Index].members[member1Index];
-                const member2 = teams[team2Index].members[member2Index];
-                
-                teams[team1Index].members[member1Index] = member2;
-                teams[team2Index].members[member2Index] = member1;
-                
-                swapMade = true;
-            }
-            
-            if (!swapMade) break;
-            
-            balanceCheck = this.checkTeamBalance(teams, ratingType);
         }
         
-        const finalBalance = this.checkTeamBalance(teams, ratingType);
-        console.log(`⚖️ ФИНАЛЬНЫЙ БАЛАНС: ${Math.round(finalBalance.percentageDiff)}% за ${rebalanceAttempts} попыток`);
+        // Финальный расчет баланса
+        const finalTeamAverages = teams.map(team => 
+            team.members.reduce((sum, member) => 
+                sum + this.normalizeParticipantRating(member, ratingType), 0
+            ) / team.members.length
+        );
         
-        return { teams, balanceStats: finalBalance, rebalanceAttempts };
+        const finalMinAvg = Math.min(...finalTeamAverages);
+        const finalMaxAvg = Math.max(...finalTeamAverages);
+        const finalBalance = ((finalMaxAvg - finalMinAvg) / globalAverageRating) * 100;
+        
+        console.log(`✅ [optimizeTeamBalance] Финальный баланс: ${Math.round(finalBalance)}% за ${iteration} итераций`);
+        
+        return {
+            finalBalance,
+            iterations: iteration,
+            teamAverages: finalTeamAverages,
+            isBalanced: finalBalance <= 20
+        };
     }
 
     /**
-     * Генерация микс команд
+     * 🎯 ОСНОВНОЙ МЕТОД ГЕНЕРАЦИИ КОМАНД (обновлен для использования нового алгоритма)
      */
-    static async generateMixTeams(tournamentId, userId, ratingType = 'faceit', shuffle = false) {
-        console.log(`🎯 Генерация микс команд для турнира ${tournamentId}`);
-        
-        const client = await pool.connect();
+    static async generateTeams(tournamentId, ratingType = 'faceit') {
+        const startTime = Date.now();
+        console.log(`🚀 [generateTeams] Начинаем формирование команд для турнира ${tournamentId} с типом рейтинга ${ratingType}`);
+
         try {
-            await client.query('BEGIN');
-            
-            // Получаем турнир с team_size
+            // 🔍 1. Получаем информацию о турнире
             const tournament = await TournamentRepository.getById(tournamentId);
             if (!tournament) {
-                throw new Error('Турнир не найден');
+                throw new Error(`Турнир ${tournamentId} не найден`);
             }
-            
-            if (tournament.format !== 'mix') {
-                throw new Error('Генерация команд доступна только для микс турниров');
-            }
-            
-            const teamSize = parseInt(tournament.team_size) || 5;
-            console.log(`📊 Размер команды: ${teamSize}`);
-            
-            // Получаем участников
+
+            console.log(`📊 Турнир: "${tournament.name}", размер команды: ${tournament.team_size}`);
+
+            // 🔍 2. Получаем всех участников турнира
             const participants = await ParticipantRepository.getAllByTournamentId(tournamentId);
-            if (participants.length < 2) {
-                throw new Error('Недостаточно участников для формирования команд');
+            if (!participants || participants.length === 0) {
+                throw new Error('Нет участников для формирования команд');
             }
-            
-            console.log(`👥 Всего участников: ${participants.length}`);
-            
-            // Обогащаем участников нормализованными рейтингами
-            participants.forEach(participant => {
-                participant.normalized_faceit_rating = this.normalizeParticipantRating(participant, 'faceit');
-                participant.normalized_premier_rating = this.normalizeParticipantRating(participant, 'premier');
-            });
-            
-            // Сортируем участников по рейтингу
-            const sortedParticipants = [...participants].sort((a, b) => {
-                const ratingA = ratingType === 'faceit' ? a.normalized_faceit_rating : a.normalized_premier_rating;
-                const ratingB = ratingType === 'faceit' ? b.normalized_faceit_rating : b.normalized_premier_rating;
-                
-                if (shuffle) {
-                    return Math.random() - 0.5; // Случайное перемешивание
-                }
-                
-                if (ratingB === ratingA) {
-                    return Math.random() - 0.5; // Случайность для равных рейтингов
-                }
-                
-                return ratingB - ratingA; // По убыванию
-            });
-            
+
+            console.log(`👥 Найдено ${participants.length} участников для формирования команд`);
+
+            // 🔍 3. Проверяем достаточность участников
+            const teamSize = parseInt(tournament.team_size, 10) || 5;
             const fullTeams = Math.floor(participants.length / teamSize);
             const playersInTeams = fullTeams * teamSize;
-            const remainingPlayers = participants.length - playersInTeams;
-            
-            console.log(`📊 Статистика: ${fullTeams} команд, ${playersInTeams} в командах, ${remainingPlayers} вне команд`);
-            
+
             if (fullTeams === 0) {
-                throw new Error(`Недостаточно участников. Нужно минимум ${teamSize}, есть ${participants.length}`);
+                throw new Error(`Недостаточно участников для формирования команд. Нужно минимум ${teamSize}, а есть ${participants.length}`);
             }
-            
-            // Удаляем существующие команды
-            await TeamRepository.deleteAllByTournamentId(tournamentId, client);
-            
-            // Генерируем команды в зависимости от размера
-            let teams;
-            if (teamSize === 2) {
-                teams = this.generatePairedTeams(sortedParticipants.slice(0, playersInTeams), ratingType);
-            } else {
-                teams = this.generateSnakeTeams(sortedParticipants.slice(0, playersInTeams), teamSize, ratingType);
-            }
-            
-            // Перебалансируем команды
-            const balanceResult = await this.rebalanceTeams(teams, ratingType);
-            teams = balanceResult.teams;
-            
-            // Сохраняем команды в БД
+
+            console.log(`📊 Статистика: ${participants.length} участников → ${fullTeams} команд по ${teamSize} игроков (${playersInTeams} в командах, ${participants.length - playersInTeams} останется)`);
+
+            // 🔍 4. Очищаем существующие команды
+            console.log(`🗑️ Удаляем существующие команды турнира ${tournamentId}...`);
+            await TeamRepository.deleteAllByTournamentId(tournamentId);
+
+            // 🔍 5. Генерируем новые команды с улучшенным алгоритмом
+            console.log(`🎯 Запускаем новый математический алгоритм формирования команд...`);
+            const teams = this.generateOptimalTeams(participants, teamSize, ratingType);
+
+            console.log(`✅ Сгенерировано ${teams.length} оптимально сбалансированных команд`);
+
+            // 🔍 6. Сохраняем команды в базе данных
+            console.log(`💾 Сохраняем команды в базе данных...`);
             const createdTeams = [];
-            const participantIdsInTeams = [];
-            
-            console.log(`💾 [DEBUG] Сохраняем ${teams.length} команд в БД...`);
-            
-            for (const team of teams) {
-                const teamResult = await client.query(
-                    'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING *',
-                    [tournamentId, team.name, tournament.created_by]
-                );
+
+            for (let i = 0; i < teams.length; i++) {
+                const team = teams[i];
                 
-                const teamId = teamResult.rows[0].id;
-                const members = [];
-                
-                console.log(`💾 [DEBUG] Команда "${team.name}" создана с ID: ${teamId}`);
-                
+                // Создаем команду
+                const createdTeam = await TeamRepository.create({
+                    tournament_id: tournamentId,
+                    name: team.name,
+                    creator_id: tournament.created_by
+                });
+
+                // Добавляем участников в команду
+                const teamMembers = [];
                 for (const member of team.members) {
-                    // 🆕 ИСПРАВЛЕНИЕ: используем правильные поля для ID участников
-                    const memberId = member.id || member.participant_id;
-                    const memberUserId = member.user_id;
-                    
-                    console.log(`👤 [DEBUG] Добавляем участника: ${member.name} (ID: ${memberId}, User ID: ${memberUserId})`);
-                    
-                    await client.query(
-                        'INSERT INTO tournament_team_members (team_id, user_id, participant_id) VALUES ($1, $2, $3)',
-                        [teamId, memberUserId, memberId]
-                    );
-                    
-                    participantIdsInTeams.push(memberId);
-                    members.push({
-                        participant_id: memberId,
-                        user_id: memberUserId,
-                        name: member.name || `Участник ${memberId}`, // 🆕 Защита от null names
-                        faceit_elo: member.faceit_elo || member.user_faceit_elo,
-                        cs2_premier_rank: member.cs2_premier_rank || member.user_premier_rank,
-                        normalized_faceit_rating: member.normalized_faceit_rating,
-                        normalized_premier_rating: member.normalized_premier_rating
+                    await TeamRepository.addMember(createdTeam.id, {
+                        user_id: member.user_id,
+                        participant_id: member.id || member.participant_id
+                    });
+
+                    teamMembers.push({
+                        ...member,
+                        team_id: createdTeam.id
                     });
                 }
-                
+
+                // Обновляем флаг in_team для участников
+                const participantIds = team.members.map(m => m.id || m.participant_id).filter(Boolean);
+                if (participantIds.length > 0) {
+                    await ParticipantRepository.updateInTeamStatus(participantIds, true);
+                }
+
                 createdTeams.push({
-                    id: teamId,
-                    name: team.name,
-                    members: members,
-                    averageRating: balanceResult.balanceStats.teamAverages ? 
-                        Math.round(balanceResult.balanceStats.teamAverages[createdTeams.length]) : 0
+                    ...createdTeam,
+                    members: teamMembers,
+                    averageRating: team.averageRating || this.calculateTeamAverageRating(team.members, ratingType)
                 });
-                
-                console.log(`✅ [DEBUG] Команда "${team.name}" сохранена с ${members.length} участниками`);
+
+                console.log(`✅ Команда "${team.name}" создана с ${team.members.length} участниками`);
             }
-            
-            console.log(`📊 [DEBUG] participantIdsInTeams: [${participantIdsInTeams.join(', ')}]`);
-            
-            // Обновляем флаги участников
-            if (participantIdsInTeams.length > 0) {
-                await client.query(
-                    'UPDATE tournament_participants SET in_team = TRUE WHERE id = ANY($1::int[])',
-                    [participantIdsInTeams]
-                );
-                console.log(`✅ [DEBUG] Обновлены флаги in_team для ${participantIdsInTeams.length} участников`);
-            }
-            
-            const participantIdsNotInTeams = sortedParticipants
-                .slice(playersInTeams)
-                .map(p => p.id || p.participant_id); // 🆝 ИСПРАВЛЕНИЕ: правильные ID
-            
-            console.log(`📊 [DEBUG] participantIdsNotInTeams: [${participantIdsNotInTeams.join(', ')}]`);
-            
-            if (participantIdsNotInTeams.length > 0) {
-                await client.query(
-                    'UPDATE tournament_participants SET in_team = FALSE WHERE id = ANY($1::int[])',
-                    [participantIdsNotInTeams]
-                );
-                console.log(`✅ [DEBUG] Обновлены флаги in_team=FALSE для ${participantIdsNotInTeams.length} участников`);
-            }
-            
-            // Обновляем тип турнира на командный
-            await client.query(
-                'UPDATE tournaments SET participant_type = $1 WHERE id = $2',
-                ['team', tournamentId]
-            );
-            
-            await client.query('COMMIT');
-            
-            // Логируем событие
-            await logTournamentEvent(tournamentId, userId, 'mix_teams_generated', {
-                teamsCount: createdTeams.length,
-                participantsCount: playersInTeams,
-                ratingType,
-                algorithm: teamSize === 2 ? 'paired' : 'snake',
-                balancePercentage: balanceResult.balanceStats.percentageDiff
-            });
-            
-            // Отправляем объявление в чат
-            await sendTournamentChatAnnouncement(
-                tournamentId,
-                `🏆 Сформированы микс команды! Создано ${createdTeams.length} команд из ${playersInTeams} участников. Баланс команд: ${Math.round(balanceResult.balanceStats.percentageDiff)}%`
-            );
-            
+
+            // 🔍 7. Обновляем тип участников турнира на 'team'
+            console.log(`🔄 Обновляем тип участников турнира на 'team'...`);
+            await TournamentRepository.updateParticipantType(tournamentId, 'team');
+
+            // 🔍 8. Финальная статистика
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+
+            // Рассчитываем финальный баланс команд
+            const teamAverages = createdTeams.map(team => team.averageRating);
+            const minAvg = Math.min(...teamAverages);
+            const maxAvg = Math.max(...teamAverages);
+            const overallAvg = teamAverages.reduce((sum, avg) => sum + avg, 0) / teamAverages.length;
+            const balance = ((maxAvg - minAvg) / overallAvg) * 100;
+
+            console.log(`🎉 [generateTeams] УСПЕШНО ЗАВЕРШЕНО за ${duration}ms:`);
+            console.log(`   📊 Создано команд: ${createdTeams.length}`);
+            console.log(`   👥 Участников в командах: ${playersInTeams}`);
+            console.log(`   ⚖️ Баланс команд: ${Math.round(balance)}%`);
+            console.log(`   🎯 Средний рейтинг: min=${Math.round(minAvg)}, max=${Math.round(maxAvg)}, общий=${Math.round(overallAvg)}`);
+
             return {
+                success: true,
                 teams: createdTeams,
                 summary: {
                     totalParticipants: participants.length,
-                    teamsCreated: fullTeams,
+                    teamsCreated: createdTeams.length,
                     participantsInTeams: playersInTeams,
-                    participantsNotInTeams: remainingPlayers,
-                    ratingType,
-                    teamSize,
-                    algorithm: teamSize === 2 ? 'paired_optimization' : 'snake_distribution',
-                    balanceStats: balanceResult.balanceStats,
-                    rebalanceAttempts: balanceResult.rebalanceAttempts
+                    participantsNotInTeams: participants.length - playersInTeams,
+                    teamSize: teamSize,
+                    ratingType: ratingType,
+                    algorithm: teamSize === 2 ? 'optimal_pairs' : 'smart_snake',
+                    balance: {
+                        percentage: Math.round(balance * 100) / 100,
+                        isGood: balance <= 20,
+                        minTeamRating: Math.round(minAvg),
+                        maxTeamRating: Math.round(maxAvg),
+                        averageRating: Math.round(overallAvg)
+                    },
+                    duration: duration
                 }
             };
-            
+
         } catch (error) {
-            await client.query('ROLLBACK');
+            const endTime = Date.now();
+            console.error(`❌ [generateTeams] Ошибка формирования команд за ${endTime - startTime}ms:`, error.message);
             throw error;
-        } finally {
-            client.release();
         }
     }
 

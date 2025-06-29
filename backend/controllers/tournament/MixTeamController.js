@@ -3,6 +3,11 @@ const TournamentService = require('../../services/tournament/TournamentService')
 const BracketService = require('../../services/tournament/BracketService');
 const { asyncHandler } = require('../../utils/tournament/asyncHandler');
 const { broadcastTournamentUpdate } = require('../../notifications');
+const { TournamentValidator } = require('../../utils/tournament/TournamentValidator');
+const { MatchService } = require('../../services/tournament/MatchService');
+const { TeamRepository } = require('../../repositories/tournament/TeamRepository');
+const { logTournamentEvent } = require('../../utils/tournament/logTournamentEvent');
+const { sendTournamentChatAnnouncement } = require('../../utils/tournament/sendTournamentChatAnnouncement');
 
 class MixTeamController {
     /**
@@ -170,14 +175,205 @@ class MixTeamController {
     });
 
     /**
-     * 🆕 Алиас для generateMixTeams (обратная совместимость с фронтендом)
-     * POST /api/tournaments/:id/form-teams
+     * 🎯 ГЕНЕРАЦИЯ КОМАНД (обновлено для нового алгоритма)
      */
-    static formTeamsAlias = asyncHandler(async (req, res) => {
-        console.log(`🔄 [MixTeamController] Алиас form-teams перенаправляет на mix-generate-teams`);
+    static formTeams = asyncHandler(async (req, res) => {
+        console.log(`🚀 [MixTeamController.formTeams] Начинаем формирование команд для турнира ${req.params.id}`);
+        console.log(`📊 Параметры запроса:`, req.body);
         
-        // Просто вызываем основной метод генерации команд
-        return MixTeamController.generateMixTeams(req, res);
+        const tournamentId = parseInt(req.params.id);
+        const { ratingType = 'faceit' } = req.body;
+        const userId = req.user.id;
+        
+        // Валидация входных данных
+        const validationResult = TournamentValidator.validateFormTeamsRequest({
+            tournamentId,
+            ratingType,
+            userId
+        });
+        
+        if (!validationResult.isValid) {
+            console.log(`❌ Валидация не пройдена:`, validationResult.errors);
+            return res.status(400).json({ 
+                error: 'Ошибка валидации',
+                details: validationResult.errors 
+            });
+        }
+        
+        try {
+            // Проверяем права доступа
+            const hasPermission = await TournamentService.checkUserPermission(tournamentId, userId, 'manage_teams');
+            if (!hasPermission) {
+                return res.status(403).json({ 
+                    error: 'Недостаточно прав для формирования команд' 
+                });
+            }
+            
+            // Получаем турнир и проверяем что это микс турнир
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+            
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Формирование команд доступно только для микс турниров' 
+                });
+            }
+            
+            if (tournament.status !== 'active') {
+                return res.status(400).json({ 
+                    error: 'Формирование команд доступно только для активных турниров' 
+                });
+            }
+            
+            // Проверяем что сетка еще не сгенерирована
+            const matches = await MatchService.getMatchesByTournament(tournamentId);
+            if (matches && matches.length > 0) {
+                return res.status(400).json({ 
+                    error: 'Нельзя формировать команды после генерации турнирной сетки' 
+                });
+            }
+            
+            console.log(`✅ Все проверки пройдены, запускаем новый алгоритм формирования команд`);
+            
+            // 🆕 ИСПОЛЬЗУЕМ НОВЫЙ УЛУЧШЕННЫЙ АЛГОРИТМ
+            const result = await MixTeamService.generateTeams(tournamentId, ratingType);
+            
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'mix_teams_generated', {
+                teamsCount: result.teams.length,
+                participantsCount: result.summary.participantsInTeams,
+                ratingType: ratingType,
+                algorithm: result.summary.algorithm,
+                balance: result.summary.balance,
+                duration: result.summary.duration
+            });
+            
+            // Отправляем объявление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🏆 Сформированы микс команды с новым алгоритмом! Создано ${result.teams.length} команд из ${result.summary.participantsInTeams} участников. Баланс команд: ${result.summary.balance.percentage}% (${result.summary.balance.isGood ? 'отличный' : 'требует улучшения'})`
+            );
+            
+            console.log(`🎉 [MixTeamController.formTeams] Команды успешно сформированы за ${result.summary.duration}ms`);
+            
+            res.status(200).json({
+                success: true,
+                message: `Команды успешно сформированы с использованием ${result.summary.algorithm === 'optimal_pairs' ? 'оптимального попарного' : 'умной змейки'} алгоритма`,
+                teams: result.teams,
+                summary: result.summary
+            });
+            
+        } catch (error) {
+            console.error(`❌ [MixTeamController.formTeams] Ошибка:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при формировании команд',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+        }
+    });
+
+    /**
+     * 🔄 ПЕРЕФОРМИРОВАНИЕ КОМАНД (обновлено для нового алгоритма)
+     */
+    static regenerateTeams = asyncHandler(async (req, res) => {
+        console.log(`🔄 [MixTeamController.regenerateTeams] Переформирование команд для турнира ${req.params.id}`);
+        
+        const tournamentId = parseInt(req.params.id);
+        const { ratingType = 'faceit', shuffle = true } = req.body;
+        const userId = req.user.id;
+        
+        try {
+            // Проверяем права доступа
+            const hasPermission = await TournamentService.checkUserPermission(tournamentId, userId, 'manage_teams');
+            if (!hasPermission) {
+                return res.status(403).json({ 
+                    error: 'Недостаточно прав для переформирования команд' 
+                });
+            }
+            
+            // Получаем турнир
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+            
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Переформирование доступно только для микс турниров' 
+                });
+            }
+            
+            if (tournament.status !== 'active') {
+                return res.status(400).json({ 
+                    error: 'Переформирование доступно только для активных турниров' 
+                });
+            }
+            
+            // Проверяем наличие существующих команд
+            const existingTeams = await TeamRepository.getByTournamentId(tournamentId);
+            if (!existingTeams || existingTeams.length === 0) {
+                return res.status(400).json({ 
+                    error: 'Нет команд для переформирования. Сначала сформируйте команды.' 
+                });
+            }
+            
+            console.log(`📊 Найдено ${existingTeams.length} существующих команд для переформирования`);
+            
+            // Проверяем и удаляем турнирную сетку если она есть
+            let bracketDeleted = false;
+            const matches = await MatchService.getMatchesByTournament(tournamentId);
+            if (matches && matches.length > 0) {
+                console.log(`🗑️ Удаляем существующую турнирную сетку (${matches.length} матчей)`);
+                await BracketService.clearBracket(tournamentId);
+                bracketDeleted = true;
+            }
+            
+            // 🆕 ИСПОЛЬЗУЕМ НОВЫЙ УЛУЧШЕННЫЙ АЛГОРИТМ ДЛЯ ПЕРЕФОРМИРОВАНИЯ
+            console.log(`🎯 Запускаем переформирование с новым алгоритмом (shuffle: ${shuffle})`);
+            const result = await MixTeamService.generateTeams(tournamentId, ratingType);
+            
+            // Логируем событие переформирования
+            await logTournamentEvent(tournamentId, userId, 'mix_teams_regenerated', {
+                previousTeamsCount: existingTeams.length,
+                newTeamsCount: result.teams.length,
+                participantsCount: result.summary.participantsInTeams,
+                ratingType: ratingType,
+                algorithm: result.summary.algorithm,
+                balance: result.summary.balance,
+                bracketDeleted: bracketDeleted,
+                shuffle: shuffle,
+                duration: result.summary.duration
+            });
+            
+            // Отправляем объявление в чат
+            let chatMessage = `🔄 Команды переформированы с новым алгоритмом! Создано ${result.teams.length} команд из ${result.summary.participantsInTeams} участников. Баланс: ${result.summary.balance.percentage}%`;
+            if (bracketDeleted) {
+                chatMessage += '. ⚠️ Турнирная сетка была удалена - требуется повторная генерация.';
+            }
+            
+            await sendTournamentChatAnnouncement(tournamentId, chatMessage);
+            
+            console.log(`🎉 [MixTeamController.regenerateTeams] Команды успешно переформированы за ${result.summary.duration}ms`);
+            
+            res.status(200).json({
+                success: true,
+                message: bracketDeleted 
+                    ? 'Команды переформированы, турнирная сетка удалена. Необходимо заново сгенерировать сетку.'
+                    : 'Команды успешно переформированы',
+                teams: result.teams,
+                summary: result.summary,
+                bracketDeleted: bracketDeleted
+            });
+            
+        } catch (error) {
+            console.error(`❌ [MixTeamController.regenerateTeams] Ошибка:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при переформировании команд',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+        }
     });
 
     /**
@@ -419,6 +615,35 @@ class MixTeamController {
                 details: error.message 
             });
         }
+    });
+
+    /**
+     * 🔄 АЛИАС МЕТОДЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ С ФРОНТЕНДОМ
+     */
+    
+    /**
+     * 🆕 Алиас для formTeams (обратная совместимость с фронтендом)
+     * POST /api/tournaments/:id/form-teams
+     */
+    static formTeamsAlias = asyncHandler(async (req, res) => {
+        console.log(`🔄 [MixTeamController] Алиас form-teams перенаправляет на новый formTeams`);
+        return MixTeamController.formTeams(req, res);
+    });
+
+    /**
+     * Алиас для generateMixTeams (старое название)
+     */
+    static generateMixTeams = asyncHandler(async (req, res) => {
+        console.log(`🔄 [MixTeamController] Алиас generateMixTeams перенаправляет на новый formTeams`);
+        return MixTeamController.formTeams(req, res);
+    });
+
+    /**
+     * Алиас для getOriginalParticipants
+     */
+    static getOriginalParticipantsAlias = asyncHandler(async (req, res) => {
+        console.log(`🔄 [MixTeamController] Алиас getOriginalParticipantsAlias перенаправляет на getOriginalParticipants`);
+        return MixTeamController.getOriginalParticipants(req, res);
     });
 }
 
