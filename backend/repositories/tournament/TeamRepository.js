@@ -113,6 +113,48 @@ class TeamRepository {
     /**
      * Получение всех команд турнира с участниками
      */
+    static async getByTournamentId(tournamentId) {
+        console.log(`🔍 TeamRepository: Получение команд турнира ${tournamentId}`);
+        
+        try {
+            const result = await pool.query(`
+                SELECT 
+                    tt.*,
+                    COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'id', ttm.id,
+                                'user_id', ttm.user_id,
+                                'participant_id', ttm.participant_id,
+                                'username', u.username,
+                                'avatar_url', u.avatar_url,
+                                'name', COALESCE(tp.name, u.username),
+                                'faceit_elo', tp.faceit_elo,
+                                'user_faceit_elo', tp.user_faceit_elo,
+                                'faceit_rating', tp.faceit_rating,
+                                'steam_rating', tp.steam_rating,
+                                'user_steam_rating', tp.user_steam_rating
+                            )
+                        ) FILTER (WHERE ttm.id IS NOT NULL), 
+                        '[]'
+                    ) as members
+                FROM tournament_teams tt
+                LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                LEFT JOIN users u ON ttm.user_id = u.id
+                LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                WHERE tt.tournament_id = $1
+                GROUP BY tt.id
+                ORDER BY tt.id
+            `, [tournamentId]);
+            
+            console.log(`✅ TeamRepository: Найдено ${result.rows.length} команд для турнира ${tournamentId}`);
+            return result.rows;
+            
+        } catch (error) {
+            console.error(`❌ TeamRepository: Ошибка получения команд турнира ${tournamentId}:`, error);
+            throw error;
+        }
+    }
 }
 
 module.exports = TeamRepository; 

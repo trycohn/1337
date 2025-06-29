@@ -4,8 +4,8 @@ const BracketService = require('../../services/tournament/BracketService');
 const { asyncHandler } = require('../../utils/tournament/asyncHandler');
 const { broadcastTournamentUpdate } = require('../../notifications');
 const { TournamentValidator } = require('../../utils/tournament/TournamentValidator');
-const { MatchService } = require('../../services/tournament/MatchService');
-const { TeamRepository } = require('../../repositories/tournament/TeamRepository');
+const MatchService = require('../../services/tournament/MatchService');
+const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 
