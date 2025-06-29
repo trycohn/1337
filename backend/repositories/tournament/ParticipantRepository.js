@@ -228,6 +228,28 @@ class ParticipantRepository {
 
         return { canParticipate: true };
     }
+
+    /**
+     * 🆕 Массовое обновление флага in_team для участников
+     */
+    static async updateInTeamStatus(participantIds, inTeamStatus) {
+        if (!participantIds || participantIds.length === 0) {
+            console.log('⚠️ updateInTeamStatus: массив участников пуст');
+            return { rowCount: 0 };
+        }
+
+        console.log(`🔄 ParticipantRepository: обновляем in_team=${inTeamStatus} для ${participantIds.length} участников: [${participantIds.join(', ')}]`);
+
+        const result = await pool.query(
+            `UPDATE tournament_participants 
+             SET in_team = $1 
+             WHERE id = ANY($2::int[])`,
+            [inTeamStatus, participantIds]
+        );
+
+        console.log(`✅ ParticipantRepository: обновлено ${result.rowCount} записей`);
+        return result;
+    }
 }
 
 module.exports = ParticipantRepository; 
