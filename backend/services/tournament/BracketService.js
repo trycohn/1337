@@ -1,8 +1,8 @@
 const pool = require('../../db');
-const { generateBracket: bracketGenerator } = require('../../bracketGenerators');
-const { logTournamentEvent } = require('../../utils/tournamentLogger');
+const { generateBracket: bracketGenerator } = require('../../bracketGenerator');
+const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../ChatService');
-const { broadcastTournamentUpdate } = require('../../utils/websocket');
+const { broadcastTournamentUpdate } = require('../../notifications');
 
 /**
  * 🎯 BracketService v2.0 - Упрощенная и надежная система генерации сеток
