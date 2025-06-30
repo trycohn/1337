@@ -183,21 +183,7 @@ const TeamGenerator = ({
 
     // 🎯 УЛУЧШЕННАЯ ЛОГИКА УСТАНОВКИ КОМАНД ИЗ ТУРНИРА
     useEffect(() => {
-        if (tournament && tournament.team_size) {
-            const teamSizeNumber = parseInt(tournament.team_size);
-            if (!isNaN(teamSizeNumber)) {
-                setTeamSize(teamSizeNumber);
-            }
-        }
-        
-        // 🎯 ВОССТАНАВЛИВАЕМ СОХРАНЕННЫЙ ТИП РЕЙТИНГА ИЗ localStorage
-        if (tournament?.id) {
-            const savedRatingType = localStorage.getItem(`tournament_${tournament.id}_ratingType`);
-            if (savedRatingType) {
-                console.log('🔍 Загружен сохраненный ratingType:', savedRatingType);
-                setRatingType(savedRatingType);
-            }
-        }
+        // 🎯 Не нужно устанавливать teamSize и ratingType, они берутся из турнира
         
         // 🎯 ИСПРАВЛЕНИЕ: Устанавливаем команды из турнира ТОЛЬКО если:
         // 1. Команды есть в турнире
@@ -236,7 +222,7 @@ const TeamGenerator = ({
             
             console.log('✅ Команды установлены без вызова onTeamsGenerated (предотвращение цикла)');
         }
-    }, [tournament?.id, tournament?.team_size, tournament?.teams, mixedTeams.length, ratingType, isReforming]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
+    }, [tournament?.id, tournament?.teams, mixedTeams.length, ratingType, isReforming]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
 
     // Функция для загрузки команд турнира
     const fetchTeams = useCallback(async () => {
