@@ -37,10 +37,19 @@ const router = express.Router();
 
 // 📋 **ОСНОВНЫЕ ТУРНИРНЫЕ ОПЕРАЦИИ**
 
+// 🔧 ВАЖНО: СПЕЦИФИЧНЫЕ МАРШРУТЫ ДОЛЖНЫ БЫТЬ ПЕРЕД ОБЩИМИ!
+// Это исправляет ошибку когда /games интерпретировался как /:id
+
+// Получение списка игр (ДОЛЖНО БЫТЬ ПЕРЕД /:id!)
+router.get('/games/list', TournamentController.getGames);
+
+// 🔧 АЛИАС ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ: старый путь /games
+router.get('/games', TournamentController.getGames);
+
 // Получение всех турниров
 router.get('/', TournamentController.getAllTournaments);
 
-// Получение турнира по ID
+// Получение турнира по ID (ПОСЛЕ специфичных маршрутов!)
 router.get('/:id', TournamentController.getTournamentById);
 
 // Создание нового турнира (требует авторизации)
@@ -54,12 +63,6 @@ router.delete('/:id', authenticateToken, TournamentController.deleteTournament);
 
 // Начало турнира (требует авторизации)
 router.post('/:id/start', authenticateToken, TournamentController.startTournament);
-
-// Получение списка игр
-router.get('/games/list', TournamentController.getGames);
-
-// 🔧 АЛИАС ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ: старый путь /games
-router.get('/games', TournamentController.getGames);
 
 // Сброс результатов матчей
 router.post('/:id/reset-match-results', authenticateToken, TournamentController.resetMatchResults);

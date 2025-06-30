@@ -318,6 +318,7 @@ const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/teams', teamsRouter);
+app.use('/api/games', gamesRouter);
 app.use('/api/tournaments', modularTournamentsRouter); // 🥇 ПЕРВЫЙ приоритет: МОДУЛЬНАЯ АРХИТЕКТУРА V4.4.0
 app.use('/api/tournaments', tournamentsFixRouter); // 🥈 ВТОРОЙ приоритет: исправленные endpoint'ы
 app.use('/api/tournaments', tournamentsLegacyRouter); // 🥉 ТРЕТИЙ приоритет: легаси endpoint'ы (backup)
