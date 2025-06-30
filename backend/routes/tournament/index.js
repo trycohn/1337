@@ -151,6 +151,9 @@ router.get('/:id/matches/check-duplicates', authenticateToken, MatchController.c
 // 🧹 Очистка дублирующихся матчей
 router.post('/:id/matches/cleanup-duplicates', authenticateToken, MatchController.cleanupDuplicateMatches);
 
+// 🔧 Диагностика блокировок базы данных (только для администраторов)
+router.get('/:id/matches/check-database-locks', authenticateToken, MatchController.checkDatabaseLocks);
+
 // 🛡️ **АДМИНИСТРАТИВНЫЕ ФУНКЦИИ**
 
 // Запрос на администрирование

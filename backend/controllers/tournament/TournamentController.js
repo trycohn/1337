@@ -189,9 +189,9 @@ class TournamentController {
         console.log('📊 [getGames] Request body:', req.body);
         
         try {
-            const games = await TournamentService.getGames();
+        const games = await TournamentService.getGames();
             console.log(`✅ [getGames] Успешно получено ${games.length} игр`);
-            res.json(games);
+        res.json(games);
         } catch (error) {
             console.error('❌ [getGames] Ошибка получения списка игр:', error);
             throw error; // asyncHandler обработает ошибку

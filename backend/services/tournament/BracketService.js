@@ -50,12 +50,39 @@ class BracketService {
         try {
             await client.query('BEGIN');
             
+            // 🔧 ИСПРАВЛЕНИЕ: Устанавливаем таймаут для предотвращения зависания
+            console.log(`🔒 [generateBracket] Устанавливаем таймаут 10 секунд для блокировки`);
+            await client.query('SET statement_timeout = 10000'); // 10 секунд
+            
             // 🔒 ТРАНЗАКЦИОННАЯ ЗАЩИТА: Блокируем турнир для предотвращения одновременной генерации
             console.log(`🔒 [generateBracket] Блокируем турнир ${tournamentId} для безопасной генерации`);
-            const tournamentResult = await client.query(
-                'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE',
-                [tournamentId]
-            );
+            
+            let tournamentResult;
+            try {
+                tournamentResult = await client.query(
+                    'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
+                    [tournamentId]
+                );
+                console.log(`✅ [generateBracket] Турнир ${tournamentId} успешно заблокирован`);
+            } catch (lockError) {
+                if (lockError.code === '55P03') {
+                    // Lock not available immediately
+                    console.log(`⚠️ [generateBracket] Турнир ${tournamentId} уже заблокирован другим процессом, пробуем с ожиданием...`);
+                    
+                    // Пробуем с обычной блокировкой, но с таймаутом
+                    tournamentResult = await client.query(
+                        'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE',
+                        [tournamentId]
+                    );
+                    console.log(`✅ [generateBracket] Турнир ${tournamentId} заблокирован после ожидания`);
+                } else {
+                    throw lockError;
+                }
+            }
+            
+            // Сбрасываем таймаут после блокировки
+            await client.query('SET statement_timeout = 0');
+            console.log(`🔓 [generateBracket] Таймаут сброшен, продолжаем генерацию`);
             
             if (tournamentResult.rows.length === 0) {
                 throw new Error('Турнир не найден');
@@ -68,6 +95,7 @@ class BracketService {
             }
 
             // 🔒 ПРОВЕРЯЕМ СУЩЕСТВУЮЩИЕ МАТЧИ В РАМКАХ ТРАНЗАКЦИИ
+            console.log(`🔍 [generateBracket] Проверяем существующие матчи для турнира ${tournamentId}`);
             const existingMatchesResult = await client.query(
                 'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
                 [tournamentId]
@@ -98,6 +126,8 @@ class BracketService {
             let participantsForBracket;
             let participantCount;
             
+            console.log(`📊 [generateBracket] Получаем участников для турнира ${tournamentId}, формат: ${tournament.format}`);
+            
             if (tournament.format === 'mix') {
                 // Для микс турниров получаем команды
                 console.log(`🎯 [generateBracket] Получаем команды для микс турнира ${tournamentId}`);
@@ -124,6 +154,7 @@ class BracketService {
                 console.log(`📊 Команд в микс турнире: ${teams.length}`);
             } else {
                 // Для обычных турниров получаем участников
+                console.log(`👥 [generateBracket] Получаем участников для обычного турнира ${tournamentId}`);
                 const participants = await ParticipantRepository.getByTournamentId(tournamentId);
                 if (participants.length < 2) {
                     throw new Error('Для генерации сетки необходимо минимум 2 участника');
@@ -134,6 +165,7 @@ class BracketService {
             }
 
             // Генерируем сетку с помощью bracketGenerator
+            console.log(`⚙️ [generateBracket] Вызываем генератор сетки для турнира ${tournamentId}`);
             const bracketData = await generateBracket(
                 tournament.format,
                 tournamentId,
@@ -175,6 +207,7 @@ class BracketService {
             }
 
             // Логируем событие создания сетки
+            console.log(`📝 [generateBracket] Логируем событие генерации сетки`);
             await logTournamentEvent(tournamentId, userId, 'bracket_generated', {
                 matchesCount: bracketData.matches.length,
                 format: tournament.format,
@@ -182,6 +215,7 @@ class BracketService {
             });
 
             // Сохраняем матчи в базу данных
+            console.log(`💾 [generateBracket] Сохраняем ${bracketData.matches.length} матчей в базу данных`);
             const savedMatches = [];
             for (const match of bracketData.matches) {
                 const matchResult = await client.query(`
@@ -208,6 +242,7 @@ class BracketService {
             }
 
             // Обновляем связи между матчами
+            console.log(`🔗 [generateBracket] Обновляем связи между матчами`);
             await this._updateMatchLinks(client, savedMatches, bracketData.matches);
 
             await client.query('COMMIT');
@@ -216,6 +251,7 @@ class BracketService {
 
             // Отправляем уведомления
             try {
+                console.log(`📡 [generateBracket] Отправляем уведомления`);
                 await broadcastTournamentUpdate(tournamentId);
                 await sendTournamentChatAnnouncement(
                     tournamentId, 
@@ -243,10 +279,25 @@ class BracketService {
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('❌ BracketService: Ошибка генерации сетки:', error);
+            console.error(`❌ BracketService: Ошибка генерации сетки для турнира ${tournamentId}:`, error);
+            console.error(`❌ Тип ошибки: ${error.name}, код: ${error.code}`);
+            console.error(`❌ Stack trace:`, error.stack);
+            
+            // Добавляем специальную обработку для таймаута
+            if (error.code === '57014') {
+                throw new Error('Генерация сетки прервана по таймауту. Возможно, турнир заблокирован другим процессом. Попробуйте через несколько секунд.');
+            }
+            
             throw error;
         } finally {
+            // Сбрасываем таймаут перед освобождением соединения
+            try {
+                await client.query('SET statement_timeout = 0');
+            } catch (resetError) {
+                console.warn('⚠️ Не удалось сбросить statement_timeout:', resetError.message);
+            }
             client.release();
+            console.log(`🔓 [generateBracket] Соединение с БД освобождено для турнира ${tournamentId}`);
         }
     }
 
@@ -275,8 +326,43 @@ class BracketService {
         
         try {
             await client.query('BEGIN');
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Устанавливаем таймаут для предотвращения зависания
+            console.log(`🔒 [regenerateBracket] Устанавливаем таймаут 10 секунд для блокировки`);
+            await client.query('SET statement_timeout = 10000'); // 10 секунд
+            
+            // 🔒 Блокируем турнир для безопасной регенерации
+            console.log(`🔒 [regenerateBracket] Блокируем турнир ${tournamentId} для безопасной регенерации`);
+            
+            let tournamentCheck;
+            try {
+                tournamentCheck = await client.query(
+                    'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
+                    [tournamentId]
+                );
+                console.log(`✅ [regenerateBracket] Турнир ${tournamentId} успешно заблокирован`);
+            } catch (lockError) {
+                if (lockError.code === '55P03') {
+                    // Lock not available immediately
+                    console.log(`⚠️ [regenerateBracket] Турнир ${tournamentId} уже заблокирован другим процессом, пробуем с ожиданием...`);
+                    
+                    // Пробуем с обычной блокировкой, но с таймаутом
+                    tournamentCheck = await client.query(
+                        'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE',
+                        [tournamentId]
+                    );
+                    console.log(`✅ [regenerateBracket] Турнир ${tournamentId} заблокирован после ожидания`);
+                } else {
+                    throw lockError;
+                }
+            }
+            
+            // Сбрасываем таймаут после блокировки
+            await client.query('SET statement_timeout = 0');
+            console.log(`🔓 [regenerateBracket] Таймаут сброшен, продолжаем регенерацию`);
 
             // Удаляем существующие матчи
+            console.log(`🗑️ [regenerateBracket] Удаляем существующие матчи для турнира ${tournamentId}`);
             const deletedMatches = await client.query(
                 'DELETE FROM matches WHERE tournament_id = $1 RETURNING id',
                 [tournamentId]
@@ -285,11 +371,14 @@ class BracketService {
             console.log(`🗑️ Удалено ${deletedMatches.rows.length} старых матчей`);
 
             await client.query('COMMIT');
+            console.log(`✅ [regenerateBracket] Транзакция удаления завершена для турнира ${tournamentId}`);
 
             // Генерируем новую сетку
+            console.log(`⚙️ [regenerateBracket] Генерируем новую сетку для турнира ${tournamentId}`);
             const result = await this.generateBracket(tournamentId, userId, thirdPlaceMatch);
 
             // Отправляем объявление в чат
+            console.log(`📡 [regenerateBracket] Отправляем объявление в чат турнира ${tournamentId}`);
             await sendTournamentChatAnnouncement(
                 tournamentId,
                 `🔄 Турнирная сетка перегенерирована! ${shuffle ? 'Участники перемешаны. ' : ''}Ссылка на сетку: /tournaments/${tournamentId}`,
@@ -298,13 +387,14 @@ class BracketService {
             );
 
             // Логируем событие
+            console.log(`📝 [regenerateBracket] Логируем событие регенерации для турнира ${tournamentId}`);
             await logTournamentEvent(tournamentId, userId, 'bracket_regenerated', {
                 shuffle: shuffle,
                 deleted_matches: deletedMatches.rows.length,
                 new_matches: result.matches.length
             });
 
-            console.log('✅ BracketService: Турнирная сетка успешно регенерирована');
+            console.log(`✅ BracketService: Турнирная сетка успешно регенерирована для турнира ${tournamentId}`);
             return {
                 ...result,
                 message: `Турнирная сетка перегенерирована${shuffle ? ' с перемешиванием участников' : ''}`
@@ -312,10 +402,25 @@ class BracketService {
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('❌ BracketService: Ошибка регенерации сетки:', error);
+            console.error(`❌ BracketService: Ошибка регенерации сетки для турнира ${tournamentId}:`, error);
+            console.error(`❌ Тип ошибки: ${error.name}, код: ${error.code}`);
+            console.error(`❌ Stack trace:`, error.stack);
+            
+            // Добавляем специальную обработку для таймаута
+            if (error.code === '57014') {
+                throw new Error('Регенерация сетки прервана по таймауту. Возможно, турнир заблокирован другим процессом. Попробуйте через несколько секунд.');
+            }
+            
             throw error;
         } finally {
+            // Сбрасываем таймаут перед освобождением соединения
+            try {
+                await client.query('SET statement_timeout = 0');
+            } catch (resetError) {
+                console.warn('⚠️ Не удалось сбросить statement_timeout:', resetError.message);
+            }
             client.release();
+            console.log(`🔓 [regenerateBracket] Соединение с БД освобождено для турнира ${tournamentId}`);
         }
     }
 
@@ -332,8 +437,43 @@ class BracketService {
         
         try {
             await client.query('BEGIN');
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Устанавливаем таймаут для предотвращения зависания
+            console.log(`🔒 [clearMatchResults] Устанавливаем таймаут 10 секунд для блокировки`);
+            await client.query('SET statement_timeout = 10000'); // 10 секунд
+            
+            // 🔒 Блокируем турнир для безопасной очистки
+            console.log(`🔒 [clearMatchResults] Блокируем турнир ${tournamentId} для безопасной очистки`);
+            
+            let tournamentCheck;
+            try {
+                tournamentCheck = await client.query(
+                    'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
+                    [tournamentId]
+                );
+                console.log(`✅ [clearMatchResults] Турнир ${tournamentId} успешно заблокирован`);
+            } catch (lockError) {
+                if (lockError.code === '55P03') {
+                    // Lock not available immediately
+                    console.log(`⚠️ [clearMatchResults] Турнир ${tournamentId} уже заблокирован другим процессом, пробуем с ожиданием...`);
+                    
+                    // Пробуем с обычной блокировкой, но с таймаутом
+                    tournamentCheck = await client.query(
+                        'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE',
+                        [tournamentId]
+                    );
+                    console.log(`✅ [clearMatchResults] Турнир ${tournamentId} заблокирован после ожидания`);
+                } else {
+                    throw lockError;
+                }
+            }
+            
+            // Сбрасываем таймаут после блокировки
+            await client.query('SET statement_timeout = 0');
+            console.log(`🔓 [clearMatchResults] Таймаут сброшен, продолжаем очистку`);
 
             // Сбрасываем результаты всех матчей
+            console.log(`🧹 [clearMatchResults] Сбрасываем результаты матчей для турнира ${tournamentId}`);
             const resetResult = await client.query(`
                 UPDATE matches 
                 SET winner_team_id = NULL, score1 = NULL, score2 = NULL, maps_data = NULL 
@@ -342,11 +482,14 @@ class BracketService {
             `, [tournamentId]);
 
             // Возвращаем участников в начальные позиции
+            console.log(`🔄 [clearMatchResults] Возвращаем участников в начальные позиции`);
             await this._resetMatchParticipants(client, tournamentId);
 
             await client.query('COMMIT');
+            console.log(`✅ [clearMatchResults] Транзакция очистки завершена для турнира ${tournamentId}`);
 
             // Отправляем объявление в чат
+            console.log(`📡 [clearMatchResults] Отправляем объявление в чат турнира ${tournamentId}`);
             await sendTournamentChatAnnouncement(
                 tournamentId,
                 `🧹 Результаты всех матчей сброшены. Турнир готов к перепроведению. Ссылка: /tournaments/${tournamentId}`,
@@ -355,15 +498,17 @@ class BracketService {
             );
 
             // Логируем событие
+            console.log(`📝 [clearMatchResults] Логируем событие очистки для турнира ${tournamentId}`);
             await logTournamentEvent(tournamentId, userId, 'match_results_cleared', {
                 cleared_matches: resetResult.rows.length
             });
 
             // Получаем обновленные данные
+            console.log(`📊 [clearMatchResults] Получаем обновленные данные турнира ${tournamentId}`);
             const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
             broadcastTournamentUpdate(tournamentId, updatedTournament);
 
-            console.log('✅ BracketService: Результаты матчей очищены');
+            console.log(`✅ BracketService: Результаты матчей очищены для турнира ${tournamentId}`);
             return {
                 message: 'Результаты всех матчей успешно сброшены',
                 tournament: updatedTournament,
@@ -372,10 +517,25 @@ class BracketService {
 
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error('❌ BracketService: Ошибка очистки результатов:', error);
+            console.error(`❌ BracketService: Ошибка очистки результатов для турнира ${tournamentId}:`, error);
+            console.error(`❌ Тип ошибки: ${error.name}, код: ${error.code}`);
+            console.error(`❌ Stack trace:`, error.stack);
+            
+            // Добавляем специальную обработку для таймаута
+            if (error.code === '57014') {
+                throw new Error('Очистка результатов прервана по таймауту. Возможно, турнир заблокирован другим процессом. Попробуйте через несколько секунд.');
+            }
+            
             throw error;
         } finally {
+            // Сбрасываем таймаут перед освобождением соединения
+            try {
+                await client.query('SET statement_timeout = 0');
+            } catch (resetError) {
+                console.warn('⚠️ Не удалось сбросить statement_timeout:', resetError.message);
+            }
             client.release();
+            console.log(`🔓 [clearMatchResults] Соединение с БД освобождено для турнира ${tournamentId}`);
         }
     }
 
@@ -713,8 +873,43 @@ class BracketService {
         
         try {
             await client.query('BEGIN');
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Устанавливаем таймаут для предотвращения зависания
+            console.log(`🔒 [clearBracket] Устанавливаем таймаут 10 секунд для блокировки`);
+            await client.query('SET statement_timeout = 10000'); // 10 секунд
+            
+            // 🔒 Блокируем турнир для безопасной очистки
+            console.log(`🔒 [clearBracket] Блокируем турнир ${tournamentId} для безопасной очистки`);
+            
+            let tournamentCheck;
+            try {
+                tournamentCheck = await client.query(
+                    'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
+                    [tournamentId]
+                );
+                console.log(`✅ [clearBracket] Турнир ${tournamentId} успешно заблокирован`);
+            } catch (lockError) {
+                if (lockError.code === '55P03') {
+                    // Lock not available immediately
+                    console.log(`⚠️ [clearBracket] Турнир ${tournamentId} уже заблокирован другим процессом, пробуем с ожиданием...`);
+                    
+                    // Пробуем с обычной блокировкой, но с таймаутом
+                    tournamentCheck = await client.query(
+                        'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE',
+                        [tournamentId]
+                    );
+                    console.log(`✅ [clearBracket] Турнир ${tournamentId} заблокирован после ожидания`);
+                } else {
+                    throw lockError;
+                }
+            }
+            
+            // Сбрасываем таймаут после блокировки
+            await client.query('SET statement_timeout = 0');
+            console.log(`🔓 [clearBracket] Таймаут сброшен, продолжаем очистку`);
 
             // Проверяем есть ли матчи для удаления
+            console.log(`🔍 [clearBracket] Проверяем существующие матчи для турнира ${tournamentId}`);
             const existingMatchesResult = await client.query(
                 'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
                 [tournamentId]
@@ -733,6 +928,7 @@ class BracketService {
             }
 
             // Удаляем все матчи турнира
+            console.log(`🗑️ [clearBracket] Удаляем ${existingMatchCount} матчей из турнира ${tournamentId}`);
             const deletedMatches = await client.query(
                 'DELETE FROM matches WHERE tournament_id = $1 RETURNING id',
                 [tournamentId]
@@ -741,14 +937,17 @@ class BracketService {
             console.log(`🗑️ [clearBracket] Удалено ${deletedMatches.rows.length} матчей из турнира ${tournamentId}`);
 
             await client.query('COMMIT');
+            console.log(`✅ [clearBracket] Транзакция удаления завершена для турнира ${tournamentId}`);
 
             // Логируем событие
+            console.log(`📝 [clearBracket] Логируем событие очистки для турнира ${tournamentId}`);
             await logTournamentEvent(tournamentId, userId, 'bracket_cleared', {
                 deletedMatches: deletedMatches.rows.length,
                 reason: 'team_regeneration'
             });
 
             // Отправляем объявление в чат (необязательно, так как это внутренняя операция)
+            console.log(`📡 [clearBracket] Отправляем объявление в чат турнира ${tournamentId}`);
             await sendTournamentChatAnnouncement(
                 tournamentId,
                 `🗑️ Турнирная сетка удалена для переформирования команд`,
@@ -767,9 +966,24 @@ class BracketService {
         } catch (error) {
             await client.query('ROLLBACK');
             console.error(`❌ [clearBracket] Ошибка удаления сетки турнира ${tournamentId}:`, error);
+            console.error(`❌ Тип ошибки: ${error.name}, код: ${error.code}`);
+            console.error(`❌ Stack trace:`, error.stack);
+            
+            // Добавляем специальную обработку для таймаута
+            if (error.code === '57014') {
+                throw new Error('Удаление сетки прервано по таймауту. Возможно, турнир заблокирован другим процессом. Попробуйте через несколько секунд.');
+            }
+            
             throw error;
         } finally {
+            // Сбрасываем таймаут перед освобождением соединения
+            try {
+                await client.query('SET statement_timeout = 0');
+            } catch (resetError) {
+                console.warn('⚠️ Не удалось сбросить statement_timeout:', resetError.message);
+            }
             client.release();
+            console.log(`🔓 [clearBracket] Соединение с БД освобождено для турнира ${tournamentId}`);
         }
     }
 }
