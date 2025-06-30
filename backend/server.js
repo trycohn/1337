@@ -30,6 +30,7 @@ const { updateActivity } = require('./middleware/activity');
 const { broadcastTournamentUpdate } = require('./notifications');
 const multer = require('multer');
 const fs = require('fs');
+const pool = require('./db');
 
 // Создаем Express приложение
 const app = express();
@@ -227,8 +228,6 @@ app.get('/testdb', async (req, res) => {
 // 🆕 Временный endpoint для изменения статуса турнира 59
 app.get('/update-tournament-59-status', async (req, res) => {
     try {
-        const pool = require('./db');
-        
         // Проверяем текущий статус
         const current = await pool.query('SELECT id, name, status FROM tournaments WHERE id = 59');
         console.log('📊 Текущий статус турнира 59:', current.rows[0]);

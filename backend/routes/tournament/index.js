@@ -31,7 +31,6 @@ const ParticipantController = require('../../controllers/tournament/ParticipantC
 const MatchController = require('../../controllers/tournament/MatchController');
 const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
-const MixTeamController = require('../../controllers/tournament/MixTeamController');
 
 const router = express.Router();
 
@@ -68,7 +67,7 @@ router.post('/:id/start', authenticateToken, verifyEmailRequired, verifyAdminOrC
 router.post('/:id/reset-match-results', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.resetMatchResults);
 
 // Получение команд турнира
-router.get('/:id/teams', ParticipantController.getTeams);
+router.get('/:id/teams', TournamentController.getTeams);
 
 // 📝 **ОБНОВЛЕНИЯ СОДЕРЖИМОГО ТУРНИРА**
 
@@ -85,31 +84,19 @@ router.put('/:id/rules', authenticateToken, verifyEmailRequired, verifyAdminOrCr
 router.put('/:id/prize-pool', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updatePrizePool);
 
 // Обновление размера команды
-router.put('/:id/team-size', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.updateTeamSize);
+router.put('/:id/team-size', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateTeamSize);
 
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ**
 
 // Генерация микс команд (основной метод)
 router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, ParticipantController.generateMixTeams);
 
-// Переформирование микс команд (основной метод)
-router.post('/:id/mix-regenerate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.regenerateTeams);
-
-// Получение оригинальных участников для микс турниров (группированные по статусу в командах)
-router.get('/:id/mix-original-participants', MixTeamController.getOriginalParticipants);
-
-// Обновление размера команды специально для микс турниров
-router.patch('/:id/mix-team-size', authenticateToken, verifyAdminOrCreator, MixTeamController.updateTeamSize);
-
-// Очистка команд микс турнира
-router.post('/:id/mix-clear-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.clearMixTeams);
+// Получение оригинальных участников для микс турниров
+router.get('/:id/mix-original-participants', TournamentController.getOriginalParticipants);
 
 // 🆕 АЛИАСЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ с фронтендом
-router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.formTeamsAlias);  // Алиас для mix-generate-teams
-router.get('/:id/original-participants', MixTeamController.getOriginalParticipantsAlias);  // Алиас для mix-original-participants
-
-// 🆕 ДОПОЛНИТЕЛЬНЫЕ АЛИАСЫ ДЛЯ СТАРЫХ МЕТОДОВ
-router.post('/:id/generate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.generateMixTeams);  // Старый алиас для генерации
+router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, ParticipantController.generateMixTeams);
+router.get('/:id/original-participants', TournamentController.getOriginalParticipants);
 
 // 👥 **УПРАВЛЕНИЕ УЧАСТНИКАМИ**
 
@@ -193,9 +180,5 @@ router.get('/:id/chat/messages', authenticateToken, verifyAdminOrCreator, ChatCo
 
 // Получение участников чата
 router.get('/:id/chat/participants', authenticateToken, verifyAdminOrCreator, ChatController.getChatParticipants);
-
-// 🛠️ **ОБРАБОТКА ОШИБОК ТУРНИРОВ**
-const { tournamentErrorHandler } = require('../../middleware/tournament/errorHandler');
-router.use(tournamentErrorHandler);
 
 module.exports = router; 
