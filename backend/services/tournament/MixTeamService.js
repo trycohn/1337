@@ -350,9 +350,9 @@ class MixTeamService {
     /**
      * 🎯 ОСНОВНОЙ МЕТОД ГЕНЕРАЦИИ КОМАНД (обновлен для использования нового алгоритма)
      */
-    static async generateTeams(tournamentId, ratingType = 'faceit') {
+    static async generateTeams(tournamentId, ratingTypeFromRequest = null) {
         const startTime = Date.now();
-        console.log(`🚀 [generateTeams] Начинаем формирование команд для турнира ${tournamentId} с типом рейтинга ${ratingType}`);
+        console.log(`🚀 [generateTeams] Начинаем формирование команд для турнира ${tournamentId}`);
 
         try {
             // 🔍 1. Получаем информацию о турнире
@@ -361,7 +361,9 @@ class MixTeamService {
                 throw new Error(`Турнир ${tournamentId} не найден`);
             }
 
-            console.log(`📊 Турнир: "${tournament.name}", размер команды: ${tournament.team_size}`);
+            // 🆕 ИСПОЛЬЗУЕМ ТИП РЕЙТИНГА ИЗ НАСТРОЕК ТУРНИРА
+            const ratingType = tournament.mix_rating_type || 'faceit';
+            console.log(`📊 Турнир: "${tournament.name}", размер команды: ${tournament.team_size}, тип рейтинга: ${ratingType}`);
 
             // 🔍 2. Получаем всех участников турнира
             const participants = await ParticipantRepository.getAllByTournamentId(tournamentId);

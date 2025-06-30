@@ -182,13 +182,11 @@ class MixTeamController {
         console.log(`📊 Параметры запроса:`, req.body);
         
         const tournamentId = parseInt(req.params.id);
-        const { ratingType = 'faceit' } = req.body;
         const userId = req.user.id;
         
-        // Валидация входных данных
+        // Валидация входных данных (убираем ratingType из валидации)
         const validationResult = TournamentValidator.validateFormTeamsRequest({
             tournamentId,
-            ratingType,
             userId
         });
         
@@ -237,14 +235,14 @@ class MixTeamController {
             
             console.log(`✅ Все проверки пройдены, запускаем новый алгоритм формирования команд`);
             
-            // 🆕 ИСПОЛЬЗУЕМ НОВЫЙ УЛУЧШЕННЫЙ АЛГОРИТМ
-            const result = await MixTeamService.generateTeams(tournamentId, ratingType);
+            // 🆕 ИСПОЛЬЗУЕМ НОВЫЙ УЛУЧШЕННЫЙ АЛГОРИТМ (без передачи ratingType)
+            const result = await MixTeamService.generateTeams(tournamentId);
             
             // Логируем событие
             await logTournamentEvent(tournamentId, userId, 'mix_teams_generated', {
                 teamsCount: result.teams.length,
                 participantsCount: result.summary.participantsInTeams,
-                ratingType: ratingType,
+                ratingType: result.summary.ratingType,
                 algorithm: result.summary.algorithm,
                 balance: result.summary.balance,
                 duration: result.summary.duration
@@ -281,7 +279,7 @@ class MixTeamController {
         console.log(`🔄 [MixTeamController.regenerateTeams] Переформирование команд для турнира ${req.params.id}`);
         
         const tournamentId = parseInt(req.params.id);
-        const { ratingType = 'faceit', shuffle = true } = req.body;
+        const { shuffle = true } = req.body;
         const userId = req.user.id;
         
         try {
@@ -330,16 +328,16 @@ class MixTeamController {
                 bracketDeleted = true;
             }
             
-            // 🆕 ИСПОЛЬЗУЕМ НОВЫЙ УЛУЧШЕННЫЙ АЛГОРИТМ ДЛЯ ПЕРЕФОРМИРОВАНИЯ
+            // 🆕 ИСПОЛЬЗУЕМ НОВЫЙ УЛУЧШЕННЫЙ АЛГОРИТМ ДЛЯ ПЕРЕФОРМИРОВАНИЯ (без ratingType)
             console.log(`🎯 Запускаем переформирование с новым алгоритмом (shuffle: ${shuffle})`);
-            const result = await MixTeamService.generateTeams(tournamentId, ratingType);
+            const result = await MixTeamService.generateTeams(tournamentId);
             
             // Логируем событие переформирования
             await logTournamentEvent(tournamentId, userId, 'mix_teams_regenerated', {
                 previousTeamsCount: existingTeams.length,
                 newTeamsCount: result.teams.length,
                 participantsCount: result.summary.participantsInTeams,
-                ratingType: ratingType,
+                ratingType: result.summary.ratingType,
                 algorithm: result.summary.algorithm,
                 balance: result.summary.balance,
                 bracketDeleted: bracketDeleted,

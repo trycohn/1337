@@ -21,7 +21,8 @@ function CreateTournament() {
     start_date: '',
     prize_pool: '',
     rules: '',
-    bracket_type: 'single_elimination'
+    bracket_type: 'single_elimination',
+    mix_rating_type: 'faceit'
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -72,7 +73,8 @@ function CreateTournament() {
             description: formData.description,
             prize_pool: formData.prize_pool,
             rules: formData.rules,
-            bracket_type: formData.format === 'mix' ? formData.bracket_type : null
+            bracket_type: formData.format === 'mix' ? formData.bracket_type : null,
+            mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -105,7 +107,8 @@ function CreateTournament() {
         team_size: format === 'mix' ? 5 : prev.team_size,
         game: format === 'mix' ? 'cs2' : '',
         participant_type: format === 'mix' ? 'solo' : 'team',
-        bracket_type: format === 'mix' ? 'single_elimination' : null
+        bracket_type: format === 'mix' ? 'single_elimination' : null,
+        mix_rating_type: format === 'mix' ? 'faceit' : prev.mix_rating_type
       };
       console.log('Новые данные формы:', newData);
       return newData;
@@ -270,6 +273,26 @@ function CreateTournament() {
                   required
                 />
               </div>
+              
+              <div className="form-group">
+                <label>Тип рейтинга для команд</label>
+                <select
+                  name="mix_rating_type"
+                  value={formData.mix_rating_type}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="faceit">FACEIT ELO</option>
+                  <option value="premier">CS2 Premier Rank</option>
+                  <option value="mixed">Полный микс (без учета рейтинга)</option>
+                </select>
+                <small className="form-hint">
+                  {formData.mix_rating_type === 'faceit' && 'Команды будут сформированы на основе FACEIT ELO участников'}
+                  {formData.mix_rating_type === 'premier' && 'Команды будут сформированы на основе CS2 Premier ранга участников'}
+                  {formData.mix_rating_type === 'mixed' && 'Участники будут распределены случайно, без учета рейтинга'}
+                </small>
+              </div>
+              
               <div className="form-group">
                 <label>Тип турнирной сетки</label>
                 <select

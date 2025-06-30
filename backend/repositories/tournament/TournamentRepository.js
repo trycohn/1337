@@ -54,14 +54,14 @@ class TournamentRepository {
     static async create(tournamentData) {
         const {
             name, game, format, created_by, status, participant_type,
-            max_participants, start_date, description, bracket_type, team_size
+            max_participants, start_date, description, bracket_type, team_size, mix_rating_type
         } = tournamentData;
 
         const result = await pool.query(
             `INSERT INTO tournaments
-             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size]
+             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type]
         );
 
         return result.rows[0];
@@ -381,4 +381,4 @@ class TournamentRepository {
     }
 }
 
-module.exports = TournamentRepository; 
+module.exports = TournamentRepository;

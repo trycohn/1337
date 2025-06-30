@@ -138,7 +138,7 @@ class TournamentService {
 
         const {
             name, game, format, participant_type, max_participants,
-            start_date, description, bracket_type, team_size
+            start_date, description, bracket_type, team_size, mix_rating_type
         } = tournamentData;
 
         const tournament = await TournamentRepository.create({
@@ -152,14 +152,16 @@ class TournamentService {
             start_date: start_date || null,
             description: description || null,
             bracket_type: bracket_type || null,
-            team_size: team_size || 1
+            team_size: team_size || 1,
+            mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null
         });
 
         // Логируем создание турнира
         await logTournamentEvent(tournament.id, userId, 'tournament_created', {
             name: tournament.name,
             game: tournament.game,
-            format: tournament.format
+            format: tournament.format,
+            mix_rating_type: tournament.mix_rating_type
         });
 
         console.log('✅ TournamentService: Турнир создан', tournament);

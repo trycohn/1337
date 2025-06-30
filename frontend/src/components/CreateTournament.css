@@ -448,4 +448,17 @@
 }
 .react-datepicker__triangle::before {
     border-bottom-color: var(--ct-border-color) !important;
+}
+/* Подсказки для полей формы */
+.create-tournament .form-hint {
+    display: block;
+    margin-top: var(--ct-spacing-xs);
+    color: var(--ct-text-muted);
+    font-size: 0.8rem;
+    font-weight: 300;
+    line-height: 1.4;
+    transition: var(--ct-transition);
+}
+.create-tournament .form-group:hover .form-hint {
+    color: var(--ct-text-secondary);
 } 

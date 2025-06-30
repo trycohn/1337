@@ -1005,4 +1005,54 @@
 }
 .show-less-participants:hover::before {
     transform: translateY(1px);
-} 
+}
+/* 🆕 СТИЛИ ДЛЯ ОТОБРАЖЕНИЯ НАСТРОЕК ТУРНИРА */
+.tournament-settings-info {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.setting-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.setting-info-item:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.setting-info-item label {
+    font-weight: 500;
+    color: #495057;
+    margin: 0;
+}
+
+.setting-value {
+    font-weight: 600;
+    color: #007bff;
+    background-color: #e3f2fd;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.setting-note {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-top: 12px;
+    text-align: center;
+}
+
+/* СТИЛИ ДЛЯ УЧАСТНИКОВ */ 

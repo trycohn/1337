@@ -3,6 +3,7 @@ import api from '../utils/api';
 import { ensureHttps } from '../utils/userHelpers';
 import './TeamGenerator.css';
 import TeamCard from './TeamCard';
+import { useLoaderAutomatic } from '../contexts/LoaderAutomaticContext';
 
 /**
  * Компонент для генерации команд в турнире
@@ -25,8 +26,17 @@ const TeamGenerator = ({
     isAdminOrCreator = false,
     toast
 }) => {
-    const [ratingType, setRatingType] = useState('faceit');
-    const [teamSize, setTeamSize] = useState('5');
+    // Убираем старые состояния для селекторов
+    const [isFormingTeams, setIsFormingTeams] = useState(false);
+    const [teams, setTeams] = useState([]);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+
+    // 🆕 Получаем настройки из данных турнира
+    const teamSize = tournament?.team_size || 5;
+    const ratingType = tournament?.mix_rating_type || 'faceit';
+
+    const { runWithLoader } = useLoaderAutomatic();
+
     const [loading, setLoading] = useState(false);
     const [mixedTeams, setMixedTeams] = useState([]);
     const [originalParticipants, setOriginalParticipants] = useState([]);
@@ -808,32 +818,23 @@ const TeamGenerator = ({
                 {isAdminOrCreator && (
                     <div className="mix-settings-section">
                         <h3>⚙️ Настройки микса</h3>
-                        <div className="mix-controls-row">
-                            <div className="mix-form-group">
-                                <label>Размер команды:</label>
-                                <select
-                                    value={teamSize}
-                                    onChange={(e) => {
-                                        const newSize = e.target.value;
-                                        setTeamSize(newSize);
-                                        updateTeamSize(newSize);
-                                    }}
-                                    disabled={mixedTeams.length > 0 || loading}
-                                >
-                                    <option value="2">2 игрока</option>
-                                    <option value="5">5 игроков</option>
-                                </select>
-                            </div>
                         
-                            <div className="mix-form-group rating-group">
-                                <label>Миксовать по рейтингу:</label>
-                                <select
-                                    value={ratingType}
-                                    onChange={(e) => setRatingType(e.target.value)}
-                                >
-                                    <option value="faceit">FACEit</option>
-                                    <option value="premier">Steam Premier</option>
-                                </select>
+                        {/* 🆕 ОТОБРАЖАЕМ НАСТРОЙКИ ТУРНИРА (только для информации) */}
+                        <div className="tournament-settings-info">
+                            <div className="setting-info-item">
+                                <label>Размер команды:</label>
+                                <span className="setting-value">{teamSize} игрок{teamSize == 1 ? '' : teamSize > 4 ? 'ов' : 'а'}</span>
+                            </div>
+                            <div className="setting-info-item">
+                                <label>Тип рейтинга:</label>
+                                <span className="setting-value">
+                                    {ratingType === 'faceit' && 'FACEIT ELO'}
+                                    {ratingType === 'premier' && 'CS2 Premier Rank'}
+                                    {ratingType === 'mixed' && 'Полный микс (без учета рейтинга)'}
+                                </span>
+                            </div>
+                            <div className="setting-note">
+                                💡 Настройки формирования команд были заданы при создании турнира
                             </div>
                         </div>
 
