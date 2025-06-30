@@ -45,6 +45,11 @@ class BracketService {
         // Проверка прав доступа
         await this._checkBracketAccess(tournamentId, userId);
 
+        // 🔧 ИСПРАВЛЕНИЕ: Объявляем переменные вне блоков try-catch
+        let bracketData = null;
+        let savedMatches = [];
+        let totalMatches = 0;
+        
         const client = await pool.connect();
         
         try {
@@ -61,7 +66,7 @@ class BracketService {
             try {
                 tournamentResult = await client.query(
                     'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
-                    [tournamentId]
+                    [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
                 );
                 console.log(`✅ [generateBracket] Турнир ${tournamentId} успешно заблокирован`);
             } catch (lockError) {
@@ -72,7 +77,7 @@ class BracketService {
                     // Пробуем с обычной блокировкой, но с таймаутом
                     tournamentResult = await client.query(
                         'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE',
-                        [tournamentId]
+                        [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
                     );
                     console.log(`✅ [generateBracket] Турнир ${tournamentId} заблокирован после ожидания`);
                 } else {
@@ -98,7 +103,7 @@ class BracketService {
             console.log(`🔍 [generateBracket] Проверяем существующие матчи для турнира ${tournamentId}`);
             const existingMatchesResult = await client.query(
                 'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
-                [tournamentId]
+                [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
             );
             
             const existingMatchCount = parseInt(existingMatchesResult.rows[0].count);
@@ -166,7 +171,7 @@ class BracketService {
 
             // Генерируем сетку с помощью bracketGenerator
             console.log(`⚙️ [generateBracket] Вызываем генератор сетки для турнира ${tournamentId}`);
-            const bracketData = await generateBracket(
+            bracketData = await generateBracket(
                 tournament.format,
                 tournamentId,
                 participantsForBracket,
@@ -183,7 +188,7 @@ class BracketService {
             // 🔒 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: убеждаемся что никто не создал матчи пока мы генерировали
             const doubleCheckResult = await client.query(
                 'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
-                [tournamentId]
+                [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
             );
             
             if (parseInt(doubleCheckResult.rows[0].count) > 0) {
@@ -216,7 +221,6 @@ class BracketService {
 
             // Сохраняем матчи в базу данных
             console.log(`💾 [generateBracket] Сохраняем ${bracketData.matches.length} матчей в базу данных`);
-            const savedMatches = [];
             for (const match of bracketData.matches) {
                 const matchResult = await client.query(`
                     INSERT INTO matches (
@@ -226,7 +230,7 @@ class BracketService {
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                     RETURNING *
                 `, [
-                    tournamentId,
+                    parseInt(tournamentId), // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
                     match.round,
                     match.match_number,
                     match.team1_id || null,
@@ -240,6 +244,8 @@ class BracketService {
 
                 savedMatches.push(matchResult.rows[0]);
             }
+
+            totalMatches = savedMatches.length;
 
             // Обновляем связи между матчами
             console.log(`🔗 [generateBracket] Обновляем связи между матчами`);
@@ -276,12 +282,18 @@ class BracketService {
 
         // 🔧 ИСПРАВЛЕНИЕ: Отправка уведомлений и финальные операции ПОСЛЕ освобождения транзакции
         try {
+            // Проверяем что у нас есть данные для отправки уведомлений
+            if (!bracketData || !bracketData.matches) {
+                console.warn('⚠️ [generateBracket] Нет данных bracketData для отправки уведомлений');
+                throw new Error('Не удалось получить данные сгенерированной сетки');
+            }
+
             // Отправляем уведомления
             console.log(`📡 [generateBracket] Отправляем уведомления`);
             await broadcastTournamentUpdate(tournamentId);
             await sendTournamentChatAnnouncement(
                 tournamentId, 
-                `🥊 Турнирная сетка сгенерирована! Создано ${bracketData.matches.length} матчей.`,
+                `🥊 Турнирная сетка сгенерирована! Создано ${totalMatches} матчей.`,
                 'system',
                 userId
             );
@@ -298,8 +310,8 @@ class BracketService {
         return {
             success: true,
             matches: bracketData.matches,
-            totalMatches: bracketData.matches.length,
-            message: `Турнирная сетка успешно сгенерирована: ${bracketData.matches.length} матчей`,
+            totalMatches: totalMatches,
+            message: `Турнирная сетка успешно сгенерирована: ${totalMatches} матчей`,
             tournament: updatedTournament
         };
     }
@@ -325,11 +337,12 @@ class BracketService {
             throw new Error('Можно регенерировать сетку только для активных турниров');
         }
 
-        const client = await pool.connect();
+        // Создаем переменные вне блоков try-catch
         let deletedMatchesCount = 0;
-        
+        const client = await pool.connect();
+
         try {
-            // 🔧 ФАЗА 1: УДАЛЕНИЕ СУЩЕСТВУЮЩИХ МАТЧЕЙ В ТРАНЗАКЦИИ
+            // 🔧 ФАЗА 1: УДАЛЕНИЕ СУЩЕСТВУЮЩИХ МАТЧЕЙ В ОТДЕЛЬНОЙ ТРАНЗАКЦИИ
             console.log(`🗑️ [regenerateBracket] ФАЗА 1: Удаляем существующие матчи для турнира ${tournamentId}`);
             
             await client.query('BEGIN');
@@ -338,14 +351,14 @@ class BracketService {
             console.log(`🔒 [regenerateBracket] Устанавливаем таймаут 10 секунд для блокировки`);
             await client.query('SET statement_timeout = 10000'); // 10 секунд
             
-            // 🔒 Блокируем турнир для безопасной регенерации
+            // 🔒 ТРАНЗАКЦИОННАЯ ЗАЩИТА: Блокируем турнир для безопасной регенерации
             console.log(`🔒 [regenerateBracket] Блокируем турнир ${tournamentId} для безопасной регенерации`);
             
             let tournamentCheck;
             try {
                 tournamentCheck = await client.query(
                     'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
-                    [tournamentId]
+                    [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
                 );
                 console.log(`✅ [regenerateBracket] Турнир ${tournamentId} успешно заблокирован`);
             } catch (lockError) {
@@ -356,7 +369,7 @@ class BracketService {
                     // Пробуем с обычной блокировкой, но с таймаутом
                     tournamentCheck = await client.query(
                         'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE',
-                        [tournamentId]
+                        [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
                     );
                     console.log(`✅ [regenerateBracket] Турнир ${tournamentId} заблокирован после ожидания`);
                 } else {
@@ -372,27 +385,44 @@ class BracketService {
             console.log(`🗑️ [regenerateBracket] Удаляем существующие матчи для турнира ${tournamentId}`);
             const deletedMatches = await client.query(
                 'DELETE FROM matches WHERE tournament_id = $1 RETURNING id',
-                [tournamentId]
+                [parseInt(tournamentId)] // 🔧 ИСПРАВЛЕНИЕ: Явное преобразование в число
             );
 
             deletedMatchesCount = deletedMatches.rows.length;
             console.log(`🗑️ Удалено ${deletedMatchesCount} старых матчей`);
 
-            // 🔧 ИСПРАВЛЕНИЕ: COMMIT только операции удаления
+            // 🔧 ИСПРАВЛЕНИЕ: COMMIT операции удаления
             await client.query('COMMIT');
             console.log(`✅ [regenerateBracket] Транзакция удаления завершена для турнира ${tournamentId}`);
             
         } catch (deleteError) {
-            // Если ошибка при удалении - делаем ROLLBACK
-            await client.query('ROLLBACK');
+            // 🔧 ИСПРАВЛЕНИЕ: Делаем ROLLBACK только если транзакция активна
+            try {
+                await client.query('ROLLBACK');
+                console.log(`🔄 [regenerateBracket] ROLLBACK выполнен после ошибки удаления`);
+            } catch (rollbackError) {
+                console.warn(`⚠️ [regenerateBracket] Не удалось выполнить ROLLBACK:`, rollbackError.message);
+            }
             console.error(`❌ [regenerateBracket] Ошибка при удалении матчей для турнира ${tournamentId}:`, deleteError);
             throw deleteError;
+        } finally {
+            // 🔧 ИСПРАВЛЕНИЕ: Безопасное освобождение соединения после фазы удаления
+            try {
+                if (client && !client._ended) {
+                    await client.query('SET statement_timeout = 0');
+                    console.log(`🔓 [regenerateBracket] statement_timeout сброшен после удаления`);
+                }
+            } catch (resetError) {
+                console.warn('⚠️ Не удалось сбросить statement_timeout после удаления:', resetError.message);
+            }
+            client.release();
+            console.log(`🔓 [regenerateBracket] Соединение освобождено после удаления`);
         }
         
         try {
             // 🔧 ФАЗА 2: ГЕНЕРАЦИЯ НОВОЙ СЕТКИ (БЕЗ ТРАНЗАКЦИИ, так как generateBracket управляет своими транзакциями)
             console.log(`⚙️ [regenerateBracket] ФАЗА 2: Генерируем новую сетку для турнира ${tournamentId}`);
-            const result = await this.generateBracket(tournamentId, userId, thirdPlaceMatch);
+            const result = await this.generateBracket(parseInt(tournamentId), userId, thirdPlaceMatch);
 
             // 🔧 ФАЗА 3: ОТПРАВКА УВЕДОМЛЕНИЙ И ЛОГИРОВАНИЕ (БЕЗ ТРАНЗАКЦИИ)
             console.log(`📡 [regenerateBracket] ФАЗА 3: Отправляем уведомления для турнира ${tournamentId}`);
@@ -420,7 +450,7 @@ class BracketService {
             };
 
         } catch (error) {
-            // 🔧 ИСПРАВЛЕНИЕ: В этом блоке НЕ нужен ROLLBACK, так как транзакция уже закоммичена
+            // 🔧 ИСПРАВЛЕНИЕ: В этом блоке НЕ нужен ROLLBACK, так как мы не используем транзакции здесь
             console.error(`❌ BracketService: Ошибка регенерации сетки для турнира ${tournamentId}:`, error);
             console.error(`❌ Тип ошибки: ${error.name}, код: ${error.code}`);
             console.error(`❌ Stack trace:`, error.stack);
@@ -431,20 +461,6 @@ class BracketService {
             }
             
             throw error;
-        } finally {
-            // 🔧 ИСПРАВЛЕНИЕ: Безопасное освобождение соединения
-            try {
-                // Проверяем состояние соединения перед попыткой сброса таймаута
-                if (client && !client._ended) {
-                    await client.query('SET statement_timeout = 0');
-                    console.log(`🔓 [regenerateBracket] statement_timeout сброшен`);
-                }
-            } catch (resetError) {
-                console.warn('⚠️ Не удалось сбросить statement_timeout при завершении:', resetError.message);
-            } finally {
-                client.release();
-                console.log(`🔓 [regenerateBracket] Соединение с БД освобождено для турнира ${tournamentId}`);
-            }
         }
     }
 
