@@ -1,372 +1,273 @@
-const MatchService = require('../../services/tournament/MatchService');
 const BracketService = require('../../services/tournament/BracketService');
-const TournamentValidator = require('../../validators/tournament/TournamentValidator');
+const MatchService = require('../../services/tournament/MatchService');
 const { asyncHandler } = require('../../utils/asyncHandler');
 
 class MatchController {
-    // 🥊 Генерация турнирной сетки
+    /**
+     * 🔄 Генерация турнирной сетки (упрощенная версия)
+     */
     static generateBracket = asyncHandler(async (req, res) => {
         const startTime = Date.now();
-        console.log('🚀 [MatchController.generateBracket] МОДУЛЬНЫЙ РОУТЕР ПОЛУЧИЛ ЗАПРОС!');
-        console.log('🚀 [MatchController.generateBracket] Tournament ID:', req.params.id);
-        console.log('🚀 [MatchController.generateBracket] User ID:', req.user.id);
-        console.log('🚀 [MatchController.generateBracket] Username:', req.user.username);
-        console.log('🚀 [MatchController.generateBracket] Request body:', req.body);
-        
-        const { id: tournamentId } = req.params;
-        const { thirdPlaceMatch } = req.body;
+        const tournamentId = parseInt(req.params.id);
         const userId = req.user.id;
+        const { thirdPlaceMatch = false } = req.body;
         
-        console.log('🚀 [MatchController.generateBracket] thirdPlaceMatch:', thirdPlaceMatch);
-        console.log('🚀 [MatchController.generateBracket] Вызываем BracketService.generateBracket...');
+        console.log(`🔄 [MatchController v2.0] Генерация сетки турнира ${tournamentId}`);
+        console.log(`👤 Пользователь: ${req.user.username} (ID: ${userId})`);
+        console.log(`⚙️ Настройки: thirdPlaceMatch=${thirdPlaceMatch}`);
         
         try {
-            const result = await BracketService.generateBracket(
-                parseInt(tournamentId), 
-                userId, 
-                thirdPlaceMatch || false
-            );
+            const result = await BracketService.generateBracket(tournamentId, userId, thirdPlaceMatch);
             
-            const endTime = Date.now();
-            console.log(`✅ [MatchController.generateBracket] Успешно завершено за ${endTime - startTime}ms`);
+            const duration = Date.now() - startTime;
+            console.log(`✅ [MatchController v2.0] Сетка сгенерирована за ${duration}ms`);
             
-            res.status(200).json({
+            res.json({
                 success: true,
-                message: result.message,
-                tournament: result.tournament,
-                matches: result.matches,
-                totalMatches: result.totalMatches,
-                existing: result.existing || false
+                message: `Турнирная сетка сгенерирована: ${result.matchesCount} матчей`,
+                data: result
             });
             
         } catch (error) {
-            const endTime = Date.now();
-            console.error(`❌ [MatchController.generateBracket] ОШИБКА после ${endTime - startTime}ms: ${error.message}`);
-            console.error(`❌ [MatchController.generateBracket] Тип ошибки: ${error.name}`);
-            console.error(`❌ [MatchController.generateBracket] Код ошибки: ${error.code || 'не определен'}`);
-            console.error(`❌ [MatchController.generateBracket] Stack trace: ${error.stack}`);
+            const duration = Date.now() - startTime;
+            console.error(`❌ [MatchController v2.0] Ошибка генерации (${duration}ms):`, error.message);
             
-            // 🆕 СПЕЦИАЛЬНАЯ ОБРАБОТКА ДЛЯ БЛОКИРОВОК
-            if (error.message.includes('заблокирован другим процессом')) {
-                console.log(`🔍 [MatchController.generateBracket] Обнаружена проблема с блокировками, запускаем диагностику`);
-                
-                // Асинхронно запускаем диагностику (не блокируем ответ)
-                BracketService.checkDatabaseLocks(parseInt(tournamentId)).catch(diagError => {
-                    console.warn('⚠️ Ошибка асинхронной диагностики:', diagError.message);
-                });
-                
-                return res.status(423).json({
-                    error: 'Турнир временно заблокирован',
-                    message: 'Турнир обрабатывается другим процессом. Попробуйте через 10-15 секунд.',
-                    details: 'Если проблема повторяется, обратитесь к администратору',
-                    tournamentId: parseInt(tournamentId),
-                    retryAfter: 15,
-                    diagnosticAvailable: true
-                });
+            // Определяем тип ошибки для пользователя
+            let userMessage = 'Произошла ошибка при генерации сетки';
+            let statusCode = 500;
+            
+            if (error.message.includes('не найден')) {
+                userMessage = 'Турнир не найден';
+                statusCode = 404;
+            } else if (error.message.includes('уже сгенерирована')) {
+                userMessage = error.message;
+                statusCode = 409; // Conflict
+            } else if (error.message.includes('Недостаточно участников')) {
+                userMessage = error.message;
+                statusCode = 400; // Bad Request
+            } else if (error.message.includes('права')) {
+                userMessage = 'Недостаточно прав для генерации сетки';
+                statusCode = 403; // Forbidden
             }
             
-            // 🆕 ОБРАБОТКА ДРУГИХ ОШИБОК БЛОКИРОВОК И ТАЙМАУТОВ
-            if (error.code === '57014' || error.message.includes('timeout') || error.message.includes('таймаут')) {
-                return res.status(408).json({
-                    error: 'Операция прервана по таймауту',
-                    message: 'Генерация сетки заняла слишком много времени. Попробуйте еще раз.',
-                    tournamentId: parseInt(tournamentId),
-                    retryAfter: 10
-                });
-            }
-            
-            if (error.code === '25P02') {
-                return res.status(409).json({
-                    error: 'Конфликт транзакций',
-                    message: 'Произошел конфликт при обработке запроса. Попробуйте еще раз.',
-                    tournamentId: parseInt(tournamentId),
-                    retryAfter: 5
-                });
-            }
-            
-            console.error(`❌ [MatchController.generateBracket] Возвращаем статус 500: Произошла ошибка при генерации турнирной сетки`);
-            res.status(500).json({
-                error: 'Произошла ошибка при генерации турнирной сетки',
-                message: error.message,
-                tournamentId: parseInt(tournamentId),
-                timestamp: new Date().toISOString()
+            res.status(statusCode).json({
+                success: false,
+                message: userMessage,
+                error: error.message,
+                duration
             });
         }
     });
-
-    // 🔄 Перегенерация турнирной сетки
-    static regenerateBracket = asyncHandler(async (req, res) => {
-        const { id: tournamentId } = req.params;
-        const { shuffle, thirdPlaceMatch } = req.body;
-        const userId = req.user.id;
-        
-        console.log(`🔄 [MatchController.regenerateBracket] Регенерация для турнира ${tournamentId}, shuffle: ${shuffle}`);
-        
-        const result = await BracketService.regenerateBracket(
-            parseInt(tournamentId), 
-            userId, 
-            shuffle || false, 
-            thirdPlaceMatch || false
-        );
-        
-        res.status(200).json({
-            success: true,
-            message: result.message,
-            tournament: result.tournament,
-            matches: result.matches,
-            deletedMatches: result.deleted_matches
-        });
-    });
-
-    // 🏆 Обновление результата матча в рамках турнира
-    static updateMatchResult = asyncHandler(async (req, res) => {
-        const { id: tournamentId, matchId } = req.params;
-        const { winner_team_id, score1, score2, maps } = req.body;
-        const userId = req.user.id;
-        
-        console.log(`⚔️ [MatchController.updateMatchResult] Обновление матча ${matchId} в турнире ${tournamentId}`);
-        
-        const result = await MatchService.updateMatchResult(
-            parseInt(tournamentId),
-            {
-                matchId: parseInt(matchId),
-                winner_team_id: parseInt(winner_team_id),
-                score1,
-                score2,
-                maps
-            },
-            userId
-        );
-        
-        res.status(200).json({
-            success: true,
-            message: 'Результат матча обновлен',
-            tournament: result.tournament,
-            advancementResult: result.advancementResult
-        });
-    });
-
-    // 🎯 Обновление результата конкретного матча (альтернативный endpoint)
-    static updateSpecificMatchResult = asyncHandler(async (req, res) => {
-        const { matchId } = req.params;
-        const { winner_team_id, score1, score2, maps_data } = req.body;
-        
-        // 🔍 ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
-        console.log(`🎯 [updateSpecificMatchResult] НАЧАЛО ОБРАБОТКИ ЗАПРОСА:`);
-        console.log(`   - Match ID (params): ${matchId}`);
-        console.log(`   - User ID: ${req.user.id}`);
-        console.log(`   - Username: ${req.user.username}`);
-        console.log(`   - Request Body:`, JSON.stringify(req.body, null, 2));
-        console.log(`   - Winner Team ID: ${winner_team_id}`);
-        console.log(`   - Score1: ${score1}`);
-        console.log(`   - Score2: ${score2}`);
-        console.log(`   - Maps data:`, maps_data);
-        
-        // 🔍 ВАЛИДАЦИЯ С ДЕТАЛЬНЫМ ЛОГИРОВАНИЕМ
-        console.log(`📝 [updateSpecificMatchResult] Запускаем валидацию с данными:`, {
-            winner_team_id,
-            score1, 
-            score2,
-            maps_data,
-            matchId
-        });
-        
-        const validationResult = TournamentValidator.validateMatchResult(req.body);
-        
-        console.log(`📝 [updateSpecificMatchResult] Результат валидации:`, {
-            isValid: validationResult.isValid,
-            errors: validationResult.errors
-        });
-        
-        if (!validationResult.isValid) {
-            console.log(`❌ [updateSpecificMatchResult] ВАЛИДАЦИЯ НЕ ПРОШЛА:`);
-            validationResult.errors.forEach((error, index) => {
-                console.log(`   ${index + 1}. ${error}`);
-            });
-            return res.status(400).json({ 
-                error: 'Ошибка валидации данных',
-                message: validationResult.errors 
-            });
-        }
-        
-        console.log(`✅ [updateSpecificMatchResult] Валидация прошла успешно, вызываем MatchService...`);
-        
-        try {
-            const result = await MatchService.updateSpecificMatchResult(
-                parseInt(matchId),
-                { winner_team_id, score1, score2, maps_data },
-                req.user.id
-            );
-            
-            console.log(`🎉 [updateSpecificMatchResult] УСПЕШНОЕ ЗАВЕРШЕНИЕ`);
-            res.json(result);
-        } catch (serviceError) {
-            console.error(`❌ [updateSpecificMatchResult] ОШИБКА В СЕРВИСЕ:`, serviceError.message);
-            console.error(`❌ [updateSpecificMatchResult] Stack trace:`, serviceError.stack);
-            throw serviceError; // Re-throw для asyncHandler
-        }
-    });
-
-    // 📋 Получение матчей турнира
-    static getMatches = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        
-        const matches = await MatchService.getMatches(parseInt(id));
-        
-        res.json(matches);
-    });
-
-    // 🔍 Получение конкретного матча
-    static getMatchById = asyncHandler(async (req, res) => {
-        const { matchId } = req.params;
-        
-        const match = await MatchService.getMatchById(parseInt(matchId));
-        
-        if (!match) {
-            return res.status(404).json({ error: 'Матч не найден' });
-        }
-        
-        res.json(match);
-    });
-
-    // 🧹 Очистка дублирующихся матчей
-    static cleanupDuplicateMatches = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        
-        console.log(`🧹 [MatchController.cleanupDuplicateMatches] Tournament ID: ${id}`);
-        console.log(`🧹 [MatchController.cleanupDuplicateMatches] User ID: ${req.user.id}`);
-        
-        const result = await BracketService.cleanupDuplicateMatches(
-            parseInt(id),
-            req.user.id
-        );
-        
-        res.status(200).json({
-            success: true,
-            message: result.message,
-            data: {
-                removed: result.removed,
-                duplicateGroups: result.duplicateGroups
-            }
-        });
-    });
-
-    // 🔍 Проверка дублирующихся матчей
-    static checkDuplicateMatches = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        
-        console.log(`🔍 [MatchController.checkDuplicateMatches] Tournament ID: ${id}`);
-        
-        const result = await BracketService.checkForDuplicateMatches(parseInt(id));
-        
-        res.status(200).json({
-            success: true,
-            data: result
-        });
-    });
-
-    // 🔧 Диагностика статуса блокировок PostgreSQL (только для администраторов)
-    static checkDatabaseLocks = asyncHandler(async (req, res) => {
-        console.log('🔍 [MatchController.checkDatabaseLocks] Запрос диагностики блокировок');
-        
-        const { id: tournamentId } = req.params;
-        const userId = req.user.id;
-        
-        try {
-            const diagnostic = await BracketService.checkDatabaseLocks(
-                tournamentId ? parseInt(tournamentId) : null
-            );
-            
-            console.log(`✅ [MatchController.checkDatabaseLocks] Диагностика завершена`);
-            
-            res.status(200).json({
-                success: true,
-                message: 'Диагностика блокировок завершена',
-                tournamentId: tournamentId ? parseInt(tournamentId) : null,
-                diagnostic: diagnostic,
-                timestamp: new Date().toISOString(),
-                recommendations: {
-                    hasBlocks: diagnostic.tournamentLocks > 0,
-                    suggestion: diagnostic.tournamentLocks > 0 
-                        ? 'Обнаружены активные блокировки. Попробуйте очистить их или подождите завершения операций.'
-                        : 'Блокировки не обнаружены. Проблема может быть на уровне приложения.'
-                }
-            });
-            
-        } catch (error) {
-            console.error(`❌ [MatchController.checkDatabaseLocks] Ошибка диагностики: ${error.message}`);
-            
-            res.status(500).json({
-                error: 'Ошибка диагностики блокировок',
-                message: error.message,
-                tournamentId: tournamentId ? parseInt(tournamentId) : null,
-                timestamp: new Date().toISOString()
-            });
-        }
-    });
-
+    
     /**
-     * 🆕 Экстренная очистка зависших блокировок
+     * 🔄 Регенерация турнирной сетки (упрощенная версия)
      */
-    static clearStuckLocks = asyncHandler(async (req, res) => {
-        console.log('🧹 [MatchController.clearStuckLocks] Запрос очистки блокировок');
-        
-        const { id: tournamentId } = req.params;
+    static regenerateBracket = asyncHandler(async (req, res) => {
+        const startTime = Date.now();
+        const tournamentId = parseInt(req.params.id);
         const userId = req.user.id;
+        const { shuffle = false, thirdPlaceMatch = false } = req.body;
+        
+        console.log(`🔄 [MatchController v2.0] Регенерация сетки турнира ${tournamentId}`);
+        console.log(`👤 Пользователь: ${req.user.username} (ID: ${userId})`);
+        console.log(`⚙️ Настройки: shuffle=${shuffle}, thirdPlaceMatch=${thirdPlaceMatch}`);
         
         try {
-            // Проверяем права (только создатель или админ турнира)
-            // Это делается внутри BracketService.clearStuckLocks
+            const result = await BracketService.regenerateBracket(tournamentId, userId, shuffle, thirdPlaceMatch);
             
-            const result = await BracketService.clearStuckLocks(
-                parseInt(tournamentId), 
-                userId
-            );
+            const duration = Date.now() - startTime;
+            console.log(`✅ [MatchController v2.0] Сетка регенерирована за ${duration}ms`);
             
-            console.log(`✅ [MatchController.clearStuckLocks] Очистка завершена`);
-            
-            res.status(200).json({
+            res.json({
                 success: true,
-                message: result.message,
-                tournamentId: parseInt(tournamentId),
-                result: result,
-                timestamp: new Date().toISOString(),
-                nextSteps: result.oldDatabaseLocks > 0 
-                    ? ['Обратитесь к администратору для завершения старых процессов БД']
-                    : ['Попробуйте снова сгенерировать турнирную сетку']
+                message: `Турнирная сетка регенерирована: ${result.matchesCount} матчей${shuffle ? ' (с перемешиванием)' : ''}`,
+                data: result
             });
             
         } catch (error) {
-            console.error(`❌ [MatchController.clearStuckLocks] Ошибка очистки: ${error.message}`);
+            const duration = Date.now() - startTime;
+            console.error(`❌ [MatchController v2.0] Ошибка регенерации (${duration}ms):`, error.message);
             
-            res.status(500).json({
-                error: 'Ошибка очистки блокировок',
-                message: error.message,
-                tournamentId: parseInt(tournamentId),
-                timestamp: new Date().toISOString()
+            // Определяем тип ошибки для пользователя
+            let userMessage = 'Произошла ошибка при регенерации сетки';
+            let statusCode = 500;
+            
+            if (error.message.includes('не найден')) {
+                userMessage = 'Турнир не найден';
+                statusCode = 404;
+            } else if (error.message.includes('Недостаточно участников')) {
+                userMessage = error.message;
+                statusCode = 400;
+            } else if (error.message.includes('права')) {
+                userMessage = 'Недостаточно прав для регенерации сетки';
+                statusCode = 403;
+            }
+            
+            res.status(statusCode).json({
+                success: false,
+                message: userMessage,
+                error: error.message,
+                duration
             });
         }
     });
-
+    
     /**
-     * Очистка результатов матчей
+     * 🗑️ Очистка результатов матчей
      */
     static clearMatchResults = asyncHandler(async (req, res) => {
-        const { id: tournamentId } = req.params;
+        const startTime = Date.now();
+        const tournamentId = parseInt(req.params.id);
         const userId = req.user.id;
         
-        console.log(`🧹 [MatchController.clearMatchResults] Очистка результатов для турнира ${tournamentId}`);
+        console.log(`🗑️ [MatchController v2.0] Очистка результатов турнира ${tournamentId}`);
+        console.log(`👤 Пользователь: ${req.user.username} (ID: ${userId})`);
         
-        const result = await BracketService.clearMatchResults(
-            parseInt(tournamentId), 
-            userId
-        );
+        try {
+            const result = await BracketService.clearMatchResults(tournamentId, userId);
+            
+            const duration = Date.now() - startTime;
+            console.log(`✅ [MatchController v2.0] Результаты очищены за ${duration}ms`);
+            
+            res.json({
+                success: true,
+                message: `Результаты очищены: ${result.clearedCount} матчей`,
+                data: result
+            });
+            
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            console.error(`❌ [MatchController v2.0] Ошибка очистки результатов (${duration}ms):`, error.message);
+            
+            let userMessage = 'Произошла ошибка при очистке результатов';
+            let statusCode = 500;
+            
+            if (error.message.includes('не найден')) {
+                userMessage = 'Турнир не найден';
+                statusCode = 404;
+            } else if (error.message.includes('права')) {
+                userMessage = 'Недостаточно прав для очистки результатов';
+                statusCode = 403;
+            }
+            
+            res.status(statusCode).json({
+                success: false,
+                message: userMessage,
+                error: error.message,
+                duration
+            });
+        }
+    });
+    
+    /**
+     * 📊 Сохранение результата матча (упрощенная версия)
+     */
+    static saveMatchResult = asyncHandler(async (req, res) => {
+        const startTime = Date.now();
+        const matchId = parseInt(req.params.matchId);
+        const userId = req.user.id;
         
-        res.status(200).json({
-            success: true,
-            message: result.message,
-            matchesReset: result.matches_reset
-        });
+        console.log(`📊 [MatchController v2.0] Сохранение результата матча ${matchId}`);
+        console.log(`👤 Пользователь: ${req.user.username} (ID: ${userId})`);
+        
+        try {
+            const result = await MatchService.saveResult(matchId, req.body, userId);
+            
+            const duration = Date.now() - startTime;
+            console.log(`✅ [MatchController v2.0] Результат сохранен за ${duration}ms`);
+            
+            res.json({
+                success: true,
+                message: 'Результат матча сохранен',
+                data: result
+            });
+            
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            console.error(`❌ [MatchController v2.0] Ошибка сохранения результата (${duration}ms):`, error.message);
+            
+            let userMessage = 'Произошла ошибка при сохранении результата';
+            let statusCode = 500;
+            
+            if (error.message.includes('не найден')) {
+                userMessage = 'Матч не найден';
+                statusCode = 404;
+            } else if (error.message.includes('права')) {
+                userMessage = 'Недостаточно прав для изменения результата';
+                statusCode = 403;
+            } else if (error.message.includes('завершен')) {
+                userMessage = 'Матч уже завершен';
+                statusCode = 409;
+            }
+            
+            res.status(statusCode).json({
+                success: false,
+                message: userMessage,
+                error: error.message,
+                duration
+            });
+        }
+    });
+    
+    /**
+     * 📋 Получение матчей турнира
+     */
+    static getMatches = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        
+        console.log(`📋 [MatchController v2.0] Получение матчей турнира ${tournamentId}`);
+        
+        try {
+            const matches = await MatchService.getByTournamentId(tournamentId);
+            
+            res.json({
+                success: true,
+                data: matches
+            });
+            
+        } catch (error) {
+            console.error(`❌ [MatchController v2.0] Ошибка получения матчей:`, error.message);
+            
+            res.status(500).json({
+                success: false,
+                message: 'Ошибка при получении матчей',
+                error: error.message
+            });
+        }
+    });
+    
+    /**
+     * 📋 Получение конкретного матча
+     */
+    static getMatch = asyncHandler(async (req, res) => {
+        const matchId = parseInt(req.params.matchId);
+        
+        console.log(`📋 [MatchController v2.0] Получение матча ${matchId}`);
+        
+        try {
+            const match = await MatchService.getById(matchId);
+            
+            if (!match) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Матч не найден'
+                });
+            }
+            
+            res.json({
+                success: true,
+                data: match
+            });
+            
+        } catch (error) {
+            console.error(`❌ [MatchController v2.0] Ошибка получения матча:`, error.message);
+            
+            res.status(500).json({
+                success: false,
+                message: 'Ошибка при получении матча',
+                error: error.message
+            });
+        }
     });
 }
 
