@@ -15,12 +15,38 @@ class TournamentController {
     // 🎯 Получение конкретного турнира
     static getTournamentById = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const tournament = await TournamentService.getTournamentById(parseInt(id));
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        console.log(`🔍 [getTournamentById] Получен запрос с ID: "${id}", тип: ${typeof id}`);
+        
+        if (!id || id === 'undefined' || id === 'null') {
+            console.log(`❌ [getTournamentById] Некорректный ID турнира: "${id}"`);
+            return res.status(400).json({ 
+                message: 'Некорректный ID турнира',
+                received_id: id 
+            });
+        }
+        
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            console.log(`❌ [getTournamentById] ID турнира не является положительным числом: "${id}" -> ${tournamentId}`);
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id,
+                parsed_id: tournamentId
+            });
+        }
+        
+        console.log(`✅ [getTournamentById] Валидация пройдена, ищем турнир с ID: ${tournamentId}`);
+        
+        const tournament = await TournamentService.getTournamentById(tournamentId);
         
         if (!tournament) {
+            console.log(`❌ [getTournamentById] Турнир с ID ${tournamentId} не найден`);
             return res.status(404).json({ message: 'Турнир не найден' });
         }
         
+        console.log(`✅ [getTournamentById] Турнир ${tournamentId} найден: "${tournament.name}"`);
         res.json(tournament);
     });
 
@@ -43,7 +69,16 @@ class TournamentController {
     static getTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
-        const tournament = await TournamentService.getTournament(parseInt(id));
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const tournament = await TournamentService.getTournament(tournamentId);
         
         if (!tournament) {
             return res.status(404).json({ error: 'Турнир не найден' });
@@ -57,7 +92,7 @@ class TournamentController {
         const { page, limit, status, game, participant_type } = req.query;
         
         const filters = { status, game, participant_type };
-        const tournaments = await TournamentService.getTournaments(filters, parseInt(page), parseInt(limit));
+        const tournaments = await TournamentService.getTournaments(filters, parseInt(page, 10), parseInt(limit, 10));
         
         res.json(tournaments);
     });
@@ -66,13 +101,22 @@ class TournamentController {
     static updateTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const validationResult = TournamentValidator.validateUpdate(req.body);
         if (!validationResult.isValid) {
             return res.status(400).json({ error: validationResult.errors });
         }
         
         const tournament = await TournamentService.updateTournament(
-            parseInt(id), 
+            tournamentId, 
             req.body, 
             req.user.id
         );
@@ -87,7 +131,16 @@ class TournamentController {
     static deleteTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
-        await TournamentService.deleteTournament(parseInt(id), req.user.id);
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        await TournamentService.deleteTournament(tournamentId, req.user.id);
         
         res.json({ message: 'Турнир успешно удален' });
     });
@@ -96,7 +149,16 @@ class TournamentController {
     static startTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
-        const result = await TournamentService.startTournament(parseInt(id), req.user.id);
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const result = await TournamentService.startTournament(tournamentId, req.user.id);
         
         res.json(result);
     });
@@ -105,7 +167,16 @@ class TournamentController {
     static endTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
-        const result = await TournamentService.endTournament(parseInt(id), req.user.id);
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const result = await TournamentService.endTournament(tournamentId, req.user.id);
         
         res.json(result);
     });
@@ -130,10 +201,20 @@ class TournamentController {
     // 🥊 Генерация турнирной сетки
     static generateBracket = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { thirdPlaceMatch = false } = req.body;
         
         const result = await BracketService.generateBracket(
-            parseInt(id), 
+            tournamentId, 
             req.user.id, 
             thirdPlaceMatch
         );
@@ -144,10 +225,20 @@ class TournamentController {
     // 🔄 Регенерация турнирной сетки
     static regenerateBracket = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { shuffle = false, thirdPlaceMatch = false } = req.body;
         
         const result = await BracketService.regenerateBracket(
-            parseInt(id), 
+            tournamentId, 
             req.user.id, 
             shuffle, 
             thirdPlaceMatch
@@ -160,7 +251,16 @@ class TournamentController {
     static clearMatchResults = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
-        const result = await BracketService.clearMatchResults(parseInt(id), req.user.id);
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const result = await BracketService.clearMatchResults(tournamentId, req.user.id);
         
         res.json(result);
     });
@@ -169,7 +269,16 @@ class TournamentController {
     static getBracket = asyncHandler(async (req, res) => {
         const { id } = req.params;
         
-        const bracket = await BracketService.getBracket(parseInt(id));
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const bracket = await BracketService.getBracket(tournamentId);
         
         res.json(bracket);
     });
@@ -177,11 +286,21 @@ class TournamentController {
     // 🔄 Валидация турнирной сетки
     static validateBracket = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const validation = await BracketService.validateTournamentBracket(parseInt(id));
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const validation = await BracketService.validateTournamentBracket(tournamentId);
         
         res.json({
             message: 'Диагностика турнирной сетки завершена',
-            tournamentId: parseInt(id),
+            tournamentId: tournamentId,
             validation
         });
     });
@@ -189,7 +308,17 @@ class TournamentController {
     // 🔧 Сброс результатов матчей
     static resetMatchResults = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const result = await TournamentService.resetMatchResults(parseInt(id), req.user.id);
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const result = await TournamentService.resetMatchResults(tournamentId, req.user.id);
         
         res.json(result);
     });
@@ -197,7 +326,17 @@ class TournamentController {
     // 🔍 Получение оригинальных участников
     static getOriginalParticipants = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const participants = await ParticipantService.getOriginalParticipants(parseInt(id));
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const participants = await ParticipantService.getOriginalParticipants(tournamentId);
         
         res.json(participants);
     });
@@ -205,7 +344,17 @@ class TournamentController {
     // 🏆 Получение команд турнира
     static getTeams = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const teams = await TournamentService.getTeams(parseInt(id));
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const teams = await TournamentService.getTeams(tournamentId);
         
         res.json(teams);
     });
@@ -213,10 +362,20 @@ class TournamentController {
     // 📝 Обновление описания
     static updateDescription = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { description } = req.body;
         
         const tournament = await TournamentService.updateDescription(
-            parseInt(id), 
+            tournamentId, 
             description, 
             req.user.id
         );
@@ -230,10 +389,20 @@ class TournamentController {
     // 📜 Обновление полного описания
     static updateFullDescription = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { full_description } = req.body;
         
         const tournament = await TournamentService.updateFullDescription(
-            parseInt(id), 
+            tournamentId, 
             full_description, 
             req.user.id
         );
@@ -247,10 +416,20 @@ class TournamentController {
     // ⚖️ Обновление регламента
     static updateRules = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { rules } = req.body;
         
         const tournament = await TournamentService.updateRules(
-            parseInt(id), 
+            tournamentId, 
             rules, 
             req.user.id
         );
@@ -264,10 +443,20 @@ class TournamentController {
     // 💰 Обновление призового фонда
     static updatePrizePool = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { prize_pool } = req.body;
         
         const tournament = await TournamentService.updatePrizePool(
-            parseInt(id), 
+            tournamentId, 
             prize_pool, 
             req.user.id
         );
@@ -281,10 +470,20 @@ class TournamentController {
     // 📏 Обновление размера команды
     static updateTeamSize = asyncHandler(async (req, res) => {
         const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
         const { teamSize } = req.body;
         
         const tournament = await TournamentService.updateTeamSize(
-            parseInt(id), 
+            tournamentId, 
             teamSize, 
             req.user.id
         );
