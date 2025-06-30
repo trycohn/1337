@@ -72,13 +72,18 @@ class BracketService {
             
             // 4. Генерируем сетку
             console.log(`⚙️ Вызываем генератор сетки...`);
-            const matches = await generateBracket(
+            const bracketResult = await generateBracket(
                 tournament.format, 
                 tournamentId, 
                 participants, 
                 thirdPlaceMatch
             );
             
+            console.log(`✅ [generateBracket] generateBracket завершен`);
+            console.log(`🔍 Результат генерации:`, typeof bracketResult, bracketResult?.success);
+            
+            // Извлекаем массив матчей из результата
+            const matches = bracketResult?.matches || bracketResult || [];
             console.log(`✅ Сгенерировано матчей: ${matches.length}`);
             
             // 5. Обновляем статус турнира если нужно
@@ -123,8 +128,10 @@ class BracketService {
         
         const client = await pool.connect();
         try {
+            console.log(`🔐 [regenerateBracket] Начинаем транзакцию...`);
             await client.query('BEGIN');
             
+            console.log(`🔍 [regenerateBracket] Ищем турнир ${tournamentId}...`);
             // 1. Получаем турнир с блокировкой
             const tournamentResult = await client.query(
                 'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE',
@@ -136,8 +143,9 @@ class BracketService {
             }
             
             const tournament = tournamentResult.rows[0];
-            console.log(`✅ Турнир найден: "${tournament.name}"`);
+            console.log(`✅ Турнир найден: "${tournament.name}" (format: ${tournament.format}, participant_type: ${tournament.participant_type})`);
             
+            console.log(`🗑️ [regenerateBracket] Удаляем существующие матчи...`);
             // 2. Удаляем все существующие матчи
             const deleteResult = await client.query(
                 'DELETE FROM matches WHERE tournament_id = $1',
@@ -146,18 +154,26 @@ class BracketService {
             
             console.log(`🗑️ Удалено матчей: ${deleteResult.rowCount}`);
             
+            console.log(`👥 [regenerateBracket] Получаем участников для формата "${tournament.format}"...`);
             // 3. Получаем участников
             let participants;
             if (tournament.format === 'mix') {
+                console.log(`🔍 Получаем микс команды...`);
                 participants = await this._getMixTeams(tournamentId, client);
             } else if (tournament.participant_type === 'solo') {
+                console.log(`🔍 Получаем solo участников...`);
                 participants = await this._getSoloParticipants(tournamentId, client);
             } else {
+                console.log(`🔍 Получаем team участников...`);
                 participants = await this._getTeamParticipants(tournamentId, client);
             }
             
+            console.log(`📊 Получено участников: ${participants.length}`);
+            console.log(`📋 Список участников:`, participants.map(p => ({ id: p.id, name: p.name })));
+            
             // 4. Перемешиваем участников если нужно
             if (shuffle && participants.length > 1) {
+                console.log(`🔀 Перемешиваем участников...`);
                 for (let i = participants.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [participants[i], participants[j]] = [participants[j], participants[i]];
@@ -165,25 +181,33 @@ class BracketService {
                 console.log(`🔀 Участники перемешаны`);
             }
             
-            console.log(`📊 Участников для регенерации: ${participants.length}`);
-            
             if (participants.length < 2) {
                 throw new Error('Недостаточно участников для генерации сетки');
             }
             
+            console.log(`⚙️ [regenerateBracket] Вызываем generateBracket...`);
+            console.log(`⚙️ Параметры: format="${tournament.format}", tournamentId=${tournamentId}, participants=${participants.length}, thirdPlaceMatch=${thirdPlaceMatch}`);
+            
             // 5. Генерируем новую сетку
-            console.log(`⚙️ Генерируем новую сетку...`);
-            const matches = await generateBracket(
+            const bracketResult = await generateBracket(
                 tournament.format, 
                 tournamentId, 
                 participants, 
                 thirdPlaceMatch
             );
             
+            console.log(`✅ [regenerateBracket] generateBracket завершен`);
+            console.log(`🔍 Результат генерации:`, typeof bracketResult, bracketResult?.success);
+            
+            // Извлекаем массив матчей из результата
+            const matches = bracketResult?.matches || bracketResult || [];
             console.log(`✅ Сгенерировано новых матчей: ${matches.length}`);
             
+            console.log(`💾 [regenerateBracket] Фиксируем транзакцию...`);
             await client.query('COMMIT');
+            console.log(`✅ Транзакция зафиксирована`);
             
+            console.log(`📤 [regenerateBracket] Отправляем уведомления...`);
             // 6. Отправляем уведомления
             await this._sendNotifications(tournamentId, tournament.name, 'regenerated');
             
@@ -199,10 +223,13 @@ class BracketService {
             };
             
         } catch (error) {
+            console.log(`❌ [regenerateBracket] ОШИБКА! Откатываем транзакцию...`);
             await client.query('ROLLBACK');
             console.error(`❌ [BracketService v2.0] Ошибка регенерации:`, error.message);
+            console.error(`📍 Stack trace:`, error.stack);
             throw error;
         } finally {
+            console.log(`🔓 [regenerateBracket] Освобождаем соединение с БД`);
             client.release();
         }
     }
