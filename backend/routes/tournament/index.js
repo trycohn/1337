@@ -58,6 +58,9 @@ router.post('/:id/start', authenticateToken, TournamentController.startTournamen
 // Получение списка игр
 router.get('/games/list', TournamentController.getGames);
 
+// 🔧 АЛИАС ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ: старый путь /games
+router.get('/games', TournamentController.getGames);
+
 // Сброс результатов матчей
 router.post('/:id/reset-match-results', authenticateToken, TournamentController.resetMatchResults);
 

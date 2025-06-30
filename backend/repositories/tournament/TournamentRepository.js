@@ -104,8 +104,16 @@ class TournamentRepository {
      * Получение списка игр
      */
     static async getGames() {
-        const result = await pool.query('SELECT id, name FROM games ORDER BY name');
-        return result.rows;
+        console.log('🎮 TournamentRepository: Выполняю SQL запрос для получения игр');
+        try {
+            const result = await pool.query('SELECT id, name FROM games ORDER BY name');
+            console.log(`✅ TournamentRepository: SQL запрос выполнен успешно, получено ${result.rows.length} записей`);
+            console.log('📊 TournamentRepository: Первые 3 игры:', result.rows.slice(0, 3));
+            return result.rows;
+        } catch (error) {
+            console.error('❌ TournamentRepository: Ошибка выполнения SQL запроса для игр:', error);
+            throw error;
+        }
     }
 
     /**

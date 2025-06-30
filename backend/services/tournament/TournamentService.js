@@ -256,7 +256,14 @@ class TournamentService {
      */
     static async getGames() {
         console.log('🎮 TournamentService: Получение списка игр');
-        return await TournamentRepository.getGames();
+        try {
+            const games = await TournamentRepository.getGames();
+            console.log(`✅ TournamentService: Получено ${games.length} игр из репозитория`);
+            return games;
+        } catch (error) {
+            console.error('❌ TournamentService: Ошибка получения списка игр:', error);
+            throw error;
+        }
     }
 
     /**

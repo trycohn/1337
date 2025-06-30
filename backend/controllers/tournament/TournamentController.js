@@ -112,8 +112,19 @@ class TournamentController {
 
     // 🎮 Получение списка игр
     static getGames = asyncHandler(async (req, res) => {
-        const games = await TournamentService.getGames();
-        res.json(games);
+        console.log('🎮 [TournamentController.getGames] Запрос получения списка игр');
+        console.log('📊 [getGames] Request params:', req.params);
+        console.log('📊 [getGames] Request query:', req.query);
+        console.log('📊 [getGames] Request body:', req.body);
+        
+        try {
+            const games = await TournamentService.getGames();
+            console.log(`✅ [getGames] Успешно получено ${games.length} игр`);
+            res.json(games);
+        } catch (error) {
+            console.error('❌ [getGames] Ошибка получения списка игр:', error);
+            throw error; // asyncHandler обработает ошибку
+        }
     });
 
     // 🥊 Генерация турнирной сетки
