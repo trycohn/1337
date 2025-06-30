@@ -1,30 +1,34 @@
-// backend/services/tournament/BracketService.js
-//
-// 🔄 УПРОЩЕННЫЙ И НАДЕЖНЫЙ BRACKET SERVICE V2.0
-// ================================================
-// 
-// ✅ Принципы новой архитектуры:
-// • Простота вместо сложности
-// • Одна транзакция для всей операции 
-// • Минимум блокировок и мьютексов
-// • Понятная логика без overengineering
-// • Атомарные операции (все или ничего)
-// • Быстрая диагностика проблем
-//
-
 const pool = require('../../db');
-const { generateBracket: bracketGenerator } = require('../../bracketGenerator');
-const { logTournamentEvent } = require('../../utils/tournament/logger');
-const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
-const { broadcastTournamentUpdate } = require('../../notifications');
+const { generateBracket: bracketGenerator } = require('../../bracketGenerators');
+const { logTournamentEvent } = require('../../utils/tournamentLogger');
+const { sendTournamentChatAnnouncement } = require('../ChatService');
+const { broadcastTournamentUpdate } = require('../../utils/websocket');
+
+/**
+ * 🎯 BracketService v2.0 - Упрощенная и надежная система генерации сеток
+ * 
+ * Принципы:
+ * - Простота: одна транзакция для всей операции
+ * - Надежность: минимум внешних зависимостей  
+ * - Атомарность: все или ничего
+ * - Понятность: простая логика без лишних абстракций
+ * 
+ * Изменения v2.0:
+ * - Убрана сложная система блокировок
+ * - Убраны race condition проверки
+ * - Убрана повторная вставка матчей (исправление критической ошибки)
+ * - Простая и понятная обработка ошибок
+ * - Детальное логирование каждого этапа
+ */
 
 class BracketService {
+    
     /**
-     * 🔄 Генерация турнирной сетки (упрощенная версия v2.0)
+     * 🎯 Генерация турнирной сетки (простая версия)
      */
     static async generateBracket(tournamentId, userId, thirdPlaceMatch = false) {
         const startTime = Date.now();
-        console.log(`🔄 [BracketService v2.0] Генерация сетки для турнира ${tournamentId} (thirdPlaceMatch: ${thirdPlaceMatch})`);
+        console.log(`🎯 [BracketService v2.0] Генерация сетки для турнира ${tournamentId}`);
         
         const client = await pool.connect();
         try {
@@ -135,33 +139,22 @@ class BracketService {
                 throw new Error('Генератор сетки не создал матчи');
             }
             
-            console.log(`💾 [generateBracket] Сохраняем ${matches.length} матчей в БД...`);
-            console.time(`save-matches-${tournamentId}`);
+            // 🔧 ИСПРАВЛЕНИЕ: bracketGenerator УЖЕ создал матчи в БД!
+            // Убираем повторную вставку которая приводила к дублированию
+            console.log(`✅ [generateBracket] Матчи уже созданы генератором сетки в БД`);
+            console.log(`ℹ️ [generateBracket] Пропускаем повторную вставку для избежания дублирования`);
             
-            // 6. Сохраняем матчи в базе данных
-            for (const match of matches) {
-                await client.query(
-                    `INSERT INTO matches (
-                        tournament_id, round, match_number, team1_id, team2_id,
-                        next_match_id, is_third_place_match, position, parent_match1_id, parent_match2_id
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                    [
-                        tournamentId,
-                        match.round,
-                        match.match_number,
-                        match.team1_id || null,
-                        match.team2_id || null,
-                        match.next_match_id || null,
-                        match.is_third_place_match || false,
-                        match.position || null,
-                        match.parent_match1_id || null,
-                        match.parent_match2_id || null
-                    ]
-                );
+            // Проверяем что матчи действительно созданы
+            const createdMatchesCheck = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            const actualMatchCount = parseInt(createdMatchesCheck.rows[0].count);
+            console.log(`📊 [generateBracket] Проверка: в БД создано ${actualMatchCount} матчей`);
+            
+            if (actualMatchCount === 0) {
+                throw new Error('Генератор сетки не создал записи в БД');
             }
-            
-            console.timeEnd(`save-matches-${tournamentId}`);
-            console.log(`✅ [generateBracket] Все матчи сохранены`);
             
             console.log(`💾 [generateBracket] Коммитим транзакцию...`);
             await client.query('COMMIT');
@@ -170,7 +163,7 @@ class BracketService {
             const duration = Date.now() - startTime;
             console.log(`🎉 [generateBracket] Генерация завершена за ${duration}ms`);
             
-            return { success: true, matchesCount: matches.length, duration };
+            return { success: true, matchesCount: actualMatchCount, duration };
             
         } catch (error) {
             console.error(`❌ [generateBracket] Ошибка:`, error.message);
@@ -313,33 +306,22 @@ class BracketService {
                 throw new Error('Генератор сетки не создал матчи');
             }
             
-            console.log(`💾 [regenerateBracket] Сохраняем ${matches.length} матчей в БД...`);
-            console.time(`save-matches-${tournamentId}`);
+            // 🔧 ИСПРАВЛЕНИЕ: bracketGenerator УЖЕ создал матчи в БД!
+            // Убираем повторную вставку которая приводила к дублированию
+            console.log(`✅ [regenerateBracket] Матчи уже созданы генератором сетки в БД`);
+            console.log(`ℹ️ [regenerateBracket] Пропускаем повторную вставку для избежания дублирования`);
             
-            // 7. Сохраняем матчи в базе данных
-            for (const match of matches) {
-                await client.query(
-                    `INSERT INTO matches (
-                        tournament_id, round, match_number, team1_id, team2_id,
-                        next_match_id, is_third_place_match, position, parent_match1_id, parent_match2_id
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                    [
-                        tournamentId,
-                        match.round,
-                        match.match_number,
-                        match.team1_id || null,
-                        match.team2_id || null,
-                        match.next_match_id || null,
-                        match.is_third_place_match || false,
-                        match.position || null,
-                        match.parent_match1_id || null,
-                        match.parent_match2_id || null
-                    ]
-                );
+            // Проверяем что матчи действительно созданы
+            const createdMatchesCheck = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            const actualMatchCount = parseInt(createdMatchesCheck.rows[0].count);
+            console.log(`📊 [regenerateBracket] Проверка: в БД создано ${actualMatchCount} матчей`);
+            
+            if (actualMatchCount === 0) {
+                throw new Error('Генератор сетки не создал записи в БД');
             }
-            
-            console.timeEnd(`save-matches-${tournamentId}`);
-            console.log(`✅ [regenerateBracket] Все матчи сохранены`);
             
             console.log(`💾 [regenerateBracket] Коммитим транзакцию...`);
             await client.query('COMMIT');
@@ -348,7 +330,7 @@ class BracketService {
             const duration = Date.now() - startTime;
             console.log(`🎉 [regenerateBracket] Регенерация завершена за ${duration}ms`);
             
-            return { success: true, matchesCount: matches.length, duration };
+            return { success: true, matchesCount: actualMatchCount, duration };
             
         } catch (error) {
             console.error(`❌ [regenerateBracket] Ошибка:`, error.message);

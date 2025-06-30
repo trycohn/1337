@@ -364,21 +364,28 @@ const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) =
     if (preliminaryMatches.length > 0) {
         const firstRoundMatches = mainMatches.filter(m => m.round === 0);
         
+        console.log(`🔗 ИСПРАВЛЕНИЕ: Связываем ${preliminaryMatches.length} предварительных матчей с ${firstRoundMatches.length} основными`);
+        
+        // 🔧 ИСПРАВЛЕНИЕ: Правильно распределяем предварительные матчи
         for (let i = 0; i < preliminaryMatches.length; i++) {
             const prelimMatch = preliminaryMatches[i];
             
-            // Находим матч первого раунда, в который должен попасть победитель
-            const targetMainMatch = firstRoundMatches.find(match => 
-                match.team1_id === null || match.team2_id === null
-            );
+            // Каждый предварительный матч связывается с определенным основным матчем
+            // Первый предварительный → первый основной матч (где team1_id или team2_id пустые)
+            // Второй предварительный → первый основной матч (в оставшийся слот)
+            // Третий предварительный → второй основной матч, и т.д.
             
-            if (targetMainMatch) {
+            const targetMatchIndex = Math.floor(i / 2); // Каждые 2 предварительных → 1 основной
+            
+            if (targetMatchIndex < firstRoundMatches.length) {
+                const targetMainMatch = firstRoundMatches[targetMatchIndex];
+                
                 await pool.query(
                     'UPDATE matches SET next_match_id = $1 WHERE id = $2',
                     [targetMainMatch.id, prelimMatch.id]
                 );
                 
-                console.log(`   🔗 Предварительный матч ${prelimMatch.id} → Основной матч ${targetMainMatch.id}`);
+                console.log(`   🔗 Предварительный матч ${prelimMatch.id} → Основной матч ${targetMainMatch.id} (слот ${i % 2 + 1})`);
             }
         }
     }
