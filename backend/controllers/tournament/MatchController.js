@@ -7,210 +7,143 @@ class MatchController {
     // 🥊 Генерация турнирной сетки
     static generateBracket = asyncHandler(async (req, res) => {
         const startTime = Date.now();
-        const { id } = req.params;
-        const { thirdPlaceMatch } = req.body;
-        
         console.log('🚀 [MatchController.generateBracket] МОДУЛЬНЫЙ РОУТЕР ПОЛУЧИЛ ЗАПРОС!');
-        console.log('🚀 [MatchController.generateBracket] Tournament ID:', id);
+        console.log('🚀 [MatchController.generateBracket] Tournament ID:', req.params.id);
         console.log('🚀 [MatchController.generateBracket] User ID:', req.user.id);
         console.log('🚀 [MatchController.generateBracket] Username:', req.user.username);
         console.log('🚀 [MatchController.generateBracket] Request body:', req.body);
+        
+        const { id: tournamentId } = req.params;
+        const { thirdPlaceMatch } = req.body;
+        const userId = req.user.id;
+        
         console.log('🚀 [MatchController.generateBracket] thirdPlaceMatch:', thirdPlaceMatch);
+        console.log('🚀 [MatchController.generateBracket] Вызываем BracketService.generateBracket...');
         
         try {
-            console.log('🚀 [MatchController.generateBracket] Вызываем BracketService.generateBracket...');
-            
             const result = await BracketService.generateBracket(
-                parseInt(id),
-                req.user.id,
-                thirdPlaceMatch
+                parseInt(tournamentId), 
+                userId, 
+                thirdPlaceMatch || false
             );
             
-            const duration = Date.now() - startTime;
-            console.log(`✅ [MatchController.generateBracket] BracketService завершился успешно за ${duration}ms`);
-            console.log(`✅ [MatchController.generateBracket] Результат:`, {
-                success: result.success,
-                totalMatches: result.totalMatches,
-                existing: result.existing || false,
-                concurrent: result.concurrent || false
-            });
+            const endTime = Date.now();
+            console.log(`✅ [MatchController.generateBracket] Успешно завершено за ${endTime - startTime}ms`);
             
-            res.json({
+            res.status(200).json({
                 success: true,
-                message: result.message || 'Сетка успешно сгенерирована',
+                message: result.message,
                 tournament: result.tournament,
                 matches: result.matches,
                 totalMatches: result.totalMatches,
-                existing: result.existing || false,
-                duration: duration
+                existing: result.existing || false
             });
             
         } catch (error) {
-            const duration = Date.now() - startTime;
-            console.error(`❌ [MatchController.generateBracket] ОШИБКА после ${duration}ms:`, error.message);
+            const endTime = Date.now();
+            console.error(`❌ [MatchController.generateBracket] ОШИБКА после ${endTime - startTime}ms: ${error.message}`);
             console.error(`❌ [MatchController.generateBracket] Тип ошибки: ${error.name}`);
             console.error(`❌ [MatchController.generateBracket] Код ошибки: ${error.code || 'не определен'}`);
-            console.error(`❌ [MatchController.generateBracket] Stack trace:`, error.stack);
+            console.error(`❌ [MatchController.generateBracket] Stack trace: ${error.stack}`);
             
-            // Определяем тип ошибки и возвращаем соответствующий HTTP статус
-            let statusCode = 500;
-            let userMessage = 'Произошла ошибка при генерации турнирной сетки';
-            
-            if (error.message.includes('таймаут')) {
-                statusCode = 408; // Request Timeout
-                userMessage = 'Генерация сетки заняла слишком много времени. Попробуйте еще раз через несколько секунд.';
-            } else if (error.message.includes('не найден')) {
-                statusCode = 404; // Not Found
-                userMessage = error.message;
-            } else if (error.message.includes('права') || error.message.includes('администратор')) {
-                statusCode = 403; // Forbidden
-                userMessage = error.message;
-            } else if (error.message.includes('команды еще не сформированы') || 
-                       error.message.includes('минимум') || 
-                       error.message.includes('участников')) {
-                statusCode = 400; // Bad Request
-                userMessage = error.message;
-            } else if (error.message.includes('заблокирован другим процессом')) {
-                statusCode = 423; // Locked
-                userMessage = 'Турнир временно заблокирован другой операцией. Попробуйте через несколько секунд.';
+            // 🆕 СПЕЦИАЛЬНАЯ ОБРАБОТКА ДЛЯ БЛОКИРОВОК
+            if (error.message.includes('заблокирован другим процессом')) {
+                console.log(`🔍 [MatchController.generateBracket] Обнаружена проблема с блокировками, запускаем диагностику`);
+                
+                // Асинхронно запускаем диагностику (не блокируем ответ)
+                BracketService.checkDatabaseLocks(parseInt(tournamentId)).catch(diagError => {
+                    console.warn('⚠️ Ошибка асинхронной диагностики:', diagError.message);
+                });
+                
+                return res.status(423).json({
+                    error: 'Турнир временно заблокирован',
+                    message: 'Турнир обрабатывается другим процессом. Попробуйте через 10-15 секунд.',
+                    details: 'Если проблема повторяется, обратитесь к администратору',
+                    tournamentId: parseInt(tournamentId),
+                    retryAfter: 15,
+                    diagnosticAvailable: true
+                });
             }
             
-            console.error(`❌ [MatchController.generateBracket] Возвращаем статус ${statusCode}: ${userMessage}`);
+            // 🆕 ОБРАБОТКА ДРУГИХ ОШИБОК БЛОКИРОВОК И ТАЙМАУТОВ
+            if (error.code === '57014' || error.message.includes('timeout') || error.message.includes('таймаут')) {
+                return res.status(408).json({
+                    error: 'Операция прервана по таймауту',
+                    message: 'Генерация сетки заняла слишком много времени. Попробуйте еще раз.',
+                    tournamentId: parseInt(tournamentId),
+                    retryAfter: 10
+                });
+            }
             
-            return res.status(statusCode).json({
-                success: false,
-                error: userMessage,
-                code: error.code || 'GENERATION_ERROR',
-                duration: duration,
-                timestamp: new Date().toISOString(),
-                tournamentId: id,
-                userId: req.user.id,
-                // В development режиме добавляем техническую информацию
-                ...(process.env.NODE_ENV === 'development' && {
-                    technical: {
-                        originalError: error.message,
-                        errorType: error.name,
-                        errorCode: error.code
-                    }
-                })
+            if (error.code === '25P02') {
+                return res.status(409).json({
+                    error: 'Конфликт транзакций',
+                    message: 'Произошел конфликт при обработке запроса. Попробуйте еще раз.',
+                    tournamentId: parseInt(tournamentId),
+                    retryAfter: 5
+                });
+            }
+            
+            console.error(`❌ [MatchController.generateBracket] Возвращаем статус 500: Произошла ошибка при генерации турнирной сетки`);
+            res.status(500).json({
+                error: 'Произошла ошибка при генерации турнирной сетки',
+                message: error.message,
+                tournamentId: parseInt(tournamentId),
+                timestamp: new Date().toISOString()
             });
         }
     });
 
     // 🔄 Перегенерация турнирной сетки
     static regenerateBracket = asyncHandler(async (req, res) => {
-        const startTime = Date.now();
-        const { id } = req.params;
-        const { shuffleParticipants, thirdPlaceMatch } = req.body;
+        const { id: tournamentId } = req.params;
+        const { shuffle, thirdPlaceMatch } = req.body;
+        const userId = req.user.id;
         
-        console.log(`🔄 [MatchController.regenerateBracket] НАЧАЛО ОБРАБОТКИ ЗАПРОСА`);
-        console.log(`🔄 [MatchController.regenerateBracket] Tournament ID: ${id}`);
-        console.log(`🔄 [MatchController.regenerateBracket] User ID: ${req.user.id}`);
-        console.log(`🔄 [MatchController.regenerateBracket] Username: ${req.user.username}`);
-        console.log(`🔄 [MatchController.regenerateBracket] shuffleParticipants: ${shuffleParticipants}`);
-        console.log(`🔄 [MatchController.regenerateBracket] thirdPlaceMatch: ${thirdPlaceMatch}`);
-        console.log(`🔄 [MatchController.regenerateBracket] Request body:`, req.body);
+        console.log(`🔄 [MatchController.regenerateBracket] Регенерация для турнира ${tournamentId}, shuffle: ${shuffle}`);
         
-        try {
-            console.log(`🚀 [MatchController.regenerateBracket] Вызываем BracketService.regenerateBracket...`);
-            
-            const result = await BracketService.regenerateBracket(
-                parseInt(id),
-                req.user.id,
-                shuffleParticipants || false,  // Правильный третий параметр - shuffle
-                thirdPlaceMatch || false       // Правильный четвертый параметр - thirdPlaceMatch
-            );
-            
-            const duration = Date.now() - startTime;
-            console.log(`✅ [MatchController.regenerateBracket] BracketService завершился успешно за ${duration}ms`);
-            console.log(`✅ [MatchController.regenerateBracket] Результат:`, {
-                success: result.success,
-                totalMatches: result.totalMatches,
-                shuffled: shuffleParticipants || false
-            });
-            
-            res.json({
-                success: true,
-                message: result.message || 'Турнирная сетка успешно перегенерирована',
-                tournament: result.tournament,
-                matches: result.matches,
-                totalMatches: result.totalMatches,
-                shuffled: shuffleParticipants || false,
-                duration: duration
-            });
-            
-        } catch (error) {
-            const duration = Date.now() - startTime;
-            console.error(`❌ [MatchController.regenerateBracket] ОШИБКА после ${duration}ms:`, error.message);
-            console.error(`❌ [MatchController.regenerateBracket] Тип ошибки: ${error.name}`);
-            console.error(`❌ [MatchController.regenerateBracket] Код ошибки: ${error.code || 'не определен'}`);
-            console.error(`❌ [MatchController.regenerateBracket] Stack trace:`, error.stack);
-            
-            // Определяем тип ошибки и возвращаем соответствующий HTTP статус
-            let statusCode = 500;
-            let userMessage = 'Произошла ошибка при регенерации турнирной сетки';
-            
-            if (error.message.includes('таймаут')) {
-                statusCode = 408; // Request Timeout
-                userMessage = 'Регенерация сетки заняла слишком много времени. Попробуйте еще раз через несколько секунд.';
-            } else if (error.message.includes('частая регенерация')) {
-                statusCode = 429; // Too Many Requests
-                userMessage = error.message;
-            } else if (error.message.includes('не найден')) {
-                statusCode = 404; // Not Found
-                userMessage = error.message;
-            } else if (error.message.includes('права') || error.message.includes('администратор')) {
-                statusCode = 403; // Forbidden
-                userMessage = error.message;
-            } else if (error.message.includes('команды еще не сформированы') || 
-                       error.message.includes('минимум') || 
-                       error.message.includes('участников')) {
-                statusCode = 400; // Bad Request
-                userMessage = error.message;
-            } else if (error.message.includes('заблокирован другим процессом')) {
-                statusCode = 423; // Locked
-                userMessage = 'Турнир временно заблокирован другой операцией. Попробуйте через несколько секунд.';
-            }
-            
-            console.error(`❌ [MatchController.regenerateBracket] Возвращаем статус ${statusCode}: ${userMessage}`);
-            
-            return res.status(statusCode).json({
-                success: false,
-                error: userMessage,
-                code: error.code || 'REGENERATION_ERROR',
-                duration: duration,
-                timestamp: new Date().toISOString(),
-                tournamentId: id,
-                userId: req.user.id,
-                // В development режиме добавляем техническую информацию
-                ...(process.env.NODE_ENV === 'development' && {
-                    technical: {
-                        originalError: error.message,
-                        errorType: error.name,
-                        errorCode: error.code
-                    }
-                })
-            });
-        }
+        const result = await BracketService.regenerateBracket(
+            parseInt(tournamentId), 
+            userId, 
+            shuffle || false, 
+            thirdPlaceMatch || false
+        );
+        
+        res.status(200).json({
+            success: true,
+            message: result.message,
+            tournament: result.tournament,
+            matches: result.matches,
+            deletedMatches: result.deleted_matches
+        });
     });
 
     // 🏆 Обновление результата матча в рамках турнира
     static updateMatchResult = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        const { matchId, winner_team_id, score1, score2, maps } = req.body;
+        const { id: tournamentId, matchId } = req.params;
+        const { winner_team_id, score1, score2, maps } = req.body;
+        const userId = req.user.id;
         
-        const validationResult = TournamentValidator.validateMatchResult(req.body);
-        if (!validationResult.isValid) {
-            return res.status(400).json({ error: validationResult.errors });
-        }
+        console.log(`⚔️ [MatchController.updateMatchResult] Обновление матча ${matchId} в турнире ${tournamentId}`);
         
         const result = await MatchService.updateMatchResult(
-            parseInt(id), 
-            { matchId, winner_team_id, score1, score2, maps }, 
-            req.user.id
+            parseInt(tournamentId),
+            {
+                matchId: parseInt(matchId),
+                winner_team_id: parseInt(winner_team_id),
+                score1,
+                score2,
+                maps
+            },
+            userId
         );
         
-        res.json(result);
+        res.status(200).json({
+            success: true,
+            message: 'Результат матча обновлен',
+            tournament: result.tournament,
+            advancementResult: result.advancementResult
+        });
     });
 
     // 🎯 Обновление результата конкретного матча (альтернативный endpoint)
@@ -334,137 +267,107 @@ class MatchController {
 
     // 🔧 Диагностика статуса блокировок PostgreSQL (только для администраторов)
     static checkDatabaseLocks = asyncHandler(async (req, res) => {
-        // Проверяем права администратора
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({
-                success: false,
-                error: 'Доступ запрещен: требуются права администратора'
-            });
-        }
+        console.log('🔍 [MatchController.checkDatabaseLocks] Запрос диагностики блокировок');
         
-        const { id } = req.params;
-        console.log(`🔧 [MatchController.checkDatabaseLocks] Диагностика блокировок для турнира ${id}, админ: ${req.user.username}`);
+        const { id: tournamentId } = req.params;
+        const userId = req.user.id;
         
         try {
-            const pool = require('../../db');
+            const diagnostic = await BracketService.checkDatabaseLocks(
+                tournamentId ? parseInt(tournamentId) : null
+            );
             
-            // Проверяем активные блокировки на турнире
-            const locksQuery = `
-                SELECT 
-                    pg_locks.locktype,
-                    pg_locks.mode,
-                    pg_locks.granted,
-                    pg_locks.pid,
-                    pg_stat_activity.query,
-                    pg_stat_activity.state,
-                    pg_stat_activity.query_start,
-                    EXTRACT(EPOCH FROM (now() - pg_stat_activity.query_start)) as duration_seconds
-                FROM pg_locks
-                LEFT JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid
-                WHERE pg_locks.relation = (
-                    SELECT oid FROM pg_class WHERE relname = 'tournaments'
-                )
-                AND pg_stat_activity.query LIKE '%tournaments%'
-                AND pg_stat_activity.state != 'idle'
-                ORDER BY pg_stat_activity.query_start;
-            `;
+            console.log(`✅ [MatchController.checkDatabaseLocks] Диагностика завершена`);
             
-            const locksResult = await pool.query(locksQuery);
-            
-            // Проверяем общую статистику соединений
-            const connectionsQuery = `
-                SELECT 
-                    COUNT(*) as total_connections,
-                    COUNT(CASE WHEN state = 'active' THEN 1 END) as active_connections,
-                    COUNT(CASE WHEN state = 'idle in transaction' THEN 1 END) as idle_in_transaction
-                FROM pg_stat_activity
-                WHERE datname = current_database();
-            `;
-            
-            const connectionsResult = await pool.query(connectionsQuery);
-            
-            // Проверяем долго выполняющиеся запросы
-            const longQueriesQuery = `
-                SELECT 
-                    pid,
-                    state,
-                    query,
-                    query_start,
-                    EXTRACT(EPOCH FROM (now() - query_start)) as duration_seconds
-                FROM pg_stat_activity
-                WHERE datname = current_database()
-                AND state != 'idle'
-                AND EXTRACT(EPOCH FROM (now() - query_start)) > 5
-                ORDER BY query_start;
-            `;
-            
-            const longQueriesResult = await pool.query(longQueriesQuery);
-            
-            console.log(`✅ [MatchController.checkDatabaseLocks] Диагностика завершена:`, {
-                locks: locksResult.rows.length,
-                longQueries: longQueriesResult.rows.length,
-                totalConnections: connectionsResult.rows[0].total_connections
-            });
-            
-            res.json({
+            res.status(200).json({
                 success: true,
-                tournamentId: parseInt(id),
+                message: 'Диагностика блокировок завершена',
+                tournamentId: tournamentId ? parseInt(tournamentId) : null,
+                diagnostic: diagnostic,
                 timestamp: new Date().toISOString(),
-                locks: {
-                    count: locksResult.rows.length,
-                    details: locksResult.rows
-                },
-                connections: connectionsResult.rows[0],
-                longRunningQueries: {
-                    count: longQueriesResult.rows.length,
-                    queries: longQueriesResult.rows
-                },
-                recommendations: generateLockRecommendations(locksResult.rows, longQueriesResult.rows)
+                recommendations: {
+                    hasBlocks: diagnostic.tournamentLocks > 0,
+                    suggestion: diagnostic.tournamentLocks > 0 
+                        ? 'Обнаружены активные блокировки. Попробуйте очистить их или подождите завершения операций.'
+                        : 'Блокировки не обнаружены. Проблема может быть на уровне приложения.'
+                }
             });
             
         } catch (error) {
-            console.error(`❌ [MatchController.checkDatabaseLocks] Ошибка диагностики:`, error);
+            console.error(`❌ [MatchController.checkDatabaseLocks] Ошибка диагностики: ${error.message}`);
+            
             res.status(500).json({
-                success: false,
-                error: 'Ошибка при диагностике блокировок базы данных',
-                details: error.message
+                error: 'Ошибка диагностики блокировок',
+                message: error.message,
+                tournamentId: tournamentId ? parseInt(tournamentId) : null,
+                timestamp: new Date().toISOString()
             });
         }
     });
-}
 
-// 🔧 Вспомогательная функция для генерации рекомендаций по блокировкам
-function generateLockRecommendations(locks, longQueries) {
-    const recommendations = [];
-    
-    if (locks.length > 0) {
-        recommendations.push('Обнаружены активные блокировки на таблице tournaments');
+    /**
+     * 🆕 Экстренная очистка зависших блокировок
+     */
+    static clearStuckLocks = asyncHandler(async (req, res) => {
+        console.log('🧹 [MatchController.clearStuckLocks] Запрос очистки блокировок');
         
-        const unGrantedLocks = locks.filter(lock => !lock.granted);
-        if (unGrantedLocks.length > 0) {
-            recommendations.push(`${unGrantedLocks.length} блокировок ожидают освобождения - возможна проблема`);
-        }
+        const { id: tournamentId } = req.params;
+        const userId = req.user.id;
         
-        const oldLocks = locks.filter(lock => lock.duration_seconds > 10);
-        if (oldLocks.length > 0) {
-            recommendations.push(`${oldLocks.length} блокировок существуют более 10 секунд - требуется вмешательство`);
+        try {
+            // Проверяем права (только создатель или админ турнира)
+            // Это делается внутри BracketService.clearStuckLocks
+            
+            const result = await BracketService.clearStuckLocks(
+                parseInt(tournamentId), 
+                userId
+            );
+            
+            console.log(`✅ [MatchController.clearStuckLocks] Очистка завершена`);
+            
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                tournamentId: parseInt(tournamentId),
+                result: result,
+                timestamp: new Date().toISOString(),
+                nextSteps: result.oldDatabaseLocks > 0 
+                    ? ['Обратитесь к администратору для завершения старых процессов БД']
+                    : ['Попробуйте снова сгенерировать турнирную сетку']
+            });
+            
+        } catch (error) {
+            console.error(`❌ [MatchController.clearStuckLocks] Ошибка очистки: ${error.message}`);
+            
+            res.status(500).json({
+                error: 'Ошибка очистки блокировок',
+                message: error.message,
+                tournamentId: parseInt(tournamentId),
+                timestamp: new Date().toISOString()
+            });
         }
-    }
-    
-    if (longQueries.length > 0) {
-        recommendations.push(`Найдено ${longQueries.length} долго выполняющихся запросов`);
+    });
+
+    /**
+     * Очистка результатов матчей
+     */
+    static clearMatchResults = asyncHandler(async (req, res) => {
+        const { id: tournamentId } = req.params;
+        const userId = req.user.id;
         
-        const veryLongQueries = longQueries.filter(query => query.duration_seconds > 30);
-        if (veryLongQueries.length > 0) {
-            recommendations.push(`${veryLongQueries.length} запросов выполняются более 30 секунд - критично`);
-        }
-    }
-    
-    if (locks.length === 0 && longQueries.length === 0) {
-        recommendations.push('Блокировки и долгие запросы не обнаружены - система работает нормально');
-    }
-    
-    return recommendations;
+        console.log(`🧹 [MatchController.clearMatchResults] Очистка результатов для турнира ${tournamentId}`);
+        
+        const result = await BracketService.clearMatchResults(
+            parseInt(tournamentId), 
+            userId
+        );
+        
+        res.status(200).json({
+            success: true,
+            message: result.message,
+            matchesReset: result.matches_reset
+        });
+    });
 }
 
 module.exports = MatchController; 

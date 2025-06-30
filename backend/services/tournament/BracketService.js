@@ -21,6 +21,191 @@ const OPERATION_TIMEOUT_MS = 30000; // 30 секунд
 
 class BracketService {
     /**
+     * 🆕 ДИАГНОСТИКА БЛОКИРОВОК БАЗЫ ДАННЫХ
+     */
+    static async checkDatabaseLocks(tournamentId = null) {
+        console.log(`🔍 [BracketService] Диагностика блокировок БД${tournamentId ? ` для турнира ${tournamentId}` : ''}`);
+        
+        try {
+            // Проверяем активные блокировки PostgreSQL
+            const locksQuery = `
+                SELECT 
+                    pg_locks.pid,
+                    pg_locks.mode,
+                    pg_locks.locktype,
+                    pg_locks.relation,
+                    pg_locks.granted,
+                    pg_stat_activity.query,
+                    pg_stat_activity.state,
+                    pg_stat_activity.application_name,
+                    pg_stat_activity.backend_start,
+                    pg_stat_activity.query_start,
+                    CASE 
+                        WHEN pg_locks.relation IS NOT NULL THEN 
+                            (SELECT schemaname||'.'||tablename FROM pg_tables WHERE 
+                             pg_tables.schemaname||'.'||pg_tables.tablename = 
+                             (SELECT schemaname||'.'||tablename FROM pg_tables WHERE 
+                              'pg_class'::regclass = pg_locks.relation))
+                        ELSE 'N/A'
+                    END as table_name
+                FROM pg_locks
+                LEFT JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid
+                WHERE pg_locks.locktype IN ('relation', 'tuple', 'advisory') 
+                AND pg_stat_activity.datname = current_database()
+                ORDER BY pg_locks.granted DESC, pg_stat_activity.query_start ASC
+            `;
+            
+            const locksResult = await pool.query(locksQuery);
+            
+            console.log(`🔍 Найдено активных блокировок: ${locksResult.rows.length}`);
+            
+            // Ищем блокировки таблиц турниров
+            const tournamentLocks = locksResult.rows.filter(lock => 
+                lock.table_name && (
+                    lock.table_name.includes('tournaments') || 
+                    lock.table_name.includes('matches') ||
+                    lock.table_name.includes('tournament_')
+                )
+            );
+            
+            if (tournamentLocks.length > 0) {
+                console.log(`🔒 Найдено ${tournamentLocks.length} блокировок турнирных таблиц:`);
+                tournamentLocks.forEach((lock, index) => {
+                    console.log(`   ${index + 1}. PID: ${lock.pid}, Table: ${lock.table_name}, Mode: ${lock.mode}, Granted: ${lock.granted}, State: ${lock.state}`);
+                    if (lock.query && lock.query.length > 100) {
+                        console.log(`      Query: ${lock.query.substring(0, 100)}...`);
+                    } else if (lock.query) {
+                        console.log(`      Query: ${lock.query}`);
+                    }
+                });
+            }
+            
+            // Проверяем конкретно блокировки турнира
+            if (tournamentId) {
+                const specificTournamentLocks = locksResult.rows.filter(lock => 
+                    lock.query && lock.query.includes(`tournaments WHERE id = ${tournamentId}`)
+                );
+                
+                if (specificTournamentLocks.length > 0) {
+                    console.log(`🎯 Найдены блокировки конкретно турнира ${tournamentId}:`);
+                    specificTournamentLocks.forEach((lock, index) => {
+                        console.log(`   ${index + 1}. PID: ${lock.pid}, Mode: ${lock.mode}, Granted: ${lock.granted}, State: ${lock.state}, Started: ${lock.query_start}`);
+                    });
+                }
+            }
+            
+            return {
+                totalLocks: locksResult.rows.length,
+                tournamentLocks: tournamentLocks.length,
+                locks: locksResult.rows,
+                tournamentSpecificLocks: tournamentId ? locksResult.rows.filter(lock => 
+                    lock.query && lock.query.includes(`tournaments WHERE id = ${tournamentId}`)
+                ).length : 0
+            };
+            
+        } catch (error) {
+            console.error('❌ Ошибка диагностики блокировок:', error);
+            return {
+                error: error.message,
+                totalLocks: 0,
+                tournamentLocks: 0
+            };
+        }
+    }
+
+    /**
+     * 🆕 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА ЗАВИСШИХ БЛОКИРОВОК (только для экстренных случаев)
+     */
+    static async clearStuckLocks(tournamentId, userId) {
+        console.log(`🧹 [BracketService] ЭКСТРЕННАЯ очистка зависших блокировок для турнира ${tournamentId}`);
+        
+        try {
+            // Сначала диагностируем проблему
+            const locksDiagnostic = await this.checkDatabaseLocks(tournamentId);
+            console.log(`🔍 Диагностика показала: ${locksDiagnostic.tournamentSpecificLocks} блокировок турнира`);
+            
+            if (locksDiagnostic.tournamentSpecificLocks === 0) {
+                console.log(`✅ Активных блокировок турнира ${tournamentId} не найдено`);
+                
+                // Очищаем application-level блокировки
+                const lockKey = `${tournamentId}-generate`;
+                if (activeBracketOperations.has(lockKey)) {
+                    activeBracketOperations.delete(lockKey);
+                    console.log(`🔓 Очищена application-level блокировка ${lockKey}`);
+                }
+                
+                return {
+                    success: true,
+                    message: 'Блокировки очищены на уровне приложения',
+                    clearedLocks: 0
+                };
+            }
+            
+            // Если есть старые блокировки (старше 5 минут), логируем их
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            
+            const oldLocksQuery = `
+                SELECT 
+                    pg_locks.pid,
+                    pg_stat_activity.query_start,
+                    pg_stat_activity.state,
+                    pg_stat_activity.query
+                FROM pg_locks
+                LEFT JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid
+                WHERE pg_locks.locktype = 'relation'
+                AND pg_stat_activity.datname = current_database()
+                AND pg_stat_activity.query LIKE '%tournaments%'
+                AND pg_stat_activity.query_start < $1
+                ORDER BY pg_stat_activity.query_start ASC
+            `;
+            
+            const oldLocksResult = await pool.query(oldLocksQuery, [fiveMinutesAgo]);
+            
+            if (oldLocksResult.rows.length > 0) {
+                console.log(`⚠️ Найдены старые блокировки (старше 5 минут): ${oldLocksResult.rows.length}`);
+                oldLocksResult.rows.forEach((lock, index) => {
+                    console.log(`   ${index + 1}. PID: ${lock.pid}, Started: ${lock.query_start}, State: ${lock.state}`);
+                });
+                
+                console.log(`⚠️ РЕКОМЕНДАЦИЯ: Обратитесь к администратору БД для принудительного завершения этих процессов`);
+                console.log(`⚠️ Команда для администратора: SELECT pg_terminate_backend(${oldLocksResult.rows.map(l => l.pid).join('), pg_terminate_backend(')})`);
+            }
+            
+            // Очищаем application-level блокировки в любом случае
+            const lockKey = `${tournamentId}-generate`;
+            if (activeBracketOperations.has(lockKey)) {
+                activeBracketOperations.delete(lockKey);
+                console.log(`🔓 Очищена application-level блокировка ${lockKey}`);
+            }
+            
+            // Очищаем debounce
+            if (lastRegenerationTimes.has(tournamentId)) {
+                lastRegenerationTimes.delete(tournamentId);
+                console.log(`🔓 Очищен debounce для турнира ${tournamentId}`);
+            }
+            
+            // Логируем событие
+            await logTournamentEvent(tournamentId, userId, 'locks_cleared', {
+                totalLocks: locksDiagnostic.totalLocks,
+                tournamentLocks: locksDiagnostic.tournamentSpecificLocks,
+                oldLocks: oldLocksResult.rows.length
+            });
+            
+            return {
+                success: true,
+                message: 'Application-level блокировки очищены',
+                clearedAppLocks: 1,
+                oldDatabaseLocks: oldLocksResult.rows.length,
+                recommendation: oldLocksResult.rows.length > 0 ? 'Обратитесь к администратору БД' : null
+            };
+            
+        } catch (error) {
+            console.error('❌ Ошибка очистки блокировок:', error);
+            throw error;
+        }
+    }
+
+    /**
      * 🆕 Проверка и установка мьютекса для предотвращения race conditions
      * @param {number} tournamentId - ID турнира
      * @param {string} operation - Тип операции
@@ -82,19 +267,28 @@ class BracketService {
     }
 
     /**
-     * 🆕 БЕЗОПАСНАЯ блокировка турнира с ранним обнаружением ошибок
+     * 🆕 УЛУЧШЕННАЯ безопасная блокировка турнира с диагностикой
      * @private
      */
     static async _safeLockTournament(client, tournamentId, operationName) {
-        let lockAcquired = false;
+        console.log(`🔒 [${operationName}] Начинаем безопасную блокировку турнира ${tournamentId}`);
+        
+        // Проверяем состояние клиента
+        if (!client || client._ended) {
+            throw new Error('Database client is not available or already ended');
+        }
         
         try {
-            console.log(`🔒 [${operationName}] Устанавливаем таймаут 10 секунд для блокировки`);
-            await client.query('SET statement_timeout = 10000'); // 10 секунд
+            // Сначала проверяем состояние транзакции
+            const transactionStatusResult = await client.query('SELECT txid_current_if_assigned() as txid');
+            console.log(`🔍 [${operationName}] Состояние транзакции проверено, txid: ${transactionStatusResult.rows[0].txid || 'не назначен'}`);
             
-            console.log(`🔒 [${operationName}] Блокируем турнир ${tournamentId} для безопасной операции`);
+            console.log(`🔒 [${operationName}] Устанавливаем таймаут 5 секунд для блокировки`);
+            await client.query('SET statement_timeout = 5000'); // Уменьшили с 10 до 5 секунд
             
-            // Сначала пробуем NOWAIT
+            console.log(`🔒 [${operationName}] Пробуем заблокировать турнир ${tournamentId} с NOWAIT`);
+            
+            // Используем NOWAIT для быстрого обнаружения блокировок
             try {
                 const tournamentResult = await client.query(
                     'SELECT id FROM tournaments WHERE id = $1 FOR UPDATE NOWAIT',
@@ -102,37 +296,56 @@ class BracketService {
                 );
                 
                 if (tournamentResult.rows.length === 0) {
-                    throw new Error('Турнир не найден');
+                    throw new Error(`Турнир ${tournamentId} не найден`);
                 }
                 
-                lockAcquired = true;
-                console.log(`✅ [${operationName}] Турнир ${tournamentId} успешно заблокирован (NOWAIT)`);
+                console.log(`✅ [${operationName}] Турнир ${tournamentId} успешно заблокирован`);
+                
+                // Сбрасываем таймаут после успешной блокировки
+                await client.query('SET statement_timeout = 0');
+                return true;
                 
             } catch (lockError) {
+                console.log(`⚠️ [${operationName}] Ошибка блокировки: ${lockError.code} - ${lockError.message}`);
+                
+                // Сбрасываем таймаут при любой ошибке
+                try {
+                    await client.query('SET statement_timeout = 0');
+                } catch (resetError) {
+                    console.warn(`⚠️ [${operationName}] Не удалось сбросить timeout из-за состояния транзакции: ${resetError.message}`);
+                }
+                
                 if (lockError.code === '55P03') {
-                    // Lock not available immediately - это означает что другой процесс уже работает
-                    console.log(`❌ [${operationName}] Турнир ${tournamentId} заблокирован другим процессом`);
-                    throw new Error(`Турнир ${tournamentId} уже обрабатывается другим процессом. Попробуйте через несколько секунд.`);
+                    // Lock not available - турнир заблокирован другим процессом
+                    console.log(`🔍 [${operationName}] Запускаем диагностику блокировок для турнира ${tournamentId}`);
+                    
+                    // Запускаем диагностику асинхронно (не блокируем основной поток)
+                    this.checkDatabaseLocks(tournamentId).catch(diagError => {
+                        console.warn('⚠️ Ошибка диагностики блокировок:', diagError.message);
+                    });
+                    
+                    throw new Error(`Турнир ${tournamentId} заблокирован другим процессом. Попробуйте через 10-15 секунд или обратитесь к администратору.`);
                 } else {
+                    // Другая ошибка блокировки
                     throw lockError;
                 }
             }
             
-            // Сбрасываем таймаут после успешной блокировки
-            await client.query('SET statement_timeout = 0');
-            console.log(`🔓 [${operationName}] Таймаут сброшен, продолжаем операцию`);
-            
-            return true;
-            
         } catch (error) {
-            // Сбрасываем таймаут при ошибке
+            console.error(`❌ [${operationName}] Критическая ошибка блокировки турнира ${tournamentId}:`, error.message);
+            
+            // Пытаемся безопасно сбросить таймаут
             try {
-                await client.query('SET statement_timeout = 0');
+                if (client && !client._ended && error.code !== '25P02') {
+                    await client.query('SET statement_timeout = 0');
+                }
             } catch (resetError) {
-                console.warn('⚠️ Не удалось сбросить statement_timeout:', resetError.message);
+                // Игнорируем ошибки сброса timeout при прерванной транзакции
+                if (resetError.code !== '25P02') {
+                    console.warn(`⚠️ [${operationName}] Не удалось сбросить statement_timeout: ${resetError.message}`);
+                }
             }
             
-            console.error(`❌ [${operationName}] Ошибка блокировки турнира ${tournamentId}:`, error.message);
             throw error;
         }
     }

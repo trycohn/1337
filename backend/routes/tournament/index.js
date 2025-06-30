@@ -25,13 +25,13 @@
 //
 
 const express = require('express');
+const { authenticateToken, verifyEmailRequired, verifyAdminOrCreator } = require('../../middleware/auth');
 const TournamentController = require('../../controllers/tournament/TournamentController');
 const ParticipantController = require('../../controllers/tournament/ParticipantController');
 const MatchController = require('../../controllers/tournament/MatchController');
 const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
 const MixTeamController = require('../../controllers/tournament/MixTeamController');
-const { authenticateToken } = require('../../middleware/auth');
 
 const router = express.Router();
 
@@ -53,91 +53,91 @@ router.get('/', TournamentController.getAllTournaments);
 router.get('/:id', TournamentController.getTournamentById);
 
 // Создание нового турнира (требует авторизации)
-router.post('/', authenticateToken, TournamentController.createTournament);
+router.post('/', authenticateToken, verifyEmailRequired, TournamentController.createTournament);
 
 // Обновление турнира (требует авторизации)
-router.put('/:id', authenticateToken, TournamentController.updateTournament);
+router.put('/:id', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateTournament);
 
 // Удаление турнира (требует авторизации)
-router.delete('/:id', authenticateToken, TournamentController.deleteTournament);
+router.delete('/:id', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.deleteTournament);
 
 // Начало турнира (требует авторизации)
-router.post('/:id/start', authenticateToken, TournamentController.startTournament);
+router.post('/:id/start', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.startTournament);
 
 // Сброс результатов матчей
-router.post('/:id/reset-match-results', authenticateToken, TournamentController.resetMatchResults);
+router.post('/:id/reset-match-results', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.resetMatchResults);
 
 // Получение команд турнира
-router.get('/:id/teams', TournamentController.getTeams);
+router.get('/:id/teams', ParticipantController.getTeams);
 
 // 📝 **ОБНОВЛЕНИЯ СОДЕРЖИМОГО ТУРНИРА**
 
 // Обновление описания
-router.put('/:id/description', authenticateToken, TournamentController.updateDescription);
+router.put('/:id/description', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateDescription);
 
 // Обновление полного описания
-router.put('/:id/full-description', authenticateToken, TournamentController.updateFullDescription);
+router.put('/:id/full-description', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateFullDescription);
 
 // Обновление регламента
-router.put('/:id/rules', authenticateToken, TournamentController.updateRules);
+router.put('/:id/rules', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateRules);
 
 // Обновление призового фонда
-router.put('/:id/prize-pool', authenticateToken, TournamentController.updatePrizePool);
+router.put('/:id/prize-pool', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updatePrizePool);
 
 // Обновление размера команды
-router.put('/:id/team-size', authenticateToken, TournamentController.updateTeamSize);
+router.put('/:id/team-size', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.updateTeamSize);
 
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ**
 
 // Генерация микс команд (основной метод)
-router.post('/:id/mix-generate-teams', authenticateToken, MixTeamController.formTeams);
+router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, ParticipantController.generateMixTeams);
 
 // Переформирование микс команд (основной метод)
-router.post('/:id/mix-regenerate-teams', authenticateToken, MixTeamController.regenerateTeams);
+router.post('/:id/mix-regenerate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.regenerateTeams);
 
 // Получение оригинальных участников для микс турниров (группированные по статусу в командах)
 router.get('/:id/mix-original-participants', MixTeamController.getOriginalParticipants);
 
 // Обновление размера команды специально для микс турниров
-router.patch('/:id/mix-team-size', authenticateToken, MixTeamController.updateTeamSize);
+router.patch('/:id/mix-team-size', authenticateToken, verifyAdminOrCreator, MixTeamController.updateTeamSize);
 
 // Очистка команд микс турнира
-router.post('/:id/mix-clear-teams', authenticateToken, MixTeamController.clearMixTeams);
+router.post('/:id/mix-clear-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.clearMixTeams);
 
 // 🆕 АЛИАСЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ с фронтендом
-router.post('/:id/form-teams', authenticateToken, MixTeamController.formTeamsAlias);  // Алиас для mix-generate-teams
+router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.formTeamsAlias);  // Алиас для mix-generate-teams
 router.get('/:id/original-participants', MixTeamController.getOriginalParticipantsAlias);  // Алиас для mix-original-participants
 
 // 🆕 ДОПОЛНИТЕЛЬНЫЕ АЛИАСЫ ДЛЯ СТАРЫХ МЕТОДОВ
-router.post('/:id/generate-teams', authenticateToken, MixTeamController.generateMixTeams);  // Старый алиас для генерации
+router.post('/:id/generate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.generateMixTeams);  // Старый алиас для генерации
 
 // 👥 **УПРАВЛЕНИЕ УЧАСТНИКАМИ**
 
 // Участие в турнире
-router.post('/:id/participate', authenticateToken, ParticipantController.participateInTournament);
+router.post('/:id/participate', authenticateToken, verifyEmailRequired, ParticipantController.participateInTournament);
 
 // Отмена участия
-router.delete('/:id/participate', authenticateToken, ParticipantController.withdrawFromTournament);
+router.delete('/:id/participate', authenticateToken, verifyEmailRequired, ParticipantController.withdrawFromTournament);
 
 // Получение участников турнира
 router.get('/:id/participants', TournamentController.getOriginalParticipants);
 
 // Удаление участника (для администраторов)
-router.delete('/:id/participants/:participantId', authenticateToken, ParticipantController.removeParticipant);
+router.delete('/:id/participants/:participantId', authenticateToken, verifyAdminOrCreator, ParticipantController.removeParticipant);
 
 // 🥊 **УПРАВЛЕНИЕ МАТЧАМИ И СЕТКАМИ**
 
 // Генерация турнирной сетки
-router.post('/:id/generate-bracket', authenticateToken, MatchController.generateBracket);
+router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.generateBracket);
 
 // Регенерация турнирной сетки
-router.post('/:id/regenerate-bracket', authenticateToken, MatchController.regenerateBracket);
+router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.regenerateBracket);
 
 // Обновление результата матча в рамках турнира
-router.put('/:id/matches/:matchId/result', authenticateToken, MatchController.updateMatchResult);
+router.post('/:id/matches/:matchId/result', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.updateMatchResult);
 
 // 🆕 Прямое обновление результата матча по ID матча (для совместимости с фронтендом)
-router.post('/matches/:matchId/result', authenticateToken, MatchController.updateSpecificMatchResult);
+router.post('/matches/:matchId/result', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.updateSpecificMatchResult);
 
 // Получение матчей турнира
 router.get('/:id/matches', MatchController.getMatches);
@@ -146,50 +146,53 @@ router.get('/:id/matches', MatchController.getMatches);
 router.get('/matches/:matchId', MatchController.getMatchById);
 
 // 🧹 Проверка дублирующихся матчей
-router.get('/:id/matches/check-duplicates', authenticateToken, MatchController.checkDuplicateMatches);
+router.get('/:id/matches/check-duplicates', authenticateToken, verifyAdminOrCreator, MatchController.checkDuplicateMatches);
 
 // 🧹 Очистка дублирующихся матчей
-router.post('/:id/matches/cleanup-duplicates', authenticateToken, MatchController.cleanupDuplicateMatches);
+router.post('/:id/matches/cleanup-duplicates', authenticateToken, verifyAdminOrCreator, MatchController.cleanupDuplicateMatches);
 
 // 🔧 Диагностика блокировок базы данных (только для администраторов)
-router.get('/:id/matches/check-database-locks', authenticateToken, MatchController.checkDatabaseLocks);
+router.get('/:id/check-database-locks', authenticateToken, verifyAdminOrCreator, MatchController.checkDatabaseLocks);
+
+// 🔧 Очистка заблокированных процессов БД (только для администраторов)
+router.post('/:id/clear-stuck-locks', authenticateToken, verifyAdminOrCreator, MatchController.clearStuckLocks);
 
 // 🛡️ **АДМИНИСТРАТИВНЫЕ ФУНКЦИИ**
 
 // Запрос на администрирование
-router.post('/:id/request-admin', authenticateToken, AdminController.requestAdmin);
+router.post('/:id/request-admin', authenticateToken, verifyAdminOrCreator, AdminController.requestAdmin);
 
 // Получение статуса запроса на администрирование
-router.get('/:id/admin-request-status', authenticateToken, AdminController.getAdminRequestStatus);
+router.get('/:id/admin-request-status', authenticateToken, verifyAdminOrCreator, AdminController.getAdminRequestStatus);
 
 // Ответ на запрос администрирования
-router.post('/:id/respond-admin-request', authenticateToken, AdminController.respondToAdminRequest);
+router.post('/:id/respond-admin-request', authenticateToken, verifyAdminOrCreator, AdminController.respondToAdminRequest);
 
 // Приглашение администратора
-router.post('/:id/invite-admin', authenticateToken, AdminController.inviteAdmin);
+router.post('/:id/invite-admin', authenticateToken, verifyAdminOrCreator, AdminController.inviteAdmin);
 
 // Принятие приглашения администратора
-router.post('/:id/accept-admin-invitation', authenticateToken, AdminController.acceptAdminInvitation);
+router.post('/:id/accept-admin-invitation', authenticateToken, verifyAdminOrCreator, AdminController.acceptAdminInvitation);
 
 // Отклонение приглашения администратора
-router.post('/:id/decline-admin-invitation', authenticateToken, AdminController.declineAdminInvitation);
+router.post('/:id/decline-admin-invitation', authenticateToken, verifyAdminOrCreator, AdminController.declineAdminInvitation);
 
 // Удаление администратора
-router.delete('/:id/admins/:userId', authenticateToken, AdminController.removeAdmin);
+router.delete('/:id/admins/:userId', authenticateToken, verifyAdminOrCreator, AdminController.removeAdmin);
 
 // Очистка истекших приглашений (глобальная операция)
-router.post('/admin-invitations/cleanup-expired', authenticateToken, AdminController.cleanupExpiredInvitations);
+router.post('/admin-invitations/cleanup-expired', authenticateToken, verifyAdminOrCreator, AdminController.cleanupExpiredInvitations);
 
 // Получение статистики приглашений (глобальная операция)
-router.get('/admin-invitations/stats', authenticateToken, AdminController.getInvitationStats);
+router.get('/admin-invitations/stats', authenticateToken, verifyAdminOrCreator, AdminController.getInvitationStats);
 
 // 💬 **ЧАТ ТУРНИРА**
 
 // Получение сообщений чата
-router.get('/:id/chat/messages', authenticateToken, ChatController.getChatMessages);
+router.get('/:id/chat/messages', authenticateToken, verifyAdminOrCreator, ChatController.getChatMessages);
 
 // Получение участников чата
-router.get('/:id/chat/participants', authenticateToken, ChatController.getChatParticipants);
+router.get('/:id/chat/participants', authenticateToken, verifyAdminOrCreator, ChatController.getChatParticipants);
 
 // 🛠️ **ОБРАБОТКА ОШИБОК ТУРНИРОВ**
 const { tournamentErrorHandler } = require('../../middleware/tournament/errorHandler');
