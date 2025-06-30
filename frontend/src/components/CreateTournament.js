@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
+import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
 import './CreateTournament.css';
 
 function CreateTournament() {

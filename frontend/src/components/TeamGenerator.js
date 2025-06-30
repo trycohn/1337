@@ -3,7 +3,7 @@ import api from '../utils/api';
 import { ensureHttps } from '../utils/userHelpers';
 import './TeamGenerator.css';
 import TeamCard from './TeamCard';
-import { useLoaderAutomatic } from '../contexts/LoaderAutomaticContext';
+import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
 
 /**
  * Компонент для генерации команд в турнире
