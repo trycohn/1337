@@ -425,31 +425,35 @@ function TournamentDetails() {
     // Функции для работы с картами в матче
     const addMap = useCallback(() => {
         const defaultMap = getDefaultMap(tournament?.game);
-        setMaps(prevMaps => [...prevMaps, { map: defaultMap, score1: 0, score2: 0 }]);
+        // setMaps(prevMaps => [...prevMaps, { map: defaultMap, score1: 0, score2: 0 }]);
+        console.log('Map functionality moved to MatchResultModal');
     }, [tournament?.game, getDefaultMap]);
 
     const removeMap = useCallback((index) => {
-        setMaps(prevMaps => prevMaps.filter((_, i) => i !== index));
+        // setMaps(prevMaps => prevMaps.filter((_, i) => i !== index));
+        console.log('Map functionality moved to MatchResultModal');
     }, []);
 
     const updateMapScore = useCallback((index, team, score) => {
-        setMaps(prevMaps => {
-            const newMaps = [...prevMaps];
-            if (newMaps[index]) {
-                newMaps[index][`score${team}`] = score;
-            }
-            return newMaps;
-        });
+        // setMaps(prevMaps => {
+        //     const newMaps = [...prevMaps];
+        //     if (newMaps[index]) {
+        //         newMaps[index][`score${team}`] = score;
+        //     }
+        //     return newMaps;
+        // });
+        console.log('Map functionality moved to MatchResultModal');
     }, []);
 
     const updateMapSelection = useCallback((index, mapName) => {
-        setMaps(prevMaps => {
-            const newMaps = [...prevMaps];
-            if (newMaps[index]) {
-                newMaps[index].map = mapName;
-            }
-            return newMaps;
-        });
+        // setMaps(prevMaps => {
+        //     const newMaps = [...prevMaps];
+        //     if (newMaps[index]) {
+        //         newMaps[index].map = mapName;
+        //     }
+        //     return newMaps;
+        // });
+        console.log('Map functionality moved to MatchResultModal');
     }, []);
 
     // Определение прав доступа
