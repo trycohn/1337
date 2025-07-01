@@ -35,9 +35,9 @@ class BracketService {
             console.log(`🔐 [generateBracket] Начинаем транзакцию...`);
             await client.query('BEGIN');
             
-            // Устанавливаем таймаут для предотвращения зависания
-            console.log(`⏰ [generateBracket] Устанавливаем таймаут 30 секунд...`);
-            await client.query('SET statement_timeout = 30000'); // 30 секунд
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Увеличиваем таймаут до 2 минут для операций с матчами
+            console.log(`⏰ [generateBracket] Устанавливаем таймаут 120 секунд...`);
+            await client.query('SET statement_timeout = 120000'); // 2 минуты
             
             console.log(`🔍 [generateBracket] Ищем турнир ${tournamentId}...`);
             console.time(`find-tournament-${tournamentId}`);
@@ -195,9 +195,9 @@ class BracketService {
             console.log(`🔐 [regenerateBracket] Начинаем транзакцию...`);
             await client.query('BEGIN');
             
-            // Устанавливаем таймаут для предотвращения зависания
-            console.log(`⏰ [regenerateBracket] Устанавливаем таймаут 30 секунд...`);
-            await client.query('SET statement_timeout = 30000'); // 30 секунд
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Увеличиваем таймаут до 2 минут для операций с матчами
+            console.log(`⏰ [regenerateBracket] Устанавливаем таймаут 120 секунд...`);
+            await client.query('SET statement_timeout = 120000'); // 2 минуты
             
             console.log(`🔍 [regenerateBracket] Ищем турнир ${tournamentId}...`);
             console.time(`find-tournament-${tournamentId}`);
@@ -237,14 +237,53 @@ class BracketService {
             console.log(`🗑️ [regenerateBracket] Удаляем существующие матчи...`);
             console.time(`delete-matches-${tournamentId}`);
             
-            // 3. Удаляем существующие матчи
-            const deleteResult = await client.query(
-                'DELETE FROM matches WHERE tournament_id = $1',
+            // 🔧 ОПТИМИЗИРОВАННОЕ УДАЛЕНИЕ МАТЧЕЙ: сначала проверяем количество
+            const countResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
                 [tournamentId]
             );
+            const matchCount = parseInt(countResult.rows[0].count);
+            console.log(`📊 [regenerateBracket] Найдено ${matchCount} существующих матчей`);
+            
+            if (matchCount === 0) {
+                console.log(`ℹ️ [regenerateBracket] Матчей для удаления нет, пропускаем операцию DELETE`);
+            } else if (matchCount > 1000) {
+                // 🔧 Для больших турниров используем батченое удаление
+                console.log(`⚠️ [regenerateBracket] Большой турнир (${matchCount} матчей), используем батченое удаление`);
+                let deletedTotal = 0;
+                let batchNumber = 1;
+                
+                while (deletedTotal < matchCount) {
+                    console.log(`🗑️ Батч ${batchNumber}: удаляем до 500 матчей...`);
+                    const batchResult = await client.query(`
+                        DELETE FROM matches 
+                        WHERE id IN (
+                            SELECT id FROM matches 
+                            WHERE tournament_id = $1 
+                            LIMIT 500
+                        )
+                    `, [tournamentId]);
+                    
+                    deletedTotal += batchResult.rowCount;
+                    console.log(`   ✅ Батч ${batchNumber}: удалено ${batchResult.rowCount} матчей (всего: ${deletedTotal}/${matchCount})`);
+                    
+                    if (batchResult.rowCount === 0) {
+                        break; // Больше нечего удалять
+                    }
+                    batchNumber++;
+                }
+                console.log(`🗑️ [regenerateBracket] Батченое удаление завершено: ${deletedTotal} матчей`);
+            } else {
+                // 🔧 Для обычных турниров используем стандартное удаление
+                const deleteResult = await client.query(
+                    'DELETE FROM matches WHERE tournament_id = $1',
+                    [tournamentId]
+                );
+                console.log(`🗑️ [regenerateBracket] Стандартное удаление: ${deleteResult.rowCount} матчей`);
+            }
             
             console.timeEnd(`delete-matches-${tournamentId}`);
-            console.log(`✅ [regenerateBracket] Удалено ${deleteResult.rowCount} матчей`);
+            console.log(`✅ [regenerateBracket] Все матчи удалены успешно`);
             
             console.log(`👥 [regenerateBracket] Получаем участников турнира...`);
             console.time(`get-participants-${tournamentId}`);

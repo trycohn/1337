@@ -67,19 +67,59 @@ const calculateTournamentMath = (participantsCount) => {
 };
 
 /**
- * 🔧 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА СУЩЕСТВУЮЩИХ МАТЧЕЙ
+ * 🔧 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА СУЩЕСТВУЮЩИХ МАТЧЕЙ (ОПТИМИЗИРОВАННАЯ)
  * @param {number} tournamentId - ID турнира
  */
 const clearExistingMatches = async (tournamentId) => {
     console.log(`🗑️ ПРИНУДИТЕЛЬНАЯ ОЧИСТКА существующих матчей турнира ${tournamentId}`);
     
-    // Удаляем ВСЕ существующие матчи турнира
-    const deleteResult = await pool.query(
-        'DELETE FROM matches WHERE tournament_id = $1',
+    // 🔧 ОПТИМИЗАЦИЯ: Сначала проверяем количество матчей
+    const countResult = await pool.query(
+        'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
         [tournamentId]
     );
+    const matchCount = parseInt(countResult.rows[0].count);
+    console.log(`📊 Найдено ${matchCount} существующих матчей`);
     
-    console.log(`✅ Удалено ${deleteResult.rowCount} существующих матчей`);
+    if (matchCount === 0) {
+        console.log(`ℹ️ Матчей для удаления нет, операция пропущена`);
+        return;
+    }
+    
+    if (matchCount > 1000) {
+        // 🔧 Для больших турниров используем батченое удаление
+        console.log(`⚠️ Большой турнир (${matchCount} матчей), используем батченое удаление`);
+        let deletedTotal = 0;
+        let batchNumber = 1;
+        
+        while (deletedTotal < matchCount) {
+            console.log(`🗑️ Батч ${batchNumber}: удаляем до 500 матчей...`);
+            const batchResult = await pool.query(`
+                DELETE FROM matches 
+                WHERE id IN (
+                    SELECT id FROM matches 
+                    WHERE tournament_id = $1 
+                    LIMIT 500
+                )
+            `, [tournamentId]);
+            
+            deletedTotal += batchResult.rowCount;
+            console.log(`   ✅ Батч ${batchNumber}: удалено ${batchResult.rowCount} матчей (всего: ${deletedTotal}/${matchCount})`);
+            
+            if (batchResult.rowCount === 0) {
+                break; // Больше нечего удалять
+            }
+            batchNumber++;
+        }
+        console.log(`✅ Батченое удаление завершено: ${deletedTotal} матчей`);
+    } else {
+        // 🔧 Для обычных турниров используем стандартное удаление
+        const deleteResult = await pool.query(
+            'DELETE FROM matches WHERE tournament_id = $1',
+            [tournamentId]
+        );
+        console.log(`✅ Стандартное удаление: ${deleteResult.rowCount} матчей`);
+    }
     
     // Дополнительная проверка
     const checkResult = await pool.query(
