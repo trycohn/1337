@@ -1,13 +1,11 @@
-// 🔧 QA REFACTORED VERSION - TournamentDetails.js v4.2.5
-// ✅ Реорганизация страницы турнира с табовой структурой
-// ✅ Убран блок достижений
-// ✅ Скрыт список участников микс-турнира после формирования команд
-// ✅ Добавлена система вкладок
-// ✅ Интеграция модального окна выбора матча за 3-е место
+// 🔧 QA REFACTORED VERSION - TournamentDetails.js v5.0 МОДУЛЬНАЯ АРХИТЕКТУРА
+// ✅ Убран дублированный функционал - используем новые API endpoints
+// ✅ Обновлены API пути согласно модульной архитектуре
+// ✅ Упрощена логика без дублирования кода
 
 // Импорты React и связанные
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 
@@ -35,11 +33,9 @@ import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
 import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import ThirdPlaceMatchModal from './tournament/modals/ThirdPlaceMatchModal';
 import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
-import UnifiedParticipantsPanel from './tournament/UnifiedParticipantsPanel';
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentParticipants from './tournament/TournamentParticipants';
 import TournamentWinners from './tournament/TournamentWinners';
-import TournamentChat from './TournamentChat';
 
 // Контекст
 import { useUser } from '../context/UserContext';
@@ -136,7 +132,6 @@ function TournamentDetails() {
     const [adminRequestStatus, setAdminRequestStatus] = useState(null);
     const [matches, setMatches] = useState([]);
     const [selectedMatch, setSelectedMatch] = useState(null);
-    const [maps, setMaps] = useState([]);
     const [availableMaps, setAvailableMaps] = useState({});
     const [originalParticipants, setOriginalParticipants] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -144,21 +139,15 @@ function TournamentDetails() {
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
 
-    // 🔒 Debounce защита для регенерации сетки
-    const [lastRegenerationTime, setLastRegenerationTime] = useState(0);
-    const [regenerationCooldown, setRegenerationCooldown] = useState(0);
-    const REGENERATION_COOLDOWN_MS = 2000; // 2 секунды (соответствует backend)
-
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
     
     // 🆕 Состояния для модального окна матча за 3-е место
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
-    const [isRegenerationMode, setIsRegenerationMode] = useState(false); // 🆕 Режим регенерации vs генерации
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isRegenerationMode, setIsRegenerationMode] = useState(false);
     
-    // Состояния для модальных окон (упрощенная версия без хука)
+    // Состояния для модальных окон
     const [modals, setModals] = useState({
         addParticipant: false,
         participantSearch: false,
@@ -296,7 +285,7 @@ function TournamentDetails() {
                         
                         setLoading(false);
                         return;
-                } else {
+                    } else {
                         console.warn('⚠️ Кешированные данные невалидны:', validation.error);
                         localStorage.removeItem(cacheKey);
                         localStorage.removeItem(cacheTimestampKey);
@@ -336,9 +325,9 @@ function TournamentDetails() {
             // Очищаем поврежденный кеш
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheTimestampKey);
-            } finally {
-                setLoading(false);
-            }
+        } finally {
+            setLoading(false);
+        }
     }, [id, handleAuthError]);
 
     // Загрузка карт для игры
@@ -404,7 +393,7 @@ function TournamentDetails() {
                     [gameName]: defaultMaps,
                     [`${gameName}_loading`]: false
                 }));
-        } else {
+            } else {
                 setAvailableMaps(prev => ({
                     ...prev,
                     [gameName]: [],
@@ -423,44 +412,14 @@ function TournamentDetails() {
         return getDefaultMapHelper(game, availableMaps);
     }, [availableMaps]);
 
-    // Функции для работы с картами в матче
-    const addMap = useCallback(() => {
-        const defaultMap = getDefaultMap(tournament?.game);
-        setMaps(prevMaps => [...prevMaps, { map: defaultMap, score1: 0, score2: 0 }]);
-    }, [tournament?.game, getDefaultMap]);
-
-    const removeMap = useCallback((index) => {
-        setMaps(prevMaps => prevMaps.filter((_, i) => i !== index));
-    }, []);
-
-    const updateMapScore = useCallback((index, team, score) => {
-        setMaps(prevMaps => {
-            const newMaps = [...prevMaps];
-            if (newMaps[index]) {
-                newMaps[index][`score${team}`] = score;
+    // Обработчик генерации команд
+    const handleTeamsGenerated = useCallback((teams) => {
+        if (Array.isArray(teams)) {
+            if (tournament?.participants?.length > 0) {
+                setOriginalParticipants([...tournament.participants]);
             }
-            return newMaps;
-        });
-    }, []);
-
-    const updateMapSelection = useCallback((index, mapName) => {
-        setMaps(prevMaps => {
-            const newMaps = [...prevMaps];
-            if (newMaps[index]) {
-                newMaps[index].map = mapName;
-            }
-            return newMaps;
-        });
-    }, []);
-
-    // Определение прав доступа
-    const canGenerateBracket = useMemo(() => {
-        return user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
-    }, [user, isCreator, adminRequestStatus, matches.length]);
-
-    const canEditMatches = useMemo(() => {
-        return user && (isCreator || adminRequestStatus === 'accepted');
-    }, [user, isCreator, adminRequestStatus]);
+        }
+    }, [tournament?.participants]);
 
     // Подготовка данных для отображения сетки
     const games = useMemo(() => {
@@ -576,23 +535,13 @@ function TournamentDetails() {
         return safeGames;
     }, [matches, tournament]);
 
-    // Обработчик генерации команд
-    const handleTeamsGenerated = useCallback((teams) => {
-        if (Array.isArray(teams)) {
-            if (tournament?.participants?.length > 0) {
-                setOriginalParticipants([...tournament.participants]);
-            }
-        }
-    }, [tournament?.participants]);
-
-    // 🆕 Функция сохранения результата матча
+    // 🔧 ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ РЕЗУЛЬТАТА МАТЧА (API v2.0)
     const saveMatchResult = useCallback(async (resultData) => {
         if (!selectedMatch) {
             console.error('❌ Нет выбранного матча для сохранения результата');
             return;
         }
 
-        // Получаем ID матча из selectedMatch
         const matchId = typeof selectedMatch === 'object' ? selectedMatch.id : selectedMatch;
         
         if (!matchId && matchId !== 0) {
@@ -600,11 +549,10 @@ function TournamentDetails() {
             return;
         }
 
-        console.log('💾 Начинаем сохранение результата матча:', {
+        console.log('💾 Начинаем сохранение результата матча через API v2.0:', {
             matchId,
             resultData,
-            tournamentId: id,
-            selectedMatch: selectedMatch
+            tournamentId: id
         });
 
         try {
@@ -615,107 +563,34 @@ function TournamentDetails() {
                 throw new Error('Отсутствует токен авторизации');
             }
 
-            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем актуальные team_id из массива matches
-            const currentMatch = matches.find(m => m.id === parseInt(matchId));
-            const team1_id = selectedMatch.team1_id || currentMatch?.team1_id;
-            const team2_id = selectedMatch.team2_id || currentMatch?.team2_id;
-
-            // 🔧 ИСПРАВЛЕНО: Улучшенная подготовка данных для отправки
-            const submitData = {
+            // 🔧 ИСПРАВЛЕНО: Используем новый API endpoint согласно модульной архитектуре
+            const response = await api.post(`/api/tournaments/${id}/matches/${matchId}/result`, {
                 score1: parseInt(resultData.score1) || 0,
                 score2: parseInt(resultData.score2) || 0,
                 maps_data: resultData.maps_data || [],
-                winner_team_id: null
-            };
-
-            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Улучшенное определение победителя с fallback логикой
-            console.log('🔍 Определяем победителя:', {
-                resultDataWinner: resultData.winner,
-                selectedMatchTeam1: selectedMatch.team1_id,
-                selectedMatchTeam2: selectedMatch.team2_id,
-                fallbackTeam1: team1_id,
-                fallbackTeam2: team2_id,
-                score1: submitData.score1,
-                score2: submitData.score2
-            });
-
-            // Приоритет 1: Явно выбранный победитель
-            if (resultData.winner === 'team1' && team1_id) {
-                submitData.winner_team_id = team1_id;
-                console.log('✅ Победитель определен явно: team1 ->', team1_id);
-            } else if (resultData.winner === 'team2' && team2_id) {
-                submitData.winner_team_id = team2_id;
-                console.log('✅ Победитель определен явно: team2 ->', team2_id);
-            } 
-            // Приоритет 2: Определение по счету
-            else if (submitData.score1 > submitData.score2 && team1_id) {
-                submitData.winner_team_id = team1_id;
-                console.log('✅ Победитель определен по счету: team1 ->', team1_id);
-            } else if (submitData.score2 > submitData.score1 && team2_id) {
-                submitData.winner_team_id = team2_id;
-                console.log('✅ Победитель определен по счету: team2 ->', team2_id);
-            } else {
-                console.log('⚠️ Победитель не определен - ничья или недостаточно данных');
-            }
-
-            // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся что winner_team_id не null при наличии счета
-            if (submitData.winner_team_id === null && (submitData.score1 !== submitData.score2)) {
-                console.warn('⚠️ КРИТИЧЕСКАЯ ПРОБЛЕМА: winner_team_id = null при разном счете! Данные матча:', {
-                    matchId,
-                    selectedMatch,
-                    currentMatch,
-                    team1_id,
-                    team2_id,
-                    resultData
-                });
-                
-                // Экстренный fallback - берем любой доступный team_id
-                if (submitData.score1 > submitData.score2) {
-                    submitData.winner_team_id = team1_id || selectedMatch.team1_id || currentMatch?.team1_id;
-                } else if (submitData.score2 > submitData.score1) {
-                    submitData.winner_team_id = team2_id || selectedMatch.team2_id || currentMatch?.team2_id;
-                }
-                
-                console.log('🚨 Применен экстренный fallback, winner_team_id:', submitData.winner_team_id);
-            }
-
-            console.log('📡 Отправляем данные на сервер:', submitData);
-
-            // Отправка запроса на сервер
-            const response = await api.post(`/api/tournaments/matches/${matchId}/result`, submitData, {
+                winner: resultData.winner
+            }, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
 
-            console.log('✅ Результат матча успешно сохранен:', response.data);
+            console.log('✅ Результат матча успешно сохранен через API v2.0:', response.data);
 
-            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очищаем кеш турнира после сохранения
+            // Очищаем кеш турнира
             const cacheKey = `tournament_cache_${id}`;
             const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheTimestampKey);
-            console.log('🗑️ Кеш турнира очищен для принудительного обновления');
 
             // Закрываем модальное окно
             closeModal('matchResult');
             setSelectedMatch(null);
             setMatchResultData({ score1: 0, score2: 0, maps_data: [] });
 
-            // 🔧 ИСПРАВЛЕНО: Обновляем данные турнира с обработкой ошибок
-            console.log('🔄 Начинаем обновление данных турнира...');
-            try {
-                await fetchTournamentData();
-                console.log('✅ Данные турнира успешно обновлены');
-            } catch (fetchError) {
-                console.error('❌ Ошибка при обновлении данных турнира:', fetchError);
-                // Не блокируем весь процесс, показываем предупреждение
-                setMessage('⚠️ Результат сохранен, но данные турнира могут быть устаревшими. Обновите страницу.');
-                setTimeout(() => setMessage(''), 5000);
-                return; // Выходим раньше чтобы не показывать success сообщение
-            }
-
+            // Обновляем данные турнира
+            await fetchTournamentData();
             setMessage('✅ Результат матча успешно сохранен!');
             setTimeout(() => setMessage(''), 3000);
 
@@ -739,9 +614,9 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMatch, id, fetchTournamentData, closeModal, matches]);
+    }, [selectedMatch, id, fetchTournamentData, closeModal]);
 
-    // 🆕 ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ МАТЧЕЙ ТУРНИРА
+    // 🔧 ОБНОВЛЕННАЯ ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ (API v2.0)
     const resetMatchResults = useCallback(async () => {
         const confirmMessage = `⚠️ ВНИМАНИЕ!\n\n` +
             `Вы собираетесь очистить результаты всех матчей турнира.\n\n` +
@@ -764,24 +639,23 @@ function TournamentDetails() {
                 throw new Error('Отсутствует токен авторизации');
             }
 
-            console.log('🔄 Начинаем сброс результатов матчей турнира', id);
+            console.log('🔄 Начинаем сброс результатов через API v2.0 для турнира', id);
 
-            // Отправка запроса на сервер
-            const response = await api.post(`/api/tournaments/${id}/reset-match-results`, {}, {
+            // 🔧 ИСПРАВЛЕНО: Используем новый API endpoint
+            const response = await api.post(`/api/tournaments/${id}/clear-match-results`, {}, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
 
-            console.log('✅ Результаты матчей успешно сброшены:', response.data);
+            console.log('✅ Результаты матчей успешно сброшены через API v2.0:', response.data);
 
             // Очищаем кеш турнира
             const cacheKey = `tournament_cache_${id}`;
             const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheTimestampKey);
-            console.log('🗑️ Кеш турнира очищен после сброса результатов');
 
             // Обновляем данные турнира
             await fetchTournamentData();
@@ -866,168 +740,39 @@ function TournamentDetails() {
                                             canEditMatches={canEditMatches}
                                             selectedMatch={selectedMatch}
                                             setSelectedMatch={(match) => {
-                                                // 🔧 ИСПРАВЛЕНИЕ: Обрабатываем match как объект или ID с проверкой на null
-                                                console.log('🎯 setSelectedMatch вызван с:', match, 'тип:', typeof match);
-                                                
                                                 if (match === null || match === undefined) {
-                                                    console.log('🎯 Выбран матч: null/undefined - снимаем выделение');
                                                     setSelectedMatch(null);
-            return;
-        }
-        
+                                                    return;
+                                                }
+                                                
                                                 const matchId = typeof match === 'object' && match !== null ? match.id : match;
-                                                console.log('🎯 Выбран матч ID:', matchId, 'из объекта:', match);
                                                 
                                                 if (matchId) {
-                                                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Найти полный объект матча и открыть модальное окно
                                                     const fullMatch = matches.find(m => m.id === parseInt(matchId));
                                                     if (fullMatch && canEditMatches) {
-                                                        console.log('🎯 Найден полный объект матча:', fullMatch);
-                                                        
-                                                        // 🔧 ИСПРАВЛЕНО: Улучшенное получение информации о командах
-                                                        console.log('🔍 Ищем информацию о командах для матча:', {
-                                                            team1_id: fullMatch.team1_id,
-                                                            team2_id: fullMatch.team2_id,
-                                                            tournamentTeams: tournament.teams?.length || 0,
-                                                            tournamentParticipants: tournament.participants?.length || 0
-                                                        });
-
-                                                        // Пробуем найти в разных источниках
-                                                        let team1Info = null;
-                                                        let team2Info = null;
-
-                                                        // Источник 1: tournament.teams
-                                                        if (tournament.teams?.length > 0) {
-                                                            team1Info = tournament.teams.find(t => t.id === fullMatch.team1_id);
-                                                            team2Info = tournament.teams.find(t => t.id === fullMatch.team2_id);
-                                                            console.log('🔍 Поиск в tournament.teams:', { team1Info, team2Info });
-                                                        }
-
-                                                        // Источник 2: tournament.participants (если не найдено в teams)
-                                                        if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
-                                                            if (!team1Info) {
-                                                                team1Info = tournament.participants.find(p => p.id === fullMatch.team1_id);
-                                                            }
-                                                            if (!team2Info) {
-                                                                team2Info = tournament.participants.find(p => p.id === fullMatch.team2_id);
-                                                            }
-                                                            console.log('🔍 Поиск в tournament.participants:', { team1Info, team2Info });
-                                                        }
-
-                                                        // Источник 3: Кеш матчей (если есть дополнительные данные)
-                                                        if (!team1Info || !team2Info) {
-                                                            // Пробуем найти в других матчах с такими же командами
-                                                            const relatedMatches = matches.filter(m => 
-                                                                m.team1_id === fullMatch.team1_id || 
-                                                                m.team2_id === fullMatch.team1_id || 
-                                                                m.team1_id === fullMatch.team2_id || 
-                                                                m.team2_id === fullMatch.team2_id
-                                                            );
-                                                            console.log('🔍 Связанные матчи для поиска названий:', relatedMatches.length);
-                                                        }
-
-                                                        // Определяем окончательные названия
-                                                        const team1Name = team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${fullMatch.team1_id}`;
-                                                        const team2Name = team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${fullMatch.team2_id}`;
-
-                                                        console.log('✅ Окончательные названия команд:', {
-                                                            team1Name,
-                                                            team2Name,
-                                                            team1Info: team1Info ? 'найден' : 'не найден',
-                                                            team2Info: team2Info ? 'найден' : 'не найден'
-                                                        });
-                                                        
-                                                        // Создаем расширенный объект матча
-                                                        const matchWithTeamInfo = {
-                                                            ...fullMatch,
-                                                            team1_name: team1Name,
-                                                            team2_name: team2Name,
-                                                            team1_composition: team1Info,
-                                                            team2_composition: team2Info
-                                                        };
-                                                        
-                                                        setSelectedMatch(matchWithTeamInfo);
+                                                        setSelectedMatch(fullMatch);
                                                         setMatchResultData({
                                                             score1: fullMatch.score1 || 0,
                                                             score2: fullMatch.score2 || 0,
                                                             maps_data: fullMatch.maps_data || []
                                                         });
                                                         openModal('matchResult');
-                                                        console.log('🎯 Открыто модальное окно для редактирования матча:', matchId);
                                                     } else {
-                                                        console.warn('⚠️ Матч не найден или нет прав на редактирование:', matchId);
                                                         setSelectedMatch(matchId);
                                                     }
                                                 } else {
-                                                    console.warn('⚠️ Не удалось определить ID матча из:', match);
                                                     setSelectedMatch(null);
                                                 }
                                             }}
                                             handleTeamClick={() => {}}
                                             format={tournament.format}
                                             onMatchClick={(match) => {
-                                                console.log('🎯 onMatchClick (overview) вызван с:', {
-                                                    matchId: match?.id,
-                                                    matchData: match,
-                                                    team1: match?.team1_name,
-                                                    team2: match?.team2_name,
-                                                    currentSelectedMatchForDetails: selectedMatchForDetails?.id
-                                                });
                                                 if (match && match.id) {
-                                                    // 🔧 ИСПРАВЛЕНИЕ: Найти оригинальный матч по ID из массива matches
                                                     const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                     if (originalMatch) {
-                                                        console.log('🎯 Найден оригинальный матч для просмотра:', {
-                                                            matchId: originalMatch.id,
-                                                            team1_id: originalMatch.team1_id,
-                                                            team2_id: originalMatch.team2_id,
-                                                            score1: originalMatch.score1,
-                                                            score2: originalMatch.score2,
-                                                            winner_team_id: originalMatch.winner_team_id
-                                                        });
-
-                                                        // Обогащаем матч данными о командах из tournament
-                                                        let team1Info = null;
-                                                        let team2Info = null;
-
-                                                        // Ищем информацию о командах
-                                                        if (tournament.teams?.length > 0) {
-                                                            team1Info = tournament.teams.find(t => t.id === originalMatch.team1_id);
-                                                            team2Info = tournament.teams.find(t => t.id === originalMatch.team2_id);
-                                                        }
-
-                                                        if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
-                                                            if (!team1Info) {
-                                                                team1Info = tournament.participants.find(p => p.id === originalMatch.team1_id);
-                                                            }
-                                                            if (!team2Info) {
-                                                                team2Info = tournament.participants.find(p => p.id === originalMatch.team2_id);
-                                                            }
-                                                        }
-
-                                                        // Создаем обогащенный объект матча
-                                                        const enrichedMatch = {
-                                                            ...originalMatch,
-                                                            team1_name: team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${originalMatch.team1_id}`,
-                                                            team2_name: team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${originalMatch.team2_id}`,
-                                                            team1_composition: team1Info,
-                                                            team2_composition: team2Info
-                                                        };
-
-                                                        console.log('🎯 Передаем обогащенный матч в модальное окно:', {
-                                                            matchId: enrichedMatch.id,
-                                                            team1_name: enrichedMatch.team1_name,
-                                                            team2_name: enrichedMatch.team2_name,
-                                                            score: `${enrichedMatch.score1}:${enrichedMatch.score2}`
-                                                        });
-
-                                                        setSelectedMatchForDetails(enrichedMatch);
+                                                        setSelectedMatchForDetails(originalMatch);
                                                         openModal('matchDetails');
-                                                    } else {
-                                                        console.warn('⚠️ onMatchClick: не найден оригинальный матч для ID:', match.id);
                                                     }
-                                                } else {
-                                                    console.warn('⚠️ onMatchClick: некорректный объект матча:', match);
                                                 }
                                             }}
                                         />
@@ -1072,19 +817,9 @@ function TournamentDetails() {
                                 {canEditMatches && games.length > 0 && (
                                     <button 
                                         className="regenerate-bracket-button"
-                                        onClick={handleRegenerateBracketWithModal}
+                                        onClick={handleRegenerateBracket}
                                     >
                                         🔄 Перегенерировать сетку
-                                    </button>
-                                )}
-                                {/* 🚨 QA FIX: Экстренная кнопка для админов */}
-                                {user?.role === 'admin' && (
-                                    <button 
-                                        className="kill-generation-button emergency-button"
-                                        onClick={handleKillGeneration}
-                                        title="Остановить зависшие процессы генерации (только для админов)"
-                                    >
-                                        🚨 Убить процессы
                                     </button>
                                 )}
                             </div>
@@ -1101,76 +836,56 @@ function TournamentDetails() {
                                         games={games}
                                         canEditMatches={canEditMatches}
                                         selectedMatch={selectedMatch}
-                                        setSelectedMatch={setSelectedMatch}
+                                        setSelectedMatch={(match) => {
+                                            if (match === null || match === undefined) {
+                                                setSelectedMatch(null);
+                                                return;
+                                            }
+                                            
+                                            const matchId = typeof match === 'object' && match !== null ? match.id : match;
+                                            
+                                            if (matchId) {
+                                                const fullMatch = matches.find(m => m.id === parseInt(matchId));
+                                                if (fullMatch && canEditMatches) {
+                                                    setSelectedMatch(fullMatch);
+                                                    setMatchResultData({
+                                                        score1: fullMatch.score1 || 0,
+                                                        score2: fullMatch.score2 || 0,
+                                                        maps_data: fullMatch.maps_data || []
+                                                    });
+                                                    openModal('matchResult');
+                                                } else {
+                                                    setSelectedMatch(matchId);
+                                                }
+                                            } else {
+                                                setSelectedMatch(null);
+                                            }
+                                        }}
                                         handleTeamClick={() => {}}
                                         format={tournament.format}
                                         onMatchClick={(match) => {
-                                            console.log('🎯 onMatchClick (bracket) вызван с:', {
-                                                matchId: match?.id,
-                                                matchData: match,
-                                                team1: match?.team1_name || match?.participants?.[0]?.name,
-                                                team2: match?.team2_name || match?.participants?.[1]?.name,
-                                                currentSelectedMatchForDetails: selectedMatchForDetails?.id
-                                            });
-                                            // 🔧 ИСПРАВЛЕНИЕ: Найти оригинальный матч по ID из массива matches
                                             if (match && match.id) {
                                                 const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                 if (originalMatch) {
-                                                    console.log('🎯 Найден оригинальный матч для просмотра (bracket):', {
-                                                        matchId: originalMatch.id,
-                                                        team1_id: originalMatch.team1_id,
-                                                        team2_id: originalMatch.team2_id,
-                                                        score1: originalMatch.score1,
-                                                        score2: originalMatch.score2
-                                                    });
-
-                                                    // Обогащаем матч данными о командах
-                                                    let team1Info = null;
-                                                    let team2Info = null;
-
-                                                    if (tournament.teams?.length > 0) {
-                                                        team1Info = tournament.teams.find(t => t.id === originalMatch.team1_id);
-                                                        team2Info = tournament.teams.find(t => t.id === originalMatch.team2_id);
-                                                    }
-
-                                                    if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
-                                                        if (!team1Info) {
-                                                            team1Info = tournament.participants.find(p => p.id === originalMatch.team1_id);
-                                                        }
-                                                        if (!team2Info) {
-                                                            team2Info = tournament.participants.find(p => p.id === originalMatch.team2_id);
-                                                        }
-                                                    }
-
-                                                    const enrichedMatch = {
-                                                        ...originalMatch,
-                                                        team1_name: team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${originalMatch.team1_id}`,
-                                                        team2_name: team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${originalMatch.team2_id}`,
-                                                        team1_composition: team1Info,
-                                                        team2_composition: team2Info
-                                                    };
-
-                                                    setSelectedMatchForDetails(enrichedMatch);
+                                                    setSelectedMatchForDetails(originalMatch);
                                                     openModal('matchDetails');
-                                                } else {
-                                                    console.warn('⚠️ onMatchClick (bracket): не найден оригинальный матч для ID:', match.id);
                                                 }
-                                            } else {
-                                                console.warn('⚠️ onMatchClick (bracket): некорректный объект матча:', match);
                                             }
                                         }}
                                     />
                                 </Suspense>
                             </TournamentErrorBoundary>
                         ) : (
-                            <div className="empty-state">
-                                <p>🏗️ Турнирная сетка не сгенерирована</p>
-                                <p className="text-muted">
-                                    {canGenerateBracket 
-                                        ? 'Для генерации сетки нужно минимум 2 участника' 
-                                        : 'Дождитесь генерации сетки организатором турнира'
-                                    }
-                                </p>
+                            <div className="no-bracket">
+                                <p>Турнирная сетка еще не создана</p>
+                                {canGenerateBracket && (
+                                    <button 
+                                        className="generate-bracket-button"
+                                        onClick={() => handleGenerateBracket()}
+                                    >
+                                        🎯 Сгенерировать сетку
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1179,184 +894,12 @@ function TournamentDetails() {
             case 'results':
                 return (
                     <div className="tab-content-results">
-                        <h3>📊 Результаты матчей</h3>
-                        
-                        {matches.length > 0 ? (
-                            <div className="results-compact-list">
-                                {matches
-                                    .filter(match => match.winner_team_id || (match.score1 !== null && match.score2 !== null))
-                                    .sort((a, b) => new Date(b.updated_at || b.completed_at) - new Date(a.updated_at || a.completed_at))
-                                    .map((match) => {
-                                        // 🔧 ИСПРАВЛЕНО: Улучшенный поиск информации о командах
-                                        let team1Info = null;
-                                        let team2Info = null;
-
-                                        // Источник 1: tournament.teams
-                                        if (tournament.teams?.length > 0) {
-                                            team1Info = tournament.teams.find(t => t.id === match.team1_id);
-                                            team2Info = tournament.teams.find(t => t.id === match.team2_id);
-                                        }
-
-                                        // Источник 2: tournament.participants (если не найдено в teams)
-                                        if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
-                                            if (!team1Info) {
-                                                team1Info = tournament.participants.find(p => p.id === match.team1_id);
-                                            }
-                                            if (!team2Info) {
-                                                team2Info = tournament.participants.find(p => p.id === match.team2_id);
-                                            }
-                                        }
-
-                                        // Определяем окончательные названия
-                                        const team1Name = team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${match.team1_id}`;
-                                        const team2Name = team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${match.team2_id}`;
-
-                                        return (
-                                            <div key={match.id} className="result-compact-item">
-                                                <div className="result-compact-content">
-                                                    <div className="result-compact-round">
-                                                        {match.is_third_place_match && (
-                                                            <span className="third-place-indicator">🥉 За 3-е место</span>
-                                                        )}
-                                                        {match.round === Math.max(...matches.map(m => m.round)) && !match.is_third_place_match && (
-                                                            <span className="grand-final-indicator">🏆 Финал</span>
-                                                        )}
-                                                        {!match.is_third_place_match && match.round !== Math.max(...matches.map(m => m.round)) && (
-                                                            <span>Раунд {match.round}</span>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    <div className="result-compact-match">
-                                                        <button 
-                                                            className={`team-name-btn ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}
-                                                            onClick={() => {
-                                                                if (team1Info) {
-                                                                    // Показать состав команды
-                                                                }
-                                                            }}
-                                                        >
-                                                            {team1Name}
-                                                        </button>
-                                                        
-                                                        <div className="match-score">
-                                                            <span className={match.winner_team_id === match.team1_id ? 'winner-score' : ''}>{match.score1 || 0}</span>
-                                                            <span className="score-separator">:</span>
-                                                            <span className={match.winner_team_id === match.team2_id ? 'winner-score' : ''}>{match.score2 || 0}</span>
-                                                        </div>
-                                                        
-                                                        <button 
-                                                            className={`team-name-btn ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}
-                                                            onClick={() => {
-                                                                if (team2Info) {
-                                                                    // Показать состав команды
-                                                                }
-                                                            }}
-                                                        >
-                                                            {team2Name}
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="result-compact-actions">
-                                                        <button 
-                                                            className="details-btn"
-                                                            onClick={() => {
-                                                                console.log('🎯 onMatchClick (компактный) вызван с:', {
-                                                                    matchId: match?.id,
-                                                                    matchData: match,
-                                                                    team1: match?.team1_name,
-                                                                    team2: match?.team2_name,
-                                                                    currentSelectedMatchForDetails: selectedMatchForDetails?.id
-                                                                });
-                                                                // 🔧 ИСПРАВЛЕНИЕ: Используем уже оригинальный матч
-                                                                // В компактном отображении мы уже работаем с оригинальными матчами
-                                                                
-                                                                // Обогащаем матч данными о командах
-                                                                let team1Info = null;
-                                                                let team2Info = null;
-
-                                                                if (tournament.teams?.length > 0) {
-                                                                    team1Info = tournament.teams.find(t => t.id === match.team1_id);
-                                                                    team2Info = tournament.teams.find(t => t.id === match.team2_id);
-                                                                }
-
-                                                                if ((!team1Info || !team2Info) && tournament.participants?.length > 0) {
-                                                                    if (!team1Info) {
-                                                                        team1Info = tournament.participants.find(p => p.id === match.team1_id);
-                                                                    }
-                                                                    if (!team2Info) {
-                                                                        team2Info = tournament.participants.find(p => p.id === match.team2_id);
-                                                                    }
-                                                                }
-
-                                                                const enrichedMatch = {
-                                                                    ...match,
-                                                                    team1_name: team1Info?.name || team1Info?.username || team1Info?.team_name || `Участник ${match.team1_id}`,
-                                                                    team2_name: team2Info?.name || team2Info?.username || team2Info?.team_name || `Участник ${match.team2_id}`,
-                                                                    team1_composition: team1Info,
-                                                                    team2_composition: team2Info
-                                                                };
-
-                                                                console.log('🎯 Передаем обогащенный матч в модальное окно (компактный):', {
-                                                                    matchId: enrichedMatch.id,
-                                                                    team1_name: enrichedMatch.team1_name,
-                                                                    team2_name: enrichedMatch.team2_name,
-                                                                    score: `${enrichedMatch.score1}:${enrichedMatch.score2}`
-                                                                });
-
-                                                                setSelectedMatchForDetails(enrichedMatch);
-                                                                openModal('matchDetails');
-                                                            }}
-                                                        >
-                                                            📋 Детали
-                                                        </button>
-                                                        
-                                                        {canEditMatches && (
-                                                            <button 
-                                                                className="edit-compact-btn"
-                                                                onClick={() => {
-                                                                    // 🔧 ИСПРАВЛЕНИЕ: Передаем весь объект матча, но с правильными данными о командах
-                                                                    const matchWithTeamInfo = {
-                                                                        ...match,
-                                                                        team1_name: team1Name,
-                                                                        team2_name: team2Name,
-                                                                        team1_composition: team1Info,
-                                                                        team2_composition: team2Info
-                                                                    };
-                                                                    setSelectedMatch(matchWithTeamInfo);
-                                                                    setMatchResultData({
-                                                                        score1: match.score1 || 0,
-                                                                        score2: match.score2 || 0,
-                                                                        maps_data: match.maps_data || []
-                                                                    });
-                                                                    openModal('matchResult');
-                                                                }}
-                                                            >
-                                                                ✏️ Изменить
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    {match.completed_at && (
-                                                        <div className="match-completed-time">
-                                                            Завершен: {new Date(match.completed_at).toLocaleString()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                </div>
-                        ) : (
-                            <div className="empty-state">
-                                <p>📋 Результаты матчей пока отсутствуют</p>
-                                <p className="text-muted">Результаты появятся после проведения матчей</p>
-                            </div>
-                        )}
-            </div>
-        );
+                        <TournamentWinners tournament={tournament} />
+                    </div>
+                );
 
             case 'management':
-        return (
+                return (
                     <div className="tab-content-management">
                         {isAdminOrCreator ? (
                             <TournamentAdminPanel
@@ -1382,21 +925,31 @@ function TournamentDetails() {
                                 }}
                                 onGenerateBracket={handleGenerateBracket}
                                 onClearResults={resetMatchResults}
-                                onInviteAdmin={inviteAdmin}
-                                onRemoveAdmin={removeAdmin}
-                                onShowAdminSearchModal={openAdminSearchModal}
+                                onInviteAdmin={() => {}}
+                                onRemoveAdmin={() => {}}
+                                onShowAdminSearchModal={() => {}}
                             />
                         ) : (
                             <div className="access-denied">
-                                <h3>🔒 Доступ ограничен</h3>
-                                <p>Эта секция доступна только администраторам и создателю турнира.</p>
-                </div>
+                                <p>У вас нет прав для управления этим турниром</p>
+                            </div>
                         )}
-            </div>
-        );
+                    </div>
+                );
 
             default:
-                return <div>Неизвестная вкладка</div>;
+                return (
+                    <div className="tab-content-info">
+                        <TournamentInfoSection 
+                            tournament={tournament}
+                            user={user}
+                            isCreator={isCreator}
+                            isAdminOrCreator={isAdminOrCreator}
+                            onParticipationUpdate={fetchTournamentData}
+                            userTeams={teams}
+                        />
+                    </div>
+                );
         }
     };
 
@@ -1645,12 +1198,17 @@ function TournamentDetails() {
         setIsSearchingAdmins(false);
     }, []);
 
-    // 🆕 WRAPPER-ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
-    const handleStartTournament = useCallback(async () => {
-        const confirmMessage = `🚀 Вы собираетесь запустить турнир.\n\nПосле запуска:\n• Участники не смогут покинуть турнир\n• Нельзя будет изменить настройки\n• Начнется проведение матчей\n\nПродолжить?`;
-        
-        if (!window.confirm(confirmMessage)) return;
+    // Определение прав доступа
+    const canGenerateBracket = useMemo(() => {
+        return user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
+    }, [user, isCreator, adminRequestStatus, matches.length]);
 
+    const canEditMatches = useMemo(() => {
+        return user && (isCreator || adminRequestStatus === 'accepted');
+    }, [user, isCreator, adminRequestStatus]);
+
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (ЧЕРЕЗ ХУК)
+    const handleStartTournament = useCallback(async () => {
         try {
             setLoading(true);
             const result = await tournamentManagement.startTournament();
@@ -1670,6 +1228,7 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАВЕРШЕНИЯ ТУРНИРА (ЧЕРЕЗ ХУК)
     const handleEndTournament = useCallback(async () => {
         const confirmMessage = `🏁 Вы собираетесь завершить турнир.\n\nПосле завершения:\n• Нельзя будет изменить результаты\n• Будут подведены итоги\n• Действие необратимо\n\nПродолжить?`;
         
@@ -1694,84 +1253,22 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
-    // 🔒 Обновление cooldown счетчика
-    useEffect(() => {
-        let interval;
-        if (regenerationCooldown > 0) {
-            interval = setInterval(() => {
-                setRegenerationCooldown(prev => Math.max(0, prev - 100));
-            }, 100);
-        }
-        return () => clearInterval(interval);
-    }, [regenerationCooldown]);
-
-    // �� УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ (БЕЗ COOLDOWN)
-    const handleRegenerateBracket = useCallback(async () => {
-        // 🔒 Простая защита от дублирования через loading состояние
-        if (loading) {
-            console.log('⚠️ Операция уже выполняется, игнорируем клик');
-            return;
-        }
-
-        // Всегда используем перемешивание участников для сбалансированной сетки
-        const shuffleParticipants = true;
-        const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
-        
-        const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново${shuffleText}\n• Действие необратимо\n\nПродолжить?`;
-        
-        if (!window.confirm(confirmMessage)) return;
-
-        try {
-            setLoading(true);
-            
-            const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
-                shuffleParticipants: shuffleParticipants,
-                thirdPlaceMatch: tournament?.third_place_match_enabled || false
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (response.data.success) {
-                setMessage('✅ Турнирная сетка успешно перегенерирована с перемешиванием участников!');
-                await fetchTournamentData();
-            } else {
-                setMessage(`❌ ${response.data.message || 'Ошибка при перегенерации сетки'}`);
-            }
-        } catch (error) {
-            console.error('❌ Ошибка при перегенерации сетки:', error);
-            let errorMessage = 'Ошибка при перегенерации сетки';
-            
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            setMessage(`❌ ${errorMessage}`);
-        } finally {
-            setLoading(false);
-            setTimeout(() => setMessage(''), 5000);
-        }
-    }, [id, tournament?.third_place_match_enabled, fetchTournamentData, loading]);
-
-    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ (БЕЗ COOLDOWN)
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ (API v2.0)
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
             console.log('🎯 Открываем модальное окно выбора матча за 3-е место для ГЕНЕРАЦИИ');
-            setIsRegenerationMode(false); // Режим генерации
+            setIsRegenerationMode(false);
             setShowThirdPlaceModal(true);
             return;
         }
 
-        // 🔒 Простая защита от дублирования через loading состояние
         if (loading) {
             console.log('⚠️ Операция уже выполняется, игнорируем клик');
             return;
         }
 
-        console.log(`🚀 Генерируем сетку с параметром thirdPlaceMatch: ${useThirdPlace}`);
+        console.log(`🚀 Генерируем сетку через API v2.0 с параметром thirdPlaceMatch: ${useThirdPlace}`);
         
         try {
             setLoading(true);
@@ -1786,6 +1283,13 @@ function TournamentDetails() {
             if (response.data.success) {
                 const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
                 setMessage(`✅ Турнирная сетка успешно сгенерирована ${matchText}!`);
+                
+                // Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                
                 await fetchTournamentData();
             } else {
                 setMessage(`❌ ${response.data.message || 'Ошибка при генерации сетки'}`);
@@ -1807,26 +1311,23 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData, loading]);
 
-    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ (БЕЗ COOLDOWN)
-    const handleRegenerateBracketWithModal = useCallback(async (useThirdPlace = null) => {
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ РЕГЕНЕРАЦИИ СЕТКИ (API v2.0)
+    const handleRegenerateBracket = useCallback(async (useThirdPlace = null) => {
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
             console.log('🎯 Открываем модальное окно выбора матча за 3-е место для РЕГЕНЕРАЦИИ');
-            setIsRegenerationMode(true); // Режим регенерации
+            setIsRegenerationMode(true);
             setShowThirdPlaceModal(true);
             return;
         }
 
-        // 🔒 Простая защита от дублирования через loading состояние
         if (loading) {
             console.log('⚠️ Операция уже выполняется, игнорируем клик');
             return;
         }
 
-        console.log(`🚀 РЕгенерируем сетку с параметром thirdPlaceMatch: ${useThirdPlace}`);
+        console.log(`🚀 Регенерируем сетку через API v2.0 с параметром thirdPlaceMatch: ${useThirdPlace}`);
         
-        // Всегда используем перемешивание участников для сбалансированной сетки
-        const shuffleParticipants = true;
         const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
         const thirdPlaceText = useThirdPlace ? '\n• Будет добавлен матч за 3-е место' : '\n• Матч за 3-е место не будет создан';
         
@@ -1839,7 +1340,7 @@ function TournamentDetails() {
             
             const token = localStorage.getItem('token');
             const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
-                shuffleParticipants: shuffleParticipants,
+                shuffle: true, // Всегда используем перемешивание
                 thirdPlaceMatch: useThirdPlace
             }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -1848,13 +1349,20 @@ function TournamentDetails() {
             if (response.data.success) {
                 const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
                 setMessage(`✅ Турнирная сетка успешно перегенерирована с перемешиванием участников ${matchText}!`);
+                
+                // Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                
                 await fetchTournamentData();
             } else {
-                setMessage(`❌ ${response.data.message || 'Ошибка при перегенерации сетки'}`);
+                setMessage(`❌ ${response.data.message || 'Ошибка при регенерации сетки'}`);
             }
         } catch (error) {
-            console.error('❌ Ошибка при перегенерации сетки:', error);
-            let errorMessage = 'Ошибка при перегенерации сетки';
+            console.error('❌ Ошибка при регенерации сетки:', error);
+            let errorMessage = 'Ошибка при регенерации сетки';
             
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
@@ -1869,7 +1377,7 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData, loading]);
 
-    // 🚨 QA FIX: Экстренная функция остановки зависших процессов генерации
+    // 🚨 УПРОЩЕННАЯ ФУНКЦИЯ ЭКСТРЕННОЙ ОСТАНОВКИ (API v2.0)
     const handleKillGeneration = useCallback(async () => {
         if (user?.role !== 'admin') {
             setMessage('❌ Только администраторы могут выполнять экстренную остановку процессов');
@@ -1893,6 +1401,13 @@ function TournamentDetails() {
             if (response.data.success) {
                 setMessage(`✅ ${response.data.message}`);
                 console.log('🚨 Процессы остановлены:', response.data);
+                
+                // Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                
                 await fetchTournamentData();
             } else {
                 setMessage(`❌ ${response.data.error || 'Ошибка при остановке процессов'}`);
@@ -1914,23 +1429,34 @@ function TournamentDetails() {
         }
     }, [id, user?.role, fetchTournamentData]);
 
-    // 🆕 ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО (ОБНОВЛЕННЫЕ)
+    // 🔒 Обновление cooldown счетчика - УБРАНО, так как таймауты больше не используются
+    // useEffect(() => {
+    //     let interval;
+    //     if (regenerationCooldown > 0) {
+    //         interval = setInterval(() => {
+    //             setRegenerationCooldown(prev => Math.max(0, prev - 100));
+    //         }, 100);
+    //     }
+    //     return () => clearInterval(interval);
+    // }, [regenerationCooldown]);
+
+    // 🆕 ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО (ИСПРАВЛЕНО)
     const handleThirdPlaceModalConfirm = useCallback((needThirdPlace) => {
         const mode = isRegenerationMode ? 'РЕГЕНЕРАЦИИ' : 'ГЕНЕРАЦИИ';
         console.log(`🎯 Пользователь выбрал: ${needThirdPlace ? 'нужен' : 'не нужен'} матч за 3-е место для ${mode}`);
         setThirdPlaceMatch(needThirdPlace);
         setShowThirdPlaceModal(false);
         
-        // 🔧 ИСПРАВЛЕНО: Вызываем правильную функцию в зависимости от режима
+        // 🔧 ИСПРАВЛЕНО: Используем унифицированные функции
         if (isRegenerationMode) {
-            handleRegenerateBracketWithModal(needThirdPlace);
+            handleRegenerateBracket(needThirdPlace);
         } else {
             handleGenerateBracket(needThirdPlace);
         }
         
         // Сбрасываем режим
         setIsRegenerationMode(false);
-    }, [handleGenerateBracket, handleRegenerateBracketWithModal, isRegenerationMode]);
+    }, [handleGenerateBracket, handleRegenerateBracket, isRegenerationMode]);
 
     const handleThirdPlaceModalClose = useCallback(() => {
         const mode = isRegenerationMode ? 'регенерацию' : 'генерацию';
@@ -2135,8 +1661,6 @@ function TournamentDetails() {
                     onClearResults={resetMatchResults}
                     hasMatches={matches.length > 0}
                     hasBracket={games.length > 0}
-                    regenerationCooldown={regenerationCooldown}
-                    isRegenerationBlocked={regenerationCooldown > 0}
                 />
 
                 {/* Сообщения */}

@@ -1,7 +1,10 @@
 const BracketService = require('../../services/tournament/BracketService');
 const MatchService = require('../../services/tournament/MatchService');
 const { asyncHandler } = require('../../utils/asyncHandler');
-const { pool } = require('../../db/pool');
+const { logTournamentEvent } = require('../../utils/tournament/logger');
+const { broadcastTournamentUpdate } = require('../../notifications');
+const pool = require('../../db');
+const { generateBracket } = require('../../bracketGenerator');
 
 class MatchController {
     /**
