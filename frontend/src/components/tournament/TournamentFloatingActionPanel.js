@@ -206,13 +206,28 @@ const TournamentFloatingActionPanel = ({
     };
 
     // Обработчик клика по действию
-    const handleActionClick = (action) => {
+    const handleActionClick = (action, event) => {
+        // 🔧 ИСПРАВЛЕНИЕ: Предотвращаем всплытие события и передачу циклических ссылок
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
         // Игнорируем клики по заблокированным действиям
         if (action.disabled || !action.onClick || typeof action.onClick !== 'function') {
             return;
         }
         
-        action.onClick();
+        // 🔧 ИСПРАВЛЕНИЕ: Вызываем функцию БЕЗ передачи event объекта
+        try {
+            action.onClick();
+        } catch (error) {
+            console.error('❌ Ошибка при выполнении действия:', {
+                actionId: action.id,
+                actionTitle: action.title,
+                errorMessage: error.message
+            });
+        }
     };
 
     // 🎨 Обработчик изменения вида отображения участников
@@ -301,7 +316,7 @@ const TournamentFloatingActionPanel = ({
                             <div 
                                 key={action.id}
                                 className={`floating-action-item ${action.color} ${action.disabled ? 'disabled' : ''}`}
-                                onClick={() => handleActionClick(action)}
+                                onClick={(event) => handleActionClick(action, event)}
                                 title={action.description}
                                 style={action.disabled ? { cursor: 'not-allowed', opacity: 0.6 } : {}}
                             >

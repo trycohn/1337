@@ -1253,32 +1253,46 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
-    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ (API v2.0)
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ (API v2.0) + ДИАГНОСТИКА
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
+        console.log('🔧 [ДИАГНОСТИКА] handleGenerateBracket вызвана с параметром:', useThirdPlace);
+        console.log('🔧 [ДИАГНОСТИКА] Текущее состояние loading:', loading);
+        console.log('🔧 [ДИАГНОСТИКА] ID турнира:', id);
+        console.log('🔧 [ДИАГНОСТИКА] Пользователь:', user?.username);
+        
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
-            console.log('🎯 Открываем модальное окно выбора матча за 3-е место для ГЕНЕРАЦИИ');
+            console.log('🎯 [ДИАГНОСТИКА] Открываем модальное окно выбора матча за 3-е место для ГЕНЕРАЦИИ');
             setIsRegenerationMode(false);
             setShowThirdPlaceModal(true);
             return;
         }
 
         if (loading) {
-            console.log('⚠️ Операция уже выполняется, игнорируем клик');
+            console.log('⚠️ [ДИАГНОСТИКА] Операция уже выполняется, игнорируем клик');
             return;
         }
 
-        console.log(`🚀 Генерируем сетку через API v2.0 с параметром thirdPlaceMatch: ${useThirdPlace}`);
+        console.log(`🚀 [ДИАГНОСТИКА] Генерируем сетку через API v2.0 с параметром thirdPlaceMatch: ${useThirdPlace}`);
         
         try {
             setLoading(true);
             
             const token = localStorage.getItem('token');
-            const response = await api.post(`/api/tournaments/${id}/generate-bracket`, {
-                thirdPlaceMatch: useThirdPlace
-            }, {
+            console.log('🔧 [ДИАГНОСТИКА] Токен получен:', token ? 'Есть' : 'Отсутствует');
+            
+            const requestUrl = `/api/tournaments/${id}/generate-bracket`;
+            console.log('🔧 [ДИАГНОСТИКА] URL запроса:', requestUrl);
+            
+            const requestData = { thirdPlaceMatch: useThirdPlace };
+            console.log('🔧 [ДИАГНОСТИКА] Данные запроса:', requestData);
+            
+            const response = await api.post(requestUrl, requestData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            
+            console.log('🔧 [ДИАГНОСТИКА] Ответ сервера - статус:', response.status);
+            console.log('🔧 [ДИАГНОСТИКА] Ответ сервера - данные:', response.data);
             
             if (response.data.success) {
                 const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
@@ -1289,13 +1303,24 @@ function TournamentDetails() {
                 const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
+                console.log('🔧 [ДИАГНОСТИКА] Кеш очищен');
                 
                 await fetchTournamentData();
+                console.log('🔧 [ДИАГНОСТИКА] Данные турнира перезагружены');
             } else {
+                console.log('🔧 [ДИАГНОСТИКА] Сервер вернул success: false');
                 setMessage(`❌ ${response.data.message || 'Ошибка при генерации сетки'}`);
             }
         } catch (error) {
-            console.error('❌ Ошибка при генерации сетки:', error);
+            console.error('❌ [ДИАГНОСТИКА] Ошибка при генерации сетки:', error);
+            console.error('❌ [ДИАГНОСТИКА] Детали ошибки:', {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                config: error.config
+            });
+            
             let errorMessage = 'Ошибка при генерации сетки';
             
             if (error.response?.data?.message) {
@@ -1308,6 +1333,7 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
+            console.log('🔧 [ДИАГНОСТИКА] Операция генерации завершена');
         }
     }, [id, fetchTournamentData, loading]);
 
@@ -1467,13 +1493,13 @@ function TournamentDetails() {
 
     // Обработка ошибок загрузки
     if (loading) {
-                        return (
+        return (
             <div className="tournament-loading" data-testid="tournament-loading">
                 <div className="loading-content">
                     <h2>🔄 Загрузка турнира...</h2>
                     <p>Пожалуйста, подождите</p>
                 </div>
-                                            </div>
+            </div>
         );
     }
 
@@ -1483,17 +1509,17 @@ function TournamentDetails() {
                 <div className="auth-error-message">
                     <h2>⚠️ Ошибка загрузки турнира</h2>
                     <p>{error}</p>
-                                                        <button 
+                    <button 
                         className="auth-error-button" 
                         onClick={() => {
                             setError(null);
                             fetchTournamentData();
                         }}
                     >
-                        🔄 Попробовать снова
-                                                        </button>
-                                                    </div>
-                                            </div>
+                        �� Попробовать снова
+                    </button>
+                </div>
+            </div>
         );
     }
 
@@ -1503,7 +1529,7 @@ function TournamentDetails() {
                 <h2>❓ Турнир не найден</h2>
                 <p>Турнир с указанным ID не существует или был удален.</p>
                 <button onClick={() => navigate('/')}>🏠 На главную</button>
-                                                        </div>
+            </div>
         );
     }
 
@@ -1516,7 +1542,7 @@ function TournamentDetails() {
                         {/* Заголовок турнира */}
                         <div className="tournament-header-tournamentdetails">
                             <h2 data-testid="tournament-title">{tournament.name}</h2>
-                                </div>
+                        </div>
 
                         {/* 🆕 Навигация по вкладкам */}
                         <div className="tabs-navigation-tournamentdetails">
