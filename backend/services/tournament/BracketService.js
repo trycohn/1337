@@ -112,8 +112,17 @@ class BracketService {
             }
             
             // 2. Получаем участников
-            const participants = await ParticipantService.getByTournamentId(tournamentId);
-            console.log(`👥 Найдено ${participants.length} участников`);
+            let participants;
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Для микс турниров используем команды, а не участников
+            if (tournament.format === 'mix') {
+                console.log('🎯 Турнир формата MIX - получаем команды');
+                participants = await this._getMixTeams(tournamentId, client);
+                console.log(`👥 Найдено ${participants.length} команд`);
+            } else {
+                participants = await ParticipantService.getByTournamentId(tournamentId);
+                console.log(`👥 Найдено ${participants.length} участников`);
+            }
             
             if (participants.length < 2) {
                 throw new Error('Недостаточно участников для генерации сетки');
@@ -249,8 +258,17 @@ class BracketService {
             }
             
             // 2. Получаем участников
-            const participants = await ParticipantService.getByTournamentId(tournamentId);
-            console.log(`👥 Найдено ${participants.length} участников`);
+            let participants;
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Для микс турниров используем команды, а не участников
+            if (tournament.format === 'mix') {
+                console.log('🎯 Турнир формата MIX - получаем команды');
+                participants = await this._getMixTeams(tournamentId, client);
+                console.log(`👥 Найдено ${participants.length} команд`);
+            } else {
+                participants = await ParticipantService.getByTournamentId(tournamentId);
+                console.log(`👥 Найдено ${participants.length} участников`);
+            }
             
             if (participants.length < 2) {
                 throw new Error('Недостаточно участников для генерации сетки');
