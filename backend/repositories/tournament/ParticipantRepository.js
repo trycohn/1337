@@ -10,7 +10,7 @@ class ParticipantRepository {
                 tp.id,
                 tp.tournament_id,
                 tp.user_id,
-                tp.name,
+                COALESCE(tp.name, u.username) as name,
                 tp.faceit_elo,
                 tp.cs2_premier_rank,
                 tp.in_team,
