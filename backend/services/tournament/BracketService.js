@@ -1,7 +1,7 @@
 const pool = require('../../db');
 const { generateBracket: bracketGenerator } = require('../../bracketGenerator');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
-const { sendTournamentChatAnnouncement } = require('../ChatService');
+const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
 
 /**
