@@ -293,7 +293,7 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
 };
 
 /**
- * 🔧 ПОЛНОСТЬЮ ПЕРЕПИСАННЫЙ генератор основных раундов турнира
+ * 🔧 КРИТИЧЕСКИ ИСПРАВЛЕННЫЙ генератор основных раундов турнира
  * @param {number} tournamentId - ID турнира
  * @param {Array} byeParticipants - Участники с автопроходом
  * @param {Object} tournamentMath - Математические параметры
@@ -305,24 +305,29 @@ const generateMainRounds = async (tournamentId, byeParticipants, tournamentMath,
     const { participantsAfterPreliminary, mainMatches } = tournamentMath;
     let matchNumber = preliminaryMatchesCount + 1;
     
-    console.log(`🏆 ГЕНЕРАЦИЯ ОСНОВНЫХ РАУНДОВ V3.1:`);
+    console.log(`🏆 ГЕНЕРАЦИЯ ОСНОВНЫХ РАУНДОВ V3.2 (КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ):`);
     console.log(`   • Участников после предварительного: ${participantsAfterPreliminary}`);
     console.log(`   • Нужно создать основных матчей: ${mainMatches}`);
     
-    // 🔧 НОВЫЙ АЛГОРИТМ: Создаем ровно столько матчей, сколько нужно
-    let remainingParticipants = participantsAfterPreliminary;
+    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем простой алгоритм на основе степеней двойки
+    // Для 4 участников: раунд 0 (2 матча) + раунд 1 (1 матч) = 3 матча
+    
+    let currentRoundParticipants = participantsAfterPreliminary;
     let round = 0;
     let totalCreatedMatches = 0;
     
-    while (remainingParticipants > 1 && totalCreatedMatches < mainMatches) {
-        const matchesInRound = Math.floor(remainingParticipants / 2);
+    console.log(`🔧 НАЧИНАЕМ СОЗДАНИЕ РАУНДОВ:`);
+    
+    while (currentRoundParticipants > 1 && totalCreatedMatches < mainMatches) {
+        const matchesInCurrentRound = Math.floor(currentRoundParticipants / 2);
         const roundNames = generateRoundNames(round, Math.ceil(Math.log2(participantsAfterPreliminary)), false, false);
         
-        console.log(`   🎯 Раунд ${round} (${roundNames.roundName}): ${matchesInRound} матчей`);
+        console.log(`   🎯 Раунд ${round} (${roundNames.roundName}): ${matchesInCurrentRound} матчей (участников: ${currentRoundParticipants})`);
         
-        for (let matchInRound = 0; matchInRound < matchesInRound; matchInRound++) {
+        for (let matchInRound = 0; matchInRound < matchesInCurrentRound; matchInRound++) {
             if (totalCreatedMatches >= mainMatches) {
-                break; // 🔧 ЗАЩИТА: Не создаем больше матчей чем нужно
+                console.log(`   🛑 ОСТАНОВКА: Достигнуто максимальное количество матчей (${mainMatches})`);
+                break;
             }
             
             let team1Id = null;
@@ -370,20 +375,27 @@ const generateMainRounds = async (tournamentId, byeParticipants, tournamentMath,
             console.log(`     ✅ Матч ${matchInRound + 1}: ${team1Name} vs ${team2Name} (${totalCreatedMatches}/${mainMatches})`);
         }
         
-        // Переходим к следующему раунду
-        remainingParticipants = matchesInRound + (remainingParticipants % 2); // +1 если есть нечетный участник
+        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильный расчет участников следующего раунда
+        // Количество участников следующего раунда = количество матчей текущего раунда
+        // (каждый матч даёт 1 победителя)
+        currentRoundParticipants = matchesInCurrentRound;
         round++;
         
-        if (matchesInRound === 0) {
-            break; // Защита от бесконечного цикла
+        console.log(`   📊 Следующий раунд будет иметь ${currentRoundParticipants} участников`);
+        
+        // 🛡️ ЗАЩИТА от бесконечного цикла
+        if (matchesInCurrentRound === 0) {
+            console.log(`   🛑 АВАРИЙНАЯ ОСТАНОВКА: matchesInCurrentRound = 0`);
+            break;
         }
     }
     
-    console.log(`✅ Создано ${totalCreatedMatches} основных матчей (ожидалось: ${mainMatches})`);
+    console.log(`✅ ГЕНЕРАЦИЯ ЗАВЕРШЕНА: создано ${totalCreatedMatches} основных матчей (ожидалось: ${mainMatches})`);
     
-    // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА
+    // 🔧 ФИНАЛЬНАЯ ПРОВЕРКА
     if (totalCreatedMatches !== mainMatches) {
-        console.warn(`⚠️ ВНИМАНИЕ: Создано ${totalCreatedMatches} матчей, ожидалось ${mainMatches}`);
+        console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Создано ${totalCreatedMatches} матчей, ожидалось ${mainMatches}`);
+        throw new Error(`Алгоритм генерации матчей неисправен: создано ${totalCreatedMatches}, ожидалось ${mainMatches}`);
     }
     
     return matches;
