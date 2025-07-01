@@ -552,6 +552,28 @@ class MatchService {
             }
         }
     }
+
+    /**
+     * 🔄 АЛИАСЫ ДЛЯ СОВМЕСТИМОСТИ С MatchController
+     */
+    
+    // Алиас для saveMatchResult (используется в MatchController)
+    static async saveResult(matchId, resultData, userId) {
+        console.log(`💾 MatchService: Алиас saveResult -> updateSpecificMatchResult для матча ${matchId}`);
+        return await this.updateSpecificMatchResult(matchId, resultData, userId);
+    }
+    
+    // Алиас для getMatches (используется в MatchController)
+    static async getByTournamentId(tournamentId) {
+        console.log(`📋 MatchService: Алиас getByTournamentId -> getMatches для турнира ${tournamentId}`);
+        return await this.getMatches(tournamentId);
+    }
+    
+    // Алиас для getMatchById (используется в MatchController)
+    static async getById(matchId) {
+        console.log(`🔍 MatchService: Алиас getById -> getMatchById для матча ${matchId}`);
+        return await this.getMatchById(matchId);
+    }
 }
 
 module.exports = MatchService; 

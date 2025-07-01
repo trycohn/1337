@@ -277,67 +277,58 @@ class MatchController {
     /**
      * 🚨 QA FIX: Экстренная остановка зависших процессов генерации
      */
-    async killGeneration(req, res) {
-        try {
-            const { id: tournamentId } = req.params;
-            const user = req.user;
-            
-            console.log(`🚨 [MatchController] ЭКСТРЕННАЯ ОСТАНОВКА процессов для турнира ${tournamentId}`);
-            console.log(`👤 Пользователь: ${user.username} (ID: ${user.id})`);
-            
-            // Проверяем права администратора
-            if (user.role !== 'admin') {
-                return res.status(403).json({
-                    error: 'Только администраторы могут выполнять экстренную остановку'
-                });
-            }
-            
-            // 1. Восстанавливаем статус турнира
-            await pool.query(
-                'UPDATE tournaments SET status = $1 WHERE id = $2 AND status = $3',
-                ['active', tournamentId, 'generating']
-            );
-            
-            // 2. Убиваем все длительные запросы в PostgreSQL
-            await pool.query(`
-                SELECT pg_cancel_backend(pid) 
-                FROM pg_stat_activity 
-                WHERE state != 'idle' 
-                AND query LIKE '%matches%' 
-                AND query LIKE '%${tournamentId}%'
-                AND query_start < NOW() - INTERVAL '60 seconds'
-            `);
-            
-            // 3. Проверяем текущее состояние
-            const statusCheck = await pool.query(
-                'SELECT status FROM tournaments WHERE id = $1',
-                [tournamentId]
-            );
-            
-            const matchesCheck = await pool.query(
-                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
-                [tournamentId]
-            );
-            
-            console.log(`✅ [MatchController] Экстренная остановка выполнена:`);
-            console.log(`   • Статус турнира: ${statusCheck.rows[0]?.status}`);
-            console.log(`   • Количество матчей: ${matchesCheck.rows[0]?.count}`);
-            
-            res.json({
-                success: true,
-                message: 'Зависшие процессы остановлены',
-                tournamentStatus: statusCheck.rows[0]?.status,
-                matchesCount: parseInt(matchesCheck.rows[0]?.count)
-            });
-            
-        } catch (error) {
-            console.error(`❌ [MatchController] Ошибка экстренной остановки:`, error.message);
-            res.status(500).json({
-                error: 'Ошибка при остановке процессов',
-                details: error.message
+    static killGeneration = asyncHandler(async (req, res) => {
+        const { id: tournamentId } = req.params;
+        const user = req.user;
+        
+        console.log(`🚨 [MatchController] ЭКСТРЕННАЯ ОСТАНОВКА процессов для турнира ${tournamentId}`);
+        console.log(`👤 Пользователь: ${user.username} (ID: ${user.id})`);
+        
+        // Проверяем права администратора
+        if (user.role !== 'admin') {
+            return res.status(403).json({
+                error: 'Только администраторы могут выполнять экстренную остановку'
             });
         }
-    }
+        
+        // 1. Восстанавливаем статус турнира
+        await pool.query(
+            'UPDATE tournaments SET status = $1 WHERE id = $2 AND status = $3',
+            ['active', tournamentId, 'generating']
+        );
+        
+        // 2. Убиваем все длительные запросы в PostgreSQL
+        await pool.query(`
+            SELECT pg_cancel_backend(pid) 
+            FROM pg_stat_activity 
+            WHERE state != 'idle' 
+            AND query LIKE '%matches%' 
+            AND query LIKE '%${tournamentId}%'
+            AND query_start < NOW() - INTERVAL '60 seconds'
+        `);
+        
+        // 3. Проверяем текущее состояние
+        const statusCheck = await pool.query(
+            'SELECT status FROM tournaments WHERE id = $1',
+            [tournamentId]
+        );
+        
+        const matchesCheck = await pool.query(
+            'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+            [tournamentId]
+        );
+        
+        console.log(`✅ [MatchController] Экстренная остановка выполнена:`);
+        console.log(`   • Статус турнира: ${statusCheck.rows[0]?.status}`);
+        console.log(`   • Количество матчей: ${matchesCheck.rows[0]?.count}`);
+        
+        res.json({
+            success: true,
+            message: 'Зависшие процессы остановлены',
+            tournamentStatus: statusCheck.rows[0]?.status,
+            matchesCount: parseInt(matchesCheck.rows[0]?.count)
+        });
+    });
 }
 
 module.exports = MatchController; 
