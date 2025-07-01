@@ -60,6 +60,8 @@ class BracketService {
             );
             
             if (parseInt(existingMatches.rows[0].count) > 0) {
+                console.log(`🔧 Найдено ${existingMatches.rows[0].count} существующих матчей, начинаем очистку...`);
+                
                 // Если есть матчи, сначала очищаем foreign keys
                 console.log('🔧 Очистка foreign key ссылок между матчами...');
                 
@@ -81,6 +83,32 @@ class BracketService {
                     [tournamentId]
                 );
                 console.log(`🗑️ Удалено ${deleteResult.rowCount} существующих матчей`);
+                
+                // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся, что все матчи удалены
+                const checkResult = await client.query(
+                    'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                    [tournamentId]
+                );
+                
+                const remainingMatches = parseInt(checkResult.rows[0].count);
+                if (remainingMatches > 0) {
+                    console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: После удаления осталось ${remainingMatches} матчей!`);
+                    
+                    // 🔧 ЭКСТРЕННАЯ ОЧИСТКА: Пробуем удалить еще раз без транзакции
+                    console.log('🚨 Пробуем экстренную очистку без транзакции...');
+                    await pool.query('DELETE FROM matches WHERE tournament_id = $1', [tournamentId]);
+                    
+                    const finalCheck = await pool.query(
+                        'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                        [tournamentId]
+                    );
+                    
+                    if (parseInt(finalCheck.rows[0].count) > 0) {
+                        throw new Error(`Не удалось полностью очистить матчи турнира ${tournamentId}`);
+                    }
+                } else {
+                    console.log('✅ Все матчи успешно удалены');
+                }
             }
             
             // 2. Получаем участников
@@ -193,6 +221,32 @@ class BracketService {
                 [tournamentId]
             );
             console.log(`🗑️ Удалено ${deleteResult.rowCount} матчей`);
+            
+            // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся, что все матчи удалены
+            const checkResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            const remainingMatches = parseInt(checkResult.rows[0].count);
+            if (remainingMatches > 0) {
+                console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: После удаления осталось ${remainingMatches} матчей!`);
+                
+                // 🔧 ЭКСТРЕННАЯ ОЧИСТКА: Пробуем удалить еще раз без транзакции
+                console.log('🚨 Пробуем экстренную очистку без транзакции...');
+                await pool.query('DELETE FROM matches WHERE tournament_id = $1', [tournamentId]);
+                
+                const finalCheck = await pool.query(
+                    'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                    [tournamentId]
+                );
+                
+                if (parseInt(finalCheck.rows[0].count) > 0) {
+                    throw new Error(`Не удалось полностью очистить матчи турнира ${tournamentId}`);
+                }
+            } else {
+                console.log('✅ Все матчи успешно удалены');
+            }
             
             // 2. Получаем участников
             const participants = await ParticipantService.getByTournamentId(tournamentId);

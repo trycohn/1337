@@ -540,20 +540,15 @@ const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) =
 
 /**
  * 🔧 ИСПРАВЛЕННАЯ валидация сгенерированной сетки
- * @param {number} tournamentId - ID турнира
+ * @param {Array} generatedMatches - Массив сгенерированных матчей
  * @param {Object} tournamentMath - Математические параметры
  * @returns {Object} - Результат валидации
  */
-const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
-    console.log('🔍 ВАЛИДАЦИЯ СГЕНЕРИРОВАННОЙ СЕТКИ V3.1');
+const validateGeneratedBracket = async (generatedMatches, tournamentMath) => {
+    console.log('🔍 ВАЛИДАЦИЯ СГЕНЕРИРОВАННОЙ СЕТКИ V3.2');
     
-    // Получаем все матчи турнира
-    const matchesResult = await pool.query(
-        'SELECT * FROM matches WHERE tournament_id = $1 ORDER BY round, position_in_round',
-        [tournamentId]
-    );
-    
-    const matches = matchesResult.rows;
+    // 🔧 ИСПРАВЛЕНИЕ: Работаем с переданным массивом матчей, а не с БД
+    const matches = generatedMatches || [];
     const preliminaryMatches = matches.filter(m => m.is_preliminary_round);
     const mainMatches = matches.filter(m => !m.is_preliminary_round && !m.is_third_place_match);
     const thirdPlaceMatches = matches.filter(m => m.is_third_place_match);
@@ -610,7 +605,7 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
         }
     }
     
-    console.log(`   📊 Статистика V3.1:`);
+    console.log(`   📊 Статистика V3.2:`);
     console.log(`      • Всего матчей: ${validation.stats.totalMatches}`);
     console.log(`      • Предварительных: ${validation.stats.preliminaryMatches} (ожидалось: ${validation.stats.expectedPreliminary})`);
     console.log(`      • Основных: ${validation.stats.mainMatches} (ожидалось: ${validation.stats.expectedMain})`);
@@ -713,7 +708,7 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
         await linkMatches(allMatches, tournamentMath, thirdPlaceMatchObj);
         
         // 6. Валидация результата
-        const validation = await validateGeneratedBracket(tournamentId, tournamentMath);
+        const validation = await validateGeneratedBracket(allMatches, tournamentMath);
         
         if (!validation.isValid) {
             throw new Error(`Валидация сетки не прошла: ${validation.errors.join(', ')}`);

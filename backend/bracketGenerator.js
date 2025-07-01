@@ -27,33 +27,52 @@ const generateBracket = async (format, tournamentId, participants, thirdPlaceMat
     
     console.log(`🎯 Генерация сетки: формат=${format}, участников=${participants.length}, матч за 3-е место=${thirdPlaceMatch}`);
     
-    let matches;
+    let result;
     
     switch (format.toLowerCase()) {
         case 'mix':
         case 'single_elimination':
-            matches = await generateSingleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
+            result = await generateSingleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
             break;
         case 'double_elimination':
-            matches = await generateDoubleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
+            result = await generateDoubleEliminationBracket(tournamentId, participants, thirdPlaceMatch);
             break;
         default:
             throw new Error(`Неподдерживаемый формат турнира: ${format}`);
     }
     
     console.log('🚨 [bracketGenerator.js] ГЕНЕРАЦИЯ ЗАВЕРШЕНА УСПЕШНО!');
-    console.log('🚨 [bracketGenerator.js] Создано матчей:', matches ? matches.length : 'UNDEFINED');
+    console.log('🚨 [bracketGenerator.js] Результат генерации:', {
+        success: result.success,
+        matchesCount: result.matches ? result.matches.length : 0,
+        stats: result.stats
+    });
     
-    // Возвращаем объект с полем matches для совместимости с BracketService
-    const result = {
-        matches: matches || [],
-        totalMatches: matches ? matches.length : 0,
-        success: true
-    };
-    
-    console.log('🚨 [bracketGenerator.js] Возвращаем объект:', result);
-    
-    return result;
+    // 🔧 ИСПРАВЛЕНИЕ: Возвращаем структуру, совместимую с BracketService
+    // Если генератор вернул объект с полем matches, возвращаем его как есть
+    // Если вернул массив, оборачиваем в объект
+    if (Array.isArray(result)) {
+        // Старый формат (массив матчей)
+        return {
+            matches: result,
+            totalMatches: result.length,
+            success: true
+        };
+    } else if (result.matches) {
+        // Новый формат (объект с полем matches)
+        return {
+            matches: result.matches,
+            totalMatches: result.matches.length,
+            success: result.success || true,
+            stats: result.stats,
+            validation: result.validation,
+            tournamentMath: result.tournamentMath
+        };
+    } else {
+        // Неизвестный формат
+        console.error('🚨 [bracketGenerator.js] Неизвестный формат результата:', result);
+        throw new Error('Генератор вернул результат в неизвестном формате');
+    }
 };
 
 module.exports = {
