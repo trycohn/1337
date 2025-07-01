@@ -1,6 +1,6 @@
 // =====================================================
-// 🔧 ИСПРАВЛЕННЫЙ SINGLE ELIMINATION ГЕНЕРАТОР V3.0
-// Версия: 3.0 - КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ МАТЕМАТИКИ
+// 🔧 ИСПРАВЛЕННЫЙ SINGLE ELIMINATION ГЕНЕРАТОР V3.1
+// Версия: 3.1 - КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ОСНОВНЫХ МАТЧЕЙ
 // =====================================================
 
 const pool = require('../db');
@@ -15,7 +15,7 @@ const calculateTournamentMath = (participantsCount) => {
         throw new Error('Минимальное количество участников: 2');
     }
 
-    console.log(`🧮 ИСПРАВЛЕННАЯ МАТЕМАТИКА ТУРНИРА для ${participantsCount} участников:`);
+    console.log(`🧮 ИСПРАВЛЕННАЯ МАТЕМАТИКА ТУРНИРА V3.1 для ${participantsCount} участников:`);
     
     // 🔧 ПРАВИЛЬНАЯ МАТЕМАТИКА SINGLE ELIMINATION:
     // В Single Elimination для N участников нужно ровно N-1 матчей
@@ -25,12 +25,7 @@ const calculateTournamentMath = (participantsCount) => {
     const nextPowerExponent = Math.ceil(Math.log2(participantsCount));
     const nextPowerOfTwo = Math.pow(2, nextPowerExponent);
     
-    // Количество основных раундов = количество раундов для степени двойки
-    const mainRounds = nextPowerExponent;
-    
-    // Количество матчей в первом основном раунде
-    const firstRoundMatches = nextPowerOfTwo / 2;
-    
+    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Учитываем предварительный раунд в основных раундах
     // Количество участников с bye (автопроходом) в первый раунд
     const byeParticipants = nextPowerOfTwo - participantsCount;
     
@@ -40,16 +35,26 @@ const calculateTournamentMath = (participantsCount) => {
     // Количество предварительных матчей
     const preliminaryMatches = preliminaryParticipants / 2;
     
-    // Количество основных матчей = общие матчи - предварительные
-    const mainMatches = totalMatches - preliminaryMatches;
+    // 🔧 ИСПРАВЛЕНИЕ: Количество участников после предварительного раунда
+    const participantsAfterPreliminary = preliminaryMatches + byeParticipants;
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Количество основных раундов = log2(участников после предварительного)
+    const mainRounds = Math.ceil(Math.log2(participantsAfterPreliminary));
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Количество основных матчей = участники после предварительного - 1
+    const mainMatches = participantsAfterPreliminary - 1;
+    
+    // Количество матчей в первом основном раунде
+    const firstRoundMatches = Math.ceil(participantsAfterPreliminary / 2);
 
     console.log(`   • Ближайшая степень двойки (вверх): 2^${nextPowerExponent} = ${nextPowerOfTwo}`);
     console.log(`   • Общих матчей в турнире: ${totalMatches}`);
     console.log(`   • Участников с автопроходом (bye): ${byeParticipants}`);
     console.log(`   • Участников в предварительном раунде: ${preliminaryParticipants}`);
     console.log(`   • Предварительных матчей: ${preliminaryMatches}`);
-    console.log(`   • Основных раундов: ${mainRounds}`);
-    console.log(`   • Основных матчей: ${mainMatches}`);
+    console.log(`   • 🔧 ИСПРАВЛЕНО: Участников после предварительного: ${participantsAfterPreliminary}`);
+    console.log(`   • 🔧 ИСПРАВЛЕНО: Основных раундов: ${mainRounds}`);
+    console.log(`   • 🔧 ИСПРАВЛЕНО: Основных матчей: ${mainMatches}`);
     console.log(`   • Матчей в первом основном раунде: ${firstRoundMatches}`);
 
     return {
@@ -60,6 +65,7 @@ const calculateTournamentMath = (participantsCount) => {
         preliminaryMatches,
         preliminaryParticipants,
         byeParticipants,
+        participantsAfterPreliminary,
         mainRounds,
         mainMatches,
         firstRoundMatches
@@ -287,7 +293,7 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
 };
 
 /**
- * 🔧 ИСПРАВЛЕННЫЙ генератор основных раундов турнира
+ * 🔧 ПОЛНОСТЬЮ ПЕРЕПИСАННЫЙ генератор основных раундов турнира
  * @param {number} tournamentId - ID турнира
  * @param {Array} byeParticipants - Участники с автопроходом
  * @param {Object} tournamentMath - Математические параметры
@@ -296,19 +302,29 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
  */
 const generateMainRounds = async (tournamentId, byeParticipants, tournamentMath, preliminaryMatchesCount) => {
     const matches = [];
-    const { mainRounds, firstRoundMatches } = tournamentMath;
+    const { participantsAfterPreliminary, mainMatches } = tournamentMath;
     let matchNumber = preliminaryMatchesCount + 1;
     
-    console.log(`🏆 ГЕНЕРАЦИЯ ОСНОВНЫХ РАУНДОВ: ${mainRounds} раундов`);
+    console.log(`🏆 ГЕНЕРАЦИЯ ОСНОВНЫХ РАУНДОВ V3.1:`);
+    console.log(`   • Участников после предварительного: ${participantsAfterPreliminary}`);
+    console.log(`   • Нужно создать основных матчей: ${mainMatches}`);
     
-    // Генерируем каждый раунд
-    for (let round = 0; round < mainRounds; round++) {
-        const matchesInRound = Math.pow(2, mainRounds - round - 1);
-        const roundNames = generateRoundNames(round, mainRounds, false, false);
+    // 🔧 НОВЫЙ АЛГОРИТМ: Создаем ровно столько матчей, сколько нужно
+    let remainingParticipants = participantsAfterPreliminary;
+    let round = 0;
+    let totalCreatedMatches = 0;
+    
+    while (remainingParticipants > 1 && totalCreatedMatches < mainMatches) {
+        const matchesInRound = Math.floor(remainingParticipants / 2);
+        const roundNames = generateRoundNames(round, Math.ceil(Math.log2(participantsAfterPreliminary)), false, false);
         
         console.log(`   🎯 Раунд ${round} (${roundNames.roundName}): ${matchesInRound} матчей`);
         
         for (let matchInRound = 0; matchInRound < matchesInRound; matchInRound++) {
+            if (totalCreatedMatches >= mainMatches) {
+                break; // 🔧 ЗАЩИТА: Не создаем больше матчей чем нужно
+            }
+            
             let team1Id = null;
             let team2Id = null;
             
@@ -346,15 +362,30 @@ const generateMainRounds = async (tournamentId, byeParticipants, tournamentMath,
             ]);
             
             matches.push(match.rows[0]);
+            totalCreatedMatches++;
             
             const team1Name = byeParticipants.find(p => p.id === team1Id)?.name || 'TBD';
             const team2Name = byeParticipants.find(p => p.id === team2Id)?.name || 'TBD';
             
-            console.log(`     ✅ Матч ${matchInRound + 1}: ${team1Name} vs ${team2Name}`);
+            console.log(`     ✅ Матч ${matchInRound + 1}: ${team1Name} vs ${team2Name} (${totalCreatedMatches}/${mainMatches})`);
+        }
+        
+        // Переходим к следующему раунду
+        remainingParticipants = matchesInRound + (remainingParticipants % 2); // +1 если есть нечетный участник
+        round++;
+        
+        if (matchesInRound === 0) {
+            break; // Защита от бесконечного цикла
         }
     }
     
-    console.log(`✅ Создано ${matches.length} основных матчей`);
+    console.log(`✅ Создано ${totalCreatedMatches} основных матчей (ожидалось: ${mainMatches})`);
+    
+    // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА
+    if (totalCreatedMatches !== mainMatches) {
+        console.warn(`⚠️ ВНИМАНИЕ: Создано ${totalCreatedMatches} матчей, ожидалось ${mainMatches}`);
+    }
+    
     return matches;
 };
 
@@ -410,11 +441,11 @@ const generateThirdPlaceMatch = async (tournamentId, tournamentMath, currentMatc
  * @param {Object} thirdPlaceMatch - Матч за 3-е место
  */
 const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) => {
-    console.log('🔗 СВЯЗЫВАНИЕ МАТЧЕЙ В ТУРНИРНОЕ ДЕРЕВО');
+    console.log('🔗 СВЯЗЫВАНИЕ МАТЧЕЙ В ТУРНИРНОЕ ДЕРЕВО V3.1');
     
     const preliminaryMatches = allMatches.filter(m => m.is_preliminary_round);
     const mainMatches = allMatches.filter(m => !m.is_preliminary_round && !m.is_third_place_match);
-    const { mainRounds } = tournamentMath;
+    const { participantsAfterPreliminary } = tournamentMath;
     
     // 1. Связываем предварительные матчи с первым основным раундом
     if (preliminaryMatches.length > 0) {
@@ -447,13 +478,22 @@ const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) =
     }
     
     // 2. Связываем основные раунды между собой
-    for (let round = 0; round < mainRounds - 1; round++) {
-        const currentRoundMatches = mainMatches.filter(m => m.round === round);
-        const nextRoundMatches = mainMatches.filter(m => m.round === round + 1);
+    // 🔧 ИСПРАВЛЕНИЕ: Используем фактические раунды из mainMatches
+    const roundNumbers = [...new Set(mainMatches.map(m => m.round))].sort((a, b) => a - b);
+    console.log(`🔗 Найдены основные раунды: ${roundNumbers.join(', ')}`);
+    
+    for (let i = 0; i < roundNumbers.length - 1; i++) {
+        const currentRound = roundNumbers[i];
+        const nextRound = roundNumbers[i + 1];
         
-        for (let i = 0; i < currentRoundMatches.length; i++) {
-            const currentMatch = currentRoundMatches[i];
-            const nextMatchIndex = Math.floor(i / 2);
+        const currentRoundMatches = mainMatches.filter(m => m.round === currentRound);
+        const nextRoundMatches = mainMatches.filter(m => m.round === nextRound);
+        
+        console.log(`🔗 Связывание: Раунд ${currentRound} (${currentRoundMatches.length} матчей) → Раунд ${nextRound} (${nextRoundMatches.length} матчей)`);
+        
+        for (let j = 0; j < currentRoundMatches.length; j++) {
+            const currentMatch = currentRoundMatches[j];
+            const nextMatchIndex = Math.floor(j / 2);
             
             if (nextMatchIndex < nextRoundMatches.length) {
                 const nextMatch = nextRoundMatches[nextMatchIndex];
@@ -463,14 +503,14 @@ const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) =
                     [nextMatch.id, currentMatch.id]
                 );
                 
-                console.log(`   🔗 Раунд ${round} матч ${currentMatch.id} → Раунд ${round + 1} матч ${nextMatch.id}`);
+                console.log(`   🔗 Раунд ${currentRound} матч ${currentMatch.id} → Раунд ${nextRound} матч ${nextMatch.id}`);
             }
         }
     }
     
     // 3. Связываем проигравших полуфинала с матчем за 3-е место
-    if (thirdPlaceMatch && mainRounds >= 2) {
-        const semifinalRound = mainRounds - 2;
+    if (thirdPlaceMatch && roundNumbers.length >= 2) {
+        const semifinalRound = roundNumbers[roundNumbers.length - 2]; // Предпоследний раунд
         const semifinalMatches = mainMatches.filter(m => m.round === semifinalRound);
         
         for (const semifinalMatch of semifinalMatches) {
@@ -493,7 +533,7 @@ const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) =
  * @returns {Object} - Результат валидации
  */
 const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
-    console.log('🔍 ВАЛИДАЦИЯ СГЕНЕРИРОВАННОЙ СЕТКИ');
+    console.log('🔍 ВАЛИДАЦИЯ СГЕНЕРИРОВАННОЙ СЕТКИ V3.1');
     
     // Получаем все матчи турнира
     const matchesResult = await pool.query(
@@ -523,11 +563,14 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
             totalMatches: matches.length,
             preliminaryMatches: preliminaryMatches.length,
             mainMatches: mainMatches.length,
-            thirdPlaceMatches: thirdPlaceMatches.length
+            thirdPlaceMatches: thirdPlaceMatches.length,
+            expectedPreliminary: expectedPreliminary,
+            expectedMain: expectedMain,
+            expectedTotal: expectedTotal
         }
     };
     
-    // Проверяем количество матчей
+    // 🔧 ИСПРАВЛЕННАЯ ПРОВЕРКА количества матчей
     if (preliminaryMatches.length !== expectedPreliminary) {
         validation.errors.push(`Неверное количество предварительных матчей: ${preliminaryMatches.length}, ожидалось: ${expectedPreliminary}`);
         validation.isValid = false;
@@ -536,6 +579,12 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
     if (mainMatches.length !== expectedMain) {
         validation.errors.push(`Неверное количество основных матчей: ${mainMatches.length}, ожидалось: ${expectedMain}`);
         validation.isValid = false;
+    }
+    
+    // 🔧 БОЛЕЕ МЯГКАЯ ПРОВЕРКА общего количества (допускаем матч за 3-е место)
+    const expectedTotalWithThirdPlace = expectedTotal + thirdPlaceMatches.length;
+    if (matches.length !== expectedTotalWithThirdPlace) {
+        validation.warnings.push(`Общее количество матчей: ${matches.length}, ожидалось: ${expectedTotalWithThirdPlace} (включая матчи за 3-е место)`);
     }
     
     // Проверяем связи между матчами
@@ -549,13 +598,22 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
         }
     }
     
-    console.log(`   📊 Статистика: ${validation.stats.totalMatches} матчей (${validation.stats.preliminaryMatches} предв. + ${validation.stats.mainMatches} основных + ${validation.stats.thirdPlaceMatches} за 3-е место)`);
+    console.log(`   📊 Статистика V3.1:`);
+    console.log(`      • Всего матчей: ${validation.stats.totalMatches}`);
+    console.log(`      • Предварительных: ${validation.stats.preliminaryMatches} (ожидалось: ${validation.stats.expectedPreliminary})`);
+    console.log(`      • Основных: ${validation.stats.mainMatches} (ожидалось: ${validation.stats.expectedMain})`);
+    console.log(`      • За 3-е место: ${validation.stats.thirdPlaceMatches}`);
     
     if (validation.isValid) {
         console.log('✅ Валидация успешна - сетка корректна');
     } else {
         console.log('❌ Валидация не пройдена:');
         validation.errors.forEach(error => console.log(`   • ${error}`));
+    }
+    
+    if (validation.warnings.length > 0) {
+        console.log('⚠️ Предупреждения:');
+        validation.warnings.forEach(warning => console.log(`   • ${warning}`));
     }
     
     return validation;
@@ -569,7 +627,7 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
  * @returns {Array} - Список сгенерированных матчей
  */
 const generateSingleEliminationBracket = async (tournamentId, participants, thirdPlaceMatch = false) => {
-    console.log('🚀 ЗАПУСК ИСПРАВЛЕННОГО ГЕНЕРАТОРА SINGLE ELIMINATION V3.0');
+    console.log('🚀 ЗАПУСК ИСПРАВЛЕННОГО ГЕНЕРАТОРА SINGLE ELIMINATION V3.1');
     console.log('='.repeat(60));
     
     // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ
