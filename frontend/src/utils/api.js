@@ -156,7 +156,13 @@ api.interceptors.response.use(
             }
         } else {
             // Произошла ошибка при настройке запроса
-            console.error('Request config error:', error.message);
+            // 🔧 ИСПРАВЛЕНИЕ: Безопасное логирование без циклических ссылок
+            console.error('Request config error:', {
+                message: error.message,
+                code: error.code,
+                name: error.name,
+                stack: error.stack?.substring(0, 500) // Ограничиваем размер stack trace
+            });
         }
         
         // Добавляем информацию об URL в объект ошибки для лучшей отладки
