@@ -155,6 +155,7 @@ function TournamentDetails() {
     // 🆕 Состояния для модального окна матча за 3-е место
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
+    const [isRegenerationMode, setIsRegenerationMode] = useState(false); // 🆕 Режим регенерации vs генерации
     
     // Состояния для модальных окон (упрощенная версия без хука)
     const [modals, setModals] = useState({
@@ -1070,7 +1071,7 @@ function TournamentDetails() {
                                 {canEditMatches && games.length > 0 && (
                                     <button 
                                         className="regenerate-bracket-button"
-                                        onClick={handleRegenerateBracket}
+                                        onClick={handleRegenerateBracketWithModal}
                                     >
                                         🔄 Перегенерировать сетку
                                     </button>
@@ -1751,11 +1752,15 @@ function TournamentDetails() {
         }
     }, [id, tournament?.third_place_match_enabled, fetchTournamentData, lastRegenerationTime, REGENERATION_COOLDOWN_MS]);
 
+    // 🆕 СОСТОЯНИЕ ДЛЯ РАЗЛИЧЕНИЯ ГЕНЕРАЦИИ И РЕГЕНЕРАЦИИ
+    const [isRegenerationMode, setIsRegenerationMode] = useState(false);
+
     // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
-            console.log('🎯 Открываем модальное окно выбора матча за 3-е место');
+            console.log('🎯 Открываем модальное окно выбора матча за 3-е место для ГЕНЕРАЦИИ');
+            setIsRegenerationMode(false); // Режим генерации
             setShowThirdPlaceModal(true);
             return;
         }
@@ -1796,20 +1801,100 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData]);
 
-    // 🆕 ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО
+    // 🆕 НОВАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
+    const handleRegenerateBracketWithModal = useCallback(async (useThirdPlace = null) => {
+        // Если параметр матча за 3-е место не передан, показываем модальное окно
+        if (useThirdPlace === null) {
+            console.log('🎯 Открываем модальное окно выбора матча за 3-е место для РЕГЕНЕРАЦИИ');
+            setIsRegenerationMode(true); // Режим регенерации
+            setShowThirdPlaceModal(true);
+            return;
+        }
+
+        console.log(`🚀 РЕгенерируем сетку с параметром thirdPlaceMatch: ${useThirdPlace}`);
+        
+        // 🔒 Проверка debounce защиты
+        const now = Date.now();
+        const timePassed = now - lastRegenerationTime;
+        
+        if (timePassed < REGENERATION_COOLDOWN_MS) {
+            const timeLeft = Math.ceil((REGENERATION_COOLDOWN_MS - timePassed) / 1000);
+            setMessage(`⏱️ Подождите ${timeLeft} секунд перед следующей регенерацией сетки`);
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        // Всегда используем перемешивание участников для сбалансированной сетки
+        const shuffleParticipants = true;
+        const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
+        const thirdPlaceText = useThirdPlace ? '\n• Будет добавлен матч за 3-е место' : '\n• Матч за 3-е место не будет создан';
+        
+        const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново${shuffleText}${thirdPlaceText}\n• Действие необратимо\n\nПродолжить?`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        try {
+            setLoading(true);
+            // 🔒 Устанавливаем время последней регенерации и запускаем cooldown
+            setLastRegenerationTime(now);
+            setRegenerationCooldown(REGENERATION_COOLDOWN_MS);
+            
+            const token = localStorage.getItem('token');
+            const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
+                shuffleParticipants: shuffleParticipants,
+                thirdPlaceMatch: useThirdPlace
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
+                setMessage(`✅ Турнирная сетка успешно перегенерирована с перемешиванием участников ${matchText}!`);
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${response.data.message || 'Ошибка при перегенерации сетки'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при перегенерации сетки:', error);
+            let errorMessage = 'Ошибка при перегенерации сетки';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setMessage(`❌ ${errorMessage}`);
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [id, fetchTournamentData, lastRegenerationTime, REGENERATION_COOLDOWN_MS]);
+
+    // 🆕 ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО (ОБНОВЛЕННЫЕ)
     const handleThirdPlaceModalConfirm = useCallback((needThirdPlace) => {
-        console.log(`🎯 Пользователь выбрал: ${needThirdPlace ? 'нужен' : 'не нужен'} матч за 3-е место`);
+        const mode = isRegenerationMode ? 'РЕГЕНЕРАЦИИ' : 'ГЕНЕРАЦИИ';
+        console.log(`🎯 Пользователь выбрал: ${needThirdPlace ? 'нужен' : 'не нужен'} матч за 3-е место для ${mode}`);
         setThirdPlaceMatch(needThirdPlace);
-        setShowThirdPlaceModal(false); // 🔧 ИСПРАВЛЕНО: Закрываем модальное окно здесь
-        handleGenerateBracket(needThirdPlace);
-    }, [handleGenerateBracket]);
+        setShowThirdPlaceModal(false);
+        
+        // 🔧 ИСПРАВЛЕНО: Вызываем правильную функцию в зависимости от режима
+        if (isRegenerationMode) {
+            handleRegenerateBracketWithModal(needThirdPlace);
+        } else {
+            handleGenerateBracket(needThirdPlace);
+        }
+        
+        // Сбрасываем режим
+        setIsRegenerationMode(false);
+    }, [handleGenerateBracket, handleRegenerateBracketWithModal, isRegenerationMode]);
 
     const handleThirdPlaceModalClose = useCallback(() => {
-        // 🔧 ИСПРАВЛЕНО: Убираем ложное сообщение об отмене
-        // Теперь эта функция вызывается только при реальной отмене
-        console.log('❌ Пользователь отменил генерацию сетки');
+        const mode = isRegenerationMode ? 'регенерацию' : 'генерацию';
+        console.log(`❌ Пользователь отменил ${mode} сетки`);
         setShowThirdPlaceModal(false);
-    }, []);
+        setIsRegenerationMode(false); // Сбрасываем режим
+    }, [isRegenerationMode]);
 
     // Обработка ошибок загрузки
     if (loading) {
