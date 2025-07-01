@@ -1,9 +1,9 @@
 const pool = require('../../db');
-const { generateBracket: bracketGenerator } = require('../../bracketGenerator');
+const { generateBracket } = require('../../bracketGenerator');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
-const { ParticipantService } = require('./ParticipantService');
+const ParticipantService = require('./ParticipantService');
 
 /**
  * 🎯 BracketService v3.0 - УПРОЩЕННАЯ архитектура без таймаутов
@@ -92,7 +92,7 @@ class BracketService {
             }
             
             // 3. Генерируем сетку
-            const bracketResult = await bracketGenerator.generateBracket(
+            const bracketResult = await generateBracket(
                 tournament.format,
                 tournamentId,
                 participants,
@@ -212,7 +212,7 @@ class BracketService {
             }
             
             // 4. Генерируем новую сетку
-            const bracketResult = await bracketGenerator.generateBracket(
+            const bracketResult = await generateBracket(
                 tournament.format,
                 tournamentId,
                 participants,

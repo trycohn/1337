@@ -93,6 +93,13 @@ class ParticipantService {
     }
 
     /**
+     * Получение участников турнира (алиас для совместимости)
+     */
+    static async getByTournamentId(tournamentId) {
+        return await this.getParticipants(tournamentId);
+    }
+
+    /**
      * Получение оригинальных участников турнира (включая тех, кто не в командах)
      */
     static async getOriginalParticipants(tournamentId) {
