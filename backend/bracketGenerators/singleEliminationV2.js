@@ -1,12 +1,12 @@
 // =====================================================
-// МАТЕМАТИЧЕСКИ КОРРЕКТНЫЙ SINGLE ELIMINATION ГЕНЕРАТОР
-// Версия: 2.0 - Полная реструктуризация
+// 🔧 ИСПРАВЛЕННЫЙ SINGLE ELIMINATION ГЕНЕРАТОР V3.0
+// Версия: 3.0 - КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ МАТЕМАТИКИ
 // =====================================================
 
 const pool = require('../db');
 
 /**
- * Математический калькулятор для Single Elimination турниров
+ * 🔧 ИСПРАВЛЕННЫЙ математический калькулятор для Single Elimination турниров
  * @param {number} participantsCount - Количество участников
  * @returns {Object} - Математические параметры турнира
  */
@@ -15,58 +15,89 @@ const calculateTournamentMath = (participantsCount) => {
         throw new Error('Минимальное количество участников: 2');
     }
 
-    // 🎯 КЛЮЧЕВАЯ МАТЕМАТИКА SINGLE ELIMINATION
+    console.log(`🧮 ИСПРАВЛЕННАЯ МАТЕМАТИКА ТУРНИРА для ${participantsCount} участников:`);
     
-    // 1. Находим ближайшую степень двойки СНИЗУ (target power of 2)
-    const targetPowerExponent = Math.floor(Math.log2(participantsCount));
-    const targetParticipants = Math.pow(2, targetPowerExponent);
-    
-    // 2. Количество участников, которых нужно исключить
-    const participantsToEliminate = participantsCount - targetParticipants;
-    
-    // 3. Количество предварительных матчей = количество участников для исключения
-    const preliminaryMatches = participantsToEliminate;
-    
-    // 4. Количество участников в предварительном раунде = 2 * количество матчей
-    const preliminaryParticipants = preliminaryMatches * 2;
-    
-    // 5. Участники с автопроходом (bye) = оставшиеся участники
-    const byeParticipants = participantsCount - preliminaryParticipants;
-    
-    // 6. Количество основных раундов = log2(targetParticipants)
-    const mainRounds = Math.log2(targetParticipants);
-    
-    // 7. Общее количество матчей в турнире (без матча за 3-е место)
+    // 🔧 ПРАВИЛЬНАЯ МАТЕМАТИКА SINGLE ELIMINATION:
+    // В Single Elimination для N участников нужно ровно N-1 матчей
     const totalMatches = participantsCount - 1;
     
-    // 8. Матчи основной сетки = totalMatches - preliminaryMatches
+    // Находим ближайшую степень двойки БОЛЬШЕ ИЛИ РАВНУЮ количеству участников
+    const nextPowerExponent = Math.ceil(Math.log2(participantsCount));
+    const nextPowerOfTwo = Math.pow(2, nextPowerExponent);
+    
+    // Количество основных раундов = количество раундов для степени двойки
+    const mainRounds = nextPowerExponent;
+    
+    // Количество матчей в первом основном раунде
+    const firstRoundMatches = nextPowerOfTwo / 2;
+    
+    // Количество участников с bye (автопроходом) в первый раунд
+    const byeParticipants = nextPowerOfTwo - participantsCount;
+    
+    // Количество участников, которые должны играть в предварительном раунде
+    const preliminaryParticipants = participantsCount - byeParticipants;
+    
+    // Количество предварительных матчей
+    const preliminaryMatches = preliminaryParticipants / 2;
+    
+    // Количество основных матчей = общие матчи - предварительные
     const mainMatches = totalMatches - preliminaryMatches;
 
-    console.log(`🧮 МАТЕМАТИКА ТУРНИРА для ${participantsCount} участников:`);
-    console.log(`   • Целевая степень двойки: 2^${targetPowerExponent} = ${targetParticipants}`);
-    console.log(`   • Исключить участников: ${participantsToEliminate}`);
-    console.log(`   • Предварительных матчей: ${preliminaryMatches}`);
-    console.log(`   • Участников в предварительном раунде: ${preliminaryParticipants}`);
+    console.log(`   • Ближайшая степень двойки (вверх): 2^${nextPowerExponent} = ${nextPowerOfTwo}`);
+    console.log(`   • Общих матчей в турнире: ${totalMatches}`);
     console.log(`   • Участников с автопроходом (bye): ${byeParticipants}`);
+    console.log(`   • Участников в предварительном раунде: ${preliminaryParticipants}`);
+    console.log(`   • Предварительных матчей: ${preliminaryMatches}`);
     console.log(`   • Основных раундов: ${mainRounds}`);
-    console.log(`   • Общих матчей: ${totalMatches} (${preliminaryMatches} предв. + ${mainMatches} основных)`);
+    console.log(`   • Основных матчей: ${mainMatches}`);
+    console.log(`   • Матчей в первом основном раунде: ${firstRoundMatches}`);
 
     return {
         participantsCount,
-        targetParticipants,
-        targetPowerExponent,
-        participantsToEliminate,
+        nextPowerOfTwo,
+        nextPowerExponent,
+        totalMatches,
         preliminaryMatches,
         preliminaryParticipants,
         byeParticipants,
         mainRounds,
-        totalMatches,
-        mainMatches
+        mainMatches,
+        firstRoundMatches
     };
 };
 
 /**
- * Распределитель участников по раундам
+ * 🔧 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА СУЩЕСТВУЮЩИХ МАТЧЕЙ
+ * @param {number} tournamentId - ID турнира
+ */
+const clearExistingMatches = async (tournamentId) => {
+    console.log(`🗑️ ПРИНУДИТЕЛЬНАЯ ОЧИСТКА существующих матчей турнира ${tournamentId}`);
+    
+    // Удаляем ВСЕ существующие матчи турнира
+    const deleteResult = await pool.query(
+        'DELETE FROM matches WHERE tournament_id = $1',
+        [tournamentId]
+    );
+    
+    console.log(`✅ Удалено ${deleteResult.rowCount} существующих матчей`);
+    
+    // Дополнительная проверка
+    const checkResult = await pool.query(
+        'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+        [tournamentId]
+    );
+    
+    const remainingMatches = parseInt(checkResult.rows[0].count);
+    if (remainingMatches > 0) {
+        console.warn(`⚠️ ВНИМАНИЕ: Остались ${remainingMatches} матчей после очистки!`);
+        throw new Error(`Не удалось полностью очистить существующие матчи. Осталось: ${remainingMatches}`);
+    }
+    
+    console.log(`✅ Все матчи турнира ${tournamentId} успешно удалены`);
+};
+
+/**
+ * Распределитель участников по раундам (ИСПРАВЛЕННЫЙ)
  * @param {Array} participants - Массив участников
  * @param {Object} tournamentMath - Математические параметры
  * @returns {Object} - Распределенные участники
@@ -144,7 +175,7 @@ const generateRoundNames = (round, totalRounds, isPreliminary = false, isThirdPl
 };
 
 /**
- * Генератор матчей предварительного раунда
+ * 🔧 ИСПРАВЛЕННЫЙ генератор матчей предварительного раунда
  * @param {number} tournamentId - ID турнира
  * @param {Array} preliminaryParticipants - Участники предварительного раунда
  * @param {Object} tournamentMath - Математические параметры
@@ -154,28 +185,18 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
     const matches = [];
     const { preliminaryMatches } = tournamentMath;
     
-    if (preliminaryMatches === 0) {
+    // 🔧 ИСПРАВЛЕНИЕ: Если preliminaryMatches = 0 ИЛИ дробное число, корректируем
+    const actualPreliminaryMatches = Math.floor(preliminaryMatches);
+    
+    if (actualPreliminaryMatches === 0) {
         console.log('🎯 Предварительный раунд не требуется');
         return matches;
     }
     
-    console.log(`🥊 ГЕНЕРАЦИЯ ПРЕДВАРИТЕЛЬНОГО РАУНДА: ${preliminaryMatches} матчей`);
-    
-    // 🔍 ДОБАВЛЯЕМ ДИАГНОСТИКУ УЧАСТНИКОВ ПЕРЕД ГЕНЕРАЦИЕЙ
-    console.log(`🔍 ДИАГНОСТИКА УЧАСТНИКОВ ПРЕДВАРИТЕЛЬНОГО РАУНДА:`);
-    console.log(`   - Количество участников: ${preliminaryParticipants.length}`);
-    console.log(`   - Ожидается матчей: ${preliminaryMatches}`);
-    
-    preliminaryParticipants.forEach((participant, index) => {
-        console.log(`   ${index + 1}. ID: ${participant.id} (тип: ${typeof participant.id}), Name: "${participant.name}"`);
-        if (typeof participant.id !== 'number' || isNaN(participant.id)) {
-            console.log(`      ❌ НЕКОРРЕКТНЫЙ ID В ПРЕДВАРИТЕЛЬНОМ РАУНДЕ!`);
-            throw new Error(`Участник ${index + 1} в предварительном раунде имеет некорректный ID: ${participant.id} (${typeof participant.id})`);
-        }
-    });
+    console.log(`🥊 ГЕНЕРАЦИЯ ПРЕДВАРИТЕЛЬНОГО РАУНДА: ${actualPreliminaryMatches} матчей`);
     
     // Генерируем пары для предварительного раунда
-    for (let i = 0; i < preliminaryMatches; i++) {
+    for (let i = 0; i < actualPreliminaryMatches; i++) {
         const team1Index = i * 2;
         const team2Index = i * 2 + 1;
         
@@ -183,11 +204,7 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
             const team1 = preliminaryParticipants[team1Index];
             const team2 = preliminaryParticipants[team2Index];
             
-            // 🔍 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА ПЕРЕД ВСТАВКОЙ В БД
-            console.log(`🔍 Проверяем участников матча ${i + 1}:`);
-            console.log(`   Team 1: ID=${team1.id} (${typeof team1.id}), Name="${team1.name}"`);
-            console.log(`   Team 2: ID=${team2.id} (${typeof team2.id}), Name="${team2.name}"`);
-            
+            // Валидация ID участников
             if (typeof team1.id !== 'number' || isNaN(team1.id)) {
                 throw new Error(`TEAM1 имеет некорректный ID: ${team1.id} (${typeof team1.id})`);
             }
@@ -196,11 +213,6 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
             }
             
             const roundNames = generateRoundNames(0, 0, true, false);
-            
-            console.log(`🔧 Вставляем матч в БД с параметрами:`);
-            console.log(`   - Tournament ID: ${tournamentId}`);
-            console.log(`   - Team1 ID: ${team1.id}`);
-            console.log(`   - Team2 ID: ${team2.id}`);
             
             const match = await pool.query(`
                 INSERT INTO matches (
@@ -228,11 +240,12 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
         }
     }
     
+    console.log(`✅ Создано ${matches.length} предварительных матчей`);
     return matches;
 };
 
 /**
- * Генератор основных раундов турнира
+ * 🔧 ИСПРАВЛЕННЫЙ генератор основных раундов турнира
  * @param {number} tournamentId - ID турнира
  * @param {Array} byeParticipants - Участники с автопроходом
  * @param {Object} tournamentMath - Математические параметры
@@ -241,7 +254,7 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
  */
 const generateMainRounds = async (tournamentId, byeParticipants, tournamentMath, preliminaryMatchesCount) => {
     const matches = [];
-    const { mainRounds, targetParticipants } = tournamentMath;
+    const { mainRounds, firstRoundMatches } = tournamentMath;
     let matchNumber = preliminaryMatchesCount + 1;
     
     console.log(`🏆 ГЕНЕРАЦИЯ ОСНОВНЫХ РАУНДОВ: ${mainRounds} раундов`);
@@ -299,6 +312,7 @@ const generateMainRounds = async (tournamentId, byeParticipants, tournamentMath,
         }
     }
     
+    console.log(`✅ Создано ${matches.length} основных матчей`);
     return matches;
 };
 
@@ -431,7 +445,7 @@ const linkMatches = async (allMatches, tournamentMath, thirdPlaceMatch = null) =
 };
 
 /**
- * Валидация сгенерированной сетки
+ * 🔧 ИСПРАВЛЕННАЯ валидация сгенерированной сетки
  * @param {number} tournamentId - ID турнира
  * @param {Object} tournamentMath - Математические параметры
  * @returns {Object} - Результат валидации
@@ -451,10 +465,13 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
     const thirdPlaceMatches = matches.filter(m => m.is_third_place_match);
     
     const { 
-        preliminaryMatches: expectedPreliminary,
+        preliminaryMatches: expectedPreliminaryFloat,
         mainMatches: expectedMain,
         totalMatches: expectedTotal
     } = tournamentMath;
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Для предварительных матчей используем Math.floor
+    const expectedPreliminary = Math.floor(expectedPreliminaryFloat);
     
     const validation = {
         isValid: true,
@@ -503,14 +520,14 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
 };
 
 /**
- * ГЛАВНАЯ ФУНКЦИЯ - Генерация турнирной сетки Single Elimination
+ * 🔧 ИСПРАВЛЕННАЯ ГЛАВНАЯ ФУНКЦИЯ - Генерация турнирной сетки Single Elimination
  * @param {number} tournamentId - ID турнира
  * @param {Array} participants - Массив участников [{ id, name }]
  * @param {boolean} thirdPlaceMatch - Нужен ли матч за 3-е место
  * @returns {Array} - Список сгенерированных матчей
  */
 const generateSingleEliminationBracket = async (tournamentId, participants, thirdPlaceMatch = false) => {
-    console.log('🚀 ЗАПУСК ГЕНЕРАТОРА SINGLE ELIMINATION V2.0');
+    console.log('🚀 ЗАПУСК ИСПРАВЛЕННОГО ГЕНЕРАТОРА SINGLE ELIMINATION V3.0');
     console.log('='.repeat(60));
     
     // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ
@@ -518,20 +535,6 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     console.log(`   - Tournament ID: ${tournamentId} (тип: ${typeof tournamentId})`);
     console.log(`   - Количество участников: ${participants.length}`);
     console.log(`   - Матч за 3-е место: ${thirdPlaceMatch}`);
-    console.log(`   - Первые 5 участников:`);
-    
-    participants.slice(0, 5).forEach((participant, index) => {
-        console.log(`     ${index + 1}. ID: ${participant.id} (тип: ${typeof participant.id}), Name: "${participant.name}"`);
-        console.log(`        Объект:`, JSON.stringify(participant));
-        
-        // Критическая проверка ID
-        if (typeof participant.id !== 'number' || isNaN(participant.id)) {
-            console.log(`        ❌ КРИТИЧЕСКАЯ ОШИБКА: Некорректный ID!`);
-            throw new Error(`УЧАСТНИК ${index + 1} ИМЕЕТ НЕКОРРЕКТНЫЙ ID: ${participant.id} (тип: ${typeof participant.id}). Ожидается число.`);
-        } else {
-            console.log(`        ✅ ID корректен`);
-        }
-    });
     
     // Общая проверка всех участников
     const invalidParticipants = participants.filter(p => typeof p.id !== 'number' || isNaN(p.id));
@@ -546,6 +549,9 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
     console.log(`✅ ВСЕ ${participants.length} УЧАСТНИКОВ ПРОШЛИ ВАЛИДАЦИЮ ID`);
     
     try {
+        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно очищаем существующие матчи
+        await clearExistingMatches(tournamentId);
+        
         // 1. Математические расчеты
         const tournamentMath = calculateTournamentMath(participants.length);
         
@@ -605,6 +611,7 @@ const generateSingleEliminationBracket = async (tournamentId, participants, thir
         
     } catch (error) {
         console.error('❌ ОШИБКА ГЕНЕРАЦИИ:', error.message);
+        console.error('❌ Stack trace:', error.stack);
         throw error;
     }
 };
@@ -614,5 +621,6 @@ module.exports = {
     calculateTournamentMath,
     distributeParticipants,
     generateRoundNames,
-    validateGeneratedBracket
+    validateGeneratedBracket,
+    clearExistingMatches
 }; 
