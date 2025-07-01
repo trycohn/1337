@@ -632,98 +632,116 @@ const validateGeneratedBracket = async (tournamentId, tournamentMath) => {
 };
 
 /**
- * 🔧 ИСПРАВЛЕННАЯ ГЛАВНАЯ ФУНКЦИЯ - Генерация турнирной сетки Single Elimination
+ * 🚀 ГЛАВНАЯ ФУНКЦИЯ: Генератор Single Elimination турнирной сетки
  * @param {number} tournamentId - ID турнира
- * @param {Array} participants - Массив участников [{ id, name }]
- * @param {boolean} thirdPlaceMatch - Нужен ли матч за 3-е место
- * @returns {Array} - Список сгенерированных матчей
+ * @param {Array} participants - Массив участников [{id, name}]
+ * @param {boolean} thirdPlaceMatch - Генерировать ли матч за 3-е место
+ * @returns {Object} - Сгенерированная сетка с матчами
  */
 const generateSingleEliminationBracket = async (tournamentId, participants, thirdPlaceMatch = false) => {
     console.log('🚀 ЗАПУСК ИСПРАВЛЕННОГО ГЕНЕРАТОРА SINGLE ELIMINATION V3.1');
-    console.log('='.repeat(60));
-    
-    // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ
-    console.log(`🔍 ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ:`);
-    console.log(`   - Tournament ID: ${tournamentId} (тип: ${typeof tournamentId})`);
-    console.log(`   - Количество участников: ${participants.length}`);
-    console.log(`   - Матч за 3-е место: ${thirdPlaceMatch}`);
-    
-    // Общая проверка всех участников
-    const invalidParticipants = participants.filter(p => typeof p.id !== 'number' || isNaN(p.id));
-    if (invalidParticipants.length > 0) {
-        console.log(`❌ НАЙДЕНО ${invalidParticipants.length} УЧАСТНИКОВ С НЕКОРРЕКТНЫМИ ID:`);
-        invalidParticipants.forEach((p, index) => {
-            console.log(`   ${index + 1}. ID: ${p.id} (${typeof p.id}), Name: ${p.name}`);
-        });
-        throw new Error(`БЛОКИРОВКА ГЕНЕРАЦИИ: ${invalidParticipants.length} участников имеют некорректные ID. Требуются числовые значения.`);
-    }
-    
-    console.log(`✅ ВСЕ ${participants.length} УЧАСТНИКОВ ПРОШЛИ ВАЛИДАЦИЮ ID`);
+    console.log('============================================================');
     
     try {
-        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно очищаем существующие матчи
-        await clearExistingMatches(tournamentId);
+        // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА ВХОДНЫХ ДАННЫХ
+        console.log('🔍 ДИАГНОСТИКА ВХОДЯЩИХ ДАННЫХ:');
+        console.log(`   - Tournament ID: ${tournamentId} (тип: ${typeof tournamentId})`);
+        console.log(`   - Количество участников: ${participants.length}`);
+        console.log(`   - Матч за 3-е место: ${thirdPlaceMatch}`);
         
-        // 1. Математические расчеты
+        // Валидация участников
+        if (!Array.isArray(participants) || participants.length < 2) {
+            throw new Error(`Недостаточно участников: ${participants.length}. Минимум 2.`);
+        }
+        
+        // 🔧 ПРОВЕРКА: Все участники должны иметь валидные ID
+        const invalidParticipants = participants.filter(p => 
+            !p || typeof p.id !== 'number' || isNaN(p.id) || !p.name
+        );
+        
+        if (invalidParticipants.length > 0) {
+            console.error('❌ НАЙДЕНЫ НЕВАЛИДНЫЕ УЧАСТНИКИ:', invalidParticipants);
+            throw new Error(`Найдено ${invalidParticipants.length} невалидных участников`);
+        }
+        
+        console.log(`✅ ВСЕ ${participants.length} УЧАСТНИКОВ ПРОШЛИ ВАЛИДАЦИЮ ID`);
+        
+        // 🔧 ВАЖНО: НЕ очищаем существующие матчи здесь!
+        // BracketService уже очистил матчи перед вызовом генератора
+        // Это предотвращает deadlock в PostgreSQL
+        // await clearExistingMatches(tournamentId);
+        console.log('ℹ️ Очистка матчей выполнена в BracketService (предотвращение deadlock)');
+        
+        // 1. Математика турнира
         const tournamentMath = calculateTournamentMath(participants.length);
         
         // 2. Распределение участников
-        const distribution = distributeParticipants(participants, tournamentMath);
+        const { preliminaryRoundParticipants, byeRoundParticipants } = 
+            distributeParticipants(participants, tournamentMath);
         
-        // 3. Генерация предварительных матчей
+        // 3. Генерация матчей
         const preliminaryMatches = await generatePreliminaryMatches(
-            tournamentId,
-            distribution.preliminaryRoundParticipants,
+            tournamentId, 
+            preliminaryRoundParticipants, 
             tournamentMath
         );
         
-        // 4. Генерация основных раундов
         const mainMatches = await generateMainRounds(
-            tournamentId,
-            distribution.byeRoundParticipants,
+            tournamentId, 
+            byeRoundParticipants, 
             tournamentMath,
             preliminaryMatches.length
         );
         
-        // 5. Генерация матча за 3-е место (если нужен)
         let thirdPlaceMatchObj = null;
-        if (thirdPlaceMatch) {
+        if (thirdPlaceMatch && tournamentMath.mainRounds >= 2) {
             thirdPlaceMatchObj = await generateThirdPlaceMatch(
-                tournamentId,
+                tournamentId, 
                 tournamentMath,
                 preliminaryMatches.length + mainMatches.length + 1
             );
         }
         
-        // 6. Объединяем все матчи
+        // 4. Объединяем все матчи
         const allMatches = [
             ...preliminaryMatches,
             ...mainMatches,
             ...(thirdPlaceMatchObj ? [thirdPlaceMatchObj] : [])
         ];
         
-        // 7. Связываем матчи в турнирное дерево
+        // 5. Связываем матчи
         await linkMatches(allMatches, tournamentMath, thirdPlaceMatchObj);
         
-        // 8. Валидация результата
+        // 6. Валидация результата
         const validation = await validateGeneratedBracket(tournamentId, tournamentMath);
         
         if (!validation.isValid) {
-            throw new Error(`Валидация не пройдена: ${validation.errors.join(', ')}`);
+            throw new Error(`Валидация сетки не прошла: ${validation.errors.join(', ')}`);
         }
         
-        console.log('='.repeat(60));
-        console.log('🎉 ГЕНЕРАЦИЯ ЗАВЕРШЕНА УСПЕШНО!');
-        console.log(`   📊 Создано матчей: ${allMatches.length}`);
-        console.log(`   🥊 Предварительных: ${preliminaryMatches.length}`);
-        console.log(`   🏆 Основных: ${mainMatches.length}`);
-        console.log(`   🥉 За 3-е место: ${thirdPlaceMatchObj ? 1 : 0}`);
+        console.log('🎉 ГЕНЕРАЦИЯ SINGLE ELIMINATION ЗАВЕРШЕНА УСПЕШНО!');
+        console.log(`📊 Итого матчей: ${allMatches.length}`);
+        console.log(`   - Предварительных: ${preliminaryMatches.length}`);
+        console.log(`   - Основных: ${mainMatches.length}`);
+        console.log(`   - За 3-е место: ${thirdPlaceMatchObj ? 1 : 0}`);
+        console.log('============================================================');
         
-        return allMatches;
+        return {
+            success: true,
+            matches: allMatches,
+            stats: {
+                total: allMatches.length,
+                preliminary: preliminaryMatches.length,
+                main: mainMatches.length,
+                thirdPlace: thirdPlaceMatchObj ? 1 : 0
+            },
+            validation,
+            tournamentMath
+        };
         
     } catch (error) {
-        console.error('❌ ОШИБКА ГЕНЕРАЦИИ:', error.message);
-        console.error('❌ Stack trace:', error.stack);
+        console.error('❌ КРИТИЧЕСКАЯ ОШИБКА В ГЕНЕРАТОРЕ:', error);
+        console.error('Stack trace:', error.stack);
         throw error;
     }
 };

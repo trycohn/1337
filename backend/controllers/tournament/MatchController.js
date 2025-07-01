@@ -21,14 +21,14 @@ class MatchController {
         console.log(`⚙️ Настройки: thirdPlaceMatch=${thirdPlaceMatch}`);
         
         try {
-            const result = await BracketService.generateBracket(tournamentId, userId, thirdPlaceMatch);
+            const result = await BracketService.generateBracket(tournamentId, thirdPlaceMatch);
             
             const duration = Date.now() - startTime;
             console.log(`✅ [MatchController v2.0] Сетка сгенерирована за ${duration}ms`);
             
             res.json({
                 success: true,
-                message: `Турнирная сетка сгенерирована: ${result.matchesCount} матчей`,
+                message: `Турнирная сетка сгенерирована: ${result.stats?.total || result.matches?.length || 0} матчей`,
                 data: result
             });
             
@@ -70,21 +70,21 @@ class MatchController {
         const startTime = Date.now();
         const tournamentId = parseInt(req.params.id);
         const userId = req.user.id;
-        const { shuffle = false, thirdPlaceMatch = false } = req.body;
+        const { shuffle = true, thirdPlaceMatch = false } = req.body;
         
         console.log(`🔄 [MatchController v2.0] Регенерация сетки турнира ${tournamentId}`);
         console.log(`👤 Пользователь: ${req.user.username} (ID: ${userId})`);
         console.log(`⚙️ Настройки: shuffle=${shuffle}, thirdPlaceMatch=${thirdPlaceMatch}`);
         
         try {
-            const result = await BracketService.regenerateBracket(tournamentId, userId, shuffle, thirdPlaceMatch);
+            const result = await BracketService.regenerateBracket(tournamentId, shuffle, thirdPlaceMatch);
             
             const duration = Date.now() - startTime;
             console.log(`✅ [MatchController v2.0] Сетка регенерирована за ${duration}ms`);
             
             res.json({
                 success: true,
-                message: `Турнирная сетка регенерирована: ${result.matchesCount} матчей${shuffle ? ' (с перемешиванием)' : ''}`,
+                message: `Турнирная сетка регенерирована: ${result.stats?.total || result.matches?.length || 0} матчей${shuffle ? ' (с перемешиванием)' : ''}`,
                 data: result
             });
             
