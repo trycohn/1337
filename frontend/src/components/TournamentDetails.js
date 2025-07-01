@@ -1800,11 +1800,13 @@ function TournamentDetails() {
     const handleThirdPlaceModalConfirm = useCallback((needThirdPlace) => {
         console.log(`🎯 Пользователь выбрал: ${needThirdPlace ? 'нужен' : 'не нужен'} матч за 3-е место`);
         setThirdPlaceMatch(needThirdPlace);
-        setShowThirdPlaceModal(false);
+        setShowThirdPlaceModal(false); // 🔧 ИСПРАВЛЕНО: Закрываем модальное окно здесь
         handleGenerateBracket(needThirdPlace);
     }, [handleGenerateBracket]);
 
     const handleThirdPlaceModalClose = useCallback(() => {
+        // 🔧 ИСПРАВЛЕНО: Убираем ложное сообщение об отмене
+        // Теперь эта функция вызывается только при реальной отмене
         console.log('❌ Пользователь отменил генерацию сетки');
         setShowThirdPlaceModal(false);
     }, []);

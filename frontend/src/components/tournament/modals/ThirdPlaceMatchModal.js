@@ -1,6 +1,6 @@
 // =====================================================
 // МОДАЛЬНОЕ ОКНО ВЫБОРА МАТЧА ЗА 3-Е МЕСТО
-// Версия: 1.0 - Для Single Elimination турниров
+// Версия: 2.0 - ИСПРАВЛЕНА ЛОГИКА ЗАКРЫТИЯ
 // =====================================================
 
 import React from 'react';
@@ -16,16 +16,17 @@ const ThirdPlaceMatchModal = ({
     if (!isOpen) return null;
 
     const handleYes = () => {
+        console.log('✅ Пользователь выбрал: НУЖЕН матч за 3-е место');
         onConfirm(true);
-        onClose();
     };
 
     const handleNo = () => {
+        console.log('✅ Пользователь выбрал: НЕ НУЖЕН матч за 3-е место');
         onConfirm(false);
-        onClose();
     };
 
     const handleCancel = () => {
+        console.log('❌ Пользователь ОТМЕНИЛ выбор матча за 3-е место');
         onClose();
     };
 
