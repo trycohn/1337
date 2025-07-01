@@ -156,6 +156,7 @@ function TournamentDetails() {
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
     const [isRegenerationMode, setIsRegenerationMode] = useState(false); // 🆕 Режим регенерации vs генерации
+    const [isGenerating, setIsGenerating] = useState(false);
     
     // Состояния для модальных окон (упрощенная версия без хука)
     const [modals, setModals] = useState({
@@ -1076,6 +1077,16 @@ function TournamentDetails() {
                                         🔄 Перегенерировать сетку
                                     </button>
                                 )}
+                                {/* 🚨 QA FIX: Экстренная кнопка для админов */}
+                                {user?.role === 'admin' && (
+                                    <button 
+                                        className="kill-generation-button emergency-button"
+                                        onClick={handleKillGeneration}
+                                        title="Остановить зависшие процессы генерации (только для админов)"
+                                    >
+                                        🚨 Убить процессы
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -1694,16 +1705,11 @@ function TournamentDetails() {
         return () => clearInterval(interval);
     }, [regenerationCooldown]);
 
-    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С ЗАЩИТОЙ ОТ ЧАСТЫХ КЛИКОВ
+    // �� УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ (БЕЗ COOLDOWN)
     const handleRegenerateBracket = useCallback(async () => {
-        // 🔒 Проверка debounce защиты
-        const now = Date.now();
-        const timePassed = now - lastRegenerationTime;
-        
-        if (timePassed < REGENERATION_COOLDOWN_MS) {
-            const timeLeft = Math.ceil((REGENERATION_COOLDOWN_MS - timePassed) / 1000);
-            setMessage(`⏱️ Подождите ${timeLeft} секунд перед следующей регенерацией сетки`);
-            setTimeout(() => setMessage(''), 3000);
+        // 🔒 Простая защита от дублирования через loading состояние
+        if (loading) {
+            console.log('⚠️ Операция уже выполняется, игнорируем клик');
             return;
         }
 
@@ -1717,9 +1723,6 @@ function TournamentDetails() {
 
         try {
             setLoading(true);
-            // 🔒 Устанавливаем время последней регенерации и запускаем cooldown
-            setLastRegenerationTime(now);
-            setRegenerationCooldown(REGENERATION_COOLDOWN_MS);
             
             const token = localStorage.getItem('token');
             const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
@@ -1750,15 +1753,21 @@ function TournamentDetails() {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [id, tournament?.third_place_match_enabled, fetchTournamentData, lastRegenerationTime, REGENERATION_COOLDOWN_MS]);
+    }, [id, tournament?.third_place_match_enabled, fetchTournamentData, loading]);
 
-    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ (БЕЗ COOLDOWN)
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
             console.log('🎯 Открываем модальное окно выбора матча за 3-е место для ГЕНЕРАЦИИ');
             setIsRegenerationMode(false); // Режим генерации
             setShowThirdPlaceModal(true);
+            return;
+        }
+
+        // 🔒 Простая защита от дублирования через loading состояние
+        if (loading) {
+            console.log('⚠️ Операция уже выполняется, игнорируем клик');
             return;
         }
 
@@ -1796,9 +1805,9 @@ function TournamentDetails() {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [id, fetchTournamentData]);
+    }, [id, fetchTournamentData, loading]);
 
-    // 🆕 НОВАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ПЕРЕГЕНЕРАЦИИ СЕТКИ С МОДАЛЬНЫМ ОКНОМ (БЕЗ COOLDOWN)
     const handleRegenerateBracketWithModal = useCallback(async (useThirdPlace = null) => {
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
@@ -1808,19 +1817,14 @@ function TournamentDetails() {
             return;
         }
 
-        console.log(`🚀 РЕгенерируем сетку с параметром thirdPlaceMatch: ${useThirdPlace}`);
-        
-        // 🔒 Проверка debounce защиты
-        const now = Date.now();
-        const timePassed = now - lastRegenerationTime;
-        
-        if (timePassed < REGENERATION_COOLDOWN_MS) {
-            const timeLeft = Math.ceil((REGENERATION_COOLDOWN_MS - timePassed) / 1000);
-            setMessage(`⏱️ Подождите ${timeLeft} секунд перед следующей регенерацией сетки`);
-            setTimeout(() => setMessage(''), 3000);
+        // 🔒 Простая защита от дублирования через loading состояние
+        if (loading) {
+            console.log('⚠️ Операция уже выполняется, игнорируем клик');
             return;
         }
 
+        console.log(`🚀 РЕгенерируем сетку с параметром thirdPlaceMatch: ${useThirdPlace}`);
+        
         // Всегда используем перемешивание участников для сбалансированной сетки
         const shuffleParticipants = true;
         const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
@@ -1832,9 +1836,6 @@ function TournamentDetails() {
 
         try {
             setLoading(true);
-            // 🔒 Устанавливаем время последней регенерации и запускаем cooldown
-            setLastRegenerationTime(now);
-            setRegenerationCooldown(REGENERATION_COOLDOWN_MS);
             
             const token = localStorage.getItem('token');
             const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, {
@@ -1866,7 +1867,52 @@ function TournamentDetails() {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [id, fetchTournamentData, lastRegenerationTime, REGENERATION_COOLDOWN_MS]);
+    }, [id, fetchTournamentData, loading]);
+
+    // 🚨 QA FIX: Экстренная функция остановки зависших процессов генерации
+    const handleKillGeneration = useCallback(async () => {
+        if (user?.role !== 'admin') {
+            setMessage('❌ Только администраторы могут выполнять экстренную остановку процессов');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        const confirmMessage = `🚨 ЭКСТРЕННАЯ ОСТАНОВКА ПРОЦЕССОВ\n\nВНИМАНИЕ:\n• Будут остановлены все зависшие процессы генерации\n• Незавершенные операции будут прерваны\n• Статус турнира будет восстановлен\n\nЭто действие следует использовать только при зависании системы!\n\nПродолжить?`;
+        
+        if (!window.confirm(confirmMessage)) return;
+
+        try {
+            setLoading(true);
+            setMessage('🚨 Останавливаем зависшие процессы...');
+            
+            const token = localStorage.getItem('token');
+            const response = await api.post(`/api/tournaments/${id}/kill-generation`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                setMessage(`✅ ${response.data.message}`);
+                console.log('🚨 Процессы остановлены:', response.data);
+                await fetchTournamentData();
+            } else {
+                setMessage(`❌ ${response.data.error || 'Ошибка при остановке процессов'}`);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при остановке процессов:', error);
+            let errorMessage = 'Ошибка при остановке процессов';
+            
+            if (error.response?.data?.details) {
+                errorMessage = error.response.data.details;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setMessage(`❌ ${errorMessage}`);
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 8000);
+        }
+    }, [id, user?.role, fetchTournamentData]);
 
     // 🆕 ОБРАБОТЧИКИ ДЛЯ МОДАЛЬНОГО ОКНА МАТЧА ЗА 3-Е МЕСТО (ОБНОВЛЕННЫЕ)
     const handleThirdPlaceModalConfirm = useCallback((needThirdPlace) => {

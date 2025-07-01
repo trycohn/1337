@@ -56,6 +56,9 @@ router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, ver
 // Регенерация турнирной сетки
 router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.regenerateBracket);
 
+// 🚨 QA FIX: Экстренная остановка зависших процессов генерации (только для админов)
+router.post('/:id/kill-generation', authenticateToken, MatchController.killGeneration);
+
 // Очистка результатов матчей
 router.post('/:id/clear-match-results', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.clearMatchResults);
 

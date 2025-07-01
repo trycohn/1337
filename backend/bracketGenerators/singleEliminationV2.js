@@ -215,7 +215,7 @@ const generateRoundNames = (round, totalRounds, isPreliminary = false, isThirdPl
 };
 
 /**
- * 🔧 ИСПРАВЛЕННЫЙ генератор матчей предварительного раунда
+ * 🔧 ИСПРАВЛЕННЫЙ генератор матчей предварительного раунда (БЕЗ ТАЙМАУТОВ)
  * @param {number} tournamentId - ID турнира
  * @param {Array} preliminaryParticipants - Участники предварительного раунда
  * @param {Object} tournamentMath - Математические параметры
@@ -235,7 +235,7 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
     
     console.log(`🥊 ГЕНЕРАЦИЯ ПРЕДВАРИТЕЛЬНОГО РАУНДА: ${actualPreliminaryMatches} матчей`);
     
-    // Генерируем пары для предварительного раунда
+    // 🔧 УПРОЩЕНИЕ: Обычные последовательные INSERT операции
     for (let i = 0; i < actualPreliminaryMatches; i++) {
         const team1Index = i * 2;
         const team2Index = i * 2 + 1;
@@ -254,7 +254,8 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
             
             const roundNames = generateRoundNames(0, 0, true, false);
             
-            const match = await pool.query(`
+            // 🔧 УПРОЩЕНИЕ: Простой INSERT без таймаутов
+            const result = await pool.query(`
                 INSERT INTO matches (
                     tournament_id, round, team1_id, team2_id, match_number,
                     bracket_type, is_preliminary_round, round_name, match_title,
@@ -274,9 +275,10 @@ const generatePreliminaryMatches = async (tournamentId, preliminaryParticipants,
                 i + 1
             ]);
             
-            matches.push(match.rows[0]);
+            const match = result.rows[0];
+            matches.push(match);
             
-            console.log(`   ✅ Матч ${i + 1}: ${team1.name} vs ${team2.name} (ID ${match.rows[0].id})`);
+            console.log(`   ✅ Матч ${i + 1}: ${team1.name} vs ${team2.name} (ID ${match.id})`);
         }
     }
     
