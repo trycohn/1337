@@ -17,14 +17,25 @@ ALTER TABLE matches ADD COLUMN IF NOT EXISTS bye_match BOOLEAN DEFAULT FALSE;
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS loser_next_match_id INTEGER;
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS position_in_round INTEGER;
 
--- Добавляем внешние ключи
-ALTER TABLE matches 
-ADD CONSTRAINT IF NOT EXISTS matches_next_match_id_fkey 
-FOREIGN KEY (next_match_id) REFERENCES matches(id);
-
-ALTER TABLE matches 
-ADD CONSTRAINT IF NOT EXISTS matches_loser_next_match_id_fkey 
-FOREIGN KEY (loser_next_match_id) REFERENCES matches(id);
+-- Добавляем внешние ключи с проверкой существования
+DO $$
+BEGIN
+    -- Проверяем и добавляем FK для next_match_id
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'matches_next_match_id_fkey') THEN
+        ALTER TABLE matches 
+        ADD CONSTRAINT matches_next_match_id_fkey 
+        FOREIGN KEY (next_match_id) REFERENCES matches(id);
+        RAISE NOTICE 'Added constraint matches_next_match_id_fkey';
+    END IF;
+    
+    -- Проверяем и добавляем FK для loser_next_match_id
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'matches_loser_next_match_id_fkey') THEN
+        ALTER TABLE matches 
+        ADD CONSTRAINT matches_loser_next_match_id_fkey 
+        FOREIGN KEY (loser_next_match_id) REFERENCES matches(id);
+        RAISE NOTICE 'Added constraint matches_loser_next_match_id_fkey';
+    END IF;
+END $$;
 
 -- Добавляем индексы для оптимизации
 CREATE INDEX IF NOT EXISTS idx_matches_next_match ON matches(next_match_id);
