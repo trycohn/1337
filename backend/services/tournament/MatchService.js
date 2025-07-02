@@ -254,21 +254,13 @@ class MatchService {
             }
 
             // 5. Простое логирование события
-            await client.query(
-                `INSERT INTO tournament_events (tournament_id, user_id, event_type, event_data, created_at)
-                 VALUES ($1, $2, $3, $4, NOW())`,
-                [
-                    matchData.tournament_id, 
-                    userId, 
-                    'match_completed',
-                    JSON.stringify({
-                        match_id: matchId,
-                        winner_team_id: winnerId,
-                        score: `${score1}:${score2}`,
-                        maps_count: mapsData?.length || 0
-                    })
-                ]
-            );
+            console.log(`📝 [safeUpdateMatchResult] Логируем событие...`);
+            await logTournamentEvent(matchData.tournament_id, userId, 'match_completed', {
+                match_id: matchId,
+                winner_team_id: winnerId,
+                score: `${score1}:${score2}`,
+                maps_count: mapsData?.length || 0
+            }, client);
 
             // 6. Коммит транзакции
             await client.query('COMMIT');
