@@ -207,7 +207,7 @@ class MatchService {
             console.log(`💾 [safeUpdateMatchResult] Обновляем результат матча ${matchId}...`);
             const updateResult = await client.query(
                 `UPDATE matches 
-                 SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4, updated_at = NOW()
+                 SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4
                  WHERE id = $5 AND (winner_team_id IS NULL OR winner_team_id != $1 OR score1 != $2 OR score2 != $3)
                  RETURNING *`,
                 [winnerId, score1, score2, JSON.stringify(mapsData), matchId]
@@ -334,7 +334,7 @@ class MatchService {
             // Атомарно обновляем позицию
             const updateResult = await client.query(
                 `UPDATE matches 
-                 SET ${updateField} = $1, updated_at = NOW()
+                 SET ${updateField} = $1
                  WHERE id = $2 AND ${updateField} IS NULL
                  RETURNING *`,
                 [teamId, targetMatchId]
