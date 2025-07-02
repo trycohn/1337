@@ -21,7 +21,7 @@
 
 .panel-header h3 {
     margin: 0;
-    color: #333;
+    color: #ffffff;
     font-size: 1.3em;
     font-weight: 600;
 }
@@ -33,14 +33,14 @@
 }
 
 .status-exists {
-    color: #28a745;
+    color: #ffffff;
     font-weight: 500;
     padding: 4px 8px;
     font-size: 0.9em;
 }
 
 .status-none {
-    color: #6c757d;
+    color: #ffffff;
     font-weight: 500;
     padding: 4px 8px;
     font-size: 0.9em;
@@ -69,7 +69,7 @@
 .bracket-info p {
     margin: 0 0 10px 0;
     font-weight: 600;
-    color: #333;
+    color: #ffffff;
 }
 
 .bracket-info ul {
@@ -79,7 +79,7 @@
 
 .bracket-info li {
     margin-bottom: 5px;
-    color: #555;
+    color: #ffffff;
 }
 
 /* Кнопки действий */
@@ -171,16 +171,13 @@
 
 /* Опции распределения */
 .seeding-options {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
     padding: 20px;
     margin-top: 15px;
 }
 
 .seeding-options h4 {
     margin: 0 0 15px 0;
-    color: #333;
+    color: #ffffff;
     font-size: 1.1em;
     font-weight: 600;
 }
@@ -304,7 +301,7 @@
 }
 
 .mix-tournament-section .bracket-info p {
-    color: #007bff;
+    color: #ffffff;
     font-weight: 600;
     margin-bottom: 10px;
     display: flex;
@@ -320,7 +317,7 @@
 
 .mix-tournament-section .bracket-info li {
     padding: 4px 0;
-    color: #495057;
+    color: #ffffff;
     border-bottom: 1px solid #e9ecef;
 }
 
@@ -332,14 +329,11 @@
 .teams-preview {
     margin-top: 20px;
     padding: 15px;
-    background: #ffffff;
-    border-radius: 6px;
-    border: 1px solid #dee2e6;
 }
 
 .teams-preview h4 {
     margin: 0 0 15px 0;
-    color: #495057;
+    color: #ffffff;
     font-size: 1.1em;
 }
 
@@ -354,13 +348,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    border-left: 3px solid #007bff;
 }
 
 .team-item strong {
-    color: #333;
+    color: #ffffff;
 }
 
 .team-item span {
@@ -370,7 +361,6 @@
 
 /* Информационные блоки */
 .bracket-info {
-    background: #f8f9fa;
     padding: 15px;
     border-radius: 6px;
     margin-bottom: 20px;
@@ -379,7 +369,7 @@
 .bracket-info p {
     margin: 0 0 10px 0;
     font-weight: 600;
-    color: #495057;
+    color: #ffffff;
 }
 
 .bracket-info ul {
@@ -389,12 +379,11 @@
 
 .bracket-info li {
     margin: 5px 0;
-    color: #6c757d;
+    color: #ffffff;
 }
 
 /* Предупреждения */
 .warning {
-    background: #fff3cd;
     border: 1px solid #ffeaa7;
     color: #856404;
     padding: 12px;
