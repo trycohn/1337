@@ -186,13 +186,13 @@ class MatchService {
             console.log(`🔄 [safeUpdateMatchResult] Начинаем транзакцию...`);
             await client.query('BEGIN');
             
-            // 1. Получаем и блокируем текущий матч с ТАЙМАУТОМ
+            // 1. Получаем и блокируем текущий матч с УЛУЧШЕННОЙ ОБРАБОТКОЙ ТАЙМАУТА
             console.log(`🔍 [safeUpdateMatchResult] Получаем данные матча ${matchId} с блокировкой...`);
             
             let matchData;
             try {
-                // Устанавливаем таймаут на блокировку (5 секунд)
-                await client.query('SET statement_timeout = 5000');
+                // 🔧 ИСПРАВЛЕНИЕ: Увеличиваем таймаут блокировки до 15 секунд
+                await client.query('SET statement_timeout = 15000');
                 
                 const matchResult = await client.query(
                     'SELECT m.*, t.format as tournament_format FROM matches m JOIN tournaments t ON m.tournament_id = t.id WHERE m.id = $1 FOR UPDATE',
@@ -209,7 +209,13 @@ class MatchService {
             } catch (lockError) {
                 console.log(`⚠️ [safeUpdateMatchResult] ОШИБКА БЛОКИРОВКИ: ${lockError.message}`);
                 
-                // Если блокировка не удалась, пробуем без FOR UPDATE
+                // 🔧 ИСПРАВЛЕНИЕ: Прерываем текущую транзакцию и начинаем новую
+                console.log(`🔄 [safeUpdateMatchResult] Прерываем транзакцию и перезапускаем без блокировки...`);
+                await client.query('ROLLBACK');
+                await client.query('BEGIN');
+                
+                // Сбрасываем таймаут и получаем данные без блокировки
+                await client.query('SET statement_timeout = 0');
                 const matchResult = await client.query(
                     'SELECT m.*, t.format as tournament_format FROM matches m JOIN tournaments t ON m.tournament_id = t.id WHERE m.id = $1',
                     [matchId]
@@ -220,9 +226,10 @@ class MatchService {
                 }
                 
                 matchData = matchResult.rows[0];
+                console.log(`⚠️ [safeUpdateMatchResult] Работаем без блокировки (пониженная безопасность)`);
             }
             
-            // Сбрасываем таймаут
+            // Сбрасываем таймаут для остальных операций
             await client.query('SET statement_timeout = 0');
 
             // 2. Обновляем результат матча
@@ -294,17 +301,47 @@ class MatchService {
         console.log(`🔧 [safeAdvanceWinner] НАЧАЛО: продвижение победителя ${winnerId} из матча ${matchId}`);
         
         try {
-            // 1. Получаем данные текущего матча с блокировкой
-            const matchResult = await client.query(
-                'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
-                [matchId]
-            );
+            // 1. Получаем данные текущего матча с улучшенной блокировкой
+            console.log(`🔍 [safeAdvanceWinner] Получаем текущий матч ${matchId}...`);
             
-            if (matchResult.rows.length === 0) {
-                throw new Error(`Матч ${matchId} не найден`);
+            let match;
+            try {
+                // Устанавливаем разумный таймаут для блокировки
+                await client.query('SET statement_timeout = 10000'); // 10 секунд
+                
+                const matchResult = await client.query(
+                    'SELECT * FROM matches WHERE id = $1 FOR UPDATE NOWAIT',
+                    [matchId]
+                );
+                
+                if (matchResult.rows.length === 0) {
+                    throw new Error(`Матч ${matchId} не найден`);
+                }
+                
+                match = matchResult.rows[0];
+                console.log(`✅ [safeAdvanceWinner] Матч заблокирован с NOWAIT`);
+                
+            } catch (lockError) {
+                console.log(`⚠️ [safeAdvanceWinner] Блокировка NOWAIT не удалась: ${lockError.message}`);
+                
+                // Fallback: получаем без блокировки
+                await client.query('SET statement_timeout = 0');
+                const matchResult = await client.query(
+                    'SELECT * FROM matches WHERE id = $1',
+                    [matchId]
+                );
+                
+                if (matchResult.rows.length === 0) {
+                    throw new Error(`Матч ${matchId} не найден`);
+                }
+                
+                match = matchResult.rows[0];
+                console.log(`⚠️ [safeAdvanceWinner] Работаем без блокировки`);
             }
             
-            const match = matchResult.rows[0];
+            // Сбрасываем таймаут
+            await client.query('SET statement_timeout = 0');
+            
             console.log(`✅ [safeAdvanceWinner] Матч получен, next_match_id: ${match.next_match_id}`);
             
             // 2. Валидация: проверяем, что победитель является участником матча
@@ -318,18 +355,41 @@ class MatchService {
                 return { advanced: false, reason: 'no_next_match' };
             }
             
-            // 4. Получаем следующий матч с блокировкой
+            // 4. Получаем следующий матч с улучшенной блокировкой
             console.log(`🔍 [safeAdvanceWinner] Получаем следующий матч ${match.next_match_id}...`);
-            const nextMatchResult = await client.query(
-                'SELECT * FROM matches WHERE id = $1 FOR UPDATE',
-                [match.next_match_id]
-            );
             
-            if (nextMatchResult.rows.length === 0) {
-                throw new Error(`Следующий матч ${match.next_match_id} не найден`);
+            let nextMatch;
+            try {
+                // Пытаемся заблокировать следующий матч с NOWAIT
+                const nextMatchResult = await client.query(
+                    'SELECT * FROM matches WHERE id = $1 FOR UPDATE NOWAIT',
+                    [match.next_match_id]
+                );
+                
+                if (nextMatchResult.rows.length === 0) {
+                    throw new Error(`Следующий матч ${match.next_match_id} не найден`);
+                }
+                
+                nextMatch = nextMatchResult.rows[0];
+                console.log(`✅ [safeAdvanceWinner] Следующий матч заблокирован с NOWAIT`);
+                
+            } catch (nextLockError) {
+                console.log(`⚠️ [safeAdvanceWinner] Блокировка следующего матча не удалась: ${nextLockError.message}`);
+                
+                // Fallback: получаем без блокировки
+                const nextMatchResult = await client.query(
+                    'SELECT * FROM matches WHERE id = $1',
+                    [match.next_match_id]
+                );
+                
+                if (nextMatchResult.rows.length === 0) {
+                    throw new Error(`Следующий матч ${match.next_match_id} не найден`);
+                }
+                
+                nextMatch = nextMatchResult.rows[0];
+                console.log(`⚠️ [safeAdvanceWinner] Работаем с следующим матчем без блокировки`);
             }
             
-            const nextMatch = nextMatchResult.rows[0];
             console.log(`🔧 [safeAdvanceWinner] Следующий матч ${nextMatch.id}: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
             
             // 5. ИСПРАВЛЕННАЯ ЛОГИКА: Определяем свободную позицию в следующем матче
@@ -377,14 +437,30 @@ class MatchService {
             
             console.log(`💾 [safeAdvanceWinner] Обновляем позицию ${updateField} в матче ${nextMatch.id}...`);
             
-            // 7. Атомарно обновляем следующий матч
+            // 7. Атомарно обновляем следующий матч с дополнительной проверкой
             const updateResult = await client.query(
                 `UPDATE matches SET ${updateField} = $1 WHERE id = $2 AND ${updateField} IS NULL RETURNING *`,
                 [winnerId, nextMatch.id]
             );
             
             if (updateResult.rows.length === 0) {
-                // Кто-то другой уже занял эту позицию
+                // Кто-то другой уже занял эту позицию или произошла ошибка
+                console.log(`⚠️ [safeAdvanceWinner] Позиция ${updateField} в матче ${nextMatch.id} не была обновлена`);
+                
+                // Проверяем текущее состояние матча
+                const checkResult = await client.query(
+                    'SELECT team1_id, team2_id FROM matches WHERE id = $1',
+                    [nextMatch.id]
+                );
+                
+                if (checkResult.rows.length > 0) {
+                    const currentMatch = checkResult.rows[0];
+                    if (currentMatch.team1_id === winnerId || currentMatch.team2_id === winnerId) {
+                        console.log(`✅ [safeAdvanceWinner] Победитель ${winnerId} уже находится в матче (race condition resolved)`);
+                        return { advanced: false, reason: 'already_advanced' };
+                    }
+                }
+                
                 throw new Error(`Позиция ${updateField} в матче ${nextMatch.id} была занята другим процессом`);
             }
             
