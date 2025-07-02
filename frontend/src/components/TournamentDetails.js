@@ -18,6 +18,7 @@ import {
     getDefaultMap as getDefaultMapHelper, 
     getDefaultCS2Maps 
 } from '../utils/mapHelpers';
+import { enrichMatchWithParticipantNames } from '../utils/participantHelpers';
 
 // 🆕 ИМПОРТ ХУКА ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
 import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
@@ -423,6 +424,53 @@ function TournamentDetails() {
         }
     }, [tournament?.participants]);
 
+    // 🔧 ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ ОБ УЧАСТНИКЕ (вынесена на уровень компонента)
+    const getParticipantInfo = useCallback((teamId) => {
+        if (!teamId) return null;
+
+        // Создаем карты участников и команд из данных турнира
+        const participantsMap = {};
+        const teamsMap = {};
+
+        if (tournament?.participants) {
+            tournament.participants.forEach(participant => {
+                if (validateParticipantData(participant)) {
+                    participantsMap[participant.id] = participant;
+                }
+            });
+        }
+
+        if (tournament?.teams) {
+            tournament.teams.forEach(team => {
+                if (team?.id) {
+                    teamsMap[team.id] = team;
+                }
+            });
+        }
+
+        if (teamsMap[teamId]) {
+            const team = teamsMap[teamId];
+            return {
+                id: teamId,
+                name: team.name,
+                avatar_url: team.members?.[0]?.avatar_url || null,
+                members: team.members || []
+            };
+        }
+
+        if (participantsMap[teamId]) {
+            const participant = participantsMap[teamId];
+            return {
+                id: teamId,
+                name: participant.name || participant.username,
+                avatar_url: participant.avatar_url,
+                members: []
+            };
+        }
+
+        return null;
+    }, [tournament]);
+
     // Подготовка данных для отображения сетки
     const games = useMemo(() => {
         if (!Array.isArray(matches) || matches.length === 0) {
@@ -452,36 +500,9 @@ function TournamentDetails() {
             });
         }
 
-        // Функция для получения информации об участнике/команде
-        const getParticipantInfo = (teamId) => {
-            if (!teamId) return null;
-
-            if (teamsMap[teamId]) {
-                const team = teamsMap[teamId];
-                return {
-                    id: teamId,
-                    name: team.name,
-                    avatar_url: team.members?.[0]?.avatar_url || null,
-                    members: team.members || []
-                };
-            }
-
-            if (participantsMap[teamId]) {
-                const participant = participantsMap[teamId];
-                return {
-                    id: teamId,
-                    name: participant.name || participant.username,
-                    avatar_url: participant.avatar_url,
-                    members: []
-                };
-            }
-
-            return null;
-        };
-
         // Создание безопасного участника
         const createSafeParticipant = (teamId, resultText, isWinner, status = 'PLAYED') => {
-            const participantInfo = getParticipantInfo(teamId);
+            const participantInfo = getParticipantInfo(teamId, participantsMap, teamsMap);
 
             return {
                 id: teamId ? String(teamId) : 'tbd',
@@ -772,18 +793,8 @@ function TournamentDetails() {
                                                 if (match && match.id) {
                                                     const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                     if (originalMatch) {
-                                                        // 🔧 ИСПРАВЛЕНИЕ: Дополняем originalMatch названиями команд
-                                                        const team1Info = getParticipantInfo(originalMatch.team1_id);
-                                                        const team2Info = getParticipantInfo(originalMatch.team2_id);
-                                                        
-                                                        const enrichedMatch = {
-                                                            ...originalMatch,
-                                                            team1_name: team1Info?.name || 'TBD',
-                                                            team2_name: team2Info?.name || 'TBD',
-                                                            team1_composition: team1Info || null,
-                                                            team2_composition: team2Info || null
-                                                        };
-                                                        
+                                                        // 🔧 ИСПРАВЛЕНИЕ: Используем утилиту для обогащения данных матча
+                                                        const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
                                                         setSelectedMatchForDetails(enrichedMatch);
                                                         openModal('matchDetails');
                                                     }
@@ -888,18 +899,8 @@ function TournamentDetails() {
                                             if (match && match.id) {
                                                 const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                 if (originalMatch) {
-                                                    // 🔧 ИСПРАВЛЕНИЕ: Дополняем originalMatch названиями команд
-                                                    const team1Info = getParticipantInfo(originalMatch.team1_id);
-                                                    const team2Info = getParticipantInfo(originalMatch.team2_id);
-                                                    
-                                                    const enrichedMatch = {
-                                                        ...originalMatch,
-                                                        team1_name: team1Info?.name || 'TBD',
-                                                        team2_name: team2Info?.name || 'TBD',
-                                                        team1_composition: team1Info || null,
-                                                        team2_composition: team2Info || null
-                                                    };
-                                                    
+                                                    // 🔧 ИСПРАВЛЕНИЕ: Используем утилиту для обогащения данных матча
+                                                    const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
                                                     setSelectedMatchForDetails(enrichedMatch);
                                                     openModal('matchDetails');
                                                 }
