@@ -432,7 +432,10 @@ class MixTeamService {
                 createdTeams.push({
                     ...createdTeam,
                     members: teamMembers,
-                    averageRating: team.averageRating || this.calculateTeamAverageRating(team.members, ratingType)
+                    averageRating: team.averageRating || this.calculateTeamAverageRating(team.members, ratingType),
+                    averageRatingFaceit: this.calculateTeamAverageRating(team.members, 'faceit'),
+                    averageRatingPremier: this.calculateTeamAverageRating(team.members, 'premier'),
+                    ratingType: ratingType
                 });
 
                 console.log(`✅ Команда "${team.name}" создана с ${team.members.length} участниками`);

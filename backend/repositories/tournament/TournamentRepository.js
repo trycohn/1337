@@ -163,6 +163,15 @@ class TournamentRepository {
      */
     static async getTeamsWithMembers(tournamentId) {
         try {
+            // 🆕 СНАЧАЛА ПОЛУЧАЕМ ИНФОРМАЦИЮ О ТУРНИРЕ для определения типа рейтинга
+            const tournamentResult = await pool.query(
+                'SELECT mix_rating_type FROM tournaments WHERE id = $1',
+                [tournamentId]
+            );
+            
+            const ratingType = tournamentResult.rows[0]?.mix_rating_type || 'faceit';
+            console.log(`📊 [getTeamsWithMembers] Турнир ${tournamentId}: тип рейтинга = ${ratingType}`);
+
             // Получаем все команды турнира
             const teamsResult = await pool.query(
                 `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
@@ -219,12 +228,18 @@ class TournamentRepository {
                     averageRatingPremier = Math.round(premierRatings.reduce((sum, rating) => sum + rating, 0) / premierRatings.length);
                 }
 
+                // 🆕 ИСПРАВЛЕНИЕ: averageRating зависит от типа рейтинга турнира
+                const averageRating = ratingType === 'premier' ? averageRatingPremier : averageRatingFaceit;
+
+                console.log(`📊 [getTeamsWithMembers] Команда "${team.name}": FACEIT=${averageRatingFaceit}, Premier=${averageRatingPremier}, итоговый (${ratingType})=${averageRating}`);
+
                 return {
                     ...team,
                     members: members,
                     averageRatingFaceit: averageRatingFaceit,
                     averageRatingPremier: averageRatingPremier,
-                    averageRating: averageRatingFaceit // для обратной совместимости
+                    averageRating: averageRating,
+                    ratingType: ratingType // 🆕 Добавляем информацию о типе рейтинга
                 };
             }));
 
