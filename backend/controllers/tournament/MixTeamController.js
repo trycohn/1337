@@ -183,11 +183,14 @@ class MixTeamController {
         
         const tournamentId = parseInt(req.params.id);
         const userId = req.user.id;
+        const { ratingType = 'faceit', teamSize } = req.body;
         
-        // Валидация входных данных (убираем ratingType из валидации)
+        // Валидация входных данных (передаем все необходимые параметры)
         const validationResult = TournamentValidator.validateFormTeamsRequest({
             tournamentId,
-            userId
+            userId,
+            ratingType,
+            teamSize
         });
         
         if (!validationResult.isValid) {

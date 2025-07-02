@@ -58,6 +58,13 @@ class TournamentValidator {
             errors.push('Некорректный ID пользователя');
         }
         
+        if (data.teamSize !== undefined) {
+            const teamSize = parseInt(data.teamSize);
+            if (!Number.isInteger(teamSize) || teamSize < 2 || teamSize > 10) {
+                errors.push('Размер команды должен быть числом от 2 до 10');
+            }
+        }
+        
         return {
             isValid: errors.length === 0,
             errors: errors
