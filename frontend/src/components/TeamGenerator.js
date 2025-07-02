@@ -98,7 +98,7 @@ const TeamGenerator = ({
                     rating = parseInt(member.faceit_rating);
                 } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
                     rating = parseInt(member.user_faceit_rating);
-                } else {
+            } else {
                     rating = 1000; // дефолт для FACEIT
                 }
             } else {
@@ -252,7 +252,7 @@ const TeamGenerator = ({
                                     return parseInt(member.faceit_rating);
                                 } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
                                     return parseInt(member.user_faceit_rating);
-                                } else {
+                            } else {
                                     return 1000;
                                 }
                             } else {
@@ -975,7 +975,7 @@ const TeamGenerator = ({
                     console.log('✅ Уведомляем родительский компонент о переформированных командах');
                     onTeamsGenerated(enrichedTeams);
                 }
-
+                
                 // 🆕 ПОКАЗЫВАЕМ СООБЩЕНИЕ О РЕЗУЛЬТАТЕ ПЕРЕФОРМИРОВАНИЯ
                 if (toast) {
                     if (response.data.bracketDeleted) {

@@ -182,12 +182,15 @@ class SingleEliminationEngine {
      */
     static async _generatePreliminaryRound(client, tournamentId, participants, bracketMath) {
         console.log(`🎯 Генерация предварительного раунда: ${bracketMath.preliminaryMatches} матчей`);
+        console.log(`🎯 Участников предварительного раунда: ${bracketMath.preliminaryParticipants}`);
+        console.log(`🎯 Проходят напрямую в основной раунд: ${bracketMath.directAdvancers}`);
         
         const preliminaryMatches = [];
         const matchPromises = [];
         
-        // Берем участников для предварительного раунда (последние в списке)
-        const preliminaryStartIndex = bracketMath.firstRoundByes;
+        // 🆕 НОВАЯ ЛОГИКА: участники для предварительного раунда - это последние участники в списке
+        // Первые directAdvancers участников проходят напрямую в основной раунд
+        const preliminaryStartIndex = bracketMath.directAdvancers;
         
         for (let i = 0; i < bracketMath.preliminaryMatches; i++) {
             const participant1Index = preliminaryStartIndex + (i * 2);
@@ -230,38 +233,37 @@ class SingleEliminationEngine {
      */
     static async _generateFirstRoundMatches(client, tournamentId, participants, bracketMath) {
         console.log(`🥇 Генерация первого раунда: ${bracketMath.firstRoundMatches} матчей`);
-        console.log(`🎯 [firstRound] Bye-проходы: ${bracketMath.firstRoundByes} участников`);
+        console.log(`🎯 [firstRound] Логика: сначала раскидать ${bracketMath.directAdvancers} участников по матчам, затем добавить слоты для победителей`);
         
         const firstRoundMatches = [];
         const matchPromises = [];
         
         if (bracketMath.needsPreliminaryRound) {
-            // Если есть предварительный раунд, то в первом раунде участвуют:
-            // - Участники с bye-проходами (первые в списке)
-            // - Победители предварительных матчей (TBD на данном этапе)
+            // 🆕 НОВАЯ ЛОГИКА: сначала раскидываем участников, проходящих напрямую, по одному в каждый матч
+            
+            // Участники, проходящие напрямую (первые directAdvancers участников)
+            const directParticipants = participants.slice(0, bracketMath.directAdvancers);
+            
+            console.log(`🎯 [firstRound] Участники проходящие напрямую:`, directParticipants.map(p => p.name || p.id));
             
             for (let i = 0; i < bracketMath.firstRoundMatches; i++) {
                 let participant1 = null;
                 let participant2 = null;
                 
-                if (i < bracketMath.firstRoundByes) {
-                    // Этот матч включает участника с bye и победителя предварительного матча
-                    participant1 = participants[i]; // Участник с bye
-                    participant2 = null; // Будет заполнено после предварительного раунда
+                // Сначала заполняем каждый матч одним участником, проходящим напрямую
+                if (i < directParticipants.length) {
+                    participant1 = directParticipants[i];
+                    console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} (прямой проход) vs TBD (победитель предварительного)`);
                 } else {
-                    // Оба места заполнятся после предварительных матчей
-                    participant1 = null;
-                    participant2 = null;
+                    console.log(`🥇 [firstRound] Матч ${i + 1}: TBD (победитель предварительного) vs TBD (победитель предварительного)`);
                 }
-                
-                console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || 'TBD'} vs ${participant2?.name || 'TBD'}`);
                 
                 const matchData = {
                     tournament_id: tournamentId,
                     round: 1,
                     match_number: i + 1,
                     team1_id: participant1?.id || null,
-                    team2_id: participant2?.id || null,
+                    team2_id: participant2?.id || null, // Заполнится после предварительного раунда
                     status: 'pending',
                     bracket_type: 'winner'
                 };
@@ -270,17 +272,14 @@ class SingleEliminationEngine {
                 matchPromises.push(matchPromise);
             }
         } else {
-            // Обычная логика без предварительного раунда
-            // Некоторые участники могут иметь bye-проходы
+            // Если нет предварительного раунда, используем стандартную логику
+            const totalMatches = bracketMath.firstRoundMatches;
             
-            const activeParticipants = participants.length - bracketMath.firstRoundByes;
-            const actualMatches = Math.floor(activeParticipants / 2);
+            console.log(`🎯 [firstRound] Без предварительного раунда, стандартная логика для ${totalMatches} матчей`);
             
-            console.log(`🎯 [firstRound] Активных участников: ${activeParticipants}, матчей: ${actualMatches}`);
-            
-            for (let i = 0; i < actualMatches; i++) {
-                const participant1 = participants[bracketMath.firstRoundByes + (i * 2)];
-                const participant2 = participants[bracketMath.firstRoundByes + (i * 2) + 1];
+            for (let i = 0; i < totalMatches; i++) {
+                const participant1 = participants[i * 2];
+                const participant2 = participants[i * 2 + 1];
                 
                 console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} vs ${participant2?.name || participant2?.id}`);
                 
@@ -534,7 +533,7 @@ class SingleEliminationEngine {
             }
             
             // Проверяем основные раунды с учетом новой математики
-            const mainRounds = bracketMath.needsPreliminaryRound ? bracketMath.rounds - 1 : bracketMath.rounds;
+            const mainRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
             
             for (let round = 1; round <= mainRounds; round++) {
                 const roundMatches = matchesByRound[round]?.filter(m => !m.is_third_place_match) || [];
@@ -580,13 +579,14 @@ class SingleEliminationEngine {
                 }
             }
             
-            // 🆕 5. Проверка bye-проходов и предварительных матчей
+            // 🆕 5. Проверка предварительных матчей и участников, проходящих напрямую
             if (bracketMath.needsPreliminaryRound) {
                 console.log(`🔍 Валидация: турнир с предварительным раундом`);
                 console.log(`🔍 Предварительных матчей: ${bracketMath.preliminaryMatches}`);
-                console.log(`🔍 Bye-проходов в первый раунд: ${bracketMath.firstRoundByes}`);
-            } else if (bracketMath.firstRoundByes > 0) {
-                console.log(`🔍 Валидация: турнир с ${bracketMath.firstRoundByes} bye-проходами`);
+                console.log(`🔍 Участников предварительного раунда: ${bracketMath.preliminaryParticipants}`);
+                console.log(`🔍 Проходят напрямую в основной раунд: ${bracketMath.directAdvancers}`);
+            } else {
+                console.log(`🔍 Валидация: стандартный турнир без предварительного раунда`);
             }
             
             console.log(`🔍 Валидация сетки: ${errors.length === 0 ? 'УСПЕШНО' : 'ОШИБКИ'}`);

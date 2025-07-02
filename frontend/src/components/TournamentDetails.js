@@ -287,7 +287,7 @@ function TournamentDetails() {
                         
                         setLoading(false);
                         return;
-                    } else {
+                } else {
                         console.warn('⚠️ Кешированные данные невалидны:', validation.error);
                         localStorage.removeItem(cacheKey);
                         localStorage.removeItem(cacheTimestampKey);
@@ -327,9 +327,9 @@ function TournamentDetails() {
             // Очищаем поврежденный кеш
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheTimestampKey);
-        } finally {
-            setLoading(false);
-        }
+            } finally {
+                setLoading(false);
+            }
     }, [id, handleAuthError]);
 
     // Загрузка карт для игры
@@ -395,7 +395,7 @@ function TournamentDetails() {
                     [gameName]: defaultMaps,
                     [`${gameName}_loading`]: false
                 }));
-            } else {
+        } else {
                 setAvailableMaps(prev => ({
                     ...prev,
                     [gameName]: [],
@@ -592,7 +592,7 @@ function TournamentDetails() {
             setMatchResultData({ score1: 0, score2: 0, maps_data: [] });
 
             // Обновляем данные турнира
-            await fetchTournamentData();
+                await fetchTournamentData();
             setMessage('✅ Результат матча успешно сохранен!');
             setTimeout(() => setMessage(''), 3000);
 
@@ -744,9 +744,9 @@ function TournamentDetails() {
                                             setSelectedMatch={(match) => {
                                                 if (match === null || match === undefined) {
                                                     setSelectedMatch(null);
-                                                    return;
-                                                }
-                                                
+            return;
+        }
+        
                                                 const matchId = typeof match === 'object' && match !== null ? match.id : match;
                                                 
                                                 if (matchId) {
@@ -897,11 +897,11 @@ function TournamentDetails() {
                 return (
                     <div className="tab-content-results">
                         <TournamentWinners tournament={tournament} />
-                    </div>
-                );
+            </div>
+        );
 
             case 'management':
-                return (
+        return (
                     <div className="tab-content-management">
                         {isAdminOrCreator ? (
                             <TournamentAdminPanel
@@ -934,10 +934,10 @@ function TournamentDetails() {
                         ) : (
                             <div className="access-denied">
                                 <p>У вас нет прав для управления этим турниром</p>
-                            </div>
+                </div>
                         )}
-                    </div>
-                );
+            </div>
+        );
 
             default:
                 return (
@@ -1267,7 +1267,7 @@ function TournamentDetails() {
         }
 
         console.log(`🚀 Генерируем сетку через API v2.0 с параметром thirdPlaceMatch: ${useThirdPlace}`);
-        
+
         try {
             setLoading(true);
             
@@ -1339,7 +1339,7 @@ function TournamentDetails() {
         const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново${shuffleText}${thirdPlaceText}\n• Действие необратимо\n\nПродолжить?`;
         
         if (!window.confirm(confirmMessage)) return;
-
+        
         try {
             setLoading(true);
             
@@ -1477,7 +1477,7 @@ function TournamentDetails() {
         if (isRegenerationMode) {
             handleRegenerateBracket(needThirdPlace);
         } else {
-            handleGenerateBracket(needThirdPlace);
+        handleGenerateBracket(needThirdPlace);
         }
         
         // Сбрасываем режим
@@ -1493,13 +1493,13 @@ function TournamentDetails() {
 
     // Обработка ошибок загрузки
     if (loading) {
-        return (
+                        return (
             <div className="tournament-loading" data-testid="tournament-loading">
                 <div className="loading-content">
                     <h2>🔄 Загрузка турнира...</h2>
                     <p>Пожалуйста, подождите</p>
                 </div>
-            </div>
+                                            </div>
         );
     }
 
@@ -1509,7 +1509,7 @@ function TournamentDetails() {
                 <div className="auth-error-message">
                     <h2>⚠️ Ошибка загрузки турнира</h2>
                     <p>{error}</p>
-                    <button 
+                                                        <button 
                         className="auth-error-button" 
                         onClick={() => {
                             setError(null);
@@ -1517,9 +1517,9 @@ function TournamentDetails() {
                         }}
                     >
                         �� Попробовать снова
-                    </button>
-                </div>
-            </div>
+                                                        </button>
+                                                    </div>
+                                            </div>
         );
     }
 
@@ -1529,7 +1529,7 @@ function TournamentDetails() {
                 <h2>❓ Турнир не найден</h2>
                 <p>Турнир с указанным ID не существует или был удален.</p>
                 <button onClick={() => navigate('/')}>🏠 На главную</button>
-            </div>
+                                                        </div>
         );
     }
 
@@ -1542,7 +1542,7 @@ function TournamentDetails() {
                         {/* Заголовок турнира */}
                         <div className="tournament-header-tournamentdetails">
                             <h2 data-testid="tournament-title">{tournament.name}</h2>
-                        </div>
+                                </div>
 
                         {/* 🆕 Навигация по вкладкам */}
                         <div className="tabs-navigation-tournamentdetails">
