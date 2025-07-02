@@ -3,12 +3,10 @@
  */
 
 .bracket-management-panel {
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+
     padding: 20px;
     margin: 20px 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
 }
 
 /* Заголовок панели */
@@ -38,8 +36,6 @@
     color: #28a745;
     font-weight: 500;
     padding: 4px 8px;
-    background: #d4edda;
-    border-radius: 4px;
     font-size: 0.9em;
 }
 
@@ -47,8 +43,6 @@
     color: #6c757d;
     font-weight: 500;
     padding: 4px 8px;
-    background: #f8f9fa;
-    border-radius: 4px;
     font-size: 0.9em;
 }
 
@@ -69,10 +63,7 @@
 
 /* Информация о сетке */
 .bracket-info {
-    background: #f8f9fa;
     padding: 15px;
-    border-radius: 6px;
-    border-left: 4px solid #007bff;
 }
 
 .bracket-info p {
@@ -220,7 +211,6 @@
 .option-group select:focus {
     outline: none;
     border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 .option-group select:disabled {
@@ -231,8 +221,7 @@
 /* Предупреждения */
 .warning {
     color: #856404;
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
+    border: 1px solid #ffffff;
     border-radius: 4px;
     padding: 10px;
     margin: 10px 0;
@@ -306,9 +295,6 @@
 
 /* 🆕 СТИЛИ ДЛЯ МИКС ТУРНИРОВ */
 .mix-tournament-section {
-    background: #f8f9fa;
-    border: 2px solid #007bff;
-    border-radius: 8px;
     padding: 20px;
     margin-bottom: 25px;
 }
