@@ -318,10 +318,19 @@ class SingleEliminationEngine {
         const allMatches = [...firstRoundMatches];
         let currentRoundMatches = firstRoundMatches;
         
+        // 🔧 ИСПРАВЛЕНИЕ: используем правильную логику для расчета количества раундов
+        // Если есть предварительный раунд, используем mainRounds, иначе rounds
+        const totalMainRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
+        const startRound = 2; // Начинаем с раунда 2 (раунд 1 уже сгенерирован)
+        
+        console.log(`⏭️ [_generateSubsequentRounds] Генерация раундов ${startRound}-${totalMainRounds}`);
+        console.log(`⏭️ Используем ${bracketMath.needsPreliminaryRound ? 'mainRounds' : 'rounds'}: ${totalMainRounds}`);
+        
         // Генерируем раунды от 2 до финала
-        for (let round = 2; round <= bracketMath.rounds; round++) {
-            const matchesInRound = Math.pow(2, bracketMath.rounds - round);
-            console.log(`⏭️ Генерация раунда ${round}: ${matchesInRound} матчей`);
+        for (let round = startRound; round <= totalMainRounds; round++) {
+            // 🔧 ИСПРАВЛЕНИЕ: правильная формула для расчета количества матчей в раунде
+            const matchesInRound = Math.pow(2, totalMainRounds - round);
+            console.log(`⏭️ Генерация раунда ${round}: ${matchesInRound} матчей (формула: 2^(${totalMainRounds} - ${round}))`);
             
             const roundMatches = [];
             const matchPromises = [];
