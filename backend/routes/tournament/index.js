@@ -32,6 +32,7 @@ const ParticipantController = require('../../controllers/tournament/ParticipantC
 const MatchController = require('../../controllers/tournament/MatchController');
 const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
+const MixTeamController = require('../../controllers/tournament/MixTeamController');
 const { BracketController } = require('../../controllers/tournament/BracketController');
 
 const router = express.Router();
@@ -75,10 +76,19 @@ router.delete('/:id/participate', authenticateToken, verifyEmailRequired, Partic
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ** (БАЗОВЫЕ МЕТОДЫ)
 
 // Генерация микс команд
-router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, ParticipantController.generateMixTeams);
+router.post('/:id/mix-generate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.generateMixTeams);
+
+// 🔄 Алиас для обратной совместимости (frontend ожидает form-teams)
+router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.generateMixTeams);
+
+// 🔄 Переформирование микс команд
+router.post('/:id/mix-regenerate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.regenerateMixTeams);
+
+// 🏆 Получение команд турнира
+router.get('/:id/teams', MixTeamController.getTeams);
 
 // Получение оригинальных участников
-router.get('/:id/original-participants', TournamentController.getOriginalParticipants);
+router.get('/:id/original-participants', MixTeamController.getOriginalParticipants);
 
 // 🔄 **УПРАВЛЕНИЕ ТУРНИРОМ** (БАЗОВЫЕ МЕТОДЫ)
 
