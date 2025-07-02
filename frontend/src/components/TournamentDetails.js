@@ -26,7 +26,7 @@ import useTournamentManagement from '../hooks/tournament/useTournamentManagement
 import './TournamentDetails.css';
 
 // Компоненты
-import TournamentInfoSection from './tournament/TournamentInfoSection';
+import TournamentInfoSection from './TournamentInfoSection';
 import MatchResultModal from './tournament/modals/MatchResultModal';
 import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
@@ -912,7 +912,7 @@ function TournamentDetails() {
                                 isLoading={loading}
                                 onStartTournament={handleStartTournament}
                                 onEndTournament={handleEndTournament}
-                                onRegenerateBracket={handleRegenerateBracket}
+                                onRegenerateBracket={handleGenerateBracket}
                                 onShowAddParticipantModal={() => openModal('addParticipant')}
                                 onShowParticipantSearchModal={() => openModal('participantSearch')}
                                 onRemoveParticipant={() => {}}
@@ -1685,6 +1685,8 @@ function TournamentDetails() {
                     onClearResults={resetMatchResults}
                     hasMatches={matches.length > 0}
                     hasBracket={games.length > 0}
+                    // 🆕 Пропсы для микс турниров
+                    mixedTeams={tournament?.teams || []}
                 />
 
                 {/* Сообщения */}
