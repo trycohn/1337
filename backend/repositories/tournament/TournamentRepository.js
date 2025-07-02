@@ -203,26 +203,38 @@ class TournamentRepository {
                 let averageRatingPremier = 0;
                 
                 if (members.length > 0) {
-                    // Рассчитываем для FACEIT (используем нормализацию из оригинального кода)
+                    // 🔧 ИСПРАВЛЕНО: Используем ту же логику что в MixTeamService.normalizeParticipantRating
                     const faceitRatings = members.map(member => {
+                        // FACEIT приоритет: faceit_elo -> user_faceit_elo -> faceit_rating -> user_faceit_rating -> 1000
                         if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
                             return parseInt(member.faceit_elo);
                         } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
                             return parseInt(member.user_faceit_elo);
+                        } else if (member.faceit_rating && !isNaN(parseInt(member.faceit_rating)) && parseInt(member.faceit_rating) > 0) {
+                            return parseInt(member.faceit_rating);
+                        } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
+                            return parseInt(member.user_faceit_rating);
                         } else {
                             return 1000; // Дефолт для FACEIT
                         }
                     });
                     averageRatingFaceit = Math.round(faceitRatings.reduce((sum, rating) => sum + rating, 0) / faceitRatings.length);
                     
-                    // Рассчитываем для Premier
+                    // 🔧 ИСПРАВЛЕНО: Используем ту же логику что в MixTeamService.normalizeParticipantRating
                     const premierRatings = members.map(member => {
+                        // Premier приоритет: cs2_premier_rank -> user_premier_rank -> premier_rank -> premier_rating -> user_premier_rating -> 5
                         if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
                             return parseInt(member.cs2_premier_rank);
                         } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
                             return parseInt(member.user_premier_rank);
+                        } else if (member.premier_rank && !isNaN(parseInt(member.premier_rank)) && parseInt(member.premier_rank) > 0) {
+                            return parseInt(member.premier_rank);
+                        } else if (member.premier_rating && !isNaN(parseInt(member.premier_rating)) && parseInt(member.premier_rating) > 0) {
+                            return parseInt(member.premier_rating);
+                        } else if (member.user_premier_rating && !isNaN(parseInt(member.user_premier_rating)) && parseInt(member.user_premier_rating) > 0) {
+                            return parseInt(member.user_premier_rating);
                         } else {
-                            return 1; // Дефолт для Premier
+                            return 5; // Дефолт для Premier
                         }
                     });
                     averageRatingPremier = Math.round(premierRatings.reduce((sum, rating) => sum + rating, 0) / premierRatings.length);

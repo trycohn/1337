@@ -88,7 +88,8 @@ const TeamGenerator = ({
         const ratings = team.members.map(member => {
             let rating;
             if (ratingType === 'faceit') {
-                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в TeamCard.js и MixTeamService.js
+                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в MixTeamService.normalizeParticipantRating
+                // FACEIT приоритет: faceit_elo -> user_faceit_elo -> faceit_rating -> user_faceit_rating -> 1000
                 if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
                     rating = parseInt(member.faceit_elo);
                 } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
@@ -98,10 +99,11 @@ const TeamGenerator = ({
                 } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
                     rating = parseInt(member.user_faceit_rating);
                 } else {
-                    rating = 1000; // дефолт
+                    rating = 1000; // дефолт для FACEIT
                 }
             } else {
-                // 🔧 ИСПРАВЛЕНО: используем ту же логику для Premier
+                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в MixTeamService.normalizeParticipantRating
+                // Premier приоритет: cs2_premier_rank -> user_premier_rank -> premier_rank -> premier_rating -> user_premier_rating -> 5
                 if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
                     rating = parseInt(member.cs2_premier_rank);
                 } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
@@ -113,7 +115,7 @@ const TeamGenerator = ({
                 } else if (member.user_premier_rating && !isNaN(parseInt(member.user_premier_rating)) && parseInt(member.user_premier_rating) > 0) {
                     rating = parseInt(member.user_premier_rating);
                 } else {
-                    rating = 1; // дефолт для Premier
+                    rating = 5; // 🔧 ИСПРАВЛЕНО: дефолт 5, как в MixTeamService
                 }
             }
             
@@ -121,7 +123,7 @@ const TeamGenerator = ({
             return rating;
         }).filter(rating => !isNaN(rating) && rating > 0);
         
-        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 1;
+        if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 5; // 🔧 ИСПРАВЛЕНО: дефолт для Premier = 5
         
         const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
         console.log(`📊 [calculateTeamAverageRating] Команда ${team.name}: рейтинги [${ratings.join(', ')}], средний = ${Math.round(average)}`);
