@@ -22,7 +22,9 @@ function CreateTournament() {
     prize_pool: '',
     rules: '',
     bracket_type: 'single_elimination',
-    mix_rating_type: 'faceit'
+    mix_rating_type: 'faceit',
+    seeding_type: 'random',
+    seeding_config: {}
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -73,8 +75,10 @@ function CreateTournament() {
             description: formData.description,
             prize_pool: formData.prize_pool,
             rules: formData.rules,
-            bracket_type: formData.format === 'mix' ? formData.bracket_type : null,
-            mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null
+            bracket_type: formData.format === 'mix' ? formData.bracket_type : 'single_elimination',
+            mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
+            seeding_type: formData.seeding_type,
+            seeding_config: formData.seeding_config
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -107,8 +111,10 @@ function CreateTournament() {
         team_size: format === 'mix' ? 5 : prev.team_size,
         game: format === 'mix' ? 'cs2' : '',
         participant_type: format === 'mix' ? 'solo' : 'team',
-        bracket_type: format === 'mix' ? 'single_elimination' : null,
-        mix_rating_type: format === 'mix' ? 'faceit' : prev.mix_rating_type
+        bracket_type: format === 'mix' ? 'single_elimination' : 'single_elimination',
+        mix_rating_type: format === 'mix' ? 'faceit' : prev.mix_rating_type,
+        seeding_type: 'random',
+        seeding_config: {}
       };
       console.log('Новые данные формы:', newData);
       return newData;
@@ -120,6 +126,15 @@ function CreateTournament() {
     setFormData(prev => ({
       ...prev,
       participant_type
+    }));
+  };
+
+  const handleSeedingTypeChange = (e) => {
+    const seedingType = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      seeding_type: seedingType,
+      seeding_config: {}
     }));
   };
 
@@ -308,6 +323,85 @@ function CreateTournament() {
             </div>
           </div>
         )}
+
+        {/* Настройки распределения участников */}
+        <div className="form-section">
+          <h3 className="section-title">Распределение участников</h3>
+          <div className="form-grid">
+            <div className="form-group full-width">
+              <label>Тип распределения</label>
+              <select
+                name="seeding_type"
+                value={formData.seeding_type}
+                onChange={handleSeedingTypeChange}
+                required
+              >
+                <option value="random">Случайное распределение</option>
+                <option value="ranking">По рейтингу</option>
+                <option value="balanced">Сбалансированное</option>
+                <option value="manual">Ручное (настраивается позже)</option>
+              </select>
+              <small className="form-hint">
+                {formData.seeding_type === 'random' && '🎲 Участники будут распределены случайным образом'}
+                {formData.seeding_type === 'ranking' && '🏆 Участники будут распределены по рейтингу (FACEIT ELO / CS2 Premier)'}
+                {formData.seeding_type === 'balanced' && '⚖️ Участники будут распределены для максимального баланса матчей'}
+                {formData.seeding_type === 'manual' && '✏️ Администратор сможет настроить распределение вручную при генерации сетки'}
+              </small>
+            </div>
+            
+            {/* Дополнительные настройки для распределения по рейтингу */}
+            {formData.seeding_type === 'ranking' && (
+              <div className="form-group">
+                <label>Тип рейтинга</label>
+                <select
+                  value={formData.seeding_config.ratingType || 'faceit_elo'}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    seeding_config: {
+                      ...prev.seeding_config,
+                      ratingType: e.target.value
+                    }
+                  }))}
+                >
+                  <option value="faceit_elo">FACEIT ELO</option>
+                  <option value="cs2_premier_rank">CS2 Premier Rank</option>
+                </select>
+              </div>
+            )}
+            
+            {formData.seeding_type === 'ranking' && (
+              <div className="form-group">
+                <label>Направление сортировки</label>
+                <select
+                  value={formData.seeding_config.direction || 'desc'}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    seeding_config: {
+                      ...prev.seeding_config,
+                      direction: e.target.value
+                    }
+                  }))}
+                >
+                  <option value="desc">От высшего к низшему</option>
+                  <option value="asc">От низшего к высшему</option>
+                </select>
+                <small className="form-hint">
+                  Определяет, как будут расставлены сильные и слабые игроки в первом раунде
+                </small>
+              </div>
+            )}
+          </div>
+          
+          <div className="seeding-info-box">
+            <h4>💡 Информация о типах распределения:</h4>
+            <ul>
+              <li><strong>Случайное:</strong> Подходит для дружеских турниров, где важна непредсказуемость</li>
+              <li><strong>По рейтингу:</strong> Классическое спортивное распределение, сильные против слабых в начале</li>
+              <li><strong>Сбалансированное:</strong> Максимально интересные матчи на всех этапах турнира</li>
+              <li><strong>Ручное:</strong> Полный контроль администратора над распределением</li>
+            </ul>
+          </div>
+        </div>
 
         <div className="form-buttons">
           <button type="submit">Создать турнир</button>

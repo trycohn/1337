@@ -1,0 +1,305 @@
+/**
+ * 🎨 СТИЛИ ДЛЯ ПАНЕЛИ УПРАВЛЕНИЯ ТУРНИРНОЙ СЕТКОЙ
+ */
+
+.bracket-management-panel {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Заголовок панели */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.panel-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+/* Статус сетки */
+.bracket-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-exists {
+    color: #28a745;
+    font-weight: 500;
+    padding: 4px 8px;
+    background: #d4edda;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.status-none {
+    color: #6c757d;
+    font-weight: 500;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+/* Контент панели */
+.panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Секции */
+.generation-section,
+.management-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Информация о сетке */
+.bracket-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.bracket-info p {
+    margin: 0 0 10px 0;
+    font-weight: 600;
+    color: #333;
+}
+
+.bracket-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.bracket-info li {
+    margin-bottom: 5px;
+    color: #555;
+}
+
+/* Кнопки действий */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-buttons-extended {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* Стили кнопок */
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-preview,
+.btn-generate {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    text-align: center;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #545b62;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.btn-preview {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-preview:hover:not(:disabled) {
+    background: #138496;
+}
+
+.btn-generate {
+    background: #28a745;
+    color: white;
+}
+
+.btn-generate:hover:not(:disabled) {
+    background: #218838;
+}
+
+/* Отключенные кнопки */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.btn-preview:disabled,
+.btn-generate:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Опции распределения */
+.seeding-options {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.seeding-options h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+/* Группы опций */
+.option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.option-group label {
+    font-weight: 500;
+    color: #555;
+    font-size: 0.9em;
+}
+
+.option-group select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+    font-size: 0.9em;
+    transition: border-color 0.2s ease;
+}
+
+.option-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.option-group select:disabled {
+    background: #e9ecef;
+    cursor: not-allowed;
+}
+
+/* Предупреждения */
+.warning {
+    color: #856404;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* Блок отсутствия доступа */
+.access-denied {
+    text-align: center;
+    padding: 30px;
+    color: #6c757d;
+}
+
+.access-denied p {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.access-denied small {
+    color: #868e96;
+    font-size: 0.85em;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .bracket-management-panel {
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .panel-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .action-buttons,
+    .action-buttons-extended {
+        flex-direction: column;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-preview,
+    .btn-generate {
+        min-width: 100%;
+    }
+    
+    .option-group {
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .bracket-management-panel {
+        padding: 12px;
+        margin: 10px 0;
+    }
+    
+    .panel-header h3 {
+        font-size: 1.1em;
+    }
+    
+    .seeding-options {
+        padding: 15px;
+    }
+} 

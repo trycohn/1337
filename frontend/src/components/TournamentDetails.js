@@ -26,7 +26,7 @@ import useTournamentManagement from '../hooks/tournament/useTournamentManagement
 import './TournamentDetails.css';
 
 // Компоненты
-import TournamentInfoSection from './TournamentInfoSection';
+import TournamentInfoSection from './tournament/TournamentInfoSection';
 import MatchResultModal from './tournament/modals/MatchResultModal';
 import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
@@ -36,6 +36,8 @@ import TournamentFloatingActionPanel from './tournament/TournamentFloatingAction
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentParticipants from './tournament/TournamentParticipants';
 import TournamentWinners from './tournament/TournamentWinners';
+import BracketManagementPanel from './tournament/BracketManagementPanel';
+import './tournament/BracketManagementPanel.css';
 
 // Контекст
 import { useUser } from '../context/UserContext';
@@ -805,25 +807,36 @@ function TournamentDetails() {
                     <div className="tab-content-bracket">
                         <div className="bracket-tab-header">
                             <h3>🏆 Турнирная сетка</h3>
-                            <div className="bracket-controls">
-                                {canGenerateBracket && (
-                                    <button 
-                                        className="generate-bracket-button"
-                                        onClick={() => handleGenerateBracket()}
-                                    >
-                                        🎯 Сгенерировать сетку
-                                    </button>
-                                )}
-                                {canEditMatches && games.length > 0 && (
-                                    <button 
-                                        className="regenerate-bracket-button"
-                                        onClick={handleRegenerateBracket}
-                                    >
-                                        🔄 Перегенерировать сетку
-                                    </button>
-                                )}
-                            </div>
                         </div>
+
+                        {/* Новая система управления сеткой */}
+                        <BracketManagementPanel
+                            tournament={tournament}
+                            user={user}
+                            matches={matches}
+                            isAdminOrCreator={isAdminOrCreator}
+                            onBracketUpdate={async (updateData) => {
+                                console.log('🔄 Обновление сетки:', updateData);
+                                
+                                // Очищаем кеш турнира
+                                const cacheKey = `tournament_cache_${id}`;
+                                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                                localStorage.removeItem(cacheKey);
+                                localStorage.removeItem(cacheTimestampKey);
+                                
+                                // Обновляем данные турнира
+                                await fetchTournamentData();
+                                
+                                // Показываем сообщение об успехе
+                                if (updateData.type === 'generated') {
+                                    setMessage('✅ Турнирная сетка успешно сгенерирована!');
+                                } else if (updateData.type === 'regenerated') {
+                                    setMessage('✅ Турнирная сетка успешно регенерирована!');
+                                }
+                                
+                                setTimeout(() => setMessage(''), 5000);
+                            }}
+                        />
 
                         {games.length > 0 ? (
                             <TournamentErrorBoundary>
@@ -878,14 +891,7 @@ function TournamentDetails() {
                         ) : (
                             <div className="no-bracket">
                                 <p>Турнирная сетка еще не создана</p>
-                                {canGenerateBracket && (
-                                    <button 
-                                        className="generate-bracket-button"
-                                        onClick={() => handleGenerateBracket()}
-                                    >
-                                        🎯 Сгенерировать сетку
-                                    </button>
-                                )}
+                                <small>Используйте панель управления выше для создания турнирной сетки</small>
                             </div>
                         )}
                     </div>
@@ -1199,10 +1205,6 @@ function TournamentDetails() {
     }, []);
 
     // Определение прав доступа
-    const canGenerateBracket = useMemo(() => {
-        return user && (isCreator || adminRequestStatus === 'accepted') && matches.length === 0;
-    }, [user, isCreator, adminRequestStatus, matches.length]);
-
     const canEditMatches = useMemo(() => {
         return user && (isCreator || adminRequestStatus === 'accepted');
     }, [user, isCreator, adminRequestStatus]);
@@ -1297,18 +1299,16 @@ function TournamentDetails() {
         } catch (error) {
             // 🔧 ИСПРАВЛЕНИЕ: Безопасное логирование ошибок без циклических ссылок
             console.error('❌ Ошибка при генерации сетки:', {
-                errorMessage: error.message,
-                errorStatus: error.response?.status,
-                errorData: error.response?.data,
-                errorStack: error.stack?.substring(0, 500)
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack?.substring(0, 500)
             });
             
             let errorMessage = 'Ошибка при генерации сетки';
             
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error;
             } else if (error.message) {
                 errorMessage = error.message;
             }

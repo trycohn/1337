@@ -29,9 +29,10 @@ const express = require('express');
 const { authenticateToken, verifyEmailRequired, verifyAdminOrCreator } = require('../../middleware/auth');
 const TournamentController = require('../../controllers/tournament/TournamentController');
 const ParticipantController = require('../../controllers/tournament/ParticipantController');
-const MatchController = require('../../controllers/tournament/MatchController');
+const { MatchController } = require('../../controllers/tournament/MatchController');
 const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
+const { BracketController } = require('../../controllers/tournament/BracketController');
 
 const router = express.Router();
 
@@ -120,5 +121,27 @@ router.get('/:id/chat/messages', authenticateToken, verifyAdminOrCreator, ChatCo
 
 // Получение участников чата
 router.get('/:id/chat/participants', authenticateToken, verifyAdminOrCreator, ChatController.getChatParticipants);
+
+// ===========================================
+// 🏗️ РОУТЫ ТУРНИРНОЙ СЕТКИ (НОВАЯ СИСТЕМА)
+// ===========================================
+
+// 🚀 Генерация турнирной сетки
+router.post('/:id/generate-bracket', authenticateToken, verifyAdminOrCreator, BracketController.generateBracket);
+
+// 🔄 Регенерация турнирной сетки
+router.post('/:id/regenerate-bracket', authenticateToken, verifyAdminOrCreator, BracketController.regenerateBracket);
+
+// 🎲 Предварительный просмотр распределения участников
+router.get('/:id/seeding-preview', authenticateToken, verifyAdminOrCreator, BracketController.previewSeeding);
+
+// 📊 Статистика турнирной сетки
+router.get('/:id/bracket-statistics', authenticateToken, verifyAdminOrCreator, BracketController.getBracketStatistics);
+
+// 🎯 Получение доступных типов распределения
+router.get('/seeding-types', BracketController.getSeedingTypes);
+
+// 🗑️ Очистка результатов турнирной сетки
+router.post('/:id/clear-bracket-results', authenticateToken, verifyAdminOrCreator, BracketController.clearBracketResults);
 
 module.exports = router; 
