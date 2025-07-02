@@ -318,7 +318,6 @@
 .mix-tournament-section .bracket-info li {
     padding: 4px 0;
     color: #ffffff;
-    border-bottom: 1px solid #e9ecef;
 }
 
 .mix-tournament-section .bracket-info li:last-child {
@@ -454,21 +453,19 @@
 
 /* Стили кнопок */
 .btn-generate {
-    background: #007bff;
     color: white;
 }
 
 .btn-generate:hover:not(:disabled) {
-    background: #0056b3;
+    background: #545b62;
 }
 
 .btn-primary {
-    background: #28a745;
     color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #1e7e34;
+    background: #545b62;
 }
 
 .btn-secondary {
@@ -481,7 +478,6 @@
 }
 
 .btn-danger {
-    background: #dc3545;
     color: white;
 }
 
@@ -490,28 +486,24 @@
 }
 
 .btn-preview {
-    background: #17a2b8;
     color: white;
 }
 
 .btn-preview:hover:not(:disabled) {
-    background: #117a8b;
+    background: #545b62;
 }
 
 /* Опции распределения */
 .seeding-options {
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
     padding: 20px;
     margin: 20px 0;
 }
 
 .seeding-options h4 {
     margin: 0 0 20px 0;
-    color: #495057;
+    color: #ffffff;
     padding-bottom: 10px;
-    border-bottom: 1px solid #e9ecef;
+
 }
 
 .option-group {
@@ -522,7 +514,7 @@
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: #495057;
+    color: #ffffff;
 }
 
 .option-group select,

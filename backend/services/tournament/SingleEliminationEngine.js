@@ -29,7 +29,7 @@ class SingleEliminationEngine {
             // 1. Валидация входных данных
             this._validateInput(tournamentId, participants, options);
             
-            // 2. Расчет математических параметров
+            // 2. Расчет математических параметров с поддержкой bye-проходов
             const bracketMath = BracketMath.calculateSingleEliminationParams(
                 participants.length, 
                 { thirdPlaceMatch: options.thirdPlaceMatch || false }
@@ -38,23 +38,26 @@ class SingleEliminationEngine {
             console.log(`📊 Математические параметры:`, {
                 originalParticipants: bracketMath.originalParticipantCount,
                 actualParticipants: bracketMath.actualParticipants,
-                excludedParticipants: bracketMath.excludedParticipants,
+                excludedParticipants: bracketMath.excludedParticipants, // Теперь всегда 0
+                needsPreliminaryRound: bracketMath.needsPreliminaryRound,
+                preliminaryMatches: bracketMath.preliminaryMatches,
+                firstRoundByes: bracketMath.firstRoundByes,
                 totalMatches: bracketMath.totalMatches,
                 rounds: bracketMath.rounds
             });
             
-            // 3. Применение алгоритма распределения
+            // 3. Применение алгоритма распределения - используем ВСЕХ участников
             const seedingType = options.seedingType || SEEDING_TYPES.RANDOM;
             const seededParticipants = SeedingFactory.createSeeding(
                 seedingType,
-                participants,
-                bracketMath.actualParticipants,
+                participants, // 🔧 ИСПРАВЛЕНО: передаем всех участников
+                participants.length, // 🔧 ИСПРАВЛЕНО: количество = всем участникам
                 options.seedingOptions || {}
             );
             
             console.log(`🎲 Распределение участников: тип ${seedingType}, количество ${seededParticipants.length}`);
             
-            // 4. Генерация структуры матчей
+            // 4. Генерация структуры матчей с поддержкой bye-проходов
             const matches = await this._generateMatches(
                 tournamentId,
                 seededParticipants,
@@ -74,12 +77,12 @@ class SingleEliminationEngine {
             return {
                 success: true,
                 matches,
-                excludedParticipants: participants.slice(bracketMath.actualParticipants),
+                excludedParticipants: [], // 🔧 ИСПРАВЛЕНО: больше не исключаем участников
                 bracketMath,
                 seedingInfo: {
                     type: seedingType,
                     participantsUsed: seededParticipants.length,
-                    participantsExcluded: bracketMath.excludedParticipants
+                    participantsExcluded: 0 // 🔧 ИСПРАВЛЕНО: никого не исключаем
                 },
                 generationTime: duration,
                 generatedAt: new Date().toISOString()
@@ -113,7 +116,21 @@ class SingleEliminationEngine {
         try {
             await client.query('BEGIN');
             
-            // 1. Генерируем матчи первого раунда
+            let currentRoundParticipants = participants;
+            
+            // 🆕 1. Генерируем предварительный раунд (если нужен)
+            if (bracketMath.needsPreliminaryRound) {
+                const preliminaryMatches = await this._generatePreliminaryRound(
+                    client,
+                    tournamentId,
+                    participants,
+                    bracketMath
+                );
+                matches.push(...preliminaryMatches);
+                console.log(`🎯 [_generateMatches] Создано предварительных матчей: ${preliminaryMatches.length}`);
+            }
+            
+            // 2. Генерируем матчи первого основного раунда
             const firstRoundMatches = await this._generateFirstRoundMatches(
                 client,
                 tournamentId,
@@ -122,7 +139,7 @@ class SingleEliminationEngine {
             );
             matches.push(...firstRoundMatches);
             
-            // 2. Генерируем матчи последующих раундов
+            // 3. Генерируем матчи последующих раундов
             const subsequentRoundMatches = await this._generateSubsequentRounds(
                 client,
                 tournamentId,
@@ -131,7 +148,7 @@ class SingleEliminationEngine {
             );
             matches.push(...subsequentRoundMatches);
             
-            // 3. Генерируем матч за 3-е место (если нужен)
+            // 4. Генерируем матч за 3-е место (если нужен)
             if (bracketMath.hasThirdPlaceMatch) {
                 const thirdPlaceMatch = await this._generateThirdPlaceMatch(
                     client,
@@ -156,6 +173,54 @@ class SingleEliminationEngine {
     }
     
     /**
+     * 🆕 Генерация предварительного раунда (раунд 0)
+     * @param {Object} client - Клиент БД
+     * @param {number} tournamentId - ID турнира
+     * @param {Array} participants - Все участники
+     * @param {Object} bracketMath - Математические параметры
+     * @returns {Array} - Матчи предварительного раунда
+     */
+    static async _generatePreliminaryRound(client, tournamentId, participants, bracketMath) {
+        console.log(`🎯 Генерация предварительного раунда: ${bracketMath.preliminaryMatches} матчей`);
+        
+        const preliminaryMatches = [];
+        const matchPromises = [];
+        
+        // Берем участников для предварительного раунда (последние в списке)
+        const preliminaryStartIndex = bracketMath.firstRoundByes;
+        
+        for (let i = 0; i < bracketMath.preliminaryMatches; i++) {
+            const participant1Index = preliminaryStartIndex + (i * 2);
+            const participant2Index = preliminaryStartIndex + (i * 2) + 1;
+            
+            const participant1 = participants[participant1Index];
+            const participant2 = participants[participant2Index];
+            
+            console.log(`🎯 [preliminaryRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} vs ${participant2?.name || participant2?.id}`);
+            
+            const matchData = {
+                tournament_id: tournamentId,
+                round: 0, // Предварительный раунд = 0
+                match_number: i + 1,
+                team1_id: participant1?.id || null,
+                team2_id: participant2?.id || null,
+                status: 'pending',
+                bracket_type: 'winner'
+            };
+            
+            const matchPromise = this._insertMatch(client, matchData);
+            matchPromises.push(matchPromise);
+        }
+        
+        // Выполняем все вставки параллельно
+        const insertedMatches = await Promise.all(matchPromises);
+        preliminaryMatches.push(...insertedMatches);
+        
+        console.log(`✅ Предварительный раунд: создано ${preliminaryMatches.length} матчей`);
+        return preliminaryMatches;
+    }
+    
+    /**
      * 🥇 Генерация матчей первого раунда
      * @param {Object} client - Клиент БД
      * @param {number} tournamentId - ID турнира
@@ -165,27 +230,73 @@ class SingleEliminationEngine {
      */
     static async _generateFirstRoundMatches(client, tournamentId, participants, bracketMath) {
         console.log(`🥇 Генерация первого раунда: ${bracketMath.firstRoundMatches} матчей`);
+        console.log(`🎯 [firstRound] Bye-проходы: ${bracketMath.firstRoundByes} участников`);
         
         const firstRoundMatches = [];
         const matchPromises = [];
         
-        for (let i = 0; i < bracketMath.firstRoundMatches; i++) {
-            const participant1 = participants[i * 2];
-            const participant2 = participants[i * 2 + 1];
+        if (bracketMath.needsPreliminaryRound) {
+            // Если есть предварительный раунд, то в первом раунде участвуют:
+            // - Участники с bye-проходами (первые в списке)
+            // - Победители предварительных матчей (TBD на данном этапе)
             
-            const matchData = {
-                tournament_id: tournamentId,
-                round: 1,
-                match_number: i + 1,
-                team1_id: participant1?.id || null,
-                team2_id: participant2?.id || null,
-                status: 'pending',
-                bracket_type: 'winner'
-            };
+            for (let i = 0; i < bracketMath.firstRoundMatches; i++) {
+                let participant1 = null;
+                let participant2 = null;
+                
+                if (i < bracketMath.firstRoundByes) {
+                    // Этот матч включает участника с bye и победителя предварительного матча
+                    participant1 = participants[i]; // Участник с bye
+                    participant2 = null; // Будет заполнено после предварительного раунда
+                } else {
+                    // Оба места заполнятся после предварительных матчей
+                    participant1 = null;
+                    participant2 = null;
+                }
+                
+                console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || 'TBD'} vs ${participant2?.name || 'TBD'}`);
+                
+                const matchData = {
+                    tournament_id: tournamentId,
+                    round: 1,
+                    match_number: i + 1,
+                    team1_id: participant1?.id || null,
+                    team2_id: participant2?.id || null,
+                    status: 'pending',
+                    bracket_type: 'winner'
+                };
+                
+                const matchPromise = this._insertMatch(client, matchData);
+                matchPromises.push(matchPromise);
+            }
+        } else {
+            // Обычная логика без предварительного раунда
+            // Некоторые участники могут иметь bye-проходы
             
-            // Создаем промис для вставки матча
-            const matchPromise = this._insertMatch(client, matchData);
-            matchPromises.push(matchPromise);
+            const activeParticipants = participants.length - bracketMath.firstRoundByes;
+            const actualMatches = Math.floor(activeParticipants / 2);
+            
+            console.log(`🎯 [firstRound] Активных участников: ${activeParticipants}, матчей: ${actualMatches}`);
+            
+            for (let i = 0; i < actualMatches; i++) {
+                const participant1 = participants[bracketMath.firstRoundByes + (i * 2)];
+                const participant2 = participants[bracketMath.firstRoundByes + (i * 2) + 1];
+                
+                console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} vs ${participant2?.name || participant2?.id}`);
+                
+                const matchData = {
+                    tournament_id: tournamentId,
+                    round: 1,
+                    match_number: i + 1,
+                    team1_id: participant1?.id || null,
+                    team2_id: participant2?.id || null,
+                    status: 'pending',
+                    bracket_type: 'winner'
+                };
+                
+                const matchPromise = this._insertMatch(client, matchData);
+                matchPromises.push(matchPromise);
+            }
         }
         
         // Выполняем все вставки параллельно
@@ -414,10 +525,29 @@ class SingleEliminationEngine {
                 matchesByRound[match.round].push(match);
             });
             
-            // Проверяем каждый раунд
-            for (let round = 1; round <= bracketMath.rounds; round++) {
-                const expectedMatches = Math.pow(2, bracketMath.rounds - round);
-                const actualMatches = matchesByRound[round]?.filter(m => !m.is_third_place_match).length || 0;
+            // 🆕 Проверяем предварительный раунд (если есть)
+            if (bracketMath.needsPreliminaryRound) {
+                const preliminaryMatches = matchesByRound[0]?.length || 0;
+                if (preliminaryMatches !== bracketMath.preliminaryMatches) {
+                    errors.push(`Предварительный раунд: неверное количество матчей ${preliminaryMatches}, ожидалось: ${bracketMath.preliminaryMatches}`);
+                }
+            }
+            
+            // Проверяем основные раунды с учетом новой математики
+            const mainRounds = bracketMath.needsPreliminaryRound ? bracketMath.rounds - 1 : bracketMath.rounds;
+            
+            for (let round = 1; round <= mainRounds; round++) {
+                const roundMatches = matchesByRound[round]?.filter(m => !m.is_third_place_match) || [];
+                const actualMatches = roundMatches.length;
+                
+                // Для первого раунда используем firstRoundMatches из bracketMath
+                let expectedMatches;
+                if (round === 1) {
+                    expectedMatches = bracketMath.firstRoundMatches;
+                } else {
+                    // Для последующих раундов используем стандартную формулу
+                    expectedMatches = Math.pow(2, mainRounds - round);
+                }
                 
                 if (actualMatches !== expectedMatches) {
                     errors.push(`Раунд ${round}: неверное количество матчей ${actualMatches}, ожидалось: ${expectedMatches}`);
@@ -448,6 +578,15 @@ class SingleEliminationEngine {
                 if (thirdPlaceMatches.length !== 1) {
                     errors.push(`Неверное количество матчей за 3-е место: ${thirdPlaceMatches.length}, ожидалось: 1`);
                 }
+            }
+            
+            // 🆕 5. Проверка bye-проходов и предварительных матчей
+            if (bracketMath.needsPreliminaryRound) {
+                console.log(`🔍 Валидация: турнир с предварительным раундом`);
+                console.log(`🔍 Предварительных матчей: ${bracketMath.preliminaryMatches}`);
+                console.log(`🔍 Bye-проходов в первый раунд: ${bracketMath.firstRoundByes}`);
+            } else if (bracketMath.firstRoundByes > 0) {
+                console.log(`🔍 Валидация: турнир с ${bracketMath.firstRoundByes} bye-проходами`);
             }
             
             console.log(`🔍 Валидация сетки: ${errors.length === 0 ? 'УСПЕШНО' : 'ОШИБКИ'}`);

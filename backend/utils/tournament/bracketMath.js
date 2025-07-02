@@ -26,17 +26,52 @@ class BracketMath {
             throw new Error('Максимальное количество участников: 1024');
         }
         
-        // Выравнивание вниз до степени двойки для ровной сетки
-        const powerOfTwo = Math.pow(2, Math.floor(Math.log2(participantCount)));
-        const actualParticipants = Math.min(participantCount, powerOfTwo);
+        // 🔧 ИСПРАВЛЕННЫЙ АЛГОРИТМ: используем ближайшую вышестоящую степень двойки
+        // Для правильного Single Elimination с bye-проходами
+        const upperPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(participantCount)));
+        const byesNeeded = upperPowerOfTwo - participantCount;
         
-        // Базовые расчеты
-        const rounds = Math.log2(actualParticipants);
-        const totalMatches = actualParticipants - 1;
-        const excludedCount = participantCount - actualParticipants;
+        // 🆕 Расчет предварительных матчей для выравнивания
+        // Если участников больше половины upperPowerOfTwo, нужны предварительные матчи
+        const lowerPowerOfTwo = upperPowerOfTwo / 2;
+        const needsPreliminaryRound = participantCount > lowerPowerOfTwo;
         
-        // Расчет матчей по раундам
-        const matchesByRound = this._calculateMatchesByRound(actualParticipants);
+        let preliminaryMatches = 0;
+        let preliminaryParticipants = 0;
+        let firstRoundByes = 0;
+        let actualParticipants = participantCount; // 🔧 ИСПРАВЛЕНО: включаем ВСЕХ участников
+        
+        if (needsPreliminaryRound) {
+            // Рассчитываем предварительные матчи
+            preliminaryParticipants = (participantCount - lowerPowerOfTwo) * 2;
+            preliminaryMatches = preliminaryParticipants / 2;
+            firstRoundByes = lowerPowerOfTwo - preliminaryMatches;
+            
+            console.log(`🎯 [bracketMath] Предварительный раунд: ${preliminaryMatches} матчей для ${preliminaryParticipants} участников`);
+            console.log(`🎯 [bracketMath] Bye-проходы в первый раунд: ${firstRoundByes} участников`);
+        } else {
+            // Простые bye-проходы в первом раунде
+            firstRoundByes = byesNeeded;
+            console.log(`🎯 [bracketMath] Bye-проходы: ${firstRoundByes} участников проходят в следующий раунд`);
+        }
+        
+        // Рассчитываем основную структуру турнира
+        const totalRounds = Math.ceil(Math.log2(participantCount)) + (needsPreliminaryRound ? 1 : 0);
+        const firstRoundMatches = needsPreliminaryRound 
+            ? lowerPowerOfTwo / 2  // После предварительного раунда
+            : Math.ceil((participantCount - firstRoundByes) / 2); // С учетом bye-проходов
+        
+        // Общее количество матчей = участники - 1 (классическая формула турнира на выбывание)
+        const totalMatches = participantCount - 1 + (needsPreliminaryRound ? preliminaryMatches : 0);
+        
+        // Расчет матчей по раундам с учетом предварительного раунда
+        const matchesByRound = this._calculateMatchesByRoundWithByes(
+            participantCount, 
+            upperPowerOfTwo, 
+            needsPreliminaryRound, 
+            preliminaryMatches,
+            firstRoundByes
+        );
         
         // Проверка наличия матча за 3-е место
         const hasThirdPlaceMatch = options.thirdPlaceMatch === true;
@@ -45,27 +80,35 @@ class BracketMath {
         return {
             // Исходные данные
             originalParticipantCount: participantCount,
-            actualParticipants,
-            excludedParticipants: excludedCount,
-            powerOfTwo,
+            actualParticipants, // 🔧 ИСПРАВЛЕНО: все участники включены
+            excludedParticipants: 0, // 🔧 ИСПРАВЛЕНО: никого не исключаем
+            upperPowerOfTwo,
+            lowerPowerOfTwo,
+            
+            // 🆕 Информация о bye-проходах и предварительных матчах
+            byesNeeded,
+            firstRoundByes,
+            needsPreliminaryRound,
+            preliminaryMatches,
+            preliminaryParticipants,
             
             // Структура сетки
-            rounds,
+            rounds: totalRounds,
             totalMatches,
             totalMatchesWithThirdPlace,
-            firstRoundMatches: actualParticipants / 2,
+            firstRoundMatches,
             finalMatch: 1,
             
             // Распределение по раундам
             matchesByRound,
-            roundNames: this._generateRoundNames(rounds),
+            roundNames: this._generateRoundNames(totalRounds, needsPreliminaryRound),
             
             // Дополнительные матчи
             hasThirdPlaceMatch,
             thirdPlaceMatch: hasThirdPlaceMatch ? 1 : 0,
             
             // Метаданные для валидации
-            isValid: this._validateParams(actualParticipants, rounds, totalMatches),
+            isValid: this._validateParamsWithByes(participantCount, totalRounds, totalMatches),
             generatedAt: new Date().toISOString()
         };
     }
@@ -92,38 +135,128 @@ class BracketMath {
     }
     
     /**
+     * 🆕 Расчет количества матчей по раундам с учетом bye-проходов
+     * @param {number} participantCount - Количество участников
+     * @param {number} upperPowerOfTwo - Ближайшая вышестоящая степень двойки
+     * @param {boolean} needsPreliminaryRound - Нужен ли предварительный раунд
+     * @param {number} preliminaryMatches - Количество предварительных матчей
+     * @param {number} firstRoundByes - Количество bye-проходов в первом раунде
+     * @returns {Array} - Массив с количеством матчей в каждом раунде
+     */
+    static _calculateMatchesByRoundWithByes(participantCount, upperPowerOfTwo, needsPreliminaryRound, preliminaryMatches, firstRoundByes) {
+        const matchesByRound = [];
+        let currentRound = 1;
+        
+        // 🆕 Предварительный раунд (если нужен)
+        if (needsPreliminaryRound) {
+            matchesByRound.push({
+                round: 0, // Предварительный раунд = раунд 0
+                roundName: 'Предварительный',
+                matchCount: preliminaryMatches,
+                participantsInRound: preliminaryMatches * 2,
+                winnersAdvancing: preliminaryMatches,
+                byesInRound: 0
+            });
+        }
+        
+        // Рассчитываем основные раунды
+        let remainingParticipants = participantCount;
+        if (needsPreliminaryRound) {
+            // После предварительного раунда остается: bye-участники + победители предварительных матчей
+            remainingParticipants = firstRoundByes + preliminaryMatches;
+        }
+        
+        // Генерируем раунды до финала
+        while (remainingParticipants > 1) {
+            const byesInThisRound = needsPreliminaryRound && currentRound === 1 ? firstRoundByes : 0;
+            const activeParticipants = remainingParticipants - byesInThisRound;
+            const matchesInRound = Math.floor(activeParticipants / 2);
+            const winnersAdvancing = matchesInRound + byesInThisRound;
+            
+            matchesByRound.push({
+                round: currentRound,
+                roundName: this._getRoundName(currentRound, needsPreliminaryRound, participantCount),
+                matchCount: matchesInRound,
+                participantsInRound: activeParticipants,
+                winnersAdvancing: winnersAdvancing,
+                byesInRound: byesInThisRound
+            });
+            
+            remainingParticipants = winnersAdvancing;
+            currentRound++;
+        }
+        
+        return matchesByRound;
+    }
+    
+    /**
      * 🏷️ Генерация названий раундов
      * @param {number} totalRounds - Общее количество раундов
+     * @param {boolean} hasPreliminaryRound - Есть ли предварительный раунд
      * @returns {Object} - Объект с названиями раундов
      */
-    static _generateRoundNames(totalRounds) {
+    static _generateRoundNames(totalRounds, hasPreliminaryRound = false) {
         const names = {};
+        const mainRounds = hasPreliminaryRound ? totalRounds - 1 : totalRounds;
         
-        for (let round = 1; round <= totalRounds; round++) {
-            const remainingRounds = totalRounds - round;
-            
-            switch (remainingRounds) {
-                case 0:
-                    names[round] = 'Финал';
-                    break;
-                case 1:
-                    names[round] = 'Полуфинал';
-                    break;
-                case 2:
-                    names[round] = 'Четвертьфинал';
-                    break;
-                case 3:
-                    names[round] = '1/8 финала';
-                    break;
-                case 4:
-                    names[round] = '1/16 финала';
-                    break;
-                default:
-                    names[round] = `Раунд ${round}`;
-            }
+        // Предварительный раунд (если есть)
+        if (hasPreliminaryRound) {
+            names[0] = 'Предварительный раунд';
+        }
+        
+        // Основные раунды
+        for (let round = 1; round <= mainRounds; round++) {
+            const remainingRounds = mainRounds - round;
+            names[round] = this._getRoundName(round, hasPreliminaryRound, 0, remainingRounds);
         }
         
         return names;
+    }
+    
+    /**
+     * 🆕 Получение названия раунда
+     * @param {number} round - Номер раунда
+     * @param {boolean} hasPreliminaryRound - Есть ли предварительный раунд
+     * @param {number} participantCount - Количество участников
+     * @param {number} remainingRounds - Оставшиеся раунды (опционально)
+     * @returns {string} - Название раунда
+     */
+    static _getRoundName(round, hasPreliminaryRound = false, participantCount = 0, remainingRounds = null) {
+        if (round === 0) {
+            return 'Предварительный раунд';
+        }
+        
+        // Если передано количество оставшихся раундов, используем его
+        if (remainingRounds !== null) {
+            const remaining = remainingRounds;
+            
+            switch (remaining) {
+                case 0:
+                    return 'Финал';
+                case 1:
+                    return 'Полуфинал';
+                case 2:
+                    return 'Четвертьфинал';
+                case 3:
+                    return '1/8 финала';
+                case 4:
+                    return '1/16 финала';
+                default:
+                    return `Раунд ${round}`;
+            }
+        }
+        
+        // Логика для определения названия на основе номера раунда
+        const adjustedRound = hasPreliminaryRound ? round - 1 : round;
+        
+        switch (adjustedRound) {
+            case 1:
+                return participantCount <= 4 ? 'Полуфинал' : 'Раунд 1';
+            case 2:
+                return 'Финал';
+            default:
+                return `Раунд ${round}`;
+        }
     }
     
     /**
@@ -146,6 +279,45 @@ class BracketMath {
         const expectedMatches = participants - 1;
         if (totalMatches !== expectedMatches) return false;
         
+        return true;
+    }
+    
+    /**
+     * 🆕 Валидация математических параметров с учетом bye-проходов
+     * @param {number} participantCount - Количество участников
+     * @param {number} totalRounds - Общее количество раундов
+     * @param {number} totalMatches - Общее количество матчей
+     * @returns {boolean} - Результат валидации
+     */
+    static _validateParamsWithByes(participantCount, totalRounds, totalMatches) {
+        // Основная проверка: в турнире на выбывание всегда участники - 1 матч
+        const expectedMatches = participantCount - 1;
+        if (totalMatches !== expectedMatches) {
+            console.warn(`⚠️ [bracketMath] Валидация: ожидается ${expectedMatches} матчей, получено ${totalMatches}`);
+            return false;
+        }
+        
+        // Проверка минимального количества раундов
+        const minRounds = Math.ceil(Math.log2(participantCount));
+        if (totalRounds < minRounds) {
+            console.warn(`⚠️ [bracketMath] Валидация: недостаточно раундов. Минимум ${minRounds}, получено ${totalRounds}`);
+            return false;
+        }
+        
+        // Проверка максимального количества раундов (не более чем minRounds + 1 для предварительного)
+        const maxRounds = minRounds + 1;
+        if (totalRounds > maxRounds) {
+            console.warn(`⚠️ [bracketMath] Валидация: слишком много раундов. Максимум ${maxRounds}, получено ${totalRounds}`);
+            return false;
+        }
+        
+        // Проверка количества участников
+        if (participantCount < 2 || participantCount > 1024) {
+            console.warn(`⚠️ [bracketMath] Валидация: некорректное количество участников: ${participantCount}`);
+            return false;
+        }
+        
+        console.log(`✅ [bracketMath] Валидация успешна: ${participantCount} участников, ${totalRounds} раундов, ${totalMatches} матчей`);
         return true;
     }
     
