@@ -57,11 +57,8 @@ class MixTeamController {
 
         try {
             // Генерируем команды
-            const result = await MixTeamService.generateMixTeams(
-                tournamentId, 
-                userId, 
-                ratingType, 
-                shuffle
+            const result = await MixTeamService.generateTeams(
+                tournamentId
             );
 
             // Получаем обновленные данные турнира
@@ -139,11 +136,8 @@ class MixTeamController {
             }
 
             // Переформировываем команды с перемешиванием
-            const result = await MixTeamService.generateMixTeams(
-                tournamentId, 
-                userId, 
-                ratingType, 
-                shuffle
+            const result = await MixTeamService.generateTeams(
+                tournamentId
             );
 
             // Получаем обновленные данные турнира
