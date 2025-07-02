@@ -1,6 +1,6 @@
 // backend/routes/tournament/index.js
 //
-// 🏗️ МОДУЛЬНАЯ АРХИТЕКТУРА ТУРНИРОВ v2.0 (ИСПРАВЛЕНО)
+// 🏗️ МОДУЛЬНАЯ АРХИТЕКТУРА ТУРНИРОВ v4.0 (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 // ====================================================
 // 
 // Этот файл заменяет монолитный файл tournaments.js на модульную архитектуру
@@ -22,6 +22,7 @@
 // • Единообразная валидация данных
 //
 // 🔄 Миграция: Старый файл tournaments.js сохранен как tournaments.js.legacy.backup
+// 🚫 v4.0: Удалены все функции генерации турнирной сетки
 //
 
 const express = require('express');
@@ -48,16 +49,7 @@ router.get('/:id', TournamentController.getTournamentById);
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, TournamentController.createTournament);
 
-// 🥊 **УПРАВЛЕНИЕ МАТЧАМИ И СЕТКАМИ** (ТОЛЬКО РЕАЛИЗОВАННЫЕ МЕТОДЫ)
-
-// Генерация турнирной сетки
-router.post('/:id/generate-bracket', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.generateBracket);
-
-// Регенерация турнирной сетки
-router.post('/:id/regenerate-bracket', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.regenerateBracket);
-
-// 🚨 QA FIX: Экстренная остановка зависших процессов генерации (только для админов)
-router.post('/:id/kill-generation', authenticateToken, MatchController.killGeneration);
+// 🥊 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей
 router.post('/:id/clear-match-results', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.clearMatchResults);

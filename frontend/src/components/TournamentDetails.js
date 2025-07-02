@@ -1297,16 +1297,18 @@ function TournamentDetails() {
         } catch (error) {
             // 🔧 ИСПРАВЛЕНИЕ: Безопасное логирование ошибок без циклических ссылок
             console.error('❌ Ошибка при генерации сетки:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack?.substring(0, 500)
+                errorMessage: error.message,
+                errorStatus: error.response?.status,
+                errorData: error.response?.data,
+                errorStack: error.stack?.substring(0, 500)
             });
             
             let errorMessage = 'Ошибка при генерации сетки';
             
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
             } else if (error.message) {
                 errorMessage = error.message;
             }
@@ -1347,23 +1349,24 @@ function TournamentDetails() {
             
             const token = localStorage.getItem('token');
             
-            // 🔧 ИСПРАВЛЕНИЕ: Формируем чистый объект запроса без циклических ссылок
-            const requestData = {
-                shuffle: true, // Всегда используем перемешивание
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Создаем чистый объект данных без циклических ссылок
+            const requestData = JSON.parse(JSON.stringify({
+                shuffle: true,
                 thirdPlaceMatch: Boolean(useThirdPlace)
+            }));
+            
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Создаем чистую конфигурацию без циклических ссылок
+            const requestConfig = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 30000
             };
             
-            console.log('📤 Отправляем запрос на регенерацию:', requestData);
+            console.log('📤 Отправляем безопасный запрос на регенерацию');
             
-            const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, requestData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            console.log('📥 Ответ от сервера:', {
-                success: response.data.success,
-                message: response.data.message,
-                hasData: !!response.data
-            });
+            const response = await api.post(`/api/tournaments/${id}/regenerate-bracket`, requestData, requestConfig);
             
             if (response.data.success) {
                 const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
@@ -1380,13 +1383,14 @@ function TournamentDetails() {
                 setMessage(`❌ ${response.data.message || 'Ошибка при регенерации сетки'}`);
             }
         } catch (error) {
-            // 🔧 ИСПРАВЛЕНИЕ: Безопасное логирование ошибок без циклических ссылок
-            console.error('❌ Ошибка при регенерации сетки:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack?.substring(0, 500)
-            });
+            // 🔧 ИСПРАВЛЕНИЕ: Максимально безопасное логирование ошибок
+            const safeError = {
+                message: error.message || 'Unknown error',
+                status: error.response?.status || 'Unknown status',
+                statusText: error.response?.statusText || 'Unknown status text'
+            };
+            
+            console.error('❌ Ошибка при регенерации сетки:', safeError);
             
             let errorMessage = 'Ошибка при регенерации сетки';
             
