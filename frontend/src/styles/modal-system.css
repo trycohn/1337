@@ -315,23 +315,18 @@
 /* === ИНФОРМАЦИОННЫЕ БЛОКИ === */
 .modal-system-info {
     padding: 15px;
-    border: 1px solid #ffffff;
-    background: #111111;
     margin: 15px 0;
 }
 
 .modal-system-info-success {
-    border-color: #00ff00;
     color: #00ff00;
 }
 
 .modal-system-info-warning {
-    border-color: #ffff00;
     color: #ffff00;
 }
 
 .modal-system-info-error {
-    border-color: #ff0000;
     color: #ff0000;
 }
 
