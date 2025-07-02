@@ -805,10 +805,6 @@ function TournamentDetails() {
             case 'bracket':
                 return (
                     <div className="tab-content-bracket">
-                        <div className="bracket-tab-header">
-                            <h3>🏆 Турнирная сетка</h3>
-                        </div>
-
                         {/* Новая система управления сеткой */}
                         <BracketManagementPanel
                             tournament={tournament}
@@ -1686,8 +1682,6 @@ function TournamentDetails() {
                     hasAccess={isAdminOrCreator}
                     onStartTournament={handleStartTournament}
                     onEndTournament={handleEndTournament}
-                    onGenerateBracket={handleGenerateBracket}
-                    onRegenerateBracketWithShuffle={handleRegenerateBracket}
                     onClearResults={resetMatchResults}
                     hasMatches={matches.length > 0}
                     hasBracket={games.length > 0}

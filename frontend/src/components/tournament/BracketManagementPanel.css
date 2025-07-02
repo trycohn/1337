@@ -302,4 +302,362 @@
     .seeding-options {
         padding: 15px;
     }
+}
+
+/* 🆕 СТИЛИ ДЛЯ МИКС ТУРНИРОВ */
+.mix-tournament-section {
+    background: #f8f9fa;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.mix-tournament-section .bracket-info {
+    margin-bottom: 20px;
+}
+
+.mix-tournament-section .bracket-info p {
+    color: #007bff;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mix-tournament-section .bracket-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mix-tournament-section .bracket-info li {
+    padding: 4px 0;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.mix-tournament-section .bracket-info li:last-child {
+    border-bottom: none;
+}
+
+/* Предварительный просмотр команд */
+.teams-preview {
+    margin-top: 20px;
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.teams-preview h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 1.1em;
+}
+
+.teams-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.team-item strong {
+    color: #333;
+}
+
+.team-item span {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+/* Информационные блоки */
+.bracket-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.bracket-info p {
+    margin: 0 0 10px 0;
+    font-weight: 600;
+    color: #495057;
+}
+
+.bracket-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.bracket-info li {
+    margin: 5px 0;
+    color: #6c757d;
+}
+
+/* Предупреждения */
+.warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-weight: 500;
+}
+
+.access-denied {
+    text-align: center;
+    padding: 30px;
+    color: #6c757d;
+}
+
+.access-denied p {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+    color: #dc3545;
+}
+
+.access-denied small {
+    color: #6c757d;
+}
+
+/* Кнопки действий */
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.action-buttons-extended {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Базовые стили кнопок */
+.btn-generate,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-preview {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-generate:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.btn-preview:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Стили кнопок */
+.btn-generate {
+    background: #007bff;
+    color: white;
+}
+
+.btn-generate:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.btn-primary {
+    background: #28a745;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #1e7e34;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #545b62;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.btn-preview {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-preview:hover:not(:disabled) {
+    background: #117a8b;
+}
+
+/* Опции распределения */
+.seeding-options {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.seeding-options h4 {
+    margin: 0 0 20px 0;
+    color: #495057;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.option-group {
+    margin-bottom: 20px;
+}
+
+.option-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.option-group select,
+.option-group input[type="text"],
+.option-group input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.95em;
+    background: #ffffff;
+}
+
+.option-group select:focus,
+.option-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.option-group select:disabled,
+.option-group input:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.option-group small {
+    display: block;
+    margin-top: 5px;
+    color: #6c757d;
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+/* Чекбоксы */
+.option-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+    transform: scale(1.1);
+}
+
+.option-group label:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 0;
+}
+
+/* Разделы генерации и управления */
+.generation-section,
+.management-section {
+    margin-top: 0;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .bracket-management-panel {
+        margin: 10px 0;
+        padding: 15px;
+    }
+    
+    .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .panel-header h3 {
+        font-size: 1.2em;
+    }
+    
+    .action-buttons,
+    .action-buttons-extended {
+        flex-direction: column;
+    }
+    
+    .btn-generate,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-preview {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .mix-tournament-section {
+        padding: 15px;
+    }
+    
+    .teams-list {
+        gap: 6px;
+    }
+    
+    .team-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}
+
+/* Анимации загрузки */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.btn-generate:disabled::before,
+.btn-primary:disabled::before {
+    content: "⏳";
+    animation: spin 1s linear infinite;
+    margin-right: 6px;
 } 

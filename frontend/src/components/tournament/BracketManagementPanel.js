@@ -5,6 +5,7 @@
  * в модульную архитектуру BracketController
  * 
  * ✅ ПОЛНАЯ ОБРАТНАЯ СОВМЕСТИМОСТЬ с существующими турнирами
+ * ✅ ПОЛНАЯ ПОДДЕРЖКА МИКС ТУРНИРОВ
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -28,6 +29,11 @@ const BracketManagementPanel = ({
     const [availableSeedingTypes, setAvailableSeedingTypes] = useState([]);
     const [showThirdPlaceOption, setShowThirdPlaceOption] = useState(false);
     const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
+    
+    // 🆕 Состояния для микс турниров
+    const [mixTeams, setMixTeams] = useState([]);
+    const [mixTeamsLoading, setMixTeamsLoading] = useState(false);
+    const [showTeamFormation, setShowTeamFormation] = useState(false);
 
     // 🔧 ОБРАТНАЯ СОВМЕСТИМОСТЬ: Определяем тип распределения для существующих турниров
     const getCurrentSeedingType = useCallback(() => {
@@ -51,6 +57,120 @@ const BracketManagementPanel = ({
         return {};
     }, [tournament]);
 
+    // 🆕 ПРОВЕРКА МИКС ТУРНИРА
+    const isMixTournament = useMemo(() => {
+        return tournament?.format === 'mix';
+    }, [tournament]);
+
+    // 🆕 ПОЛУЧЕНИЕ КОМАНД ДЛЯ МИКС ТУРНИРА
+    const loadMixTeams = useCallback(async () => {
+        if (!isMixTournament || !tournament?.id) return;
+
+        try {
+            setMixTeamsLoading(true);
+            const token = localStorage.getItem('token');
+            
+            const response = await api.get(`/api/tournaments/${tournament.id}/teams`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data && Array.isArray(response.data)) {
+                setMixTeams(response.data);
+                console.log(`🎮 Загружено ${response.data.length} команд для микс турнира`);
+            } else {
+                setMixTeams([]);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки команд микс турнира:', error);
+            setMixTeams([]);
+        } finally {
+            setMixTeamsLoading(false);
+        }
+    }, [isMixTournament, tournament?.id]);
+
+    // �� ПРОВЕРКА ГОТОВНОСТИ МИКС ТУРНИРА К ГЕНЕРАЦИИ СЕТКИ
+    const mixTournamentStatus = useMemo(() => {
+        if (!isMixTournament) {
+            return { ready: true, reason: null };
+        }
+
+        const participantsCount = tournament?.participants?.length || 0;
+        const teamsCount = mixTeams.length;
+        const teamSize = tournament?.team_size || 5;
+        const expectedTeams = Math.floor(participantsCount / teamSize);
+
+        if (participantsCount < teamSize * 2) {
+            return { 
+                ready: false, 
+                reason: `Недостаточно участников. Нужно минимум ${teamSize * 2} для создания 2 команд, а есть ${participantsCount}` 
+            };
+        }
+
+        if (teamsCount === 0) {
+            return { 
+                ready: false, 
+                reason: 'Команды еще не сформированы из соло участников' 
+            };
+        }
+
+        if (teamsCount < 2) {
+            return { 
+                ready: false, 
+                reason: `Недостаточно команд. Есть ${teamsCount}, а нужно минимум 2` 
+            };
+        }
+
+        return { 
+            ready: true, 
+            reason: null,
+            info: `Готово ${teamsCount} команд из ${participantsCount} участников`
+        };
+    }, [isMixTournament, tournament, mixTeams]);
+
+    // 🆕 ФОРМИРОВАНИЕ КОМАНД ДЛЯ МИКС ТУРНИРА
+    const handleFormMixTeams = useCallback(async () => {
+        if (!tournament?.id || loading) return;
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+
+            console.log('🎯 Формирование команд для микс турнира:', tournament.id);
+
+            const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {
+                ratingType: tournament.mix_rating_type || 'faceit',
+                shuffle: false
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                console.log('✅ Команды успешно сформированы:', response.data);
+                
+                // Перезагружаем команды
+                await loadMixTeams();
+                
+                if (onBracketUpdate) {
+                    onBracketUpdate({
+                        type: 'teams_formed',
+                        data: response.data,
+                        message: response.data.message
+                    });
+                }
+                
+                setShowTeamFormation(false);
+            } else {
+                throw new Error(response.data.error || 'Ошибка формирования команд');
+            }
+
+        } catch (error) {
+            console.error('❌ Ошибка формирования команд:', error);
+            alert(`❌ Ошибка формирования команд: ${error.response?.data?.error || error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    }, [tournament?.id, tournament?.mix_rating_type, onBracketUpdate, loading, loadMixTeams]);
+
     // Статистика турнирной сетки
     const bracketStatistics = useMemo(() => {
         if (!matches || matches.length === 0) {
@@ -59,7 +179,9 @@ const BracketManagementPanel = ({
 
         const totalMatches = matches.length;
         const completedMatches = matches.filter(m => m.winner_team_id).length;
-        const participantsCount = tournament?.participants?.length || 0;
+        
+        // Для микс турниров считаем команды, для обычных - участников
+        const participantsCount = isMixTournament ? mixTeams.length : (tournament?.participants?.length || 0);
         const excludedCount = tournament?.excluded_participants_count || 0;
         const participantsInBracket = participantsCount - excludedCount;
 
@@ -71,7 +193,7 @@ const BracketManagementPanel = ({
             participantsInBracket,
             completionPercentage: totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0
         };
-    }, [matches, tournament]);
+    }, [matches, tournament, isMixTournament, mixTeams]);
 
     // Проверяем, существует ли турнирная сетка
     const hasBracket = matches && matches.length > 0;
@@ -112,14 +234,28 @@ const BracketManagementPanel = ({
                 tournamentId: tournament.id,
                 seedingType: currentType,
                 seedingConfig: currentConfig,
-                hasNewFields: !!tournament.seeding_type
+                hasNewFields: !!tournament.seeding_type,
+                isMixTournament
             });
         }
-    }, [tournament, getCurrentSeedingType, getCurrentSeedingConfig]);
+    }, [tournament, getCurrentSeedingType, getCurrentSeedingConfig, isMixTournament]);
+
+    // 🆕 Загрузка команд для микс турниров
+    useEffect(() => {
+        if (isMixTournament) {
+            loadMixTeams();
+        }
+    }, [isMixTournament, loadMixTeams]);
 
     // Генерация турнирной сетки
     const handleGenerateBracket = useCallback(async () => {
         if (!tournament?.id || loading) return;
+
+        // 🆕 ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
+        if (isMixTournament && !mixTournamentStatus.ready) {
+            alert(`❌ Нельзя создать сетку: ${mixTournamentStatus.reason}`);
+            return;
+        }
 
         try {
             setLoading(true);
@@ -129,7 +265,9 @@ const BracketManagementPanel = ({
                 tournamentId: tournament.id,
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
-                seedingConfig
+                seedingConfig,
+                isMixTournament,
+                teamsCount: mixTeams.length
             });
 
             const response = await api.post(`/api/tournaments/${tournament.id}/generate-bracket`, {
@@ -162,17 +300,24 @@ const BracketManagementPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading]);
+    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading, isMixTournament, mixTournamentStatus, mixTeams]);
 
     // Регенерация турнирной сетки
     const handleRegenerateBracket = useCallback(async () => {
         if (!tournament?.id || loading) return;
+
+        // 🆕 ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
+        if (isMixTournament && !mixTournamentStatus.ready) {
+            alert(`❌ Нельзя регенерировать сетку: ${mixTournamentStatus.reason}`);
+            return;
+        }
 
         const confirmMessage = `🔄 Вы собираетесь регенерировать турнирную сетку.\n\n` +
             `ВНИМАНИЕ:\n` +
             `• Все результаты матчей будут удалены\n` +
             `• Сетка будет создана заново\n` +
             `• Участники будут перераспределены\n` +
+            (isMixTournament ? `• Команды останутся теми же (${mixTeams.length} команд)\n` : '') +
             `• Действие необратимо\n\n` +
             `Продолжить?`;
 
@@ -186,7 +331,9 @@ const BracketManagementPanel = ({
                 tournamentId: tournament.id,
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
-                seedingConfig
+                seedingConfig,
+                isMixTournament,
+                teamsCount: mixTeams.length
             });
 
             const response = await api.post(`/api/tournaments/${tournament.id}/regenerate-bracket`, {
@@ -219,11 +366,17 @@ const BracketManagementPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading]);
+    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading, isMixTournament, mixTournamentStatus, mixTeams]);
 
     // Предварительный просмотр распределения
     const handlePreviewSeeding = useCallback(async () => {
         if (!tournament?.id || loading) return;
+
+        // 🆕 ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
+        if (isMixTournament && !mixTournamentStatus.ready) {
+            alert(`❌ Нельзя показать предварительный просмотр: ${mixTournamentStatus.reason}`);
+            return;
+        }
 
         try {
             setLoading(true);
@@ -242,7 +395,13 @@ const BracketManagementPanel = ({
                 const preview = response.data.data;
                 
                 let message = `🎲 Предварительный просмотр распределения:\n\n`;
-                message += `Участников в сетке: ${preview.participants.length}\n`;
+                
+                if (isMixTournament) {
+                    message += `Команд в сетке: ${preview.participants.length}\n`;
+                    message += `Команд всего: ${mixTeams.length}\n`;
+                } else {
+                    message += `Участников в сетке: ${preview.participants.length}\n`;
+                }
                 
                 if (preview.excludedParticipants.length > 0) {
                     message += `Исключено: ${preview.excludedParticipants.length}\n`;
@@ -262,7 +421,7 @@ const BracketManagementPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, loading]);
+    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, loading, isMixTournament, mixTournamentStatus, mixTeams]);
 
     // Получение статистики турнирной сетки
     const handleGetStatistics = useCallback(async () => {
@@ -283,7 +442,12 @@ const BracketManagementPanel = ({
                 message += `Всего матчей: ${stats.totalMatches}\n`;
                 message += `Завершено: ${stats.completedMatches}\n`;
                 message += `Прогресс: ${stats.completionPercentage}%\n`;
-                message += `Участников: ${stats.participantsCount}\n`;
+                
+                if (isMixTournament) {
+                    message += `Команд: ${mixTeams.length}\n`;
+                } else {
+                    message += `Участников: ${stats.participantsCount}\n`;
+                }
                 
                 if (stats.excludedCount > 0) {
                     message += `Исключено: ${stats.excludedCount}\n`;
@@ -300,7 +464,7 @@ const BracketManagementPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [tournament?.id, loading]);
+    }, [tournament?.id, loading, isMixTournament, mixTeams]);
 
     // Проверка прав доступа
     if (!isAdminOrCreator) {
@@ -314,31 +478,57 @@ const BracketManagementPanel = ({
         );
     }
 
-    // Проверка наличия участников
-    const participantsCount = tournament?.participants?.length || 0;
-    if (participantsCount < 2) {
-        return (
-            <div className="bracket-management-panel">
-                <div className="panel-header">
-                    <h3>⚙️ Управление турнирной сеткой</h3>
-                    <div className="bracket-status">
-                        <span className="status-none">Недостаточно участников</span>
+    // 🆕 СПЕЦИАЛЬНАЯ ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
+    if (isMixTournament) {
+        const participantsCount = tournament?.participants?.length || 0;
+        const teamSize = tournament?.team_size || 5;
+        const minParticipants = teamSize * 2;
+
+        if (participantsCount < minParticipants) {
+            return (
+                <div className="bracket-management-panel">
+                    <div className="panel-header">
+                        <h3>⚙️ Управление турнирной сеткой (Микс турнир)</h3>
+                        <div className="bracket-status">
+                            <span className="status-none">Недостаточно участников</span>
+                        </div>
+                    </div>
+                    <div className="panel-content">
+                        <div className="warning">
+                            ⚠️ Для микс турнира с командами по {teamSize} игроков необходимо минимум {minParticipants} участников. 
+                            Сейчас зарегистрировано: {participantsCount}
+                        </div>
                     </div>
                 </div>
-                <div className="panel-content">
-                    <div className="warning">
-                        ⚠️ Для создания турнирной сетки необходимо минимум 2 участника. 
-                        Сейчас зарегистрировано: {participantsCount}
+            );
+        }
+    } else {
+        // Проверка наличия участников для обычных турниров
+        const participantsCount = tournament?.participants?.length || 0;
+        if (participantsCount < 2) {
+            return (
+                <div className="bracket-management-panel">
+                    <div className="panel-header">
+                        <h3>⚙️ Управление турнирной сеткой</h3>
+                        <div className="bracket-status">
+                            <span className="status-none">Недостаточно участников</span>
+                        </div>
+                    </div>
+                    <div className="panel-content">
+                        <div className="warning">
+                            ⚠️ Для создания турнирной сетки необходимо минимум 2 участника. 
+                            Сейчас зарегистрировано: {participantsCount}
+                        </div>
                     </div>
                 </div>
-            </div>
-        );
+            );
+        }
     }
 
     return (
         <div className="bracket-management-panel">
             <div className="panel-header">
-                <h3>⚙️ Управление турнирной сеткой</h3>
+                <h3>⚙️ Управление турнирной сеткой {isMixTournament && '(Микс турнир)'}</h3>
                 <div className="bracket-status">
                     {hasBracket ? (
                         <span className="status-exists">
@@ -353,228 +543,330 @@ const BracketManagementPanel = ({
             </div>
 
             <div className="panel-content">
-                {!hasBracket ? (
-                    // Раздел генерации новой сетки
-                    <div className="generation-section">
+                {/* 🆕 СПЕЦИАЛЬНАЯ СЕКЦИЯ ДЛЯ МИКС ТУРНИРОВ */}
+                {isMixTournament && (
+                    <div className="mix-tournament-section">
                         <div className="bracket-info">
-                            <p>🎯 Создание турнирной сетки</p>
+                            <p>🎮 Микс турнир: команды формируются из соло участников</p>
                             <ul>
-                                <li>Участников готово: {participantsCount}</li>
-                                <li>Тип турнира: {tournament?.format || 'single_elimination'}</li>
-                                <li>Текущий тип распределения: {getCurrentSeedingType()}</li>
+                                <li>Соло участников: {tournament?.participants?.length || 0}</li>
+                                <li>Размер команды: {tournament?.team_size || 5}</li>
+                                <li>Команд сформировано: {mixTeamsLoading ? 'Загрузка...' : mixTeams.length}</li>
+                                <li>Статус: {mixTournamentStatus.ready ? '✅ Готов к созданию сетки' : `❌ ${mixTournamentStatus.reason}`}</li>
+                                {mixTournamentStatus.info && <li>Инфо: {mixTournamentStatus.info}</li>}
                             </ul>
                         </div>
 
-                        <div className="action-buttons">
-                            <button 
-                                className="btn-generate"
-                                onClick={() => setShowSeedingOptions(!showSeedingOptions)}
-                                disabled={loading}
-                            >
-                                {showSeedingOptions ? '🔽 Скрыть настройки' : '🎯 Настроить и создать сетку'}
-                            </button>
-                            
-                            <button 
-                                className="btn-secondary"
-                                onClick={handlePreviewSeeding}
-                                disabled={loading}
-                            >
-                                🎲 Предварительный просмотр
-                            </button>
-                        </div>
-
-                        {showSeedingOptions && (
-                            <div className="seeding-options">
-                                <h4>🔧 Настройки распределения участников</h4>
+                        {/* Кнопки управления командами */}
+                        {!mixTournamentStatus.ready && (
+                            <div className="action-buttons">
+                                <button 
+                                    className="btn-primary"
+                                    onClick={handleFormMixTeams}
+                                    disabled={loading || mixTeamsLoading}
+                                >
+                                    {loading ? '⏳ Формирование...' : '🎯 Сформировать команды'}
+                                </button>
                                 
+                                <button 
+                                    className="btn-secondary"
+                                    onClick={() => setShowTeamFormation(!showTeamFormation)}
+                                    disabled={loading}
+                                >
+                                    {showTeamFormation ? '🔽 Скрыть настройки' : '⚙️ Настройки формирования'}
+                                </button>
+                            </div>
+                        )}
+
+                        {showTeamFormation && (
+                            <div className="seeding-options">
+                                <h4>🔧 Настройки формирования команд</h4>
                                 <div className="option-group">
-                                    <label>Тип распределения:</label>
+                                    <label>Тип рейтинга:</label>
                                     <select 
-                                        value={selectedSeedingType}
-                                        onChange={(e) => setSelectedSeedingType(e.target.value)}
-                                        disabled={loading}
+                                        value={tournament?.mix_rating_type || 'faceit'}
+                                        disabled={true}
                                     >
-                                        {availableSeedingTypes.map(type => (
-                                            <option key={type.value} value={type.value}>
-                                                {type.displayName}
-                                            </option>
-                                        ))}
+                                        <option value="faceit">FACEIT ELO</option>
+                                        <option value="premier">CS2 Premier Rank</option>
+                                        <option value="mixed">Полный микс (без рейтинга)</option>
                                     </select>
+                                    <small>Настройка доступна при создании турнира</small>
                                 </div>
+                            </div>
+                        )}
 
-                                {selectedSeedingType === 'ranking' && (
-                                    <>
-                                        <div className="option-group">
-                                            <label>Тип рейтинга:</label>
-                                            <select 
-                                                value={seedingConfig.ratingType || 'faceit_elo'}
-                                                onChange={(e) => setSeedingConfig(prev => ({
-                                                    ...prev,
-                                                    ratingType: e.target.value
-                                                }))}
-                                                disabled={loading}
-                                            >
-                                                <option value="faceit_elo">FACEIT ELO</option>
-                                                <option value="cs2_premier_rank">CS2 Premier Rank</option>
-                                            </select>
+                        {/* Отображение команд */}
+                        {mixTeams.length > 0 && (
+                            <div className="teams-preview">
+                                <h4>👥 Сформированные команды ({mixTeams.length})</h4>
+                                <div className="teams-list">
+                                    {mixTeams.slice(0, 3).map((team, index) => (
+                                        <div key={team.id} className="team-item">
+                                            <strong>{team.name}</strong>
+                                            {team.members && (
+                                                <span> ({team.members.length} игроков)</span>
+                                            )}
                                         </div>
-                                        
-                                        <div className="option-group">
-                                            <label>Направление сортировки:</label>
-                                            <select 
-                                                value={seedingConfig.direction || 'desc'}
-                                                onChange={(e) => setSeedingConfig(prev => ({
-                                                    ...prev,
-                                                    direction: e.target.value
-                                                }))}
-                                                disabled={loading}
-                                            >
-                                                <option value="desc">От сильных к слабым</option>
-                                                <option value="asc">От слабых к сильным</option>
-                                            </select>
+                                    ))}
+                                    {mixTeams.length > 3 && (
+                                        <div className="team-item">
+                                            <span>... и еще {mixTeams.length - 3} команд</span>
                                         </div>
-                                    </>
-                                )}
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
-                                <div className="option-group">
-                                    <label>
-                                        <input 
-                                            type="checkbox"
-                                            checked={thirdPlaceMatch}
-                                            onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                            disabled={loading}
-                                        />
-                                        Добавить матч за 3-е место
-                                    </label>
+                {/* Основная логика генерации сетки */}
+                {(!isMixTournament || mixTournamentStatus.ready) && (
+                    <>
+                        {!hasBracket ? (
+                            // Раздел генерации новой сетки
+                            <div className="generation-section">
+                                <div className="bracket-info">
+                                    <p>🎯 Создание турнирной сетки</p>
+                                    <ul>
+                                        {isMixTournament ? (
+                                            <>
+                                                <li>Команд готово: {mixTeams.length}</li>
+                                                <li>Тип турнира: {tournament?.format || 'mix'}</li>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <li>Участников готово: {tournament?.participants?.length || 0}</li>
+                                                <li>Тип турнира: {tournament?.format || 'single_elimination'}</li>
+                                            </>
+                                        )}
+                                        <li>Текущий тип распределения: {getCurrentSeedingType()}</li>
+                                    </ul>
                                 </div>
 
                                 <div className="action-buttons">
                                     <button 
-                                        className="btn-primary"
-                                        onClick={handleGenerateBracket}
+                                        className="btn-generate"
+                                        onClick={() => setShowSeedingOptions(!showSeedingOptions)}
                                         disabled={loading}
                                     >
-                                        {loading ? '⏳ Создание...' : '🚀 Создать турнирную сетку'}
+                                        {showSeedingOptions ? '🔽 Скрыть настройки' : '🎯 Настроить и создать сетку'}
+                                    </button>
+                                    
+                                    <button 
+                                        className="btn-secondary"
+                                        onClick={handlePreviewSeeding}
+                                        disabled={loading}
+                                    >
+                                        🎲 Предварительный просмотр
                                     </button>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    // Раздел управления существующей сеткой
-                    <div className="management-section">
-                        <div className="bracket-info">
-                            <p>📊 Статистика турнирной сетки</p>
-                            <ul>
-                                <li>Всего матчей: {bracketStatistics?.totalMatches}</li>
-                                <li>Завершено: {bracketStatistics?.completedMatches}</li>
-                                <li>Прогресс: {bracketStatistics?.completionPercentage}%</li>
-                                <li>Участников в сетке: {bracketStatistics?.participantsInBracket}</li>
-                                {bracketStatistics?.excludedCount > 0 && (
-                                    <li>Исключено для выравнивания: {bracketStatistics.excludedCount}</li>
-                                )}
-                            </ul>
-                        </div>
 
-                        <div className="action-buttons">
-                            <button 
-                                className="btn-preview"
-                                onClick={handleGetStatistics}
-                                disabled={loading}
-                            >
-                                📊 Подробная статистика
-                            </button>
-                            
-                            <button 
-                                className="btn-secondary"
-                                onClick={() => setShowSeedingOptions(!showSeedingOptions)}
-                                disabled={loading}
-                            >
-                                {showSeedingOptions ? '🔽 Скрыть настройки' : '🔄 Настроить регенерацию'}
-                            </button>
-                        </div>
-
-                        {showSeedingOptions && (
-                            <div className="seeding-options">
-                                <h4>🔄 Регенерация турнирной сетки</h4>
-                                
-                                <div className="warning">
-                                    ⚠️ Регенерация удалит все результаты матчей и создаст сетку заново с новым распределением участников.
-                                </div>
-                                
-                                <div className="option-group">
-                                    <label>Новый тип распределения:</label>
-                                    <select 
-                                        value={selectedSeedingType}
-                                        onChange={(e) => setSelectedSeedingType(e.target.value)}
-                                        disabled={loading}
-                                    >
-                                        {availableSeedingTypes.map(type => (
-                                            <option key={type.value} value={type.value}>
-                                                {type.displayName}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {selectedSeedingType === 'ranking' && (
-                                    <>
+                                {showSeedingOptions && (
+                                    <div className="seeding-options">
+                                        <h4>🔧 Настройки распределения {isMixTournament ? 'команд' : 'участников'}</h4>
+                                        
                                         <div className="option-group">
-                                            <label>Тип рейтинга:</label>
+                                            <label>Тип распределения:</label>
                                             <select 
-                                                value={seedingConfig.ratingType || 'faceit_elo'}
-                                                onChange={(e) => setSeedingConfig(prev => ({
-                                                    ...prev,
-                                                    ratingType: e.target.value
-                                                }))}
+                                                value={selectedSeedingType}
+                                                onChange={(e) => setSelectedSeedingType(e.target.value)}
                                                 disabled={loading}
                                             >
-                                                <option value="faceit_elo">FACEIT ELO</option>
-                                                <option value="cs2_premier_rank">CS2 Premier Rank</option>
+                                                {availableSeedingTypes.map(type => (
+                                                    <option key={type.value} value={type.value}>
+                                                        {type.displayName}
+                                                    </option>
+                                                ))}
                                             </select>
+                                        </div>
+
+                                        {selectedSeedingType === 'ranking' && !isMixTournament && (
+                                            <>
+                                                <div className="option-group">
+                                                    <label>Тип рейтинга:</label>
+                                                    <select 
+                                                        value={seedingConfig.ratingType || 'faceit_elo'}
+                                                        onChange={(e) => setSeedingConfig(prev => ({
+                                                            ...prev,
+                                                            ratingType: e.target.value
+                                                        }))}
+                                                        disabled={loading}
+                                                    >
+                                                        <option value="faceit_elo">FACEIT ELO</option>
+                                                        <option value="cs2_premier_rank">CS2 Premier Rank</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div className="option-group">
+                                                    <label>Направление сортировки:</label>
+                                                    <select 
+                                                        value={seedingConfig.direction || 'desc'}
+                                                        onChange={(e) => setSeedingConfig(prev => ({
+                                                            ...prev,
+                                                            direction: e.target.value
+                                                        }))}
+                                                        disabled={loading}
+                                                    >
+                                                        <option value="desc">От сильных к слабым</option>
+                                                        <option value="asc">От слабых к сильным</option>
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {isMixTournament && selectedSeedingType === 'ranking' && (
+                                            <div className="option-group">
+                                                <small>ℹ️ Для микс турниров рейтинг команд рассчитывается автоматически на основе участников команды</small>
+                                            </div>
+                                        )}
+
+                                        <div className="option-group">
+                                            <label>
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={thirdPlaceMatch}
+                                                    onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                                    disabled={loading}
+                                                />
+                                                Добавить матч за 3-е место
+                                            </label>
+                                        </div>
+
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="btn-primary"
+                                                onClick={handleGenerateBracket}
+                                                disabled={loading}
+                                            >
+                                                {loading ? '⏳ Создание...' : '🚀 Создать турнирную сетку'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            // Раздел управления существующей сеткой
+                            <div className="management-section">
+                                <div className="bracket-info">
+                                    <p>📊 Статистика турнирной сетки</p>
+                                    <ul>
+                                        <li>Всего матчей: {bracketStatistics?.totalMatches}</li>
+                                        <li>Завершено: {bracketStatistics?.completedMatches}</li>
+                                        <li>Прогресс: {bracketStatistics?.completionPercentage}%</li>
+                                        {isMixTournament ? (
+                                            <li>Команд в сетке: {bracketStatistics?.participantsInBracket}</li>
+                                        ) : (
+                                            <li>Участников в сетке: {bracketStatistics?.participantsInBracket}</li>
+                                        )}
+                                        {bracketStatistics?.excludedCount > 0 && (
+                                            <li>Исключено для выравнивания: {bracketStatistics.excludedCount}</li>
+                                        )}
+                                    </ul>
+                                </div>
+
+                                <div className="action-buttons">
+                                    <button 
+                                        className="btn-preview"
+                                        onClick={handleGetStatistics}
+                                        disabled={loading}
+                                    >
+                                        📊 Подробная статистика
+                                    </button>
+                                    
+                                    <button 
+                                        className="btn-secondary"
+                                        onClick={() => setShowSeedingOptions(!showSeedingOptions)}
+                                        disabled={loading}
+                                    >
+                                        {showSeedingOptions ? '🔽 Скрыть настройки' : '🔄 Настроить регенерацию'}
+                                    </button>
+                                </div>
+
+                                {showSeedingOptions && (
+                                    <div className="seeding-options">
+                                        <h4>🔄 Регенерация турнирной сетки</h4>
+                                        
+                                        <div className="warning">
+                                            ⚠️ Регенерация удалит все результаты матчей и создаст сетку заново с новым распределением {isMixTournament ? 'команд' : 'участников'}.
+                                            {isMixTournament && ' Команды останутся прежними.'}
                                         </div>
                                         
                                         <div className="option-group">
-                                            <label>Направление сортировки:</label>
+                                            <label>Новый тип распределения:</label>
                                             <select 
-                                                value={seedingConfig.direction || 'desc'}
-                                                onChange={(e) => setSeedingConfig(prev => ({
-                                                    ...prev,
-                                                    direction: e.target.value
-                                                }))}
+                                                value={selectedSeedingType}
+                                                onChange={(e) => setSelectedSeedingType(e.target.value)}
                                                 disabled={loading}
                                             >
-                                                <option value="desc">От сильных к слабым</option>
-                                                <option value="asc">От слабых к сильным</option>
+                                                {availableSeedingTypes.map(type => (
+                                                    <option key={type.value} value={type.value}>
+                                                        {type.displayName}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
-                                    </>
+
+                                        {selectedSeedingType === 'ranking' && !isMixTournament && (
+                                            <>
+                                                <div className="option-group">
+                                                    <label>Тип рейтинга:</label>
+                                                    <select 
+                                                        value={seedingConfig.ratingType || 'faceit_elo'}
+                                                        onChange={(e) => setSeedingConfig(prev => ({
+                                                            ...prev,
+                                                            ratingType: e.target.value
+                                                        }))}
+                                                        disabled={loading}
+                                                    >
+                                                        <option value="faceit_elo">FACEIT ELO</option>
+                                                        <option value="cs2_premier_rank">CS2 Premier Rank</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div className="option-group">
+                                                    <label>Направление сортировки:</label>
+                                                    <select 
+                                                        value={seedingConfig.direction || 'desc'}
+                                                        onChange={(e) => setSeedingConfig(prev => ({
+                                                            ...prev,
+                                                            direction: e.target.value
+                                                        }))}
+                                                        disabled={loading}
+                                                    >
+                                                        <option value="desc">От сильных к слабым</option>
+                                                        <option value="asc">От слабых к сильным</option>
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        <div className="option-group">
+                                            <label>
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={thirdPlaceMatch}
+                                                    onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                                    disabled={loading}
+                                                />
+                                                Добавить матч за 3-е место
+                                            </label>
+                                        </div>
+
+                                        <div className="action-buttons-extended">
+                                            <button 
+                                                className="btn-danger"
+                                                onClick={handleRegenerateBracket}
+                                                disabled={loading}
+                                            >
+                                                {loading ? '⏳ Регенерация...' : '🔄 Регенерировать сетку'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 )}
-
-                                <div className="option-group">
-                                    <label>
-                                        <input 
-                                            type="checkbox"
-                                            checked={thirdPlaceMatch}
-                                            onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                            disabled={loading}
-                                        />
-                                        Добавить матч за 3-е место
-                                    </label>
-                                </div>
-
-                                <div className="action-buttons-extended">
-                                    <button 
-                                        className="btn-danger"
-                                        onClick={handleRegenerateBracket}
-                                        disabled={loading}
-                                    >
-                                        {loading ? '⏳ Регенерация...' : '🔄 Регенерировать сетку'}
-                                    </button>
-                                </div>
                             </div>
                         )}
-                    </div>
+                    </>
                 )}
             </div>
         </div>

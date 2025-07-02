@@ -94,38 +94,6 @@ const TournamentFloatingActionPanel = ({
         const actions = [];
         const status = tournament.status;
 
-        // "Сгенерировать турнирную сетку" - при статусе "Активный", если сетки нет
-        if (status === 'active' && !hasBracket) {
-            actions.push({
-                id: 'generate-bracket',
-                icon: '⚡',
-                title: 'Сгенерировать турнирную сетку',
-                description: 'Создать турнирную сетку для проведения турнира',
-                onClick: onGenerateBracket,
-                color: 'primary',
-                priority: 1
-            });
-        }
-
-        // "Перегенерация турнирной сетки" - при статусе "Активный", если сетка есть
-        if (status === 'active' && hasBracket && onRegenerateBracketWithShuffle) {
-            const cooldownSeconds = Math.ceil(regenerationCooldown / 1000);
-            const isBlocked = isRegenerationBlocked || regenerationCooldown > 0;
-            
-            actions.push({
-                id: 'regenerate-bracket-shuffle',
-                icon: isBlocked ? '⏱️' : '🎲',
-                title: isBlocked ? `Подождите ${cooldownSeconds}с` : 'Перегенерация сетки',
-                description: isBlocked 
-                    ? `Защита от частых регенераций. Осталось ${cooldownSeconds} секунд`
-                    : 'Заново создать сетку со случайным порядком участников',
-                onClick: isBlocked ? null : onRegenerateBracketWithShuffle,
-                color: isBlocked ? 'disabled' : 'warning',
-                priority: 2,
-                disabled: isBlocked
-            });
-        }
-
         // 🆕 "Переформировать команды" - для микс турниров с активными командами
         if (canReformTeams && onReformTeams) {
             actions.push({
@@ -181,8 +149,7 @@ const TournamentFloatingActionPanel = ({
         // Сортируем по приоритету (меньшее число = выше приоритет)
         return actions.sort((a, b) => a.priority - b.priority);
     }, [tournament, hasBracket, hasMatches, canReformTeams, 
-        onStartTournament, onEndTournament, onGenerateBracket, 
-        onClearResults, onReformTeams, onRegenerateBracketWithShuffle]);
+        onStartTournament, onEndTournament, onClearResults, onReformTeams]);
 
     // Если нет прав или турнира - не показываем панель вообще
     if (!isAdminOrCreator || !tournament) {
