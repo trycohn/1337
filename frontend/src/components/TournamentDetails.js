@@ -772,7 +772,19 @@ function TournamentDetails() {
                                                 if (match && match.id) {
                                                     const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                     if (originalMatch) {
-                                                        setSelectedMatchForDetails(originalMatch);
+                                                        // 🔧 ИСПРАВЛЕНИЕ: Дополняем originalMatch названиями команд
+                                                        const team1Info = getParticipantInfo(originalMatch.team1_id);
+                                                        const team2Info = getParticipantInfo(originalMatch.team2_id);
+                                                        
+                                                        const enrichedMatch = {
+                                                            ...originalMatch,
+                                                            team1_name: team1Info?.name || 'TBD',
+                                                            team2_name: team2Info?.name || 'TBD',
+                                                            team1_composition: team1Info || null,
+                                                            team2_composition: team2Info || null
+                                                        };
+                                                        
+                                                        setSelectedMatchForDetails(enrichedMatch);
                                                         openModal('matchDetails');
                                                     }
                                                 }
@@ -876,7 +888,19 @@ function TournamentDetails() {
                                             if (match && match.id) {
                                                 const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                 if (originalMatch) {
-                                                    setSelectedMatchForDetails(originalMatch);
+                                                    // 🔧 ИСПРАВЛЕНИЕ: Дополняем originalMatch названиями команд
+                                                    const team1Info = getParticipantInfo(originalMatch.team1_id);
+                                                    const team2Info = getParticipantInfo(originalMatch.team2_id);
+                                                    
+                                                    const enrichedMatch = {
+                                                        ...originalMatch,
+                                                        team1_name: team1Info?.name || 'TBD',
+                                                        team2_name: team2Info?.name || 'TBD',
+                                                        team1_composition: team1Info || null,
+                                                        team2_composition: team2Info || null
+                                                    };
+                                                    
+                                                    setSelectedMatchForDetails(enrichedMatch);
                                                     openModal('matchDetails');
                                                 }
                                             }
