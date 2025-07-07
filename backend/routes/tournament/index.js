@@ -54,6 +54,12 @@ router.get('/:id', TournamentController.getTournamentById);
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, TournamentController.createTournament);
 
+// ⚖️ Обновление регламента турнира
+router.put('/:id/rules', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateRules);
+
+// 📝 Обновление описания турнира  
+router.put('/:id/description', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateDescription);
+
 // 🥊 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей

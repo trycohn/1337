@@ -203,7 +203,7 @@ const BracketRenderer = ({
             <style>
                 body, html { margin: 0; padding: 0; font-family: Arial, sans-serif; }
                 .bracket-container { padding: 20px; }
-                .bracket-grid { display: flex; gap: 20px; }
+                .bracket-grid { display: flex; gap: 20px; align-items: center; }
                 .round-column { display: flex; flex-direction: column; gap: 10px; }
                 .match-card { width: 200px; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 10px; }
                 .team { display: flex; justify-content: space-between; padding: 5px 0; }

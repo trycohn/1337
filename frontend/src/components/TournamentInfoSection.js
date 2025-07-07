@@ -15,7 +15,7 @@ const TournamentInfoSection = ({
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingRegulations, setIsEditingRegulations] = useState(false);
     const [description, setDescription] = useState(tournament?.description || '');
-    const [regulations, setRegulations] = useState(tournament?.regulations || '');
+    const [regulations, setRegulations] = useState(tournament?.rules || '');
     const [isLoading, setIsLoading] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [showActions, setShowActions] = useState(false);
@@ -32,7 +32,7 @@ const TournamentInfoSection = ({
     // Обновляем значения при изменении турнира
     useEffect(() => {
         setDescription(tournament?.description || '');
-        setRegulations(tournament?.regulations || '');
+        setRegulations(tournament?.rules || '');
     }, [tournament]);
 
     // 🆕 Проверка, является ли пользователь участником
@@ -270,11 +270,34 @@ const TournamentInfoSection = ({
     const handleSaveDescription = async () => {
         setIsLoading(true);
         try {
-            // TODO: Добавить API вызов для сохранения описания
-            console.log('Сохранение описания:', description);
-            setIsEditingDescription(false);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/tournaments/${tournament.id}/description`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: description
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log('✅ Описание успешно сохранено:', description);
+                setIsEditingDescription(false);
+                
+                // Обновляем данные турнира если передан колбэк
+                if (onParticipationUpdate) {
+                    onParticipationUpdate();
+                }
+            } else {
+                throw new Error(data.message || 'Ошибка при сохранении описания');
+            }
         } catch (error) {
-            console.error('Ошибка сохранения описания:', error);
+            console.error('❌ Ошибка сохранения описания:', error);
+            alert(`Ошибка сохранения описания: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -284,11 +307,34 @@ const TournamentInfoSection = ({
     const handleSaveRegulations = async () => {
         setIsLoading(true);
         try {
-            // TODO: Добавить API вызов для сохранения регламента
-            console.log('Сохранение регламента:', regulations);
-            setIsEditingRegulations(false);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/tournaments/${tournament.id}/rules`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    rules: regulations
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log('✅ Регламент успешно сохранен:', regulations);
+                setIsEditingRegulations(false);
+                
+                // Обновляем данные турнира если передан колбэк
+                if (onParticipationUpdate) {
+                    onParticipationUpdate();
+                }
+            } else {
+                throw new Error(data.message || 'Ошибка при сохранении регламента');
+            }
         } catch (error) {
-            console.error('Ошибка сохранения регламента:', error);
+            console.error('❌ Ошибка сохранения регламента:', error);
+            alert(`Ошибка сохранения регламента: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -302,7 +348,7 @@ const TournamentInfoSection = ({
 
     // Отмена редактирования регламента
     const handleCancelRegulations = () => {
-        setRegulations(tournament?.regulations || '');
+        setRegulations(tournament?.rules || '');
         setIsEditingRegulations(false);
     };
 
