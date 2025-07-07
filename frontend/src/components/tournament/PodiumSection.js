@@ -154,17 +154,6 @@ const PodiumSection = ({ tournament, matches }) => {
                 </div>
 
                 {/* Дополнительная информация */}
-                <div className="podium-footer">
-                    <div className="podium-tournament-info">
-                        <span className="podium-tournament-name">{tournament?.name}</span>
-                        <span className="podium-tournament-date">
-                            {tournament?.completed_at ? 
-                                new Date(tournament.completed_at).toLocaleDateString('ru-RU') : 
-                                'Завершен'
-                            }
-                        </span>
-                    </div>
-                </div>
             </div>
         </div>
     );
