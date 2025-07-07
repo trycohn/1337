@@ -50,6 +50,7 @@
   overflow: hidden;
   padding: var(--spacing-lg);
   background-color: var(--card-background);
+  min-height: 550px;
 }
 .auth-form {
   width: 100%;
