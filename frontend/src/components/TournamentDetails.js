@@ -9,7 +9,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 import { useModalSystem } from '../hooks/useModalSystem';
-import { useTournamentManagement } from '../hooks/tournament/useTournamentManagement';
+import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
 import { enrichMatchWithParticipantNames, validateParticipantData } from '../utils/participantHelpers';
 
@@ -43,6 +43,9 @@ import TournamentWinners from './tournament/TournamentWinners';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import './tournament/BracketManagementPanel.css';
 
+// 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
+import PodiumSection from './tournament/PodiumSection';
+
 // Ленивая загрузка BracketRenderer с улучшенной обработкой ошибок
 const LazyBracketRenderer = React.lazy(() => 
     import('./BracketRenderer').catch(err => {
@@ -58,9 +61,6 @@ const LazyBracketRenderer = React.lazy(() =>
         };
     })
 );
-
-// 🏆 Ленивая загрузка PodiumSection для подиума с призерами
-const LazyPodiumSection = React.lazy(() => import('./tournament/PodiumSection'));
 
 // Error Boundary для обработки ошибок рендеринга
 class TournamentErrorBoundary extends React.Component {
@@ -444,27 +444,27 @@ function TournamentDetails() {
             });
         }
 
-        if (teamsMap[teamId]) {
-            const team = teamsMap[teamId];
-            return {
-                id: teamId,
-                name: team.name,
-                avatar_url: team.members?.[0]?.avatar_url || null,
-                members: team.members || []
-            };
-        }
+            if (teamsMap[teamId]) {
+                const team = teamsMap[teamId];
+                return {
+                    id: teamId,
+                    name: team.name,
+                    avatar_url: team.members?.[0]?.avatar_url || null,
+                    members: team.members || []
+                };
+            }
 
-        if (participantsMap[teamId]) {
-            const participant = participantsMap[teamId];
-            return {
-                id: teamId,
-                name: participant.name || participant.username,
-                avatar_url: participant.avatar_url,
-                members: []
-            };
-        }
+            if (participantsMap[teamId]) {
+                const participant = participantsMap[teamId];
+                return {
+                    id: teamId,
+                    name: participant.name || participant.username,
+                    avatar_url: participant.avatar_url,
+                    members: []
+                };
+            }
 
-        return null;
+            return null;
     }, [tournament]);
 
     // Подготовка данных для отображения сетки
@@ -615,7 +615,7 @@ function TournamentDetails() {
                         winner_team_id: winner_team_id,
                         entity_type: entityType
                     });
-                } else {
+            } else {
                     console.warn('⚠️ Не удалось найти team1_id/team2_id в данных матча:', matchData);
                 }
             }
@@ -678,7 +678,7 @@ function TournamentDetails() {
             setMatchResultData({ score1: 0, score2: 0, maps_data: [] });
 
             // Обновляем данные турнира
-            await fetchTournamentData();
+                await fetchTournamentData();
             setMessage('✅ Результат матча успешно сохранен!');
             setTimeout(() => setMessage(''), 3000);
 
@@ -815,9 +815,7 @@ function TournamentDetails() {
 
                         {/* 🏆 ПОДИУМ С ПРИЗЕРАМИ для завершенных турниров */}
                         {tournament?.status === 'completed' && games.length > 0 && (
-                            <Suspense fallback={<div>🏆 Загрузка подиума...</div>}>
-                                <LazyPodiumSection tournament={tournament} matches={matches} />
-                            </Suspense>
+                            <PodiumSection tournament={tournament} matches={matches} />
                         )}
 
                         {/* Турнирная сетка */}
