@@ -412,16 +412,15 @@ class TournamentService {
     /**
      * Обновление регламента турнира
      */
+
     static async updateRules(tournamentId, rules, userId) {
         console.log(`⚖️ TournamentService: Обновление регламента турнира ${tournamentId}`);
 
         await this._checkTournamentAccess(tournamentId, userId);
 
-        const tournament = await TournamentRepository.getById(tournamentId);
-        if (tournament.status !== 'active') {
-            throw new Error('Турнир неактивен');
-        }
-
+    // 🔧 ИСПРАВЛЕНО: Убрана проверка статуса турнира
+    // Регламент можно редактировать в любом статусе турнира (active, completed, in_progress)
+    
         return await TournamentRepository.updateRules(tournamentId, rules);
     }
 
