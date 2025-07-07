@@ -261,7 +261,7 @@
 
 /* вљЎ РРќР”РРљРђРўРћР  РџРћР‘Р•Р”Р« */
 .custom-seed.winner::before {
-    content: "рџЏ†";
+    content: "";
     position: absolute;
     top: -8px;
     right: -8px;
