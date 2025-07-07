@@ -367,7 +367,7 @@ const TournamentAdminPanel = ({
                 </div>
 
                 {/* 🎯 УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ */}
-                {tournament?.status === 'in_progress' && matches?.some(m => m.status === 'completed') && (
+                {tournament?.status === 'ongoing' && matches?.some(m => m.status === 'completed') && (
                     <div className="results-section-v2">
                         <h4>📊 Управление результатами</h4>
                         <div className="results-actions">
@@ -392,7 +392,7 @@ const TournamentAdminPanel = ({
                 )}
 
                 {/* 🎯 УПРАВЛЕНИЕ МАТЧАМИ */}
-                {tournament?.status === 'in_progress' && matches && matches.length > 0 && (
+                {tournament?.status === 'ongoing' && matches && matches.length > 0 && (
                     <div className="matches-section-v2">
                         <h4>⚔️ Активные матчи</h4>
                         <div className="matches-list-v2">
@@ -414,12 +414,22 @@ const TournamentAdminPanel = ({
                                             className="edit-match-btn-v2"
                                             onClick={() => onEditMatchResult(match)}
                                             disabled={isLoading}
-                                            title="Редактировать результат"
+                                            title="Редактировать результат матча"
                                         >
                                             ✏️
                                         </button>
                                     </div>
                                 ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 🆕 ИНФОРМАЦИЯ О НЕДОСТУПНОСТИ РЕДАКТИРОВАНИЯ */}
+                {tournament?.status !== 'ongoing' && matches && matches.length > 0 && (
+                    <div className="matches-section-v2">
+                        <h4>⚔️ Матчи турнира</h4>
+                        <div className="warning-message-v2">
+                            ⚠️ Редактирование матчей возможно только в турнире со статусом "Идет"
                         </div>
                     </div>
                 )}

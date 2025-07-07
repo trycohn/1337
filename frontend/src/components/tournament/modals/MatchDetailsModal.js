@@ -132,6 +132,12 @@ const MatchDetailsModal = ({
                            selectedMatch.status === 'completed' || 
                            selectedMatch.status === 'DONE';
 
+    // 🆕 Проверка статуса турнира для редактирования
+    const canEditByTournamentStatus = tournament?.status === 'ongoing';
+    const tournamentStatusMessage = !canEditByTournamentStatus 
+        ? 'Редактирование матчей возможно только в турнире со статусом "Идет"'
+        : null;
+
     const isCS2 = tournament?.game === 'Counter-Strike 2' || 
                   tournament?.game === 'CS2' ||
                   (selectedMatch.maps_data && selectedMatch.maps_data.length > 0);
@@ -537,7 +543,12 @@ const MatchDetailsModal = ({
                         </button>
                         
                         {canEdit && !selectedMatch.editBlocked && (
-                            <button className="modal-system-btn modal-system-btn-primary" onClick={handleEdit}>
+                            <button 
+                                className={`modal-system-btn ${canEditByTournamentStatus ? 'modal-system-btn-primary' : 'modal-system-btn-disabled'}`}
+                                onClick={canEditByTournamentStatus ? handleEdit : undefined}
+                                disabled={!canEditByTournamentStatus}
+                                title={tournamentStatusMessage || "Редактировать результат матча"}
+                            >
                                 ✏️ Редактировать результат
                             </button>
                         )}

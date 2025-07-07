@@ -587,7 +587,7 @@ function TournamentDetails() {
                 throw new Error('Отсутствует токен авторизации');
             }
 
-            // 🔧 ИСПРАВЛЕНИЕ: Определяем winner_team_id на основе winner и данных матча
+            // 🔧 УНИВЕРСАЛЬНОЕ ИСПРАВЛЕНИЕ: Определяем winner_team_id для команд И соло участников
             let winner_team_id = null;
             
             // Если уже есть winner_team_id в resultData, используем его
@@ -606,30 +606,61 @@ function TournamentDetails() {
                     } else if (resultData.winner === 'team2') {
                         winner_team_id = matchData.team2_id;
                     }
-                    console.log('✅ Преобразован winner в winner_team_id:', {
+                    
+                    // 🆕 УНИВЕРСАЛЬНАЯ ЛОГИКА: Определяем тип турнира для логирования
+                    const participantType = tournament?.participant_type || 'unknown';
+                    const entityType = participantType === 'solo' ? 'участника' : 'команды';
+                    
+                    console.log('✅ Преобразован winner в winner_team_id для', entityType, ':', {
+                        participant_type: participantType,
                         winner: resultData.winner,
                         team1_id: matchData.team1_id,
                         team2_id: matchData.team2_id,
-                        winner_team_id: winner_team_id
+                        winner_team_id: winner_team_id,
+                        entity_type: entityType
                     });
                 } else {
                     console.warn('⚠️ Не удалось найти team1_id/team2_id в данных матча:', matchData);
                 }
             }
 
-            console.log('🎯 Итоговые данные для отправки:', {
+            // 🆕 ДОПОЛНИТЕЛЬНАЯ ВАЛИДАЦИЯ: Проверяем что winner_team_id существует среди участников
+            if (winner_team_id && tournament) {
+                let isValidWinner = false;
+                
+                if (tournament.participant_type === 'solo' && tournament.participants) {
+                    // Для соло турниров проверяем среди участников
+                    isValidWinner = tournament.participants.some(p => p.id === winner_team_id);
+                } else if (tournament.participant_type === 'team' && tournament.teams) {
+                    // Для командных турниров проверяем среди команд
+                    isValidWinner = tournament.teams.some(t => t.id === winner_team_id);
+                }
+                
+                if (!isValidWinner) {
+                    console.warn('⚠️ winner_team_id не найден среди участников турнира:', {
+                        winner_team_id,
+                        participant_type: tournament.participant_type,
+                        available_participants: tournament.participants?.length || 0,
+                        available_teams: tournament.teams?.length || 0
+                    });
+                }
+            }
+
+            console.log('🎯 Итоговые данные для отправки (универсальные):', {
                 score1: parseInt(resultData.score1) || 0,
                 score2: parseInt(resultData.score2) || 0,
                 maps_data: resultData.maps_data || [],
-                winner_team_id: winner_team_id
+                winner_team_id: winner_team_id,
+                participant_type: tournament?.participant_type,
+                tournament_format: tournament?.format
             });
 
-            // 🔧 ИСПРАВЛЕНО: Передаем winner_team_id вместо winner
+            // 🔧 ИСПРАВЛЕНО: Используем новый API endpoint согласно модульной архитектуре
             const response = await api.post(`/api/tournaments/${id}/matches/${matchId}/result`, {
                 score1: parseInt(resultData.score1) || 0,
                 score2: parseInt(resultData.score2) || 0,
                 maps_data: resultData.maps_data || [],
-                winner_team_id: winner_team_id  // ✅ Передаем winner_team_id
+                winner_team_id: winner_team_id  // ✅ Передаем winner_team_id вместо winner
             }, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
@@ -675,7 +706,7 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMatch, id, fetchTournamentData, closeModal, matches]);
+    }, [selectedMatch, id, fetchTournamentData, closeModal, matches, tournament]);
 
     // 🔧 ОБНОВЛЕННАЯ ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ (API v2.0)
     const resetMatchResults = useCallback(async () => {
@@ -1265,8 +1296,13 @@ function TournamentDetails() {
 
     // Определение прав доступа
     const canEditMatches = useMemo(() => {
-        return user && (isCreator || adminRequestStatus === 'accepted');
-    }, [user, isCreator, adminRequestStatus]);
+        // Разрешаем редактирование только если:
+        // 1. Пользователь авторизован И (является создателем ИЛИ админом)
+        // 2. Турнир находится в статусе "ongoing" (Идет)
+        return user && 
+               (isCreator || adminRequestStatus === 'accepted') && 
+               tournament?.status === 'ongoing';
+    }, [user, isCreator, adminRequestStatus, tournament?.status]);
 
     // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (ЧЕРЕЗ ХУК)
     const handleStartTournament = useCallback(async () => {
