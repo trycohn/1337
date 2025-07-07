@@ -401,14 +401,14 @@ class MatchService {
     }
 
     /**
-     * 🚀 УЛУЧШЕННАЯ ФУНКЦИЯ ПРОДВИЖЕНИЯ КОМАНДЫ
+     * 🚀 УПРОЩЕННАЯ ФУНКЦИЯ ПРОДВИЖЕНИЯ КОМАНДЫ (для предустановленной структуры)
      * @private
      */
     static async _simpleAdvanceTeam(teamId, targetMatchId, advanceType, client) {
-        console.log(`🚀 [simpleAdvanceTeam] Продвигаем команду ${teamId} в матч ${targetMatchId} (${advanceType})`);
+        console.log(`🚀 [simpleAdvanceTeam] Продвижение команды ${teamId} в предустановленный матч ${targetMatchId} (${advanceType})`);
         
         try {
-            // Проверяем текущее состояние целевого матча
+            // Получаем целевой матч
             const targetMatchResult = await client.query(
                 'SELECT id, team1_id, team2_id, round, match_number FROM matches WHERE id = $1',
                 [targetMatchId]
@@ -429,27 +429,24 @@ class MatchService {
                 return { advanced: false, reason: 'already_in_match' };
             }
             
-            // 🔧 УЛУЧШЕННАЯ ЛОГИКА: Определяем куда можно поставить команду
+            // 🆕 НОВАЯ УПРОЩЕННАЯ ЛОГИКА: Определяем позицию для команды
             let updateField = null;
             let updateValue = teamId;
             
-            // Сначала пытаемся заполнить team1_id, если он пустой
+            // Заполняем первую свободную позицию
             if (!targetMatch.team1_id) {
                 updateField = 'team1_id';
                 console.log(`🎯 [simpleAdvanceTeam] Ставим команду ${teamId} в позицию team1_id`);
-            } 
-            // Если team1_id занят, пытаемся заполнить team2_id
-            else if (!targetMatch.team2_id) {
+            } else if (!targetMatch.team2_id) {
                 updateField = 'team2_id';
                 console.log(`🎯 [simpleAdvanceTeam] Ставим команду ${teamId} в позицию team2_id`);
-            } 
-            // Если обе позиции заняты
-            else {
-                console.log(`⚠️ [simpleAdvanceTeam] Все позиции в матче ${targetMatchId} заняты (team1: ${targetMatch.team1_id}, team2: ${targetMatch.team2_id})`);
-                return { advanced: false, reason: 'match_full' };
+            } else {
+                console.log(`⚠️ [simpleAdvanceTeam] Обе позиции в матче ${targetMatchId} уже заняты (team1: ${targetMatch.team1_id}, team2: ${targetMatch.team2_id})`);
+                console.log(`🤔 [simpleAdvanceTeam] Это неожиданно в предустановленной структуре - возможна ошибка генерации`);
+                return { advanced: false, reason: 'unexpected_match_full' };
             }
             
-            // 🔧 АТОМАРНОЕ ОБНОВЛЕНИЕ: используем WHERE условие для предотвращения race conditions
+            // 🔧 АТОМАРНОЕ ОБНОВЛЕНИЕ
             const updateResult = await client.query(
                 `UPDATE matches 
                  SET ${updateField} = $1
@@ -467,10 +464,12 @@ class MatchService {
             console.log(`✅ [simpleAdvanceTeam] Команда ${teamId} успешно продвинута в позицию ${updateField} матча ${targetMatchId}`);
             console.log(`✅ [simpleAdvanceTeam] Обновленный матч: team1_id=${updatedMatch.team1_id}, team2_id=${updatedMatch.team2_id}`);
             
-            // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Матч готов к игре?
+            // Проверяем готовность матча
             const isMatchReady = updatedMatch.team1_id && updatedMatch.team2_id;
             if (isMatchReady) {
                 console.log(`🏁 [simpleAdvanceTeam] Матч ${targetMatchId} теперь готов к игре!`);
+            } else {
+                console.log(`⏳ [simpleAdvanceTeam] Матч ${targetMatchId} ожидает второго участника`);
             }
             
             return {

@@ -110,66 +110,36 @@ class SingleEliminationEngine {
      * @returns {Array} - Массив сгенерированных матчей
      */
     static async _generateMatches(tournamentId, participants, bracketMath, options) {
-        const matches = [];
         const client = await pool.connect();
         
         try {
             await client.query('BEGIN');
             
-            let currentRoundParticipants = participants;
-            let preliminaryMatches = [];
+            console.log(`🏗️ [НОВАЯ АРХИТЕКТУРА] Создание полной турнирной сетки с предустановленными связями`);
+            console.log(`📊 Параметры: ${participants.length} участников, ${bracketMath.totalMatches} матчей, ${bracketMath.rounds} раундов`);
             
-            // 🆕 1. Генерируем предварительный раунд (если нужен)
-            if (bracketMath.needsPreliminaryRound) {
-                preliminaryMatches = await this._generatePreliminaryRound(
-                    client,
-                    tournamentId,
-                    participants,
-                    bracketMath
-                );
-                matches.push(...preliminaryMatches);
-                console.log(`🎯 [_generateMatches] Создано предварительных матчей: ${preliminaryMatches.length}`);
-            }
+            // 🆕 ШАГ 1: Создаем ВСЕ матчи турнира (пустые, без участников)
+            const allMatches = await this._createAllTournamentMatches(client, tournamentId, bracketMath);
+            console.log(`✅ Создано ${allMatches.length} матчей для всего турнира`);
             
-            // 2. Генерируем матчи первого основного раунда
-            const firstRoundMatches = await this._generateFirstRoundMatches(
-                client,
-                tournamentId,
-                participants,
-                bracketMath
-            );
-            matches.push(...firstRoundMatches);
+            // 🆕 ШАГ 2: Устанавливаем ВСЕ связи next_match_id между матчами
+            await this._establishAllConnections(client, allMatches, bracketMath);
+            console.log(`🔗 Установлены все связи между матчами`);
             
-            // 🔧 ИСПРАВЛЕНИЕ: Связываем предварительные матчи с первым раундом
-            if (bracketMath.needsPreliminaryRound && preliminaryMatches.length > 0) {
-                await this._linkPreliminaryToFirstRound(client, preliminaryMatches, firstRoundMatches, bracketMath);
-                console.log(`🔗 [_generateMatches] Связаны предварительные матчи с первым раундом`);
-            }
+            // 🆕 ШАГ 3: Размещаем участников ТОЛЬКО в стартовых матчах
+            await this._placeParticipantsInStartingMatches(client, allMatches, participants, bracketMath);
+            console.log(`👥 Участники размещены в стартовых матчах`);
             
-            // 3. Генерируем матчи последующих раундов
-            const subsequentRoundMatches = await this._generateSubsequentRounds(
-                client,
-                tournamentId,
-                firstRoundMatches,
-                bracketMath
-            );
-            matches.push(...subsequentRoundMatches);
-            
-            // 4. Генерируем матч за 3-е место (если нужен)
+            // 🆕 ШАГ 4: Генерируем матч за 3-е место (если нужен)
             if (bracketMath.hasThirdPlaceMatch) {
-                const thirdPlaceMatch = await this._generateThirdPlaceMatch(
-                    client,
-                    tournamentId,
-                    matches,
-                    bracketMath
-                );
-                matches.push(thirdPlaceMatch);
+                const thirdPlaceMatch = await this._generateThirdPlaceMatch(client, tournamentId, allMatches, bracketMath);
+                allMatches.push(thirdPlaceMatch);
             }
             
             await client.query('COMMIT');
             
-            console.log(`🔧 Сгенерировано матчей: ${matches.length}`);
-            return matches;
+            console.log(`🎉 [НОВАЯ АРХИТЕКТУРА] Полная турнирная сетка создана: ${allMatches.length} матчей`);
+            return allMatches;
             
         } catch (error) {
             await client.query('ROLLBACK');
@@ -180,122 +150,49 @@ class SingleEliminationEngine {
     }
     
     /**
-     * 🆕 Генерация предварительного раунда (раунд 0)
+     * 🆕 ШАГ 1: Создание ВСЕХ матчей турнира (пустых)
      * @param {Object} client - Клиент БД
-     * @param {number} tournamentId - ID турнира
-     * @param {Array} participants - Все участники
+     * @param {number} tournamentId - ID турнира  
      * @param {Object} bracketMath - Математические параметры
-     * @returns {Array} - Матчи предварительного раунда
+     * @returns {Array} - Все матчи турнира
      */
-    static async _generatePreliminaryRound(client, tournamentId, participants, bracketMath) {
-        console.log(`🎯 Генерация предварительного раунда: ${bracketMath.preliminaryMatches} матчей`);
-        console.log(`🎯 Участников предварительного раунда: ${bracketMath.preliminaryParticipants}`);
-        console.log(`🎯 Проходят напрямую в основной раунд: ${bracketMath.directAdvancers}`);
+    static async _createAllTournamentMatches(client, tournamentId, bracketMath) {
+        console.log(`🏗️ [createAllTournamentMatches] Создание структуры турнира`);
         
-        const preliminaryMatches = [];
+        const allMatches = [];
         const matchPromises = [];
         
-        // 🆕 НОВАЯ ЛОГИКА: участники для предварительного раунда - это последние участники в списке
-        // Первые directAdvancers участников проходят напрямую в основной раунд
-        const preliminaryStartIndex = bracketMath.directAdvancers;
+        // Определяем стартовый раунд и количество раундов
+        const startRound = bracketMath.needsPreliminaryRound ? 0 : 1;
+        const totalRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
         
-        for (let i = 0; i < bracketMath.preliminaryMatches; i++) {
-            const participant1Index = preliminaryStartIndex + (i * 2);
-            const participant2Index = preliminaryStartIndex + (i * 2) + 1;
-            
-            const participant1 = participants[participant1Index];
-            const participant2 = participants[participant2Index];
-            
-            console.log(`🎯 [preliminaryRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} vs ${participant2?.name || participant2?.id}`);
-            
-            const matchData = {
-                tournament_id: tournamentId,
-                round: 0, // Предварительный раунд = 0
-                match_number: i + 1,
-                team1_id: participant1?.id || null,
-                team2_id: participant2?.id || null,
-                status: 'pending',
-                bracket_type: 'winner'
-            };
-            
-            const matchPromise = this._insertMatch(client, matchData);
-            matchPromises.push(matchPromise);
-        }
+        console.log(`📊 Создаем раунды ${startRound} - ${totalRounds}`);
         
-        // Выполняем все вставки параллельно
-        const insertedMatches = await Promise.all(matchPromises);
-        preliminaryMatches.push(...insertedMatches);
-        
-        console.log(`✅ Предварительный раунд: создано ${preliminaryMatches.length} матчей`);
-        return preliminaryMatches;
-    }
-    
-    /**
-     * 🥇 Генерация матчей первого раунда
-     * @param {Object} client - Клиент БД
-     * @param {number} tournamentId - ID турнира
-     * @param {Array} participants - Участники
-     * @param {Object} bracketMath - Математические параметры
-     * @returns {Array} - Матчи первого раунда
-     */
-    static async _generateFirstRoundMatches(client, tournamentId, participants, bracketMath) {
-        console.log(`🥇 Генерация первого раунда: ${bracketMath.firstRoundMatches} матчей`);
-        console.log(`🎯 [firstRound] Логика: сначала раскидать ${bracketMath.directAdvancers} участников по матчам, затем добавить слоты для победителей`);
-        
-        const firstRoundMatches = [];
-        const matchPromises = [];
-        
-        if (bracketMath.needsPreliminaryRound) {
-            // 🆕 НОВАЯ ЛОГИКА: сначала раскидываем участников, проходящих напрямую, по одному в каждый матч
+        // Создаем матчи для каждого раунда
+        for (let round = startRound; round <= totalRounds; round++) {
+            let matchesInRound;
             
-            // Участники, проходящие напрямую (первые directAdvancers участников)
-            const directParticipants = participants.slice(0, bracketMath.directAdvancers);
-            
-            console.log(`🎯 [firstRound] Участники проходящие напрямую:`, directParticipants.map(p => p.name || p.id));
-            
-            for (let i = 0; i < bracketMath.firstRoundMatches; i++) {
-                let participant1 = null;
-                let participant2 = null;
-                
-                // Сначала заполняем каждый матч одним участником, проходящим напрямую
-                if (i < directParticipants.length) {
-                    participant1 = directParticipants[i];
-                    console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} (прямой проход) vs TBD (победитель предварительного)`);
-                } else {
-                    console.log(`🥇 [firstRound] Матч ${i + 1}: TBD (победитель предварительного) vs TBD (победитель предварительного)`);
-                }
-                
-                const matchData = {
-                    tournament_id: tournamentId,
-                    round: 1,
-                    match_number: i + 1,
-                    team1_id: participant1?.id || null,
-                    team2_id: participant2?.id || null, // Заполнится после предварительного раунда
-                    status: 'pending',
-                    bracket_type: 'winner'
-                };
-                
-                const matchPromise = this._insertMatch(client, matchData);
-                matchPromises.push(matchPromise);
+            if (round === 0) {
+                // Предварительный раунд
+                matchesInRound = bracketMath.preliminaryMatches;
+            } else if (round === 1) {
+                // Первый основной раунд
+                matchesInRound = bracketMath.firstRoundMatches;
+            } else {
+                // Последующие раунды: формула 2^(totalRounds - round)
+                matchesInRound = Math.pow(2, totalRounds - round);
             }
-        } else {
-            // Если нет предварительного раунда, используем стандартную логику
-            const totalMatches = bracketMath.firstRoundMatches;
             
-            console.log(`🎯 [firstRound] Без предварительного раунда, стандартная логика для ${totalMatches} матчей`);
+            console.log(`🔧 Раунд ${round}: создаем ${matchesInRound} матчей`);
             
-            for (let i = 0; i < totalMatches; i++) {
-                const participant1 = participants[i * 2];
-                const participant2 = participants[i * 2 + 1];
-                
-                console.log(`🥇 [firstRound] Матч ${i + 1}: ${participant1?.name || participant1?.id} vs ${participant2?.name || participant2?.id}`);
-                
+            // Создаем матчи для текущего раунда
+            for (let matchNumber = 1; matchNumber <= matchesInRound; matchNumber++) {
                 const matchData = {
                     tournament_id: tournamentId,
-                    round: 1,
-                    match_number: i + 1,
-                    team1_id: participant1?.id || null,
-                    team2_id: participant2?.id || null,
+                    round: round,
+                    match_number: matchNumber,
+                    team1_id: null, // Будет заполнено позже для стартовых матчей
+                    team2_id: null, // Будет заполнено позже для стартовых матчей
                     status: 'pending',
                     bracket_type: 'winner'
                 };
@@ -307,123 +204,230 @@ class SingleEliminationEngine {
         
         // Выполняем все вставки параллельно
         const insertedMatches = await Promise.all(matchPromises);
-        firstRoundMatches.push(...insertedMatches);
+        allMatches.push(...insertedMatches);
         
-        console.log(`✅ Первый раунд: создано ${firstRoundMatches.length} матчей`);
-        return firstRoundMatches;
+        // Сортируем матчи по раунду и номеру для удобства
+        allMatches.sort((a, b) => {
+            if (a.round !== b.round) return a.round - b.round;
+            return a.match_number - b.match_number;
+        });
+        
+        console.log(`✅ Создана структура турнира: ${allMatches.length} матчей`);
+        return allMatches;
     }
     
     /**
-     * 🔧 Связывание предварительных матчей с первым раундом через next_match_id
+     * 🆕 ШАГ 2: Установка ВСЕХ связей next_match_id
      * @param {Object} client - Клиент БД
-     * @param {Array} preliminaryMatches - Матчи предварительного раунда
-     * @param {Array} firstRoundMatches - Матчи первого раунда
+     * @param {Array} allMatches - Все матчи турнира
      * @param {Object} bracketMath - Математические параметры
      */
-    static async _linkPreliminaryToFirstRound(client, preliminaryMatches, firstRoundMatches, bracketMath) {
-        console.log(`🔗 [_linkPreliminaryToFirstRound] Связывание ${preliminaryMatches.length} предварительных матчей с ${firstRoundMatches.length} матчами первого раунда`);
+    static async _establishAllConnections(client, allMatches, bracketMath) {
+        console.log(`🔗 [establishAllConnections] Установка всех связей между матчами`);
         
         const updatePromises = [];
         
-        // 🔧 УЛУЧШЕННАЯ ЛОГИКА: Правильно связываем предварительные матчи
-        // Логика: каждый предварительный матч ведет к определенной позиции в первом раунде
+        // Группируем матчи по раундам для удобства
+        const matchesByRound = {};
+        allMatches.forEach(match => {
+            if (!matchesByRound[match.round]) {
+                matchesByRound[match.round] = [];
+            }
+            matchesByRound[match.round].push(match);
+        });
+        
+        // Определяем диапазон раундов
+        const startRound = bracketMath.needsPreliminaryRound ? 0 : 1;
+        const totalRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
+        
+        console.log(`🔗 Связываем раунды ${startRound} - ${totalRounds - 1} с их следующими раундами`);
+        
+        // Связываем каждый раунд со следующим
+        for (let round = startRound; round < totalRounds; round++) {
+            const currentRoundMatches = matchesByRound[round] || [];
+            const nextRoundMatches = matchesByRound[round + 1] || [];
+            
+            console.log(`🔗 Раунд ${round} -> Раунд ${round + 1}: ${currentRoundMatches.length} -> ${nextRoundMatches.length} матчей`);
+            
+            if (round === 0 && bracketMath.needsPreliminaryRound) {
+                // 🔧 СПЕЦИАЛЬНАЯ ЛОГИКА для предварительного раунда
+                await this._linkPreliminaryToFirstRound_v2(client, currentRoundMatches, nextRoundMatches, bracketMath, updatePromises);
+            } else {
+                // 🔧 СТАНДАРТНАЯ ЛОГИКА для основных раундов
+                await this._linkStandardRounds(client, currentRoundMatches, nextRoundMatches, updatePromises);
+            }
+        }
+        
+        // Выполняем все обновления связей
+        if (updatePromises.length > 0) {
+            await Promise.all(updatePromises);
+            console.log(`✅ Установлено ${updatePromises.length} связей между матчами`);
+        }
+    }
+    
+    /**
+     * 🔧 Связывание предварительного раунда с первым раундом (улучшенная версия)
+     * @private
+     */
+    static async _linkPreliminaryToFirstRound_v2(client, preliminaryMatches, firstRoundMatches, bracketMath, updatePromises) {
+        console.log(`🎯 [linkPreliminaryToFirstRound_v2] ${preliminaryMatches.length} предварительных -> ${firstRoundMatches.length} первого раунда`);
+        console.log(`📊 DirectAdvancers: ${bracketMath.directAdvancers}, Preliminary participants: ${bracketMath.preliminaryParticipants}`);
+        
+        // 🔧 ЛОГИКА: Предварительные матчи заполняют свободные позиции в первом раунде
+        // firstRoundMatches уже частично заполнены directAdvancers участниками
+        // Нужно связать каждый предварительный матч с конкретной позицией в первом раунде
+        
+        let nextAvailableSlot = 0; // Индекс следующей доступной позиции в первом раунде
         
         for (let i = 0; i < preliminaryMatches.length; i++) {
             const preliminaryMatch = preliminaryMatches[i];
             
-            // Определяем к какому матчу первого раунда должен вести данный предварительный матч
-            // Если у нас есть directAdvancers участников, то первые позиции в первом раунде заняты
-            // Победители предварительных матчей должны заполнить оставшиеся позиции
+            // Находим следующий свободный слот в первом раунде
+            // (слоты уже зарезервированы для directAdvancers, остальные для победителей предварительных)
             
-            // Простое правило: каждый предварительный матч ведет к матчу первого раунда с тем же индексом
-            // Но учитываем, что в матчах первого раунда могут быть участники, проходящие напрямую
+            // Простая логика: каждый предварительный матч ведет к определенной позиции
+            const targetFirstRoundIndex = Math.floor(i / 2);
+            const targetMatch = firstRoundMatches[targetFirstRoundIndex];
             
-            let targetFirstRoundMatchIndex = Math.floor(i / 2); // Каждые 2 предварительных матча заполняют 1 матч первого раунда
-            
-            // Если остаток от деления = 0, то это первая позиция в матче, иначе вторая
-            const positionInMatch = i % 2;
-            
-            if (targetFirstRoundMatchIndex < firstRoundMatches.length) {
-                const targetMatch = firstRoundMatches[targetFirstRoundMatchIndex];
-                
+            if (targetMatch) {
                 const updatePromise = client.query(
-                    'UPDATE matches SET next_match_id = $1, position_in_round = $2 WHERE id = $3',
-                    [targetMatch.id, positionInMatch + 1, preliminaryMatch.id]
+                    'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                    [targetMatch.id, preliminaryMatch.id]
                 );
                 updatePromises.push(updatePromise);
                 
-                console.log(`�� Предварительный матч ${preliminaryMatch.id} (${i+1}) -> Первый раунд матч ${targetMatch.id} (позиция ${positionInMatch + 1})`);
+                console.log(`🎯 Предварительный матч ${preliminaryMatch.id} (${preliminaryMatch.match_number}) -> Первый раунд матч ${targetMatch.id} (${targetMatch.match_number})`);
             } else {
-                console.error(`❌ [_linkPreliminaryToFirstRound] Не найден целевой матч первого раунда для предварительного матча ${i+1}`);
+                console.error(`❌ Не найден целевой матч для предварительного матча ${preliminaryMatch.id}`);
             }
         }
         
-        await Promise.all(updatePromises);
-        console.log(`✅ [_linkPreliminaryToFirstRound] Установлено ${updatePromises.length} связей`);
+        console.log(`✅ Связано ${preliminaryMatches.length} предварительных матчей с первым раундом`);
     }
     
     /**
-     * ⏭️ Генерация матчей последующих раундов
-     * @param {Object} client - Клиент БД
-     * @param {number} tournamentId - ID турнира
-     * @param {Array} firstRoundMatches - Матчи первого раунда
-     * @param {Object} bracketMath - Математические параметры
-     * @returns {Array} - Матчи всех последующих раундов
+     * 🔧 Связывание стандартных раундов
+     * @private
      */
-    static async _generateSubsequentRounds(client, tournamentId, firstRoundMatches, bracketMath) {
-        const allMatches = [...firstRoundMatches];
-        let currentRoundMatches = firstRoundMatches;
+    static async _linkStandardRounds(client, currentRoundMatches, nextRoundMatches, updatePromises) {
+        console.log(`🔗 [linkStandardRounds] ${currentRoundMatches.length} -> ${nextRoundMatches.length} матчей`);
         
-        // 🔧 ИСПРАВЛЕНИЕ: используем правильную логику для расчета количества раундов
-        // Если есть предварительный раунд, используем mainRounds, иначе rounds
-        const totalMainRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
-        const startRound = 2; // Начинаем с раунда 2 (раунд 1 уже сгенерирован)
-        
-        console.log(`⏭️ [_generateSubsequentRounds] Генерация раундов ${startRound}-${totalMainRounds}`);
-        console.log(`⏭️ Используем ${bracketMath.needsPreliminaryRound ? 'mainRounds' : 'rounds'}: ${totalMainRounds}`);
-        
-        // Генерируем раунды от 2 до финала
-        for (let round = startRound; round <= totalMainRounds; round++) {
-            // 🔧 ИСПРАВЛЕНИЕ: правильная формула для расчета количества матчей в раунде
-            const matchesInRound = Math.pow(2, totalMainRounds - round);
-            console.log(`⏭️ Генерация раунда ${round}: ${matchesInRound} матчей (формула: 2^(${totalMainRounds} - ${round}))`);
+        // Стандартная логика: каждые 2 матча текущего раунда ведут к 1 матчу следующего раунда
+        for (let i = 0; i < currentRoundMatches.length; i++) {
+            const currentMatch = currentRoundMatches[i];
+            const nextMatchIndex = Math.floor(i / 2);
+            const nextMatch = nextRoundMatches[nextMatchIndex];
             
-            const roundMatches = [];
-            const matchPromises = [];
+            if (nextMatch) {
+                const updatePromise = client.query(
+                    'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                    [nextMatch.id, currentMatch.id]
+                );
+                updatePromises.push(updatePromise);
+                
+                console.log(`🔗 Матч ${currentMatch.id} (R${currentMatch.round}M${currentMatch.match_number}) -> Матч ${nextMatch.id} (R${nextMatch.round}M${nextMatch.match_number})`);
+            }
+        }
+    }
+    
+    /**
+     * 🆕 ШАГ 3: Размещение участников в стартовых матчах
+     * @param {Object} client - Клиент БД
+     * @param {Array} allMatches - Все матчи турнира
+     * @param {Array} participants - Участники турнира
+     * @param {Object} bracketMath - Математические параметры
+     */
+    static async _placeParticipantsInStartingMatches(client, allMatches, participants, bracketMath) {
+        console.log(`👥 [placeParticipantsInStartingMatches] Размещение ${participants.length} участников`);
+        
+        const updatePromises = [];
+        
+        if (bracketMath.needsPreliminaryRound) {
+            // 🎯 ЛОГИКА С ПРЕДВАРИТЕЛЬНЫМ РАУНДОМ
+            console.log(`🎯 Турнир с предварительным раундом`);
+            console.log(`📊 DirectAdvancers: ${bracketMath.directAdvancers}, Preliminary: ${bracketMath.preliminaryParticipants}`);
             
-            for (let i = 0; i < matchesInRound; i++) {
-                const sourceMatch1 = currentRoundMatches[i * 2];
-                const sourceMatch2 = currentRoundMatches[i * 2 + 1];
+            // 1. Размещаем участников, проходящих напрямую, в первом раунде
+            const directParticipants = participants.slice(0, bracketMath.directAdvancers);
+            const firstRoundMatches = allMatches.filter(m => m.round === 1);
+            
+            for (let i = 0; i < directParticipants.length && i < firstRoundMatches.length; i++) {
+                const participant = directParticipants[i];
+                const match = firstRoundMatches[i];
                 
-                const matchData = {
-                    tournament_id: tournamentId,
-                    round: round,
-                    match_number: i + 1,
-                    team1_id: null, // Будет заполнено после завершения source матчей
-                    team2_id: null,
-                    status: 'pending',
-                    bracket_type: 'winner',
-                    source_match1_id: sourceMatch1?.id || null,
-                    source_match2_id: sourceMatch2?.id || null
-                };
+                const updatePromise = client.query(
+                    'UPDATE matches SET team1_id = $1 WHERE id = $2',
+                    [participant.id, match.id]
+                );
+                updatePromises.push(updatePromise);
                 
-                const matchPromise = this._insertMatch(client, matchData);
-                matchPromises.push(matchPromise);
+                console.log(`👤 DirectAdvancer: ${participant.name || participant.id} -> Первый раунд матч ${match.id}`);
             }
             
-            const insertedMatches = await Promise.all(matchPromises);
-            roundMatches.push(...insertedMatches);
+            // 2. Размещаем остальных участников в предварительном раунде
+            const preliminaryParticipants = participants.slice(bracketMath.directAdvancers);
+            const preliminaryMatches = allMatches.filter(m => m.round === 0);
             
-            // Обновляем next_match_id для матчей предыдущего раунда
-            await this._updateNextMatchIds(client, currentRoundMatches, roundMatches);
+            for (let i = 0; i < preliminaryMatches.length; i++) {
+                const match = preliminaryMatches[i];
+                const participant1 = preliminaryParticipants[i * 2];
+                const participant2 = preliminaryParticipants[i * 2 + 1];
+                
+                if (participant1) {
+                    const updatePromise1 = client.query(
+                        'UPDATE matches SET team1_id = $1 WHERE id = $2',
+                        [participant1.id, match.id]
+                    );
+                    updatePromises.push(updatePromise1);
+                    console.log(`👤 Preliminary: ${participant1.name || participant1.id} -> Предварительный матч ${match.id} (team1)`);
+                }
+                
+                if (participant2) {
+                    const updatePromise2 = client.query(
+                        'UPDATE matches SET team2_id = $1 WHERE id = $2',
+                        [participant2.id, match.id]
+                    );
+                    updatePromises.push(updatePromise2);
+                    console.log(`👤 Preliminary: ${participant2.name || participant2.id} -> Предварительный матч ${match.id} (team2)`);
+                }
+            }
             
-            allMatches.push(...roundMatches);
-            currentRoundMatches = roundMatches;
+        } else {
+            // 🎯 СТАНДАРТНАЯ ЛОГИКА БЕЗ ПРЕДВАРИТЕЛЬНОГО РАУНДА
+            console.log(`🎯 Стандартный турнир без предварительного раунда`);
             
-            console.log(`✅ Раунд ${round}: создано ${roundMatches.length} матчей`);
+            const firstRoundMatches = allMatches.filter(m => m.round === 1);
+            
+            for (let i = 0; i < firstRoundMatches.length; i++) {
+                const match = firstRoundMatches[i];
+                const participant1 = participants[i * 2];
+                const participant2 = participants[i * 2 + 1];
+                
+                if (participant1) {
+                    const updatePromise1 = client.query(
+                        'UPDATE matches SET team1_id = $1 WHERE id = $2',
+                        [participant1.id, match.id]
+                    );
+                    updatePromises.push(updatePromise1);
+                    console.log(`👤 ${participant1.name || participant1.id} -> Первый раунд матч ${match.id} (team1)`);
+                }
+                
+                if (participant2) {
+                    const updatePromise2 = client.query(
+                        'UPDATE matches SET team2_id = $1 WHERE id = $2',
+                        [participant2.id, match.id]
+                    );
+                    updatePromises.push(updatePromise2);
+                    console.log(`👤 ${participant2.name || participant2.id} -> Первый раунд матч ${match.id} (team2)`);
+                }
+            }
         }
         
-        return allMatches.slice(firstRoundMatches.length); // Возвращаем только новые матчи
+        // Выполняем все обновления размещения участников
+        if (updatePromises.length > 0) {
+            await Promise.all(updatePromises);
+            console.log(`✅ Размещено участников: ${updatePromises.length} обновлений`);
+        }
     }
     
     /**
