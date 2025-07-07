@@ -251,7 +251,7 @@ class MatchService {
             let advancementResults = [];
             
             if (matchData.next_match_id && winnerId) {
-                console.log(`🏆 [safeUpdateMatchResult] Продвигаем победителя ${winnerId}...`);
+                console.log(`🏆 [safeUpdateMatchResult] Продвигаем победителя ${winnerId} в матч ${matchData.next_match_id}...`);
                 const advanceResult = await this._simpleAdvanceTeam(
                     winnerId, 
                     matchData.next_match_id, 
@@ -259,12 +259,27 @@ class MatchService {
                     client
                 );
                 advancementResults.push(advanceResult);
+                
+                if (advanceResult.advanced) {
+                    console.log(`✅ [safeUpdateMatchResult] Победитель успешно продвинут в ${advanceResult.position} матча ${advanceResult.targetMatchId}`);
+                    if (advanceResult.isMatchReady) {
+                        console.log(`🏁 [safeUpdateMatchResult] Матч ${advanceResult.targetMatchId} готов к игре! Участники: ${advanceResult.matchDetails.team1_id} vs ${advanceResult.matchDetails.team2_id}`);
+                    }
+                } else {
+                    console.log(`❌ [safeUpdateMatchResult] Не удалось продвинуть победителя: ${advanceResult.reason}`);
+                }
+            } else {
+                if (!winnerId) {
+                    console.log(`⚠️ [safeUpdateMatchResult] Нет winner_team_id для продвижения`);
+                } else if (!matchData.next_match_id) {
+                    console.log(`⚠️ [safeUpdateMatchResult] У матча ${matchId} нет next_match_id (возможно, финальный матч)`);
+                }
             }
 
             // 4. Продвижение проигравшего (для double elimination)
             if (matchData.loser_next_match_id && winnerId) {
                 const loserId = matchData.team1_id === winnerId ? matchData.team2_id : matchData.team1_id;
-                console.log(`💔 [safeUpdateMatchResult] Продвигаем проигравшего ${loserId}...`);
+                console.log(`💔 [safeUpdateMatchResult] Продвигаем проигравшего ${loserId} в матч ${matchData.loser_next_match_id}...`);
                 const loserAdvanceResult = await this._simpleAdvanceTeam(
                     loserId, 
                     matchData.loser_next_match_id, 
@@ -272,6 +287,15 @@ class MatchService {
                     client
                 );
                 advancementResults.push(loserAdvanceResult);
+                
+                if (loserAdvanceResult.advanced) {
+                    console.log(`✅ [safeUpdateMatchResult] Проигравший успешно продвинут в ${loserAdvanceResult.position} матча ${loserAdvanceResult.targetMatchId}`);
+                    if (loserAdvanceResult.isMatchReady) {
+                        console.log(`🏁 [safeUpdateMatchResult] Матч ${loserAdvanceResult.targetMatchId} готов к игре! Участники: ${loserAdvanceResult.matchDetails.team1_id} vs ${loserAdvanceResult.matchDetails.team2_id}`);
+                    }
+                } else {
+                    console.log(`❌ [safeUpdateMatchResult] Не удалось продвинуть проигравшего: ${loserAdvanceResult.reason}`);
+                }
             }
 
             // 5. Простое логирование события
@@ -307,7 +331,7 @@ class MatchService {
     }
 
     /**
-     * 🚀 УПРОЩЕННАЯ ФУНКЦИЯ ПРОДВИЖЕНИЯ КОМАНДЫ
+     * 🚀 УЛУЧШЕННАЯ ФУНКЦИЯ ПРОДВИЖЕНИЯ КОМАНДЫ
      * @private
      */
     static async _simpleAdvanceTeam(teamId, targetMatchId, advanceType, client) {
@@ -316,7 +340,7 @@ class MatchService {
         try {
             // Проверяем текущее состояние целевого матча
             const targetMatchResult = await client.query(
-                'SELECT id, team1_id, team2_id FROM matches WHERE id = $1',
+                'SELECT id, team1_id, team2_id, round, match_number FROM matches WHERE id = $1',
                 [targetMatchId]
             );
             
@@ -326,6 +350,8 @@ class MatchService {
             }
             
             const targetMatch = targetMatchResult.rows[0];
+            console.log(`🎯 [simpleAdvanceTeam] Целевой матч: раунд ${targetMatch.round}, матч №${targetMatch.match_number}`);
+            console.log(`🎯 [simpleAdvanceTeam] Текущие участники: team1_id=${targetMatch.team1_id}, team2_id=${targetMatch.team2_id}`);
             
             // Проверяем, не находится ли команда уже в матче
             if (targetMatch.team1_id === teamId || targetMatch.team2_id === teamId) {
@@ -333,43 +359,67 @@ class MatchService {
                 return { advanced: false, reason: 'already_in_match' };
             }
             
-            // Определяем куда можно поставить команду
+            // 🔧 УЛУЧШЕННАЯ ЛОГИКА: Определяем куда можно поставить команду
             let updateField = null;
+            let updateValue = teamId;
+            
+            // Сначала пытаемся заполнить team1_id, если он пустой
             if (!targetMatch.team1_id) {
                 updateField = 'team1_id';
-            } else if (!targetMatch.team2_id) {
+                console.log(`🎯 [simpleAdvanceTeam] Ставим команду ${teamId} в позицию team1_id`);
+            } 
+            // Если team1_id занят, пытаемся заполнить team2_id
+            else if (!targetMatch.team2_id) {
                 updateField = 'team2_id';
-            } else {
-                console.log(`⚠️ [simpleAdvanceTeam] Все позиции в матче ${targetMatchId} заняты`);
+                console.log(`🎯 [simpleAdvanceTeam] Ставим команду ${teamId} в позицию team2_id`);
+            } 
+            // Если обе позиции заняты
+            else {
+                console.log(`⚠️ [simpleAdvanceTeam] Все позиции в матче ${targetMatchId} заняты (team1: ${targetMatch.team1_id}, team2: ${targetMatch.team2_id})`);
                 return { advanced: false, reason: 'match_full' };
             }
             
-            // Атомарно обновляем позицию
+            // 🔧 АТОМАРНОЕ ОБНОВЛЕНИЕ: используем WHERE условие для предотвращения race conditions
             const updateResult = await client.query(
                 `UPDATE matches 
                  SET ${updateField} = $1
                  WHERE id = $2 AND ${updateField} IS NULL
-                 RETURNING *`,
-                [teamId, targetMatchId]
+                 RETURNING id, team1_id, team2_id, round, match_number`,
+                [updateValue, targetMatchId]
             );
             
             if (updateResult.rows.length === 0) {
-                console.log(`⚠️ [simpleAdvanceTeam] Позиция ${updateField} уже занята в матче ${targetMatchId}`);
-                return { advanced: false, reason: 'position_taken' };
+                console.log(`⚠️ [simpleAdvanceTeam] Позиция ${updateField} уже занята в матче ${targetMatchId} (race condition)`);
+                return { advanced: false, reason: 'position_taken_race_condition' };
             }
             
+            const updatedMatch = updateResult.rows[0];
             console.log(`✅ [simpleAdvanceTeam] Команда ${teamId} успешно продвинута в позицию ${updateField} матча ${targetMatchId}`);
+            console.log(`✅ [simpleAdvanceTeam] Обновленный матч: team1_id=${updatedMatch.team1_id}, team2_id=${updatedMatch.team2_id}`);
+            
+            // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Матч готов к игре?
+            const isMatchReady = updatedMatch.team1_id && updatedMatch.team2_id;
+            if (isMatchReady) {
+                console.log(`🏁 [simpleAdvanceTeam] Матч ${targetMatchId} теперь готов к игре!`);
+            }
             
             return {
                 advanced: true,
                 targetMatchId: targetMatchId,
                 position: updateField,
-                advanceType: advanceType
+                advanceType: advanceType,
+                isMatchReady: isMatchReady,
+                matchDetails: {
+                    round: updatedMatch.round,
+                    matchNumber: updatedMatch.match_number,
+                    team1_id: updatedMatch.team1_id,
+                    team2_id: updatedMatch.team2_id
+                }
             };
             
         } catch (error) {
             console.error(`❌ [simpleAdvanceTeam] Ошибка продвижения команды ${teamId}:`, error.message);
-            return { advanced: false, reason: 'error', error: error.message };
+            return { advanced: false, reason: 'database_error', error: error.message };
         }
     }
 

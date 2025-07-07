@@ -117,10 +117,11 @@ class SingleEliminationEngine {
             await client.query('BEGIN');
             
             let currentRoundParticipants = participants;
+            let preliminaryMatches = [];
             
             // 🆕 1. Генерируем предварительный раунд (если нужен)
             if (bracketMath.needsPreliminaryRound) {
-                const preliminaryMatches = await this._generatePreliminaryRound(
+                preliminaryMatches = await this._generatePreliminaryRound(
                     client,
                     tournamentId,
                     participants,
@@ -138,6 +139,12 @@ class SingleEliminationEngine {
                 bracketMath
             );
             matches.push(...firstRoundMatches);
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Связываем предварительные матчи с первым раундом
+            if (bracketMath.needsPreliminaryRound && preliminaryMatches.length > 0) {
+                await this._linkPreliminaryToFirstRound(client, preliminaryMatches, firstRoundMatches, bracketMath);
+                console.log(`🔗 [_generateMatches] Связаны предварительные матчи с первым раундом`);
+            }
             
             // 3. Генерируем матчи последующих раундов
             const subsequentRoundMatches = await this._generateSubsequentRounds(
@@ -304,6 +311,55 @@ class SingleEliminationEngine {
         
         console.log(`✅ Первый раунд: создано ${firstRoundMatches.length} матчей`);
         return firstRoundMatches;
+    }
+    
+    /**
+     * 🔧 Связывание предварительных матчей с первым раундом через next_match_id
+     * @param {Object} client - Клиент БД
+     * @param {Array} preliminaryMatches - Матчи предварительного раунда
+     * @param {Array} firstRoundMatches - Матчи первого раунда
+     * @param {Object} bracketMath - Математические параметры
+     */
+    static async _linkPreliminaryToFirstRound(client, preliminaryMatches, firstRoundMatches, bracketMath) {
+        console.log(`🔗 [_linkPreliminaryToFirstRound] Связывание ${preliminaryMatches.length} предварительных матчей с ${firstRoundMatches.length} матчами первого раунда`);
+        
+        const updatePromises = [];
+        
+        // 🔧 УЛУЧШЕННАЯ ЛОГИКА: Правильно связываем предварительные матчи
+        // Логика: каждый предварительный матч ведет к определенной позиции в первом раунде
+        
+        for (let i = 0; i < preliminaryMatches.length; i++) {
+            const preliminaryMatch = preliminaryMatches[i];
+            
+            // Определяем к какому матчу первого раунда должен вести данный предварительный матч
+            // Если у нас есть directAdvancers участников, то первые позиции в первом раунде заняты
+            // Победители предварительных матчей должны заполнить оставшиеся позиции
+            
+            // Простое правило: каждый предварительный матч ведет к матчу первого раунда с тем же индексом
+            // Но учитываем, что в матчах первого раунда могут быть участники, проходящие напрямую
+            
+            let targetFirstRoundMatchIndex = Math.floor(i / 2); // Каждые 2 предварительных матча заполняют 1 матч первого раунда
+            
+            // Если остаток от деления = 0, то это первая позиция в матче, иначе вторая
+            const positionInMatch = i % 2;
+            
+            if (targetFirstRoundMatchIndex < firstRoundMatches.length) {
+                const targetMatch = firstRoundMatches[targetFirstRoundMatchIndex];
+                
+                const updatePromise = client.query(
+                    'UPDATE matches SET next_match_id = $1, position_in_round = $2 WHERE id = $3',
+                    [targetMatch.id, positionInMatch + 1, preliminaryMatch.id]
+                );
+                updatePromises.push(updatePromise);
+                
+                console.log(`�� Предварительный матч ${preliminaryMatch.id} (${i+1}) -> Первый раунд матч ${targetMatch.id} (позиция ${positionInMatch + 1})`);
+            } else {
+                console.error(`❌ [_linkPreliminaryToFirstRound] Не найден целевой матч первого раунда для предварительного матча ${i+1}`);
+            }
+        }
+        
+        await Promise.all(updatePromises);
+        console.log(`✅ [_linkPreliminaryToFirstRound] Установлено ${updatePromises.length} связей`);
     }
     
     /**
