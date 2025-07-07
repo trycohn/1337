@@ -123,7 +123,7 @@ class SingleEliminationEngine {
             console.log(`✅ Создано ${allMatches.length} матчей для всего турнира`);
             
             // 🆕 ШАГ 2: Устанавливаем ВСЕ связи next_match_id между матчами
-            await this._establishAllConnections(client, allMatches, bracketMath);
+            await this._establishAllConnections(client, allMatches, participants, bracketMath);
             console.log(`🔗 Установлены все связи между матчами`);
             
             // 🆕 ШАГ 3: Размещаем участников ТОЛЬКО в стартовых матчах
@@ -222,7 +222,7 @@ class SingleEliminationEngine {
      * @param {Array} allMatches - Все матчи турнира
      * @param {Object} bracketMath - Математические параметры
      */
-    static async _establishAllConnections(client, allMatches, bracketMath) {
+    static async _establishAllConnections(client, allMatches, participants, bracketMath) {
         console.log(`🔗 [establishAllConnections] Установка всех связей между матчами`);
         
         const updatePromises = [];
@@ -250,8 +250,8 @@ class SingleEliminationEngine {
             console.log(`🔗 Раунд ${round} -> Раунд ${round + 1}: ${currentRoundMatches.length} -> ${nextRoundMatches.length} матчей`);
             
             if (round === 0 && bracketMath.needsPreliminaryRound) {
-                // 🔧 СПЕЦИАЛЬНАЯ ЛОГИКА для предварительного раунда
-                await this._linkPreliminaryToFirstRound_v2(client, currentRoundMatches, nextRoundMatches, bracketMath, updatePromises);
+                // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА для предварительного раунда
+                await this._linkPreliminaryToFirstRound_v3(client, currentRoundMatches, nextRoundMatches, participants, bracketMath, updatePromises);
             } else {
                 // 🔧 СТАНДАРТНАЯ ЛОГИКА для основных раундов
                 await this._linkStandardRounds(client, currentRoundMatches, nextRoundMatches, updatePromises);
@@ -266,43 +266,87 @@ class SingleEliminationEngine {
     }
     
     /**
-     * 🔧 Связывание предварительного раунда с первым раундом (улучшенная версия)
+     * 🔧 ИСПРАВЛЕННАЯ ФУНКЦИЯ: Связывание предварительного раунда с первым раундом (v3)
+     * Учитывает размещение DirectAdvancers и связывает предварительные матчи только со свободными позициями
      * @private
      */
-    static async _linkPreliminaryToFirstRound_v2(client, preliminaryMatches, firstRoundMatches, bracketMath, updatePromises) {
-        console.log(`🎯 [linkPreliminaryToFirstRound_v2] ${preliminaryMatches.length} предварительных -> ${firstRoundMatches.length} первого раунда`);
+    static async _linkPreliminaryToFirstRound_v3(client, preliminaryMatches, firstRoundMatches, participants, bracketMath, updatePromises) {
+        console.log(`🎯 [linkPreliminaryToFirstRound_v3] ${preliminaryMatches.length} предварительных -> ${firstRoundMatches.length} первого раунда`);
         console.log(`📊 DirectAdvancers: ${bracketMath.directAdvancers}, Preliminary participants: ${bracketMath.preliminaryParticipants}`);
         
-        // 🔧 ЛОГИКА: Предварительные матчи заполняют свободные позиции в первом раунде
-        // firstRoundMatches уже частично заполнены directAdvancers участниками
-        // Нужно связать каждый предварительный матч с конкретной позицией в первом раунде
+        // 🔧 ШАГ 1: Определяем план размещения DirectAdvancers в первом раунде
+        const directAdvancers = participants.slice(0, bracketMath.directAdvancers);
+        console.log(`👥 DirectAdvancers: ${directAdvancers.map(p => p.name || p.id).join(', ')}`);
         
-        let nextAvailableSlot = 0; // Индекс следующей доступной позиции в первом раунде
+        // 🔧 ШАГ 2: Создаем карту занятости позиций в первом раунде
+        // Логика: DirectAdvancers заполняют позиции team1_id в матчах первого раунда по порядку
+        const occupancyMap = [];
         
-        for (let i = 0; i < preliminaryMatches.length; i++) {
-            const preliminaryMatch = preliminaryMatches[i];
+        for (let i = 0; i < firstRoundMatches.length; i++) {
+            const match = firstRoundMatches[i];
             
-            // Находим следующий свободный слот в первом раунде
-            // (слоты уже зарезервированы для directAdvancers, остальные для победителей предварительных)
-            
-            // Простая логика: каждый предварительный матч ведет к определенной позиции
-            const targetFirstRoundIndex = Math.floor(i / 2);
-            const targetMatch = firstRoundMatches[targetFirstRoundIndex];
-            
-            if (targetMatch) {
-                const updatePromise = client.query(
-                    'UPDATE matches SET next_match_id = $1 WHERE id = $2',
-                    [targetMatch.id, preliminaryMatch.id]
-                );
-                updatePromises.push(updatePromise);
-                
-                console.log(`🎯 Предварительный матч ${preliminaryMatch.id} (${preliminaryMatch.match_number}) -> Первый раунд матч ${targetMatch.id} (${targetMatch.match_number})`);
+            if (i < bracketMath.directAdvancers) {
+                // DirectAdvancer займет team1_id в этом матче
+                occupancyMap.push({
+                    matchId: match.id,
+                    matchNumber: match.match_number,
+                    team1_occupied: true,  // DirectAdvancer
+                    team2_occupied: false, // Свободно для победителя предварительного
+                    availablePosition: 'team2_id'
+                });
+                console.log(`🎯 Матч ${match.id} (M${match.match_number}): team1_id = DirectAdvancer, team2_id = свободно`);
             } else {
-                console.error(`❌ Не найден целевой матч для предварительного матча ${preliminaryMatch.id}`);
+                // В этом матче обе позиции свободны для победителей предварительных
+                occupancyMap.push({
+                    matchId: match.id,
+                    matchNumber: match.match_number,
+                    team1_occupied: false, // Свободно для победителя предварительного
+                    team2_occupied: false, // Свободно для победителя предварительного
+                    availablePosition: 'both'
+                });
+                console.log(`🎯 Матч ${match.id} (M${match.match_number}): обе позиции свободны`);
             }
         }
         
-        console.log(`✅ Связано ${preliminaryMatches.length} предварительных матчей с первым раундом`);
+        // 🔧 ШАГ 3: Создаем план связывания предварительных матчей
+        let currentFirstRoundMatchIndex = 0;
+        let positionInMatch = 'team2_id'; // Начинаем с team2_id в первом матче (где team1_id занят DirectAdvancer)
+        
+        for (let i = 0; i < preliminaryMatches.length; i++) {
+            const preliminaryMatch = preliminaryMatches[i];
+            const occupancy = occupancyMap[currentFirstRoundMatchIndex];
+            
+            if (!occupancy) {
+                console.error(`❌ Не найдена информация о занятости для матча ${currentFirstRoundMatchIndex}`);
+                continue;
+            }
+            
+            // Связываем предварительный матч с целевым матчем первого раунда
+            const updatePromise = client.query(
+                'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                [occupancy.matchId, preliminaryMatch.id]
+            );
+            updatePromises.push(updatePromise);
+            
+            console.log(`🎯 Предварительный матч ${preliminaryMatch.id} (M${preliminaryMatch.match_number}) -> Первый раунд матч ${occupancy.matchId} (M${occupancy.matchNumber}) [${positionInMatch}]`);
+            
+            // 🔧 ШАГ 4: Переходим к следующей позиции
+            if (occupancy.team1_occupied && !occupancy.team2_occupied) {
+                // В этом матче team1_id занят DirectAdvancer, team2_id мы только что заняли
+                // Переходим к следующему матчу
+                currentFirstRoundMatchIndex++;
+                positionInMatch = 'team1_id'; // В следующем матче начинаем с team1_id
+            } else if (positionInMatch === 'team1_id') {
+                // Мы заняли team1_id, теперь занимаем team2_id в том же матче
+                positionInMatch = 'team2_id';
+            } else {
+                // Мы заняли team2_id, переходим к следующему матчу
+                currentFirstRoundMatchIndex++;
+                positionInMatch = 'team1_id';
+            }
+        }
+        
+        console.log(`✅ Связано ${preliminaryMatches.length} предварительных матчей с первым раундом (учтены DirectAdvancers)`);
     }
     
     /**
@@ -343,14 +387,15 @@ class SingleEliminationEngine {
         const updatePromises = [];
         
         if (bracketMath.needsPreliminaryRound) {
-            // 🎯 ЛОГИКА С ПРЕДВАРИТЕЛЬНЫМ РАУНДОМ
+            // 🎯 ИСПРАВЛЕННАЯ ЛОГИКА С ПРЕДВАРИТЕЛЬНЫМ РАУНДОМ
             console.log(`🎯 Турнир с предварительным раундом`);
             console.log(`📊 DirectAdvancers: ${bracketMath.directAdvancers}, Preliminary: ${bracketMath.preliminaryParticipants}`);
             
-            // 1. Размещаем участников, проходящих напрямую, в первом раунде
+            // 1. Размещаем участников, проходящих напрямую, в первом раунде (СОГЛАСОВАННО С ЛОГИКОЙ СВЯЗЫВАНИЯ)
             const directParticipants = participants.slice(0, bracketMath.directAdvancers);
             const firstRoundMatches = allMatches.filter(m => m.round === 1);
             
+            // 🔧 ВАЖНО: DirectAdvancers размещаются в team1_id матчей первого раунда ПО ПОРЯДКУ
             for (let i = 0; i < directParticipants.length && i < firstRoundMatches.length; i++) {
                 const participant = directParticipants[i];
                 const match = firstRoundMatches[i];
@@ -361,7 +406,7 @@ class SingleEliminationEngine {
                 );
                 updatePromises.push(updatePromise);
                 
-                console.log(`👤 DirectAdvancer: ${participant.name || participant.id} -> Первый раунд матч ${match.id}`);
+                console.log(`👤 DirectAdvancer: ${participant.name || participant.id} -> Первый раунд матч ${match.id} (team1_id) [согласованно с логикой связывания]`);
             }
             
             // 2. Размещаем остальных участников в предварительном раунде
@@ -426,7 +471,7 @@ class SingleEliminationEngine {
         // Выполняем все обновления размещения участников
         if (updatePromises.length > 0) {
             await Promise.all(updatePromises);
-            console.log(`✅ Размещено участников: ${updatePromises.length} обновлений`);
+            console.log(`✅ Размещено участников: ${updatePromises.length} обновлений (согласованно с логикой связывания)`);
         }
     }
     
