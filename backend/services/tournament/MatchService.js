@@ -223,6 +223,39 @@ class MatchService {
             
             const matchData = matchResult.rows[0];
             console.log(`✅ [safeUpdateMatchResult] Матч получен: ${matchData.team1_id} vs ${matchData.team2_id}`);
+            console.log(`🔍 [safeUpdateMatchResult] Диагностика связей: next_match_id=${matchData.next_match_id}, loser_next_match_id=${matchData.loser_next_match_id}, round=${matchData.round}, match_number=${matchData.match_number}`);
+            
+            // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Если next_match_id null, проверим в базе еще раз
+            if (!matchData.next_match_id) {
+                console.log(`🔍 [safeUpdateMatchResult] next_match_id = null, проверяем связи в базе...`);
+                const linkCheckResult = await client.query(
+                    `SELECT m1.id, m1.round, m1.match_number, m1.next_match_id,
+                            m2.id as target_match_id, m2.round as target_round, m2.match_number as target_match_number
+                     FROM matches m1
+                     LEFT JOIN matches m2 ON m1.next_match_id = m2.id
+                     WHERE m1.id = $1`,
+                    [matchId]
+                );
+                
+                if (linkCheckResult.rows.length > 0) {
+                    const linkInfo = linkCheckResult.rows[0];
+                    console.log(`🔍 [safeUpdateMatchResult] Связи матча:`, {
+                        match_id: linkInfo.id,
+                        round: linkInfo.round,
+                        match_number: linkInfo.match_number,
+                        next_match_id: linkInfo.next_match_id,
+                        target_exists: !!linkInfo.target_match_id,
+                        target_round: linkInfo.target_round,
+                        target_match_number: linkInfo.target_match_number
+                    });
+                    
+                    // Обновляем matchData если найден next_match_id
+                    if (linkInfo.next_match_id && !matchData.next_match_id) {
+                        matchData.next_match_id = linkInfo.next_match_id;
+                        console.log(`🔄 [safeUpdateMatchResult] Обновлен next_match_id из дополнительного запроса: ${linkInfo.next_match_id}`);
+                    }
+                }
+            }
 
             // 2. Атомарное обновление результата матча
             console.log(`💾 [safeUpdateMatchResult] Обновляем результат матча ${matchId}...`);
@@ -234,23 +267,27 @@ class MatchService {
                 [winnerId, score1, score2, JSON.stringify(mapsData), matchId]
             );
             
+            let matchWasUpdated = false;
             if (updateResult.rows.length === 0) {
-                console.log(`⚠️ [safeUpdateMatchResult] Результат не изменился или матч уже обновлен`);
-                await client.query('ROLLBACK');
-                return {
-                    success: true,
-                    message: 'Результат матча не изменился',
-                    duration: Date.now() - startTime,
-                    updated: false
-                };
+                console.log(`⚠️ [safeUpdateMatchResult] Результат не изменился, но проверяем продвижение команд...`);
+                // Получаем текущие данные матча даже если обновления не было
+                const currentMatchResult = await client.query(
+                    'SELECT * FROM matches WHERE id = $1',
+                    [matchId]
+                );
+                if (currentMatchResult.rows.length === 0) {
+                    throw new Error(`Матч ${matchId} не найден после попытки обновления`);
+                }
+                matchWasUpdated = false;
+            } else {
+                console.log(`✅ [safeUpdateMatchResult] Результат матча обновлен`);
+                matchWasUpdated = true;
             }
-            
-            console.log(`✅ [safeUpdateMatchResult] Результат матча обновлен`);
 
-            // 3. Упрощенное продвижение команд (если необходимо)
+            // 3. Продвижение команд (выполняется ВСЕГДА если есть winner_team_id)
             let advancementResults = [];
             
-            if (matchData.next_match_id && winnerId) {
+            if (winnerId && matchData.next_match_id) {
                 console.log(`🏆 [safeUpdateMatchResult] Продвигаем победителя ${winnerId} в матч ${matchData.next_match_id}...`);
                 const advanceResult = await this._simpleAdvanceTeam(
                     winnerId, 
@@ -273,6 +310,15 @@ class MatchService {
                     console.log(`⚠️ [safeUpdateMatchResult] Нет winner_team_id для продвижения`);
                 } else if (!matchData.next_match_id) {
                     console.log(`⚠️ [safeUpdateMatchResult] У матча ${matchId} нет next_match_id (возможно, финальный матч)`);
+                    // Проверим в базе данных
+                    const matchCheckResult = await client.query(
+                        'SELECT next_match_id, round, match_number FROM matches WHERE id = $1',
+                        [matchId]
+                    );
+                    if (matchCheckResult.rows.length > 0) {
+                        const matchInfo = matchCheckResult.rows[0];
+                        console.log(`🔍 [safeUpdateMatchResult] Данные матча: раунд ${matchInfo.round}, матч №${matchInfo.match_number}, next_match_id=${matchInfo.next_match_id}`);
+                    }
                 }
             }
 
@@ -304,7 +350,8 @@ class MatchService {
                 match_id: matchId,
                 winner_team_id: winnerId,
                 score: `${score1}:${score2}`,
-                maps_count: mapsData?.length || 0
+                maps_count: mapsData?.length || 0,
+                match_updated: matchWasUpdated
             }, client);
 
             // 6. Коммит транзакции
@@ -315,10 +362,11 @@ class MatchService {
             
             return {
                 success: true,
-                message: 'Результат матча обновлен успешно',
+                message: matchWasUpdated ? 'Результат матча обновлен успешно' : 'Результат матча не изменился, но продвижение выполнено',
                 duration: duration,
-                updated: true,
-                advancementResults
+                updated: matchWasUpdated,
+                advancementResults,
+                advancementCount: advancementResults.filter(r => r.advanced).length
             };
 
         } catch (error) {
