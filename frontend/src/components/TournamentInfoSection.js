@@ -357,7 +357,7 @@ const TournamentInfoSection = ({
     const openFullRegulations = () => {
         if (!regulations) return;
         
-        // Создаем HTML для полного регламента
+        // Создаем HTML для полного регламента в стиле проекта
         const fullRegulationsHTML = `
             <!DOCTYPE html>
             <html lang="ru">
@@ -366,55 +366,163 @@ const TournamentInfoSection = ({
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Регламент турнира - ${tournament?.name || 'Турнир'}</title>
                 <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                        background-color: #000000;
+                        color: #ffffff;
+                        line-height: 1.6;
+                        min-height: 100vh;
+                        padding: 40px 20px;
+                    }
+                    
+                    .container {
                         max-width: 800px;
                         margin: 0 auto;
-                        padding: 20px;
-                        line-height: 1.6;
-                        background-color: #f5f5f5;
-                        color: #333;
                     }
+                    
                     .header {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        color: white;
-                        padding: 30px;
-                        border-radius: 10px;
-                        margin-bottom: 30px;
                         text-align: center;
+                        margin-bottom: 40px;
+                        padding-bottom: 20px;
+                        border-bottom: 1px solid #333333;
                     }
+                    
                     .header h1 {
-                        margin: 0;
-                        font-size: 28px;
+                        font-size: 2rem;
+                        font-weight: 300;
+                        letter-spacing: -0.025em;
+                        margin-bottom: 8px;
+                        color: #ffffff;
                     }
-                    .header p {
-                        margin: 10px 0 0 0;
-                        opacity: 0.9;
+                    
+                    .header .tournament-name {
+                        font-size: 1.125rem;
+                        color: #e0e0e0;
+                        font-weight: 400;
                     }
+                    
+                    .header .logo {
+                        display: inline-block;
+                        margin-right: 12px;
+                        font-size: 2rem;
+                        color: #ef4444;
+                    }
+                    
                     .content {
-                        background: white;
-                        padding: 30px;
-                        border-radius: 10px;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        background: #111111;
+                        border: 1px solid #2a2a2a;
+                        border-radius: 8px;
+                        padding: 32px;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
                     }
+                    
                     .regulation-text {
                         white-space: pre-wrap;
-                        font-size: 16px;
+                        font-size: 0.875rem;
                         line-height: 1.8;
+                        color: #e0e0e0;
                     }
+                    
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 1px solid #333333;
+                        color: #666666;
+                        font-size: 0.75rem;
+                    }
+                    
+                    .footer .accent {
+                        color: #ef4444;
+                        font-weight: 500;
+                    }
+                    
+                    /* Прокрутка в стиле проекта */
+                    ::-webkit-scrollbar {
+                        width: 8px;
+                    }
+                    
+                    ::-webkit-scrollbar-track {
+                        background: #1a1a1a;
+                    }
+                    
+                    ::-webkit-scrollbar-thumb {
+                        background: #333333;
+                        border-radius: 4px;
+                    }
+                    
+                    ::-webkit-scrollbar-thumb:hover {
+                        background: #555555;
+                    }
+                    
+                    /* Адаптивность */
+                    @media (max-width: 768px) {
+                        body {
+                            padding: 20px 16px;
+                        }
+                        
+                        .header h1 {
+                            font-size: 1.5rem;
+                        }
+                        
+                        .content {
+                            padding: 24px;
+                        }
+                        
+                        .regulation-text {
+                            font-size: 0.8rem;
+                        }
+                    }
+                    
                     @media print {
-                        body { background-color: white; }
-                        .header { background: #667eea; }
+                        body {
+                            background-color: white;
+                            color: black;
+                        }
+                        
+                        .content {
+                            background: white;
+                            border: 1px solid #ddd;
+                            box-shadow: none;
+                        }
+                        
+                        .regulation-text {
+                            color: black;
+                        }
+                        
+                        .header .logo {
+                            color: #333;
+                        }
+                        
+                        .footer .accent {
+                            color: #333;
+                        }
                     }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <h1>📋 Регламент турнира</h1>
-                    <p>${tournament?.name || 'Турнир'}</p>
-                </div>
-                <div class="content">
-                    <div class="regulation-text">${regulations.replace(/\n/g, '<br>')}</div>
+                <div class="container">
+                    <div class="header">
+                        <h1>
+                            <span class="logo">📋</span>
+                            Регламент турнира
+                        </h1>
+                        <div class="tournament-name">${tournament?.name || 'Турнир'}</div>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="regulation-text">${regulations.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    
+                    <div class="footer">
+                        Создано в <span class="accent">1337 Community</span> Tournament System
+                    </div>
                 </div>
             </body>
             </html>
@@ -775,18 +883,6 @@ const TournamentInfoSection = ({
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                            
-                                            {/* Индикатор сокращения */}
-                                            <div className="truncation-indicator">
-                                                <span>📄 Показаны первые 400 символов</span>
-                                                <button 
-                                                    className="view-full-btn"
-                                                    onClick={openFullRegulations}
-                                                    title="Открыть полный регламент в новой вкладке"
-                                                >
-                                                    👁️ Показать полный регламент
-                                                </button>
                                             </div>
                                         </div>
                                     ) : (

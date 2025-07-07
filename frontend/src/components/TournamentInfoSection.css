@@ -1188,43 +1188,6 @@
     transform: translateY(-1px);
 }
 
-.truncation-indicator {
-    margin-top: 16px;
-    padding: 12px;
-    background: #0f0f0f;
-    border: 1px solid #333333;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-}
-
-.truncation-indicator span {
-    color: #888888;
-    font-size: 0.75rem;
-    font-style: italic;
-}
-
-.view-full-btn {
-    background: transparent;
-    color: #3b82f6;
-    border: 1px solid #3b82f6;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.view-full-btn:hover {
-    background: #3b82f6;
-    color: #ffffff;
-    transform: translateY(-1px);
-}
-
 @keyframes fadeInTooltip {
     from {
         opacity: 0;
@@ -1248,15 +1211,5 @@
     
     .regulations-tooltip::after {
         display: none;
-    }
-    
-    .truncation-indicator {
-        flex-direction: column;
-        gap: 8px;
-        text-align: center;
-    }
-    
-    .view-full-btn {
-        width: 100%;
     }
 } 
