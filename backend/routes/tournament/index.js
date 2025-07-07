@@ -42,6 +42,9 @@ const router = express.Router();
 // Получение списка игр (ДОЛЖНО БЫТЬ ПЕРЕД /:id!)
 router.get('/games', TournamentController.getGames);
 
+// 🎯 Получение доступных типов распределения (ДОЛЖНО БЫТЬ ПЕРЕД /:id!)
+router.get('/seeding-types', BracketController.getSeedingTypes);
+
 // Получение всех турниров
 router.get('/', TournamentController.getAllTournaments);
 
@@ -147,9 +150,6 @@ router.get('/:id/seeding-preview', authenticateToken, verifyAdminOrCreator, Brac
 
 // 📊 Статистика турнирной сетки
 router.get('/:id/bracket-statistics', authenticateToken, verifyAdminOrCreator, BracketController.getBracketStatistics);
-
-// 🎯 Получение доступных типов распределения
-router.get('/seeding-types', BracketController.getSeedingTypes);
 
 // 🗑️ Очистка результатов турнирной сетки
 router.post('/:id/clear-bracket-results', authenticateToken, verifyAdminOrCreator, BracketController.clearBracketResults);
