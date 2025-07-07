@@ -1299,9 +1299,7 @@ function TournamentDetails() {
         // Разрешаем редактирование только если:
         // 1. Пользователь авторизован И (является создателем ИЛИ админом)
         // 2. Турнир находится в статусе "ongoing" (Идет)
-        return user && 
-               (isCreator || adminRequestStatus === 'accepted') && 
-               tournament?.status === 'ongoing';
+        return user && (isCreator || adminRequestStatus === 'accepted');
     }, [user, isCreator, adminRequestStatus, tournament?.status]);
 
     // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (ЧЕРЕЗ ХУК)

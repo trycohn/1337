@@ -217,28 +217,49 @@ class TournamentService {
         await this._checkTournamentAccess(tournamentId, userId);
 
         const tournament = await TournamentRepository.getById(tournamentId);
+        
+        // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА СТАТУСА ТУРНИРА
+        console.log(`🔍 [startTournament] Диагностика турнира ${tournamentId}:`, {
+            id: tournament?.id,
+            name: tournament?.name,
+            status: tournament?.status,
+            format: tournament?.format,
+            created_by: tournament?.created_by,
+            userId: userId,
+            hasPermission: tournament?.created_by === userId
+        });
+        
         if (tournament.status !== 'active') {
-            throw new Error('Можно начать только активный турнир');
+            const errorMessage = `Можно начать только активный турнир. Текущий статус: "${tournament.status}"`;
+            console.error(`❌ [startTournament] ${errorMessage}`);
+            throw new Error(errorMessage);
         }
 
         // Проверка наличия сгенерированной сетки
         const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
+        console.log(`🔍 [startTournament] Количество матчей в турнире: ${matchesCount}`);
+        
         if (matchesCount === 0) {
-            throw new Error('Перед началом турнира необходимо сгенерировать сетку');
+            const errorMessage = 'Перед началом турнира необходимо сгенерировать сетку';
+            console.error(`❌ [startTournament] ${errorMessage}`);
+            throw new Error(errorMessage);
         }
 
         // Изменение статуса турнира
+        console.log(`🔄 [startTournament] Меняем статус турнира с "${tournament.status}" на "in_progress"`);
         await TournamentRepository.updateStatus(tournamentId, 'in_progress');
 
         // Получаем обновленные данные турнира
         const updatedTournament = await this.getTournamentById(tournamentId);
+        console.log(`✅ [startTournament] Турнир обновлен, новый статус: "${updatedTournament.status}"`);
 
         // Отправляем обновление через WebSocket
         broadcastTournamentUpdate(tournamentId, updatedTournament);
 
         // Логируем старт турнира
         await logTournamentEvent(tournamentId, userId, 'tournament_started', {
-            participantCount: updatedTournament.participant_count
+            participantCount: updatedTournament.participant_count,
+            matchesCount: matchesCount
         });
 
         // Отправляем объявление в чат турнира
