@@ -411,6 +411,12 @@
 }
 
 /* === ФОРМЫ === */
+.form-grid-3 {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
 .modal-system-form-group {
     margin-bottom: 20px;
 }
