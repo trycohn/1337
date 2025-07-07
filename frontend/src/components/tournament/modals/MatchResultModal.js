@@ -200,22 +200,38 @@ const MatchResultModal = ({
 
     // 🎯 ФУНКЦИЯ ВЫБОРА ПОБЕДИТЕЛЯ
     const selectWinner = useCallback((team) => {
-        console.log('🏆 Выбран победитель:', team);
+        console.log('🏆 Выбран победитель вручную:', {
+            selectedTeam: team,
+            previousWinner: selectedWinner,
+            team1Name: selectedMatch?.team1_name || 'Команда 1',
+            team2Name: selectedMatch?.team2_name || 'Команда 2',
+            currentScore: `${matchResultData.score1}:${matchResultData.score2}`
+        });
+        
         setSelectedWinner(team);
         
         // Автоматически обновляем счет, если нужно
         if (team === 'team1' && parseInt(matchResultData.score1 || 0) <= parseInt(matchResultData.score2 || 0)) {
+            const newScore = Math.max(1, parseInt(matchResultData.score2 || 0) + 1);
+            console.log(`🎯 Автоматически увеличиваем счет команды 1 до ${newScore}`);
             setMatchResultData(prev => ({
                 ...prev,
-                score1: Math.max(1, parseInt(prev.score2 || 0) + 1)
+                score1: newScore
             }));
         } else if (team === 'team2' && parseInt(matchResultData.score2 || 0) <= parseInt(matchResultData.score1 || 0)) {
+            const newScore = Math.max(1, parseInt(matchResultData.score1 || 0) + 1);
+            console.log(`🎯 Автоматически увеличиваем счет команды 2 до ${newScore}`);
             setMatchResultData(prev => ({
                 ...prev,
-                score2: Math.max(1, parseInt(prev.score1 || 0) + 1)
+                score2: newScore
             }));
         }
-    }, [matchResultData, setMatchResultData]);
+        
+        // Временно отключаем автоматический расчет при ручном выборе
+        if (autoCalculateScore) {
+            console.log('⚠️ Внимание: При ручном выборе победителя автоматический расчет может конфликтовать');
+        }
+    }, [matchResultData, setMatchResultData, selectedWinner, selectedMatch, autoCalculateScore]);
 
     // 🎯 РАСЧЕТ СТАТИСТИКИ ПО КАРТАМ
     const getMapStatistics = useCallback(() => {
@@ -282,22 +298,36 @@ const MatchResultModal = ({
             score2: team2Wins
         }));
         
-        // Автоматически определяем победителя
+        // 🔧 ИСПРАВЛЕНО: Улучшенное автоматическое определение победителя
+        // 🏆 ПРИОРИТЕТНЫЙ КРИТЕРИЙ: Количество выигранных карт важнее общего счета
+        let newWinner = null;
         if (team1Wins > team2Wins) {
-            setSelectedWinner('team1');
+            newWinner = 'team1';
         } else if (team2Wins > team1Wins) {
-            setSelectedWinner('team2');
-        } else {
-            setSelectedWinner(null);
+            newWinner = 'team2';
+        }
+        // Если равный счет - оставляем null (ничья)
+        
+        // Обновляем победителя только если он изменился
+        if (newWinner !== selectedWinner) {
+            console.log('🏆 Автоматически обновляем победителя (ПРИОРИТЕТ: карты):', {
+                previousWinner: selectedWinner,
+                newWinner: newWinner,
+                reason: 'calculateOverallScoreFromMaps - карты имеют приоритет'
+            });
+            setSelectedWinner(newWinner);
         }
         
         console.log('📊 Автоматический расчет счета:', {
             mapsPlayed: mapsData.length,
             team1Wins,
             team2Wins,
-            winner: team1Wins > team2Wins ? 'team1' : team2Wins > team1Wins ? 'team2' : 'draw'
+            previousWinner: selectedWinner,
+            newWinner: newWinner,
+            team1Name: selectedMatch?.team1_name || 'Команда 1',
+            team2Name: selectedMatch?.team2_name || 'Команда 2'
         });
-    }, [matchResultData.maps_data, setMatchResultData]);
+    }, [matchResultData.maps_data, setMatchResultData, selectedWinner, selectedMatch]);
 
     // 🎯 ОТСЛЕЖИВАНИЕ ИЗМЕНЕНИЙ РЕЗУЛЬТАТОВ ПО КАРТАМ
     useEffect(() => {
@@ -348,19 +378,75 @@ const MatchResultModal = ({
     // 🎯 ОБРАБОТЧИКИ СОБЫТИЙ
     const handleScoreChange = (team, value) => {
         const score = parseInt(value) || 0; // Убираем ограничение Math.max(0, ...)
+        const scoreField = team === 1 ? 'score1' : 'score2';
+        const otherScoreField = team === 1 ? 'score2' : 'score1';
+        const otherScore = parseInt(matchResultData[otherScoreField]) || 0;
+        
+        console.log('📊 Изменение счета:', {
+            team: team,
+            newScore: score,
+            otherTeamScore: otherScore,
+            field: scoreField
+        });
+        
         setMatchResultData(prev => ({
             ...prev,
-            [team === 1 ? 'score1' : 'score2']: score
+            [scoreField]: score
         }));
         
-        // Автоопределение победителя
-        const otherScore = team === 1 ? parseInt(matchResultData.score2) || 0 : parseInt(matchResultData.score1) || 0;
-        if (score > otherScore) {
-            setSelectedWinner(team === 1 ? 'team1' : 'team2');
-        } else if (score < otherScore) {
-            setSelectedWinner(team === 1 ? 'team2' : 'team1');
-        } else {
-            setSelectedWinner(null);
+        // 🔧 ИСПРАВЛЕНО: Улучшенное автоопределение победителя при изменении счета
+        let newWinner = selectedWinner;
+        
+        // 🏆 УЧИТЫВАЕМ ПРИОРИТЕТ КАРТ: Если есть карты, они важнее общего счета
+        const mapsData = matchResultData.maps_data || [];
+        let shouldUpdateWinnerByScore = true;
+        
+        if (mapsData.length > 0) {
+            // Если есть карты, проверяем их результаты
+            let team1MapWins = 0;
+            let team2MapWins = 0;
+            
+            mapsData.forEach(map => {
+                const mapScore1 = parseInt(map.score1) || 0;
+                const mapScore2 = parseInt(map.score2) || 0;
+                
+                if (mapScore1 > mapScore2) {
+                    team1MapWins++;
+                } else if (mapScore2 > mapScore1) {
+                    team2MapWins++;
+                }
+            });
+            
+            // Если есть определенный победитель по картам, не меняем его
+            if (team1MapWins !== team2MapWins) {
+                console.log('🗺️ Карты определяют победителя, игнорируем изменение общего счета');
+                shouldUpdateWinnerByScore = false;
+            }
+        }
+        
+        // Обновляем победителя по счету только если карты не определяют результат
+        if (shouldUpdateWinnerByScore) {
+            if (score > otherScore) {
+                newWinner = team === 1 ? 'team1' : 'team2';
+            } else if (score < otherScore) {
+                newWinner = team === 1 ? 'team2' : 'team1';
+            } else if (score === otherScore) {
+                // При равном счете сбрасываем победителя только если не было ручного выбора
+                if (autoCalculateScore) {
+                    newWinner = null;
+                }
+            }
+            
+            // Обновляем победителя только если изменился
+            if (newWinner !== selectedWinner) {
+                console.log('🏆 Автоматически обновляем победителя при изменении счета:', {
+                    previousWinner: selectedWinner,
+                    newWinner: newWinner,
+                    reason: 'handleScoreChange - общий счет (нет карт или равные победы на картах)',
+                    scores: `${team === 1 ? score : otherScore}:${team === 2 ? score : otherScore}`
+                });
+                setSelectedWinner(newWinner);
+            }
         }
     };
 
@@ -468,16 +554,95 @@ const MatchResultModal = ({
             return;
         }
         
-        // Добавляем информацию о победителе
+        // 🔧 ИСПРАВЛЕНО: УЛУЧШЕННАЯ ЛОГИКА АВТОМАТИЧЕСКОГО ОПРЕДЕЛЕНИЯ ПОБЕДИТЕЛЯ
+        let finalWinner = selectedWinner;
+        
+        console.log('🏆 Определение победителя:', {
+            currentSelectedWinner: selectedWinner,
+            score1: matchResultData.score1,
+            score2: matchResultData.score2,
+            autoCalculateScore: autoCalculateScore,
+            mapsCount: (matchResultData.maps_data || []).length
+        });
+        
+        // Если победитель не выбран вручную, определяем автоматически
+        if (!finalWinner) {
+            const mapsData = matchResultData.maps_data || [];
+            
+            // 🔧 ПРИОРИТЕТ 1: Определяем по картам (если есть)
+            if (mapsData.length > 0) {
+                let team1MapWins = 0;
+                let team2MapWins = 0;
+                
+                mapsData.forEach(map => {
+                    const mapScore1 = parseInt(map.score1) || 0;
+                    const mapScore2 = parseInt(map.score2) || 0;
+                    
+                    if (mapScore1 > mapScore2) {
+                        team1MapWins++;
+                    } else if (mapScore2 > mapScore1) {
+                        team2MapWins++;
+                    }
+                });
+                
+                console.log('🗺️ Приоритетное определение победителя по картам:', {
+                    team1MapWins,
+                    team2MapWins,
+                    mapsPlayed: mapsData.length
+                });
+                
+                if (team1MapWins > team2MapWins) {
+                    finalWinner = 'team1';
+                    console.log('🏆 Победитель определен по картам: team1');
+                } else if (team2MapWins > team1MapWins) {
+                    finalWinner = 'team2';
+                    console.log('🏆 Победитель определен по картам: team2');
+                }
+                // Если равное количество побед на картах, переходим к общему счету
+            }
+            
+            // 🔧 ПРИОРИТЕТ 2: Если карт нет или равное количество побед - определяем по общему счету
+            if (!finalWinner) {
+                const score1 = parseInt(matchResultData.score1) || 0;
+                const score2 = parseInt(matchResultData.score2) || 0;
+                
+                console.log('🤖 Определение победителя по общему счету:', { score1, score2 });
+                
+                if (score1 > score2) {
+                    finalWinner = 'team1';
+                    console.log('🏆 Победитель определен по общему счету: team1');
+                } else if (score2 > score1) {
+                    finalWinner = 'team2';
+                    console.log('🏆 Победитель определен по общему счету: team2');
+                } else {
+                    console.log('🤝 Ничья - равный счет и равное количество побед на картах');
+                    finalWinner = null;
+                }
+            }
+        }
+        
+        // Обновляем состояние если победитель изменился
+        if (finalWinner !== selectedWinner) {
+            console.log('🔄 Обновляем selectedWinner:', finalWinner);
+            setSelectedWinner(finalWinner);
+        }
+        
+        // 🔧 ИСПРАВЛЕНО: Передаем информацию о winner_team_id для бэкенда
         const submitData = {
             ...matchResultData,
-            winner: selectedWinner
+            winner: finalWinner,
+            // Добавляем явное указание winner_team_id для бэкенда
+            winner_team_id: finalWinner === 'team1' ? selectedMatch.team1_id : 
+                           finalWinner === 'team2' ? selectedMatch.team2_id : null
         };
         
-        console.log('💾 Сохраняем результат матча:', {
+        console.log('💾 Финальные данные для сохранения:', {
             matchId: matchId,
-            submitData: submitData,
-            hasOnSave: typeof onSave === 'function'
+            finalWinner: finalWinner,
+            winner_team_id: submitData.winner_team_id,
+            score: `${submitData.score1}:${submitData.score2}`,
+            mapsCount: (submitData.maps_data || []).length,
+            submitData: submitData
         });
         
         if (typeof onSave === 'function') {
@@ -611,6 +776,20 @@ const MatchResultModal = ({
                                     >
                                         🔄 Сбросить выбор победителя
                                     </button>
+                                </div>
+                            )}
+                            
+                            {/* 🆕 Информация об автоматическом определении победителя */}
+                            {!selectedWinner && (
+                                <div className="modal-system-info modal-system-mt-20">
+                                    <p className="modal-system-bold">🤖 Автоматическое определение победителя</p>
+                                    <p>Если вы не выберете победителя вручную, он будет определен автоматически по приоритетам:</p>
+                                    <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+                                        <li><strong>1️⃣ По количеству выигранных карт</strong> (главный критерий)</li>
+                                        <li><strong>2️⃣ По общему счету матча</strong> (если карт нет или равное количество побед)</li>
+                                        <li><strong>3️⃣ Ничья</strong> - если все показатели равны</li>
+                                    </ul>
+                                    <p className="modal-system-text-sm">💡 В турнирах CS2 количество выигранных карт важнее общего фрагового счета</p>
                                 </div>
                             )}
                         </div>
