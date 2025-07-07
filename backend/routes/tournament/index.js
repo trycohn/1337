@@ -98,6 +98,9 @@ router.get('/:id/original-participants', MixTeamController.getOriginalParticipan
 // Запуск турнира
 router.post('/:id/start', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.startTournament);
 
+// Завершение турнира
+router.post('/:id/end', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.endTournament);
+
 // 🛡️ **АДМИНИСТРАТИВНЫЕ ФУНКЦИИ**
 
 // Запрос на администрирование

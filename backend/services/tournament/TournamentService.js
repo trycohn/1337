@@ -273,6 +273,72 @@ class TournamentService {
     }
 
     /**
+     * Завершение турнира
+     */
+    static async endTournament(tournamentId, userId) {
+        console.log(`🏁 TournamentService: Завершение турнира ${tournamentId}`);
+
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        
+        // 🔍 ДЕТАЛЬНАЯ ДИАГНОСТИКА СТАТУСА ТУРНИРА
+        console.log(`🔍 [endTournament] Диагностика турнира ${tournamentId}:`, {
+            id: tournament?.id,
+            name: tournament?.name,
+            status: tournament?.status,
+            format: tournament?.format,
+            created_by: tournament?.created_by,
+            userId: userId,
+            hasPermission: tournament?.created_by === userId
+        });
+        
+        if (tournament.status !== 'in_progress') {
+            const errorMessage = `Можно завершить только турнир в процессе. Текущий статус: "${tournament.status}"`;
+            console.error(`❌ [endTournament] ${errorMessage}`);
+            throw new Error(errorMessage);
+        }
+
+        // Проверка наличия сгенерированной сетки
+        const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
+        console.log(`🔍 [endTournament] Количество матчей в турнире: ${matchesCount}`);
+        
+        if (matchesCount === 0) {
+            const errorMessage = 'Нельзя завершить турнир без сгенерированной сетки';
+            console.error(`❌ [endTournament] ${errorMessage}`);
+            throw new Error(errorMessage);
+        }
+
+        // Изменение статуса турнира на завершенный
+        console.log(`🔄 [endTournament] Меняем статус турнира с "${tournament.status}" на "completed"`);
+        await TournamentRepository.updateStatus(tournamentId, 'completed');
+
+        // Получаем обновленные данные турнира
+        const updatedTournament = await this.getTournamentById(tournamentId);
+        console.log(`✅ [endTournament] Турнир обновлен, новый статус: "${updatedTournament.status}"`);
+
+        // Отправляем обновление через WebSocket
+        broadcastTournamentUpdate(tournamentId, updatedTournament);
+
+        // Логируем завершение турнира
+        await logTournamentEvent(tournamentId, userId, 'tournament_ended', {
+            participantCount: updatedTournament.participant_count,
+            matchesCount: matchesCount,
+            endedBy: userId
+        });
+
+        // Отправляем объявление в чат турнира
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `Турнир "${updatedTournament.name}" завершен`
+        );
+
+        console.log('✅ TournamentService: Турнир завершен');
+        return updatedTournament;
+    }
+
+    /**
      * Получение списка игр
      */
     static async getGames() {
