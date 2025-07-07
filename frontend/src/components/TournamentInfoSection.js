@@ -41,32 +41,18 @@ const TournamentInfoSection = ({
         setRegulations(tournament?.rules || '');
     }, [tournament?.description, tournament?.rules]);
 
-    // 🆕 ДОПОЛНИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ для обновлений в реальном времени
-    // Синхронизируем локальное состояние с актуальными данными турнира
+    // 🔧 УПРОЩЕННАЯ СИНХРОНИЗАЦИЯ: только для случаев когда турнир полностью обновился
     useEffect(() => {
-        // Синхронизируем описание только если мы не в режиме редактирования
-        if (!isEditingDescription && tournament?.description !== description) {
-            console.log('🔄 Синхронизация описания:', {
-                tournamentDescription: tournament?.description,
-                localDescription: description,
-                isEditingDescription
+        if (tournament?.id && !isEditingDescription && !isEditingRegulations) {
+            console.log('🔄 Полная синхронизация с обновленными данными турнира:', {
+                tournamentId: tournament.id,
+                tournamentRules: tournament?.rules,
+                tournamentDescription: tournament?.description
             });
             setDescription(tournament?.description || '');
-        }
-    }, [tournament?.description, isEditingDescription, description]);
-
-    useEffect(() => {
-        // Синхронизируем регламент только если мы не в режиме редактирования
-        if (!isEditingRegulations && tournament?.rules !== regulations) {
-            console.log('🔄 Синхронизация регламента:', {
-                tournamentRules: tournament?.rules,
-                localRegulations: regulations,
-                isEditingRegulations,
-                areEqual: tournament?.rules === regulations
-            });
             setRegulations(tournament?.rules || '');
         }
-    }, [tournament?.rules, isEditingRegulations, regulations]);
+    }, [tournament]);
 
     // 🆕 Проверка, является ли пользователь участником
     const isUserParticipant = () => {
@@ -324,13 +310,19 @@ const TournamentInfoSection = ({
             const data = await response.json();
 
             if (response.ok) {
-                console.log('✅ Описание успешно сохранено на сервере:', description);
+                console.log('✅ Описание успешно сохранено на сервере:', data);
                 
-                // 🔧 УЛУЧШЕННАЯ ЛОГИКА ОБНОВЛЕНИЯ СОСТОЯНИЯ
-                // 1. Сначала выходим из режима редактирования
+                // 1. Выходим из режима редактирования
                 setIsEditingDescription(false);
                 
-                // 2. Обновляем данные турнира если передан колбэк
+                // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${tournament.id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                console.log('🗑️ Кеш турнира очищен для получения актуальных данных');
+                
+                // 2. Обновляем данные турнира
                 if (onParticipationUpdate) {
                     console.log('🔄 Вызываем onParticipationUpdate для обновления данных турнира');
                     await onParticipationUpdate();
@@ -338,10 +330,6 @@ const TournamentInfoSection = ({
                 } else {
                     console.warn('⚠️ onParticipationUpdate не предоставлен');
                 }
-                
-                // 3. Принудительно синхронизируем локальное состояние с сохраненными данными
-                console.log('🔄 Принудительная синхронизация локального состояния описания');
-                setDescription(description); // Оставляем текущее сохраненное значение
                 
                 console.log('✅ Описание успешно сохранено и состояние обновлено');
             } else {
@@ -380,13 +368,19 @@ const TournamentInfoSection = ({
             const data = await response.json();
 
             if (response.ok) {
-                console.log('✅ Регламент успешно сохранен на сервере:', regulations);
+                console.log('✅ Регламент успешно сохранен на сервере:', data);
                 
-                // 🔧 УЛУЧШЕННАЯ ЛОГИКА ОБНОВЛЕНИЯ СОСТОЯНИЯ
-                // 1. Сначала выходим из режима редактирования
+                // 1. Выходим из режима редактирования
                 setIsEditingRegulations(false);
                 
-                // 2. Обновляем данные турнира если передан колбэк
+                // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${tournament.id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                console.log('🗑️ Кеш турнира очищен для получения актуальных данных');
+                
+                // 2. Обновляем данные турнира
                 if (onParticipationUpdate) {
                     console.log('🔄 Вызываем onParticipationUpdate для обновления данных турнира');
                     await onParticipationUpdate();
@@ -394,11 +388,6 @@ const TournamentInfoSection = ({
                 } else {
                     console.warn('⚠️ onParticipationUpdate не предоставлен');
                 }
-                
-                // 3. Принудительно синхронизируем локальное состояние с сохраненными данными
-                // Это гарантирует, что UI отображает актуальные данные даже если props не обновились
-                console.log('🔄 Принудительная синхронизация локального состояния');
-                setRegulations(regulations); // Оставляем текущее сохраненное значение
                 
                 console.log('✅ Регламент успешно сохранен и состояние обновлено');
             } else {
