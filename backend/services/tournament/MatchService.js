@@ -142,6 +142,25 @@ class MatchService {
             throw new Error('Результат матча не изменился');
         }
 
+        // 🛡️ ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА ЦЕЛОСТНОСТИ (быстрая, без транзакции)
+        const client = await pool.connect();
+        try {
+            // Получаем расширенные данные матча для проверки
+            const matchWithLinks = await client.query(
+                `SELECT m.*, t.format as tournament_format 
+                 FROM matches m 
+                 JOIN tournaments t ON m.tournament_id = t.id 
+                 WHERE m.id = $1`,
+                [matchId]
+            );
+            
+            if (matchWithLinks.rows.length > 0) {
+                await this._validateTournamentIntegrity(client, matchWithLinks.rows[0], finalWinnerTeamId, resultData.score1, resultData.score2);
+            }
+        } finally {
+            client.release();
+        }
+
         // 🔥 Используем безопасную функцию обновления результата матча
         const updateResult = await this._safeUpdateMatchResult(
             matchId, 
@@ -257,6 +276,9 @@ class MatchService {
                 }
             }
 
+            // 🛡️ ПРОВЕРКА ЦЕЛОСТНОСТИ ТУРНИРНОЙ СЕТКИ
+            await this._validateTournamentIntegrity(client, matchData, winnerId, score1, score2);
+            
             // 2. Атомарное обновление результата матча
             console.log(`💾 [safeUpdateMatchResult] Обновляем результат матча ${matchId}...`);
             const updateResult = await client.query(
@@ -469,6 +491,136 @@ class MatchService {
             console.error(`❌ [simpleAdvanceTeam] Ошибка продвижения команды ${teamId}:`, error.message);
             return { advanced: false, reason: 'database_error', error: error.message };
         }
+    }
+
+    /**
+     * 🛡️ ПРОВЕРКА ЦЕЛОСТНОСТИ ТУРНИРНОЙ СЕТКИ
+     * Запрещает изменение результата матча, если любой из участников уже сыграл следующий матч
+     * @private
+     */
+    static async _validateTournamentIntegrity(client, matchData, winnerId, score1, score2) {
+        console.log(`🛡️ [validateTournamentIntegrity] Проверка целостности для матча ${matchData.id}`);
+        
+        const team1_id = matchData.team1_id;
+        const team2_id = matchData.team2_id;
+        const matchesToCheck = [];
+        
+        // Добавляем следующий матч для проверки (winner bracket)
+        if (matchData.next_match_id) {
+            matchesToCheck.push({
+                match_id: matchData.next_match_id,
+                type: 'winner_bracket',
+                description: 'следующий матч для победителя'
+            });
+        }
+        
+        // Добавляем матч для проигравшего (loser bracket в double elimination)
+        if (matchData.loser_next_match_id) {
+            matchesToCheck.push({
+                match_id: matchData.loser_next_match_id,
+                type: 'loser_bracket',
+                description: 'матч для проигравшего (loser bracket)'
+            });
+        }
+        
+        if (matchesToCheck.length === 0) {
+            console.log(`✅ [validateTournamentIntegrity] Нет следующих матчей для проверки`);
+            return;
+        }
+        
+        for (const checkMatch of matchesToCheck) {
+            console.log(`🔍 [validateTournamentIntegrity] Проверяем ${checkMatch.description} (ID: ${checkMatch.match_id})`);
+            
+            // Получаем данные следующего матча
+            const nextMatchResult = await client.query(
+                `SELECT id, team1_id, team2_id, winner_team_id, score1, score2, 
+                        round, match_number, status, maps_data
+                 FROM matches 
+                 WHERE id = $1`,
+                [checkMatch.match_id]
+            );
+            
+            if (nextMatchResult.rows.length === 0) {
+                console.log(`⚠️ [validateTournamentIntegrity] Следующий матч ${checkMatch.match_id} не найден`);
+                continue;
+            }
+            
+            const nextMatch = nextMatchResult.rows[0];
+            console.log(`🔍 [validateTournamentIntegrity] Следующий матч: ${nextMatch.team1_id} vs ${nextMatch.team2_id}, статус: ${nextMatch.status}`);
+            
+            // Проверяем участие наших команд в следующем матче
+            const ourTeamsInNextMatch = [];
+            if (nextMatch.team1_id === team1_id || nextMatch.team1_id === team2_id) {
+                ourTeamsInNextMatch.push({ team_id: nextMatch.team1_id, position: 'team1' });
+            }
+            if (nextMatch.team2_id === team1_id || nextMatch.team2_id === team2_id) {
+                ourTeamsInNextMatch.push({ team_id: nextMatch.team2_id, position: 'team2' });
+            }
+            
+            if (ourTeamsInNextMatch.length === 0) {
+                console.log(`✅ [validateTournamentIntegrity] Наши команды не участвуют в матче ${checkMatch.match_id}`);
+                continue;
+            }
+            
+            console.log(`🎯 [validateTournamentIntegrity] Наши команды в следующем матче:`, ourTeamsInNextMatch);
+            
+            // Проверяем, завершен ли следующий матч
+            const isNextMatchCompleted = this._isMatchCompleted(nextMatch);
+            
+            if (isNextMatchCompleted) {
+                // Следующий матч завершен - нельзя изменять результат текущего матча
+                const participantsInfo = ourTeamsInNextMatch.map(p => `команда ${p.team_id} (${p.position})`).join(', ');
+                
+                const errorMessage = `🚫 Нельзя изменить результат матча ${matchData.id} (раунд ${matchData.round}, матч №${matchData.match_number}), ` +
+                    `так как ${participantsInfo} уже сыграли в следующем матче ${nextMatch.id} ` +
+                    `(раунд ${nextMatch.round}, матч №${nextMatch.match_number}). ` +
+                    `Следующий матч завершен со счетом ${nextMatch.score1}:${nextMatch.score2}`;
+                
+                console.log(`❌ [validateTournamentIntegrity] ${errorMessage}`);
+                throw new Error(errorMessage);
+            } else {
+                console.log(`✅ [validateTournamentIntegrity] Следующий матч ${checkMatch.match_id} еще не завершен - изменение разрешено`);
+            }
+        }
+        
+        console.log(`✅ [validateTournamentIntegrity] Проверка целостности пройдена - изменение результата разрешено`);
+    }
+    
+    /**
+     * 🔍 Проверка завершенности матча
+     * @private
+     */
+    static _isMatchCompleted(match) {
+        // Матч считается завершенным если:
+        // 1. Есть winner_team_id ИЛИ
+        // 2. Есть результат (score1 и score2 не null и не равны 0:0) ИЛИ
+        // 3. Статус completed/finished ИЛИ
+        // 4. Есть данные о картах с результатами
+        
+        if (match.winner_team_id) {
+            return true;
+        }
+        
+        if (match.status === 'completed' || match.status === 'finished') {
+            return true;
+        }
+        
+        if (match.score1 !== null && match.score2 !== null && 
+            !(match.score1 === 0 && match.score2 === 0)) {
+            return true;
+        }
+        
+        if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length > 0) {
+            // Проверяем есть ли результаты в картах
+            const hasMapResults = match.maps_data.some(map => 
+                (parseInt(map.score1) || 0) > 0 || (parseInt(map.score2) || 0) > 0
+            );
+            if (hasMapResults) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
