@@ -188,7 +188,9 @@ const MatchDetailsModal = ({
                             >
                                 <div className="modal-system-text-center">
                                     <h4 className="modal-system-bold modal-system-mb-10">
-                                        {selectedMatch.team1_name || 'Команда 1'}
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ: имя участника или команды */}
+                                        {selectedMatch.team1_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
                                     </h4>
                                     <div style={{ fontSize: '28px', fontWeight: 'bold' }}>
                                         {selectedMatch.score1 !== undefined ? selectedMatch.score1 :
@@ -228,7 +230,9 @@ const MatchDetailsModal = ({
                             >
                                 <div className="modal-system-text-center">
                                     <h4 className="modal-system-bold modal-system-mb-10">
-                                        {selectedMatch.team2_name || 'Команда 2'}
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ: имя участника или команды */}
+                                        {selectedMatch.team2_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
                                     </h4>
                                     <div style={{ fontSize: '28px', fontWeight: 'bold' }}>
                                         {selectedMatch.score2 !== undefined ? selectedMatch.score2 :
@@ -348,8 +352,16 @@ const MatchDetailsModal = ({
                                                     <div className="modal-system-info">
                                                         <h4 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h4>
                                                         <div className="modal-system-flex-column">
-                                                            <span>{selectedMatch.team1_name}: {mapStats.team1Wins}</span>
-                                                            <span>{selectedMatch.team2_name}: {mapStats.team2Wins}</span>
+                                                            <span>
+                                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике MatchDetailsModal */}
+                                                                {selectedMatch.team1_name || 
+                                                                 (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1Wins}
+                                                            </span>
+                                                            <span>
+                                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике MatchDetailsModal */}
+                                                                {selectedMatch.team2_name || 
+                                                                 (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2Wins}
+                                                            </span>
                                                             {mapStats.draws > 0 && <span>Ничьи: {mapStats.draws}</span>}
                                                         </div>
                                                     </div>
@@ -372,9 +384,17 @@ const MatchDetailsModal = ({
                                         <h4 className="modal-system-bold">Матч еще не сыгран</h4>
                                         <p className="modal-system-mb-20">Результаты появятся после завершения игры между командами.</p>
                                         <div className="modal-system-flex-center">
-                                            <span className="modal-system-bold">{selectedMatch.team1_name || 'Команда 1'}</span>
+                                            <span className="modal-system-bold">
+                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ для несыгранного матча */}
+                                                {selectedMatch.team1_name || 
+                                                 (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
+                                            </span>
                                             <span className="modal-system-badge">VS</span>
-                                            <span className="modal-system-bold">{selectedMatch.team2_name || 'Команда 2'}</span>
+                                            <span className="modal-system-bold">
+                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ для несыгранного матча */}
+                                                {selectedMatch.team2_name || 
+                                                 (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
+                                            </span>
                                         </div>
                                     </div>
                                 )}
@@ -405,14 +425,22 @@ const MatchDetailsModal = ({
                                                 </div>
                                                 <div className="modal-system-grid-3">
                                                     <div className="modal-system-text-center">
-                                                        <div className="modal-system-bold">{selectedMatch.team1_name}</div>
+                                                        <div className="modal-system-bold">
+                                                            {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в картах MatchDetailsModal */}
+                                                            {selectedMatch.team1_name || 
+                                                             (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
+                                                        </div>
                                                         <div style={{ fontSize: '20px' }}>{score1}</div>
                                                     </div>
                                                     <div className="modal-system-text-center">
                                                         <div style={{ fontSize: '20px', fontWeight: 'bold' }}>:</div>
                                                     </div>
                                                     <div className="modal-system-text-center">
-                                                        <div className="modal-system-bold">{selectedMatch.team2_name}</div>
+                                                        <div className="modal-system-bold">
+                                                            {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в картах MatchDetailsModal */}
+                                                            {selectedMatch.team2_name || 
+                                                             (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
+                                                        </div>
                                                         <div style={{ fontSize: '20px' }}>{score2}</div>
                                                     </div>
                                                 </div>

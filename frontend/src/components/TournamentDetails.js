@@ -502,7 +502,7 @@ function TournamentDetails() {
 
         // Создание безопасного участника
         const createSafeParticipant = (teamId, resultText, isWinner, status = 'PLAYED') => {
-            const participantInfo = getParticipantInfo(teamId, participantsMap, teamsMap);
+            const participantInfo = getParticipantInfo(teamId);
 
             return {
                 id: teamId ? String(teamId) : 'tbd',
@@ -575,7 +575,8 @@ function TournamentDetails() {
         console.log('💾 Начинаем сохранение результата матча через API v2.0:', {
             matchId,
             resultData,
-            tournamentId: id
+            tournamentId: id,
+            selectedMatch: selectedMatch
         });
 
         try {
@@ -586,12 +587,49 @@ function TournamentDetails() {
                 throw new Error('Отсутствует токен авторизации');
             }
 
-            // 🔧 ИСПРАВЛЕНО: Используем новый API endpoint согласно модульной архитектуре
+            // 🔧 ИСПРАВЛЕНИЕ: Определяем winner_team_id на основе winner и данных матча
+            let winner_team_id = null;
+            
+            // Если уже есть winner_team_id в resultData, используем его
+            if (resultData.winner_team_id) {
+                winner_team_id = resultData.winner_team_id;
+                console.log('✅ Используем переданный winner_team_id:', winner_team_id);
+            } 
+            // Если есть winner ('team1' или 'team2'), преобразуем его в ID
+            else if (resultData.winner && selectedMatch) {
+                const matchData = typeof selectedMatch === 'object' ? selectedMatch : 
+                                  matches.find(m => m.id === parseInt(selectedMatch));
+                
+                if (matchData && matchData.team1_id && matchData.team2_id) {
+                    if (resultData.winner === 'team1') {
+                        winner_team_id = matchData.team1_id;
+                    } else if (resultData.winner === 'team2') {
+                        winner_team_id = matchData.team2_id;
+                    }
+                    console.log('✅ Преобразован winner в winner_team_id:', {
+                        winner: resultData.winner,
+                        team1_id: matchData.team1_id,
+                        team2_id: matchData.team2_id,
+                        winner_team_id: winner_team_id
+                    });
+                } else {
+                    console.warn('⚠️ Не удалось найти team1_id/team2_id в данных матча:', matchData);
+                }
+            }
+
+            console.log('🎯 Итоговые данные для отправки:', {
+                score1: parseInt(resultData.score1) || 0,
+                score2: parseInt(resultData.score2) || 0,
+                maps_data: resultData.maps_data || [],
+                winner_team_id: winner_team_id
+            });
+
+            // 🔧 ИСПРАВЛЕНО: Передаем winner_team_id вместо winner
             const response = await api.post(`/api/tournaments/${id}/matches/${matchId}/result`, {
                 score1: parseInt(resultData.score1) || 0,
                 score2: parseInt(resultData.score2) || 0,
                 maps_data: resultData.maps_data || [],
-                winner: resultData.winner
+                winner_team_id: winner_team_id  // ✅ Передаем winner_team_id
             }, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
@@ -613,7 +651,7 @@ function TournamentDetails() {
             setMatchResultData({ score1: 0, score2: 0, maps_data: [] });
 
             // Обновляем данные турнира
-                await fetchTournamentData();
+            await fetchTournamentData();
             setMessage('✅ Результат матча успешно сохранен!');
             setTimeout(() => setMessage(''), 3000);
 
@@ -637,7 +675,7 @@ function TournamentDetails() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMatch, id, fetchTournamentData, closeModal]);
+    }, [selectedMatch, id, fetchTournamentData, closeModal, matches]);
 
     // 🔧 ОБНОВЛЕННАЯ ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ (API v2.0)
     const resetMatchResults = useCallback(async () => {

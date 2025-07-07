@@ -101,6 +101,13 @@ class MatchService {
      */
     static async updateSpecificMatchResult(matchId, resultData, userId) {
         console.log(`🎯 MatchService: Обновление результата матча ${matchId}`);
+        console.log(`📊 Полученные данные:`, {
+            winner_team_id: resultData.winner_team_id,
+            winner: resultData.winner,
+            score1: resultData.score1,
+            score2: resultData.score2,
+            maps_data: resultData.maps_data
+        });
         
         // Получаем матч и его турнир
         const match = await MatchRepository.getById(matchId);
@@ -113,18 +120,32 @@ class MatchService {
         // Проверка прав доступа
         await this._checkMatchAccess(tournamentId, userId);
 
+        // 🔧 ИСПРАВЛЕНИЕ: Определяем winner_team_id если не передан напрямую
+        let finalWinnerTeamId = resultData.winner_team_id;
+        
+        if (!finalWinnerTeamId && resultData.winner && match.team1_id && match.team2_id) {
+            if (resultData.winner === 'team1') {
+                finalWinnerTeamId = match.team1_id;
+            } else if (resultData.winner === 'team2') {
+                finalWinnerTeamId = match.team2_id;
+            }
+            console.log(`🔄 Преобразован winner "${resultData.winner}" в winner_team_id: ${finalWinnerTeamId}`);
+        }
+
+        console.log(`🏆 Итоговый winner_team_id: ${finalWinnerTeamId}`);
+
         // Проверяем, изменились ли данные матча
         const scoreChanged = match.score1 !== resultData.score1 || match.score2 !== resultData.score2;
         const mapsChanged = resultData.maps_data && Array.isArray(resultData.maps_data) && resultData.maps_data.length > 0;
         
-        if (match.winner_team_id === resultData.winner_team_id && !scoreChanged && !mapsChanged) {
+        if (match.winner_team_id === finalWinnerTeamId && !scoreChanged && !mapsChanged) {
             throw new Error('Результат матча не изменился');
         }
 
         // 🔥 Используем безопасную функцию обновления результата матча
         const updateResult = await this._safeUpdateMatchResult(
             matchId, 
-            resultData.winner_team_id, 
+            finalWinnerTeamId,  // ✅ Передаем исправленный winner_team_id
             resultData.score1, 
             resultData.score2, 
             resultData.maps_data, 
@@ -379,27 +400,54 @@ class MatchService {
      */
     static async _sendMatchResultAnnouncement(match, resultData, tournament) {
         try {
-            // Получаем имена команд/участников
-            let team1Name, team2Name;
+            // 🆕 УНИВЕРСАЛЬНАЯ ЛОГИКА: Получаем имена команд/участников в зависимости от типа турнира
+            let team1Name, team2Name, winnerName;
+            
+            console.log(`📢 Отправка уведомления для турнира типа "${tournament.participant_type}"`);
             
             if (tournament.participant_type === 'solo') {
-                const p1 = await pool.query('SELECT name FROM tournament_participants WHERE id=$1', [match.team1_id]);
-                team1Name = p1.rows[0]?.name;
-                const p2 = await pool.query('SELECT name FROM tournament_participants WHERE id=$1', [match.team2_id]);
-                team2Name = p2.rows[0]?.name;
+                // Для соло турниров участники из tournament_participants
+                const p1 = await pool.query('SELECT name, username FROM tournament_participants WHERE id = $1', [match.team1_id]);
+                const p2 = await pool.query('SELECT name, username FROM tournament_participants WHERE id = $1', [match.team2_id]);
+                
+                team1Name = p1.rows[0]?.name || p1.rows[0]?.username || `Участник ${match.team1_id}`;
+                team2Name = p2.rows[0]?.name || p2.rows[0]?.username || `Участник ${match.team2_id}`;
+                
+                console.log(`✅ Получены имена участников: "${team1Name}" vs "${team2Name}"`);
             } else {
-                const t1 = await pool.query('SELECT name FROM tournament_teams WHERE id=$1', [match.team1_id]);
-                team1Name = t1.rows[0]?.name;
-                const t2 = await pool.query('SELECT name FROM tournament_teams WHERE id=$1', [match.team2_id]);
-                team2Name = t2.rows[0]?.name;
+                // Для командных турниров команды из tournament_teams
+                const t1 = await pool.query('SELECT name FROM tournament_teams WHERE id = $1', [match.team1_id]);
+                const t2 = await pool.query('SELECT name FROM tournament_teams WHERE id = $1', [match.team2_id]);
+                
+                team1Name = t1.rows[0]?.name || `Команда ${match.team1_id}`;
+                team2Name = t2.rows[0]?.name || `Команда ${match.team2_id}`;
+                
+                console.log(`✅ Получены названия команд: "${team1Name}" vs "${team2Name}"`);
             }
             
-            const winName = resultData.winner_team_id ? 
-                (resultData.winner_team_id === match.team1_id ? team1Name : team2Name) : '';
+            // 🆕 УНИВЕРСАЛЬНОЕ ОПРЕДЕЛЕНИЕ ПОБЕДИТЕЛЯ
+            if (resultData.winner_team_id) {
+                if (resultData.winner_team_id === match.team1_id) {
+                    winnerName = team1Name;
+                } else if (resultData.winner_team_id === match.team2_id) {
+                    winnerName = team2Name;
+                } else {
+                    console.warn('⚠️ winner_team_id не совпадает ни с team1_id, ни с team2_id');
+                    winnerName = null;
+                }
+            }
             
-            const announcement = `Матч ${match.match_number} ${team1Name} vs ${team2Name} завершен со счетом ${resultData.score1}:${resultData.score2}${winName ? `, победил ${winName}` : ''}. Ссылка на сетку: /tournaments/${tournament.id}`;
+            // 🆕 УНИВЕРСАЛЬНОЕ СООБЩЕНИЕ
+            const entityType = tournament.participant_type === 'solo' ? 'участников' : 'команд';
+            const matchType = tournament.participant_type === 'solo' ? 'Поединок' : 'Матч';
+            
+            const announcement = `${matchType} ${match.match_number || '№' + match.id} между ${entityType} ${team1Name} и ${team2Name} завершен со счетом ${resultData.score1}:${resultData.score2}${winnerName ? `. Победил: ${winnerName}` : ''}. Ссылка на сетку: /tournaments/${tournament.id}`;
+            
+            console.log(`📢 Отправляем уведомление: "${announcement}"`);
             
             await sendTournamentChatAnnouncement(tournament.id, announcement);
+            
+            console.log('✅ Уведомление о результате матча отправлено');
         } catch (error) {
             console.error('❌ Ошибка отправки объявления о результате матча:', error);
         }

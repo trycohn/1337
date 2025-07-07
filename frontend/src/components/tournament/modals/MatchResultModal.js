@@ -557,12 +557,15 @@ const MatchResultModal = ({
         // 🔧 ИСПРАВЛЕНО: УЛУЧШЕННАЯ ЛОГИКА АВТОМАТИЧЕСКОГО ОПРЕДЕЛЕНИЯ ПОБЕДИТЕЛЯ
         let finalWinner = selectedWinner;
         
-        console.log('🏆 Определение победителя:', {
+        console.log('🏆 Определение победителя (универсальное для соло/команд):', {
             currentSelectedWinner: selectedWinner,
             score1: matchResultData.score1,
             score2: matchResultData.score2,
             autoCalculateScore: autoCalculateScore,
-            mapsCount: (matchResultData.maps_data || []).length
+            mapsCount: (matchResultData.maps_data || []).length,
+            participant_type: tournament?.participant_type,
+            team1_id: selectedMatch?.team1_id,
+            team2_id: selectedMatch?.team2_id
         });
         
         // Если победитель не выбран вручную, определяем автоматически
@@ -627,19 +630,32 @@ const MatchResultModal = ({
             setSelectedWinner(finalWinner);
         }
         
-        // 🔧 ИСПРАВЛЕНО: Передаем информацию о winner_team_id для бэкенда
+        // 🔧 УНИВЕРСАЛЬНОЕ ИСПРАВЛЕНИЕ: Передаем информацию о winner_team_id для бэкенда
+        let winner_team_id = null;
+        if (finalWinner && selectedMatch) {
+            if (finalWinner === 'team1') {
+                winner_team_id = selectedMatch.team1_id;
+            } else if (finalWinner === 'team2') {
+                winner_team_id = selectedMatch.team2_id;
+            }
+        }
+        
+        // 🆕 УНИВЕРСАЛЬНАЯ ВАЛИДАЦИЯ: Проверяем тип турнира для логирования
+        const participantType = tournament?.participant_type || 'unknown';
+        const entityType = participantType === 'solo' ? 'участника' : 'команды';
+        
         const submitData = {
             ...matchResultData,
             winner: finalWinner,
-            // Добавляем явное указание winner_team_id для бэкенда
-            winner_team_id: finalWinner === 'team1' ? selectedMatch.team1_id : 
-                           finalWinner === 'team2' ? selectedMatch.team2_id : null
+            winner_team_id: winner_team_id  // ✅ Универсально работает для команд и соло
         };
         
-        console.log('💾 Финальные данные для сохранения:', {
+        console.log('💾 Финальные данные для сохранения (универсальные):', {
             matchId: matchId,
             finalWinner: finalWinner,
-            winner_team_id: submitData.winner_team_id,
+            winner_team_id: winner_team_id,
+            participant_type: participantType,
+            entity_type: entityType,
             score: `${submitData.score1}:${submitData.score2}`,
             mapsCount: (submitData.maps_data || []).length,
             submitData: submitData
@@ -718,7 +734,9 @@ const MatchResultModal = ({
                                 >
                                     <div className="modal-system-text-center">
                                         <div className="modal-system-bold modal-system-mb-10">
-                                            {selectedMatch.team1_name || 'Команда 1'}
+                                            {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ: имя участника или команды */}
+                                            {selectedMatch.team1_name || 
+                                             (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
                                         </div>
                                         {selectedWinner === 'team1' && (
                                             <div className="modal-system-badge modal-system-badge-success">
@@ -748,7 +766,9 @@ const MatchResultModal = ({
                                 >
                                     <div className="modal-system-text-center">
                                         <div className="modal-system-bold modal-system-mb-10">
-                                            {selectedMatch.team2_name || 'Команда 2'}
+                                            {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ: имя участника или команды */}
+                                            {selectedMatch.team2_name || 
+                                             (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
                                         </div>
                                         {selectedWinner === 'team2' && (
                                             <div className="modal-system-badge modal-system-badge-success">
@@ -845,10 +865,12 @@ const MatchResultModal = ({
                                 </div>
                             )}
                             
-                            <div className="modal-system-grid-3">
+                            <div className="form-grid-3">
                                 <div className="modal-system-form-group">
                                     <label className="modal-system-label">
-                                        {selectedMatch.team1_name || 'Команда 1'}
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции счета */}
+                                        {selectedMatch.team1_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
                                     </label>
                                     <input
                                         type="number"
@@ -869,7 +891,9 @@ const MatchResultModal = ({
 
                                 <div className="modal-system-form-group">
                                     <label className="modal-system-label">
-                                        {selectedMatch.team2_name || 'Команда 2'}
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции счета */}
+                                        {selectedMatch.team2_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
                                     </label>
                                     <input
                                         type="number"
@@ -944,7 +968,9 @@ const MatchResultModal = ({
                                             <div className="modal-system-grid-3">
                                                 <div className="modal-system-form-group">
                                                     <label className="modal-system-label">
-                                                        {selectedMatch.team1_name || 'Команда 1'}
+                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции карт */}
+                                                        {selectedMatch.team1_name || 
+                                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
                                                     </label>
                                                     <input
                                                         type="number"
@@ -959,7 +985,9 @@ const MatchResultModal = ({
                                                 </div>
                                                 <div className="modal-system-form-group">
                                                     <label className="modal-system-label">
-                                                        {selectedMatch.team2_name || 'Команда 2'}
+                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции карт */}
+                                                        {selectedMatch.team2_name || 
+                                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
                                                     </label>
                                                     <input
                                                         type="number"
@@ -996,8 +1024,16 @@ const MatchResultModal = ({
                                             <div className="modal-system-info">
                                                 <h5 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h5>
                                                 <div className="modal-system-flex-column">
-                                                    <span>{selectedMatch.team1_name}: {mapStats.team1Wins}</span>
-                                                    <span>{selectedMatch.team2_name}: {mapStats.team2Wins}</span>
+                                                    <span>
+                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                                        {selectedMatch.team1_name || 
+                                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1Wins}
+                                                    </span>
+                                                    <span>
+                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                                        {selectedMatch.team2_name || 
+                                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2Wins}
+                                                    </span>
                                                     {mapStats.draws > 0 && <span>Ничьи: {mapStats.draws}</span>}
                                                 </div>
                                             </div>
@@ -1005,8 +1041,16 @@ const MatchResultModal = ({
                                             <div className="modal-system-info">
                                                 <h5 className="modal-system-bold modal-system-mb-10">🎯 Общий счет по очкам</h5>
                                                 <div className="modal-system-flex-column">
-                                                    <span>{selectedMatch.team1_name}: {mapStats.team1TotalScore}</span>
-                                                    <span>{selectedMatch.team2_name}: {mapStats.team2TotalScore}</span>
+                                                    <span>
+                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                                        {selectedMatch.team1_name || 
+                                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1TotalScore}
+                                                    </span>
+                                                    <span>
+                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                                        {selectedMatch.team2_name || 
+                                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2TotalScore}
+                                                    </span>
                                                     <span>Разность: ±{mapStats.scoreDifference}</span>
                                                 </div>
                                             </div>
@@ -1016,8 +1060,8 @@ const MatchResultModal = ({
                                                 <div className="modal-system-flex-column">
                                                     <span>Карт сыграно: {mapStats.mapsCount}</span>
                                                     <span>Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
-                                                                 mapStats.mapsCount <= 3 ? 'BO3' : 
-                                                                 mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}</span>
+                                                                     mapStats.mapsCount <= 3 ? 'BO3' : 
+                                                                     mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}</span>
                                                     <span>Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount / 2)}</span>
                                                 </div>
                                             </div>
