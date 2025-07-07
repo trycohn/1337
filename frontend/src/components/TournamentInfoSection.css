@@ -1120,7 +1120,143 @@
     }
     
     .participant-status-badge {
-        font-size: 0.8rem;
-        padding: 6px 12px;
+        font-size: 0.75rem;
+        padding: 8px 12px;
+    }
+}
+
+/* 🆕 Стили для сокращенного отображения регламента */
+.rules-container {
+    position: relative;
+}
+
+.rules-truncated {
+    position: relative;
+    cursor: help;
+}
+
+.regulations-tooltip {
+    position: absolute;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2a2a;
+    border: 1px solid #444444;
+    border-radius: 8px;
+    padding: 12px;
+    z-index: 1000;
+    min-width: 200px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: fadeInTooltip 0.2s ease-out;
+}
+
+.regulations-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #2a2a2a;
+}
+
+.tooltip-content p {
+    margin: 0 0 8px 0;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.tooltip-link {
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-weight: 500;
+}
+
+.tooltip-link:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.truncation-indicator {
+    margin-top: 16px;
+    padding: 12px;
+    background: #0f0f0f;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.truncation-indicator span {
+    color: #888888;
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+.view-full-btn {
+    background: transparent;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.view-full-btn:hover {
+    background: #3b82f6;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+@keyframes fadeInTooltip {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Адаптивность для тултипа */
+@media (max-width: 768px) {
+    .regulations-tooltip {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90vw;
+    }
+    
+    .regulations-tooltip::after {
+        display: none;
+    }
+    
+    .truncation-indicator {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .view-full-btn {
+        width: 100%;
     }
 } 

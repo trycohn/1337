@@ -19,6 +19,9 @@ const TournamentInfoSection = ({
     const [isLoading, setIsLoading] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [showActions, setShowActions] = useState(false);
+    
+    // 🆕 Состояния для управления отображением регламента
+    const [showRegulationsTooltip, setShowRegulationsTooltip] = useState(false);
 
     // 🆕 Состояния для участия в турнире
     const [showParticipationConfirm, setShowParticipationConfirm] = useState(false);
@@ -335,6 +338,100 @@ const TournamentInfoSection = ({
         }
         return [];
     };
+    
+    // 🆕 Функция для обрезки текста до указанного количества символов
+    const truncateText = (text, maxLength = 400) => {
+        if (!text || text.length <= maxLength) return text;
+        
+        // Находим последний пробел до максимальной длины
+        const truncated = text.substring(0, maxLength);
+        const lastSpaceIndex = truncated.lastIndexOf(' ');
+        
+        // Если нашли пробел, обрезаем до него, иначе просто по максимальной длине
+        return lastSpaceIndex > 0 ? 
+            truncated.substring(0, lastSpaceIndex) + '...' : 
+            truncated + '...';
+    };
+
+    // 🆕 Функция для открытия полного регламента в новой вкладке
+    const openFullRegulations = () => {
+        if (!regulations) return;
+        
+        // Создаем HTML для полного регламента
+        const fullRegulationsHTML = `
+            <!DOCTYPE html>
+            <html lang="ru">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Регламент турнира - ${tournament?.name || 'Турнир'}</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        line-height: 1.6;
+                        background-color: #f5f5f5;
+                        color: #333;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 10px;
+                        margin-bottom: 30px;
+                        text-align: center;
+                    }
+                    .header h1 {
+                        margin: 0;
+                        font-size: 28px;
+                    }
+                    .header p {
+                        margin: 10px 0 0 0;
+                        opacity: 0.9;
+                    }
+                    .content {
+                        background: white;
+                        padding: 30px;
+                        border-radius: 10px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .regulation-text {
+                        white-space: pre-wrap;
+                        font-size: 16px;
+                        line-height: 1.8;
+                    }
+                    @media print {
+                        body { background-color: white; }
+                        .header { background: #667eea; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>📋 Регламент турнира</h1>
+                    <p>${tournament?.name || 'Турнир'}</p>
+                </div>
+                <div class="content">
+                    <div class="regulation-text">${regulations.replace(/\n/g, '<br>')}</div>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // Открываем новое окно с полным регламентом
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+            newWindow.document.write(fullRegulationsHTML);
+            newWindow.document.close();
+        }
+    };
+
+    // 🆕 Проверка, нужно ли сокращать регламент
+    const shouldTruncateRegulations = (text) => {
+        return text && text.length > 400;
+    };
 
     const creatorInfo = getCreatorInfo();
     const adminsList = getAdmins();
@@ -649,9 +746,57 @@ const TournamentInfoSection = ({
                         <>
                             {regulations ? (
                                 <div className="rules-text">
-                                    {regulations.split('\n').map((line, index) => (
-                                        <div key={index} className="rule-item">{line}</div>
-                                    ))}
+                                    {/* 🆕 Сокращенное отображение регламента с тултипом */}
+                                    {shouldTruncateRegulations(regulations) ? (
+                                        <div className="rules-container">
+                                            {/* Сокращенный текст */}
+                                            <div 
+                                                className="rules-truncated"
+                                                onMouseEnter={() => setShowRegulationsTooltip(true)}
+                                                onMouseLeave={() => setShowRegulationsTooltip(false)}
+                                                style={{ position: 'relative' }}
+                                            >
+                                                {truncateText(regulations).split('\n').map((line, index) => (
+                                                    <div key={index} className="rule-item">{line}</div>
+                                                ))}
+                                                
+                                                {/* Тултип для показа полного регламента */}
+                                                {showRegulationsTooltip && (
+                                                    <div className="regulations-tooltip">
+                                                        <div className="tooltip-content">
+                                                            <p>📋 Показать полный регламент</p>
+                                                            <button 
+                                                                className="tooltip-link"
+                                                                onClick={openFullRegulations}
+                                                                title="Открыть полный регламент в новой вкладке"
+                                                            >
+                                                                🔗 Открыть в новой вкладке
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Индикатор сокращения */}
+                                            <div className="truncation-indicator">
+                                                <span>📄 Показаны первые 400 символов</span>
+                                                <button 
+                                                    className="view-full-btn"
+                                                    onClick={openFullRegulations}
+                                                    title="Открыть полный регламент в новой вкладке"
+                                                >
+                                                    👁️ Показать полный регламент
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        // Полный текст, если он короткий
+                                        <div>
+                                            {regulations.split('\n').map((line, index) => (
+                                                <div key={index} className="rule-item">{line}</div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="default-rules">
