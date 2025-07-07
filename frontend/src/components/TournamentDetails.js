@@ -4,10 +4,14 @@
 // ✅ Упрощена логика без дублирования кода
 
 // Импорты React и связанные
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
+import { useModalSystem } from '../hooks/useModalSystem';
+import { useTournamentManagement } from '../hooks/tournament/useTournamentManagement';
+import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
+import { enrichMatchWithParticipantNames, validateParticipantData } from '../utils/participantHelpers';
 
 // Утилиты и хелперы
 import { ensureHttps } from '../utils/userHelpers';
@@ -18,10 +22,9 @@ import {
     getDefaultMap as getDefaultMapHelper, 
     getDefaultCS2Maps 
 } from '../utils/mapHelpers';
-import { enrichMatchWithParticipantNames } from '../utils/participantHelpers';
 
-// 🆕 ИМПОРТ ХУКА ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
-import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
+// Контекст
+import { useUser } from '../context/UserContext';
 
 // Стили
 import './TournamentDetails.css';
@@ -40,9 +43,6 @@ import TournamentWinners from './tournament/TournamentWinners';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import './tournament/BracketManagementPanel.css';
 
-// Контекст
-import { useUser } from '../context/UserContext';
-
 // Ленивая загрузка BracketRenderer с улучшенной обработкой ошибок
 const LazyBracketRenderer = React.lazy(() => 
     import('./BracketRenderer').catch(err => {
@@ -58,6 +58,9 @@ const LazyBracketRenderer = React.lazy(() =>
         };
     })
 );
+
+// 🏆 Ленивая загрузка PodiumSection для подиума с призерами
+const LazyPodiumSection = React.lazy(() => import('./tournament/PodiumSection'));
 
 // Error Boundary для обработки ошибок рендеринга
 class TournamentErrorBoundary extends React.Component {
@@ -112,13 +115,6 @@ const validateTournamentData = (data) => {
     }
     
     return { isValid: true };
-};
-
-const validateParticipantData = (participant) => {
-    if (!participant || typeof participant !== 'object') {
-        return false;
-    }
-    return participant.id && (participant.name || participant.username);
 };
 
 // Основной компонент
@@ -816,6 +812,13 @@ function TournamentDetails() {
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
                         />
+
+                        {/* 🏆 ПОДИУМ С ПРИЗЕРАМИ для завершенных турниров */}
+                        {tournament?.status === 'completed' && games.length > 0 && (
+                            <Suspense fallback={<div>🏆 Загрузка подиума...</div>}>
+                                <LazyPodiumSection tournament={tournament} matches={matches} />
+                            </Suspense>
+                        )}
 
                         {/* Турнирная сетка */}
                         {games.length > 0 && (
