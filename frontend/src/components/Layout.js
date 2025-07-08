@@ -207,6 +207,36 @@ function Layout() {
         markAllMessagesSeen();
     };
 
+    // Закрытие меню при клике вне его области и нажатии Escape
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (isMenuOpen && !event.target.closest('.navigation') && !event.target.closest('.hamburger')) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape' && isMenuOpen) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        if (isMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleEscapeKey);
+            // Предотвращаем прокрутку фона при открытом меню
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscapeKey);
+            document.body.style.overflow = 'unset';
+        };
+    }, [isMenuOpen]);
+
     return (
         <div className="home-container">
             {loading && <Loader />}
@@ -242,6 +272,12 @@ function Layout() {
                                             Админ панель
                                         </Link>
                                     )}
+                                    <button onClick={() => { 
+                                        handleLogout(); 
+                                        setIsMenuOpen(false); 
+                                    }}>
+                                        Выйти
+                                    </button>
                                 </>
                             )}
                         </nav>

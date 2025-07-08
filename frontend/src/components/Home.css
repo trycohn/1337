@@ -469,7 +469,7 @@ header.header {
   border-color: #ff0000;
   color: #ffffff;
 }
-/* РЎРѕРѕР±С‰РµРЅРёРµ РѕР± РѕС‚СЃСѓС‚СЃС‚РІРёРё С‚СѓСЂРЅРёСЂРѕРІ */
+/* РЎРѕРѕР±С‰РµРЅРёРµ РѕР± РѕС‚СЃСўСѓС‚СЃС‚РІРёРё С‚СѓСЂРЅРёСЂРѕРІ */
 .tournaments-list p {
   color: #888888;
   text-align: center;
@@ -1090,4 +1090,408 @@ header.header {
 .forgot-password-link a:hover {
   color: #333;
   text-decoration: underline;
+}
+
+/* =========================
+   МОБИЛЬНАЯ АДАПТАЦИЯ
+   ========================= */
+
+/* Медиа-запрос для мобильных устройств */
+@media (max-width: 768px) {
+  /* Общие стили для мобильных устройств */
+  main {
+    max-width: 95%;
+    width: 95%;
+    padding: 0 10px;
+  }
+  
+  /* Адаптация хедера */
+  .header {
+    padding: 10px 15px;
+    position: relative;
+    background-color: #000000;
+    border-bottom: 1px solid #333333;
+  }
+  
+  /* Контейнер навигации */
+  .nav-container {
+    position: relative;
+    z-index: 1001;
+  }
+  
+  /* Показываем гамбургер на мобильных устройствах */
+  .hamburger {
+    display: block !important;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1002;
+    position: relative;
+  }
+  
+  .hamburger svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+  }
+  
+  .hamburger:hover svg {
+    transform: scale(1.1);
+  }
+  
+  .hamburger svg path {
+    fill: #ffffff;
+    transition: fill 0.3s ease;
+  }
+  
+  .hamburger:hover svg path {
+    fill: #cccccc;
+  }
+  
+  /* Скрываем обычную навигацию на мобильных устройствах */
+  .navigation {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100vh;
+    background-color: #000000;
+    border-right: 1px solid #333333;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 80px 0 20px 0;
+    z-index: 1001;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+  }
+  
+  /* Открытое состояние мобильного меню */
+  .navigation.open {
+    left: 0;
+  }
+  
+  /* Стили для ссылок в мобильном меню */
+  .navigation a,
+  .navigation button {
+    padding: 16px 24px;
+    margin: 0;
+    height: auto;
+    border-bottom: 1px solid #222222;
+    font-size: 16px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .navigation a:hover,
+  .navigation button:hover {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    transform: translateX(5px);
+  }
+  
+  /* Специальные стили для кнопки "Выйти" */
+  .navigation button {
+    background-color: #333333;
+    color: #ffffff;
+    margin-top: auto;
+    border-top: 1px solid #444444;
+    font-weight: 500;
+  }
+  
+  .navigation button:hover {
+    background-color: #444444;
+    transform: none;
+  }
+  
+  /* Стили для админской ссылки */
+  .navigation .admin-link {
+    color: #ff6b6b !important;
+    font-weight: 600 !important;
+    position: relative;
+  }
+  
+  .navigation .admin-link:hover {
+    color: #ff8e8e !important;
+    background-color: rgba(255, 107, 107, 0.1);
+  }
+  
+  /* Блок авторизации */
+  .auth-block {
+    position: relative;
+    z-index: 1002;
+  }
+  
+  .user-info {
+    gap: 8px;
+  }
+  
+  .user-info span {
+    font-size: 14px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .header-avatar-link .profile-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .user-info button {
+    padding: 4px 8px;
+    font-size: 14px;
+    display: none; /* Скрываем кнопку "Выйти" из хедера, она будет в меню */
+  }
+  
+  /* Overlay для затемнения фона */
+  .navigation::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  
+  .navigation.open::before {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  /* Стили для иконки сообщений */
+  .messages-icon-container {
+    position: relative;
+  }
+  
+  .messages-icon {
+    font-size: 20px;
+  }
+  
+  .unread-badge {
+    top: -6px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+  
+  /* Адаптация турниров */
+  .tournaments-list {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .tournaments-list h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  /* Показываем мобильную фильтрацию */
+  .tournaments-filter-bar {
+    display: block;
+  }
+  
+  /* Скрываем таблицу и показываем карточки на мобильных устройствах */
+  .tournaments-list table {
+    display: none;
+  }
+  
+  .tournaments-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  .tournament-card {
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .tournament-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+  }
+  
+  .tournament-name {
+    font-size: 16px;
+    margin-bottom: 12px;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+  
+  .tournament-details {
+    padding: 0;
+  }
+  
+  .tournament-info {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .tournament-label {
+    font-size: 12px;
+    min-width: 70px;
+  }
+  
+  .tournament-value {
+    font-size: 14px;
+  }
+  
+  /* Кнопки управления видом */
+  .tournaments-view-controls {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .view-mode-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+    width: 100%;
+  }
+  
+  /* Адаптация форм */
+  .auth-page {
+    padding: 10px;
+    min-height: calc(100vh - 80px);
+  }
+  
+  .auth-container {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .auth-form-container {
+    padding: 20px;
+    min-height: 380px;
+  }
+  
+  .auth-form {
+    left: 20px;
+    right: 20px;
+    top: 20px;
+    width: calc(100% - 40px);
+  }
+  
+  .form-group input {
+    font-size: 16px; /* Предотвращает зум на iOS */
+    padding: 14px 16px;
+  }
+  
+  .auth-button,
+  .steam-button,
+  .faceit-button {
+    padding: 14px 16px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+  
+  /* Улучшенные стили для участников */
+  .participants-list ul {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .participant-item {
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .participant-avatar-img {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .participant-name {
+    font-size: 14px;
+  }
+  
+  .admin-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  
+  /* Улучшения для сообщений */
+  .friend-request-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .friend-request-actions button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    width: 100%;
+  }
+  
+  /* Стили для логина */
+  .login-button-container {
+    margin-left: 8px;
+  }
+  
+  .login-button {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+  }
+  
+  /* Спрятать кнопку управления видом на очень маленьких экранах */
+  @media (max-width: 480px) {
+    .tournaments-view-controls {
+      display: none;
+    }
+    
+    .hamburger {
+      padding: 4px;
+    }
+    
+    .navigation {
+      width: 100%;
+      padding: 70px 0 20px 0;
+    }
+    
+    .user-info span {
+      display: none;
+    }
+    
+    .header-avatar-link .profile-avatar {
+      width: 24px;
+      height: 24px;
+    }
+    
+    .messages-icon {
+      font-size: 18px;
+    }
+    
+    .unread-badge {
+      min-width: 14px;
+      height: 14px;
+      font-size: 9px;
+    }
+  }
 }
