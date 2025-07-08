@@ -272,12 +272,14 @@ function Layout() {
                                             Админ панель
                                         </Link>
                                     )}
-                                    <button onClick={() => { 
-                                        handleLogout(); 
-                                        setIsMenuOpen(false); 
-                                    }}>
-                                        Выйти
-                                    </button>
+                                    {isMobile && (
+                                        <button onClick={() => { 
+                                            handleLogout(); 
+                                            setIsMenuOpen(false); 
+                                        }}>
+                                            Выйти
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </nav>
