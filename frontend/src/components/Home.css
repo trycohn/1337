@@ -126,6 +126,7 @@ header.header {
   border-radius: 0px;
   cursor: pointer;
   font-size: 16px;
+  display: none; /* Скрываем кнопку "Выйти" из хедера на всех устройствах - она будет только в мобильном меню */
 }
 .user-info button:hover {
   background-color: #7b7b7b;
@@ -1254,7 +1255,7 @@ header.header {
   .user-info button {
     padding: 4px 8px;
     font-size: 14px;
-    display: none; /* Скрываем кнопку "Выйти" из хедера, она будет в меню */
+    display: none; /* Скрываем кнопку "Выйти" из хедера на всех устройствах - она будет только в мобильном меню */
   }
   
   /* Overlay для затемнения фона */
