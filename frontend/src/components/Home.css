@@ -1281,6 +1281,7 @@ header.header {
   /* Стили для иконки сообщений */
   .messages-icon-container {
     position: relative;
+    margin-right: 10px;
   }
   
   .messages-icon {
