@@ -1965,7 +1965,7 @@
 
 .view-mode-btn {
     padding: var(--spacing-xs) var(--spacing-md);
-    border: 1px solid var(--border-color);
+    border: 1px solid #ff0000;
     border-radius: 0;
     background-color: transparent;
     color: var(--text-secondary);
@@ -1979,13 +1979,11 @@
 
 .view-mode-btn:hover {
     background-color: var(--bg-tertiary);
-    border-color: var(--border-hover);
 }
 
 .view-mode-btn.active {
     background-color: var(--text-primary);
-    color: var(--bg-primary);
-    border-color: var(--text-primary);
+    color: #000000;
 }
 
 .tournaments-filter-bar {

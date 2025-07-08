@@ -239,10 +239,10 @@
 }
 .create-tournament button {
     padding: var(--ct-spacing-md) var(--ct-spacing-xl);
-    border: 1px solid var(--ct-text-primary);
+    border: 1px solid #ff0000;
     border-radius: 0;
-    background-color: var(--ct-text-primary);
-    color: var(--ct-bg-primary);
+    background-color: #000000;
+    color: #ffffff;
     font-size: 1rem;
     font-weight: 300;
     text-transform: uppercase;
@@ -254,25 +254,16 @@
     overflow: hidden;
 }
 .create-tournament button:hover {
-    background-color: var(--ct-bg-primary);
-    color: var(--ct-text-primary);
+    background-color: #555555;
+    color: #ffffff;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px #FFFFFF1A; /* rgba(255, 255, 255, 0.1) РІ HEX */
 }
 .create-tournament button:active {
     transform: translateY(0);
 }
-/* РљРЅРѕРїРєР° РѕС‚РјРµРЅС‹ */
-.create-tournament button[type="button"] {
-    background-color: var(--ct-bg-tertiary);
-    color: var(--ct-text-secondary);
-    border-color: var(--ct-border-color);
-}
-.create-tournament button[type="button"]:hover {
-    background-color: var(--ct-bg-primary);
-    color: var(--ct-text-primary);
-    border-color: var(--ct-border-hover);
-}
+
+
 /* РђРЅРёРјР°С†РёРё Рё СЌС„С„РµРєС‚С‹ */
 @keyframes fadeIn {
     from {
