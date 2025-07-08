@@ -1978,11 +1978,11 @@
 }
 
 .view-mode-btn:hover {
-    background-color: #555555;
+    background-color: #141414;
 }
 
 .view-mode-btn.active {
-    background-color: #555555;
+    background-color: #141414;
     color: #ffffff;
 }
 

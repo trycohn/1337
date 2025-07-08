@@ -461,11 +461,11 @@ header.header {
   transition: all 0.2s ease;
 }
 .view-mode-btn:hover {
-  background-color: #555555;
+  background-color: #141414;
   border-color: #ff0000;
 }
 .view-mode-btn.active {
-  background-color: #555555;
+  background-color: #141414;
   border-color: #ff0000;
   color: #ffffff;
 }
