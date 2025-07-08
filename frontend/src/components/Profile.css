@@ -1967,8 +1967,8 @@
     padding: var(--spacing-xs) var(--spacing-md);
     border: 1px solid #ff0000;
     border-radius: 0;
-    background-color: transparent;
-    color: var(--text-secondary);
+    background-color: #000000;
+    color: #ffffff;
     font-size: 0.8rem;
     font-weight: 300;
     text-transform: uppercase;
@@ -1978,12 +1978,12 @@
 }
 
 .view-mode-btn:hover {
-    background-color: var(--bg-tertiary);
+    background-color: #555555;
 }
 
 .view-mode-btn.active {
-    background-color: var(--text-primary);
-    color: #000000;
+    background-color: #555555;
+    color: #ffffff;
 }
 
 .tournaments-filter-bar {
