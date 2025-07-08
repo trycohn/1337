@@ -1028,7 +1028,6 @@ header.header {
   color: #ffffff;
   font-weight: 400;
   text-align: right;
-  flex: 1;
 }
 .tournament-status {
   padding: 4px 8px;

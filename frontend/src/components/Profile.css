@@ -2159,6 +2159,8 @@
     font-size: 1.1rem;
     font-weight: 300;
     color: var(--text-primary);
+    margin: auto;
+    margin-bottom: 15px;
 }
 
 .tournament-name a {
@@ -2179,7 +2181,7 @@
 
 .tournament-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
     padding: var(--spacing-xs) 0;
     border-bottom: 1px solid var(--border-color);
@@ -2199,8 +2201,8 @@
 
 .tournament-value {
     color: var(--text-primary);
-    font-weight: 300;
-    text-align: right;
+    font-weight: 700;
+    text-align: center;
 }
 
 .tournament-status {
