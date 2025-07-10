@@ -44,16 +44,16 @@ const createWelcomeEmailTemplate = (username, userEmail) => {
             }
             
             .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #000000 0%, #111111 100%);
                 padding: 40px 30px;
                 text-align: center;
                 color: white;
             }
             
             .logo {
-                width: 80px;
-                height: 80px;
-                background: rgba(255, 255, 255, 0.2);
+                width: 160px;
+                height: 120px;
+                background: #000000;
                 border-radius: 20px;
                 margin: 0 auto 20px;
                 display: flex;
@@ -188,7 +188,7 @@ const createWelcomeEmailTemplate = (username, userEmail) => {
                 text-align: center;
                 margin: 30px 0;
                 padding: 24px;
-                background: linear-gradient(135deg, #667eea, #764ba2);
+                background: linear-gradient(135deg, #000000, #111111);
                 border-radius: 12px;
                 color: white;
             }
@@ -204,28 +204,32 @@ const createWelcomeEmailTemplate = (username, userEmail) => {
                 opacity: 0.9;
                 margin-bottom: 20px;
             }
+            .cta-section a {
+                text-decoration: none;  
+                color: #ffffff;
+                text-transform: uppercase;
+            }
             
             .cta-button {
                 display: inline-block;
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
+                background: #000000;
+                color: #ffffff;
                 text-decoration: none;
                 padding: 12px 24px;
                 border-radius: 8px;
                 font-weight: 600;
-                font-size: 14px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
+                font-size: 18px;
+                border: 2px solid #ff0000;
                 transition: all 0.3s ease;
             }
             
             .cta-button:hover {
-                background: rgba(255, 255, 255, 0.3);
-                border-color: rgba(255, 255, 255, 0.5);
+                background: #111111;
+                border-color: rgb(255, 0, 0);
             }
             
             .footer {
-                background: #2c3e50;
-                color: #bdc3c7;
+                color:#000000;
                 padding: 24px 30px;
                 text-align: center;
                 font-size: 12px;
