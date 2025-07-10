@@ -327,6 +327,52 @@
     border-radius: 8px;
 }
 
+.my-team-card {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.my-team-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 15px;
+}
+
+.my-team-avatar-container {
+    flex-shrink: 0;
+}
+
+.my-team-avatar {
+    width: 60px;
+    height: 60px;
+}
+
+.my-team-badges .captain-badge {
+    background-color: #000000;
+}
+
+.my-team-members {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+
+}
+
+.my-team-member-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    background: #111111;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+
+
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
     .my-teams {

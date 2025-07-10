@@ -221,20 +221,20 @@ const MyTeams = ({ user }) => {
                             <div className="my-team-members">
                                 <div className="my-members-list">
                                     {team.members.slice(0, 4).map(member => (
-                                        <div key={member.id} className="member-item">
-                                            <div className="member-avatar">
+                                        <div key={member.id} className="my-team-member-item">
+                                            <div className="my-team-member-avatar">
                                                 {member.avatar_url ? (
                                                     <img 
                                                         src={ensureHttps(member.avatar_url)} 
                                                         alt={member.username}
                                                     />
                                                 ) : (
-                                                    <div className="avatar-placeholder">
+                                                    <div className="my-team-avatar-placeholder">
                                                         {member.username.charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="member-name">
+                                            <span className="my-team-member-name">
                                                 {member.username}
                                                 {member.role === 'captain' && ' 👑'}
                                             </span>
