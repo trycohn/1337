@@ -1229,59 +1229,81 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
 });
 
 // Маршрут для перенаправления пользователя на страницу авторизации Faceit для привязки аккаунта
-router.get('/link-faceit', authenticateToken, (req, res) => {
-    const clientId = process.env.FACEIT_CLIENT_ID;
-    const redirectUri = process.env.FACEIT_REDIRECT_URI; // должен точно совпадать с настройками Faceit
+router.get('/link-faceit', async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        if (!token) {
+            return res.status(401).json({ error: 'Токен не предоставлен' });
+        }
 
-    // Генерация code_verifier и вычисление code_challenge (S256)
-    const codeVerifier = crypto.randomBytes(32).toString('hex');
-    const hash = crypto.createHash('sha256').update(codeVerifier).digest();
-    const codeChallenge = hash.toString('base64')
-      .replace(/\+/g, '-')  // URL-safe
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+        // Проверяем и декодируем токен
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (err) {
+            console.error('Ошибка проверки токена:', err);
+            return res.status(401).json({ error: 'Недействительный токен' });
+        }
 
-    // Генерируем state-параметр, включающий userId
-    const randomPart = crypto.randomBytes(8).toString('hex');
-    const state = `${randomPart}-${req.user.id}`;
+        const clientId = process.env.FACEIT_CLIENT_ID;
+        const redirectUri = process.env.FACEIT_REDIRECT_URI;
 
-    console.log('Устанавливаем куки для FACEIT привязки:');
-    console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
-    console.log('state:', state);
-    console.log('Host:', req.headers.host);
-    console.log('Origin:', req.headers.origin);
+        if (!clientId || !redirectUri) {
+            console.error('Отсутствуют переменные окружения FACEIT');
+            return res.status(500).json({ error: 'Конфигурация FACEIT не настроена' });
+        }
 
-    // Получаем домен из заголовка или используем стандартный
-    const domain = req.headers.host ? req.headers.host.split(':')[0] : '1337community.com';
-    const cookieOptions = { 
-        httpOnly: true, 
-        secure: true, 
-        sameSite: 'none',
-        maxAge: 15 * 60 * 1000 // 15 минут
-    };
-    
-    console.log('Cookie options:', cookieOptions);
+        // Генерация code_verifier и вычисление code_challenge (S256)
+        const codeVerifier = crypto.randomBytes(32).toString('hex');
+        const hash = crypto.createHash('sha256').update(codeVerifier).digest();
+        const codeChallenge = hash.toString('base64')
+          .replace(/\+/g, '-')  // URL-safe
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
 
-    // Сохраняем codeVerifier и state в куки с настройками для HTTPS
-    res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
-    res.cookie('faceit_state', state, cookieOptions);
+        // Генерируем state-параметр, включающий userId
+        const randomPart = crypto.randomBytes(8).toString('hex');
+        const state = `${randomPart}-${decoded.id}`;
 
-    const authUrl = 'https://accounts.faceit.com';
-    const params = querystring.stringify({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: 'openid profile email membership',
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        state: state,
-        redirect_popup: 'true'
-    });
-    
-    console.log('Redirect URL:', `${authUrl}?${params}`);
-    console.log('FACEIT параметры:', {clientId, redirectUri});
-    
-    res.redirect(`${authUrl}?${params}`);
+        console.log('Устанавливаем куки для FACEIT привязки:');
+        console.log('code_verifier:', codeVerifier.substring(0, 10) + '...');
+        console.log('state:', state);
+        console.log('userId:', decoded.id);
+
+        const cookieOptions = { 
+            httpOnly: true, 
+            secure: true, 
+            sameSite: 'none',
+            maxAge: 15 * 60 * 1000 // 15 минут
+        };
+        
+        console.log('Cookie options:', cookieOptions);
+
+        // Сохраняем codeVerifier и state в куки с настройками для HTTPS
+        res.cookie('faceit_code_verifier', codeVerifier, cookieOptions);
+        res.cookie('faceit_state', state, cookieOptions);
+
+        const authUrl = 'https://accounts.faceit.com';
+        const params = querystring.stringify({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: 'openid profile email membership',
+            code_challenge: codeChallenge,
+            code_challenge_method: 'S256',
+            state: state,
+            redirect_popup: 'true'
+        });
+        
+        console.log('Redirect URL:', `${authUrl}?${params}`);
+        console.log('FACEIT параметры:', {clientId, redirectUri});
+        
+        res.redirect(`${authUrl}?${params}`);
+    } catch (err) {
+        console.error('Ошибка в link-faceit:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
 });
 
 // Callback для Faceit после авторизации
