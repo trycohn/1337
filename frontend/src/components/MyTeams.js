@@ -192,8 +192,8 @@ const MyTeams = ({ user }) => {
                             className="team-card"
                             onClick={() => openTeamModal(team)}
                         >
-                            <div className="team-header">
-                                <div className="team-avatar-container">
+                            <div className="my-team-header">
+                                <div className="my-team-avatar-container">
                                     {team.avatar_url ? (
                                         <img 
                                             src={ensureHttps(team.avatar_url)} 
@@ -201,14 +201,14 @@ const MyTeams = ({ user }) => {
                                             className="team-avatar"
                                         />
                                     ) : (
-                                        <div className="team-avatar-placeholder">
+                                        <div className="my-team-avatar-placeholder">
                                             {team.name.charAt(0).toUpperCase()}
                                         </div>
                                     )}
                                 </div>
                                 <div className="team-info">
-                                    <h3 className="team-name">{team.name}</h3>
-                                    <div className="team-badges">
+                                    <h3 className="my-team-name">{team.name}</h3>
+                                    <div className="my-team-badges">
                                         {team.is_captain && (
                                             <span className="captain-badge">Капитан</span>
                                         )}
@@ -218,8 +218,8 @@ const MyTeams = ({ user }) => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="team-members">
-                                <div className="members-list">
+                            <div className="my-team-members">
+                                <div className="my-members-list">
                                     {team.members.slice(0, 4).map(member => (
                                         <div key={member.id} className="member-item">
                                             <div className="member-avatar">
@@ -241,7 +241,7 @@ const MyTeams = ({ user }) => {
                                         </div>
                                     ))}
                                     {team.member_count > 4 && (
-                                        <div className="more-members">
+                                        <div className="my-more-members">
                                             +{team.member_count - 4} еще
                                         </div>
                                     )}
