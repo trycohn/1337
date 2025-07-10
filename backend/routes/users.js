@@ -408,19 +408,111 @@ router.post('/update-email', authenticateToken, async (req, res) => {
         return res.status(400).json({ message: 'Email обязателен' });
     }
 
+    // Валидация email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Неправильный формат email' });
+    }
+
     try {
+        console.log(`🔄 Обновление email для пользователя ID: ${req.user.id}`);
+        console.log(`📧 Новый email: ${email}`);
+
+        // Получаем текущие данные пользователя для диагностики
+        const currentUserResult = await pool.query(
+            'SELECT id, username, email, steam_id, faceit_id FROM users WHERE id = $1',
+            [req.user.id]
+        );
+
+        if (currentUserResult.rows.length === 0) {
+            console.error('❌ Пользователь не найден в базе данных');
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const currentUser = currentUserResult.rows[0];
+        console.log(`👤 Текущий пользователь:`, {
+            id: currentUser.id,
+            username: currentUser.username,
+            currentEmail: currentUser.email,
+            steamId: currentUser.steam_id,
+            faceitId: currentUser.faceit_id
+        });
+
         // Проверяем, не занят ли email другим пользователем
-        const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1 AND id != $2', [email, req.user.id]);
+        console.log('🔍 Проверяем занятость email...');
+        const emailCheck = await pool.query(
+            'SELECT id, username, email FROM users WHERE email = $1 AND id != $2',
+            [email, req.user.id]
+        );
+
         if (emailCheck.rows.length > 0) {
+            console.warn('⚠️ Email уже занят другим пользователем:', emailCheck.rows[0]);
             return res.status(400).json({ error: 'Этот email уже занят' });
         }
 
+        console.log('✅ Email свободен, выполняем обновление...');
+
         // Обновляем email и сбрасываем статус верификации
-        await pool.query('UPDATE users SET email = $1, is_verified = FALSE WHERE id = $2', [email, req.user.id]);
-        res.json({ message: 'Email успешно обновлен' });
+        const updateResult = await pool.query(
+            'UPDATE users SET email = $1, is_verified = FALSE WHERE id = $2 RETURNING id, username, email, is_verified',
+            [email, req.user.id]
+        );
+
+        if (updateResult.rows.length === 0) {
+            console.error('❌ Не удалось обновить email - пользователь не найден');
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const updatedUser = updateResult.rows[0];
+        console.log('✅ Email успешно обновлен:', {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            newEmail: updatedUser.email,
+            isVerified: updatedUser.is_verified
+        });
+
+        res.json({ 
+            message: 'Email успешно обновлен',
+            user: {
+                email: updatedUser.email,
+                isVerified: updatedUser.is_verified
+            }
+        });
     } catch (err) {
-        console.error('Ошибка обновления email:', err);
-        res.status(500).json({ error: 'Не удалось обновить email' });
+        console.error('❌ Ошибка обновления email:', err);
+        
+        // Детальная информация об ошибке для диагностики
+        let errorMessage = 'Не удалось обновить email';
+        let errorDetails = {};
+
+        if (err.code === '23505') {
+            // Уникальное ограничение
+            errorMessage = 'Этот email уже используется';
+            errorDetails = { duplicateKey: true };
+        } else if (err.code === '23503') {
+            // Нарушение внешнего ключа
+            errorMessage = 'Ошибка связи с базой данных';
+            errorDetails = { foreignKeyViolation: true };
+        } else if (err.code === '23502') {
+            // Нарушение NOT NULL
+            errorMessage = 'Недостаточно данных для обновления';
+            errorDetails = { notNull: true };
+        } else if (err.code === '23514') {
+            // Нарушение CHECK constraint
+            errorMessage = 'Данные не соответствуют требованиям';
+            errorDetails = { checkConstraint: true };
+        }
+
+        // Дополнительная информация для разработчиков
+        if (process.env.NODE_ENV === 'development') {
+            errorDetails.sqlCode = err.code;
+            errorDetails.sqlMessage = err.message;
+        }
+
+        res.status(500).json({ 
+            error: errorMessage,
+            details: errorDetails
+        });
     }
 });
 
