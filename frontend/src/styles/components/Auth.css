@@ -664,12 +664,14 @@
   --tooltip-bg: #dc3545;
   --tooltip-border: #b02a37;
   --tooltip-shadow: rgba(220, 53, 69, 0.3);
+  z-index: 1000;
 }
 
 .auth-tooltip.success {
   --tooltip-bg: #28a745;
   --tooltip-border: #1e7e34;
   --tooltip-shadow: rgba(40, 167, 69, 0.3);
+  z-index: 1000;
 }
 
 .tooltip-content {
@@ -760,6 +762,7 @@
     top: -60px;
     left: 0;
     max-width: 100%;
+    z-index: 1000;
   }
   
   .tooltip-arrow {
