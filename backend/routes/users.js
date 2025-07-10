@@ -12,6 +12,7 @@ const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { sendWelcomeEmail } = require('../services/emailService');
 
 // Настройка транспорта nodemailer
 const transporter = nodemailer.createTransport({
@@ -95,6 +96,14 @@ router.post('/register', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '168h' }
         );
+
+        // Отправляем приветственное email
+        try {
+            await sendWelcomeEmail(email, username);
+        } catch (emailError) {
+            console.error('Ошибка отправки приветственного email:', emailError);
+            // Не блокируем регистрацию, если email не отправился
+        }
 
         res.status(201).json({ message: 'Пользователь создан', userId: newUser.id, token });
     } catch (err) {

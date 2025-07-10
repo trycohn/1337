@@ -1,75 +1,133 @@
-import { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Home.css';
+import axios from 'axios';
+import './Register.css';
 
 function Register() {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
+    const [message, setMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post('/api/users/register', {
-        username,
-        email,
-        password,
-      });
-      console.log('Регистрация успешна:', response.data);
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
 
-      // Сохранение токена и авторизация
-      localStorage.setItem('token', response.data.token);
-      
-      setSuccessMessage('Вы успешно зарегистрировались!');
-      setError(null);
+    const validatePasswords = () => {
+        if (formData.password !== formData.confirmPassword) {
+            setMessage('Пароли не совпадают');
+            return false;
+        }
+        if (formData.password.length < 6) {
+            setMessage('Пароль должен содержать минимум 6 символов');
+            return false;
+        }
+        return true;
+    };
 
-      // Задержка 2 секунды перед перенаправлением
-      setTimeout(() => {
-        setSuccessMessage(null);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        
+        if (!validatePasswords()) {
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // Используем относительный путь для API
+            const response = await axios.post('/api/users/register', {
+                username: formData.username,
+                email: formData.email,
+                password: formData.password
+            });
+
+            setShowSuccessModal(true);
+        } catch (error) {
+            setMessage(error.response?.data?.message || 'Произошла ошибка при регистрации');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleModalClose = () => {
+        setShowSuccessModal(false);
         navigate('/');
-      }, 2000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка регистрации'); // Изменено с .error на .message
-      setSuccessMessage(null);
-      console.error('Ошибка регистрации:', err);
-    }
-  };
+    };
 
-  return (
-    <section className="register">
-      <h2>Регистрация</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Имя пользователя"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Электронная почта"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Зарегистрироваться</button>
-      </form>
-      {error && <p className="error">{error}</p>}
-      {successMessage && <div className="success-popup">{successMessage}</div>}
-    </section>
-  );
+    return (
+        <div className="register-container">
+            <h2>Регистрация</h2>
+            <form onSubmit={handleSubmit}>
+                <div>
+                    <label>Имя пользователя:</label>
+                    <input
+                        type="text"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Email:</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Пароль:</label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Подтвердите пароль:</label>
+                    <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+                <button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
+                </button>
+            </form>
+            {message && <p className="message">{message}</p>}
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="modal-overlay" onClick={handleModalClose}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h3>Поздравляем!</h3>
+                        <p>Регистрация прошла успешно!</p>
+                        <p>На ваш email отправлено приветственное письмо с данными аккаунта.</p>
+                        <button onClick={handleModalClose}>Продолжить</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default Register;
