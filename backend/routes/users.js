@@ -97,17 +97,91 @@ router.post('/register', async (req, res) => {
             { expiresIn: '168h' }
         );
 
-        // Отправляем приветственное email
+        // 📧 УЛУЧШЕННАЯ ОТПРАВКА ПРИВЕТСТВЕННОГО EMAIL
+        let emailSent = false;
+        let emailError = null;
         try {
-            await sendWelcomeEmail(email, username);
-        } catch (emailError) {
-            console.error('Ошибка отправки приветственного email:', emailError);
-            // Не блокируем регистрацию, если email не отправился
+            console.log(`📧 Отправляем приветственное письмо пользователю ${username} (${email})`);
+            const emailResult = await sendWelcomeEmail(email, username);
+            if (emailResult.success) {
+                console.log(`✅ Приветственное письмо успешно отправлено: ${emailResult.messageId}`);
+                emailSent = true;
+            } else {
+                console.error(`❌ Ошибка отправки приветственного письма:`, emailResult.error);
+                emailError = emailResult.error;
+            }
+        } catch (emailException) {
+            console.error('❌ Исключение при отправке приветственного email:', emailException);
+            emailError = emailException.message;
         }
 
-        res.status(201).json({ message: 'Пользователь создан', userId: newUser.id, token });
+        // 🔔 ОТПРАВЛЯЕМ СИСТЕМНОЕ УВЕДОМЛЕНИЕ
+        try {
+            const { sendSystemNotification } = require('../utils/systemNotifications');
+            
+            const welcomeMessage = `🎉 Добро пожаловать в 1337 Community, ${username}!\n\n` +
+                                 `Ваш аккаунт успешно создан и готов к использованию.\n` +
+                                 `• Участвуйте в турнирах\n` +
+                                 `• Находите команду\n` +
+                                 `• Отслеживайте статистику\n` +
+                                 `• Получайте достижения\n\n` +
+                                 `${emailSent ? '📧 Приветственное письмо отправлено на ваш email.' : '⚠️ Не удалось отправить приветственное письмо.'}`;
+            
+            await sendSystemNotification(newUser.id, welcomeMessage, 'welcome', {
+                userId: newUser.id,
+                username: username,
+                email: email,
+                emailSent: emailSent
+            });
+            
+            console.log(`✅ Системное уведомление отправлено пользователю ${username}`);
+        } catch (notificationError) {
+            console.error('⚠️ Ошибка отправки системного уведомления:', notificationError);
+            // Не блокируем регистрацию
+        }
+
+        // 🏆 ПРОВЕРЯЕМ ДОСТИЖЕНИЯ ДЛЯ НОВОГО ПОЛЬЗОВАТЕЛЯ
+        try {
+            const achievementSystem = require('../services/achievementSystem');
+            
+            // Инициализируем систему достижений если не инициализирована
+            if (!achievementSystem.initialized) {
+                await achievementSystem.initialize();
+            }
+            
+            await achievementSystem.triggerAchievementCheck(newUser.id, 'registration', {
+                username: username,
+                registrationDate: new Date()
+            });
+            console.log(`🏆 Проверка достижений запущена для пользователя ${username}`);
+        } catch (achievementError) {
+            console.error('⚠️ Ошибка проверки достижений:', achievementError);
+            // Не блокируем регистрацию
+        }
+
+        // 📊 ВОЗВРАЩАЕМ РАСШИРЕННУЮ ИНФОРМАЦИЮ
+        const responseData = {
+            message: 'Пользователь создан',
+            userId: newUser.id,
+            token,
+            user: {
+                id: newUser.id,
+                username: newUser.username,
+                email: email,
+                role: newUser.role
+            },
+            emailSent: emailSent
+        };
+
+        // Добавляем информацию об ошибке email только в dev режиме
+        if (!emailSent && process.env.NODE_ENV === 'development') {
+            responseData.emailError = emailError;
+        }
+
+        console.log(`🎉 Пользователь ${username} успешно зарегистрирован (ID: ${newUser.id})`);
+        res.status(201).json(responseData);
     } catch (err) {
-        console.error('Ошибка регистрации:', err);
+        console.error('❌ Ошибка регистрации:', err);
         res.status(500).json({ error: err.message });
     }
 });

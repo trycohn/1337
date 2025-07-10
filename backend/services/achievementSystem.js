@@ -53,10 +53,53 @@ class AchievementSystem {
 
         // Инициализируем базовые достижения
         await this.initializeBaseAchievements();
+        
+        // 🆕 ЗАГРУЖАЕМ ДОСТИЖЕНИЯ ИЗ БАЗЫ ДАННЫХ В КЭШ
+        await this.loadAchievementsFromDatabase();
+    }
+
+    // 🆕 НОВЫЙ МЕТОД ДЛЯ ЗАГРУЗКИ ДОСТИЖЕНИЙ ИЗ БД
+    async loadAchievementsFromDatabase() {
+        try {
+            const result = await pool.query('SELECT * FROM achievements ORDER BY id');
+            this.achievements.clear();
+            
+            for (const row of result.rows) {
+                const achievement = {
+                    id: row.id,
+                    key: row.key,
+                    name: row.name,
+                    description: row.description,
+                    icon: row.icon,
+                    category: row.category,
+                    rarity: row.rarity,
+                    points: row.points,
+                    requirements: row.requirements
+                };
+                
+                this.achievements.set(row.key, achievement);
+            }
+            
+            console.log(`✅ Загружено ${result.rows.length} достижений в кэш`);
+        } catch (error) {
+            console.error('❌ Ошибка загрузки достижений из базы данных:', error);
+        }
     }
 
     async initializeBaseAchievements() {
         const baseAchievements = [
+            // 🎯 ДОСТИЖЕНИЯ ЗА РЕГИСТРАЦИЮ
+            {
+                key: 'first_registration',
+                name: 'Добро пожаловать!',
+                description: 'Успешная регистрация в 1337 Community',
+                icon: '🎉',
+                category: 'registration',
+                rarity: 'common',
+                points: 50,
+                requirements: { type: 'registration_completed', count: 1 }
+            },
+            
             // Турнирные достижения
             {
                 key: 'first_tournament',
@@ -201,12 +244,9 @@ class AchievementSystem {
                 achievement.points,
                 JSON.stringify(achievement.requirements)
             ]);
-
-            // Кэшируем достижение в памяти
-            this.achievements.set(achievement.key, achievement);
         }
 
-        console.log(`✅ Инициализировано ${baseAchievements.length} базовых достижений`);
+        console.log(`✅ Обновлено ${baseAchievements.length} базовых достижений в базе данных`);
     }
 
     async checkUserAchievements(userId) {
@@ -260,6 +300,12 @@ class AchievementSystem {
 
             // Различные типы требований
             switch (requirements.type) {
+                case 'registration_completed':
+                    // Достижение за регистрацию автоматически разблокируется
+                    progress = 1;
+                    isCompleted = true;
+                    break;
+                    
                 case 'tournament_participation':
                     progress = userStats.totalTournaments;
                     isCompleted = progress >= requirements.count;
