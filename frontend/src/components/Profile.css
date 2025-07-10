@@ -670,7 +670,7 @@
 .modal-buttons {
     display: flex;
     gap: var(--spacing-sm);
-    justify-content: flex-end;
+    justify-content: center;
     margin-top: var(--spacing-lg);
 }
 
