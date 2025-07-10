@@ -27,7 +27,7 @@
 }
 
 .team-card-large {
-    background: #f8f9fa;
+    background: #000000;
     border-radius: 12px;
     padding: 20px;
     border: 2px solid #e9ecef;
@@ -270,16 +270,18 @@
     background: #000000;
     border-radius: 12px;
     padding: 20px;
-    border: 2px solid #e9ecef;
+    border: 1px solid #e9ecef;
     height: fit-content;
     color: #ffffff;
+    display: flex;
+    justify-content: space-around;
+    flex-direction: row;
 }
 
 .invite-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
 }
 
 .invite-header h4 {
@@ -302,11 +304,12 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    padding: 0;
 }
 
 .toggle-invite-btn:hover {
-    background: #ffffff;
-    color: #000000;
+    background: #111111;
+    color: #ffffff;
     transform: scale(1.1);
 }
 
