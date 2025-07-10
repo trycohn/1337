@@ -2383,7 +2383,7 @@ function Profile() {
                                                 </button>
                                                 {user.steam_id && (
                                                     <button className="btn btn-secondary btn-sm btn-steam" onClick={fetchAndSetSteamNickname}>
-                                                        Установить никнейм Steam
+                                                        Никнейм из Steam
                                                     </button>
                                                 )}
                                             </div>
