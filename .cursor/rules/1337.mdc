@@ -25,4 +25,6 @@ Focus on practical, server-side implementation and avoid local development assum
 
 В файле SYSTEM_ARCHITECTURE.md описание всей структуры проекта.
 
+Цветовая схема - монохромная, background-color: #000, color: #fff, граница для кнопок #ff0000, hover при наведении на кнопки #111111, дополнительный цвет фона - #111.
+
 Use context7
