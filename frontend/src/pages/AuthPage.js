@@ -11,10 +11,14 @@ function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 🆕 СОСТОЯНИЕ ДЛЯ ТУЛТИПОВ
+  const [tooltips, setTooltips] = useState({
+    login: { show: false, message: '', type: 'error' },
+    register: { show: false, message: '', type: 'error' }
+  });
   
   // 🆕 СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ПРИВЕТСТВЕННОГО ОКНА
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -23,6 +27,30 @@ function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+
+  // 🆕 ФУНКЦИЯ ДЛЯ ПОКАЗА ТУЛТИПА
+  const showTooltip = (form, message, type = 'error') => {
+    setTooltips(prev => ({
+      ...prev,
+      [form]: { show: true, message, type }
+    }));
+    
+    // Автоматическое скрытие через 5 секунд
+    setTimeout(() => {
+      setTooltips(prev => ({
+        ...prev,
+        [form]: { show: false, message: '', type: 'error' }
+      }));
+    }, 5000);
+  };
+
+  // 🆕 ФУНКЦИЯ ДЛЯ СКРЫТИЯ ТУЛТИПА
+  const hideTooltip = (form) => {
+    setTooltips(prev => ({
+      ...prev,
+      [form]: { show: false, message: '', type: 'error' }
+    }));
+  };
 
   // Проверяем URL-параметр register при загрузке компонента
   useEffect(() => {
@@ -39,7 +67,7 @@ function AuthPage() {
     
     if (token) {
       login(token);
-      setSuccessMessage('Вы успешно вошли через Steam!');
+      showTooltip('login', 'Вы успешно вошли через Steam!', 'success');
       window.history.replaceState({}, document.title, '/login');
       setTimeout(() => {
         navigate('/');
@@ -48,10 +76,10 @@ function AuthPage() {
     
     const errorMessage = searchParams.get('message');
     if (errorMessage) {
-      setError(decodeURIComponent(errorMessage));
+      showTooltip('login', decodeURIComponent(errorMessage), 'error');
       window.history.replaceState({}, document.title, '/login');
     }
-  }, [location, navigate]);
+  }, [location, navigate, login]);
 
   // Очистка ошибок при изменении полей
   const clearFieldError = (fieldName) => {
@@ -61,8 +89,10 @@ function AuthPage() {
         [fieldName]: ''
       }));
     }
-    if (error) {
-      setError(null);
+    // 🆕 Скрываем тултипы при изменении полей
+    if (tooltips.login.show || tooltips.register.show) {
+      hideTooltip('login');
+      hideTooltip('register');
     }
   };
 
@@ -148,15 +178,14 @@ function AuthPage() {
       });
       
       await login(response.data.token);
-      setSuccessMessage('Вы успешно вошли в систему!');
-      setError(null);
+      showTooltip('login', 'Вы успешно вошли в систему!', 'success');
       
       setTimeout(() => {
         navigate('/');
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка входа');
-      setSuccessMessage(null);
+      const errorMessage = err.response?.data?.message || 'Ошибка входа';
+      showTooltip('login', errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +193,7 @@ function AuthPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError(null);
+    hideTooltip('register'); // Очищаем предыдущие тултипы
     
     if (!validateRegistrationForm()) {
       return;
@@ -187,10 +216,8 @@ function AuthPage() {
         });
         setShowWelcomeModal(true);
       } else {
-        setSuccessMessage(`Аккаунт успешно создан! На email ${email} отправлено приветственное письмо.`);
+        showTooltip('register', `Аккаунт успешно создан! На email ${email} отправлено приветственное письмо.`, 'success');
       }
-      
-      setError(null);
       
       // Очищаем форму
       setUsername('');
@@ -212,8 +239,7 @@ function AuthPage() {
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Ошибка регистрации';
-      setError(errorMessage);
-      setSuccessMessage(null);
+      showTooltip('register', errorMessage, 'error');
       
       // Обработка специфических ошибок сервера
       if (err.response?.data?.field) {
@@ -284,13 +310,34 @@ function AuthPage() {
                 Забыли пароль?
               </a>
             </div>
-            <button 
-              type="submit" 
-              className={`auth-button ${isLoading ? 'loading' : ''}`}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Вход...' : 'Войти'}
-            </button>
+            <div className="auth-button-container">
+              <button 
+                type="submit" 
+                className={`auth-button ${isLoading ? 'loading' : ''}`}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Вход...' : 'Войти'}
+              </button>
+              
+              {/* 🆕 ТУЛТИП ДЛЯ ВХОДА */}
+              {tooltips.login.show && (
+                <div className={`auth-tooltip ${tooltips.login.type}`}>
+                  <div className="tooltip-content">
+                    <span className="tooltip-icon">
+                      {tooltips.login.type === 'success' ? '✅' : '❌'}
+                    </span>
+                    <span className="tooltip-message">{tooltips.login.message}</span>
+                    <button 
+                      className="tooltip-close"
+                      onClick={() => hideTooltip('login')}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="tooltip-arrow"></div>
+                </div>
+              )}
+            </div>
             
             <div className="auth-divider">
               <span className="auth-divider-text">или</span>
@@ -392,13 +439,34 @@ function AuthPage() {
                 <div className="field-error">{validationErrors.confirmPassword}</div>
               )}
             </div>
-            <button 
-              type="submit" 
-              className={`auth-button ${isLoading ? 'loading' : ''}`}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
-            </button>
+            <div className="auth-button-container">
+              <button 
+                type="submit" 
+                className={`auth-button ${isLoading ? 'loading' : ''}`}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
+              </button>
+              
+              {/* 🆕 ТУЛТИП ДЛЯ РЕГИСТРАЦИИ */}
+              {tooltips.register.show && (
+                <div className={`auth-tooltip ${tooltips.register.type}`}>
+                  <div className="tooltip-content">
+                    <span className="tooltip-icon">
+                      {tooltips.register.type === 'success' ? '✅' : '❌'}
+                    </span>
+                    <span className="tooltip-message">{tooltips.register.message}</span>
+                    <button 
+                      className="tooltip-close"
+                      onClick={() => hideTooltip('register')}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="tooltip-arrow"></div>
+                </div>
+              )}
+            </div>
             
             <div className="auth-divider">
               <span className="auth-divider-text">или</span>
@@ -421,9 +489,6 @@ function AuthPage() {
               </button>
             </div>
           </form>
-          
-          {error && <p className="error-message">{error}</p>}
-          {successMessage && <div className="success-message">{successMessage}</div>}
         </div>
       </div>
       
