@@ -340,11 +340,12 @@ router.get('/:chatId/messages', authenticateToken, async (req, res) => {
                         RETURNING id
                     `, [id, req.user.id]);
                     
-                    // Если записи не существует, создаем новую
+                    // Если записи не существует, создаем новую (с защитой от дублирования)
                     if (updateResult.rows.length === 0) {
                         await client.query(`
                             INSERT INTO message_status (message_id, user_id, is_read, read_at)
                             VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                            ON CONFLICT (message_id, user_id) DO NOTHING
                         `, [id, req.user.id]);
                     }
                 }
@@ -406,11 +407,12 @@ router.post('/:chatId/read', authenticateToken, async (req, res) => {
                         RETURNING id
                     `, [id, req.user.id]);
                     
-                    // Если записи не существует, создаем новую
+                    // Если записи не существует, создаем новую (с защитой от дублирования)
                     if (updateResult.rows.length === 0) {
                         await client.query(`
                             INSERT INTO message_status (message_id, user_id, is_read, read_at)
                             VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP)
+                            ON CONFLICT (message_id, user_id) DO NOTHING
                         `, [id, req.user.id]);
                     }
                 }
