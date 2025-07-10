@@ -284,10 +284,24 @@ class AchievementSystem {
         const { requirements } = achievement;
         
         try {
+            // Получаем ID достижения из базы данных если не указан
+            let achievementId = achievement.id;
+            if (!achievementId) {
+                const achievementResult = await pool.query(
+                    'SELECT id FROM achievements WHERE key = $1',
+                    [achievement.key]
+                );
+                if (achievementResult.rows.length === 0) {
+                    console.log(`❓ Достижение с ключом ${achievement.key} не найдено в базе данных`);
+                    return false;
+                }
+                achievementId = achievementResult.rows[0].id;
+            }
+
             // Проверяем, не разблокировано ли уже это достижение
             const existingResult = await pool.query(
                 'SELECT unlocked_at FROM user_achievements WHERE user_id = $1 AND achievement_id = $2',
-                [userId, achievement.id]
+                [userId, achievementId]
             );
             
             if (existingResult.rows.length > 0 && existingResult.rows[0].unlocked_at) {
@@ -364,7 +378,7 @@ class AchievementSystem {
                         THEN EXCLUDED.unlocked_at 
                         ELSE user_achievements.unlocked_at 
                     END
-            `, [userId, achievement.id, progress, maxProgress, isCompleted ? new Date() : null]);
+            `, [userId, achievementId, progress, maxProgress, isCompleted ? new Date() : null]);
 
             return isCompleted && !existingResult.rows[0]?.unlocked_at;
             

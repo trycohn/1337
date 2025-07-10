@@ -102,11 +102,12 @@ async function sendSystemNotification(recipientId, message, type = 'system', met
             [chatId, systemUserId, message, type, metadata ? JSON.stringify(metadata) : null]
         );
         
-        // Помечаем сообщение как непрочитанное для получателя
-        await pool.query(
-            'INSERT INTO message_status (message_id, user_id, is_read, read_at) VALUES ($1, $2, $3, NULL)',
-            [messageResult.rows[0].id, recipientId, false]
-        );
+        // Помечаем сообщение как непрочитанное для получателя (избегаем дублирования)
+        await pool.query(`
+            INSERT INTO message_status (message_id, user_id, is_read, read_at) 
+            VALUES ($1, $2, $3, NULL)
+            ON CONFLICT (message_id, user_id) DO NOTHING
+        `, [messageResult.rows[0].id, recipientId, false]);
         
         console.log(`Системное уведомление отправлено пользователю ${recipientId}: ${message}`);
         if (metadata) {
