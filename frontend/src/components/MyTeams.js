@@ -189,7 +189,7 @@ const MyTeams = ({ user }) => {
                     teams.map(team => (
                         <div 
                             key={team.id} 
-                            className="team-card"
+                            className="my-team-card"
                             onClick={() => openTeamModal(team)}
                         >
                             <div className="my-team-header">
