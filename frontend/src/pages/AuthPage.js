@@ -15,6 +15,11 @@ function AuthPage() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 🆕 СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ПРИВЕТСТВЕННОГО ОКНА
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [welcomeData, setWelcomeData] = useState({ username: '', email: '' });
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -173,10 +178,14 @@ function AuthPage() {
         password,
       });
       
-      // 🆕 АВТОМАТИЧЕСКАЯ АВТОРИЗАЦИЯ: используем токен из ответа
+      // 🆕 ПОКАЗЫВАЕМ МОДАЛЬНОЕ ПРИВЕТСТВЕННОЕ ОКНО
       if (response.data.token) {
         await login(response.data.token);
-        setSuccessMessage(`Добро пожаловать, ${username}! Аккаунт создан и вы автоматически авторизованы. Приветственное письмо отправлено на ${email}.`);
+        setWelcomeData({ 
+          username: username.trim(), 
+          email: email.trim().toLowerCase() 
+        });
+        setShowWelcomeModal(true);
       } else {
         setSuccessMessage(`Аккаунт успешно создан! На email ${email} отправлено приветственное письмо.`);
       }
@@ -190,10 +199,17 @@ function AuthPage() {
       setConfirmPassword('');
       setValidationErrors({});
       
-      // 🆕 СОКРАЩАЕМ ВРЕМЯ ДО ПЕРЕХОДА, так как пользователь уже авторизован
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
+      // 🆕 ПЕРЕХОД НА ГЛАВНУЮ СТРАНИЦУ ПОСЛЕ ЗАКРЫТИЯ МОДАЛЬНОГО ОКНА
+      if (response.data.token) {
+        setTimeout(() => {
+          setShowWelcomeModal(false);
+          navigate('/');
+        }, 4000); // 4 секунды для чтения сообщения
+      } else {
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      }
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Ошибка регистрации';
       setError(errorMessage);
@@ -410,6 +426,48 @@ function AuthPage() {
           {successMessage && <div className="success-message">{successMessage}</div>}
         </div>
       </div>
+      
+      {/* 🆕 МОДАЛЬНОЕ ПРИВЕТСТВЕННОЕ ОКНО */}
+      {showWelcomeModal && (
+        <div className="welcome-modal-overlay">
+          <div className="welcome-modal">
+            <div className="welcome-modal-header">
+              <div className="welcome-icon">🎉</div>
+              <h2>Добро пожаловать!</h2>
+            </div>
+            <div className="welcome-modal-content">
+              <h3>Привет, {welcomeData.username}!</h3>
+              <p>Ваш аккаунт успешно создан и вы автоматически авторизованы.</p>
+              <p>Приветственное письмо отправлено на <strong>{welcomeData.email}</strong></p>
+              <div className="welcome-features">
+                <div className="feature-item">
+                  <span className="feature-icon">🏆</span>
+                  <span>Участвуйте в турнирах</span>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">👥</span>
+                  <span>Находите команду</span>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">📊</span>
+                  <span>Отслеживайте статистику</span>
+                </div>
+              </div>
+            </div>
+            <div className="welcome-modal-footer">
+              <button 
+                className="welcome-close-btn"
+                onClick={() => {
+                  setShowWelcomeModal(false);
+                  navigate('/');
+                }}
+              >
+                Начать пользоваться! 🚀
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

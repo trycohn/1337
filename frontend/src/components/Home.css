@@ -34,6 +34,7 @@ header.header {
 .nav-container {
   display: flex;
   align-items: center;
+  padding-left: 10px;
 }
 .hamburger {
   display: none;
@@ -86,6 +87,7 @@ header.header {
 .auth-block {
   display: flex;
   align-items: center;
+  padding-right: 10px;
 }
 .auth-block input,
 .auth-block button,
