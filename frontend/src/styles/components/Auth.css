@@ -399,7 +399,7 @@
 }
 
 .welcome-modal {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  background: linear-gradient(135deg, #111111 0%, #222222 100%);
   border-radius: 20px;
   padding: 0;
   max-width: 500px;
@@ -407,13 +407,13 @@
   max-height: 80vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid #ff0000;
   position: relative;
   animation: modalSlideIn 0.4s ease-out;
 }
 
 .welcome-modal-header {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #111111 0%, #222222 100%);
   color: white;
   padding: 30px;
   text-align: center;
@@ -454,21 +454,21 @@
 }
 
 .welcome-modal-content h3 {
-  color: #2c3e50;
+  color: #ffffff;
   font-size: 24px;
   margin: 0 0 15px 0;
   font-weight: 600;
 }
 
 .welcome-modal-content p {
-  color: #7f8c8d;
+  color: #ffffff;
   font-size: 16px;
   line-height: 1.6;
   margin: 10px 0;
 }
 
 .welcome-modal-content strong {
-  color: #2c3e50;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -483,11 +483,11 @@
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #111111 0%, #222222 100%);
   border-radius: 12px;
-  border-left: 4px solid #4CAF50;
+  border-left: 4px solid #ff0000;
   font-size: 14px;
-  color: #495057;
+  color: #ffffff;
   font-weight: 500;
   transition: all 0.3s ease;
   animation: slideInUp 0.6s ease-out forwards;
@@ -501,7 +501,6 @@
 
 .welcome-features .feature-item:hover {
   transform: translateX(5px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
 .welcome-features .feature-icon {
@@ -517,16 +516,14 @@
 }
 
 .welcome-close-btn {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   color: white;
-  border: none;
+  border: #ff0000;
   padding: 15px 30px;
   border-radius: 25px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
   position: relative;
   overflow: hidden;
   min-width: 200px;
@@ -549,12 +546,10 @@
 
 .welcome-close-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .welcome-close-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
 }
 
 /* Анимации */
