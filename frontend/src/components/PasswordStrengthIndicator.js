@@ -15,13 +15,12 @@ function PasswordStrengthIndicator({ password, confirmPassword }) {
             uppercase: /[A-Z]/.test(password),
             lowercase: /[a-z]/.test(password),
             numbers: /\d/.test(password),
-            symbols: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
             noSpaces: !/\s/.test(password)
         };
 
         // Проверка длины (обязательная)
         if (checks.length) {
-            score += 25;
+            score += 30;
             if (password.length >= 12) {
                 score += 10; // Бонус за длинный пароль
             }
@@ -31,30 +30,23 @@ function PasswordStrengthIndicator({ password, confirmPassword }) {
 
         // Проверка заглавных букв
         if (checks.uppercase) {
-            score += 15;
+            score += 20;
         } else {
             feedback.push('Добавьте заглавные буквы (A-Z)');
         }
 
         // Проверка строчных букв
         if (checks.lowercase) {
-            score += 15;
+            score += 20;
         } else {
             feedback.push('Добавьте строчные буквы (a-z)');
         }
 
         // Проверка цифр
         if (checks.numbers) {
-            score += 15;
-        } else {
-            feedback.push('Добавьте цифры (0-9)');
-        }
-
-        // Проверка специальных символов
-        if (checks.symbols) {
             score += 20;
         } else {
-            feedback.push('Добавьте специальные символы (!@#$%^&*)');
+            feedback.push('Добавьте цифры (0-9)');
         }
 
         // Проверка на отсутствие пробелов
@@ -185,12 +177,6 @@ function PasswordStrengthIndicator({ password, confirmPassword }) {
                                 {strength.checks.numbers ? '✓' : '○'}
                             </span>
                             <span>Цифры (0-9)</span>
-                        </div>
-                        <div className={`requirement ${strength.checks.symbols ? 'met' : 'unmet'}`}>
-                            <span className="requirement-icon">
-                                {strength.checks.symbols ? '✓' : '○'}
-                            </span>
-                            <span>Символы (!@#$%)</span>
                         </div>
                         <div className={`requirement ${strength.checks.noSpaces ? 'met' : 'unmet'}`}>
                             <span className="requirement-icon">
