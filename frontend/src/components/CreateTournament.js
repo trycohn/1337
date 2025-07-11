@@ -2,10 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import DatePicker from 'react-datepicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { ru } from 'date-fns/locale';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
 import './CreateTournament.css';
+
+// Регистрируем русскую локаль
+registerLocale('ru', ru);
 
 function CreateTournament() {
   const navigate = useNavigate();
@@ -28,13 +32,13 @@ function CreateTournament() {
   });
   const { runWithLoader } = useLoaderAutomatic();
 
-  // 🆕 Функция для определения игры CS2
+  // 🆕 Функция для определения игры CS2 (с исправленными ESLint предупреждениями)
   const isCS2Game = (gameName) => {
     if (!gameName) return false;
     const normalizedGame = gameName.toLowerCase().replace(/[^a-z0-9]/g, '');
     return normalizedGame === 'counterstrike2' || 
            normalizedGame === 'cs2' || 
-           gameName.toLowerCase().includes('counter') && gameName.toLowerCase().includes('strike') && gameName.includes('2');
+           (gameName.toLowerCase().includes('counter') && gameName.toLowerCase().includes('strike') && gameName.includes('2'));
   };
 
   useEffect(() => {
@@ -269,9 +273,19 @@ function CreateTournament() {
                   selected={formData.start_date}
                   onChange={(date) => setFormData((prev) => ({ ...prev, start_date: date }))}
                   showTimeSelect
-                  dateFormat="Pp"
+                  dateFormat="dd.MM.yyyy HH:mm"
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  timeCaption="Время"
                   placeholderText="Выберите дату и время"
+                  locale="ru"
+                  calendarStartDay={1}
+                  minDate={new Date()}
+                  className="date-picker-input"
                 />
+                <small className="form-hint">
+                  📅 Выберите дату и время начала турнира (российское время)
+                </small>
               </div>
             </div>
           </div>
