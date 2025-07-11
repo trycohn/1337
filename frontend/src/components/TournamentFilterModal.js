@@ -141,7 +141,7 @@ const TournamentFilterModal = ({
                 <div className="modal-system-header">
                     <div>
                         <h2 className="modal-system-title">
-                            🔍 Фильтр турниров
+                            Фильтр турниров
                             {getActiveFiltersCount() > 0 && (
                                 <span className="modal-system-badge modal-system-badge-primary modal-system-ml-10">
                                     {getActiveFiltersCount()} активных
@@ -167,7 +167,7 @@ const TournamentFilterModal = ({
                     {/* 🎮 ДИСЦИПЛИНА */}
                     <div className="modal-system-section">
                         <h3 className="modal-system-section-title">
-                            🎮 Дисциплина
+                            Дисциплина
                             {localFilters.games.length > 0 && (
                                 <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
                                     {localFilters.games.length} выбрано
@@ -192,7 +192,7 @@ const TournamentFilterModal = ({
                     {/* 🏆 ФОРМАТ ТУРНИРА */}
                     <div className="modal-system-section">
                         <h3 className="modal-system-section-title">
-                            🏆 Формат турнира
+                            Формат турнира
                             {localFilters.formats.length > 0 && (
                                 <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
                                     {localFilters.formats.length} выбрано
@@ -217,7 +217,7 @@ const TournamentFilterModal = ({
                     {/* 👥 ТИП УЧАСТНИКОВ */}
                     <div className="modal-system-section">
                         <h3 className="modal-system-section-title">
-                            👥 Тип участников
+                            Тип участников
                             {localFilters.participantTypes.length > 0 && (
                                 <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
                                     {localFilters.participantTypes.length} выбрано
@@ -242,7 +242,7 @@ const TournamentFilterModal = ({
                     {/* 📊 СТАТУС */}
                     <div className="modal-system-section">
                         <h3 className="modal-system-section-title">
-                            📊 Статус турнира
+                            Статус турнира
                             {localFilters.statuses.length > 0 && (
                                 <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
                                     {localFilters.statuses.length} выбрано
@@ -268,7 +268,7 @@ const TournamentFilterModal = ({
                         {/* 💰 ПРИЗОВОЙ ФОНД */}
                         <div className="modal-system-section">
                             <h3 className="modal-system-section-title">
-                                💰 Призовой фонд
+                                Призовой фонд
                                 {localFilters.hasPrizePool !== null && (
                                     <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
                                         {localFilters.hasPrizePool ? 'Есть' : 'Нет'}
@@ -278,21 +278,23 @@ const TournamentFilterModal = ({
                             <div className="modal-system-flex-column modal-system-gap-10">
                                 <label className="modal-system-checkbox-item">
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="prizePool"
                                         checked={localFilters.hasPrizePool === true}
                                         onChange={() => handlePrizepoolChange(true)}
                                         className="modal-system-checkbox"
                                     />
-                                    <span className="modal-system-checkbox-label">Есть призовой фонд</span>
+                                    <span className="modal-system-checkbox-label">Есть</span>
                                 </label>
                                 <label className="modal-system-checkbox-item">
                                     <input
-                                        type="checkbox"
+                                        type="radio"
+                                        name="prizePool"
                                         checked={localFilters.hasPrizePool === false}
                                         onChange={() => handlePrizepoolChange(false)}
                                         className="modal-system-checkbox"
                                     />
-                                    <span className="modal-system-checkbox-label">Без призового фонда</span>
+                                    <span className="modal-system-checkbox-label">Нет</span>
                                 </label>
                             </div>
                         </div>
@@ -300,7 +302,7 @@ const TournamentFilterModal = ({
                         {/* 🧮 КОЛИЧЕСТВО УЧАСТНИКОВ */}
                         <div className="modal-system-section">
                             <h3 className="modal-system-section-title">
-                                🧮 Количество участников
+                                Количество участников
                                 {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
                                     <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
                                         {localFilters.participantCount.min} - {localFilters.participantCount.max}
@@ -308,51 +310,79 @@ const TournamentFilterModal = ({
                                 )}
                             </h3>
                             <div className="modal-system-flex-column modal-system-gap-15">
-                                <div className="modal-system-range-group">
-                                    <label className="modal-system-label">
-                                        От:
+                                {/* Единый слайдер на всю ширину */}
+                                <div className="modal-system-single-range-slider" style={{ width: '90%', margin: '0 auto' }}>
+                                    <div className="modal-system-range-inputs" style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        marginBottom: '10px',
+                                        gap: '10px'
+                                    }}>
+                                        <label style={{ flex: 1 }}>
+                                            От:
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="128"
+                                                value={localFilters.participantCount.min}
+                                                onChange={(e) => handleParticipantCountChange('min', e.target.value)}
+                                                className="modal-system-input modal-system-input-small"
+                                                style={{ width: '100%' }}
+                                            />
+                                        </label>
+                                        <label style={{ flex: 1 }}>
+                                            До:
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="128"
+                                                value={localFilters.participantCount.max}
+                                                onChange={(e) => handleParticipantCountChange('max', e.target.value)}
+                                                className="modal-system-input modal-system-input-small"
+                                                style={{ width: '100%' }}
+                                            />
+                                        </label>
+                                    </div>
+                                    
+                                    {/* Двойной слайдер */}
+                                    <div className="modal-system-dual-range" style={{ position: 'relative', width: '100%' }}>
                                         <input
-                                            type="number"
+                                            type="range"
                                             min="0"
                                             max="128"
                                             value={localFilters.participantCount.min}
                                             onChange={(e) => handleParticipantCountChange('min', e.target.value)}
-                                            className="modal-system-input modal-system-input-small"
+                                            className="modal-system-slider"
+                                            style={{ 
+                                                position: 'absolute',
+                                                width: '100%',
+                                                height: '6px',
+                                                background: 'transparent',
+                                                pointerEvents: 'none'
+                                            }}
                                         />
-                                    </label>
-                                    <label className="modal-system-label">
-                                        До:
                                         <input
-                                            type="number"
+                                            type="range"
                                             min="0"
                                             max="128"
                                             value={localFilters.participantCount.max}
                                             onChange={(e) => handleParticipantCountChange('max', e.target.value)}
-                                            className="modal-system-input modal-system-input-small"
+                                            className="modal-system-slider"
+                                            style={{ 
+                                                position: 'absolute',
+                                                width: '100%',
+                                                height: '6px',
+                                                background: 'rgba(255, 255, 255, 0.2)',
+                                                borderRadius: '3px'
+                                            }}
                                         />
-                                    </label>
-                                </div>
-                                
-                                {/* Слайдер-визуализация */}
-                                <div className="modal-system-range-slider">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="128"
-                                        value={localFilters.participantCount.min}
-                                        onChange={(e) => handleParticipantCountChange('min', e.target.value)}
-                                        className="modal-system-slider"
-                                        style={{ marginBottom: '5px' }}
-                                    />
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="128"
-                                        value={localFilters.participantCount.max}
-                                        onChange={(e) => handleParticipantCountChange('max', e.target.value)}
-                                        className="modal-system-slider"
-                                    />
-                                    <div className="modal-system-range-labels">
+                                    </div>
+                                    
+                                    <div className="modal-system-range-labels" style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between',
+                                        marginTop: '10px'
+                                    }}>
                                         <span>0</span>
                                         <span>64</span>
                                         <span>128</span>
@@ -367,37 +397,37 @@ const TournamentFilterModal = ({
                         <div className="modal-system-section">
                             <div className="modal-system-info modal-system-info-primary">
                                 <h4 className="modal-system-bold modal-system-mb-10">
-                                    📋 Предварительный просмотр фильтров
+                                    Предварительный просмотр фильтров
                                 </h4>
                                 <div className="modal-system-flex-wrap modal-system-gap-5">
                                     {localFilters.games.map(game => (
                                         <span key={game} className="modal-system-badge modal-system-badge-primary">
-                                            🎮 {game}
+                                            {game}
                                         </span>
                                     ))}
                                     {localFilters.formats.map(format => (
                                         <span key={format} className="modal-system-badge modal-system-badge-primary">
-                                            🏆 {format}
+                                            {format}
                                         </span>
                                     ))}
                                     {localFilters.participantTypes.map(type => (
                                         <span key={type} className="modal-system-badge modal-system-badge-primary">
-                                            👥 {availableParticipantTypes.find(t => t.value === type)?.label}
+                                            {availableParticipantTypes.find(t => t.value === type)?.label}
                                         </span>
                                     ))}
                                     {localFilters.statuses.map(status => (
                                         <span key={status} className="modal-system-badge modal-system-badge-primary">
-                                            📊 {availableStatuses.find(s => s.value === status)?.label}
+                                            {availableStatuses.find(s => s.value === status)?.label}
                                         </span>
                                     ))}
                                     {localFilters.hasPrizePool !== null && (
                                         <span className="modal-system-badge modal-system-badge-primary">
-                                            💰 {localFilters.hasPrizePool ? 'С призовым фондом' : 'Без призового фонда'}
+                                            Призовой фонд: {localFilters.hasPrizePool ? 'Есть' : 'Нет'}
                                         </span>
                                     )}
                                     {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
                                         <span className="modal-system-badge modal-system-badge-primary">
-                                            🧮 {localFilters.participantCount.min}-{localFilters.participantCount.max} участников
+                                            {localFilters.participantCount.min}-{localFilters.participantCount.max} участников
                                         </span>
                                     )}
                                 </div>
@@ -413,7 +443,7 @@ const TournamentFilterModal = ({
                         onClick={resetFilters}
                         disabled={getActiveFiltersCount() === 0}
                     >
-                        🗑️ Сбросить все
+                        Сбросить все
                     </button>
                     
                     <div className="modal-system-flex modal-system-gap-10">
@@ -427,7 +457,7 @@ const TournamentFilterModal = ({
                             className="modal-system-btn modal-system-btn-primary"
                             onClick={applyFilters}
                         >
-                            ✅ Применить фильтры
+                            Применить фильтры
                             {getActiveFiltersCount() > 0 && ` (${getActiveFiltersCount()})`}
                         </button>
                     </div>

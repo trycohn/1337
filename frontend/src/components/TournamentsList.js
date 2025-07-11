@@ -50,11 +50,11 @@ function TournamentsList() {
 
     // 🆕 ДОСТУПНЫЕ ВАРИАНТЫ СОРТИРОВКИ
     const sortOptions = [
-        { value: 'created_at', label: 'Дата создания', icon: '📅' },
-        { value: 'start_date', label: 'Дата старта', icon: '🚀' },
-        { value: 'participant_count', label: 'Количество участников', icon: '👥' },
-        { value: 'prize_pool', label: 'Призовой фонд', icon: '💰' },
-        { value: 'name', label: 'Название', icon: '📝' }
+        { value: 'created_at', label: 'Дата создания' },
+        { value: 'start_date', label: 'Дата старта' },
+        { value: 'participant_count', label: 'Количество участников' },
+        { value: 'prize_pool', label: 'Призовой фонд' },
+        { value: 'name', label: 'Название' }
     ];
 
     useEffect(() => {
@@ -750,10 +750,10 @@ function TournamentsList() {
             <div className="tournaments-view-controls">
                 <div className="view-mode-buttons">
                     <button className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
-                        📊 Таблица
+                        Таблица
                     </button>
                     <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
-                        📋 Карточки
+                        Карточки
                     </button>
                 </div>
                 
@@ -764,7 +764,7 @@ function TournamentsList() {
                         className={`filter-btn ${hasActiveFilters() ? 'filter-active' : ''}`}
                         onClick={() => setShowFilterModal(true)}
                     >
-                        🔍 Фильтр
+                        Фильтр
                         {getActiveFiltersCount() > 0 && (
                             <span className="filter-count">
                                 {getActiveFiltersCount()}
@@ -776,7 +776,7 @@ function TournamentsList() {
                     {viewMode === 'card' && (
                         <div className="sort-controls">
                             <label className="sort-label">
-                                📋 Сортировка:
+                                Сортировка:
                                 <select 
                                     value={`${sort.field}-${sort.direction}`} 
                                     onChange={(e) => {
@@ -787,10 +787,10 @@ function TournamentsList() {
                                 >
                                     {sortOptions.map(option => [
                                         <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
-                                            {option.icon} {option.label} (по убыванию)
+                                            {option.label} (по убыванию)
                                         </option>,
                                         <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
-                                            {option.icon} {option.label} (по возрастанию)
+                                            {option.label} (по возрастанию)
                                         </option>
                                     ]).flat()}
                                 </select>
@@ -804,7 +804,7 @@ function TournamentsList() {
                             onClick={clearAllFilters}
                             className="clear-filters-btn"
                         >
-                            🗑️ Очистить ({getActiveFiltersCount()})
+                            Очистить ({getActiveFiltersCount()})
                         </button>
                     )}
                 </div>
