@@ -257,7 +257,7 @@
 
 /* === КОНТЕНТ СЕКЦИИ === */
 .modal-system-section {
-    margin-bottom: 30px;
+    margin-bottom: 12px;
 }
 
 .modal-system-section:last-child {
@@ -292,7 +292,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     justify-items: center;
-    align-items: center;
+    align-items: start;
 }
 
 .modal-system-grid-4 {
@@ -327,8 +327,8 @@
 
 /* === ИНФОРМАЦИОННЫЕ БЛОКИ === */
 .modal-system-info {
-    padding: 15px;
-    margin: 15px 0;
+    padding: 5px;
+    margin: 5px 0;
 }
 
 .modal-system-info-success {
