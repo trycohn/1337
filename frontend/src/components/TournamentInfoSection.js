@@ -4,7 +4,6 @@ import { ensureHttps } from '../utils/userHelpers';
 import ParticipationConfirmModal from './tournament/modals/ParticipationConfirmModal';
 import TeamSelectionModal from './modals/TeamSelectionModal';
 import axios from 'axios'; // Added axios import
-import LoginModal from './modals/LoginModal'; // Added LoginModal import
 
 const TournamentInfoSection = ({ 
     tournament, 
@@ -30,7 +29,6 @@ const TournamentInfoSection = ({
     const [showTeamSelection, setShowTeamSelection] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [participationLoading, setParticipationLoading] = useState(false);
-    const [showLoginModal, setShowLoginModal] = useState(false); // Added showLoginModal state
     const [isParticipating, setIsParticipating] = useState(false); // Added isParticipating state
 
     // Обновляем значения при изменении турнира
@@ -672,7 +670,12 @@ const TournamentInfoSection = ({
     // Обработка участия в турнире
     const handleParticipate = async () => {
         if (!user) {
-            setShowLoginModal(true);
+            // Сохраняем контекст турнира для возврата после авторизации
+            localStorage.setItem('returnToTournament', tournament.id);
+            localStorage.setItem('tournamentAction', 'participate');
+            
+            // Перенаправляем на страницу входа/регистрации
+            window.location.href = '/register?action=participate';
             return;
         }
 
@@ -1211,15 +1214,7 @@ const TournamentInfoSection = ({
                 />
             )}
 
-            {/* Модальное окно входа */}
-            <LoginModal
-                isOpen={showLoginModal}
-                onClose={() => setShowLoginModal(false)}
-                onLoginSuccess={() => {
-                    setShowLoginModal(false);
-                    handleParticipate(); // Повторная попытка участия после входа
-                }}
-            />
+            {/* Убираем LoginModal полностью */}
         </div>
     );
 };
