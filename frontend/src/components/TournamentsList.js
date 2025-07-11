@@ -5,18 +5,39 @@ import { Link } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './Home.css';
+import TournamentFilterModal from './TournamentFilterModal'; // 🆕 Импорт нового фильтра
 
 function TournamentsList() {
     const [tournaments, setTournaments] = useState([]);
     const [error, setError] = useState(null);
+    
+    // 🆕 РАСШИРЕННАЯ СИСТЕМА ФИЛЬТРОВ
     const [filters, setFilters] = useState({
+        // Старые простые фильтры (для совместимости)
         game: '',
         name: '',
         format: '',
         status: '',
         start_date: null,
+        
+        // 🆕 Новые расширенные фильтры
+        games: [], // Массив выбранных игр
+        formats: [], // Массив выбранных форматов
+        participantTypes: [], // Массив выбранных типов участников
+        statuses: [], // Массив выбранных статусов
+        hasPrizePool: null, // null, true, false
+        participantCount: { min: 0, max: 128 }
     });
-    const [sort, setSort] = useState({ field: '', direction: 'asc' });
+
+    // 🆕 СИСТЕМА СОРТИРОВКИ
+    const [sort, setSort] = useState({ 
+        field: 'created_at', // По умолчанию сортируем по дате создания
+        direction: 'desc' 
+    });
+    
+    // 🆕 СОСТОЯНИЕ МОДАЛЬНОГО ОКНА ФИЛЬТРА
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    
     const [activeFilter, setActiveFilter] = useState(null);
     const [viewMode, setViewMode] = useState(window.innerWidth <= 600 ? 'card' : 'table');
     const filterRefs = {
@@ -26,6 +47,15 @@ function TournamentsList() {
         status: useRef(null),
         start_date: useRef(null),
     };
+
+    // 🆕 ДОСТУПНЫЕ ВАРИАНТЫ СОРТИРОВКИ
+    const sortOptions = [
+        { value: 'created_at', label: 'Дата создания', icon: '📅' },
+        { value: 'start_date', label: 'Дата старта', icon: '🚀' },
+        { value: 'participant_count', label: 'Количество участников', icon: '👥' },
+        { value: 'prize_pool', label: 'Призовой фонд', icon: '💰' },
+        { value: 'name', label: 'Название', icon: '📝' }
+    ];
 
     useEffect(() => {
         const handleResize = () => {
@@ -137,11 +167,21 @@ function TournamentsList() {
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
+    // 🆕 ОБНОВЛЕННАЯ ФУНКЦИЯ СОРТИРОВКИ
     const handleSort = (field) => {
         setSort((prev) => ({
             field,
             direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
         }));
+    };
+
+    // 🆕 ПРИМЕНЕНИЕ РАСШИРЕННЫХ ФИЛЬТРОВ
+    const handleApplyAdvancedFilters = (newFilters) => {
+        setFilters(prev => ({
+            ...prev,
+            ...newFilters
+        }));
+        console.log('🔍 Применены расширенные фильтры:', newFilters);
     };
 
     const applyFilter = (field, value) => {
@@ -154,73 +194,32 @@ function TournamentsList() {
         setActiveFilter(null);
     };
 
+    // 🆕 УЛУЧШЕННАЯ ФУНКЦИЯ ОЧИСТКИ ВСЕХ ФИЛЬТРОВ
     const clearAllFilters = () => {
         setFilters({
+            // Сбрасываем старые фильтры
             game: '',
             name: '',
             format: '',
             status: '',
             start_date: null,
+            
+            // Сбрасываем новые фильтры
+            games: [],
+            formats: [],
+            participantTypes: [],
+            statuses: [],
+            hasPrizePool: null,
+            participantCount: { min: 0, max: 128 }
         });
         setActiveFilter(null);
+        console.log('🗑️ Все фильтры очищены');
     };
 
     const toggleFilter = (filterName) => {
         console.log('🔧 Toggle filter called:', filterName, 'Current active:', activeFilter);
-        console.log('🔧 Window width:', window.innerWidth);
-        console.log('🔧 Tournaments data:', tournaments.length, 'tournaments');
         const newActiveFilter = activeFilter === filterName ? null : filterName;
-        console.log('🔧 Setting active filter to:', newActiveFilter);
         setActiveFilter(newActiveFilter);
-        
-        // Принудительная проверка через небольшую задержку
-        setTimeout(() => {
-            const dropdownElement = document.querySelector('.tournaments-list th .dropdown');
-            console.log('🔧 Dropdown element found:', dropdownElement);
-            if (dropdownElement) {
-                const styles = window.getComputedStyle(dropdownElement);
-                console.log('🔧 Dropdown styles:', styles);
-                console.log('🔧 Dropdown display:', styles.display);
-                console.log('🔧 Dropdown visibility:', styles.visibility);
-                console.log('🔧 Dropdown z-index:', styles.zIndex);
-                
-                // Дополнительная диагностика
-                const rect = dropdownElement.getBoundingClientRect();
-                console.log('🔧 Dropdown position:', {
-                    top: rect.top,
-                    left: rect.left,
-                    width: rect.width,
-                    height: rect.height,
-                    bottom: rect.bottom,
-                    right: rect.right
-                });
-                
-                // Проверяем, не перекрыт ли элемент
-                const elementAtCenter = document.elementFromPoint(
-                    rect.left + rect.width / 2,
-                    rect.top + rect.height / 2
-                );
-                console.log('🔧 Element at dropdown center:', elementAtCenter);
-                
-                // Проверяем родительские элементы на overflow
-                let parent = dropdownElement.parentElement;
-                while (parent) {
-                    const parentStyles = window.getComputedStyle(parent);
-                    if (parentStyles.overflow !== 'visible' || parentStyles.overflowX !== 'visible' || parentStyles.overflowY !== 'visible') {
-                        console.log('🔧 Parent with overflow:', parent, {
-                            overflow: parentStyles.overflow,
-                            overflowX: parentStyles.overflowX,
-                            overflowY: parentStyles.overflowY
-                        });
-                    }
-                    parent = parent.parentElement;
-                }
-                
-                // Проверяем высоту контента
-                console.log('🔧 Dropdown content height:', dropdownElement.scrollHeight);
-                console.log('🔧 Dropdown children count:', dropdownElement.children.length);
-            }
-        }, 100);
     };
 
     const uniqueValues = (field) => {
@@ -248,14 +247,48 @@ function TournamentsList() {
         return values;
     };
 
+    // 🆕 УЛУЧШЕННАЯ ПРОВЕРКА АКТИВНЫХ ФИЛЬТРОВ
     const hasActiveFilters = () => {
-        return filters.game !== '' || filters.name !== '' || filters.format !== '' || 
-               filters.status !== '' || filters.start_date !== null;
+        // Проверяем старые фильтры
+        const hasOldFilters = filters.game !== '' || filters.name !== '' || filters.format !== '' || 
+                              filters.status !== '' || filters.start_date !== null;
+        
+        // Проверяем новые фильтры
+        const hasNewFilters = filters.games.length > 0 || filters.formats.length > 0 || 
+                              filters.participantTypes.length > 0 || filters.statuses.length > 0 ||
+                              filters.hasPrizePool !== null ||
+                              filters.participantCount.min > 0 || filters.participantCount.max < 128;
+        
+        return hasOldFilters || hasNewFilters;
     };
 
+    // 🆕 ПОДСЧЕТ АКТИВНЫХ ФИЛЬТРОВ
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        
+        // Старые фильтры
+        if (filters.game) count++;
+        if (filters.name) count++;
+        if (filters.format) count++;
+        if (filters.status) count++;
+        if (filters.start_date) count++;
+        
+        // Новые фильтры
+        count += filters.games.length;
+        count += filters.formats.length;
+        count += filters.participantTypes.length;
+        count += filters.statuses.length;
+        if (filters.hasPrizePool !== null) count++;
+        if (filters.participantCount.min > 0 || filters.participantCount.max < 128) count++;
+        
+        return count;
+    };
+
+    // 🆕 УЛУЧШЕННАЯ ЛОГИКА ФИЛЬТРАЦИИ И СОРТИРОВКИ
     const filteredAndSortedTournaments = tournaments
         .filter((tournament) => {
-            return (
+            // Старые фильтры (для совместимости)
+            const oldFiltersMatch = (
                 (filters.game === '' || tournament.game === filters.game) &&
                 (filters.name === '' || tournament.name?.toLowerCase().includes(filters.name.toLowerCase())) &&
                 (filters.format === '' || tournament.format === filters.format) &&
@@ -264,21 +297,64 @@ function TournamentsList() {
                     new Date(tournament.start_date).toLocaleDateString('ru-RU') ===
                     filters.start_date.toLocaleDateString('ru-RU'))
             );
+
+            // Новые расширенные фильтры
+            const gamesMatch = filters.games.length === 0 || filters.games.includes(tournament.game);
+            const formatsMatch = filters.formats.length === 0 || filters.formats.includes(tournament.format);
+            const participantTypesMatch = filters.participantTypes.length === 0 || filters.participantTypes.includes(tournament.participant_type);
+            const statusesMatch = filters.statuses.length === 0 || filters.statuses.includes(tournament.status);
+            
+            // Фильтр по призовому фонду
+            const prizepoolMatch = filters.hasPrizePool === null || 
+                (filters.hasPrizePool === true && tournament.prize_pool && tournament.prize_pool > 0) ||
+                (filters.hasPrizePool === false && (!tournament.prize_pool || tournament.prize_pool === 0));
+            
+            // Фильтр по количеству участников
+            const participantCountMatch = tournament.participant_count >= filters.participantCount.min && 
+                                        tournament.participant_count <= filters.participantCount.max;
+
+            return oldFiltersMatch && gamesMatch && formatsMatch && participantTypesMatch && 
+                   statusesMatch && prizepoolMatch && participantCountMatch;
         })
         .sort((a, b) => {
             if (!sort.field) return 0;
-            if (sort.field === 'participant_count') {
-                return sort.direction === 'asc'
-                    ? a.participant_count - b.participant_count
-                    : b.participant_count - a.participant_count;
+            
+            let aValue, bValue;
+            
+            switch (sort.field) {
+                case 'participant_count':
+                    aValue = a.participant_count || 0;
+                    bValue = b.participant_count || 0;
+                    return sort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                case 'start_date':
+                case 'created_at':
+                    aValue = new Date(a[sort.field]);
+                    bValue = new Date(b[sort.field]);
+                    return sort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                case 'prize_pool':
+                    aValue = a.prize_pool || 0;
+                    bValue = b.prize_pool || 0;
+                    return sort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    
+                case 'name':
+                    aValue = (a.name || '').toLowerCase();
+                    bValue = (b.name || '').toLowerCase();
+                    return sort.direction === 'asc' ? 
+                        aValue.localeCompare(bValue) : 
+                        bValue.localeCompare(aValue);
+                    
+                default:
+                    return 0;
             }
-            if (sort.field === 'start_date') {
-                return sort.direction === 'asc'
-                    ? new Date(a.start_date) - new Date(b.start_date)
-                    : new Date(b.start_date) - new Date(a.start_date);
-            }
-            return 0;
         });
+
+    // 🆕 ПОЛУЧЕНИЕ ИКОНКИ СОРТИРОВКИ
+    const getSortIcon = (field) => {
+        if (sort.field !== field) return '↕️';
+        return sort.direction === 'asc' ? '▲' : '▼';
+    };
 
     const renderTableView = () => (
         <div>
@@ -288,7 +364,7 @@ function TournamentsList() {
                         onClick={clearAllFilters}
                         className="clear-all-filters-btn"
                     >
-                        ✕ Сбросить все фильтры
+                        ✕ Сбросить все фильтры ({getActiveFiltersCount()})
                     </button>
                 </div>
             )}
@@ -670,15 +746,71 @@ function TournamentsList() {
             <h2>Список турниров</h2>
             {error && <p className="error">{error}</p>}
             
+            {/* === 🆕 УЛУЧШЕННЫЕ КОНТРОЛЫ === */}
             <div className="tournaments-view-controls">
-                <button className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
-                    Таблица
-                </button>
-                <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
-                    Карточки
-                </button>
+                <div className="view-mode-buttons">
+                    <button className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
+                        📊 Таблица
+                    </button>
+                    <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
+                        📋 Карточки
+                    </button>
+                </div>
+                
+                {/* === 🆕 ФИЛЬТР И СОРТИРОВКА === */}
+                <div className="filters-and-sort">
+                    {/* Кнопка расширенного фильтра */}
+                    <button 
+                        className={`filter-btn ${hasActiveFilters() ? 'filter-active' : ''}`}
+                        onClick={() => setShowFilterModal(true)}
+                    >
+                        🔍 Фильтр
+                        {getActiveFiltersCount() > 0 && (
+                            <span className="filter-count">
+                                {getActiveFiltersCount()}
+                            </span>
+                        )}
+                    </button>
+                    
+                    {/* Сортировка для режима Карточки */}
+                    {viewMode === 'card' && (
+                        <div className="sort-controls">
+                            <label className="sort-label">
+                                📋 Сортировка:
+                                <select 
+                                    value={`${sort.field}-${sort.direction}`} 
+                                    onChange={(e) => {
+                                        const [field, direction] = e.target.value.split('-');
+                                        setSort({ field, direction });
+                                    }}
+                                    className="sort-select"
+                                >
+                                    {sortOptions.map(option => [
+                                        <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
+                                            {option.icon} {option.label} (по убыванию)
+                                        </option>,
+                                        <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
+                                            {option.icon} {option.label} (по возрастанию)
+                                        </option>
+                                    ]).flat()}
+                                </select>
+                            </label>
+                        </div>
+                    )}
+                    
+                    {/* Кнопка очистки всех фильтров */}
+                    {hasActiveFilters() && (
+                        <button 
+                            onClick={clearAllFilters}
+                            className="clear-filters-btn"
+                        >
+                            🗑️ Очистить ({getActiveFiltersCount()})
+                        </button>
+                    )}
+                </div>
             </div>
 
+            {/* Старая панель фильтров для мобильных устройств */}
             <div className="tournaments-filter-bar">
                 <input
                     type="text"
@@ -689,9 +821,32 @@ function TournamentsList() {
                 />
             </div>
             
+            {/* === 🆕 СТАТИСТИКА РЕЗУЛЬТАТОВ === */}
+            {filteredAndSortedTournaments.length !== tournaments.length && (
+                <div className="results-summary">
+                    <span className="results-count">
+                        Показано {filteredAndSortedTournaments.length} из {tournaments.length} турниров
+                    </span>
+                    {hasActiveFilters() && (
+                        <span className="active-filters-summary">
+                            (активных фильтров: {getActiveFiltersCount()})
+                        </span>
+                    )}
+                </div>
+            )}
+            
             {viewMode === 'table' ? renderTableView() : renderCardView()}
             
             {filteredAndSortedTournaments.length === 0 && <p>Турниров пока нет.</p>}
+            
+            {/* === 🆕 МОДАЛЬНОЕ ОКНО ФИЛЬТРА === */}
+            <TournamentFilterModal
+                isOpen={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                filters={filters}
+                onApplyFilters={handleApplyAdvancedFilters}
+                tournaments={tournaments}
+            />
         </section>
     );
 }
