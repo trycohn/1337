@@ -3,6 +3,8 @@ import './TournamentInfoSection.css';
 import { ensureHttps } from '../utils/userHelpers';
 import ParticipationConfirmModal from './tournament/modals/ParticipationConfirmModal';
 import TeamSelectionModal from './modals/TeamSelectionModal';
+import axios from 'axios'; // Added axios import
+import LoginModal from './modals/LoginModal'; // Added LoginModal import
 
 const TournamentInfoSection = ({ 
     tournament, 
@@ -28,6 +30,8 @@ const TournamentInfoSection = ({
     const [showTeamSelection, setShowTeamSelection] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [participationLoading, setParticipationLoading] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false); // Added showLoginModal state
+    const [isParticipating, setIsParticipating] = useState(false); // Added isParticipating state
 
     // Обновляем значения при изменении турнира
     useEffect(() => {
@@ -227,14 +231,31 @@ const TournamentInfoSection = ({
         return formatNames[format] || format || 'Не указан';
     };
 
-    // Функция для получения читаемого названия типа участников
-    const getParticipantTypeDisplayName = (type) => {
-        const typeNames = {
-            'solo': 'Одиночный',
-            'team': 'Командный',
-            'mix': 'Микс'
-        };
-        return typeNames[type] || type || 'Не указан';
+    // 🆕 Функция для получения отображаемого имени типа участников
+    const getParticipantTypeDisplayName = (participantType) => {
+      const names = {
+        'cs2_classic_5v5': 'Классический 5х5',
+        'cs2_wingman_2v2': 'Wingman 2х2',
+        'team': 'Командный',
+        'solo': 'Одиночный'
+      };
+      return names[participantType] || participantType;
+    };
+
+    // 🆕 Функция для определения минимального размера команды
+    const getMinTeamSize = (participantType) => {
+      const minSizes = {
+        'cs2_classic_5v5': 5,
+        'cs2_wingman_2v2': 2,
+        'team': 1,
+        'solo': 1
+      };
+      return minSizes[participantType] || 1;
+    };
+
+    // 🆕 Функция для проверки является ли турнир командным (включая CS2)
+    const isTeamTournament = (participantType) => {
+      return ['team', 'cs2_classic_5v5', 'cs2_wingman_2v2'].includes(participantType);
     };
 
     // 🆕 Функция для получения читаемого статуса турнира
@@ -646,6 +667,90 @@ const TournamentInfoSection = ({
     // 🆕 Проверка, нужно ли сокращать регламент
     const shouldTruncateRegulations = (text) => {
         return text && text.length > 400;
+    };
+
+    // Обработка участия в турнире
+    const handleParticipate = async () => {
+        if (!user) {
+            setShowLoginModal(true);
+            return;
+        }
+
+        setIsParticipating(true);
+
+        try {
+            const participantType = tournament.participant_type;
+            
+            console.log('🎯 Попытка участия:', {
+                tournamentId: tournament.id,
+                participantType: participantType,
+                userId: user.id
+            });
+
+            // Формируем данные запроса в зависимости от типа турнира
+            let requestData = {
+                participant_type: participantType
+            };
+
+            // 🆕 Для командных турниров (включая CS2) запрашиваем команду
+            if (isTeamTournament(participantType)) {
+                console.log('👥 Командный турнир, показываем диалог создания/выбора команды');
+                
+                // Для CS2 турниров показываем информацию о минимальных требованиях
+                const minTeamSize = getMinTeamSize(participantType);
+                const typeName = getParticipantTypeDisplayName(participantType);
+                
+                const teamChoice = prompt(
+                    `${typeName} турнир требует команду минимум ${minTeamSize} игроков.\n\n` +
+                    `Введите название новой команды или оставьте пустым для выбора существующей:`
+                );
+                
+                if (teamChoice === null) {
+                    // Пользователь отменил
+                    setIsParticipating(false);
+                    return;
+                }
+                
+                if (teamChoice.trim()) {
+                    requestData.newTeamName = teamChoice.trim();
+                } else {
+                    // Здесь можно показать модальное окно выбора существующей команды
+                    alert('Выбор существующей команды пока не реализован. Создайте новую команду.');
+                    setIsParticipating(false);
+                    return;
+                }
+            }
+
+            console.log('📤 Отправляем запрос на участие:', requestData);
+
+            const response = await axios.post(
+                `/api/tournaments/${tournament.id}/participate`,
+                requestData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            );
+
+            console.log('✅ Успешное участие:', response.data);
+            
+            // Уведомляем родительский компонент
+            if (onParticipationUpdate) {
+                onParticipationUpdate();
+            }
+
+        } catch (error) {
+            console.error('❌ Ошибка участия в турнире:', error);
+            
+            const errorMessage = error.response?.data?.error || 
+                               error.response?.data?.message || 
+                               'Произошла ошибка при регистрации в турнире';
+            
+            alert(errorMessage);
+        } finally {
+            setIsParticipating(false);
+        }
     };
 
     const creatorInfo = getCreatorInfo();
@@ -1105,6 +1210,16 @@ const TournamentInfoSection = ({
                     user={user}
                 />
             )}
+
+            {/* Модальное окно входа */}
+            <LoginModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
+                onLoginSuccess={() => {
+                    setShowLoginModal(false);
+                    handleParticipate(); // Повторная попытка участия после входа
+                }}
+            />
         </div>
     );
 };

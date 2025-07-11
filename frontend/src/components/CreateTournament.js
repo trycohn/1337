@@ -212,9 +212,27 @@ function CreateTournament() {
                     onChange={handleParticipantTypeChange}
                     required
                   >
-                    <option value="team">Командный</option>
-                    <option value="solo">Одиночный</option>
+                    <option value="">Выберите тип участников</option>
+                    {formData.game === 'cs2' ? (
+                      // CS2-специфичные типы участников
+                      <>
+                        <option value="cs2_classic_5v5">Классический 5х5</option>
+                        <option value="cs2_wingman_2v2">Wingman 2х2</option>
+                      </>
+                    ) : (
+                      // Стандартные типы для других игр
+                      <>
+                        <option value="team">Командный</option>
+                        <option value="solo">Одиночный</option>
+                      </>
+                    )}
                   </select>
+                  {formData.game === 'cs2' && (
+                    <small className="form-hint">
+                      {formData.participant_type === 'cs2_classic_5v5' && '🏆 Классический формат CS2: команды минимум 5 игроков'}
+                      {formData.participant_type === 'cs2_wingman_2v2' && '⚡ Wingman формат CS2: команды минимум 2 игрока'}
+                    </small>
+                  )}
                 </div>
               )}
 

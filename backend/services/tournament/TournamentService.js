@@ -2,6 +2,7 @@ const pool = require('../../db');
 const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
 const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
 const MatchRepository = require('../../repositories/tournament/MatchRepository');
+const TeamRepository = require('../../repositories/tournament/TeamRepository'); // Added TeamRepository
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
@@ -498,36 +499,138 @@ class TournamentService {
     }
 
     /**
-     * Проверка разрешений пользователя на действия с турниром
+     * Получение детальной информации о турнире с дополнительными данными
+     */
+    static async getTournamentDetails(tournamentId) {
+        try {
+            const tournament = await TournamentRepository.getByIdWithCreator(tournamentId);
+            
+            if (!tournament) {
+                throw new Error('Турнир не найден');
+            }
+
+            // Получаем участников или команды в зависимости от типа турнира
+            let participants = [];
+            let teams = [];
+
+            // 🆕 ОБНОВЛЕННАЯ ЛОГИКА: поддержка CS2 типов участников
+            const isTeamTournament = ['team', 'cs2_classic_5v5', 'cs2_wingman_2v2'].includes(tournament.participant_type);
+            const isSoloTournament = tournament.participant_type === 'solo';
+
+            if (tournament.format === 'mix' || isSoloTournament) {
+                participants = await ParticipantRepository.getByTournamentId(tournamentId);
+                teams = await TeamRepository.getByTournamentId(tournamentId);
+            } else if (isTeamTournament) {
+                teams = await TournamentRepository.getTeamsWithMembers(tournamentId);
+            }
+
+            // Получаем матчи
+            const matches = await MatchRepository.getByTournamentId(tournamentId);
+
+            // Добавляем CS2-специфичную информацию
+            const enhancedTournament = this._enhanceWithCS2Info(tournament);
+
+            return {
+                ...enhancedTournament,
+                participants,
+                teams,
+                matches
+            };
+
+        } catch (error) {
+            console.error(`❌ Ошибка получения деталей турнира ${tournamentId}:`, error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * 🆕 Улучшение турнира с CS2-специфичной информацией
+     */
+    static _enhanceWithCS2Info(tournament) {
+        if (tournament.game === 'Counter-Strike 2' && tournament.format !== 'mix') {
+            return {
+                ...tournament,
+                display_participant_type: this._getCS2DisplayName(tournament.participant_type),
+                min_team_size: this._getCS2MinTeamSize(tournament.participant_type),
+                is_cs2_tournament: true
+            };
+        }
+
+        return {
+            ...tournament,
+            display_participant_type: this._getStandardDisplayName(tournament.participant_type),
+            is_cs2_tournament: false
+        };
+    }
+
+    /**
+     * 🆕 Получить отображаемое имя для CS2 типов
+     */
+    static _getCS2DisplayName(participantType) {
+        const names = {
+            'cs2_classic_5v5': 'Классический 5х5',
+            'cs2_wingman_2v2': 'Wingman 2х2'
+        };
+        return names[participantType] || participantType;
+    }
+
+    /**
+     * 🆕 Получить минимальный размер команды для CS2
+     */
+    static _getCS2MinTeamSize(participantType) {
+        const sizes = {
+            'cs2_classic_5v5': 5,
+            'cs2_wingman_2v2': 2
+        };
+        return sizes[participantType] || 5;
+    }
+
+    /**
+     * 🆕 Получить стандартное отображаемое имя
+     */
+    static _getStandardDisplayName(participantType) {
+        const names = {
+            'team': 'Командный',
+            'solo': 'Одиночный'
+        };
+        return names[participantType] || participantType;
+    }
+
+    /**
+     * Проверка прав пользователя на выполнение действий с турниром
      */
     static async checkUserPermission(tournamentId, userId, permission = 'general') {
-        console.log(`🔒 [TournamentService] Проверка разрешения "${permission}" для пользователя ${userId} в турнире ${tournamentId}`);
-        
         try {
             const tournament = await TournamentRepository.getById(tournamentId);
             if (!tournament) {
-                console.log(`❌ [checkUserPermission] Турнир ${tournamentId} не найден`);
                 return false;
             }
 
             // Создатель турнира имеет все права
             if (tournament.created_by === userId) {
-                console.log(`✅ [checkUserPermission] Пользователь ${userId} - создатель турнира`);
                 return true;
             }
 
             // Проверяем администраторов турнира
             const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
             if (isAdmin) {
-                console.log(`✅ [checkUserPermission] Пользователь ${userId} - администратор турнира`);
                 return true;
             }
 
-            console.log(`❌ [checkUserPermission] Пользователь ${userId} не имеет прав на "${permission}" в турнире ${tournamentId}`);
+            // Для микс турниров и CS2 турниров проверяем специфичные права
+            if (['mix', 'cs2_classic_5v5', 'cs2_wingman_2v2'].includes(tournament.format) || 
+                ['cs2_classic_5v5', 'cs2_wingman_2v2'].includes(tournament.participant_type)) {
+                
+                // Права управления командами для микс и CS2 турниров
+                if (permission === 'manage_teams') {
+                    return tournament.created_by === userId || isAdmin;
+                }
+            }
+
             return false;
 
         } catch (error) {
-            console.error(`❌ [checkUserPermission] Ошибка проверки разрешений:`, error);
+            console.error(`❌ Ошибка проверки прав пользователя ${userId} для турнира ${tournamentId}:`, error.message);
             return false;
         }
     }
@@ -551,13 +654,6 @@ class TournamentService {
             console.error(`❌ [hasMatches] Ошибка проверки матчей турнира ${tournamentId}:`, error);
             return false;
         }
-    }
-
-    /**
-     * Получение подробных данных турнира (алиас для getTournamentById)
-     */
-    static async getTournamentDetails(tournamentId) {
-        return await this.getTournamentById(tournamentId);
     }
 }
 

@@ -1,39 +1,65 @@
 /**
- * Валидатор для операций с турнирами
- * Централизованная валидация всех входящих данных
+ * 🎯 Валидатор турниров
+ * Центральный валидатор для проверки данных турниров
  */
 
 class TournamentValidator {
+    
     /**
-     * Валидация данных для создания турнира
+     * Валидация данных создания турнира
      */
     static validateCreateTournament(data) {
         const errors = [];
-        
+
+        // Валидация названия
         if (!data.name || typeof data.name !== 'string' || data.name.trim().length < 3) {
             errors.push('Название турнира должно содержать минимум 3 символа');
         }
-        
+
+        if (data.name && data.name.length > 100) {
+            errors.push('Название турнира не может превышать 100 символов');
+        }
+
+        // Валидация игры
         if (!data.game || typeof data.game !== 'string') {
-            errors.push('Укажите игру для турнира');
+            errors.push('Необходимо выбрать игру');
         }
-        
-        if (!data.format || !['single_elimination', 'double_elimination', 'round_robin', 'mix'].includes(data.format)) {
-            errors.push('Укажите корректный формат турнира');
+
+        // Валидация формата
+        const validFormats = ['single', 'double', 'mix'];
+        if (!data.format || !validFormats.includes(data.format)) {
+            errors.push('Неверный формат турнира');
         }
-        
-        if (!data.participant_type || !['solo', 'team'].includes(data.participant_type)) {
-            errors.push('Укажите корректный тип участников');
+
+        // 🆕 ОБНОВЛЕННАЯ ВАЛИДАЦИЯ: поддержка CS2 типов участников
+        const validParticipantTypes = ['solo', 'team', 'cs2_classic_5v5', 'cs2_wingman_2v2'];
+        if (!data.participant_type || !validParticipantTypes.includes(data.participant_type)) {
+            errors.push('Неверный тип участников');
         }
-        
-        if (data.max_participants && (!Number.isInteger(data.max_participants) || data.max_participants < 2)) {
-            errors.push('Максимальное количество участников должно быть числом больше 1');
+
+        // Специальная валидация для CS2 типов
+        if (data.game === 'Counter-Strike 2' && data.format !== 'mix') {
+            if (!['cs2_classic_5v5', 'cs2_wingman_2v2'].includes(data.participant_type)) {
+                errors.push('Для Counter Strike 2 необходимо выбрать "Классический 5х5" или "Wingman 2х2"');
+            }
         }
-        
-        if (data.team_size && (!Number.isInteger(data.team_size) || data.team_size < 1)) {
-            errors.push('Размер команды должен быть положительным числом');
+
+        // Валидация для не-CS2 игр
+        if (data.game !== 'Counter-Strike 2' && data.format !== 'mix') {
+            if (!['team', 'solo'].includes(data.participant_type)) {
+                errors.push('Для данной игры доступны только типы "Командный" или "Одиночный"');
+            }
         }
-        
+
+        // Валидация размера команды для CS2
+        if (data.participant_type === 'cs2_classic_5v5' && data.team_size && data.team_size < 5) {
+            errors.push('Классический формат CS2 требует минимум 5 игроков в команде');
+        }
+
+        if (data.participant_type === 'cs2_wingman_2v2' && data.team_size && data.team_size < 2) {
+            errors.push('Wingman формат CS2 требует минимум 2 игрока в команде');
+        }
+
         return {
             isValid: errors.length === 0,
             errors: errors
@@ -41,34 +67,110 @@ class TournamentValidator {
     }
 
     /**
-     * Валидация данных для формирования команд
+     * Валидация запроса на формирование команд
      */
     static validateFormTeamsRequest(data) {
         const errors = [];
-        
-        if (!data.tournamentId || !Number.isInteger(data.tournamentId) || data.tournamentId <= 0) {
+
+        // Валидация tournament ID
+        if (!data.tournamentId || typeof data.tournamentId !== 'number' || data.tournamentId <= 0) {
             errors.push('Некорректный ID турнира');
         }
-        
-        if (!data.ratingType || !['faceit', 'premier'].includes(data.ratingType)) {
-            errors.push('Некорректный тип рейтинга (должен быть faceit или premier)');
-        }
-        
-        if (!data.userId || !Number.isInteger(data.userId) || data.userId <= 0) {
+
+        // Валидация user ID
+        if (!data.userId || typeof data.userId !== 'number' || data.userId <= 0) {
             errors.push('Некорректный ID пользователя');
         }
-        
-        if (data.teamSize !== undefined) {
-            const teamSize = parseInt(data.teamSize);
-            if (!Number.isInteger(teamSize) || teamSize < 2 || teamSize > 10) {
-                errors.push('Размер команды должен быть числом от 2 до 10');
+
+        // 🆕 ОБНОВЛЕННАЯ ВАЛИДАЦИЯ: поддержка рейтинга для команд в зависимости от типа
+        if (data.ratingType && !['faceit', 'premier', 'mixed'].includes(data.ratingType)) {
+            errors.push('Неверный тип рейтинга. Допустимые: faceit, premier, mixed');
+        }
+
+        // Валидация размера команды
+        if (data.teamSize !== undefined && data.teamSize !== null) {
+            if (typeof data.teamSize !== 'number' || ![2, 3, 4, 5].includes(data.teamSize)) {
+                errors.push('Размер команды должен быть числом от 2 до 5');
             }
         }
-        
+
         return {
             isValid: errors.length === 0,
             errors: errors
         };
+    }
+
+    /**
+     * 🆕 Валидация типа участников с поддержкой CS2
+     */
+    static validateParticipantType(participantType, game, format) {
+        const errors = [];
+
+        // Для микс турниров только solo
+        if (format === 'mix' && participantType !== 'solo') {
+            errors.push('Для микс турниров доступен только тип "Одиночный"');
+            return { isValid: false, errors };
+        }
+
+        // Для CS2 турниров
+        if (game === 'Counter-Strike 2' && format !== 'mix') {
+            const validCS2Types = ['cs2_classic_5v5', 'cs2_wingman_2v2'];
+            if (!validCS2Types.includes(participantType)) {
+                errors.push('Для Counter Strike 2 доступны только типы "Классический 5х5" и "Wingman 2х2"');
+            }
+        }
+
+        // Для остальных игр
+        if (game !== 'Counter-Strike 2' && format !== 'mix') {
+            const validStandardTypes = ['team', 'solo'];
+            if (!validStandardTypes.includes(participantType)) {
+                errors.push('Для данной игры доступны только типы "Командный" и "Одиночный"');
+            }
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+
+    /**
+     * 🆕 Получить минимальный размер команды для типа участников
+     */
+    static getMinTeamSize(participantType) {
+        const minSizes = {
+            'cs2_classic_5v5': 5,
+            'cs2_wingman_2v2': 2,
+            'team': 1,
+            'solo': 1
+        };
+        return minSizes[participantType] || 1;
+    }
+
+    /**
+     * 🆕 Получить максимальный размер команды для типа участников
+     */
+    static getMaxTeamSize(participantType) {
+        const maxSizes = {
+            'cs2_classic_5v5': 10,
+            'cs2_wingman_2v2': 4,
+            'team': 10,
+            'solo': 1
+        };
+        return maxSizes[participantType] || 10;
+    }
+
+    /**
+     * 🆕 Получить отображаемое имя типа участников
+     */
+    static getParticipantTypeDisplayName(participantType) {
+        const names = {
+            'cs2_classic_5v5': 'Классический 5х5',
+            'cs2_wingman_2v2': 'Wingman 2х2',
+            'team': 'Командный',
+            'solo': 'Одиночный'
+        };
+        return names[participantType] || participantType;
     }
 
     /**

@@ -1,8 +1,10 @@
-const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
 const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
 const TeamRepository = require('../../repositories/tournament/TeamRepository');
+const TournamentValidator = require('../../validators/tournament/TournamentValidator');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentEventNotification } = require('../../utils/tournament/chatHelpers');
+const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
 
 class ParticipantService {
@@ -155,68 +157,92 @@ class ParticipantService {
     }
 
     /**
-     * Обработка участия в соло-турнире
-     * @private
+     * Обработка участия в одиночном турнире
      */
     static async _handleSoloParticipation(tournament, userId, username) {
-        // Создаем участника
-        const participant = await ParticipantRepository.create({
+        console.log(`👤 [ParticipantService] Обработка одиночного участия пользователя ${userId} в турнире ${tournament.id}`);
+
+        // Добавляем участника в турнир
+        await ParticipantRepository.create({
             tournament_id: tournament.id,
             user_id: userId,
             name: username
         });
 
-        // Логируем событие
         await logTournamentEvent(tournament.id, userId, 'participant_joined', {
-            participantName: username,
-            participantType: 'solo'
+            participant_name: username,
+            tournament_name: tournament.name
         });
 
-        // Уведомление в чат
-        await sendTournamentEventNotification(tournament.id, 'participant_joined', {
-            participantName: username
-        });
-
-        console.log('✅ ParticipantService: Соло-участие успешно');
-        return participant;
+        await sendTournamentChatAnnouncement(
+            tournament.id,
+            `🎮 ${username} присоединился к турниру!`
+        );
     }
 
     /**
-     * Обработка участия в командном турнире
-     * @private
+     * 🆕 Обработка участия в командном турнире (включая CS2)
      */
     static async _handleTeamParticipation(tournament, userId, username, options) {
-        const { teamId, newTeamName } = options;
-
-        if (teamId) {
-            // Присоединение к существующей команде
-            return await this._joinExistingTeam(tournament, userId, username, teamId);
-        } else if (newTeamName) {
-            // Создание новой команды
-            return await this._createNewTeam(tournament, userId, username, newTeamName);
+        console.log(`👥 [ParticipantService] Обработка командного участия пользователя ${userId} в турнире ${tournament.id}`);
+        
+        // Проверяем минимальный размер команды для CS2
+        const minTeamSize = this._getMinTeamSize(tournament.participant_type);
+        
+        if (options.teamId) {
+            await this._joinExistingTeam(tournament, userId, username, options.teamId, minTeamSize);
+        } else if (options.newTeamName) {
+            await this._createNewTeam(tournament, userId, username, options.newTeamName, minTeamSize);
         } else {
             throw new Error('Для командного турнира необходимо указать команду или создать новую');
         }
     }
 
     /**
-     * Присоединение к существующей команде
-     * @private
+     * 🆕 Получить минимальный размер команды в зависимости от типа участников
      */
-    static async _joinExistingTeam(tournament, userId, username, teamId) {
-        // Проверяем, существует ли команда
+    static _getMinTeamSize(participantType) {
+        const minSizes = {
+            'cs2_classic_5v5': 5,
+            'cs2_wingman_2v2': 2,
+            'team': 1, // Стандартные командные турниры
+            'solo': 1
+        };
+        return minSizes[participantType] || 1;
+    }
+
+    /**
+     * 🆕 Получить максимальный размер команды в зависимости от типа участников
+     */
+    static _getMaxTeamSize(participantType) {
+        const maxSizes = {
+            'cs2_classic_5v5': 10,
+            'cs2_wingman_2v2': 4,
+            'team': 10, // Стандартные командные турниры
+            'solo': 1
+        };
+        return maxSizes[participantType] || 10;
+    }
+
+    /**
+     * Присоединение к существующей команде
+     */
+    static async _joinExistingTeam(tournament, userId, username, teamId, minTeamSize = 1) {
         const team = await TeamRepository.getById(teamId);
+        
         if (!team || team.tournament_id !== tournament.id) {
             throw new Error('Команда не найдена в этом турнире');
         }
 
-        // Проверяем лимит участников в команде
-        const teamMembersCount = await TeamRepository.getMembersCount(teamId);
-        if (teamMembersCount >= (tournament.team_size || 5)) {
-            throw new Error('Команда заполнена');
+        const membersCount = await TeamRepository.getMembersCount(teamId);
+        const maxTeamSize = this._getMaxTeamSize(tournament.participant_type);
+        
+        if (membersCount >= maxTeamSize) {
+            const typeName = this._getTypeDisplayName(tournament.participant_type);
+            throw new Error(`Команда заполнена (максимум ${maxTeamSize} участников для ${typeName})`);
         }
 
-        // Создаем участника
+        // Создаем участника турнира
         const participant = await ParticipantRepository.create({
             tournament_id: tournament.id,
             user_id: userId,
@@ -226,29 +252,24 @@ class ParticipantService {
         // Добавляем в команду
         await TeamRepository.addMember(teamId, userId, participant.id);
 
-        // Логируем событие
         await logTournamentEvent(tournament.id, userId, 'participant_joined_team', {
-            participantName: username,
-            teamId: teamId,
-            teamName: team.name
+            participant_name: username,
+            team_name: team.name,
+            team_id: teamId
         });
 
-        console.log('✅ ParticipantService: Присоединение к команде успешно');
-        return participant;
+        await sendTournamentChatAnnouncement(
+            tournament.id,
+            `👥 ${username} присоединился к команде "${team.name}"!`
+        );
     }
 
     /**
      * Создание новой команды
-     * @private
      */
-    static async _createNewTeam(tournament, userId, username, teamName) {
-        // Создаем участника
-        const participant = await ParticipantRepository.create({
-            tournament_id: tournament.id,
-            user_id: userId,
-            name: username
-        });
-
+    static async _createNewTeam(tournament, userId, username, teamName, minTeamSize = 1) {
+        const maxTeamSize = this._getMaxTeamSize(tournament.participant_type);
+        
         // Создаем команду
         const team = await TeamRepository.create({
             tournament_id: tournament.id,
@@ -256,18 +277,43 @@ class ParticipantService {
             creator_id: userId
         });
 
+        // Создаем участника турнира
+        const participant = await ParticipantRepository.create({
+            tournament_id: tournament.id,
+            user_id: userId,
+            name: username
+        });
+
         // Добавляем создателя в команду
         await TeamRepository.addMember(team.id, userId, participant.id);
 
-        // Логируем событие
+        const typeName = this._getTypeDisplayName(tournament.participant_type);
+
         await logTournamentEvent(tournament.id, userId, 'team_created', {
-            participantName: username,
-            teamId: team.id,
-            teamName: teamName
+            team_name: teamName,
+            team_id: team.id,
+            creator_name: username,
+            min_team_size: minTeamSize,
+            max_team_size: maxTeamSize
         });
 
-        console.log('✅ ParticipantService: Новая команда создана');
-        return participant;
+        await sendTournamentChatAnnouncement(
+            tournament.id,
+            `🏆 ${username} создал команду "${teamName}" для ${typeName}! Минимум участников: ${minTeamSize}`
+        );
+    }
+
+    /**
+     * 🆕 Получить отображаемое название типа участников
+     */
+    static _getTypeDisplayName(participantType) {
+        const names = {
+            'cs2_classic_5v5': 'Классический 5х5',
+            'cs2_wingman_2v2': 'Wingman 2х2',
+            'team': 'командного турнира',
+            'solo': 'одиночного турнира'
+        };
+        return names[participantType] || participantType;
     }
 
     /**
