@@ -8,6 +8,7 @@ const MatchService = require('../../services/tournament/MatchService');
 const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
+const { migrateTournamentCaptains } = require('../../migrate_existing_teams_captains');
 
 class MixTeamController {
     /**
@@ -608,6 +609,431 @@ class MixTeamController {
             res.status(500).json({ 
                 error: 'Ошибка получения статистики микс команд',
                 details: error.message 
+            });
+        }
+    });
+
+    /**
+     * 🆕 НАЗНАЧЕНИЕ КАПИТАНА КОМАНДЫ
+     * POST /api/tournaments/:id/teams/:teamId/set-captain
+     */
+    static setCaptain = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const teamId = parseInt(req.params.teamId);
+        const { userId: targetUserId } = req.body;
+        const currentUserId = req.user.id;
+
+        console.log(`👑 [MixTeamController] Назначение капитана команды ${teamId} для турнира ${tournamentId}`);
+
+        // Проверяем права доступа
+        const hasPermission = await TournamentService.checkUserPermission(tournamentId, currentUserId, 'manage_teams');
+        if (!hasPermission) {
+            return res.status(403).json({ 
+                error: 'Недостаточно прав для управления капитанами' 
+            });
+        }
+
+        try {
+            // Получаем турнир для определения типа рейтинга
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Управление капитанами доступно только для микс турниров' 
+                });
+            }
+
+            // Проверяем существование команды
+            const team = await TeamRepository.getById(teamId);
+            if (!team || team.tournament_id !== tournamentId) {
+                return res.status(404).json({ error: 'Команда не найдена' });
+            }
+
+            // Получаем рейтинг нового капитана
+            const members = await TeamRepository.getMembers(teamId);
+            const targetMember = members.find(m => m.user_id === targetUserId);
+            
+            if (!targetMember) {
+                return res.status(400).json({ 
+                    error: 'Пользователь не является участником команды' 
+                });
+            }
+
+            // Определяем рейтинг для капитана
+            const ratingType = tournament.mix_rating_type || 'faceit';
+            const captainRating = MixTeamService.normalizeParticipantRating(targetMember, ratingType);
+
+            // Назначаем капитана
+            const captain = await TeamRepository.setCaptain(teamId, targetUserId, captainRating);
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, currentUserId, 'captain_assigned', {
+                team_id: teamId,
+                captain_user_id: targetUserId,
+                captain_rating: captainRating,
+                rating_type: ratingType
+            });
+
+            // Отправляем уведомление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `👑 Назначен новый капитан команды "${team.name}": ${targetMember.username || targetMember.participant_name} (рейтинг: ${captainRating})`
+            );
+
+            // Получаем обновленную информацию о капитане
+            const captainInfo = await TeamRepository.getTeamCaptain(teamId);
+
+            console.log(`✅ [MixTeamController] Капитан назначен: ${targetMember.username} (рейтинг: ${captainRating})`);
+
+            res.status(200).json({
+                success: true,
+                message: `Капитан команды успешно назначен`,
+                captain: captainInfo,
+                team_id: teamId,
+                captain_rating: captainRating
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка назначения капитана:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при назначении капитана' 
+            });
+        }
+    });
+
+    /**
+     * 🆕 ПОЛУЧЕНИЕ ИНФОРМАЦИИ О КАПИТАНЕ КОМАНДЫ
+     * GET /api/tournaments/:id/teams/:teamId/captain
+     */
+    static getTeamCaptain = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const teamId = parseInt(req.params.teamId);
+
+        console.log(`🔍 [MixTeamController] Получение информации о капитане команды ${teamId}`);
+
+        try {
+            // Проверяем существование команды
+            const team = await TeamRepository.getById(teamId);
+            if (!team || team.tournament_id !== tournamentId) {
+                return res.status(404).json({ error: 'Команда не найдена' });
+            }
+
+            // Получаем информацию о капитане
+            const captain = await TeamRepository.getTeamCaptain(teamId);
+
+            if (!captain) {
+                return res.status(404).json({ 
+                    error: 'У команды нет назначенного капитана' 
+                });
+            }
+
+            console.log(`✅ [MixTeamController] Капитан найден: ${captain.username}`);
+
+            res.status(200).json({
+                success: true,
+                captain: captain,
+                team_id: teamId
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка получения капитана:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при получении информации о капитане' 
+            });
+        }
+    });
+
+    /**
+     * 🆕 АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ КАПИТАНА ПО РЕЙТИНГУ
+     * POST /api/tournaments/:id/teams/:teamId/auto-assign-captain
+     */
+    static autoAssignCaptain = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const teamId = parseInt(req.params.teamId);
+        const { ratingType } = req.body;
+        const currentUserId = req.user.id;
+
+        console.log(`🎯 [MixTeamController] Автоназначение капитана команды ${teamId} для турнира ${tournamentId}`);
+
+        // Проверяем права доступа
+        const hasPermission = await TournamentService.checkUserPermission(tournamentId, currentUserId, 'manage_teams');
+        if (!hasPermission) {
+            return res.status(403).json({ 
+                error: 'Недостаточно прав для управления капитанами' 
+            });
+        }
+
+        try {
+            // Получаем турнир для определения типа рейтинга
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Управление капитанами доступно только для микс турниров' 
+                });
+            }
+
+            // Проверяем существование команды
+            const team = await TeamRepository.getById(teamId);
+            if (!team || team.tournament_id !== tournamentId) {
+                return res.status(404).json({ error: 'Команда не найдена' });
+            }
+
+            // Определяем тип рейтинга
+            const finalRatingType = ratingType || tournament.mix_rating_type || 'faceit';
+
+            // Автоматически назначаем капитана
+            const captain = await TeamRepository.autoAssignCaptain(teamId, finalRatingType);
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, currentUserId, 'captain_auto_assigned', {
+                team_id: teamId,
+                captain_user_id: captain.user_id,
+                captain_rating: captain.captain_rating,
+                rating_type: finalRatingType
+            });
+
+            // Отправляем уведомление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🎯 Автоназначен капитан команды "${team.name}": ${captain.username || captain.participant_name} (рейтинг: ${captain.captain_rating})`
+            );
+
+            console.log(`✅ [MixTeamController] Капитан автоназначен: ${captain.username} (рейтинг: ${captain.captain_rating})`);
+
+            res.status(200).json({
+                success: true,
+                message: `Капитан команды автоматически назначен`,
+                captain: captain,
+                team_id: teamId,
+                rating_type: finalRatingType
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка автоназначения капитана:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при автоназначении капитана' 
+            });
+        }
+    });
+
+    /**
+     * 🆕 МАССОВОЕ НАЗНАЧЕНИЕ КАПИТАНОВ ДЛЯ ВСЕХ КОМАНД ТУРНИРА
+     * POST /api/tournaments/:id/assign-all-captains
+     */
+    static assignAllCaptains = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const { ratingType } = req.body;
+        const currentUserId = req.user.id;
+
+        console.log(`👑 [MixTeamController] Массовое назначение капитанов для турнира ${tournamentId}`);
+
+        // Проверяем права доступа
+        const hasPermission = await TournamentService.checkUserPermission(tournamentId, currentUserId, 'manage_teams');
+        if (!hasPermission) {
+            return res.status(403).json({ 
+                error: 'Недостаточно прав для управления капитанами' 
+            });
+        }
+
+        try {
+            // Получаем турнир
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Управление капитанами доступно только для микс турниров' 
+                });
+            }
+
+            // Определяем тип рейтинга
+            const finalRatingType = ratingType || tournament.mix_rating_type || 'faceit';
+
+            // Массовое назначение капитанов
+            const result = await TeamRepository.assignCaptainsForExistingTeams(tournamentId, finalRatingType);
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, currentUserId, 'captains_mass_assigned', {
+                total_teams: result.total_teams,
+                assigned_captains: result.assigned_captains,
+                rating_type: finalRatingType
+            });
+
+            // Отправляем уведомление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `👑 Массовое назначение капитанов завершено: ${result.assigned_captains} из ${result.total_teams} команд получили капитанов`
+            );
+
+            console.log(`✅ [MixTeamController] Массовое назначение завершено: ${result.assigned_captains}/${result.total_teams}`);
+
+            res.status(200).json({
+                success: true,
+                message: `Назначено ${result.assigned_captains} капитанов из ${result.total_teams} команд`,
+                result: result,
+                rating_type: finalRatingType
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка массового назначения капитанов:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при массовом назначении капитанов' 
+            });
+        }
+    });
+
+    /**
+     * 🆕 ПОЛУЧЕНИЕ СТАТИСТИКИ ПО КАПИТАНАМ ТУРНИРА
+     * GET /api/tournaments/:id/captains-stats
+     */
+    static getCaptainsStats = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+
+        console.log(`📊 [MixTeamController] Получение статистики капитанов для турнира ${tournamentId}`);
+
+        try {
+            // Получаем статистику
+            const stats = await TeamRepository.getCaptainStats(tournamentId);
+
+            // Получаем команды с капитанами для дополнительной информации
+            const teams = await TeamRepository.getByTournamentId(tournamentId);
+            const teamsWithCaptains = teams.filter(team => team.captain_user_id);
+
+            const enhancedStats = {
+                ...stats,
+                total_teams: teams.length,
+                teams_with_captains: teamsWithCaptains.length,
+                teams_without_captains: teams.length - teamsWithCaptains.length,
+                captains_coverage: teams.length > 0 ? Math.round((teamsWithCaptains.length / teams.length) * 100) : 0
+            };
+
+            console.log(`✅ [MixTeamController] Статистика получена: ${enhancedStats.teams_with_captains}/${enhancedStats.total_teams} команд имеют капитанов`);
+
+            res.status(200).json({
+                success: true,
+                stats: enhancedStats,
+                tournament_id: tournamentId
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка получения статистики капитанов:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при получении статистики капитанов' 
+            });
+        }
+    });
+
+    /**
+     * 🆕 ПРОВЕРКА ЯВЛЯЕТСЯ ЛИ ПОЛЬЗОВАТЕЛЬ КАПИТАНОМ КОМАНДЫ
+     * GET /api/tournaments/:id/teams/:teamId/is-captain/:userId
+     */
+    static isUserCaptain = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const teamId = parseInt(req.params.teamId);
+        const userId = parseInt(req.params.userId);
+
+        console.log(`🔍 [MixTeamController] Проверка капитанства пользователя ${userId} в команде ${teamId}`);
+
+        try {
+            // Проверяем существование команды
+            const team = await TeamRepository.getById(teamId);
+            if (!team || team.tournament_id !== tournamentId) {
+                return res.status(404).json({ error: 'Команда не найдена' });
+            }
+
+            // Проверяем является ли пользователь капитаном
+            const isCaptain = await TeamRepository.isUserCaptain(teamId, userId);
+
+            console.log(`✅ [MixTeamController] Пользователь ${userId} ${isCaptain ? 'является' : 'не является'} капитаном команды ${teamId}`);
+
+            res.status(200).json({
+                success: true,
+                is_captain: isCaptain,
+                user_id: userId,
+                team_id: teamId
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка проверки капитанства:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при проверке капитанства' 
+            });
+        }
+    });
+
+    /**
+     * 🆕 МИГРАЦИЯ СУЩЕСТВУЮЩИХ КОМАНД (НАЗНАЧЕНИЕ КАПИТАНОВ)
+     * POST /api/tournaments/:id/migrate-captains
+     */
+    static migrateCaptains = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const { ratingType } = req.body;
+        const currentUserId = req.user.id;
+
+        console.log(`🔄 [MixTeamController] Миграция капитанов для турнира ${tournamentId}`);
+
+        // Проверяем права доступа
+        const hasPermission = await TournamentService.checkUserPermission(tournamentId, currentUserId, 'manage_teams');
+        if (!hasPermission) {
+            return res.status(403).json({ 
+                error: 'Недостаточно прав для миграции капитанов' 
+            });
+        }
+
+        try {
+            // Получаем турнир
+            const tournament = await TournamentService.getTournament(tournamentId);
+            if (!tournament) {
+                return res.status(404).json({ error: 'Турнир не найден' });
+            }
+
+            if (tournament.format !== 'mix') {
+                return res.status(400).json({ 
+                    error: 'Миграция капитанов доступна только для микс турниров' 
+                });
+            }
+
+            // Определяем тип рейтинга
+            const finalRatingType = ratingType || tournament.mix_rating_type || 'faceit';
+
+            // Выполняем миграцию
+            const result = await migrateTournamentCaptains(tournamentId, finalRatingType);
+
+            // Логируем событие
+            await logTournamentEvent(tournamentId, currentUserId, 'captains_migrated', {
+                total_teams: result.total_teams,
+                assigned_captains: result.assigned_captains,
+                rating_type: finalRatingType
+            });
+
+            // Отправляем уведомление в чат
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `🔄 Миграция капитанов завершена: ${result.assigned_captains} из ${result.total_teams} команд получили капитанов`
+            );
+
+            console.log(`✅ [MixTeamController] Миграция завершена: ${result.assigned_captains}/${result.total_teams}`);
+
+            res.status(200).json({
+                success: true,
+                message: `Миграция завершена. Назначено ${result.assigned_captains} капитанов из ${result.total_teams} команд`,
+                result: result,
+                rating_type: finalRatingType
+            });
+
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка миграции капитанов:`, error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при миграции капитанов' 
             });
         }
     });

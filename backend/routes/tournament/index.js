@@ -99,6 +99,29 @@ router.get('/:id/teams', MixTeamController.getTeams);
 // Получение оригинальных участников
 router.get('/:id/original-participants', MixTeamController.getOriginalParticipants);
 
+// 👑 **УПРАВЛЕНИЕ КАПИТАНАМИ КОМАНД** (НОВАЯ СИСТЕМА v4.8)
+
+// Назначение капитана команды
+router.post('/:id/teams/:teamId/set-captain', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MixTeamController.setCaptain);
+
+// Получение информации о капитане команды
+router.get('/:id/teams/:teamId/captain', MixTeamController.getTeamCaptain);
+
+// Автоматическое назначение капитана по рейтингу
+router.post('/:id/teams/:teamId/auto-assign-captain', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MixTeamController.autoAssignCaptain);
+
+// Массовое назначение капитанов для всех команд турнира
+router.post('/:id/assign-all-captains', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MixTeamController.assignAllCaptains);
+
+// Получение статистики по капитанам турнира
+router.get('/:id/captains-stats', MixTeamController.getCaptainsStats);
+
+// Проверка является ли пользователь капитаном команды
+router.get('/:id/teams/:teamId/is-captain/:userId', MixTeamController.isUserCaptain);
+
+// Миграция существующих команд (назначение капитанов)
+router.post('/:id/migrate-captains', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MixTeamController.migrateCaptains);
+
 // 🔄 **УПРАВЛЕНИЕ ТУРНИРОМ** (БАЗОВЫЕ МЕТОДЫ)
 
 // Запуск турнира

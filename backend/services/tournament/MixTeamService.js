@@ -22,6 +22,35 @@ class MixTeamService {
     }
 
     /**
+     * 🆕 ОПРЕДЕЛЕНИЕ КАПИТАНА КОМАНДЫ ПО НАИВЫСШЕМУ РЕЙТИНГУ
+     * @param {Array} members - Участники команды
+     * @param {string} ratingType - Тип рейтинга ('faceit' или 'premier')
+     * @returns {Object} Объект с информацией о капитане и его рейтинге
+     */
+    static determineCaptain(members, ratingType) {
+        if (!members || members.length === 0) {
+            return { captain: null, captainRating: null };
+        }
+        
+        // Сортируем участников по рейтингу (по убыванию)
+        const sortedMembers = [...members].sort((a, b) => {
+            const ratingA = this.normalizeParticipantRating(a, ratingType);
+            const ratingB = this.normalizeParticipantRating(b, ratingType);
+            return ratingB - ratingA;
+        });
+        
+        const captain = sortedMembers[0];
+        const captainRating = this.normalizeParticipantRating(captain, ratingType);
+        
+        console.log(`👑 [determineCaptain] Капитан команды: ${captain.name} (рейтинг: ${captainRating})`);
+        
+        return {
+            captain,
+            captainRating
+        };
+    }
+
+    /**
      * Нормализация рейтинга участника с консистентными приоритетами
      */
     static normalizeParticipantRating(participant, ratingType) {
@@ -53,8 +82,8 @@ class MixTeamService {
             
             if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
                 rating = parseInt(participant.cs2_premier_rank);
-            } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
-                rating = parseInt(participant.user_premier_rank);
+            } else if (participant.user_cs2_premier_rank && !isNaN(parseInt(participant.user_cs2_premier_rank)) && parseInt(participant.user_cs2_premier_rank) > 0) {
+                rating = parseInt(participant.user_cs2_premier_rank);
             } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
                 rating = parseInt(participant.premier_rank);
             } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
@@ -348,7 +377,7 @@ class MixTeamService {
     }
 
     /**
-     * 🎯 ОСНОВНОЙ МЕТОД ГЕНЕРАЦИИ КОМАНД (обновлен для использования нового алгоритма)
+     * 🎯 ОСНОВНОЙ МЕТОД ГЕНЕРАЦИИ КОМАНД (обновлен для назначения капитанов)
      */
     static async generateTeams(tournamentId, ratingTypeFromRequest = null) {
         const startTime = Date.now();
@@ -394,12 +423,15 @@ class MixTeamService {
 
             console.log(`✅ Сгенерировано ${teams.length} оптимально сбалансированных команд`);
 
-            // 🔍 6. Сохраняем команды в базе данных
-            console.log(`💾 Сохраняем команды в базе данных...`);
+            // 🔍 6. Сохраняем команды в базе данных С НАЗНАЧЕНИЕМ КАПИТАНОВ
+            console.log(`💾 Сохраняем команды в базе данных с назначением капитанов...`);
             const createdTeams = [];
 
             for (let i = 0; i < teams.length; i++) {
                 const team = teams[i];
+                
+                // 🆕 ОПРЕДЕЛЯЕМ КАПИТАНА КОМАНДЫ
+                const { captain, captainRating } = this.determineCaptain(team.members, ratingType);
                 
                 // Создаем команду
                 const createdTeam = await TeamRepository.create({
@@ -408,19 +440,35 @@ class MixTeamService {
                     creator_id: tournament.created_by
                 });
 
-                // Добавляем участников в команду
+                // 🆕 ДОБАВЛЯЕМ УЧАСТНИКОВ В КОМАНДУ С НАЗНАЧЕНИЕМ КАПИТАНА
                 const teamMembers = [];
                 for (const member of team.members) {
+                    const isCaptain = captain && (
+                        (member.id && member.id === captain.id) || 
+                        (member.participant_id && member.participant_id === captain.participant_id) ||
+                        (member.user_id && member.user_id === captain.user_id)
+                    );
+                    
+                    const memberCaptainRating = isCaptain ? captainRating : null;
+                    
                     await TeamRepository.addMember(
                         createdTeam.id, 
                         member.user_id, 
-                        member.id || member.participant_id
+                        member.id || member.participant_id,
+                        isCaptain,  // 🆕 Флаг капитана
+                        memberCaptainRating  // 🆕 Рейтинг капитана
                     );
 
                     teamMembers.push({
                         ...member,
-                        team_id: createdTeam.id
+                        team_id: createdTeam.id,
+                        is_captain: isCaptain,
+                        captain_rating: memberCaptainRating
                     });
+                    
+                    if (isCaptain) {
+                        console.log(`👑 Назначен капитан: ${member.name} (рейтинг: ${captainRating}) для команды "${team.name}"`);
+                    }
                 }
 
                 // Обновляем флаг in_team для участников
@@ -435,10 +483,15 @@ class MixTeamService {
                     averageRating: team.averageRating || this.calculateTeamAverageRating(team.members, ratingType),
                     averageRatingFaceit: this.calculateTeamAverageRating(team.members, 'faceit'),
                     averageRatingPremier: this.calculateTeamAverageRating(team.members, 'premier'),
-                    ratingType: ratingType
+                    ratingType: ratingType,
+                    // 🆕 ИНФОРМАЦИЯ О КАПИТАНЕ
+                    captain_user_id: captain?.user_id,
+                    captain_participant_id: captain?.id || captain?.participant_id,
+                    captain_name: captain?.name,
+                    captain_rating: captainRating
                 });
 
-                console.log(`✅ Команда "${team.name}" создана с ${team.members.length} участниками`);
+                console.log(`✅ Команда "${team.name}" создана с ${team.members.length} участниками и капитаном ${captain?.name || 'N/A'}`);
             }
 
             // 🔍 7. Обновляем тип участников турнира на 'team'
@@ -456,11 +509,26 @@ class MixTeamService {
             const overallAvg = teamAverages.reduce((sum, avg) => sum + avg, 0) / teamAverages.length;
             const balance = ((maxAvg - minAvg) / overallAvg) * 100;
 
+            // 🆕 СТАТИСТИКА ПО КАПИТАНАМ
+            const captainStats = {
+                total_captains: createdTeams.filter(team => team.captain_rating).length,
+                average_captain_rating: Math.round(
+                    createdTeams
+                        .filter(team => team.captain_rating)
+                        .reduce((sum, team) => sum + team.captain_rating, 0) / 
+                    createdTeams.filter(team => team.captain_rating).length || 0
+                ),
+                highest_captain_rating: Math.max(...createdTeams.map(team => team.captain_rating || 0)),
+                lowest_captain_rating: Math.min(...createdTeams.filter(team => team.captain_rating).map(team => team.captain_rating))
+            };
+
             console.log(`🎉 [generateTeams] УСПЕШНО ЗАВЕРШЕНО за ${duration}ms:`);
             console.log(`   📊 Создано команд: ${createdTeams.length}`);
             console.log(`   👥 Участников в командах: ${playersInTeams}`);
+            console.log(`   👑 Назначено капитанов: ${captainStats.total_captains}`);
             console.log(`   ⚖️ Баланс команд: ${Math.round(balance)}%`);
             console.log(`   🎯 Средний рейтинг: min=${Math.round(minAvg)}, max=${Math.round(maxAvg)}, общий=${Math.round(overallAvg)}`);
+            console.log(`   👑 Средний рейтинг капитанов: ${captainStats.average_captain_rating}`);
 
             return {
                 success: true,
@@ -480,6 +548,7 @@ class MixTeamService {
                         maxTeamRating: Math.round(maxAvg),
                         averageRating: Math.round(overallAvg)
                     },
+                    captains: captainStats,  // 🆕 Статистика капитанов
                     duration: duration
                 }
             };
