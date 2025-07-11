@@ -118,7 +118,7 @@ function CreateTournament() {
         ...prev,
         format,
         team_size: format === 'mix' ? 5 : prev.team_size,
-        game: format === 'mix' ? 'cs2' : prev.game,
+        game: format === 'mix' ? 'counter strike 2' : prev.game, // Исправлено: используем точное название из БД
         participant_type: format === 'mix' ? 'solo' : 'team',
         bracket_type: format === 'mix' ? 'single_elimination' : 'single_elimination',
         mix_rating_type: format === 'mix' ? 'faceit' : prev.mix_rating_type,
@@ -216,7 +216,7 @@ function CreateTournament() {
                   required
                 >
                   {formData.format === 'mix' ? (
-                    <option value="cs2">Counter Strike 2</option>
+                    <option value="counter strike 2">Counter Strike 2</option>
                   ) : (
                     <>
                       <option value="">Выберите игру</option>
