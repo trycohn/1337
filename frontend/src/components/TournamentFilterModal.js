@@ -133,7 +133,7 @@ const TournamentFilterModal = ({
     return (
         <div className="modal-system-overlay" onClick={onClose}>
             <div 
-                className="modal-system-modal modal-system-modal-large" 
+                className="modal-system-container modal-system-modal-large" 
                 onClick={(e) => e.stopPropagation()}
                 style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}
             >

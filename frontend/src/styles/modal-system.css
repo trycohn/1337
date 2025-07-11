@@ -76,7 +76,7 @@
 }
 
 .modal-system-subtitle {
-    margin: 8px 0 0 0;
+    margin: 8px 0 0 0 !important;
     color: #cccccc;
     font-size: 14px;
     font-weight: 400;
@@ -163,12 +163,12 @@
 }
 
 .modal-system-btn-primary {
-    background: #ffffff;
-    color: #000000;
+    background: #000000;
+    color: #ffffff;
 }
 
 .modal-system-btn-primary:hover {
-    background: #000000;
+    background: #111;
     color: #ffffff;
 }
 
@@ -497,7 +497,7 @@
     .modal-system-header,
     .modal-system-body,
     .modal-system-footer {
-        padding: 15px;
+        padding: 5px;
     }
     
     .modal-system-title {
