@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './styles/modal-system.css';
+import '../styles/modal-system.css'; // 🔧 ИСПРАВЛЕН ПУТЬ К CSS
 
 /**
  * 🎯 TournamentFilterModal v1.0 - Расширенная система фильтрации турниров
