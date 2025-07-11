@@ -87,25 +87,29 @@ const TeamGenerator = ({
         
         const ratings = team.members.map(member => {
             let rating;
+            let isManualRating = false; // 🆕 Флаг ручного рейтинга
+            
             if (ratingType === 'faceit') {
-                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в MixTeamService.normalizeParticipantRating
-                // FACEIT приоритет: faceit_elo -> user_faceit_elo -> faceit_rating -> user_faceit_rating -> 1000
+                // 🔧 ИСПРАВЛЕНО: Приоритизируем ручные рейтинги участников (как в backend)
+                // ПРИОРИТЕТ: faceit_elo (ручной) -> user_faceit_elo (профиль) -> faceit_rating (резерв) -> 1000 (дефолт)
                 if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
                     rating = parseInt(member.faceit_elo);
+                    isManualRating = true; // 🆕 Ручной рейтинг
                 } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
                     rating = parseInt(member.user_faceit_elo);
                 } else if (member.faceit_rating && !isNaN(parseInt(member.faceit_rating)) && parseInt(member.faceit_rating) > 0) {
                     rating = parseInt(member.faceit_rating);
                 } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
                     rating = parseInt(member.user_faceit_rating);
-            } else {
+                } else {
                     rating = 1000; // дефолт для FACEIT
                 }
             } else {
-                // 🔧 ИСПРАВЛЕНО: используем ту же логику что в MixTeamService.normalizeParticipantRating
-                // Premier приоритет: cs2_premier_rank -> user_premier_rank -> premier_rank -> premier_rating -> user_premier_rating -> 5
+                // 🔧 ИСПРАВЛЕНО: Приоритизируем ручные рейтинги участников (как в backend)
+                // ПРИОРИТЕТ: cs2_premier_rank (ручной) -> user_premier_rank (профиль) -> premier_rank (резерв) -> 5 (дефолт)
                 if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
                     rating = parseInt(member.cs2_premier_rank);
+                    isManualRating = true; // 🆕 Ручной рейтинг
                 } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
                     rating = parseInt(member.user_premier_rank);
                 } else if (member.premier_rank && !isNaN(parseInt(member.premier_rank)) && parseInt(member.premier_rank) > 0) {
@@ -119,16 +123,72 @@ const TeamGenerator = ({
                 }
             }
             
-            console.log(`📊 [calculateTeamAverageRating] Участник ${member.name}: рейтинг ${rating} (тип: ${ratingType})`);
-            return rating;
-        }).filter(rating => !isNaN(rating) && rating > 0);
+            console.log(`📊 [calculateTeamAverageRating] Участник ${member.name}: рейтинг ${rating} (тип: ${ratingType}, ручной: ${isManualRating})`);
+            return { rating, isManualRating };
+        }).filter(item => !isNaN(item.rating) && item.rating > 0);
         
         if (ratings.length === 0) return ratingType === 'faceit' ? 1000 : 5; // 🔧 ИСПРАВЛЕНО: дефолт для Premier = 5
         
-        const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
-        console.log(`📊 [calculateTeamAverageRating] Команда ${team.name}: рейтинги [${ratings.join(', ')}], средний = ${Math.round(average)}`);
+        const average = ratings.reduce((sum, item) => sum + item.rating, 0) / ratings.length;
+        const manualRatingsCount = ratings.filter(item => item.isManualRating).length;
+        
+        console.log(`📊 [calculateTeamAverageRating] Команда ${team.name}: рейтинги [${ratings.map(r => r.rating).join(', ')}], средний = ${Math.round(average)}, ручных: ${manualRatingsCount}/${ratings.length}`);
         return Math.round(average);
     }, [ratingType]);
+
+    // 🆕 ФУНКЦИЯ ОПРЕДЕЛЕНИЯ РЕЙТИНГА УЧАСТНИКА С УКАЗАНИЕМ ИСТОЧНИКА
+    const getParticipantRatingInfo = useCallback((participant) => {
+        let rating;
+        let isManualRating = false;
+        let source = '';
+        
+        if (ratingType === 'faceit') {
+            // 🔧 ИСПРАВЛЕНО: используем ту же логику что в backend
+            if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
+                rating = parseInt(participant.faceit_elo);
+                isManualRating = true;
+                source = 'ручной';
+            } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
+                rating = parseInt(participant.user_faceit_elo);
+                source = 'профиль';
+            } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
+                rating = parseInt(participant.faceit_rating);
+                source = 'резерв';
+            } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
+                rating = parseInt(participant.user_faceit_rating);
+                source = 'резерв';
+            } else {
+                rating = 1000;
+                source = 'дефолт';
+            }
+        } else {
+            // 🔧 ИСПРАВЛЕНО: используем ту же логику что в backend
+            if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
+                rating = parseInt(participant.cs2_premier_rank);
+                isManualRating = true;
+                source = 'ручной';
+            } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
+                rating = parseInt(participant.user_premier_rank);
+                source = 'профиль';
+            } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
+                rating = parseInt(participant.premier_rank);
+                source = 'резерв';
+            } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
+                rating = parseInt(participant.premier_rating);
+                source = 'резерв';
+            } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
+                rating = parseInt(participant.user_premier_rating);
+                source = 'резерв';
+            } else {
+                rating = 5;
+                source = 'дефолт';
+            }
+        }
+        
+        return { rating, isManualRating, source };
+    }, [ratingType]);
+
+    // 🆕 ФУНКЦИЯ ОПРЕДЕЛЕНИЯ УЧАСТНИКА С НАИЛУЧШИМ РЕЙТИНГОМ (ЛОГИКА КАПИТАНА)
 
     // 🆕 ЭФФЕКТ ДЛЯ СОХРАНЕНИЯ ratingType В localStorage
     useEffect(() => {
@@ -252,7 +312,7 @@ const TeamGenerator = ({
                                     return parseInt(member.faceit_rating);
                                 } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
                                     return parseInt(member.user_faceit_rating);
-                            } else {
+                                } else {
                                     return 1000;
                                 }
                             } else {
@@ -544,38 +604,22 @@ const TeamGenerator = ({
                                                                 )}
                                                             </div>
                                                             <div className="member-rating">
-                                                                🎯 {ratingType === 'faceit' 
-                                                                    ? `${(() => {
-                                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга как в других местах
-                                                                        if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
-                                                                            return parseInt(member.faceit_elo);
-                                                                        } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
-                                                                            return parseInt(member.user_faceit_elo);
-                                                                        } else if (member.faceit_rating && !isNaN(parseInt(member.faceit_rating)) && parseInt(member.faceit_rating) > 0) {
-                                                                            return parseInt(member.faceit_rating);
-                                                                        } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
-                                                                            return parseInt(member.user_faceit_rating);
-                                                                        } else {
-                                                                            return 1000;
-                                                                        }
-                                                                    })()} ELO`
-                                                                    : `${(() => {
-                                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга как в других местах
-                                                                        if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
-                                                                            return parseInt(member.cs2_premier_rank);
-                                                                        } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
-                                                                            return parseInt(member.user_premier_rank);
-                                                                        } else if (member.premier_rank && !isNaN(parseInt(member.premier_rank)) && parseInt(member.premier_rank) > 0) {
-                                                                            return parseInt(member.premier_rank);
-                                                                        } else if (member.premier_rating && !isNaN(parseInt(member.premier_rating)) && parseInt(member.premier_rating) > 0) {
-                                                                            return parseInt(member.premier_rating);
-                                                                        } else if (member.user_premier_rating && !isNaN(parseInt(member.user_premier_rating)) && parseInt(member.user_premier_rating) > 0) {
-                                                                            return parseInt(member.user_premier_rating);
-                                                                        } else {
-                                                                            return 5;
-                                                                        }
-                                                                    })()} Premier`
-                                                                }
+                                                                {(() => {
+                                                                    // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
+                                                                    const ratingInfo = getParticipantRatingInfo(member);
+                                                                    
+                                                                    return (
+                                                                        <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                                            🎯 {ratingType === 'faceit' 
+                                                                                ? `${ratingInfo.rating} ELO`
+                                                                                : `${ratingInfo.rating} Ранг`
+                                                                            }
+                                                                            {ratingInfo.isManualRating && (
+                                                                                <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
+                                                                            )}
+                                                                        </span>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -645,38 +689,22 @@ const TeamGenerator = ({
                                     <span className="participant-name">{participant.name}</span>
                                     <div className="participant-info">
                                         <span className="participant-rating">
-                                            {ratingType === 'faceit' 
-                                                ? `FACEIT: ${(() => {
-                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
-                                                    if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
-                                                        return parseInt(participant.faceit_elo);
-                                                    } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
-                                                        return parseInt(participant.user_faceit_elo);
-                                                    } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
-                                                        return parseInt(participant.faceit_rating);
-                                                    } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
-                                                        return parseInt(participant.user_faceit_rating);
-                                                    } else {
-                                                        return 1000;
-                                                    }
-                                                })()}`
-                                                : `Premier: ${(() => {
-                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
-                                                    if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
-                                                        return parseInt(participant.cs2_premier_rank);
-                                                    } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
-                                                        return parseInt(participant.user_premier_rank);
-                                                    } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
-                                                        return parseInt(participant.premier_rank);
-                                                    } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
-                                                        return parseInt(participant.premier_rating);
-                                                    } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
-                                                        return parseInt(participant.user_premier_rating);
-                                                    } else {
-                                                        return 1;
-                                                    }
-                                                })()}`
-                                            }
+                                            {(() => {
+                                                // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
+                                                const ratingInfo = getParticipantRatingInfo(participant);
+                                                
+                                                return (
+                                                    <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                        {ratingType === 'faceit' 
+                                                            ? `FACEIT: ${ratingInfo.rating}`
+                                                            : `Premier: ${ratingInfo.rating}`
+                                                        }
+                                                        {ratingInfo.isManualRating && (
+                                                            <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
+                                                        )}
+                                                    </span>
+                                                );
+                                            })()}
                                         </span>
                                         <span className="participant-status">Свободен</span>
                                     </div>
@@ -717,37 +745,22 @@ const TeamGenerator = ({
                                     <div className="participant-info">
                                         
                                         <span className="participant-rating">
-                                            {ratingType === 'faceit' 
-                                                ? `FACEIT: ${(() => {
-                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
-                                                    if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
-                                                        return parseInt(participant.faceit_elo);
-                                                    } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
-                                                        return parseInt(participant.user_faceit_elo);
-                                                    } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
-                                                        return parseInt(participant.faceit_rating);
-                                                    } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
-                                                        return parseInt(participant.user_faceit_rating);
-                                                    } else {
-                                                        return 1000;
-                                                    }
-                                                })()} ELO`
-                                                : `Premier: ${(() => {
-                                                    // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
-                                                    if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
-                                                        return parseInt(participant.cs2_premier_rank);
-                                                    } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
-                                                        return parseInt(participant.user_premier_rank);
-                                                    } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
-                                                        return parseInt(participant.premier_rank);
-                                                    } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
-                                                        return parseInt(participant.premier_rating);
-                                                    } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
-                                                        return parseInt(participant.user_premier_rating);
-                                                    } else {
-                                                        return 1;
-                                                    }
-                                                })()} Ранг`}
+                                            {(() => {
+                                                // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
+                                                const ratingInfo = getParticipantRatingInfo(participant);
+                                                
+                                                return (
+                                                    <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                        {ratingType === 'faceit' 
+                                                            ? `FACEIT: ${ratingInfo.rating}`
+                                                            : `Premier: ${ratingInfo.rating}`
+                                                        }
+                                                        {ratingInfo.isManualRating && (
+                                                            <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
+                                                        )}
+                                                    </span>
+                                                );
+                                            })()}
                                         </span>
                                         <span className="participant-status">В команде</span>
                                     </div>
@@ -780,37 +793,22 @@ const TeamGenerator = ({
                                         <div className="participant-info">
                                             
                                             <span className="participant-rating">
-                                                {ratingType === 'faceit' 
-                                                    ? `FACEIT: ${(() => {
-                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
-                                                        if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
-                                                            return parseInt(participant.faceit_elo);
-                                                        } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
-                                                            return parseInt(participant.user_faceit_elo);
-                                                        } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
-                                                            return parseInt(participant.faceit_rating);
-                                                        } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
-                                                            return parseInt(participant.user_faceit_rating);
-                                                        } else {
-                                                            return 1000;
-                                                        }
-                                                    })()} ELO`
-                                                    : `Premier: ${(() => {
-                                                        // 🔧 ИСПРАВЛЕНО: используем консистентную логику расчета рейтинга
-                                                        if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
-                                                            return parseInt(participant.cs2_premier_rank);
-                                                        } else if (participant.user_premier_rank && !isNaN(parseInt(participant.user_premier_rank)) && parseInt(participant.user_premier_rank) > 0) {
-                                                            return parseInt(participant.user_premier_rank);
-                                                        } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
-                                                            return parseInt(participant.premier_rank);
-                                                        } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
-                                                            return parseInt(participant.premier_rating);
-                                                        } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
-                                                            return parseInt(participant.user_premier_rating);
-                                                        } else {
-                                                            return 1;
-                                                        }
-                                                    })()} Ранг`}
+                                                {(() => {
+                                                    // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
+                                                    const ratingInfo = getParticipantRatingInfo(participant);
+                                                    
+                                                    return (
+                                                        <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                            {ratingType === 'faceit' 
+                                                                ? `FACEIT: ${ratingInfo.rating}`
+                                                                : `Premier: ${ratingInfo.rating}`
+                                                            }
+                                                            {ratingInfo.isManualRating && (
+                                                                <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
+                                                            )}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </span>
                                         </div>
                                         {isAdminOrCreator && tournament.participant_type === 'solo' && (

@@ -387,4 +387,59 @@
     .team-size-control select:hover {
         background: rgba(255, 255, 255, 0.2);
     }
+}
+
+/* 🆕 СТИЛИ ДЛЯ ИНДИКАТОРА РУЧНОГО РЕЙТИНГА */
+.manual-rating-indicator {
+    color: #ff6b6b;
+    font-size: 0.8em;
+    margin-left: 3px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.manual-rating-indicator:hover {
+    opacity: 1;
+}
+
+/* 🆕 УЛУЧШЕННЫЕ СТИЛИ ДЛЯ РЕЙТИНГА УЧАСТНИКОВ */
+.participant-rating {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.member-rating {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* 🆕 СТИЛИ ДЛЯ TOOLTIP РЕЙТИНГА */
+.participant-rating span[title],
+.member-rating span[title] {
+    cursor: help;
+    border-bottom: 1px dotted #666;
+}
+
+/* 🆕 СТИЛИ ДЛЯ РАЗНЫХ ТИПОВ РЕЙТИНГОВ */
+.rating-source-manual {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+.rating-source-profile {
+    color: #4ecdc4;
+    font-weight: 500;
+}
+
+.rating-source-reserve {
+    color: #ffd93d;
+    font-weight: 400;
+}
+
+.rating-source-default {
+    color: #95a5a6;
+    font-weight: 300;
+    font-style: italic;
 } 

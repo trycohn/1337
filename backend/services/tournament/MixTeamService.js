@@ -32,7 +32,9 @@ class MixTeamService {
             return { captain: null, captainRating: null };
         }
         
-        // Сортируем участников по рейтингу (по убыванию)
+        console.log(`👑 [determineCaptain] Анализ ${members.length} участников для выбора капитана (тип рейтинга: ${ratingType})`);
+        
+        // Сортируем участников по рейтингу (по убыванию) с приоритизацией ручных рейтингов
         const sortedMembers = [...members].sort((a, b) => {
             const ratingA = this.normalizeParticipantRating(a, ratingType);
             const ratingB = this.normalizeParticipantRating(b, ratingType);
@@ -42,63 +44,117 @@ class MixTeamService {
         const captain = sortedMembers[0];
         const captainRating = this.normalizeParticipantRating(captain, ratingType);
         
-        console.log(`👑 [determineCaptain] Капитан команды: ${captain.name} (рейтинг: ${captainRating})`);
+        // 🆕 ОПРЕДЕЛЯЕМ ИСПОЛЬЗОВАЛСЯ ЛИ РУЧНОЙ РЕЙТИНГ
+        let usedManualRating = false;
+        if (ratingType === 'faceit') {
+            usedManualRating = Boolean(captain.faceit_elo && !isNaN(parseInt(captain.faceit_elo)) && parseInt(captain.faceit_elo) > 0);
+        } else {
+            usedManualRating = Boolean(captain.cs2_premier_rank && !isNaN(parseInt(captain.cs2_premier_rank)) && parseInt(captain.cs2_premier_rank) > 0);
+        }
+        
+        console.log(`👑 [determineCaptain] Выбран капитан: ${captain.name} (рейтинг: ${captainRating}, ручной: ${usedManualRating})`);
+        
+        // 🆕 ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ ВСЕХ УЧАСТНИКОВ
+        console.log(`📊 [determineCaptain] Рейтинги всех участников:`);
+        sortedMembers.forEach((member, index) => {
+            const memberRating = this.normalizeParticipantRating(member, ratingType);
+            const memberUsedManual = ratingType === 'faceit' 
+                ? Boolean(member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0)
+                : Boolean(member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0);
+            
+            console.log(`   ${index + 1}. ${member.name}: ${memberRating} (ручной: ${memberUsedManual}) ${index === 0 ? '👑 КАПИТАН' : ''}`);
+        });
         
         return {
             captain,
-            captainRating
+            captainRating,
+            usedManualRating, // 🆕 Флаг использования ручного рейтинга
+            totalCandidates: members.length
         };
     }
 
     /**
      * Нормализация рейтинга участника с консистентными приоритетами
+     * 🔧 ОБНОВЛЕНО: Улучшенное логирование и обработка ручных рейтингов
      */
     static normalizeParticipantRating(participant, ratingType) {
         let rating;
+        let usedManualRating = false;
+        let source = '';
         
         if (ratingType === 'faceit') {
             // 🎯 ПРИОРИТЕТ ДЛЯ FACEIT (согласно требованиям):
-            // 1. Кастомный ELO участника турнира (если был указан при формировании команд)
-            // 2. ELO зарегистрированного пользователя
-            // 3. FACEIT рейтинг пользователя (резервный)
+            // 1. Кастомный ELO участника турнира (РУЧНОЙ РЕЙТИНГ) - participant.faceit_elo
+            // 2. ELO зарегистрированного пользователя - user_faceit_elo  
+            // 3. FACEIT рейтинг пользователя (резервный) - faceit_rating
             // 4. Дефолт 1000
             
             if (participant.faceit_elo && !isNaN(parseInt(participant.faceit_elo)) && parseInt(participant.faceit_elo) > 0) {
                 rating = parseInt(participant.faceit_elo);
+                usedManualRating = true;
+                source = 'manual_tournament_participant';
             } else if (participant.user_faceit_elo && !isNaN(parseInt(participant.user_faceit_elo)) && parseInt(participant.user_faceit_elo) > 0) {
                 rating = parseInt(participant.user_faceit_elo);
+                source = 'user_profile';
             } else if (participant.faceit_rating && !isNaN(parseInt(participant.faceit_rating)) && parseInt(participant.faceit_rating) > 0) {
                 rating = parseInt(participant.faceit_rating);
+                source = 'legacy_faceit_rating';
             } else if (participant.user_faceit_rating && !isNaN(parseInt(participant.user_faceit_rating)) && parseInt(participant.user_faceit_rating) > 0) {
                 rating = parseInt(participant.user_faceit_rating);
+                source = 'legacy_user_faceit_rating';
             } else {
                 rating = 1000; // Дефолт для FACEIT
+                source = 'default_faceit';
             }
         } else if (ratingType === 'premier') {
             // 🎯 ПРИОРИТЕТ ДЛЯ CS2 PREMIER (согласно требованиям):
-            // 1. Кастомный ранг участника турнира (если был указан при формировании команд)
-            // 2. Premier ранг зарегистрированного пользователя
+            // 1. Кастомный ранг участника турнира (РУЧНОЙ РЕЙТИНГ) - participant.cs2_premier_rank
+            // 2. Premier ранг зарегистрированного пользователя - user_cs2_premier_rank
             // 3. Дефолт 5
             
             if (participant.cs2_premier_rank && !isNaN(parseInt(participant.cs2_premier_rank)) && parseInt(participant.cs2_premier_rank) > 0) {
                 rating = parseInt(participant.cs2_premier_rank);
+                usedManualRating = true;
+                source = 'manual_tournament_participant';
             } else if (participant.user_cs2_premier_rank && !isNaN(parseInt(participant.user_cs2_premier_rank)) && parseInt(participant.user_cs2_premier_rank) > 0) {
                 rating = parseInt(participant.user_cs2_premier_rank);
+                source = 'user_profile';
             } else if (participant.premier_rank && !isNaN(parseInt(participant.premier_rank)) && parseInt(participant.premier_rank) > 0) {
                 rating = parseInt(participant.premier_rank);
+                source = 'legacy_premier_rank';
             } else if (participant.premier_rating && !isNaN(parseInt(participant.premier_rating)) && parseInt(participant.premier_rating) > 0) {
                 rating = parseInt(participant.premier_rating);
+                source = 'legacy_premier_rating';
             } else if (participant.user_premier_rating && !isNaN(parseInt(participant.user_premier_rating)) && parseInt(participant.user_premier_rating) > 0) {
                 rating = parseInt(participant.user_premier_rating);
+                source = 'legacy_user_premier_rating';
             } else {
                 rating = 5; // Дефолт для Premier
+                source = 'default_premier';
             }
         } else {
             // Fallback на faceit если тип не определен
             rating = 1000;
+            source = 'fallback_faceit';
         }
         
-        console.log(`📊 Рейтинг участника ${participant.name}: ${rating} (тип: ${ratingType})`);
+        // 🆕 ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ С ИНФОРМАЦИЕЙ ОБ ИСТОЧНИКЕ РЕЙТИНГА
+        console.log(`📊 [normalizeParticipantRating] ${participant.name}: рейтинг ${rating} (тип: ${ratingType}, источник: ${source}, ручной: ${usedManualRating})`);
+        
+        // 🆕 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДОСТУПНЫХ РЕЙТИНГОВ
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`   🔍 Доступные рейтинги для ${participant.name}:`, {
+                faceit_elo: participant.faceit_elo,
+                user_faceit_elo: participant.user_faceit_elo,
+                cs2_premier_rank: participant.cs2_premier_rank,
+                user_cs2_premier_rank: participant.user_cs2_premier_rank,
+                faceit_rating: participant.faceit_rating,
+                premier_rank: participant.premier_rank,
+                premier_rating: participant.premier_rating,
+                user_premier_rating: participant.user_premier_rating
+            });
+        }
+        
         return rating;
     }
 
@@ -430,8 +486,9 @@ class MixTeamService {
             for (let i = 0; i < teams.length; i++) {
                 const team = teams[i];
                 
-                // 🆕 ОПРЕДЕЛЯЕМ КАПИТАНА КОМАНДЫ
-                const { captain, captainRating } = this.determineCaptain(team.members, ratingType);
+                // 🆕 ОПРЕДЕЛЯЕМ КАПИТАНА КОМАНДЫ С УЛУЧШЕННОЙ ЛОГИКОЙ
+                const captainInfo = this.determineCaptain(team.members, ratingType);
+                const { captain, captainRating, usedManualRating } = captainInfo;
                 
                 // Создаем команду
                 const createdTeam = await TeamRepository.create({
@@ -467,7 +524,7 @@ class MixTeamService {
                     });
                     
                     if (isCaptain) {
-                        console.log(`👑 Назначен капитан: ${member.name} (рейтинг: ${captainRating}) для команды "${team.name}"`);
+                        console.log(`👑 Назначен капитан: ${member.name} (рейтинг: ${captainRating}, ручной: ${usedManualRating}) для команды "${team.name}"`);
                     }
                 }
 
@@ -484,14 +541,15 @@ class MixTeamService {
                     averageRatingFaceit: this.calculateTeamAverageRating(team.members, 'faceit'),
                     averageRatingPremier: this.calculateTeamAverageRating(team.members, 'premier'),
                     ratingType: ratingType,
-                    // 🆕 ИНФОРМАЦИЯ О КАПИТАНЕ
+                    // 🆕 РАСШИРЕННАЯ ИНФОРМАЦИЯ О КАПИТАНЕ
                     captain_user_id: captain?.user_id,
                     captain_participant_id: captain?.id || captain?.participant_id,
                     captain_name: captain?.name,
-                    captain_rating: captainRating
+                    captain_rating: captainRating,
+                    captain_manual_rating_used: usedManualRating // 🆕 Флаг использования ручного рейтинга
                 });
 
-                console.log(`✅ Команда "${team.name}" создана с ${team.members.length} участниками и капитаном ${captain?.name || 'N/A'}`);
+                console.log(`✅ Команда "${team.name}" создана с ${team.members.length} участниками и капитаном ${captain?.name || 'N/A'} (ручной рейтинг: ${usedManualRating})`);
             }
 
             // 🔍 7. Обновляем тип участников турнира на 'team'
@@ -509,9 +567,10 @@ class MixTeamService {
             const overallAvg = teamAverages.reduce((sum, avg) => sum + avg, 0) / teamAverages.length;
             const balance = ((maxAvg - minAvg) / overallAvg) * 100;
 
-            // 🆕 СТАТИСТИКА ПО КАПИТАНАМ
+            // 🆕 РАСШИРЕННАЯ СТАТИСТИКА ПО КАПИТАНАМ
             const captainStats = {
                 total_captains: createdTeams.filter(team => team.captain_rating).length,
+                captains_with_manual_ratings: createdTeams.filter(team => team.captain_manual_rating_used).length,
                 average_captain_rating: Math.round(
                     createdTeams
                         .filter(team => team.captain_rating)
@@ -519,13 +578,16 @@ class MixTeamService {
                     createdTeams.filter(team => team.captain_rating).length || 0
                 ),
                 highest_captain_rating: Math.max(...createdTeams.map(team => team.captain_rating || 0)),
-                lowest_captain_rating: Math.min(...createdTeams.filter(team => team.captain_rating).map(team => team.captain_rating))
+                lowest_captain_rating: Math.min(...createdTeams.filter(team => team.captain_rating).map(team => team.captain_rating)),
+                manual_rating_usage_percentage: createdTeams.length > 0 ? 
+                    Math.round((createdTeams.filter(team => team.captain_manual_rating_used).length / createdTeams.length) * 100) : 0
             };
 
             console.log(`🎉 [generateTeams] УСПЕШНО ЗАВЕРШЕНО за ${duration}ms:`);
             console.log(`   📊 Создано команд: ${createdTeams.length}`);
             console.log(`   👥 Участников в командах: ${playersInTeams}`);
             console.log(`   👑 Назначено капитанов: ${captainStats.total_captains}`);
+            console.log(`   🎯 Капитанов с ручными рейтингами: ${captainStats.captains_with_manual_ratings} (${captainStats.manual_rating_usage_percentage}%)`);
             console.log(`   ⚖️ Баланс команд: ${Math.round(balance)}%`);
             console.log(`   🎯 Средний рейтинг: min=${Math.round(minAvg)}, max=${Math.round(maxAvg)}, общий=${Math.round(overallAvg)}`);
             console.log(`   👑 Средний рейтинг капитанов: ${captainStats.average_captain_rating}`);
@@ -548,7 +610,7 @@ class MixTeamService {
                         maxTeamRating: Math.round(maxAvg),
                         averageRating: Math.round(overallAvg)
                     },
-                    captains: captainStats,  // 🆕 Статистика капитанов
+                    captains: captainStats,  // 🆕 Расширенная статистика капитанов
                     duration: duration
                 }
             };

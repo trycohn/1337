@@ -65,48 +65,117 @@ class TeamRepository {
     }
 
     /**
-     * 🆕 Назначение капитана команды
+     * 🆕 НАЗНАЧЕНИЕ КАПИТАНА КОМАНДЫ
      * @param {number} teamId - ID команды
-     * @param {number} userId - ID пользователя для назначения капитаном
-     * @param {number} captainRating - Рейтинг нового капитана
+     * @param {number} userId - ID пользователя, который станет капитаном
+     * @param {number} captainRating - Рейтинг капитана (опционально, будет рассчитан автоматически)
+     * @returns {Object} Информация о назначенном капитане
      */
     static async setCaptain(teamId, userId, captainRating = null) {
+        console.log(`👑 [TeamRepository] Назначение капитана команды ${teamId}, пользователь ${userId}`);
+        
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             
-            // Проверяем что пользователь является участником команды
-            const memberCheck = await client.query(
-                'SELECT id FROM tournament_team_members WHERE team_id = $1 AND user_id = $2',
-                [teamId, userId]
-            );
+            // 🔧 ИСПРАВЛЕНО: Получаем полную информацию об участнике с приоритизацией ручных рейтингов
+            const memberResult = await client.query(`
+                SELECT 
+                    ttm.id,
+                    ttm.user_id,
+                    ttm.participant_id,
+                    u.username,
+                    -- 🆕 РУЧНЫЕ РЕЙТИНГИ УЧАСТНИКА (приоритет)
+                    tp.faceit_elo,
+                    tp.cs2_premier_rank,
+                    -- 🆕 РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ (резерв)
+                    u.faceit_elo as user_faceit_elo,
+                    u.cs2_premier_rank as user_premier_rank,
+                    -- 🆕 ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ ДЛЯ СОВМЕСТИМОСТИ
+                    tp.name as participant_name,
+                    u.email as user_email
+                FROM tournament_team_members ttm
+                LEFT JOIN users u ON ttm.user_id = u.id  
+                LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                WHERE ttm.team_id = $1 AND ttm.user_id = $2
+            `, [teamId, userId]);
             
-            if (memberCheck.rows.length === 0) {
-                throw new Error('Пользователь не является участником команды');
+            if (memberResult.rows.length === 0) {
+                throw new Error('Пользователь не является участником этой команды');
             }
             
-            // Убираем капитанство у всех участников команды
-            await client.query(
-                'UPDATE tournament_team_members SET is_captain = FALSE WHERE team_id = $1',
-                [teamId]
-            );
+            const member = memberResult.rows[0];
+            
+            // 🔧 ИСПРАВЛЕНО: Если рейтинг не передан, рассчитываем его с приоритизацией ручных рейтингов
+            let finalCaptainRating = captainRating;
+            if (finalCaptainRating === null) {
+                // Получаем турнир для определения типа рейтинга
+                const tournamentResult = await client.query(`
+                    SELECT mix_rating_type 
+                    FROM tournaments t
+                    JOIN tournament_teams tt ON t.id = tt.tournament_id
+                    WHERE tt.id = $1
+                `, [teamId]);
+                
+                const ratingType = tournamentResult.rows[0]?.mix_rating_type || 'faceit';
+                
+                // 🆕 ИСПОЛЬЗУЕМ ПРИОРИТИЗАЦИЮ РУЧНЫХ РЕЙТИНГОВ
+                if (ratingType === 'faceit') {
+                    // ПРИОРИТЕТ: ручной рейтинг участника → рейтинг пользователя → дефолт
+                    if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
+                        finalCaptainRating = parseInt(member.faceit_elo);
+                    } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
+                        finalCaptainRating = parseInt(member.user_faceit_elo);
+                    } else {
+                        finalCaptainRating = 1000; // дефолт для FACEIT
+                    }
+                } else {
+                    // ПРИОРИТЕТ: ручной рейтинг участника → рейтинг пользователя → дефолт
+                    if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
+                        finalCaptainRating = parseInt(member.cs2_premier_rank);
+                    } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
+                        finalCaptainRating = parseInt(member.user_premier_rank);
+                    } else {
+                        finalCaptainRating = 5; // дефолт для Premier
+                    }
+                }
+                
+                console.log(`📊 [setCaptain] Рассчитан рейтинг капитана: ${finalCaptainRating} (тип: ${ratingType}), ручной: ${member.faceit_elo || member.cs2_premier_rank}, пользователь: ${member.user_faceit_elo || member.user_premier_rank}`);
+            }
+            
+            // Снимаем статус капитана со всех участников команды
+            await client.query(`
+                UPDATE tournament_team_members 
+                SET is_captain = FALSE, captain_rating = NULL 
+                WHERE team_id = $1
+            `, [teamId]);
             
             // Назначаем нового капитана
-            const result = await client.query(
-                `UPDATE tournament_team_members 
-                 SET is_captain = TRUE, captain_rating = $3
-                 WHERE team_id = $1 AND user_id = $2 
-                 RETURNING *`,
-                [teamId, userId, captainRating]
-            );
+            await client.query(`
+                UPDATE tournament_team_members 
+                SET is_captain = TRUE, captain_rating = $1 
+                WHERE team_id = $2 AND user_id = $3
+            `, [finalCaptainRating, teamId, userId]);
             
             await client.query('COMMIT');
-            console.log(`✅ TeamRepository: Назначен новый капитан ${userId} для команды ${teamId}`);
-            return result.rows[0];
+            
+            const captainInfo = {
+                team_id: teamId,
+                user_id: userId,
+                username: member.username,
+                participant_name: member.participant_name,
+                is_captain: true,
+                captain_rating: finalCaptainRating,
+                manual_rating_used: Boolean(member.faceit_elo || member.cs2_premier_rank) // 🆕 Флаг использования ручного рейтинга
+            };
+            
+            console.log(`✅ [TeamRepository] Капитан назначен: ${member.username} (рейтинг: ${finalCaptainRating}, ручной: ${captainInfo.manual_rating_used})`);
+            
+            return captainInfo;
             
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error(`❌ TeamRepository: Ошибка назначения капитана:`, error);
+            console.error(`❌ [TeamRepository] Ошибка назначения капитана:`, error);
             throw error;
         } finally {
             client.release();
@@ -138,70 +207,123 @@ class TeamRepository {
     }
 
     /**
-     * 🆕 Автоматическое назначение капитана по наивысшему рейтингу
+     * 🆕 АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ КАПИТАНА ПО РЕЙТИНГУ
      * @param {number} teamId - ID команды
      * @param {string} ratingType - Тип рейтинга ('faceit' или 'premier')
+     * @returns {Object} Информация о назначенном капитане
      */
     static async autoAssignCaptain(teamId, ratingType = 'faceit') {
+        console.log(`🎯 [TeamRepository] Автоназначение капитана для команды ${teamId} (тип рейтинга: ${ratingType})`);
+        
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             
-            // Определяем приоритет полей рейтинга в зависимости от типа
-            let orderBy = '';
-            if (ratingType === 'faceit') {
-                orderBy = `
-                    COALESCE(tp.faceit_elo, u.faceit_elo, 1000) DESC,
-                    ttm.created_at ASC
-                `;
-            } else {
-                orderBy = `
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) DESC,
-                    ttm.created_at ASC
-                `;
-            }
-            
-            // Находим участника с наивысшим рейтингом
-            const result = await client.query(`
+            // 🔧 ИСПРАВЛЕНО: Получаем всех участников команды с приоритизацией ручных рейтингов
+            const membersResult = await client.query(`
                 SELECT 
-                    ttm.*,
-                    COALESCE(tp.faceit_elo, u.faceit_elo, 1000) as faceit_rating,
-                    COALESCE(tp.cs2_premier_rank, u.cs2_premier_rank, 5) as premier_rating
+                    ttm.id,
+                    ttm.user_id,
+                    ttm.participant_id,
+                    ttm.is_captain,
+                    u.username,
+                    -- 🆕 РУЧНЫЕ РЕЙТИНГИ УЧАСТНИКА (приоритет)
+                    tp.faceit_elo,
+                    tp.cs2_premier_rank,
+                    -- 🆕 РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ (резерв)
+                    u.faceit_elo as user_faceit_elo,
+                    u.cs2_premier_rank as user_premier_rank,
+                    -- 🆕 ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ
+                    tp.name as participant_name,
+                    u.email as user_email
                 FROM tournament_team_members ttm
+                LEFT JOIN users u ON ttm.user_id = u.id  
                 LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
-                LEFT JOIN users u ON ttm.user_id = u.id
                 WHERE ttm.team_id = $1
-                ORDER BY ${orderBy}
-                LIMIT 1
+                ORDER BY ttm.id
             `, [teamId]);
             
-            if (result.rows.length === 0) {
-                throw new Error('В команде нет участников для назначения капитаном');
+            if (membersResult.rows.length === 0) {
+                throw new Error('В команде нет участников');
             }
             
-            const newCaptain = result.rows[0];
-            const captainRating = ratingType === 'faceit' ? newCaptain.faceit_rating : newCaptain.premier_rating;
+            // 🔧 ИСПРАВЛЕНО: Находим участника с наивысшим рейтингом с приоритизацией ручных рейтингов
+            let bestMember = null;
+            let bestRating = -1;
             
-            // Убираем капитанство у всех
-            await client.query(
-                'UPDATE tournament_team_members SET is_captain = FALSE WHERE team_id = $1',
-                [teamId]
-            );
+            for (const member of membersResult.rows) {
+                let rating = 0;
+                let usedManualRating = false;
+                
+                if (ratingType === 'faceit') {
+                    // 🆕 ПРИОРИТЕТ: ручной рейтинг участника → рейтинг пользователя → дефолт
+                    if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
+                        rating = parseInt(member.faceit_elo);
+                        usedManualRating = true;
+                    } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
+                        rating = parseInt(member.user_faceit_elo);
+                    } else {
+                        rating = 1000; // дефолт для FACEIT
+                    }
+                } else {
+                    // 🆕 ПРИОРИТЕТ: ручной рейтинг участника → рейтинг пользователя → дефолт
+                    if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
+                        rating = parseInt(member.cs2_premier_rank);
+                        usedManualRating = true;
+                    } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
+                        rating = parseInt(member.user_premier_rank);
+                    } else {
+                        rating = 5; // дефолт для Premier
+                    }
+                }
+                
+                console.log(`📊 [autoAssignCaptain] Участник ${member.username}: рейтинг ${rating} (ручной: ${usedManualRating}), ручные значения: faceit_elo=${member.faceit_elo}, cs2_premier_rank=${member.cs2_premier_rank}`);
+                
+                if (rating > bestRating) {
+                    bestRating = rating;
+                    bestMember = member;
+                    bestMember.usedManualRating = usedManualRating; // 🆕 Сохраняем флаг
+                }
+            }
+            
+            if (!bestMember) {
+                throw new Error('Не удалось найти подходящего кандидата на роль капитана');
+            }
+            
+            // Снимаем статус капитана со всех участников команды
+            await client.query(`
+                UPDATE tournament_team_members 
+                SET is_captain = FALSE, captain_rating = NULL 
+                WHERE team_id = $1
+            `, [teamId]);
             
             // Назначаем нового капитана
-            await client.query(
-                'UPDATE tournament_team_members SET is_captain = TRUE, captain_rating = $2 WHERE id = $1',
-                [newCaptain.id, captainRating]
-            );
+            await client.query(`
+                UPDATE tournament_team_members 
+                SET is_captain = TRUE, captain_rating = $1 
+                WHERE team_id = $2 AND user_id = $3
+            `, [bestRating, teamId, bestMember.user_id]);
             
             await client.query('COMMIT');
-            console.log(`✅ TeamRepository: Автоназначен капитан ${newCaptain.user_id} для команды ${teamId} (рейтинг: ${captainRating})`);
             
-            return await this.getTeamCaptain(teamId);
+            const captainInfo = {
+                team_id: teamId,
+                user_id: bestMember.user_id,
+                username: bestMember.username,
+                participant_name: bestMember.participant_name,
+                is_captain: true,
+                captain_rating: bestRating,
+                manual_rating_used: bestMember.usedManualRating, // 🆕 Флаг использования ручного рейтинга
+                rating_type: ratingType
+            };
+            
+            console.log(`✅ [TeamRepository] Автокапитан назначен: ${bestMember.username} (рейтинг: ${bestRating}, ручной: ${bestMember.usedManualRating})`);
+            
+            return captainInfo;
             
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error(`❌ TeamRepository: Ошибка автоназначения капитана:`, error);
+            console.error(`❌ [TeamRepository] Ошибка автоназначения капитана:`, error);
             throw error;
         } finally {
             client.release();
@@ -449,48 +571,139 @@ class TeamRepository {
     }
 
     /**
-     * 🆕 Массовое назначение капитанов для существующих команд турнира
+     * 🆕 МАССОВОЕ НАЗНАЧЕНИЕ КАПИТАНОВ ДЛЯ СУЩЕСТВУЮЩИХ КОМАНД
      * @param {number} tournamentId - ID турнира
-     * @param {string} ratingType - Тип рейтинга для определения капитана
+     * @param {string} ratingType - Тип рейтинга ('faceit' или 'premier')
+     * @returns {Object} Статистика назначения
      */
     static async assignCaptainsForExistingTeams(tournamentId, ratingType = 'faceit') {
+        console.log(`👑 [TeamRepository] Массовое назначение капитанов для турнира ${tournamentId} (тип рейтинга: ${ratingType})`);
+        
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             
             // Получаем все команды турнира без капитанов
-            const teams = await client.query(`
-                SELECT tt.id as team_id
+            const teamsResult = await client.query(`
+                SELECT DISTINCT tt.id, tt.name
                 FROM tournament_teams tt
-                LEFT JOIN tournament_team_members captain ON (
-                    tt.id = captain.team_id AND captain.is_captain = TRUE
+                WHERE tt.tournament_id = $1
+                AND NOT EXISTS (
+                    SELECT 1 FROM tournament_team_members ttm 
+                    WHERE ttm.team_id = tt.id AND ttm.is_captain = TRUE
                 )
-                WHERE tt.tournament_id = $1 AND captain.id IS NULL
+                ORDER BY tt.id
             `, [tournamentId]);
             
             let assignedCount = 0;
+            const results = [];
             
-            // Назначаем капитанов для каждой команды
-            for (const team of teams.rows) {
+            for (const team of teamsResult.rows) {
                 try {
-                    await this.autoAssignCaptain(team.team_id, ratingType);
-                    assignedCount++;
+                    // 🔧 ИСПРАВЛЕНО: Получаем участников с приоритизацией ручных рейтингов
+                    const membersResult = await client.query(`
+                        SELECT 
+                            ttm.id,
+                            ttm.user_id,
+                            ttm.participant_id,
+                            u.username,
+                            -- 🆕 РУЧНЫЕ РЕЙТИНГИ УЧАСТНИКА (приоритет)
+                            tp.faceit_elo,
+                            tp.cs2_premier_rank,
+                            -- 🆕 РЕЙТИНГИ ПОЛЬЗОВАТЕЛЯ (резерв)
+                            u.faceit_elo as user_faceit_elo,
+                            u.cs2_premier_rank as user_premier_rank,
+                            tp.name as participant_name
+                        FROM tournament_team_members ttm
+                        LEFT JOIN users u ON ttm.user_id = u.id  
+                        LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                        WHERE ttm.team_id = $1
+                    `, [team.id]);
+                    
+                    if (membersResult.rows.length === 0) {
+                        console.log(`⚠️ [assignCaptainsForExistingTeams] Команда ${team.name} пуста, пропускаем`);
+                        continue;
+                    }
+                    
+                    // 🔧 ИСПРАВЛЕНО: Находим лучшего кандидата с приоритизацией ручных рейтингов
+                    let bestMember = null;
+                    let bestRating = -1;
+                    
+                    for (const member of membersResult.rows) {
+                        let rating = 0;
+                        let usedManualRating = false;
+                        
+                        if (ratingType === 'faceit') {
+                            // 🆕 ПРИОРИТЕТ: ручной рейтинг участника → рейтинг пользователя → дефолт
+                            if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
+                                rating = parseInt(member.faceit_elo);
+                                usedManualRating = true;
+                            } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
+                                rating = parseInt(member.user_faceit_elo);
+                            } else {
+                                rating = 1000;
+                            }
+                        } else {
+                            // 🆕 ПРИОРИТЕТ: ручной рейтинг участника → рейтинг пользователя → дефолт
+                            if (member.cs2_premier_rank && !isNaN(parseInt(member.cs2_premier_rank)) && parseInt(member.cs2_premier_rank) > 0) {
+                                rating = parseInt(member.cs2_premier_rank);
+                                usedManualRating = true;
+                            } else if (member.user_premier_rank && !isNaN(parseInt(member.user_premier_rank)) && parseInt(member.user_premier_rank) > 0) {
+                                rating = parseInt(member.user_premier_rank);
+                            } else {
+                                rating = 5;
+                            }
+                        }
+                        
+                        if (rating > bestRating) {
+                            bestRating = rating;
+                            bestMember = member;
+                            bestMember.usedManualRating = usedManualRating;
+                        }
+                    }
+                    
+                    if (bestMember) {
+                        // Назначаем капитана
+                        await client.query(`
+                            UPDATE tournament_team_members 
+                            SET is_captain = TRUE, captain_rating = $1 
+                            WHERE team_id = $2 AND user_id = $3
+                        `, [bestRating, team.id, bestMember.user_id]);
+                        
+                        assignedCount++;
+                        results.push({
+                            team_id: team.id,
+                            team_name: team.name,
+                            captain_username: bestMember.username,
+                            captain_rating: bestRating,
+                            manual_rating_used: bestMember.usedManualRating
+                        });
+                        
+                        console.log(`✅ [assignCaptainsForExistingTeams] Команда "${team.name}": капитан ${bestMember.username} (рейтинг: ${bestRating}, ручной: ${bestMember.usedManualRating})`);
+                    }
+                    
                 } catch (error) {
-                    console.warn(`⚠️ Не удалось назначить капитана для команды ${team.team_id}:`, error.message);
+                    console.error(`❌ [assignCaptainsForExistingTeams] Ошибка для команды ${team.name}:`, error);
                 }
             }
             
             await client.query('COMMIT');
-            console.log(`✅ TeamRepository: Назначено ${assignedCount} капитанов для турнира ${tournamentId}`);
             
-            return {
-                total_teams: teams.rows.length,
-                assigned_captains: assignedCount
+            const stats = {
+                total_teams: teamsResult.rows.length,
+                assigned_captains: assignedCount,
+                success_rate: teamsResult.rows.length > 0 ? Math.round((assignedCount / teamsResult.rows.length) * 100) : 0,
+                results: results,
+                manual_ratings_used: results.filter(r => r.manual_rating_used).length // 🆕 Количество капитанов с ручными рейтингами
             };
+            
+            console.log(`🎉 [assignCaptainsForExistingTeams] Завершено: ${assignedCount}/${teamsResult.rows.length} капитанов назначено, из них ${stats.manual_ratings_used} с ручными рейтингами`);
+            
+            return stats;
             
         } catch (error) {
             await client.query('ROLLBACK');
-            console.error(`❌ TeamRepository: Ошибка массового назначения капитанов:`, error);
+            console.error(`❌ [assignCaptainsForExistingTeams] Критическая ошибка:`, error);
             throw error;
         } finally {
             client.release();
