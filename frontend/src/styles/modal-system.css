@@ -671,7 +671,7 @@
 .modal-system-range-group {
     display: flex;
     gap: 15px;
-    align-items: end;
+    align-items: center;
 }
 
 .modal-system-range-group .modal-system-label {
