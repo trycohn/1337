@@ -28,6 +28,15 @@ function CreateTournament() {
   });
   const { runWithLoader } = useLoaderAutomatic();
 
+  // 🆕 Функция для определения игры CS2
+  const isCS2Game = (gameName) => {
+    if (!gameName) return false;
+    const normalizedGame = gameName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return normalizedGame === 'counterstrike2' || 
+           normalizedGame === 'cs2' || 
+           gameName.toLowerCase().includes('counter') && gameName.toLowerCase().includes('strike') && gameName.includes('2');
+  };
+
   useEffect(() => {
     console.log('Начало загрузки игр');
     // Используем хук для загрузки списка игр с прелоадером
@@ -109,7 +118,7 @@ function CreateTournament() {
         ...prev,
         format,
         team_size: format === 'mix' ? 5 : prev.team_size,
-        game: format === 'mix' ? 'cs2' : '',
+        game: format === 'mix' ? 'cs2' : prev.game,
         participant_type: format === 'mix' ? 'solo' : 'team',
         bracket_type: format === 'mix' ? 'single_elimination' : 'single_elimination',
         mix_rating_type: format === 'mix' ? 'faceit' : prev.mix_rating_type,
@@ -129,6 +138,23 @@ function CreateTournament() {
     }));
   };
 
+  // 🆕 Обработчик изменения игры
+  const handleGameChange = (e) => {
+    const selectedGame = e.target.value;
+    console.log('Выбрана игра:', selectedGame, 'isCS2:', isCS2Game(selectedGame));
+    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        game: selectedGame,
+        // Сбрасываем тип участников при смене игры
+        participant_type: isCS2Game(selectedGame) ? 'cs2_classic_5v5' : 'team'
+      };
+      console.log('Новые данные после выбора игры:', newData);
+      return newData;
+    });
+  };
+
   const handleSeedingTypeChange = (e) => {
     const seedingType = e.target.value;
     setFormData(prev => ({
@@ -140,6 +166,7 @@ function CreateTournament() {
 
   console.log('Текущий формат:', formData.format);
   console.log('Текущая игра:', formData.game);
+  console.log('isCS2Game:', isCS2Game(formData.game));
   console.log('Список игр:', games);
 
   return (
@@ -185,7 +212,7 @@ function CreateTournament() {
                 <select
                   name="game"
                   value={formData.game}
-                  onChange={handleInputChange}
+                  onChange={handleGameChange}
                   required
                 >
                   {formData.format === 'mix' ? (
@@ -213,7 +240,7 @@ function CreateTournament() {
                     required
                   >
                     <option value="">Выберите тип участников</option>
-                    {formData.game === 'cs2' ? (
+                    {isCS2Game(formData.game) ? (
                       // CS2-специфичные типы участников
                       <>
                         <option value="cs2_classic_5v5">Классический 5х5</option>
@@ -227,7 +254,7 @@ function CreateTournament() {
                       </>
                     )}
                   </select>
-                  {formData.game === 'cs2' && (
+                  {isCS2Game(formData.game) && (
                     <small className="form-hint">
                       {formData.participant_type === 'cs2_classic_5v5' && '🏆 Классический формат CS2: команды минимум 5 игроков'}
                       {formData.participant_type === 'cs2_wingman_2v2' && '⚡ Wingman формат CS2: команды минимум 2 игрока'}
