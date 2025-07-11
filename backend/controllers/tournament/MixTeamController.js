@@ -8,7 +8,7 @@ const MatchService = require('../../services/tournament/MatchService');
 const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
-const { migrateTournamentCaptains } = require('../../migrate_existing_teams_captains');
+const { migrateExistingTeamsCaptainsSafe } = require('../../migrate_existing_teams_captains_safe');
 
 class MixTeamController {
     /**
@@ -1006,27 +1006,29 @@ class MixTeamController {
             const finalRatingType = ratingType || tournament.mix_rating_type || 'faceit';
 
             // Выполняем миграцию
-            const result = await migrateTournamentCaptains(tournamentId, finalRatingType);
+            await migrateExistingTeamsCaptainsSafe();
+
+            // Получаем актуальную статистику после миграции
+            const stats = await TeamRepository.getCaptainStats(tournamentId);
 
             // Логируем событие
             await logTournamentEvent(tournamentId, currentUserId, 'captains_migrated', {
-                total_teams: result.total_teams,
-                assigned_captains: result.assigned_captains,
-                rating_type: finalRatingType
+                rating_type: finalRatingType,
+                migration_completed: true
             });
 
             // Отправляем уведомление в чат
             await sendTournamentChatAnnouncement(
                 tournamentId,
-                `🔄 Миграция капитанов завершена: ${result.assigned_captains} из ${result.total_teams} команд получили капитанов`
+                `🔄 Миграция капитанов завершена! Проверьте статистику команд для получения детальной информации.`
             );
 
-            console.log(`✅ [MixTeamController] Миграция завершена: ${result.assigned_captains}/${result.total_teams}`);
+            console.log(`✅ [MixTeamController] Миграция завершена для турнира ${tournamentId}`);
 
             res.status(200).json({
                 success: true,
-                message: `Миграция завершена. Назначено ${result.assigned_captains} капитанов из ${result.total_teams} команд`,
-                result: result,
+                message: `Миграция капитанов завершена успешно`,
+                stats: stats,
                 rating_type: finalRatingType
             });
 
