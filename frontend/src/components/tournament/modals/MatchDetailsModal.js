@@ -299,12 +299,6 @@ const MatchDetailsModal = ({
                                     🗺️ Карты ({mapStats.mapsCount})
                                 </button>
                             )}
-                            <button 
-                                className={`modal-system-btn ${activeTab === 'details' ? 'modal-system-btn-primary' : ''}`}
-                                onClick={() => setActiveTab('details')}
-                            >
-                                ℹ️ Детали
-                            </button>
                         </div>
                     )}
 
@@ -339,7 +333,7 @@ const MatchDetailsModal = ({
                                                         </div>
                                                         <div className="modal-system-info">
                                                             <div className="modal-system-text-center">
-                                                                <div className="modal-system-bold">Общий счет фрагов</div>
+                                                                <div className="modal-system-bold">Счет</div>
                                                                 <div style={{ fontSize: '18px', margin: '10px 0' }}>
                                                                     {mapStats.team1TotalScore} : {mapStats.team2TotalScore}
                                                                 </div>
@@ -376,7 +370,7 @@ const MatchDetailsModal = ({
                                                         <h4 className="modal-system-bold modal-system-mb-10">🎯 Производительность</h4>
                                                         <div className="modal-system-flex-column">
                                                             <span>Разность фрагов: ±{mapStats.scoreDifference}</span>
-                                                            <span>Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount)}</span>
+                                                            <span>Общее количество раундов: {mapStats.team1TotalScore + mapStats.team2TotalScore}</span>
                                                             {mapStats.mapsCount >= 3 && <span>Формат: BO{mapStats.mapsCount}</span>}
                                                         </div>
                                                     </div>
@@ -453,61 +447,6 @@ const MatchDetailsModal = ({
                                             </div>
                                         );
                                     })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Вкладка "Детали" */}
-                        {activeTab === 'details' && (
-                            <div>
-                                <h3 className="modal-system-section-title">ℹ️ Техническая информация</h3>
-                                <div className="modal-system-table">
-                                    <table className="modal-system-table">
-                                        <tbody>
-                                            <tr>
-                                                <td className="modal-system-bold">ID матча</td>
-                                                <td>{selectedMatch.id}</td>
-                                            </tr>
-                                            {selectedMatch.round && (
-                                                <tr>
-                                                    <td className="modal-system-bold">Раунд турнира</td>
-                                                    <td>{selectedMatch.round}</td>
-                                                </tr>
-                                            )}
-                                            {selectedMatch.match_number && (
-                                                <tr>
-                                                    <td className="modal-system-bold">Номер матча</td>
-                                                    <td>#{selectedMatch.match_number}</td>
-                                                </tr>
-                                            )}
-                                            <tr>
-                                                <td className="modal-system-bold">Статус</td>
-                                                <td>
-                                                    <span className={`modal-system-badge ${isMatchCompleted ? 'modal-system-badge-success' : 'modal-system-badge-warning'}`}>
-                                                        {isMatchCompleted ? '✅ Завершен' : '⏳ Ожидается'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                            {selectedMatch.bracket_type && (
-                                                <tr>
-                                                    <td className="modal-system-bold">Тип матча</td>
-                                                    <td>{selectedMatch.bracket_type}</td>
-                                                </tr>
-                                            )}
-                                            {selectedMatch.created_at && (
-                                                <tr>
-                                                    <td className="modal-system-bold">Создан</td>
-                                                    <td>{new Date(selectedMatch.created_at).toLocaleString('ru-RU')}</td>
-                                                </tr>
-                                            )}
-                                            {selectedMatch.completed_at && (
-                                                <tr>
-                                                    <td className="modal-system-bold">Завершен</td>
-                                                    <td>{new Date(selectedMatch.completed_at).toLocaleString('ru-RU')}</td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         )}
