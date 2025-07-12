@@ -1174,12 +1174,13 @@ header.header {
 
 .filter-btn-tournaments:hover {
     background: transparent; /* 🔧 Убираем фон при hover */
-    transform: translateY(-2px);
+    border: none !important;
 }
 
 /* 🔧 Добавляем свечение при hover для иконки */
 .filter-btn-tournaments:hover svg {
     filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) !important;
+    border: none !important;
 }
 
 .filter-btn-tournaments.filter-active {
