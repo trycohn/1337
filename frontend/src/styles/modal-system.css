@@ -286,6 +286,7 @@
 
 .modal-system-grid-2 {
     grid-template-columns: 1fr 1fr;
+    margin-bottom: 12px;
 }
 
 .modal-system-grid-3 {
@@ -806,6 +807,7 @@
     pointer-events: none; /* Отключаем события для всего слайдера */
     margin: 0;
     padding: 0;
+    padding-bottom: 12px;
 }
 
 /* Включаем события только для thumb */
