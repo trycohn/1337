@@ -763,8 +763,24 @@ function TournamentsList() {
                     <button 
                         className={`filter-btn ${hasActiveFilters() ? 'filter-active' : ''}`}
                         onClick={() => setShowFilterModal(true)}
+                        title="Фильтр турниров"
                     >
-                        Фильтр
+                        {/* 🔧 Белая SVG иконка фильтра высотой 48px */}
+                        <svg 
+                            width="32" 
+                            height="48" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ 
+                                filter: hasActiveFilters() ? 'drop-shadow(0 0 6px #ff0000)' : 'none'
+                            }}
+                        >
+                            <path 
+                                d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" 
+                                fill="#ffffff"
+                            />
+                        </svg>
                         {getActiveFiltersCount() > 0 && (
                             <span className="filter-count">
                                 {getActiveFiltersCount()}
