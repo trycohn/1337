@@ -87,15 +87,26 @@ const TournamentFilterModal = ({
         }));
     };
 
+    // 🔧 ИСПРАВЛЕННАЯ ФУНКЦИЯ с ограничениями для двойного слайдера
     const handleParticipantCountChange = (type, value) => {
         const numValue = Math.max(0, Math.min(128, parseInt(value) || 0));
-        setLocalFilters(prev => ({
-            ...prev,
-            participantCount: {
-                ...prev.participantCount,
-                [type]: numValue
+        
+        setLocalFilters(prev => {
+            const newCount = { ...prev.participantCount };
+            
+            if (type === 'min') {
+                // Минимальное значение не может быть больше максимального
+                newCount.min = Math.min(numValue, newCount.max);
+            } else {
+                // Максимальное значение не может быть меньше минимального
+                newCount.max = Math.max(numValue, newCount.min);
             }
-        }));
+            
+            return {
+                ...prev,
+                participantCount: newCount
+            };
+        });
     };
 
     // Сброс всех фильтров
@@ -358,45 +369,67 @@ const TournamentFilterModal = ({
                                     </label>
                                 </div>
                                 
-                                {/* Двойной слайдер */}
+                                {/* 🔧 ИСПРАВЛЕННЫЙ двойной слайдер */}
                                 <div className="modal-system-dual-range" style={{ 
                                     position: 'relative', 
                                     width: '100%',
-                                    height: '20px',
+                                    height: '30px',
                                     marginBottom: '10px'
                                 }}>
+                                    {/* Фоновый трек слайдера */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        width: '100%',
+                                        height: '6px',
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        borderRadius: '3px',
+                                        zIndex: 1
+                                    }}></div>
+                                    
+                                    {/* Слайдер минимального значения */}
                                     <input
                                         type="range"
                                         min="0"
                                         max="128"
                                         value={localFilters.participantCount.min}
                                         onChange={(e) => handleParticipantCountChange('min', e.target.value)}
-                                        className="modal-system-slider"
                                         style={{ 
                                             position: 'absolute',
                                             width: '100%',
-                                            height: '6px',
+                                            height: '30px',
                                             background: 'transparent',
                                             outline: 'none',
-                                            zIndex: 2
+                                            appearance: 'none',
+                                            WebkitAppearance: 'none',
+                                            MozAppearance: 'none',
+                                            pointerEvents: 'none',
+                                            zIndex: localFilters.participantCount.max <= localFilters.participantCount.min ? 3 : 2
                                         }}
+                                        className="dual-range-slider-input"
                                     />
+                                    
+                                    {/* Слайдер максимального значения */}
                                     <input
                                         type="range"
                                         min="0"
                                         max="128"
                                         value={localFilters.participantCount.max}
                                         onChange={(e) => handleParticipantCountChange('max', e.target.value)}
-                                        className="modal-system-slider"
                                         style={{ 
                                             position: 'absolute',
                                             width: '100%',
-                                            height: '6px',
-                                            background: 'rgba(255, 255, 255, 0.2)',
-                                            borderRadius: '3px',
+                                            height: '30px',
+                                            background: 'transparent',
                                             outline: 'none',
-                                            zIndex: 1
+                                            appearance: 'none',
+                                            WebkitAppearance: 'none',
+                                            MozAppearance: 'none',
+                                            pointerEvents: 'none',
+                                            zIndex: localFilters.participantCount.max <= localFilters.participantCount.min ? 2 : 3
                                         }}
+                                        className="dual-range-slider-input"
                                     />
                                 </div>
                                 
