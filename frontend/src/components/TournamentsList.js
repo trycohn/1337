@@ -765,10 +765,10 @@ function TournamentsList() {
                         onClick={() => setShowFilterModal(true)}
                         title="Фильтр турниров"
                     >
-                        {/* 🔧 Белая SVG иконка фильтра высотой 48px */}
+                        {/* 🔧 Белая SVG иконка фильтра высотой 37px */}
                         <svg 
                             width="32" 
-                            height="48" 
+                            height="37" 
                             viewBox="0 0 24 24" 
                             fill="none" 
                             xmlns="http://www.w3.org/2000/svg"
