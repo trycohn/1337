@@ -298,95 +298,118 @@ const TournamentFilterModal = ({
                                 </label>
                             </div>
                         </div>
+                    </div>
 
-                        {/* 🧮 КОЛИЧЕСТВО УЧАСТНИКОВ */}
-                        <div className="modal-system-section">
-                            <h3 className="modal-system-section-title">
-                                Количество участников
-                                {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
-                                    <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
-                                        {localFilters.participantCount.min} - {localFilters.participantCount.max}
-                                    </span>
-                                )}
-                            </h3>
-                            <div className="modal-system-flex-column modal-system-gap-15">
-                                {/* Единый слайдер на всю ширину */}
-                                <div className="modal-system-single-range-slider" style={{ width: '90%', margin: '0 auto' }}>
-                                    <div className="modal-system-range-inputs" style={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'space-between', 
-                                        marginBottom: '10px',
-                                        gap: '10px'
-                                    }}>
-                                        <label style={{ flex: 1 }}>
-                                            От:
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="128"
-                                                value={localFilters.participantCount.min}
-                                                onChange={(e) => handleParticipantCountChange('min', e.target.value)}
-                                                className="modal-system-input modal-system-input-small"
-                                                style={{ width: '100%' }}
-                                            />
-                                        </label>
-                                        <label style={{ flex: 1 }}>
-                                            До:
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="128"
-                                                value={localFilters.participantCount.max}
-                                                onChange={(e) => handleParticipantCountChange('max', e.target.value)}
-                                                className="modal-system-input modal-system-input-small"
-                                                style={{ width: '100%' }}
-                                            />
-                                        </label>
-                                    </div>
-                                    
-                                    {/* Двойной слайдер */}
-                                    <div className="modal-system-dual-range" style={{ position: 'relative', width: '100%' }}>
+                    {/* КОЛИЧЕСТВО УЧАСТНИКОВ - отдельная секция */}
+                    <div className="modal-system-section">
+                        <h3 className="modal-system-section-title">
+                            Количество участников
+                            {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
+                                <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
+                                    {localFilters.participantCount.min} - {localFilters.participantCount.max}
+                                </span>
+                            )}
+                        </h3>
+                        <div className="modal-system-flex-column modal-system-gap-15">
+                            {/* Центрированный слайдер 70% ширины */}
+                            <div className="modal-system-single-range-slider" style={{ 
+                                width: '70%', 
+                                margin: '0 auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                            }}>
+                                <div className="modal-system-range-inputs" style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    marginBottom: '15px',
+                                    gap: '20px',
+                                    width: '100%'
+                                }}>
+                                    <label style={{ flex: 1, textAlign: 'center' }}>
+                                        От:
                                         <input
-                                            type="range"
+                                            type="number"
                                             min="0"
                                             max="128"
                                             value={localFilters.participantCount.min}
                                             onChange={(e) => handleParticipantCountChange('min', e.target.value)}
-                                            className="modal-system-slider"
+                                            className="modal-system-input modal-system-input-small"
                                             style={{ 
-                                                position: 'absolute',
                                                 width: '100%',
-                                                height: '6px',
-                                                background: 'transparent',
-                                                pointerEvents: 'none'
+                                                marginTop: '5px'
                                             }}
                                         />
+                                    </label>
+                                    <label style={{ flex: 1, textAlign: 'center' }}>
+                                        До:
                                         <input
-                                            type="range"
+                                            type="number"
                                             min="0"
                                             max="128"
                                             value={localFilters.participantCount.max}
                                             onChange={(e) => handleParticipantCountChange('max', e.target.value)}
-                                            className="modal-system-slider"
+                                            className="modal-system-input modal-system-input-small"
                                             style={{ 
-                                                position: 'absolute',
                                                 width: '100%',
-                                                height: '6px',
-                                                background: 'rgba(255, 255, 255, 0.2)',
-                                                borderRadius: '3px'
+                                                marginTop: '5px'
                                             }}
                                         />
-                                    </div>
-                                    
-                                    <div className="modal-system-range-labels" style={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'space-between',
-                                        marginTop: '10px'
-                                    }}>
-                                        <span>0</span>
-                                        <span>64</span>
-                                        <span>128</span>
-                                    </div>
+                                    </label>
+                                </div>
+                                
+                                {/* Двойной слайдер */}
+                                <div className="modal-system-dual-range" style={{ 
+                                    position: 'relative', 
+                                    width: '100%',
+                                    height: '20px',
+                                    marginBottom: '10px'
+                                }}>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="128"
+                                        value={localFilters.participantCount.min}
+                                        onChange={(e) => handleParticipantCountChange('min', e.target.value)}
+                                        className="modal-system-slider"
+                                        style={{ 
+                                            position: 'absolute',
+                                            width: '100%',
+                                            height: '6px',
+                                            background: 'transparent',
+                                            outline: 'none',
+                                            zIndex: 2
+                                        }}
+                                    />
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="128"
+                                        value={localFilters.participantCount.max}
+                                        onChange={(e) => handleParticipantCountChange('max', e.target.value)}
+                                        className="modal-system-slider"
+                                        style={{ 
+                                            position: 'absolute',
+                                            width: '100%',
+                                            height: '6px',
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            borderRadius: '3px',
+                                            outline: 'none',
+                                            zIndex: 1
+                                        }}
+                                    />
+                                </div>
+                                
+                                <div className="modal-system-range-labels" style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    width: '100%',
+                                    fontSize: '12px',
+                                    color: 'rgba(255, 255, 255, 0.6)'
+                                }}>
+                                    <span>0</span>
+                                    <span>64</span>
+                                    <span>128</span>
                                 </div>
                             </div>
                         </div>
