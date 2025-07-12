@@ -761,7 +761,7 @@ function TournamentsList() {
                 <div className="filters-and-sort">
                     {/* Кнопка расширенного фильтра */}
                     <button 
-                        className={`filter-btn ${hasActiveFilters() ? 'filter-active' : ''}`}
+                        className={`filter-btn-tournaments ${hasActiveFilters() ? 'filter-active' : ''}`}
                         onClick={() => setShowFilterModal(true)}
                         title="Фильтр турниров"
                     >
