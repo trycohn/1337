@@ -1035,7 +1035,7 @@
 
 .participate-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    background-color: #111111 !important;
+    background-color: #000000 !important;
     color: #ffffff !important;
 }
 
