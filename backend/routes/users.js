@@ -1737,22 +1737,29 @@ router.get('/profile/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         
-        // Получаем базовую информацию о пользователе
+        console.log(`🔍 Запрос профиля пользователя ID: ${userId}`);
+        
+        // Получаем базовую информацию о пользователе (используем только основные поля)
         const userResult = await pool.query(
-            'SELECT id, username, steam_id, faceit_id, steam_url, avatar_url, cs2_premier_rank, last_active FROM users WHERE id = $1',
+            'SELECT id, username, steam_id, faceit_id, steam_url, avatar_url, cs2_premier_rank, created_at FROM users WHERE id = $1',
             [userId]
         );
         
+        console.log(`📊 Результат запроса для пользователя ${userId}:`, {
+            found: userResult.rows.length > 0,
+            rowCount: userResult.rows.length
+        });
+        
         if (userResult.rows.length === 0) {
+            console.log(`❌ Пользователь с ID ${userId} не найден в базе данных`);
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
         
         const user = userResult.rows[0];
+        console.log(`✅ Пользователь найден: ${user.username} (ID: ${user.id})`);
         
-        // Определяем статус активности
-        const now = new Date();
-        const lastActive = new Date(user.last_active);
-        const diffInSeconds = Math.floor((now - lastActive) / 1000);
+        // Устанавливаем статус онлайн по умолчанию
+        user.online_status = 'offline';
         
         // Получаем соединения WebSocket для проверки онлайн-статуса в реальном времени
         const app = global.app || req.app;
@@ -1764,6 +1771,7 @@ router.get('/profile/:userId', async (req, res) => {
             const ws = connectedClients.get(userId.toString());
             if (ws && ws.readyState === 1) { // 1 = WebSocket.OPEN
                 isOnlineRealtime = true;
+                user.online_status = 'online';
             }
         }
         
