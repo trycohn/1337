@@ -6,6 +6,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ru } from 'date-fns/locale';
 import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
+import { useAuth } from '../context/AuthContext'; // 🆕 Добавляем AuthContext
 import { 
   safeNavigateToTournament, 
   validateApiResponse, 
@@ -19,6 +20,7 @@ registerLocale('ru', ru);
 
 function CreateTournament() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth(); // 🆕 Получаем пользователя из AuthContext
   const [games, setGames] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +39,23 @@ function CreateTournament() {
     seeding_config: {}
   });
   const { runWithLoader } = useLoaderAutomatic();
+
+  // 🆕 Проверка статуса верификации пользователя
+  const isUserVerified = () => {
+    if (!user) return false;
+    return user.email && user.is_verified;
+  };
+
+  const hasUserEmail = () => {
+    return user && user.email;
+  };
+
+  const getVerificationStatus = () => {
+    if (!user) return { canCreate: false, reason: 'not_logged_in' };
+    if (!user.email) return { canCreate: false, reason: 'no_email' };
+    if (!user.is_verified) return { canCreate: false, reason: 'not_verified' };
+    return { canCreate: true, reason: 'verified' };
+  };
 
   // 🆕 Функция для определения игры CS2 (с исправленными ESLint предупреждениями)
   const isCS2Game = (gameName) => {
@@ -66,6 +85,24 @@ function CreateTournament() {
 
   const handleCreateTournament = async (e) => {
     e.preventDefault();
+    
+    // 🆕 Проверка верификации перед созданием турнира
+    const verificationStatus = getVerificationStatus();
+    if (!verificationStatus.canCreate) {
+      if (verificationStatus.reason === 'not_logged_in') {
+        alert('Необходима авторизация');
+        navigate('/register');
+        return;
+      } else if (verificationStatus.reason === 'no_email') {
+        alert('Для создания турнира необходимо привязать email к аккаунту');
+        navigate('/profile');
+        return;
+      } else if (verificationStatus.reason === 'not_verified') {
+        alert('Для создания турнира необходимо подтвердить email');
+        navigate('/profile');
+        return;
+      }
+    }
     
     // Проверка токена
     const token = localStorage.getItem('token');
@@ -208,14 +245,107 @@ function CreateTournament() {
     }));
   };
 
+  // 🆕 Функция для рендера предупреждения о верификации
+  const renderVerificationWarning = () => {
+    if (authLoading) return null;
+    
+    const verificationStatus = getVerificationStatus();
+    
+    if (verificationStatus.canCreate) return null;
+
+    if (verificationStatus.reason === 'not_logged_in') {
+      return (
+        <div className="verification-warning">
+          <div className="warning-icon">⚠️</div>
+          <div className="warning-content">
+            <h3>Необходима авторизация</h3>
+            <p>Для создания турнира необходимо войти в систему или зарегистрироваться.</p>
+            <div className="warning-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/register')}
+              >
+                Войти / Регистрация
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (verificationStatus.reason === 'no_email') {
+      return (
+        <div className="verification-warning">
+          <div className="warning-icon">📧</div>
+          <div className="warning-content">
+            <h3>Требуется привязка email</h3>
+            <p>
+              Для создания турниров необходимо привязать email к вашему аккаунту. 
+              Это нужно для получения уведомлений и обеспечения безопасности.
+            </p>
+            <div className="warning-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/profile')}
+              >
+                Привязать email в профиле
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (verificationStatus.reason === 'not_verified') {
+      return (
+        <div className="verification-warning">
+          <div className="warning-icon">✉️</div>
+          <div className="warning-content">
+            <h3>Требуется подтверждение email</h3>
+            <p>
+              Ваш email <strong>{user.email}</strong> не подтвержден. 
+              Для создания турниров необходимо подтвердить ваш email адрес.
+            </p>
+            <div className="warning-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/profile')}
+              >
+                Подтвердить email в профиле
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   console.log('Текущий формат:', formData.format);
   console.log('Текущая игра:', formData.game);
   console.log('isCS2Game:', isCS2Game(formData.game));
   console.log('Список игр:', games);
 
+  // 🆕 Показываем загрузку пока проверяется авторизация
+  if (authLoading) {
+    return (
+      <div className="create-tournament loading">
+        <div className="loading-spinner"></div>
+        <p>Проверка авторизации...</p>
+      </div>
+    );
+  }
+
+  const verificationStatus = getVerificationStatus();
+
   return (
     <section className="create-tournament">
       <h2>Создать турнир</h2>
+      
+      {/* 🆕 Отображаем предупреждение о верификации */}
+      {renderVerificationWarning()}
+      
       <form onSubmit={handleCreateTournament}>
         
         {/* Основная и дополнительная информация в горизонтальной компоновке */}
@@ -232,6 +362,7 @@ function CreateTournament() {
                   placeholder="Введите название турнира"
                   value={formData.name}
                   onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                   required
                 />
               </div>
@@ -242,6 +373,7 @@ function CreateTournament() {
                   name="format"
                   value={formData.format}
                   onChange={handleFormatChange}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                   required
                 >
                   <option value="">Выберите формат</option>
@@ -257,6 +389,7 @@ function CreateTournament() {
                   name="game"
                   value={formData.game}
                   onChange={handleGameChange}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                   required
                 >
                   {formData.format === 'mix' ? (
@@ -281,6 +414,7 @@ function CreateTournament() {
                     name="participant_type"
                     value={formData.participant_type}
                     onChange={handleParticipantTypeChange}
+                    disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                     required
                   >
                     <option value="">Выберите тип участников</option>
@@ -322,6 +456,7 @@ function CreateTournament() {
                   calendarStartDay={1}
                   minDate={new Date()}
                   className="date-picker-input"
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 />
                 <small className="form-hint">
                   📅 Выберите дату и время начала турнира (российское время)
@@ -342,6 +477,7 @@ function CreateTournament() {
                   placeholder="Например: 10,000₽"
                   value={formData.prize_pool}
                   onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 />
               </div>
               
@@ -353,6 +489,7 @@ function CreateTournament() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows="4"
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 />
               </div>
               
@@ -364,6 +501,7 @@ function CreateTournament() {
                   value={formData.rules}
                   onChange={handleInputChange}
                   rows="5"
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 />
               </div>
             </div>
@@ -384,6 +522,7 @@ function CreateTournament() {
                   onChange={handleInputChange}
                   min="2"
                   max="10"
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                   required
                 />
               </div>
@@ -394,6 +533,7 @@ function CreateTournament() {
                   name="mix_rating_type"
                   value={formData.mix_rating_type}
                   onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                   required
                 >
                   <option value="faceit">FACEIT ELO</option>
@@ -413,6 +553,7 @@ function CreateTournament() {
                   name="bracket_type"
                   value={formData.bracket_type}
                   onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                   required
                 >
                   <option value="single_elimination">Single Elimination</option>
@@ -433,6 +574,7 @@ function CreateTournament() {
                 name="seeding_type"
                 value={formData.seeding_type}
                 onChange={handleSeedingTypeChange}
+                disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 required
               >
                 <option value="random">Случайное распределение</option>
@@ -461,6 +603,7 @@ function CreateTournament() {
                       ratingType: e.target.value
                     }
                   }))}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 >
                   <option value="faceit_elo">FACEIT ELO</option>
                   <option value="cs2_premier_rank">CS2 Premier Rank</option>
@@ -480,6 +623,7 @@ function CreateTournament() {
                       direction: e.target.value
                     }
                   }))}
+                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
                 >
                   <option value="desc">От высшего к низшему</option>
                   <option value="asc">От низшего к высшему</option>
@@ -503,7 +647,13 @@ function CreateTournament() {
         </div>
 
         <div className="form-buttons">
-          <button type="submit">Создать турнир</button>
+          <button 
+            type="submit"
+            disabled={!verificationStatus.canCreate} // 🆕 Отключаем кнопку для неверифицированных
+            className={!verificationStatus.canCreate ? 'disabled' : ''}
+          >
+            {verificationStatus.canCreate ? 'Создать турнир' : 'Требуется верификация'}
+          </button>
           <button 
             type="button" 
             onClick={() => navigate(-1)}

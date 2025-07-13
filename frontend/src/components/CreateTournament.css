@@ -620,3 +620,235 @@
     padding: 6px 12px;
   }
 } 
+
+/* =========================
+   СТИЛИ ДЛЯ ВЕРИФИКАЦИИ ПОЛЬЗОВАТЕЛЯ
+   ========================= */
+
+/* 🆕 Предупреждение о верификации */
+.create-tournament .verification-warning {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a1a1a 100%);
+    border: 2px solid #ff0000;
+    border-radius: 12px;
+    padding: var(--ct-spacing-lg);
+    margin: 0 0 var(--ct-spacing-2xl) 0;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ct-spacing-md);
+    box-shadow: 0 8px 32px rgba(255, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.create-tournament .verification-warning::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ff0000, #ff4444, #ff0000);
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.create-tournament .verification-warning .warning-icon {
+    font-size: 3rem;
+    flex-shrink: 0;
+    margin-top: 4px;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+}
+
+.create-tournament .verification-warning .warning-content {
+    flex: 1;
+}
+
+.create-tournament .verification-warning h3 {
+    color: var(--ct-text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 var(--ct-spacing-sm) 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.create-tournament .verification-warning p {
+    color: var(--ct-text-secondary);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0 0 var(--ct-spacing-md) 0;
+}
+
+.create-tournament .verification-warning .warning-actions {
+    display: flex;
+    gap: var(--ct-spacing-sm);
+    flex-wrap: wrap;
+}
+
+.create-tournament .verification-warning .btn {
+    padding: var(--ct-spacing-sm) var(--ct-spacing-lg);
+    background: linear-gradient(135deg, #ff0000, #cc0000);
+    color: var(--ct-text-primary);
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--ct-transition);
+    font-size: 0.9rem;
+    box-shadow: 0 4px 16px rgba(255, 0, 0, 0.2);
+}
+
+.create-tournament .verification-warning .btn:hover {
+    background: linear-gradient(135deg, #ff1111, #dd0000);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 0, 0, 0.3);
+}
+
+.create-tournament .verification-warning .btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.2);
+}
+
+/* 🆕 Состояние загрузки авторизации */
+.create-tournament.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    text-align: center;
+}
+
+.create-tournament.loading .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--ct-border-color);
+    border-top: 4px solid #ff0000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--ct-spacing-lg);
+}
+
+.create-tournament.loading p {
+    color: var(--ct-text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* 🆕 Отключенные элементы формы */
+.create-tournament input[disabled],
+.create-tournament select[disabled],
+.create-tournament textarea[disabled] {
+    background-color: #0a0a0a !important;
+    color: var(--ct-text-disabled) !important;
+    border-color: #222222 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    user-select: none;
+}
+
+.create-tournament input[disabled]:hover,
+.create-tournament select[disabled]:hover,
+.create-tournament textarea[disabled]:hover {
+    border-color: #222222 !important;
+    background-color: #0a0a0a !important;
+    transform: none !important;
+}
+
+.create-tournament input[disabled]::placeholder {
+    color: #444444 !important;
+}
+
+/* 🆕 Отключенная кнопка создания турнира */
+.create-tournament button[disabled],
+.create-tournament button.disabled {
+    background: linear-gradient(135deg, #333333, #222222) !important;
+    color: var(--ct-text-disabled) !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.create-tournament button[disabled]:hover,
+.create-tournament button.disabled:hover {
+    background: linear-gradient(135deg, #333333, #222222) !important;
+    transform: none !important;
+    box-shadow: none !important;
+    color: var(--ct-text-disabled) !important;
+}
+
+.create-tournament button[disabled]:active,
+.create-tournament button.disabled:active {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 🆕 Отключенные лейблы */
+.create-tournament .form-group:has(input[disabled]) label,
+.create-tournament .form-group:has(select[disabled]) label,
+.create-tournament .form-group:has(textarea[disabled]) label {
+    color: var(--ct-text-disabled);
+    opacity: 0.7;
+}
+
+/* 🆕 Отключенный DatePicker */
+.create-tournament .react-datepicker-wrapper input[disabled] {
+    background-color: #0a0a0a !important;
+    color: var(--ct-text-disabled) !important;
+    border-color: #222222 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+/* 🆕 Затемнение секций для неверифицированных пользователей */
+.create-tournament.verification-required .form-section {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+
+.create-tournament.verification-required .form-section::after {
+    content: '🔒 Требуется верификация';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: var(--ct-text-secondary);
+    padding: var(--ct-spacing-sm) var(--ct-spacing-md);
+    border-radius: 6px;
+    border: 1px solid var(--ct-border-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* 🆕 Адаптивность для предупреждений */
+@media (max-width: 768px) {
+    .create-tournament .verification-warning {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--ct-spacing-md);
+    }
+    
+    .create-tournament .verification-warning .warning-icon {
+        font-size: 2.5rem;
+        margin: 0 auto var(--ct-spacing-sm) auto;
+    }
+    
+    .create-tournament .verification-warning .warning-actions {
+        justify-content: center;
+    }
+    
+    .create-tournament .verification-warning .btn {
+        min-width: 200px;
+    }
+} 

@@ -1010,13 +1010,15 @@
     flex-direction: column;
     gap: 12px;
     align-items: center;
+    background-color: #000000 !important;
+    border: none !important;
 }
 
 .participate-btn {
-    background-color: #111111 !important;
+    background-color: #000000 !important;
     color: white !important;
     padding: 12px 24px;
-    border: none !important;
+    border: 1px solid #ff0000 !important;
     border-radius: 0px;
     cursor: pointer;
     font-size: 20px !important;
@@ -1034,7 +1036,7 @@
 .participate-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     background-color: #111111 !important;
-    color: #c5c5c5 !important;
+    color: #ffffff !important;
 }
 
 .participate-btn:active:not(:disabled) {
