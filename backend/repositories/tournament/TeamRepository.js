@@ -340,7 +340,7 @@ class TeamRepository {
             'SELECT EXISTS(SELECT 1 FROM tournament_team_members WHERE team_id = $1 AND user_id = $2 AND is_captain = TRUE) as is_captain',
             [teamId, userId]
         );
-        
+
         return result.rows[0].is_captain;
     }
 
@@ -398,10 +398,10 @@ class TeamRepository {
             
             // Удаляем участника
             const result = await client.query(
-                'DELETE FROM tournament_team_members WHERE team_id = $1 AND user_id = $2 RETURNING *',
-                [teamId, userId]
-            );
-            
+            'DELETE FROM tournament_team_members WHERE team_id = $1 AND user_id = $2 RETURNING *',
+            [teamId, userId]
+        );
+
             // Если удаленный участник был капитаном, автоматически назначаем нового
             if (wasCaptain) {
                 const remainingMembers = await client.query(
@@ -434,7 +434,7 @@ class TeamRepository {
             
             await client.query('COMMIT');
             console.log(`✅ TeamRepository: Удален участник ${userId} из команды ${teamId}`);
-            return result.rows[0] || null;
+        return result.rows[0] || null;
             
         } catch (error) {
             await client.query('ROLLBACK');

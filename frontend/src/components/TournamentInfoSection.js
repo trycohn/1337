@@ -795,6 +795,28 @@ const TournamentInfoSection = ({
                     </div>
                 </div>
 
+                {/* 🆕 Блок с размером команды для командных и микс турниров */}
+                {(isTeamTournament(tournament?.participant_type) || tournament?.format === 'mix') && tournament?.team_size && (
+                    <div className="meta-row">
+                        <div className="meta-item">
+                            <strong>👨‍👩‍👧‍👦 Игроков в команде:</strong>
+                            <span>{tournament.team_size}</span>
+                        </div>
+                        
+                        {/* 🆕 Дополнительная информация для микс турниров */}
+                        {tournament?.format === 'mix' && (
+                            <div className="meta-item">
+                                <strong>🎲 Тип микса:</strong>
+                                <span>
+                                    {tournament.mix_rating_type === 'faceit' && 'По FACEIT ELO'}
+                                    {tournament.mix_rating_type === 'premier' && 'По CS2 Premier Rank'}
+                                    {(!tournament.mix_rating_type || tournament.mix_rating_type === 'mixed') && 'Случайный микс'}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="meta-row">
                     <div className="meta-item">
                         <strong>📅 Дата создания:</strong>
