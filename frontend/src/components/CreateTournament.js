@@ -1,11 +1,17 @@
 // frontend/src/components/CreateTournament.js
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ru } from 'date-fns/locale';
-import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
+import useLoaderAutomatic from '../hooks/useLoaderAutomaticHook';
+import { 
+  safeNavigateToTournament, 
+  validateApiResponse, 
+  handleApiError, 
+  API_RESPONSE_STRUCTURES 
+} from '../utils/apiUtils';
 import './CreateTournament.css';
 
 // Регистрируем русскую локаль
@@ -60,32 +66,29 @@ function CreateTournament() {
 
   const handleCreateTournament = async (e) => {
     e.preventDefault();
+    
+    // Проверка токена
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Войдите, чтобы создать турнир');
+      alert('Необходима авторизация');
       return;
     }
 
-    // Проверяем, что указана дата старта
-    if (!formData.start_date) {
-      alert('Необходимо выбрать дату начала турнира');
-      return;
-    }
-
-    // Используем хук для создания турнира с прелоадером
     runWithLoader(async () => {
       try {
+        console.log('🚀 Начинаем создание турнира...');
+        
         const response = await axios.post(
           '/api/tournaments',
           {
             name: formData.name,
-            game: formData.game,
-            format: formData.format,
-            participant_type: formData.participant_type,
-            team_size: formData.format === 'mix' ? formData.team_size : null,
-            max_teams: formData.format === 'mix' ? formData.max_teams : null,
-            start_date: formData.start_date.toISOString(),
             description: formData.description,
+            format: formData.format,
+            game: formData.game,
+            participant_type: formData.participant_type,
+            team_size: formData.team_size,
+            max_teams: formData.max_teams,
+            start_date: formData.start_date,
             prize_pool: formData.prize_pool,
             rules: formData.rules,
             bracket_type: formData.format === 'mix' ? formData.bracket_type : 'single_elimination',
@@ -96,12 +99,49 @@ function CreateTournament() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
-        // Перенаправляем на страницу созданного турнира
-        navigate(`/tournaments/${response.data.id}`);
+        console.log('✅ Турнир создан, ответ сервера:', response.data);
+        
+        // 🔧 НОВАЯ БЕЗОПАСНАЯ ОБРАБОТКА с валидацией структуры ответа
+        const validation = validateApiResponse(response, 'CREATE_TOURNAMENT');
+        
+        if (!validation.isValid) {
+          console.error('❌ Структура ответа API не соответствует ожидаемой:', validation.errors);
+          throw new Error(`Некорректная структура ответа сервера: ${validation.errors.join(', ')}`);
+        }
+        
+        // 🔧 БЕЗОПАСНАЯ НАВИГАЦИЯ с использованием новых утилит
+        const navigationSuccess = safeNavigateToTournament(
+          navigate, 
+          response, 
+          'CREATE_TOURNAMENT',
+          (error) => {
+            console.error('❌ Ошибка навигации:', error);
+            alert('Турнир создан, но возникла ошибка при переходе на страницу турнира');
+          }
+        );
+        
+        if (!navigationSuccess) {
+          throw new Error('Не удалось перейти на страницу созданного турнира');
+        }
+        
+        console.log('✅ Турнир успешно создан и произведен переход на страницу');
         
       } catch (error) {
-        console.error('Ошибка создания турнира:', error);
-        alert(error.response?.data?.error || 'Ошибка создания турнира');
+        // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК с использованием новых утилит
+        const errorMessage = handleApiError(
+          error, 
+          'Создание турнира',
+          (message) => {
+            console.error('❌ Обработанная ошибка:', message);
+            alert(message);
+          }
+        );
+        
+        console.error('❌ Полные детали ошибки:', {
+          message: error.message,
+          response: error.response?.data,
+          stack: error.stack
+        });
       }
     });
   };
