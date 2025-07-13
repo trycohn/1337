@@ -286,7 +286,7 @@ const ParticipantSearchModal = ({
                                         <div className="user-actions">
                                             {/* Кнопка просмотра профиля */}
                                             <Link 
-                                                to={`/profile/${user.id}`}
+                                                to={`/user/${user.id}`}
                                                 className="action-button view-profile-btn"
                                                 target="_blank"
                                                 rel="noopener noreferrer"

@@ -596,7 +596,7 @@ const TournamentInfoSection = ({
 
     const handleOpenProfile = () => {
         if (selectedParticipant) {
-            window.open(`/profile/${selectedParticipant.id}`, '_blank');
+            window.open(`/user/${selectedParticipant.id}`, '_blank');
             setShowActions(false);
             setSelectedParticipant(null);
         }
@@ -1102,7 +1102,7 @@ const TournamentInfoSection = ({
                             <div className="creator-info">
                                 {creatorInfo ? (
                                     <a 
-                                        href={`/profile/${creatorInfo.id}`} 
+                                        href={`/user/${creatorInfo.id}`} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
                                         className="creator-link"
@@ -1138,7 +1138,7 @@ const TournamentInfoSection = ({
                                         </div>
                                         <div className="admin-info">
                                             <a 
-                                                href={`/profile/${admin.user_id || admin.id}`}
+                                                href={`/user/${admin.user_id || admin.id}`}
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 className="admin-link"

@@ -322,7 +322,7 @@ const UnifiedParticipantsPanel = ({
                             <div className="smart-participant-info-participants-list">
                                 <div className="smart-name-section-participants-list">
                                     {participant.user_id ? (
-                                        <Link to={`/profile/${participant.user_id}`} className="smart-participant-name-participants-list">
+                                        <Link to={`/user/${participant.user_id}`} className="smart-participant-name-participants-list">
                                             {participant.name}
                                         </Link>
                                     ) : (
@@ -431,7 +431,7 @@ const UnifiedParticipantsPanel = ({
                                         </td>
                                         <td className="name-cell">
                                             {participant.user_id ? (
-                                                <Link to={`/profile/${participant.user_id}`} className="table-participant-name-participants-list">
+                                                <Link to={`/user/${participant.user_id}`} className="table-participant-name-participants-list">
                                                     {participant.name}
                                                 </Link>
                                             ) : (
@@ -561,7 +561,7 @@ const UnifiedParticipantsPanel = ({
                                 <div className="gaming-player-info-participants-list">
                                     <div className="player-name-section-participants-list">
                                         {participant.user_id ? (
-                                            <Link to={`/profile/${participant.user_id}`} className="gaming-player-name-participants-list">
+                                            <Link to={`/user/${participant.user_id}`} className="gaming-player-name-participants-list">
                                                 {participant.name}
                                             </Link>
                                         ) : (
@@ -946,7 +946,7 @@ const UnifiedParticipantsPanel = ({
                                                 <div className="member-info-participants-list">
                                                     <div className="member-name-participants-list">
                                                         {member.user_id ? (
-                                                            <a href={`/profile/${member.user_id}`}>
+                                                            <a href={`/user/${member.user_id}`}>
                                                                 {member.name || member.username}
                                                             </a>
                                                         ) : (

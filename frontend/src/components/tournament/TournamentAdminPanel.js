@@ -241,7 +241,7 @@ const TournamentAdminPanel = ({
                                         <div className="participant-details-v2">
                                             {participant.user_id ? (
                                                 <Link 
-                                                    to={`/profile/${participant.user_id}`}
+                                                    to={`/user/${participant.user_id}`}
                                                     className="participant-name-v2"
                                                 >
                                                     {participant.name || participant.username || 'Участник'}

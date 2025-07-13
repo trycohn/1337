@@ -601,7 +601,7 @@ const TeamGenerator = ({
                                                                 title={formattedName.isTruncated ? formattedName.originalName : undefined}
                                                             >
                                                                 {member.user_id ? (
-                                                                    <a href={`/profile/${member.user_id}`} className="member-profile-link">
+                                                                    <a href={`/user/${member.user_id}`} className="member-profile-link">
                                                                         {formattedName.displayName}
                                                                     </a>
                                                                 ) : (
