@@ -122,6 +122,7 @@ const publicRoutes = [
   /^\/api\/tournaments\/\d+\/original-participants$/,  // Оригинальные участники турнира
   /^\/api\/users\/login$/,  // Авторизация пользователей
   /^\/api\/users\/register$/,  // Регистрация пользователей
+  /^\/api\/users\/profile\/\d+$/,  // Публичные профили пользователей
   /^\/api\/users\/steam$/,  // Steam OAuth
   /^\/api\/users\/faceit-login$/,  // FACEIT OAuth
   /^\/api\/users\/steam\/callback$/,  // Steam callback
