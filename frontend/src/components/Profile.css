@@ -2649,7 +2649,7 @@
     text-align: center;
 }
 
-/* Р¤РёР»СЊС‚СЂС‹ РєР°С‚РµРіРѕСЂРёР№ РґРѕСЃС‚РёР¶РµРЅРёР№ */
+/* Р¤РёР»СЊС‚С‹ РєР°С‚РµРіРѕСЂРёР№ РґРѕСЃС‚РёР¶РµРЅРёР№ */
 .achievement-filters {
     display: flex;
     flex-wrap: wrap;
@@ -2971,3 +2971,115 @@
 }
 
 /* Responsive adjustments */ 
+
+/* =========================
+   QA: УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК ПРОФИЛЕЙ
+   ========================= */
+
+/* Контейнер ошибки профиля */
+.profile-error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: var(--spacing-xl);
+    background-color: var(--bg-primary);
+}
+
+.profile-error-content {
+    text-align: center;
+    max-width: 500px;
+    padding: var(--spacing-2xl);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.error-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.8;
+}
+
+.profile-error-content h2 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.error-message {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+    line-height: 1.5;
+    font-size: 1rem;
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-actions .btn-primary {
+    background-color: var(--btn-order-color);
+    color: var(--text-primary);
+    border: 1px solid var(--btn-order-color);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.error-actions .btn-primary:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--btn-order-color);
+    transform: translateY(-1px);
+}
+
+.error-actions .btn-secondary {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.error-actions .btn-secondary:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .profile-error-container {
+        min-height: 50vh;
+        padding: var(--spacing-lg);
+    }
+    
+    .profile-error-content {
+        padding: var(--spacing-xl);
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .error-actions .btn-primary,
+    .error-actions .btn-secondary {
+        width: 100%;
+        max-width: 200px;
+    }
+}

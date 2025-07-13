@@ -27,7 +27,16 @@ function UserProfile() {
                 setUser(response.data);
                 setError('');
             } catch (err) {
-                setError(err.response?.data?.message || 'Ошибка загрузки профиля пользователя');
+                console.log('❌ Ошибка получения профиля:', err.response?.status, err.response?.data);
+                
+                // Специфичная обработка для 404 ошибки
+                if (err.response?.status === 404) {
+                    setError('Пользователь не найден. Возможно, этот профиль больше не существует или был удален.');
+                } else if (err.response?.status >= 500) {
+                    setError('Сервер временно недоступен. Попробуйте обновить страницу через несколько минут.');
+                } else {
+                    setError(err.response?.data?.message || 'Ошибка загрузки профиля пользователя. Попробуйте обновить страницу.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -228,7 +237,33 @@ function UserProfile() {
     };
 
     if (loading) return <div className="profile-loading">Загрузка профиля...</div>;
-    if (error) return <div className="profile-error">{error}</div>;
+    
+    if (error) {
+        return (
+            <div className="profile-error-container">
+                <div className="profile-error-content">
+                    <div className="error-icon">❌</div>
+                    <h2>Профиль недоступен</h2>
+                    <p className="error-message">{error}</p>
+                    <div className="error-actions">
+                        <button 
+                            className="btn-primary" 
+                            onClick={() => navigate(-1)}
+                        >
+                            ← Назад
+                        </button>
+                        <button 
+                            className="btn-secondary" 
+                            onClick={() => window.location.reload()}
+                        >
+                            🔄 Обновить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
     if (!user) return <div className="profile-not-found">Пользователь не найден</div>;
 
     return (
