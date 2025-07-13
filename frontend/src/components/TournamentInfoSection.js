@@ -58,23 +58,93 @@ const TournamentInfoSection = ({
 
     // 🆕 Проверка, является ли пользователь участником
     const isUserParticipant = () => {
-        if (!user || !tournament?.participants) return false;
-        return tournament.participants.some(participant => 
-            participant.user_id === user.id || participant.id === user.id
-        );
+        if (!user || !tournament?.participants) {
+            console.log('🔍 isUserParticipant: нет пользователя или участников', {
+                hasUser: !!user,
+                hasParticipants: !!tournament?.participants,
+                participantsLength: tournament?.participants?.length
+            });
+            return false;
+        }
+        
+        // 🔧 УЛУЧШЕННАЯ ПРОВЕРКА: проверяем разные поля участников
+        const isParticipating = tournament.participants.some(participant => {
+            const isMatch = participant.user_id === user.id || 
+                           participant.id === user.id ||
+                           participant.participant_id === user.id; // Дополнительная проверка
+            
+            if (isMatch) {
+                console.log('✅ Найден участник:', {
+                    participantData: participant,
+                    userId: user.id,
+                    matchField: participant.user_id === user.id ? 'user_id' : 
+                               participant.id === user.id ? 'id' : 'participant_id'
+                });
+            }
+            
+            return isMatch;
+        });
+        
+        console.log('🔍 isUserParticipant результат:', {
+            isParticipating,
+            userId: user.id,
+            username: user.username,
+            tournamentId: tournament.id,
+            participantsCount: tournament.participants.length,
+            participants: tournament.participants.map(p => ({
+                id: p.id,
+                user_id: p.user_id,
+                participant_id: p.participant_id,
+                name: p.name,
+                username: p.username
+            }))
+        });
+        
+        return isParticipating;
     };
 
     // 🆕 Проверка возможности участия
     const canParticipate = () => {
-        if (!user) return false;
-        if (!tournament) return false;
-        if (tournament.status !== 'active') return false;
-        if (isUserParticipant()) return false;
+        console.log('🔍 canParticipate: начинаем проверку');
+        
+        if (!user) {
+            console.log('❌ canParticipate: нет пользователя');
+            return false;
+        }
+        
+        if (!tournament) {
+            console.log('❌ canParticipate: нет турнира');
+            return false;
+        }
+        
+        if (tournament.status !== 'active') {
+            console.log('❌ canParticipate: турнир не активен:', tournament.status);
+            return false;
+        }
+        
+        const userIsParticipant = isUserParticipant();
+        if (userIsParticipant) {
+            console.log('❌ canParticipate: пользователь уже участвует');
+            return false;
+        }
         
         // Проверка лимита участников
         if (tournament.max_participants && tournament.participants?.length >= tournament.max_participants) {
+            console.log('❌ canParticipate: достигнут лимит участников:', {
+                max: tournament.max_participants,
+                current: tournament.participants?.length
+            });
             return false;
         }
+        
+        console.log('✅ canParticipate: участие разрешено', {
+            hasUser: !!user,
+            hasTournament: !!tournament,
+            tournamentStatus: tournament.status,
+            isParticipant: userIsParticipant,
+            participantsCount: tournament.participants?.length,
+            maxParticipants: tournament.max_participants
+        });
         
         return true;
     };
@@ -117,6 +187,13 @@ const TournamentInfoSection = ({
         
         try {
             const token = localStorage.getItem('token');
+            console.log('🚀 Отправляем запрос на участие:', {
+                tournamentId: tournament.id,
+                participantType: tournament.participant_type,
+                userId: user?.id,
+                username: user?.username
+            });
+            
             const response = await fetch(`/api/tournaments/${tournament.id}/participate`, {
                 method: 'POST',
                 headers: {
@@ -128,20 +205,55 @@ const TournamentInfoSection = ({
                 })
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('❌ Ошибка парсинга ответа от сервера:', parseError);
+                data = { message: 'Ошибка обработки ответа сервера' };
+            }
+
+            console.log('📨 Ответ сервера:', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText,
+                data: data
+            });
 
             if (response.ok) {
+                console.log('✅ Успешное участие в турнире');
                 setShowParticipationConfirm(false);
+                
+                // 🔧 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА КЕША для получения актуальных данных
+                const cacheKey = `tournament_cache_${tournament.id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                console.log('🗑️ Кеш турнира очищен после успешного участия');
+                
                 if (onParticipationUpdate) {
                     onParticipationUpdate();
                 }
-                console.log('✅ Успешное участие в турнире');
             } else {
-                throw new Error(data.message || 'Ошибка при участии в турнире');
+                // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК: показываем конкретную ошибку от backend
+                const errorMessage = data?.error || data?.message || `Ошибка сервера (${response.status})`;
+                console.error('❌ Ошибка от сервера:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorMessage: errorMessage,
+                    fullData: data
+                });
+                
+                // Закрываем модальное окно даже при ошибке
+                setShowParticipationConfirm(false);
+                
+                // Показываем понятное сообщение пользователю
+                alert(`❌ ${errorMessage}`);
             }
         } catch (error) {
-            console.error('❌ Ошибка участия в турнире:', error);
-            alert(`Ошибка: ${error.message}`);
+            console.error('❌ Сетевая ошибка при участии в турнире:', error);
+            setShowParticipationConfirm(false);
+            alert(`❌ Сетевая ошибка: ${error.message}`);
         } finally {
             setParticipationLoading(false);
         }
@@ -162,6 +274,14 @@ const TournamentInfoSection = ({
         
         try {
             const token = localStorage.getItem('token');
+            console.log('🚀 Отправляем запрос на участие команды:', {
+                tournamentId: tournament.id,
+                teamId: selectedTeam.id,
+                teamName: selectedTeam.name,
+                userId: user?.id,
+                username: user?.username
+            });
+            
             const response = await fetch(`/api/tournaments/${tournament.id}/participate`, {
                 method: 'POST',
                 headers: {
@@ -175,21 +295,58 @@ const TournamentInfoSection = ({
                 })
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('❌ Ошибка парсинга ответа от сервера:', parseError);
+                data = { message: 'Ошибка обработки ответа сервера' };
+            }
+
+            console.log('📨 Ответ сервера (команда):', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText,
+                data: data
+            });
 
             if (response.ok) {
+                console.log('✅ Успешное участие команды в турнире');
                 setShowParticipationConfirm(false);
                 setSelectedTeam(null);
+                
+                // 🔧 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА КЕША для получения актуальных данных
+                const cacheKey = `tournament_cache_${tournament.id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                console.log('🗑️ Кеш турнира очищен после успешного участия команды');
+                
                 if (onParticipationUpdate) {
                     onParticipationUpdate();
                 }
-                console.log('✅ Успешное участие команды в турнире');
             } else {
-                throw new Error(data.message || 'Ошибка при участии команды в турнире');
+                // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК: показываем конкретную ошибку от backend
+                const errorMessage = data?.error || data?.message || `Ошибка сервера (${response.status})`;
+                console.error('❌ Ошибка от сервера (команда):', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorMessage: errorMessage,
+                    fullData: data
+                });
+                
+                // Закрываем модальное окно и сбрасываем выбранную команду даже при ошибке
+                setShowParticipationConfirm(false);
+                setSelectedTeam(null);
+                
+                // Показываем понятное сообщение пользователю
+                alert(`❌ ${errorMessage}`);
             }
         } catch (error) {
-            console.error('❌ Ошибка участия команды в турнире:', error);
-            alert(`Ошибка: ${error.message}`);
+            console.error('❌ Сетевая ошибка при участии команды в турнире:', error);
+            setShowParticipationConfirm(false);
+            setSelectedTeam(null);
+            alert(`❌ Сетевая ошибка: ${error.message}`);
         } finally {
             setParticipationLoading(false);
         }
@@ -846,57 +1003,83 @@ const TournamentInfoSection = ({
                 </div>
 
                 {/* 🆕 Кнопка участия в турнире */}
-                {canParticipate() && (
-                    <div className="meta-row">
-                        <div className="meta-item participation-section">
-                            <strong>🎯 Участие в турнире:</strong>
-                            <div className="participation-controls">
-                                <button 
-                                    className="participate-btn"
-                                    onClick={handleParticipateClick}
-                                    disabled={participationLoading}
-                                >
-                                    {participationLoading ? (
-                                        <>
-                                            <span className="loading-spinner"></span>
-                                            Участвую...
-                                        </>
-                                    ) : (
-                                        <>
-                                            🚀 Участвовать в турнире
-                                        </>
+                {(() => {
+                    const canParticipateResult = canParticipate();
+                    const isParticipantResult = isUserParticipant();
+                    
+                    console.log('🎯 Рендеринг блока участия:', {
+                        canParticipate: canParticipateResult,
+                        isUserParticipant: isParticipantResult,
+                        userId: user?.id,
+                        username: user?.username,
+                        tournamentId: tournament?.id,
+                        tournamentStatus: tournament?.status,
+                        participantsCount: tournament?.participants?.length
+                    });
+                    
+                    return canParticipateResult ? (
+                        <div className="meta-row">
+                            <div className="meta-item participation-section">
+                                <strong>🎯 Участие в турнире:</strong>
+                                <div className="participation-controls">
+                                    <button 
+                                        className="participate-btn"
+                                        onClick={handleParticipateClick}
+                                        disabled={participationLoading}
+                                    >
+                                        {participationLoading ? (
+                                            <>
+                                                <span className="loading-spinner"></span>
+                                                Участвую...
+                                            </>
+                                        ) : (
+                                            <>
+                                                🚀 Участвовать в турнире
+                                            </>
+                                        )}
+                                    </button>
+                                    
+                                    {tournament.participant_type === 'team' && (
+                                        <div className="participation-hint">
+                                            <span className="hint-icon">💡</span>
+                                            <span>Для участия потребуется выбрать команду</span>
+                                        </div>
                                     )}
-                                </button>
-                                
-                                {tournament.participant_type === 'team' && (
-                                    <div className="participation-hint">
-                                        <span className="hint-icon">💡</span>
-                                        <span>Для участия потребуется выбрать команду</span>
-                                    </div>
-                                )}
-                                
-                                {tournament.participant_type === 'mix' && (
-                                    <div className="participation-hint">
-                                        <span className="hint-icon">🎲</span>
-                                        <span>Команды будут сформированы автоматически</span>
-                                    </div>
-                                )}
+                                    
+                                    {tournament.participant_type === 'mix' && (
+                                        <div className="participation-hint">
+                                            <span className="hint-icon">🎲</span>
+                                            <span>Команды будут сформированы автоматически</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    ) : null;
+                })()}
 
                 {/* Отображение статуса участия для уже участвующих */}
-                {isUserParticipant() && (
-                    <div className="meta-row">
-                        <div className="meta-item participation-status">
-                            <strong>✅ Ваш статус:</strong>
-                            <span className="participant-status-badge">
-                                🎯 Вы участвуете в турнире
-                            </span>
+                {(() => {
+                    const isParticipantResult = isUserParticipant();
+                    
+                    console.log('✅ Рендеринг статуса участия:', {
+                        isUserParticipant: isParticipantResult,
+                        shouldShowStatus: isParticipantResult,
+                        userId: user?.id,
+                        username: user?.username
+                    });
+                    
+                    return isParticipantResult ? (
+                        <div className="meta-row">
+                            <div className="meta-item participation-status">
+                                <strong>✅ Ваш статус:</strong>
+                                <span className="participant-status-badge">
+                                    🎯 Вы участвуете в турнире
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    ) : null;
+                })()}
 
                 {/* 🆕 Блок с создателем и администраторами */}
                 <div className="meta-row">
