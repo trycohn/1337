@@ -1766,29 +1766,11 @@ router.get('/profile/:userId', async (req, res) => {
         const connectedClients = app.get('connectedClients');
         
         // Проверяем, есть ли у пользователя активное WebSocket соединение
-        let isOnlineRealtime = false;
         if (connectedClients && connectedClients.has(userId.toString())) {
             const ws = connectedClients.get(userId.toString());
             if (ws && ws.readyState === 1) { // 1 = WebSocket.OPEN
-                isOnlineRealtime = true;
                 user.online_status = 'online';
             }
-        }
-        
-        // Определяем статус активности на основе времени последней активности и WebSocket
-        if (isOnlineRealtime) {
-            user.online_status = 'online';
-        } else if (diffInSeconds < 300) { // 5 минут
-            user.online_status = 'online';
-        } else if (diffInSeconds < 3600) { // 1 час
-            const minutes = Math.floor(diffInSeconds / 60);
-            user.online_status = `был ${minutes} ${getMinutesWord(minutes)} назад`;
-        } else if (diffInSeconds < 86400) { // 24 часа
-            const hours = Math.floor(diffInSeconds / 3600);
-            user.online_status = `был ${hours} ${getHoursWord(hours)} назад`;
-        } else {
-            const days = Math.floor(diffInSeconds / 86400);
-            user.online_status = `был ${days} ${getDaysWord(days)} назад`;
         }
         
         // Если у пользователя привязан Steam, получаем его никнейм (с кэшированием)
@@ -1806,19 +1788,21 @@ router.get('/profile/:userId', async (req, res) => {
                 } else {
                     // Кэш устарел или отсутствует, запрашиваем у Steam API
                     const apiKey = process.env.STEAM_API_KEY;
-                    const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${user.steam_id}`, {
-                        timeout: 5000 // Таймаут 5 секунд
-                    });
-                    
-                    if (steamUserResponse.data.response.players.length > 0) {
-                        const steamNickname = steamUserResponse.data.response.players[0].personaname;
-                        user.steam_nickname = steamNickname;
+                    if (apiKey) {
+                        const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${user.steam_id}`, {
+                            timeout: 5000 // Таймаут 5 секунд
+                        });
                         
-                        // Сохраняем в кэш
-                        await pool.query(
-                            'UPDATE users SET steam_nickname = $1, steam_nickname_updated = NOW() WHERE id = $2',
-                            [steamNickname, userId]
-                        );
+                        if (steamUserResponse.data.response.players.length > 0) {
+                            const steamNickname = steamUserResponse.data.response.players[0].personaname;
+                            user.steam_nickname = steamNickname;
+                            
+                            // Сохраняем в кэш
+                            await pool.query(
+                                'UPDATE users SET steam_nickname = $1, steam_nickname_updated = NOW() WHERE id = $2',
+                                [steamNickname, userId]
+                            );
+                        }
                     }
                 }
             } catch (steamErr) {
@@ -1949,9 +1933,10 @@ router.get('/profile/:userId', async (req, res) => {
         // Удаляем не нужные для публичного профиля поля
         delete user.cs2_premier_rank;
         
+        console.log(`✅ Профиль пользователя ${userId} успешно сформирован`);
         res.json(user);
     } catch (err) {
-        console.error('Ошибка получения профиля пользователя:', err);
+        console.error('❌ Ошибка получения профиля пользователя:', err);
         res.status(500).json({ error: 'Ошибка сервера при получении профиля' });
     }
 });
