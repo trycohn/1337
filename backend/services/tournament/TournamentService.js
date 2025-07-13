@@ -473,6 +473,61 @@ class TournamentService {
     }
 
     /**
+     * Обновление типа рейтинга для микс-турниров
+     */
+    static async updateRatingType(tournamentId, mixRatingType, userId) {
+        console.log(`🎯 TournamentService: Обновление типа рейтинга турнира ${tournamentId} на ${mixRatingType}`);
+
+        // Валидация типа рейтинга
+        const validRatingTypes = ['faceit', 'premier', 'mixed'];
+        if (!validRatingTypes.includes(mixRatingType)) {
+            throw new Error(`Некорректный тип рейтинга: ${mixRatingType}. Допустимые: ${validRatingTypes.join(', ')}`);
+        }
+
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (tournament.format !== 'mix') {
+            throw new Error('Изменение типа рейтинга доступно только для микс-турниров');
+        }
+
+        if (tournament.status !== 'active') {
+            throw new Error('Изменение типа рейтинга доступно только для активных турниров');
+        }
+
+        // Проверяем, не сгенерированы ли уже команды
+        const teamsCount = await TournamentRepository.getTeamsCount(tournamentId);
+        if (teamsCount > 0) {
+            throw new Error('Нельзя изменить тип рейтинга после формирования команд. Очистите команды перед сменой типа.');
+        }
+
+        // Обновляем тип рейтинга
+        const updatedTournament = await TournamentRepository.updateMixRatingType(tournamentId, mixRatingType);
+
+        // Логируем событие
+        await logTournamentEvent(tournamentId, userId, 'rating_type_changed', {
+            old_rating_type: tournament.mix_rating_type,
+            new_rating_type: mixRatingType
+        });
+
+        // Отправляем объявление в чат
+        const typeNames = {
+            'faceit': 'FACEIT ELO',
+            'premier': 'CS2 Premier Rank',
+            'mixed': 'Случайный микс'
+        };
+
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `🎯 Тип рейтинга для формирования команд изменен на: ${typeNames[mixRatingType]}`
+        );
+
+        console.log(`✅ TournamentService: Тип рейтинга турнира ${tournamentId} успешно изменен на ${mixRatingType}`);
+
+        return updatedTournament;
+    }
+
+    /**
      * Проверка прав доступа к турниру
      * @private
      */

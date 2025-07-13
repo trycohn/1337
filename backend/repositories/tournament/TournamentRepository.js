@@ -393,6 +393,17 @@ class TournamentRepository {
     }
 
     /**
+     * Обновление типа рейтинга для микс-турниров
+     */
+    static async updateMixRatingType(tournamentId, mixRatingType) {
+        const result = await pool.query(
+            'UPDATE tournaments SET mix_rating_type = $1 WHERE id = $2 RETURNING *',
+            [mixRatingType, tournamentId]
+        );
+        return result.rows[0];
+    }
+
+    /**
      * Сброс результатов матчей турнира
      */
     static async resetMatchResults(tournamentId, userId) {

@@ -31,6 +31,9 @@ const TournamentInfoSection = ({
     const [participationLoading, setParticipationLoading] = useState(false);
     const [isParticipating, setIsParticipating] = useState(false); // Added isParticipating state
 
+    // 🆕 Состояния для управления типом рейтинга
+    const [ratingTypeLoading, setRatingTypeLoading] = useState(false);
+
     // Обновляем значения при изменении турнира
     useEffect(() => {
         console.log('🏁 Первичная инициализация данных турнира:', {
@@ -913,6 +916,92 @@ const TournamentInfoSection = ({
         }
     };
 
+    // 🆕 Функция для изменения типа рейтинга турнира
+    const handleRatingTypeChange = async (newRatingType) => {
+        if (!tournament?.id || !isAdminOrCreator) {
+            console.log('❌ Нет прав для изменения типа рейтинга');
+            return;
+        }
+
+        if (tournament.mix_rating_type === newRatingType) {
+            console.log('ℹ️ Тип рейтинга уже установлен:', newRatingType);
+            return;
+        }
+
+        setRatingTypeLoading(true);
+        console.log('🔄 Изменяем тип рейтинга турнира:', {
+            tournamentId: tournament.id,
+            oldType: tournament.mix_rating_type,
+            newType: newRatingType
+        });
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/tournaments/${tournament.id}/rating-type`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    mix_rating_type: newRatingType
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log('✅ Тип рейтинга успешно изменен:', data);
+                
+                // Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${tournament.id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                console.log('🗑️ Кеш турнира очищен после смены типа рейтинга');
+                
+                // Обновляем данные турнира
+                if (onParticipationUpdate) {
+                    await onParticipationUpdate();
+                }
+
+                // Уведомляем об успешной смене
+                const typeNames = {
+                    'faceit': 'FACEIT ELO',
+                    'premier': 'CS2 Premier Rank',
+                    'mixed': 'Случайный микс'
+                };
+                
+                alert(`✅ Тип рейтинга изменен на: ${typeNames[newRatingType] || newRatingType}`);
+            } else {
+                throw new Error(data.message || 'Ошибка при изменении типа рейтинга');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка изменения типа рейтинга:', error);
+            alert(`❌ Ошибка: ${error.message}`);
+        } finally {
+            setRatingTypeLoading(false);
+        }
+    };
+
+    // 🆕 Проверка, можно ли изменять тип рейтинга
+    const canChangeRatingType = () => {
+        return tournament?.format === 'mix' && 
+               tournament?.status === 'active' && 
+               isAdminOrCreator &&
+               !tournament?.teams?.length; // Если команды еще не сформированы
+    };
+
+    // 🆕 Получение отображаемого названия типа рейтинга
+    const getRatingTypeDisplayName = (ratingType) => {
+        const names = {
+            'faceit': 'FACEIT ELO',
+            'premier': 'CS2 Premier Rank',
+            'mixed': 'Случайный микс'
+        };
+        return names[ratingType] || ratingType || 'Не указан';
+    };
+
     const creatorInfo = getCreatorInfo();
     const adminsList = getAdmins();
     const statusInfo = getStatusDisplayName(tournament?.status);
@@ -971,6 +1060,68 @@ const TournamentInfoSection = ({
                                 </span>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* 🆕 Блок управления типом рейтинга для микс-турниров */}
+                {canChangeRatingType() && (
+                    <div className="meta-row">
+                        <div className="meta-item rating-type-control">
+                            <strong>⚙️ Управление типом рейтинга:</strong>
+                            <div className="rating-type-selector">
+                                <div className="rating-type-info">
+                                    <span className="current-type">
+                                        Текущий: {getRatingTypeDisplayName(tournament.mix_rating_type)}
+                                    </span>
+                                </div>
+                                <div className="rating-type-buttons">
+                                    <button 
+                                        className={`rating-type-btn ${tournament.mix_rating_type === 'faceit' ? 'active' : ''}`}
+                                        onClick={() => handleRatingTypeChange('faceit')}
+                                        disabled={ratingTypeLoading || tournament.mix_rating_type === 'faceit'}
+                                        title="Формировать команды по FACEIT ELO рейтингу"
+                                    >
+                                        {ratingTypeLoading && tournament.mix_rating_type !== 'faceit' ? (
+                                            <span className="loading-spinner-small"></span>
+                                        ) : (
+                                            '🎯'
+                                        )}
+                                        FACEIT ELO
+                                    </button>
+                                    <button 
+                                        className={`rating-type-btn ${tournament.mix_rating_type === 'premier' ? 'active' : ''}`}
+                                        onClick={() => handleRatingTypeChange('premier')}
+                                        disabled={ratingTypeLoading || tournament.mix_rating_type === 'premier'}
+                                        title="Формировать команды по CS2 Premier рангу"
+                                    >
+                                        {ratingTypeLoading && tournament.mix_rating_type !== 'premier' ? (
+                                            <span className="loading-spinner-small"></span>
+                                        ) : (
+                                            '🏆'
+                                        )}
+                                        CS2 Premier
+                                    </button>
+                                    <button 
+                                        className={`rating-type-btn ${(!tournament.mix_rating_type || tournament.mix_rating_type === 'mixed') ? 'active' : ''}`}
+                                        onClick={() => handleRatingTypeChange('mixed')}
+                                        disabled={ratingTypeLoading || (!tournament.mix_rating_type || tournament.mix_rating_type === 'mixed')}
+                                        title="Случайное формирование команд"
+                                    >
+                                        {ratingTypeLoading && tournament.mix_rating_type !== 'mixed' ? (
+                                            <span className="loading-spinner-small"></span>
+                                        ) : (
+                                            '🎲'
+                                        )}
+                                        Случайный
+                                    </button>
+                                </div>
+                                {ratingTypeLoading && (
+                                    <div className="rating-type-loading">
+                                        <span className="loading-text">Изменяем тип рейтинга...</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 

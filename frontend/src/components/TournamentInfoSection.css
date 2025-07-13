@@ -1215,3 +1215,121 @@
         display: none;
     }
 } 
+
+/* 🆕 СТИЛИ ДЛЯ УПРАВЛЕНИЯ ТИПОМ РЕЙТИНГА */
+.rating-type-control {
+    width: 100%;
+    max-width: 100%;
+}
+
+.rating-type-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.rating-type-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.current-type {
+    background: #111111;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid #333333;
+}
+
+.rating-type-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rating-type-btn {
+    background: #111111;
+    color: #ffffff;
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 120px;
+    justify-content: center;
+    position: relative;
+}
+
+.rating-type-btn:hover:not(:disabled) {
+    background: #111111;
+    border-color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+}
+
+.rating-type-btn.active {
+    background: #ff0000;
+    color: #ffffff;
+    border-color: #ff0000;
+    font-weight: 700;
+}
+
+.rating-type-btn.active:hover {
+    background: #cc0000;
+    border-color: #cc0000;
+}
+
+.rating-type-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.rating-type-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.loading-text {
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.loading-spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .rating-type-buttons {
+        flex-direction: column;
+    }
+    
+    .rating-type-btn {
+        min-width: 100%;
+    }
+    
+    .current-type {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+} 

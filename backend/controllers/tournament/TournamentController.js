@@ -493,6 +493,52 @@ class TournamentController {
             tournament
         });
     });
+
+    // 🎯 Обновление типа рейтинга для микс-турниров
+    static updateRatingType = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const { mix_rating_type } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ ТИПА РЕЙТИНГА
+        const validRatingTypes = ['faceit', 'premier', 'mixed'];
+        if (!validRatingTypes.includes(mix_rating_type)) {
+            return res.status(400).json({ 
+                message: 'Некорректный тип рейтинга',
+                received_type: mix_rating_type,
+                valid_types: validRatingTypes
+            });
+        }
+        
+        console.log(`🎯 [updateRatingType] Обновление типа рейтинга турнира ${tournamentId} на ${mix_rating_type}`);
+        
+        const tournament = await TournamentService.updateRatingType(
+            tournamentId, 
+            mix_rating_type, 
+            req.user.id
+        );
+        
+        const typeNames = {
+            'faceit': 'FACEIT ELO',
+            'premier': 'CS2 Premier Rank', 
+            'mixed': 'Случайный микс'
+        };
+        
+        res.json({
+            message: `Тип рейтинга успешно изменен на: ${typeNames[mix_rating_type]}`,
+            tournament,
+            rating_type: mix_rating_type
+        });
+    });
 }
 
 module.exports = TournamentController; 

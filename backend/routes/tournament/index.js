@@ -60,6 +60,9 @@ router.put('/:id/rules', authenticateToken, verifyEmailRequired, verifyAdminOrCr
 // 📝 Обновление описания турнира  
 router.put('/:id/description', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateDescription);
 
+// 🎯 Обновление типа рейтинга для микс-турниров
+router.put('/:id/rating-type', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateRatingType);
+
 // 🥊 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей
