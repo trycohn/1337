@@ -213,14 +213,14 @@ const TeamGenerator = ({
         if (mixedTeams.length === 0) return false;
         
         // 🆕 Проверяем что есть достаточно участников
-        if (displayParticipants.length < 2) return false;
+        if (displayParticipants.length < parseInt(teamSize)) return false;
         
         // 🆕 ИСПРАВЛЕНИЕ: разрешаем переформирование даже если есть сетка
         // Сетка будет автоматически удалена при переформировании
         // if (tournament?.matches && tournament.matches.length > 0) return false;
         
         return true;
-    }, [isAdminOrCreator, tournament?.status, mixedTeams.length, displayParticipants.length]);
+    }, [isAdminOrCreator, tournament?.status, mixedTeams.length, displayParticipants.length, teamSize]);
 
     // 🆕 ФУНКЦИЯ ПОЛУЧЕНИЯ ТЕКСТА О СОСТОЯНИИ УЧАСТНИКОВ
     const getParticipantsStatusText = useCallback(() => {
@@ -429,8 +429,13 @@ const TeamGenerator = ({
 
     // Функция для формирования команд
     const handleFormTeams = async () => {
-        if (!tournament?.id || displayParticipants.length < 2) {
-            console.warn('Недостаточно участников для формирования команд');
+        // 🔧 ИСПРАВЛЕНО: проверяем минимум teamSize участников для создания 1 команды
+        const minRequiredParticipants = parseInt(teamSize) || 5;
+        if (!tournament?.id || displayParticipants.length < minRequiredParticipants) {
+            console.warn(`Недостаточно участников для формирования команд. Нужно минимум ${minRequiredParticipants}, а есть ${displayParticipants.length}`);
+            if (toast) {
+                toast.warning(`Недостаточно участников для формирования команд. Нужно минимум ${minRequiredParticipants} для создания команды из ${teamSize} игроков.`);
+            }
             return;
         }
         
@@ -673,6 +678,21 @@ const TeamGenerator = ({
                         <h4 className="participants-group-title">
                             ⚠️ Не в команде ({notInTeamParticipants.length})
                         </h4>
+                        
+                        {/* 🆕 ИНФОРМАЦИОННОЕ СООБЩЕНИЕ */}
+                        <div className="info-message" style={{ 
+                            padding: '12px', 
+                            background: 'rgba(255, 165, 0, 0.1)', 
+                            border: '1px solid rgba(255, 165, 0, 0.3)', 
+                            borderRadius: '8px', 
+                            marginBottom: '15px',
+                            color: '#ffa500'
+                        }}>
+                            💡 <strong>Информация:</strong> Эти участники не попали в команды из-за недостаточного количества игроков 
+                            для формирования полной команды из {teamSize} человек. Они останутся доступными и будут автоматически 
+                            включены в новые команды при регистрации дополнительных участников или переформировании команд.
+                        </div>
+                        
                         <div className="participants-grid">
                             {notInTeamParticipants.map((participant) => (
                                 <div key={participant?.id || `participant-${Math.random()}`} className="participant-card not-in-team">
@@ -847,6 +867,26 @@ const TeamGenerator = ({
                                     {ratingType === 'mixed' && 'Полный микс (без учета рейтинга)'}
                                 </span>
                             </div>
+                            
+                            {/* 🆕 ИНФОРМАЦИЯ О ЛОГИКЕ СОЗДАНИЯ КОМАНД */}
+                            <div className="setting-note" style={{ 
+                                marginTop: '15px', 
+                                padding: '12px', 
+                                background: 'rgba(0, 123, 255, 0.1)', 
+                                border: '1px solid rgba(0, 123, 255, 0.3)', 
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                lineHeight: '1.4'
+                            }}>
+                                <strong>ℹ️ Как формируются команды:</strong>
+                                <ul style={{ marginTop: '8px', marginBottom: '0', paddingLeft: '20px' }}>
+                                    <li>Создается максимальное количество полных команд из {teamSize} игроков</li>
+                                    <li>Участники, не попавшие в команды, остаются доступными</li>
+                                    <li>При добавлении новых участников можно переформировать команды</li>
+                                    <li>Минимум участников для создания команд: {teamSize}</li>
+                                </ul>
+                            </div>
+                            
                             <div className="setting-note">
                                 💡 Настройки формирования команд были заданы при создании турнира
                             </div>
@@ -858,7 +898,7 @@ const TeamGenerator = ({
                                 <button 
                                     onClick={handleFormTeams} 
                                     className="form-teams-button"
-                                    disabled={loading || displayParticipants.length < 2}
+                                    disabled={loading || displayParticipants.length < parseInt(teamSize)}
                                 >
                                     {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды'}
                                 </button>
@@ -869,16 +909,16 @@ const TeamGenerator = ({
                                 <button 
                                     onClick={() => setShowReformModal(true)} 
                                     className="reform-teams-button"
-                                    disabled={reformLoading || displayParticipants.length < 2}
+                                    disabled={reformLoading || displayParticipants.length < parseInt(teamSize)}
                                 >
                                     🔄 Переформировать команды
                                     {notInTeamParticipants.length > 0 && ` (включая ${notInTeamParticipants.length} новых)`}
                                 </button>
                             )}
                         
-                            {displayParticipants.length < 2 && (
+                            {displayParticipants.length < parseInt(teamSize) && (
                                 <p className="min-participants-notice">
-                                    ⚠️ Для создания команд нужно минимум 2 участника
+                                    ⚠️ Для создания команд из {teamSize} игроков нужно минимум {teamSize} участников
                                 </p>
                             )}
                         
@@ -891,8 +931,8 @@ const TeamGenerator = ({
                                     {tournament.status === 'in_progress' && (
                                         <p>🚫 Переформирование недоступно - турнир уже начался</p>
                                     )}
-                                    {displayParticipants.length < 2 && (
-                                        <p>⚠️ Недостаточно участников для переформирования (нужно минимум 2)</p>
+                                    {displayParticipants.length < parseInt(teamSize) && (
+                                        <p>⚠️ Недостаточно участников для переформирования (нужно минимум {teamSize})</p>
                                     )}
                                 </div>
                             )}

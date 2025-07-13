@@ -99,10 +99,11 @@ const BracketManagementPanel = ({
         const teamSize = tournament?.team_size || 5;
         const expectedTeams = Math.floor(participantsCount / teamSize);
 
-        if (participantsCount < teamSize * 2) {
+        // 🔧 ИСПРАВЛЕНО: разрешаем создание сетки начиная с одной команды (teamSize участников)
+        if (participantsCount < teamSize) {
             return { 
                 ready: false, 
-                reason: `Недостаточно участников. Нужно минимум ${teamSize * 2} для создания 2 команд, а есть ${participantsCount}` 
+                reason: `Недостаточно участников для формирования команд. Нужно минимум ${teamSize} для создания 1 команды, а есть ${participantsCount}` 
             };
         }
 
@@ -482,7 +483,8 @@ const BracketManagementPanel = ({
     if (isMixTournament) {
         const participantsCount = tournament?.participants?.length || 0;
         const teamSize = tournament?.team_size || 5;
-        const minParticipants = teamSize * 2;
+        // 🔧 ИСПРАВЛЕНО: требуем минимум teamSize участников для создания 1 команды
+        const minParticipants = teamSize;
 
         if (participantsCount < minParticipants) {
             return (
@@ -495,8 +497,14 @@ const BracketManagementPanel = ({
                     </div>
                     <div className="panel-content">
                         <div className="warning">
-                            ⚠️ Для микс турнира с командами по {teamSize} игроков необходимо минимум {minParticipants} участников. 
+                            ⚠️ Для микс турнира с командами по {teamSize} игроков необходимо минимум {minParticipants} участников для создания хотя бы одной команды. 
                             Сейчас зарегистрировано: {participantsCount}
+                            {participantsCount >= teamSize && participantsCount < teamSize * 2 && (
+                                <div style={{ marginTop: '10px', color: '#ffa500' }}>
+                                    💡 При {participantsCount} участниках будет создана 1 команда из {teamSize} игроков. 
+                                    {participantsCount % teamSize > 0 && ` ${participantsCount % teamSize} участников останется вне команды.`}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
