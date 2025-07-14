@@ -1022,15 +1022,15 @@ function TournamentDetails() {
                                 }}
                                 onGenerateBracket={handleGenerateBracket}
                                 onClearResults={resetMatchResults}
-                                onInviteAdmin={() => {}}
-                                onRemoveAdmin={() => {}}
-                                onShowAdminSearchModal={() => {}}
+                                onInviteAdmin={inviteAdmin}
+                                onRemoveAdmin={removeAdmin}
+                                onShowAdminSearchModal={openAdminSearchModal}
                                 onUpdateTournamentSetting={handleUpdateTournamentSetting}
                             />
                         ) : (
                             <div className="access-denied">
                                 <p>У вас нет прав для управления этим турниром</p>
-                </div>
+                            </div>
                         )}
             </div>
         );
