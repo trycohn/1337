@@ -266,17 +266,17 @@
 
 .referral-share-icon.discord:hover {
     color: #ff0000;
-    box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
+    box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
 }
 
 .referral-share-icon.vk:hover {
     color: #ff0000;
-    box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
+    box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
 }
 
 .referral-share-icon.steam:hover {
     color: #ff0000;
-    box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
+    box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
 }
 
 /* Tooltip для иконок */

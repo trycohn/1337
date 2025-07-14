@@ -543,8 +543,6 @@
 
 /* ===== 🔗 ПАНЕЛЬ РЕФЕРАЛЬНЫХ ПРИГЛАШЕНИЙ ===== */
 .referral-invite-panel {
-    background-color: #111111;
-    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 20px;
     margin-top: 20px;
     border-radius: 4px;

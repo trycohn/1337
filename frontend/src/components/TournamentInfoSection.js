@@ -292,9 +292,7 @@ const TournamentInfoSection = ({
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    participant_type: 'team',
-                    team_id: selectedTeam.id,
-                    team_data: selectedTeam
+                    teamId: selectedTeam.id
                 })
             });
 
