@@ -61,9 +61,8 @@ router.post('/generate-link', authenticateToken, async (req, res) => {
         if (existingLink.rows.length > 0) {
             // Возвращаем существующую ссылку
             const link = existingLink.rows[0];
-            const baseUrl = process.env.NODE_ENV === 'production'
-                ? process.env.CLIENT_URL || 'https://1337community.com'
-                : 'http://localhost:3000';
+            const baseUrl = process.env.CLIENT_URL || 
+                           (process.env.NODE_ENV === 'production' ? 'https://1337community.com' : 'http://localhost:3000');
             
             return res.json({
                 success: true,
@@ -90,9 +89,8 @@ router.post('/generate-link', authenticateToken, async (req, res) => {
         const referralLink = result.rows[0];
         
         // Формируем полную ссылку
-        const baseUrl = process.env.NODE_ENV === 'production'
-            ? process.env.CLIENT_URL || 'https://1337community.com'
-            : 'http://localhost:3000';
+        const baseUrl = process.env.CLIENT_URL || 
+                       (process.env.NODE_ENV === 'production' ? 'https://1337community.com' : 'http://localhost:3000');
         
         const fullUrl = `${baseUrl}/invite/${referralCode}`;
 
