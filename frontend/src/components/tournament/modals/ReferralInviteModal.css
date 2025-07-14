@@ -1,11 +1,11 @@
 /**
- * ReferralInviteModal.css v1.0.0
+ * ReferralInviteModal.css v2.0.0 - Минималистичный дизайн
  * Стили для модального окна реферальных приглашений
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @updated 2025-01-25
  * @author 1337 Community Development Team
- * @features Монохромный дизайн, адаптивность, копирование ссылок
+ * @features Минималистичный дизайн, иконки соцсетей, компактная статистика
  */
 
 /* ===== ОСНОВНОЕ МОДАЛЬНОЕ ОКНО ===== */
@@ -14,7 +14,7 @@
 }
 
 .referral-modal-content {
-    max-width: 600px;
+    max-width: 500px;
     width: 95%;
     max-height: 90vh;
     overflow-y: auto;
@@ -26,27 +26,27 @@
 .referral-modal-content .modal-header {
     background-color: #111111;
     border-bottom: 1px solid #ff0000;
-    padding: 20px;
+    padding: 15px 20px;
 }
 
 .referral-modal-content .modal-header h3 {
     color: #ffffff;
     margin: 0;
-    font-size: 1.4em;
+    font-size: 1.2em;
     font-weight: 300;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .referral-modal-content .modal-body {
-    padding: 25px;
+    padding: 20px;
     background-color: #000000;
 }
 
 .referral-modal-content .modal-footer {
     background-color: #111111;
     border-top: 1px solid #ff0000;
-    padding: 20px;
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     gap: 15px;
@@ -55,92 +55,89 @@
 /* ===== СОСТОЯНИЯ ЗАГРУЗКИ И ОШИБОК ===== */
 .referral-loading {
     text-align: center;
-    padding: 40px 20px;
+    padding: 30px 20px;
     color: #ffffff;
 }
 
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 0, 0, 0.3);
-    border-top: 3px solid #ff0000;
+.referral-loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(255, 0, 0, 0.3);
+    border-top: 2px solid #ff0000;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 15px;
+    animation: referral-spin 1s linear infinite;
+    margin: 0 auto 12px;
 }
 
-@keyframes spin {
+@keyframes referral-spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
 .referral-error {
     text-align: center;
-    padding: 30px 20px;
+    padding: 20px;
     background-color: rgba(255, 0, 0, 0.1);
     border: 1px solid #ff0000;
-    border-radius: 4px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .referral-error p {
     color: #ff0000;
-    margin: 0 0 15px 0;
-    font-weight: 500;
-}
-
-.retry-btn {
-    background: transparent;
-    color: #ff0000;
-    border: 1px solid #ff0000;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    margin: 0 0 10px 0;
+    font-weight: 400;
     font-size: 0.9em;
 }
 
-.retry-btn:hover {
+.referral-retry-btn {
+    background: transparent;
+    color: #ff0000;
+    border: 1px solid #ff0000;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8em;
+}
+
+.referral-retry-btn:hover {
     background-color: #111111;
-    transform: translateY(-1px);
 }
 
 /* ===== ИНФОРМАЦИЯ О ТУРНИРЕ ===== */
-.tournament-info {
-    background-color: #111111;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 25px;
-    border-radius: 4px;
+.referral-tournament-info {
+    background-color: #000000;
+    padding: 15px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.tournament-info h4 {
+.referral-tournament-info h4 {
     color: #ffffff;
-    margin: 0 0 10px 0;
-    font-size: 1.2em;
-    font-weight: 500;
+    margin: 0 0 8px 0;
+    font-size: 1em;
+    font-weight: 400;
 }
 
-.tournament-info p {
+.referral-tournament-info p {
     color: #cccccc;
-    margin: 5px 0;
-    font-size: 0.95em;
+    margin: 3px 0;
+    font-size: 0.85em;
 }
 
 /* ===== СЕКЦИЯ РЕФЕРАЛЬНОЙ ССЫЛКИ ===== */
 .referral-link-section {
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
 .referral-link-section label {
     display: block;
     color: #ffffff;
-    font-weight: 500;
-    margin-bottom: 10px;
-    font-size: 1em;
+    font-weight: 400;
+    margin-bottom: 8px;
+    font-size: 0.9em;
 }
 
-.link-input-group {
+.referral-link-input-group {
     display: flex;
     gap: 0;
 }
@@ -151,11 +148,10 @@
     color: #ffffff;
     border: 1px solid #ff0000;
     border-right: none;
-    padding: 12px 15px;
-    font-size: 0.9em;
+    padding: 10px 12px;
+    font-size: 0.8em;
     font-family: 'Courier New', monospace;
     outline: none;
-    border-radius: 0;
 }
 
 .referral-link-input:focus {
@@ -163,249 +159,265 @@
     border-color: #ffffff;
 }
 
-.copy-btn {
+.referral-copy-btn {
     background: #ff0000;
     color: #ffffff;
     border: 1px solid #ff0000;
-    padding: 12px 20px;
+    padding: 10px 15px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 1em;
-    min-width: 60px;
-    border-radius: 0;
+    font-size: 0.9em;
+    min-width: 50px;
 }
 
-.copy-btn:hover:not(.success) {
+.referral-copy-btn:hover:not(.success) {
     background-color: #ffffff;
     color: #000000;
 }
 
-.copy-btn.success {
+.referral-copy-btn.success {
     background-color: #00ff00;
     border-color: #00ff00;
     color: #000000;
 }
 
-.copy-success {
+.referral-copy-success {
     color: #00ff00;
-    font-size: 0.9em;
-    margin: 8px 0 0 0;
-    font-weight: 500;
+    font-size: 0.8em;
+    margin: 6px 0 0 0;
+    font-weight: 400;
 }
 
-/* ===== ИНФОРМАЦИЯ О ССЫЛКЕ ===== */
-.link-info {
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 25px;
-    border-radius: 4px;
+/* ===== ИНФОРМАЦИЯ О ССЫЛКЕ (упрощенная) ===== */
+.referral-link-info {
+    background-color: #000000;
+    padding: 10px 0;
+    margin-bottom: 20px;
 }
 
-.info-grid {
+.referral-info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    gap: 12px;
 }
 
-.info-item {
+.referral-info-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.info-label {
+.referral-info-label {
     color: #cccccc;
-    font-size: 0.9em;
+    font-size: 0.8em;
 }
 
-.info-value {
+.referral-info-value {
     color: #ffffff;
-    font-weight: 500;
-    font-size: 0.9em;
+    font-weight: 400;
+    font-size: 0.8em;
 }
 
-/* ===== СПОСОБЫ ОТПРАВКИ ===== */
-.share-methods {
-    margin-bottom: 25px;
+/* ===== СПОСОБЫ ОТПРАВКИ (только иконки) ===== */
+.referral-share-methods {
+    margin-bottom: 20px;
 }
 
-.share-methods h4 {
+.referral-share-methods h4 {
     color: #ffffff;
-    margin: 0 0 15px 0;
-    font-size: 1.1em;
-    font-weight: 500;
+    margin: 0 0 12px 0;
+    font-size: 1em;
+    font-weight: 400;
 }
 
-.share-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
+.referral-share-icons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
-.share-btn {
+.referral-share-icon {
+    width: 40px;
+    height: 40px;
     background: transparent;
     color: #ffffff;
     border: 1px solid #ff0000;
-    padding: 12px 8px;
-    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.9em;
-    font-weight: 500;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    position: relative;
 }
 
-.share-btn:hover {
+.referral-share-icon:hover {
     background-color: #111111;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(255, 0, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 0, 0, 0.3);
 }
 
-.share-btn.telegram:hover {
+.referral-share-icon.telegram:hover {
     border-color: #0088cc;
     color: #0088cc;
 }
 
-.share-btn.discord:hover {
+.referral-share-icon.discord:hover {
     border-color: #7289da;
     color: #7289da;
 }
 
-.share-btn.vk:hover {
+.referral-share-icon.vk:hover {
     border-color: #4c75a3;
     color: #4c75a3;
 }
 
-.share-btn.steam:hover {
+.referral-share-icon.steam:hover {
     border-color: #00adee;
     color: #00adee;
 }
 
-/* ===== СТАТИСТИКА ПРИГЛАШЕНИЙ ===== */
+/* Tooltip для иконок */
+.referral-share-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111111;
+    color: #ffffff;
+    padding: 4px 8px;
+    font-size: 0.7em;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    border: 1px solid #333333;
+}
+
+.referral-share-icon:hover::after {
+    opacity: 1;
+}
+
+/* ===== СТАТИСТИКА ПРИГЛАШЕНИЙ (компактная) ===== */
 .referral-stats {
-    background-color: #111111;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 25px;
-    border-radius: 4px;
+    background-color: #000000;
+    padding: 15px 0;
+    margin-bottom: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .referral-stats h4 {
     color: #ffffff;
-    margin: 0 0 15px 0;
-    font-size: 1.1em;
-    font-weight: 500;
+    margin: 0 0 12px 0;
+    font-size: 1em;
+    font-weight: 400;
 }
 
-.stats-grid {
+.referral-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
 }
 
-.stat-item {
+.referral-stat-item {
     text-align: center;
-    padding: 15px 10px;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    padding: 8px 4px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     transition: transform 0.3s ease;
 }
 
-.stat-item:hover {
-    transform: translateY(-2px);
-    background-color: rgba(255, 255, 255, 0.08);
+.referral-stat-item:hover {
+    transform: translateY(-1px);
+    background-color: rgba(255, 255, 255, 0.04);
 }
 
-.stat-value {
+.referral-stat-value {
     display: block;
     color: #ff0000;
-    font-size: 1.8em;
-    font-weight: 700;
-    margin-bottom: 5px;
+    font-size: 1.4em;
+    font-weight: 600;
+    margin-bottom: 2px;
 }
 
-.stat-label {
+.referral-stat-label {
     color: #cccccc;
-    font-size: 0.85em;
-    line-height: 1.2;
+    font-size: 0.7em;
+    line-height: 1.1;
 }
 
-/* ===== ИНСТРУКЦИЯ ===== */
+/* ===== ИНСТРУКЦИЯ (компактная) ===== */
 .referral-instructions {
-    background-color: rgba(255, 255, 255, 0.03);
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    background-color: #000000;
+    padding: 15px 0;
 }
 
 .referral-instructions h4 {
     color: #ffffff;
-    margin: 0 0 15px 0;
-    font-size: 1.1em;
-    font-weight: 500;
+    margin: 0 0 10px 0;
+    font-size: 1em;
+    font-weight: 400;
 }
 
 .referral-instructions ol {
     color: #cccccc;
-    margin: 0 0 15px 0;
-    padding-left: 20px;
+    margin: 0 0 10px 0;
+    padding-left: 18px;
 }
 
 .referral-instructions li {
-    margin-bottom: 8px;
-    line-height: 1.4;
+    margin-bottom: 4px;
+    line-height: 1.3;
+    font-size: 0.85em;
 }
 
 .referral-instructions .note {
     color: #ffcc00;
-    font-size: 0.9em;
-    margin: 15px 0 0 0;
+    font-size: 0.8em;
+    margin: 10px 0 0 0;
     font-style: italic;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 15px;
+    padding-top: 10px;
 }
 
 /* ===== КНОПКИ ФУТЕРА ===== */
-.modal-footer .btn-secondary,
-.modal-footer .btn-primary {
-    padding: 12px 24px;
-    border-radius: 4px;
-    font-weight: 500;
+.referral-modal-footer .btn-secondary,
+.referral-modal-footer .btn-primary {
+    padding: 10px 20px;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.3s ease;
     flex: 1;
-    max-width: 200px;
+    max-width: 150px;
+    font-size: 0.9em;
 }
 
-.modal-footer .btn-secondary {
+.referral-modal-footer .btn-secondary {
     background: transparent;
     color: #ffffff;
     border: 1px solid #ffffff;
 }
 
-.modal-footer .btn-secondary:hover {
+.referral-modal-footer .btn-secondary:hover {
     background-color: #111111;
-    transform: translateY(-1px);
 }
 
-.modal-footer .btn-primary {
+.referral-modal-footer .btn-primary {
     background: #ff0000;
     color: #ffffff;
     border: 1px solid #ff0000;
 }
 
-.modal-footer .btn-primary:hover:not(:disabled) {
+.referral-modal-footer .btn-primary:hover:not(:disabled) {
     background-color: #ffffff;
     color: #000000;
-    transform: translateY(-1px);
 }
 
-.modal-footer .btn-primary:disabled {
+.referral-modal-footer .btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
 }
 
 /* ===== АДАПТИВНОСТЬ ===== */
@@ -418,32 +430,39 @@
     .referral-modal-content .modal-header,
     .referral-modal-content .modal-body,
     .referral-modal-content .modal-footer {
-        padding: 15px;
+        padding: 12px 15px;
     }
 
-    .info-grid {
+    .referral-info-grid {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 8px;
     }
 
-    .share-buttons {
-        grid-template-columns: 1fr 1fr;
+    .referral-share-icons {
+        gap: 12px;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
+    .referral-share-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1em;
     }
 
-    .modal-footer {
+    .referral-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .referral-modal-footer {
         flex-direction: column;
     }
 
-    .modal-footer .btn-secondary,
-    .modal-footer .btn-primary {
+    .referral-modal-footer .btn-secondary,
+    .referral-modal-footer .btn-primary {
         max-width: none;
     }
 
-    .link-input-group {
+    .referral-link-input-group {
         flex-direction: column;
     }
 
@@ -452,35 +471,41 @@
         border-bottom: none;
     }
 
-    .copy-btn {
+    .referral-copy-btn {
         border-top: none;
     }
 }
 
 @media (max-width: 480px) {
-    .tournament-info,
+    .referral-tournament-info,
     .referral-stats,
     .referral-instructions {
-        padding: 15px;
+        padding: 10px 0;
     }
 
-    .share-buttons {
-        grid-template-columns: 1fr;
+    .referral-share-icons {
+        gap: 10px;
     }
 
-    .stats-grid {
+    .referral-share-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9em;
+    }
+
+    .referral-stats-grid {
         grid-template-columns: 1fr;
     }
 
     .referral-modal-content .modal-header h3 {
-        font-size: 1.2em;
+        font-size: 1.1em;
     }
 }
 
 /* ===== ACCESSIBILITY ===== */
-.copy-btn:focus,
-.share-btn:focus,
-.retry-btn:focus {
+.referral-copy-btn:focus,
+.referral-share-icon:focus,
+.referral-retry-btn:focus {
     outline: 2px solid #ff0000;
     outline-offset: 2px;
 }
@@ -490,7 +515,7 @@
 }
 
 /* ===== АНИМАЦИИ ===== */
-@keyframes fadeInUp {
+@keyframes referral-fadeInUp {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -502,13 +527,13 @@
 }
 
 .referral-modal-content {
-    animation: fadeInUp 0.3s ease-out;
+    animation: referral-fadeInUp 0.3s ease-out;
 }
 
-.tournament-info,
+.referral-tournament-info,
 .referral-link-section,
-.share-methods,
+.referral-share-methods,
 .referral-stats,
 .referral-instructions {
-    animation: fadeInUp 0.4s ease-out;
+    animation: referral-fadeInUp 0.4s ease-out;
 } 

@@ -1,11 +1,11 @@
 /**
- * ReferralInviteModal v1.0.0 - Модальное окно для приглашения друзей по реферальной ссылке
+ * ReferralInviteModal v2.0.0 - Минималистичный дизайн с иконками соцсетей
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @updated 2025-01-25
  * @author 1337 Community Development Team
  * @purpose Генерация и отображение реферальных ссылок для приглашения друзей в турниры
- * @features Копирование ссылки, QR код, статистика приглашений
+ * @features Копирование ссылки, иконки соцсетей, компактная статистика
  */
 
 import React, { useState, useEffect } from 'react';
@@ -142,23 +142,23 @@ const ReferralInviteModal = ({
         <div className="modal-overlay referral-modal-overlay" onClick={onClose}>
             <div className="modal-content referral-modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h3>🔗 Пригласить друга в турнир</h3>
+                    <h3>🔗 Пригласить друга</h3>
                     <button className="modal-close" onClick={onClose}>✕</button>
                 </div>
 
                 <div className="modal-body">
                     {loading && (
                         <div className="referral-loading">
-                            <div className="loading-spinner"></div>
-                            <p>Генерируем реферальную ссылку...</p>
+                            <div className="referral-loading-spinner"></div>
+                            <p>Генерируем ссылку...</p>
                         </div>
                     )}
 
                     {error && (
                         <div className="referral-error">
                             <p>❌ {error}</p>
-                            <button onClick={generateReferralLink} className="retry-btn">
-                                🔄 Попробовать снова
+                            <button onClick={generateReferralLink} className="referral-retry-btn">
+                                🔄 Повторить
                             </button>
                         </div>
                     )}
@@ -166,8 +166,8 @@ const ReferralInviteModal = ({
                     {referralData && !loading && (
                         <>
                             {/* Информация о турнире */}
-                            <div className="tournament-info">
-                                <h4>📋 Турнир: {tournament.name}</h4>
+                            <div className="referral-tournament-info">
+                                <h4>📋 {tournament.name}</h4>
                                 <p>🎮 Игра: {tournament.game}</p>
                                 <p>🏆 Формат: {tournament.format}</p>
                             </div>
@@ -175,7 +175,7 @@ const ReferralInviteModal = ({
                             {/* Реферальная ссылка */}
                             <div className="referral-link-section">
                                 <label>🔗 Ваша реферальная ссылка:</label>
-                                <div className="link-input-group">
+                                <div className="referral-link-input-group">
                                     <input 
                                         type="text" 
                                         value={referralData.full_url} 
@@ -184,109 +184,113 @@ const ReferralInviteModal = ({
                                     />
                                     <button 
                                         onClick={copyToClipboard}
-                                        className={`copy-btn ${copySuccess ? 'success' : ''}`}
+                                        className={`referral-copy-btn ${copySuccess ? 'success' : ''}`}
                                         title="Копировать ссылку"
                                     >
                                         {copySuccess ? '✅' : '📋'}
                                     </button>
                                 </div>
                                 {copySuccess && (
-                                    <p className="copy-success">✅ Ссылка скопирована в буфер обмена!</p>
+                                    <p className="referral-copy-success">✅ Ссылка скопирована!</p>
                                 )}
                             </div>
 
                             {/* Информация о ссылке */}
-                            <div className="link-info">
-                                <div className="info-grid">
-                                    <div className="info-item">
-                                        <span className="info-label">📅 Истекает:</span>
-                                        <span className="info-value">{formatExpirationDate(referralData.expires_at)}</span>
+                            <div className="referral-link-info">
+                                <div className="referral-info-grid">
+                                    <div className="referral-info-item">
+                                        <span className="referral-info-label">📅 Истекает:</span>
+                                        <span className="referral-info-value">{formatExpirationDate(referralData.expires_at)}</span>
                                     </div>
-                                    <div className="info-item">
-                                        <span className="info-label">🔢 Использований:</span>
-                                        <span className="info-value">{referralData.uses_count} / {referralData.max_uses}</span>
+                                    <div className="referral-info-item">
+                                        <span className="referral-info-label">🔢 Использований:</span>
+                                        <span className="referral-info-value">{referralData.uses_count} / {referralData.max_uses}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Способы отправки */}
-                            <div className="share-methods">
-                                <h4>📤 Поделиться ссылкой:</h4>
-                                <div className="share-buttons">
+                            {/* Способы отправки - только иконки */}
+                            <div className="referral-share-methods">
+                                <h4>📤 Поделиться:</h4>
+                                <div className="referral-share-icons">
                                     <button 
                                         onClick={() => shareViaMethod('telegram')}
-                                        className="share-btn telegram"
+                                        className="referral-share-icon telegram"
+                                        data-tooltip="Telegram"
                                         title="Отправить в Telegram"
                                     >
-                                        📱 Telegram
+                                        📱
                                     </button>
                                     <button 
                                         onClick={() => shareViaMethod('discord')}
-                                        className="share-btn discord"
+                                        className="referral-share-icon discord"
+                                        data-tooltip="Discord"
                                         title="Отправить в Discord"
                                     >
-                                        🎮 Discord
+                                        🎮
                                     </button>
                                     <button 
                                         onClick={() => shareViaMethod('vk')}
-                                        className="share-btn vk"
+                                        className="referral-share-icon vk"
+                                        data-tooltip="VK"
                                         title="Отправить в VK"
                                     >
-                                        🔵 VK
+                                        🔵
                                     </button>
                                     <button 
                                         onClick={() => shareViaMethod('steam')}
-                                        className="share-btn steam"
+                                        className="referral-share-icon steam"
+                                        data-tooltip="Steam"
                                         title="Отправить в Steam"
                                     >
-                                        🚂 Steam
+                                        🚂
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Статистика приглашений */}
+                            {/* Статистика приглашений - компактная */}
                             {stats && (
                                 <div className="referral-stats">
-                                    <h4>📊 Ваша статистика приглашений:</h4>
-                                    <div className="stats-grid">
-                                        <div className="stat-item">
-                                            <span className="stat-value">{stats.summary.total_invitations}</span>
-                                            <span className="stat-label">Создано ссылок</span>
+                                    <h4>📊 Статистика:</h4>
+                                    <div className="referral-stats-grid">
+                                        <div className="referral-stat-item">
+                                            <span className="referral-stat-value">{stats.summary.total_invitations}</span>
+                                            <span className="referral-stat-label">Ссылок</span>
                                         </div>
-                                        <div className="stat-item">
-                                            <span className="stat-value">{stats.summary.successful_registrations}</span>
-                                            <span className="stat-label">Новых игроков</span>
+                                        <div className="referral-stat-item">
+                                            <span className="referral-stat-value">{stats.summary.successful_registrations}</span>
+                                            <span className="referral-stat-label">Игроков</span>
                                         </div>
-                                        <div className="stat-item">
-                                            <span className="stat-value">{stats.summary.tournament_participants}</span>
-                                            <span className="stat-label">Участвовали в турнирах</span>
+                                        <div className="referral-stat-item">
+                                            <span className="referral-stat-value">{stats.summary.tournament_participants}</span>
+                                            <span className="referral-stat-label">Участвовали</span>
                                         </div>
-                                        <div className="stat-item">
-                                            <span className="stat-value">{stats.summary.active_links}</span>
-                                            <span className="stat-label">Активных ссылок</span>
+                                        <div className="referral-stat-item">
+                                            <span className="referral-stat-value">{stats.summary.active_links}</span>
+                                            <span className="referral-stat-label">Активных</span>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Инструкция */}
+                            {/* Инструкция - компактная */}
                             <div className="referral-instructions">
                                 <h4>💡 Как это работает:</h4>
                                 <ol>
-                                    <li>📤 Отправьте ссылку друзьям любым удобным способом</li>
-                                    <li>👤 Друг переходит по ссылке и регистрируется на сайте</li>
-                                    <li>🎮 Друг автоматически получает приглашение в турнир</li>
-                                    <li>🏆 Вы получаете бонусы за каждого приглашенного игрока!</li>
+                                    <li>📤 Отправьте ссылку друзьям</li>
+                                    <li>👤 Друг регистрируется</li>
+                                    <li>🎮 Получает приглашение в турнир</li>
+                                    <li>🏆 Вы получаете бонусы!</li>
                                 </ol>
                                 <p className="note">
-                                    ⏰ Ссылка действует 7 дней и может быть использована максимум 10 раз
+                                    ⏰ Ссылка действует 7 дней, максимум 10 использований
                                 </p>
                             </div>
                         </>
                     )}
                 </div>
 
-                <div className="modal-footer">
+                <div className="modal-footer referral-modal-footer">
                     <button className="btn-secondary" onClick={onClose}>
                         Закрыть
                     </button>
@@ -296,7 +300,7 @@ const ReferralInviteModal = ({
                             onClick={copyToClipboard}
                             disabled={copySuccess}
                         >
-                            {copySuccess ? '✅ Скопировано' : '📋 Копировать ссылку'}
+                            {copySuccess ? '✅ Скопировано' : '📋 Копировать'}
                         </button>
                     )}
                 </div>
