@@ -53,7 +53,9 @@ router.post('/generate-link', authenticateToken, async (req, res) => {
         // Проверяем, есть ли уже активная ссылка для этого турнира от данного пользователя
         const existingLink = await pool.query(`
             SELECT * FROM referral_links 
-            WHERE user_id = $1 AND tournament_id = $2 AND is_active = true AND expires_at > NOW()
+            WHERE user_id = $1 AND tournament_id = $2 
+            AND expires_at > NOW()
+            AND (is_active = true OR is_active IS NULL)
         `, [user_id, tournament_id]);
 
         if (existingLink.rows.length > 0) {
@@ -80,8 +82,8 @@ router.post('/generate-link', authenticateToken, async (req, res) => {
         const result = await pool.query(`
             INSERT INTO referral_links (
                 user_id, tournament_id, referral_code, 
-                expires_at, max_uses, uses_count, is_active
-            ) VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', 10, 0, true)
+                expires_at, max_uses, uses_count
+            ) VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', 10, 0)
             RETURNING *
         `, [user_id, tournament_id, referralCode]);
 
@@ -142,7 +144,6 @@ router.get('/info/:referralCode', async (req, res) => {
             LEFT JOIN users u ON rl.user_id = u.id
             LEFT JOIN tournaments t ON rl.tournament_id = t.id
             WHERE rl.referral_code = $1 
-              AND rl.is_active = true
               AND rl.expires_at > NOW()
               AND rl.uses_count < rl.max_uses
         `, [referralCode]);
