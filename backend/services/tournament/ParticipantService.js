@@ -185,17 +185,160 @@ class ParticipantService {
      */
     static async _handleTeamParticipation(tournament, userId, username, options) {
         console.log(`👥 [ParticipantService] Обработка командного участия пользователя ${userId} в турнире ${tournament.id}`);
+        console.log(`📋 Опции:`, options);
         
         // Проверяем минимальный размер команды для CS2
         const minTeamSize = this._getMinTeamSize(tournament.participant_type);
         
         if (options.teamId) {
-            await this._joinExistingTeam(tournament, userId, username, options.teamId, minTeamSize);
+            // 🆕 ИСПРАВЛЕНО: Сначала ищем в пользовательских командах
+            await this._joinOrCreateFromUserTeam(tournament, userId, username, options.teamId, minTeamSize);
         } else if (options.newTeamName) {
             await this._createNewTeam(tournament, userId, username, options.newTeamName, minTeamSize);
         } else {
             throw new Error('Для командного турнира необходимо указать команду или создать новую');
         }
+    }
+
+    /**
+     * 🆕 Присоединение к команде или создание турнирной команды на основе пользовательской
+     */
+    static async _joinOrCreateFromUserTeam(tournament, userId, username, teamId, minTeamSize = 1) {
+        const pool = require('../../db');
+        
+        // Сначала проверяем, есть ли команда в турнирных командах
+        const tournamentTeam = await TeamRepository.getById(teamId);
+        
+        if (tournamentTeam && tournamentTeam.tournament_id === tournament.id) {
+            // Это уже турнирная команда - присоединяемся напрямую
+            return await this._joinExistingTournamentTeam(tournament, userId, username, teamId, minTeamSize);
+        }
+        
+        // Ищем в пользовательских командах
+        const userTeamResult = await pool.query('SELECT * FROM user_teams WHERE id = $1', [teamId]);
+        const userTeam = userTeamResult.rows[0];
+        
+        if (!userTeam) {
+            throw new Error('Команда не найдена');
+        }
+        
+        // Проверяем, что пользователь является участником этой команды
+        const memberResult = await pool.query(
+            'SELECT * FROM user_team_members WHERE team_id = $1 AND user_id = $2', 
+            [teamId, userId]
+        );
+        
+        if (memberResult.rows.length === 0) {
+            throw new Error('Вы не являетесь участником этой команды');
+        }
+        
+        // Проверяем, не создана ли уже турнирная команда на основе этой пользовательской команды
+        const existingTournamentTeamResult = await pool.query(
+            'SELECT * FROM tournament_teams WHERE tournament_id = $1 AND name = $2',
+            [tournament.id, userTeam.name]
+        );
+        
+        if (existingTournamentTeamResult.rows.length > 0) {
+            // Турнирная команда уже существует - присоединяемся к ней
+            const existingTeam = existingTournamentTeamResult.rows[0];
+            return await this._joinExistingTournamentTeam(tournament, userId, username, existingTeam.id, minTeamSize);
+        }
+        
+        // Создаем новую турнирную команду на основе пользовательской
+        console.log(`🆕 Создаем турнирную команду "${userTeam.name}" на основе пользовательской команды ${teamId}`);
+        
+        const tournamentTeamData = await TeamRepository.create({
+            tournament_id: tournament.id,
+            name: userTeam.name,
+            creator_id: userTeam.captain_id
+        });
+        
+        // Добавляем всех участников пользовательской команды в турнирную команду
+        const userTeamMembersResult = await pool.query(`
+            SELECT utm.*, u.username 
+            FROM user_team_members utm 
+            JOIN users u ON utm.user_id = u.id 
+            WHERE utm.team_id = $1
+        `, [teamId]);
+        
+        for (const member of userTeamMembersResult.rows) {
+            // Создаем участника турнира
+            const participant = await ParticipantRepository.create({
+                tournament_id: tournament.id,
+                user_id: member.user_id,
+                name: member.username
+            });
+            
+            // Добавляем в турнирную команду
+            await TeamRepository.addMember(
+                tournamentTeamData.id, 
+                member.user_id, 
+                participant.id,
+                member.role === 'captain' // is_captain
+            );
+        }
+        
+        await logTournamentEvent(tournament.id, userId, 'team_imported_from_user_team', {
+            user_team_id: teamId,
+            tournament_team_id: tournamentTeamData.id,
+            team_name: userTeam.name,
+            members_count: userTeamMembersResult.rows.length
+        });
+
+        await sendTournamentChatAnnouncement(
+            tournament.id,
+            `🏆 Команда "${userTeam.name}" присоединилась к турниру! (${userTeamMembersResult.rows.length} участников)`
+        );
+    }
+
+    /**
+     * Присоединение к существующей турнирной команде
+     */
+    static async _joinExistingTournamentTeam(tournament, userId, username, teamId, minTeamSize = 1) {
+        const team = await TeamRepository.getById(teamId);
+        
+        if (!team || team.tournament_id !== tournament.id) {
+            throw new Error('Команда не найдена в этом турнире');
+        }
+
+        const membersCount = await TeamRepository.getMembersCount(teamId);
+        const maxTeamSize = this._getMaxTeamSize(tournament.participant_type);
+        
+        if (membersCount >= maxTeamSize) {
+            const typeName = this._getTypeDisplayName(tournament.participant_type);
+            throw new Error(`Команда заполнена (максимум ${maxTeamSize} участников для ${typeName})`);
+        }
+
+        // Проверяем, не является ли пользователь уже участником команды
+        const existingMemberResult = await pool.query(
+            'SELECT * FROM tournament_team_members WHERE team_id = $1 AND user_id = $2',
+            [teamId, userId]
+        );
+        
+        if (existingMemberResult.rows.length > 0) {
+            throw new Error('Вы уже являетесь участником этой команды');
+        }
+
+        // Создаем участника турнира
+        const participant = await ParticipantRepository.create({
+            tournament_id: tournament.id,
+            user_id: userId,
+            name: username
+        });
+
+        // Добавляем в команду
+        await TeamRepository.addMember(teamId, userId, participant.id);
+
+        await logTournamentEvent(tournament.id, userId, 'participant_joined_team', {
+            participant_name: username,
+            team_name: team.name,
+            team_id: teamId
+        });
+
+        await sendTournamentChatAnnouncement(
+            tournament.id,
+            `👥 ${username} присоединился к команде "${team.name}"!`
+        );
     }
 
     /**
@@ -222,46 +365,6 @@ class ParticipantService {
             'solo': 1
         };
         return maxSizes[participantType] || 10;
-    }
-
-    /**
-     * Присоединение к существующей команде
-     */
-    static async _joinExistingTeam(tournament, userId, username, teamId, minTeamSize = 1) {
-        const team = await TeamRepository.getById(teamId);
-        
-        if (!team || team.tournament_id !== tournament.id) {
-            throw new Error('Команда не найдена в этом турнире');
-        }
-
-        const membersCount = await TeamRepository.getMembersCount(teamId);
-        const maxTeamSize = this._getMaxTeamSize(tournament.participant_type);
-        
-        if (membersCount >= maxTeamSize) {
-            const typeName = this._getTypeDisplayName(tournament.participant_type);
-            throw new Error(`Команда заполнена (максимум ${maxTeamSize} участников для ${typeName})`);
-        }
-
-        // Создаем участника турнира
-        const participant = await ParticipantRepository.create({
-            tournament_id: tournament.id,
-            user_id: userId,
-            name: username
-        });
-
-        // Добавляем в команду
-        await TeamRepository.addMember(teamId, userId, participant.id);
-
-        await logTournamentEvent(tournament.id, userId, 'participant_joined_team', {
-            participant_name: username,
-            team_name: team.name,
-            team_id: teamId
-        });
-
-        await sendTournamentChatAnnouncement(
-            tournament.id,
-            `👥 ${username} присоединился к команде "${team.name}"!`
-        );
     }
 
     /**
@@ -376,25 +479,6 @@ class ParticipantService {
         console.log(`✅ Участник ${participantName} добавлен в турнир ${tournamentId}`);
         return newParticipant;
     }
-
-    /**
-     * Генерация команд для микс-турнира (заглушка)
-     */
-    static async generateMixTeams(tournamentId, userId, username, ratingType = 'faceit') {
-        console.log(`🎲 ParticipantService: Генерация команд для микс-турнира ${tournamentId} пользователем ${username}`);
-        
-        // Проверяем права доступа
-        await this._checkAdminAccess(tournamentId, userId);
-        
-        // TODO: Реализовать логику генерации команд для микс-турниров
-        // Это сложная функция, которая должна:
-        // 1. Получить всех участников турнира
-        // 2. Разделить их по рейтингу
-        // 3. Создать сбалансированные команды
-        // 4. Обновить тип турнира на командный
-        
-        throw new Error('Генерация команд для микс-турниров временно недоступна. Используйте старый интерфейс.');
-    }
 }
 
-module.exports = ParticipantService; 
+module.exports = ParticipantService;
