@@ -1249,10 +1249,11 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 .rating-type-btn {
-    background: #111111;
+    background: #000000;
     color: #ffffff;
     border: 1px solid #ff0000;
     border-radius: 8px;
@@ -1271,21 +1272,20 @@
 
 .rating-type-btn:hover:not(:disabled) {
     background: #111111;
-    border-color: #ffffff;
+    border-color: #ff0000;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
 }
 
 .rating-type-btn.active {
-    background: #ff0000;
+    background: #111111;
     color: #ffffff;
     border-color: #ff0000;
     font-weight: 700;
 }
 
 .rating-type-btn.active:hover {
-    background: #cc0000;
-    border-color: #cc0000;
+    background: #111111;
+    border-color: #ff0000;
 }
 
 .rating-type-btn:disabled {
