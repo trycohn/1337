@@ -242,7 +242,7 @@
     height: 50px;
     background: transparent;
     color: #ffffff;
-    border: none;
+    border: none !important;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -254,29 +254,29 @@
 }
 
 .referral-share-icon:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #ffffff1a;
     transform: translateY(-3px) scale(1.1);
     box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
 }
 
 .referral-share-icon.telegram:hover {
-    color: #0088cc;
-    box-shadow: 0 6px 20px rgba(0, 136, 204, 0.4);
+    color: #ff0000;
+    box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
 }
 
 .referral-share-icon.discord:hover {
-    color: #7289da;
+    color: #ff0000;
     box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
 }
 
 .referral-share-icon.vk:hover {
-    color: #4c75a3;
-    box-shadow: 0 6px 20px rgba(76, 117, 163, 0.4);
+    color: #ff0000;
+    box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
 }
 
 .referral-share-icon.steam:hover {
-    color: #00adee;
-    box-shadow: 0 6px 20px rgba(0, 173, 238, 0.4);
+    color: #ff0000;
+    box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
 }
 
 /* Tooltip для иконок */
