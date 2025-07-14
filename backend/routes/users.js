@@ -67,29 +67,85 @@ const upload = multer({
 
 // Регистрация нового пользователя
 router.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email, password, referralCode } = req.body;
 
     if (!username || !email || !password) {
         return res.status(400).json({ message: 'Username, email и пароль обязательны' });
     }
 
+    const client = await pool.connect();
+    
     try {
-        const usernameCheck = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        await client.query('BEGIN');
+        
+        const usernameCheck = await client.query('SELECT * FROM users WHERE username = $1', [username]);
         if (usernameCheck.rows.length > 0) {
+            await client.query('ROLLBACK');
             return res.status(400).json({ message: 'Имя пользователя уже занято' });
         }
 
-        const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const emailCheck = await client.query('SELECT * FROM users WHERE email = $1', [email]);
         if (emailCheck.rows.length > 0) {
+            await client.query('ROLLBACK');
             return res.status(400).json({ message: 'Email уже зарегистрирован' });
         }
 
+        // 🔗 ОБРАБОТКА РЕФЕРАЛЬНОГО КОДА
+        let referrerId = null;
+        let referralLinkId = null;
+        let tournamentId = null;
+        
+        if (referralCode) {
+            console.log(`🔗 Проверяем реферальный код: ${referralCode}`);
+            
+            // Ищем активную реферальную ссылку
+            const referralResult = await client.query(`
+                SELECT rl.*, u.username as referrer_username 
+                FROM referral_links rl
+                JOIN users u ON rl.user_id = u.id
+                WHERE rl.referral_code = $1 
+                  AND rl.expires_at > NOW() 
+                  AND rl.uses_count < rl.max_uses
+                  AND rl.is_active = true
+            `, [referralCode]);
+            
+            if (referralResult.rows.length > 0) {
+                const referralLink = referralResult.rows[0];
+                referrerId = referralLink.user_id;
+                referralLinkId = referralLink.id;
+                tournamentId = referralLink.tournament_id;
+                
+                console.log(`✅ Действительный реферальный код найден. Приглашающий: ${referralLink.referrer_username} (ID: ${referrerId})`);
+            } else {
+                console.log(`❌ Недействительный или истекший реферальный код: ${referralCode}`);
+                // Не блокируем регистрацию, просто игнорируем неверный код
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await pool.query(
-            'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, role',
-            [username, email, hashedPassword]
+        const result = await client.query(
+            'INSERT INTO users (username, email, password_hash, invited_by, invited_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, role',
+            [username, email, hashedPassword, referrerId, referrerId ? new Date() : null]
         );
         const newUser = result.rows[0];
+
+        // 🔗 ОБНОВЛЯЕМ СТАТИСТИКУ РЕФЕРАЛЬНОЙ ССЫЛКИ
+        if (referralLinkId) {
+            await client.query(`
+                UPDATE referral_links 
+                SET uses_count = uses_count + 1, 
+                    last_used_at = NOW() 
+                WHERE id = $1
+            `, [referralLinkId]);
+            
+            // Создаем запись об использовании реферальной ссылки
+            await client.query(`
+                INSERT INTO referral_uses (referral_link_id, new_user_id, registration_ip, user_agent)
+                VALUES ($1, $2, $3, $4)
+            `, [referralLinkId, newUser.id, req.ip, req.get('User-Agent')]);
+            
+            console.log(`✅ Статистика реферальной ссылки обновлена. Использований: +1`);
+        }
 
         const token = jwt.sign(
             { id: newUser.id, role: newUser.role, username: newUser.username },
@@ -119,25 +175,104 @@ router.post('/register', async (req, res) => {
         try {
             const { sendSystemNotification } = require('../utils/systemNotifications');
             
-            const welcomeMessage = `🎉 Добро пожаловать в 1337 Community, ${username}!\n\n` +
-                                 `Ваш аккаунт успешно создан и готов к использованию.\n` +
-                                 `• Участвуйте в турнирах\n` +
-                                 `• Находите команду\n` +
-                                 `• Отслеживайте статистику\n` +
-                                 `• Получайте достижения\n\n` +
-                                 `${emailSent ? '📧 Приветственное письмо отправлено на ваш email.' : '⚠️ Не удалось отправить приветственное письмо.'}`;
+            let welcomeMessage = `🎉 Добро пожаловать в 1337 Community, ${username}!\n\n` +
+                               `Ваш аккаунт успешно создан и готов к использованию.\n` +
+                               `• Участвуйте в турнирах\n` +
+                               `• Находите команду\n` +
+                               `• Отслеживайте статистику\n` +
+                               `• Получайте достижения\n\n`;
+            
+            // Добавляем информацию о реферальном приглашении
+            if (referrerId) {
+                const referrerResult = await client.query('SELECT username FROM users WHERE id = $1', [referrerId]);
+                const referrerUsername = referrerResult.rows[0]?.username || 'Неизвестный';
+                welcomeMessage += `🔗 Вы были приглашены пользователем ${referrerUsername}!\n`;
+                
+                if (tournamentId) {
+                    const tournamentResult = await client.query('SELECT name FROM tournaments WHERE id = $1', [tournamentId]);
+                    const tournamentName = tournamentResult.rows[0]?.name || 'Неизвестный турнир';
+                    welcomeMessage += `🏆 Автоматическое участие в турнире "${tournamentName}"!\n`;
+                }
+                welcomeMessage += '\n';
+            }
+                               
+            welcomeMessage += `${emailSent ? '📧 Приветственное письмо отправлено на ваш email.' : '⚠️ Не удалось отправить приветственное письмо.'}`;
             
             await sendSystemNotification(newUser.id, welcomeMessage, 'welcome', {
                 userId: newUser.id,
                 username: username,
                 email: email,
-                emailSent: emailSent
+                emailSent: emailSent,
+                referrerId: referrerId,
+                tournamentId: tournamentId
             });
             
             console.log(`✅ Системное уведомление отправлено пользователю ${username}`);
         } catch (notificationError) {
             console.error('⚠️ Ошибка отправки системного уведомления:', notificationError);
             // Не блокируем регистрацию
+        }
+
+        // 🔗 АВТОМАТИЧЕСКОЕ УЧАСТИЕ В ТУРНИРЕ (если есть реферальная ссылка)
+        if (tournamentId && referrerId) {
+            try {
+                // Проверяем, что турнир все еще активен и принимает участников
+                const tournamentCheck = await client.query(`
+                    SELECT status, max_participants, 
+                           (SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = $1) as current_participants
+                    FROM tournaments WHERE id = $1
+                `, [tournamentId]);
+                
+                if (tournamentCheck.rows.length > 0) {
+                    const tournament = tournamentCheck.rows[0];
+                    
+                    if (tournament.status === 'active' && 
+                        (!tournament.max_participants || tournament.current_participants < tournament.max_participants)) {
+                        
+                        // Добавляем пользователя в турнир
+                        await client.query(`
+                            INSERT INTO tournament_participants (tournament_id, user_id, registered_at)
+                            VALUES ($1, $2, NOW())
+                            ON CONFLICT (tournament_id, user_id) DO NOTHING
+                        `, [tournamentId, newUser.id]);
+                        
+                        console.log(`✅ Пользователь ${username} автоматически добавлен в турнир ID: ${tournamentId}`);
+                        
+                        // Отправляем уведомление о успешном участии
+                        await sendSystemNotification(newUser.id, 
+                            `🏆 Вы успешно зарегистрированы в турнире!\n\nБлагодаря реферальной ссылке вы автоматически стали участником турнира.`, 
+                            'tournament_join', 
+                            { tournamentId: tournamentId }
+                        );
+                    }
+                }
+            } catch (tournamentError) {
+                console.error('❌ Ошибка автоматического добавления в турнир:', tournamentError);
+                // Не блокируем регистрацию
+            }
+        }
+
+        // 🔗 УВЕДОМЛЯЕМ ПРИГЛАСИВШЕГО ПОЛЬЗОВАТЕЛЯ
+        if (referrerId) {
+            try {
+                const { sendSystemNotification } = require('../utils/systemNotifications');
+                
+                await sendSystemNotification(referrerId, 
+                    `🎉 По вашей реферальной ссылке зарегистрировался новый пользователь!\n\n` +
+                    `👤 Пользователь: ${username}\n` +
+                    `🏆 Вы получили бонусы за привлечение нового игрока!`, 
+                    'referral_success', 
+                    { 
+                        newUserId: newUser.id, 
+                        newUsername: username,
+                        tournamentId: tournamentId 
+                    }
+                );
+                
+                console.log(`✅ Уведомление о новом реферале отправлено пользователю ID: ${referrerId}`);
+            } catch (referralNotificationError) {
+                console.error('⚠️ Ошибка отправки уведомления о реферале:', referralNotificationError);
+            }
         }
 
         // 🏆 ПРОВЕРЯЕМ ДОСТИЖЕНИЯ ДЛЯ НОВОГО ПОЛЬЗОВАТЕЛЯ
@@ -151,13 +286,17 @@ router.post('/register', async (req, res) => {
             
             await achievementSystem.triggerAchievementCheck(newUser.id, 'registration', {
                 username: username,
-                registrationDate: new Date()
+                registrationDate: new Date(),
+                referrerId: referrerId,
+                tournamentId: tournamentId
             });
             console.log(`🏆 Проверка достижений запущена для пользователя ${username}`);
         } catch (achievementError) {
             console.error('⚠️ Ошибка проверки достижений:', achievementError);
             // Не блокируем регистрацию
         }
+
+        await client.query('COMMIT');
 
         // 📊 ВОЗВРАЩАЕМ РАСШИРЕННУЮ ИНФОРМАЦИЮ
         const responseData = {
@@ -170,7 +309,9 @@ router.post('/register', async (req, res) => {
                 email: email,
                 role: newUser.role
             },
-            emailSent: emailSent
+            emailSent: emailSent,
+            referralSuccess: !!referrerId,
+            tournamentJoined: !!(tournamentId && referrerId)
         };
 
         // Добавляем информацию об ошибке email только в dev режиме
@@ -178,11 +319,14 @@ router.post('/register', async (req, res) => {
             responseData.emailError = emailError;
         }
 
-        console.log(`🎉 Пользователь ${username} успешно зарегистрирован (ID: ${newUser.id})`);
+        console.log(`🎉 Пользователь ${username} успешно зарегистрирован (ID: ${newUser.id})${referrerId ? ` по реферальной ссылке от пользователя ID: ${referrerId}` : ''}`);
         res.status(201).json(responseData);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('❌ Ошибка регистрации:', err);
         res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
     }
 });
 

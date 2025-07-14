@@ -311,6 +311,8 @@ const adminRouter = require('./routes/admin');
 const achievementsRouter = require('./routes/achievements'); // Роуты для системы достижений
 // ✨ V4 ULTIMATE: Импорт революционных API
 const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
+// 🔗 СИСТЕМА РЕФЕРАЛЬНЫХ ПРИГЛАШЕНИЙ v1.0.0
+const referralsRouter = require('./routes/referrals');
 
 // Маршруты API
 app.use('/api/auth', authRouter);
@@ -332,6 +334,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/achievements', achievementsRouter); // Подключаем систему достижений
 // ✨ V4 ULTIMATE: Революционные API endpoints
 app.use('/api/v4', v4EnhancedStatsRouter);
+// 🔗 РЕФЕРАЛЬНАЯ СИСТЕМА
+app.use('/api/referrals', referralsRouter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {

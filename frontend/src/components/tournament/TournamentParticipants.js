@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import TeamGenerator from '../TeamGenerator';
 import ParticipantSearchModal from './modals/ParticipantSearchModal';
+import ReferralInviteModal from './modals/ReferralInviteModal';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
 import './TournamentParticipants.css';
 
@@ -25,6 +26,9 @@ const TournamentParticipants = ({
         cs2_premier_rank: ''
     });
     const [message, setMessage] = useState('');
+    
+    // 🔗 СОСТОЯНИЕ ДЛЯ РЕФЕРАЛЬНОГО МОДАЛЬНОГО ОКНА
+    const [referralModal, setReferralModal] = useState(false);
 
     // Хук для управления турниром
     const tournamentManagement = useTournamentManagement(tournament?.id);
@@ -347,6 +351,25 @@ const TournamentParticipants = ({
                 </div>
             )}
 
+            {/* 🔗 КНОПКА ПРИГЛАШЕНИЯ ДРУЗЕЙ - доступна всем авторизованным пользователям */}
+            {user && tournament?.status === 'active' && (
+                <div className="referral-invite-panel">
+                    <h4>👥 Пригласить друзей</h4>
+                    <div className="referral-actions">
+                        <button 
+                            className="invite-referral-btn"
+                            onClick={() => setReferralModal(true)}
+                            title="Создать реферальную ссылку для приглашения друзей"
+                        >
+                            🔗 Пригласить друга
+                        </button>
+                        <p className="referral-description">
+                            Поделитесь ссылкой с друзьями и получайте бонусы за каждого нового игрока!
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Модальное окно поиска участников */}
             {participantSearchModal && (
                 <ParticipantSearchModal
@@ -452,6 +475,16 @@ const TournamentParticipants = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Модальное окно реферальных приглашений */}
+            {referralModal && (
+                <ReferralInviteModal
+                    isOpen={referralModal}
+                    onClose={() => setReferralModal(false)}
+                    tournament={tournament}
+                    user={user}
+                />
             )}
         </div>
     );
