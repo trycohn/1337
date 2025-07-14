@@ -362,10 +362,6 @@
     border-bottom: none;
 }
 
-.search-result-item:hover {
-    background: #f8f9fa;
-}
-
 .user-info {
     display: flex;
     align-items: center;
