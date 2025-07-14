@@ -63,6 +63,15 @@ router.put('/:id/description', authenticateToken, verifyEmailRequired, verifyAdm
 // 🎯 Обновление типа рейтинга для микс-турниров
 router.put('/:id/rating-type', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateRatingType);
 
+// 🎮 Обновление дисциплины турнира
+router.put('/:id/game', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateGame);
+
+// 🏆 Обновление формата турнира
+router.put('/:id/format', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateFormat);
+
+// 📅 Обновление даты старта турнира
+router.put('/:id/start-date', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateStartDate);
+
 // 🥊 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей

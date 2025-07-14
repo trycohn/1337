@@ -11,6 +11,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
+import TournamentSettingsPanel from './TournamentSettingsPanel';
 import './TournamentAdminPanel.css';
 
 const TournamentAdminPanel = ({
@@ -31,7 +32,9 @@ const TournamentAdminPanel = ({
     // 🆕 НОВЫЕ ПРОПСЫ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ
     onInviteAdmin,
     onRemoveAdmin,
-    onShowAdminSearchModal
+    onShowAdminSearchModal,
+    // 🆕 НОВЫЙ ПРОПС ДЛЯ УПРАВЛЕНИЯ НАСТРОЙКАМИ ТУРНИРА
+    onUpdateTournamentSetting
 }) => {
     if (!isCreatorOrAdmin) {
         return null;
@@ -365,6 +368,15 @@ const TournamentAdminPanel = ({
                         </div>
                     )}
                 </div>
+
+                {/* 🆕 УПРАВЛЕНИЕ НАСТРОЙКАМИ ТУРНИРА */}
+                {tournament?.status === 'active' && (
+                    <TournamentSettingsPanel 
+                        tournament={tournament}
+                        isLoading={isLoading}
+                        onUpdateSetting={onUpdateTournamentSetting}
+                    />
+                )}
 
                 {/* 🎯 УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ */}
                 {tournament?.status === 'ongoing' && matches?.some(m => m.status === 'completed') && (

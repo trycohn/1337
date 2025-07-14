@@ -539,6 +539,136 @@ class TournamentController {
             rating_type: mix_rating_type
         });
     });
+
+    // 🎮 Обновление дисциплины турнира
+    static updateGame = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const { game } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ ИГРЫ
+        if (!game || typeof game !== 'string' || game.trim().length === 0) {
+            return res.status(400).json({ 
+                message: 'Дисциплина не может быть пустой',
+                received_game: game
+            });
+        }
+        
+        console.log(`🎮 [updateGame] Обновление дисциплины турнира ${tournamentId} на "${game}"`);
+        
+        const tournament = await TournamentService.updateGame(
+            tournamentId, 
+            game.trim(), 
+            req.user.id
+        );
+        
+        res.json({
+            message: `Дисциплина успешно изменена на: ${game}`,
+            tournament,
+            game: game
+        });
+    });
+
+    // 🏆 Обновление формата турнира
+    static updateFormat = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const { format } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ ФОРМАТА
+        const validFormats = ['single_elimination', 'double_elimination', 'mix'];
+        if (!validFormats.includes(format)) {
+            return res.status(400).json({ 
+                message: 'Некорректный формат турнира',
+                received_format: format,
+                valid_formats: validFormats
+            });
+        }
+        
+        console.log(`🏆 [updateFormat] Обновление формата турнира ${tournamentId} на "${format}"`);
+        
+        const tournament = await TournamentService.updateFormat(
+            tournamentId, 
+            format, 
+            req.user.id
+        );
+        
+        const formatNames = {
+            'single_elimination': 'Одиночное исключение',
+            'double_elimination': 'Двойное исключение',
+            'mix': 'Микс-турнир'
+        };
+        
+        res.json({
+            message: `Формат успешно изменен на: ${formatNames[format]}`,
+            tournament,
+            format: format
+        });
+    });
+
+    // 📅 Обновление даты старта турнира
+    static updateStartDate = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const { start_date } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ ДАТЫ
+        if (!start_date) {
+            return res.status(400).json({ 
+                message: 'Дата старта не может быть пустой',
+                received_date: start_date
+            });
+        }
+        
+        const startDate = new Date(start_date);
+        if (isNaN(startDate.getTime())) {
+            return res.status(400).json({ 
+                message: 'Некорректный формат даты',
+                received_date: start_date
+            });
+        }
+        
+        console.log(`📅 [updateStartDate] Обновление даты старта турнира ${tournamentId} на "${start_date}"`);
+        
+        const tournament = await TournamentService.updateStartDate(
+            tournamentId, 
+            startDate, 
+            req.user.id
+        );
+        
+        res.json({
+            message: `Дата старта успешно изменена на: ${startDate.toLocaleString('ru-RU')}`,
+            tournament,
+            start_date: startDate
+        });
+    });
 }
 
 module.exports = TournamentController; 

@@ -308,7 +308,51 @@ class TournamentRepository {
     }
 
     /**
-     * Получение количества команд в турнире
+     * 🎮 Обновление дисциплины турнира
+     */
+    static async updateGame(tournamentId, game) {
+        const result = await pool.query(
+            'UPDATE tournaments SET game = $1 WHERE id = $2 RETURNING *',
+            [game, tournamentId]
+        );
+        return result.rows[0];
+    }
+
+    /**
+     * 🏆 Обновление формата турнира
+     */
+    static async updateFormat(tournamentId, format) {
+        const result = await pool.query(
+            'UPDATE tournaments SET format = $1 WHERE id = $2 RETURNING *',
+            [format, tournamentId]
+        );
+        return result.rows[0];
+    }
+
+    /**
+     * 📅 Обновление даты старта турнира
+     */
+    static async updateStartDate(tournamentId, startDate) {
+        const result = await pool.query(
+            'UPDATE tournaments SET start_date = $1 WHERE id = $2 RETURNING *',
+            [startDate, tournamentId]
+        );
+        return result.rows[0];
+    }
+
+    /**
+     * 📊 Получение количества участников турнира
+     */
+    static async getParticipantsCount(tournamentId) {
+        const result = await pool.query(
+            'SELECT COUNT(*) as count FROM tournament_participants WHERE tournament_id = $1',
+            [tournamentId]
+        );
+        return parseInt(result.rows[0].count);
+    }
+
+    /**
+     * 🏆 Получение количества команд турнира
      */
     static async getTeamsCount(tournamentId) {
         const result = await pool.query(

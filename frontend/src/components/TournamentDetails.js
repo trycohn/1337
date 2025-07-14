@@ -1025,6 +1025,7 @@ function TournamentDetails() {
                                 onInviteAdmin={() => {}}
                                 onRemoveAdmin={() => {}}
                                 onShowAdminSearchModal={() => {}}
+                                onUpdateTournamentSetting={handleUpdateTournamentSetting}
                             />
                         ) : (
                             <div className="access-denied">
@@ -1323,6 +1324,70 @@ function TournamentDetails() {
             setTimeout(() => setMessage(''), 5000);
         }
     }, [tournamentManagement, fetchTournamentData]);
+
+    // 🆕 ОБРАБОТЧИК ОБНОВЛЕНИЯ НАСТРОЕК ТУРНИРА
+    const handleUpdateTournamentSetting = useCallback(async (field, value) => {
+        console.log(`🔧 [handleUpdateTournamentSetting] Обновление настройки: ${field} = ${value}`);
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Пользователь не авторизован');
+        }
+
+        let endpoint;
+        let payload;
+
+        // Определяем endpoint и payload в зависимости от поля
+        switch (field) {
+            case 'game':
+                endpoint = `/api/tournaments/${id}/game`;
+                payload = { game: value };
+                break;
+            case 'format':
+                endpoint = `/api/tournaments/${id}/format`;
+                payload = { format: value };
+                break;
+            case 'mix_rating_type':
+                endpoint = `/api/tournaments/${id}/rating-type`;
+                payload = { mix_rating_type: value };
+                break;
+            case 'start_date':
+                endpoint = `/api/tournaments/${id}/start-date`;
+                payload = { start_date: value };
+                break;
+            default:
+                throw new Error(`Неизвестное поле настройки: ${field}`);
+        }
+
+        try {
+            const response = await api.put(endpoint, payload, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log(`✅ [handleUpdateTournamentSetting] Настройка ${field} успешно обновлена:`, response.data);
+
+            // Очищаем кеш турнира
+            const cacheKey = `tournament_cache_${id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+
+            // Обновляем данные турнира
+            await fetchTournamentData();
+
+            // Показываем уведомление
+            setMessage(`✅ ${response.data.message || 'Настройка успешно обновлена'}`);
+            setTimeout(() => setMessage(''), 5000);
+
+        } catch (error) {
+            console.error(`❌ [handleUpdateTournamentSetting] Ошибка обновления настройки ${field}:`, error);
+            const errorMessage = error.response?.data?.message || error.message || 'Неизвестная ошибка';
+            throw new Error(errorMessage);
+        }
+    }, [id, fetchTournamentData]);
 
     // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАВЕРШЕНИЯ ТУРНИРА (ЧЕРЕЗ ХУК)
     const handleEndTournament = useCallback(async () => {

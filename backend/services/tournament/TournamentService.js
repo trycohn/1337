@@ -473,57 +473,198 @@ class TournamentService {
     }
 
     /**
-     * Обновление типа рейтинга для микс-турниров
+     * 🎯 Обновление типа рейтинга для микс-турниров
      */
     static async updateRatingType(tournamentId, mixRatingType, userId) {
-        console.log(`🎯 TournamentService: Обновление типа рейтинга турнира ${tournamentId} на ${mixRatingType}`);
-
-        // Валидация типа рейтинга
-        const validRatingTypes = ['faceit', 'premier', 'mixed'];
-        if (!validRatingTypes.includes(mixRatingType)) {
-            throw new Error(`Некорректный тип рейтинга: ${mixRatingType}. Допустимые: ${validRatingTypes.join(', ')}`);
-        }
-
+        console.log(`🎯 [TournamentService.updateRatingType] Обновление типа рейтинга турнира ${tournamentId} на ${mixRatingType}`);
+        
+        // Проверка прав доступа
         await this._checkTournamentAccess(tournamentId, userId);
-
+        
         const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
         if (tournament.format !== 'mix') {
             throw new Error('Изменение типа рейтинга доступно только для микс-турниров');
         }
-
+        
         if (tournament.status !== 'active') {
             throw new Error('Изменение типа рейтинга доступно только для активных турниров');
         }
-
-        // Проверяем, не сгенерированы ли уже команды
+        
+        // Проверка на уже сформированные команды (можно менять только до формирования команд)
         const teamsCount = await TournamentRepository.getTeamsCount(tournamentId);
         if (teamsCount > 0) {
-            throw new Error('Нельзя изменить тип рейтинга после формирования команд. Очистите команды перед сменой типа.');
+            throw new Error('Нельзя изменить тип рейтинга после формирования команд');
         }
-
-        // Обновляем тип рейтинга
+        
+        // Обновление в базе данных
         const updatedTournament = await TournamentRepository.updateMixRatingType(tournamentId, mixRatingType);
-
-        // Логируем событие
+        
+        // Логирование события
         await logTournamentEvent(tournamentId, userId, 'rating_type_changed', {
             old_rating_type: tournament.mix_rating_type,
             new_rating_type: mixRatingType
         });
-
-        // Отправляем объявление в чат
+        
+        // Уведомление в чат турнира
         const typeNames = {
             'faceit': 'FACEIT ELO',
             'premier': 'CS2 Premier Rank',
             'mixed': 'Случайный микс'
         };
-
+        
         await sendTournamentChatAnnouncement(
             tournamentId,
-            `🎯 Тип рейтинга для формирования команд изменен на: ${typeNames[mixRatingType]}`
+            `🎯 Тип рейтинга изменен на: ${typeNames[mixRatingType]}`
         );
+        
+        console.log(`✅ [updateRatingType] Тип рейтинга турнира ${tournamentId} обновлен на ${mixRatingType}`);
+        return updatedTournament;
+    }
 
-        console.log(`✅ TournamentService: Тип рейтинга турнира ${tournamentId} успешно изменен на ${mixRatingType}`);
+    /**
+     * 🎮 Обновление дисциплины турнира
+     */
+    static async updateGame(tournamentId, game, userId) {
+        console.log(`🎮 [TournamentService.updateGame] Обновление дисциплины турнира ${tournamentId} на "${game}"`);
+        
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+        
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
+        if (tournament.status !== 'active') {
+            throw new Error('Изменение дисциплины доступно только для активных турниров');
+        }
+        
+        // Проверка на уже созданную сетку (можно менять только до создания сетки)
+        const hasMatches = await this.hasMatches(tournamentId);
+        if (hasMatches) {
+            throw new Error('Нельзя изменить дисциплину после создания турнирной сетки');
+        }
+        
+        // Обновление в базе данных
+        const updatedTournament = await TournamentRepository.updateGame(tournamentId, game);
+        
+        // Логирование события
+        await logTournamentEvent(tournamentId, userId, 'game_changed', {
+            old_game: tournament.game,
+            new_game: game
+        });
+        
+        // Уведомление в чат турнира
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `🎮 Дисциплина турнира изменена на: ${game}`
+        );
+        
+        console.log(`✅ [updateGame] Дисциплина турнира ${tournamentId} обновлена на "${game}"`);
+        return updatedTournament;
+    }
 
+    /**
+     * 🏆 Обновление формата турнира
+     */
+    static async updateFormat(tournamentId, format, userId) {
+        console.log(`🏆 [TournamentService.updateFormat] Обновление формата турнира ${tournamentId} на "${format}"`);
+        
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+        
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
+        if (tournament.status !== 'active') {
+            throw new Error('Изменение формата доступно только для активных турниров');
+        }
+        
+        // Проверка на участников и команды
+        const participantsCount = await TournamentRepository.getParticipantsCount(tournamentId);
+        const teamsCount = await TournamentRepository.getTeamsCount(tournamentId);
+        
+        if (participantsCount > 0 || teamsCount > 0) {
+            throw new Error('Нельзя изменить формат турнира при наличии участников или команд');
+        }
+        
+        // Обновление в базе данных
+        const updatedTournament = await TournamentRepository.updateFormat(tournamentId, format);
+        
+        // Логирование события
+        await logTournamentEvent(tournamentId, userId, 'format_changed', {
+            old_format: tournament.format,
+            new_format: format
+        });
+        
+        // Уведомление в чат турнира
+        const formatNames = {
+            'single_elimination': 'Одиночное исключение',
+            'double_elimination': 'Двойное исключение',
+            'mix': 'Микс-турнир'
+        };
+        
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `🏆 Формат турнира изменен на: ${formatNames[format]}`
+        );
+        
+        console.log(`✅ [updateFormat] Формат турнира ${tournamentId} обновлен на "${format}"`);
+        return updatedTournament;
+    }
+
+    /**
+     * 📅 Обновление даты старта турнира
+     */
+    static async updateStartDate(tournamentId, startDate, userId) {
+        console.log(`📅 [TournamentService.updateStartDate] Обновление даты старта турнира ${tournamentId} на "${startDate}"`);
+        
+        // Проверка прав доступа
+        await this._checkTournamentAccess(tournamentId, userId);
+        
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
+        if (tournament.status === 'completed') {
+            throw new Error('Нельзя изменить дату старта завершенного турнира');
+        }
+        
+        // Проверяем, что дата не в прошлом (с учетом разницы в 1 час для защиты от ошибок)
+        const now = new Date();
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        
+        if (startDate < oneHourAgo) {
+            throw new Error('Дата старта не может быть в прошлом');
+        }
+        
+        // Обновление в базе данных
+        const updatedTournament = await TournamentRepository.updateStartDate(tournamentId, startDate);
+        
+        // Логирование события
+        await logTournamentEvent(tournamentId, userId, 'start_date_changed', {
+            old_start_date: tournament.start_date,
+            new_start_date: startDate
+        });
+        
+        // Уведомление в чат турнира
+        await sendTournamentChatAnnouncement(
+            tournamentId,
+            `📅 Дата старта турнира изменена на: ${startDate.toLocaleString('ru-RU')}`
+        );
+        
+        console.log(`✅ [updateStartDate] Дата старта турнира ${tournamentId} обновлена на "${startDate}"`);
         return updatedTournament;
     }
 
