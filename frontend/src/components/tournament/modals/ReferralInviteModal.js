@@ -209,7 +209,7 @@ const ReferralInviteModal = ({
                                 </div>
                             </div>
 
-                            {/* Способы отправки - только иконки */}
+                            {/* Способы отправки - только иконки Font Awesome */}
                             <div className="referral-share-methods">
                                 <h4>📤 Поделиться:</h4>
                                 <div className="referral-share-icons">
@@ -219,7 +219,7 @@ const ReferralInviteModal = ({
                                         data-tooltip="Telegram"
                                         title="Отправить в Telegram"
                                     >
-                                        📱
+                                        <i className="fab fa-telegram"></i>
                                     </button>
                                     <button 
                                         onClick={() => shareViaMethod('discord')}
@@ -227,7 +227,7 @@ const ReferralInviteModal = ({
                                         data-tooltip="Discord"
                                         title="Отправить в Discord"
                                     >
-                                        🎮
+                                        <i className="fab fa-discord"></i>
                                     </button>
                                     <button 
                                         onClick={() => shareViaMethod('vk')}
@@ -235,7 +235,7 @@ const ReferralInviteModal = ({
                                         data-tooltip="VK"
                                         title="Отправить в VK"
                                     >
-                                        🔵
+                                        <i className="fab fa-vk"></i>
                                     </button>
                                     <button 
                                         onClick={() => shareViaMethod('steam')}
@@ -243,7 +243,7 @@ const ReferralInviteModal = ({
                                         data-tooltip="Steam"
                                         title="Отправить в Steam"
                                     >
-                                        🚂
+                                        <i className="fab fa-steam"></i>
                                     </button>
                                 </div>
                             </div>
