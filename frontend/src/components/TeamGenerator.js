@@ -696,7 +696,7 @@ const TeamGenerator = ({
                         <div className="participants-grid">
                             {notInTeamParticipants.map((participant) => (
                                 <div key={participant?.id || `participant-${Math.random()}`} className="participant-card not-in-team">
-                                    <div className="participant-avatar">
+                                    <div className="participant-avatar participant-avatar__not-in-team">
                                         <img 
                                             src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
                                             alt={`${participant.name} avatar`}
@@ -809,9 +809,9 @@ const TeamGenerator = ({
                                                 }}
                                             />
                                         </div>
-                                        <span className="participant-name">{participant.name}</span>
+                                        
                                         <div className="participant-info">
-                                            
+                                            <span className="participant-name">{participant.name}</span> 
                                             <span className="participant-rating">
                                                 {(() => {
                                                     // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ

@@ -44,12 +44,16 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: 10px;
+  margin-left: 10px;
   border: 2px solid #374151;
 }
 .participant-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.participant-avatar__not-in-team {
+  margin-right: 0 !important;
 }
 .participant-info {
   flex: 1;

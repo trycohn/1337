@@ -121,6 +121,7 @@
 .participant-avatar {
     position: relative;
     margin-right: 12px;
+    margin-left: 12px;
     flex-shrink: 0;
 }
 .participant-avatar img {

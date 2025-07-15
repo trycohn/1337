@@ -889,6 +889,7 @@ header.header {
 }
 .participant-avatar {
   margin-right: 10px;
+  margin-left: 10px;
 }
 .participant-avatar-img {
   width: 40px;
