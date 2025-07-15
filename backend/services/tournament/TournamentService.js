@@ -199,9 +199,13 @@ class TournamentService {
         await this._checkTournamentDeletionAccess(tournamentId, userId);
 
         const tournament = await TournamentRepository.getById(tournamentId);
-        if (tournament.status !== 'active') {
-            throw new Error('Турнир неактивен');
+        if (!tournament) {
+            throw new Error('Турнир не найден');
         }
+
+        // 🗑️ ИСПРАВЛЕНО: Убрана проверка статуса турнира
+        // Создатель может удалить турнир в любом статусе
+        console.log(`🗑️ [deleteTournament] Удаление турнира "${tournament.name}" (статус: ${tournament.status})`);
 
         await TournamentRepository.delete(tournamentId);
 
