@@ -41,6 +41,7 @@ import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentParticipants from './tournament/TournamentParticipants';
 import TournamentWinners from './tournament/TournamentWinners';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
+import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
@@ -159,6 +160,10 @@ function TournamentDetails() {
     const [adminSearchResults, setAdminSearchResults] = useState([]);
     const [isSearchingAdmins, setIsSearchingAdmins] = useState(false);
     const [adminSearchModal, setAdminSearchModal] = useState(false);
+
+    // 🆕 СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ОКНА УДАЛЕНИЯ ТУРНИРА
+    const [deleteTournamentModal, setDeleteTournamentModal] = useState(false);
+    const [isDeletingTournament, setIsDeletingTournament] = useState(false);
 
     // Данные для модальных окон
     const [newParticipantData, setNewParticipantData] = useState({
@@ -1026,6 +1031,8 @@ function TournamentDetails() {
                                 onRemoveAdmin={removeAdmin}
                                 onShowAdminSearchModal={openAdminSearchModal}
                                 onUpdateTournamentSetting={handleUpdateTournamentSetting}
+                                onDeleteTournament={openDeleteTournamentModal}
+                                user={user}
                             />
                         ) : (
                             <div className="access-denied">
@@ -1414,7 +1421,91 @@ function TournamentDetails() {
         }
     }, [tournamentManagement, fetchTournamentData]);
 
-    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ (API v2.0)
+    // 🗑️ ФУНКЦИЯ УДАЛЕНИЯ ТУРНИРА
+    const handleDeleteTournament = useCallback(async () => {
+        if (!tournament?.id) {
+            setMessage('❌ Не удалось определить ID турнира');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        try {
+            setIsDeletingTournament(true);
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('Отсутствует токен авторизации');
+            }
+
+            console.log('🗑️ Начинаем удаление турнира:', tournament.id);
+
+            const response = await api.delete(`/api/tournaments/${tournament.id}`, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('✅ Турнир успешно удален:', response.data);
+
+            // Очищаем кеш турнира
+            const cacheKey = `tournament_cache_${tournament.id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+
+            // Закрываем модальное окно
+            setDeleteTournamentModal(false);
+
+            // Показываем сообщение об успехе
+            setMessage('✅ Турнир успешно удален!');
+            
+            // Перенаправляем на главную страницу через 2 секунды
+            setTimeout(() => {
+                navigate('/');
+            }, 2000);
+
+        } catch (error) {
+            console.error('❌ Ошибка при удалении турнира:', error);
+            
+            let errorMessage = 'Ошибка при удалении турнира';
+            
+            if (error.response?.status === 403) {
+                errorMessage = 'У вас нет прав для удаления этого турнира';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Турнир не найден';
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response.data?.error || 'Турнир нельзя удалить в текущем состоянии';
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setMessage(`❌ ${errorMessage}`);
+            setTimeout(() => setMessage(''), 5000);
+        } finally {
+            setIsDeletingTournament(false);
+        }
+    }, [tournament, navigate]);
+
+    // 🔧 ФУНКЦИЯ ОТКРЫТИЯ МОДАЛЬНОГО ОКНА УДАЛЕНИЯ ТУРНИРА
+    const openDeleteTournamentModal = useCallback(() => {
+        setDeleteTournamentModal(true);
+        console.log('🗑️ Открыто модальное окно удаления турнира');
+    }, []);
+
+    // 🔧 ФУНКЦИЯ ЗАКРЫТИЯ МОДАЛЬНОГО ОКНА УДАЛЕНИЯ ТУРНИРА
+    const closeDeleteTournamentModal = useCallback(() => {
+        if (isDeletingTournament) {
+            console.log('⚠️ Попытка закрыть модальное окно во время удаления - игнорируем');
+            return;
+        }
+        setDeleteTournamentModal(false);
+        console.log('🗑️ Закрыто модальное окно удаления турнира');
+    }, [isDeletingTournament]);
+
+    // �� УПРОЩЕННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СЕТКИ (API v2.0)
     const handleGenerateBracket = useCallback(async (useThirdPlace = null) => {
         // Если параметр матча за 3-е место не передан, показываем модальное окно
         if (useThirdPlace === null) {
@@ -1835,6 +1926,17 @@ function TournamentDetails() {
                         onSearch={searchAdmins}
                         existingAdmins={tournament?.admins || []}
                         existingParticipants={[]} // Не нужно для режима админов
+                    />
+                )}
+
+                {/* 🗑️ Модальное окно удаления турнира */}
+                {deleteTournamentModal && (
+                    <DeleteTournamentModal
+                        isOpen={deleteTournamentModal}
+                        onClose={closeDeleteTournamentModal}
+                        onConfirm={handleDeleteTournament}
+                        tournament={tournament}
+                        isLoading={isDeletingTournament}
                     />
                 )}
 

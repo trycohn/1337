@@ -714,3 +714,172 @@
 }
 /* РђРґР°РїС‚РёРІРЅС‹Рµ СЃС‚РёР»Рё РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
  
+/* Высокий контраст */
+@media (prefers-contrast: high) {
+    .invite-admin-btn {
+        border-width: 3px !important;
+    }
+    
+    .remove-admin-btn {
+        border-width: 3px !important;
+    }
+}
+
+/* 🚨 ОПАСНЫЕ ДЕЙСТВИЯ */
+.danger-zone-section-v2 {
+    background: rgba(255, 0, 0, 0.05);
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 32px;
+}
+
+.danger-zone-section-v2 h4 {
+    color: #ff0000;
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.danger-zone-warning {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.danger-zone-warning p {
+    margin: 0;
+    color: #ff6666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.danger-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.action-btn-v2.danger-btn {
+    background: #ff0000;
+    border: 1px solid #ff0000;
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.action-btn-v2.danger-btn:hover:not(:disabled) {
+    background: #cc0000;
+    border-color: #cc0000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
+}
+
+.action-btn-v2.danger-btn:disabled {
+    background: #333333;
+    border-color: #333333;
+    color: #666666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.delete-tournament-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.delete-tournament-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.delete-tournament-btn:hover::before {
+    left: 100%;
+}
+
+/* Адаптивность для опасных действий */
+@media (max-width: 768px) {
+    .danger-zone-section-v2 {
+        padding: 16px;
+        margin-top: 24px;
+    }
+    
+    .danger-actions {
+        flex-direction: column;
+    }
+    
+    .action-btn-v2.danger-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Анимация для привлечения внимания к опасным действиям */
+@keyframes dangerPulse {
+    0%, 100% { 
+        border-color: rgba(255, 0, 0, 0.2); 
+    }
+    50% { 
+        border-color: rgba(255, 0, 0, 0.4); 
+    }
+}
+
+.danger-zone-section-v2:hover {
+    animation: dangerPulse 2s infinite;
+}
+
+/* Отключение анимации для пользователей с пониженной подвижностью */
+@media (prefers-reduced-motion: reduce) {
+    .danger-zone-section-v2:hover {
+        animation: none;
+    }
+    
+    .delete-tournament-btn::before {
+        transition: none;
+    }
+    
+    .action-btn-v2.danger-btn {
+        transition: none;
+    }
+}
+
+/* 🚨 ПРЕДУПРЕЖДЕНИЕ ДЛЯ НЕ-СОЗДАТЕЛЕЙ */
+.creator-only-warning {
+    background: rgba(255, 165, 0, 0.1);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+}
+
+.creator-only-warning p {
+    margin: 0;
+    color: #ffa500;
+    font-size: 14px;
+    font-weight: 500;
+    font-style: italic;
+}
+
+/* Адаптивность для предупреждения создателя */
+@media (max-width: 768px) {
+    .creator-only-warning {
+        padding: 10px;
+    }
+    
+    .creator-only-warning p {
+        font-size: 13px;
+    }
+}
+ 

@@ -34,7 +34,11 @@ const TournamentAdminPanel = ({
     onRemoveAdmin,
     onShowAdminSearchModal,
     // 🆕 НОВЫЙ ПРОПС ДЛЯ УПРАВЛЕНИЯ НАСТРОЙКАМИ ТУРНИРА
-    onUpdateTournamentSetting
+    onUpdateTournamentSetting,
+    // 🗑️ НОВЫЙ ПРОПС ДЛЯ УДАЛЕНИЯ ТУРНИРА
+    onDeleteTournament,
+    // 🆕 ДОБАВЛЕН ПРОПС USER ДЛЯ ПРОВЕРКИ СОЗДАТЕЛЯ
+    user
 }) => {
     if (!isCreatorOrAdmin) {
         return null;
@@ -404,60 +408,46 @@ const TournamentAdminPanel = ({
                 )}
 
                 {/* 🎯 УПРАВЛЕНИЕ МАТЧАМИ */}
-                {tournament?.status === 'ongoing' && matches && matches.length > 0 && (
+                {tournament?.status === 'ongoing' && matches?.some(m => m.status === 'completed') && (
                     <div className="matches-section-v2">
-                        <h4>⚔️ Активные матчи</h4>
-                        <div className="matches-list-v2">
-                            {matches
-                                .filter(match => match.status !== 'completed')
-                                .slice(0, 3)
-                                .map((match, index) => (
-                                    <div key={match.id || index} className="match-item-v2">
-                                        <div className="match-info-v2">
-                                            <div className="match-teams">
-                                                {match.team1_name || match.participant1_name || 'Команда 1'} vs{' '}
-                                                {match.team2_name || match.participant2_name || 'Команда 2'}
-                                            </div>
-                                            <div className="match-round">
-                                                Раунд {match.round || '?'}
-                                            </div>
-                                        </div>
-                                        <button
-                                            className="edit-match-btn-v2"
-                                            onClick={() => onEditMatchResult(match)}
-                                            disabled={isLoading}
-                                            title="Редактировать результат матча"
-                                        >
-                                            ✏️
-                                        </button>
-                                    </div>
-                                ))}
+                        <h4>⚔️ Управление матчами</h4>
+                        <div className="matches-actions">
+                            <button 
+                                className="action-btn-v2 edit-btn"
+                                onClick={() => onEditMatchResult()}
+                                disabled={isLoading}
+                            >
+                                ✏️ Редактировать результат
+                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* 🆕 ИНФОРМАЦИЯ О НЕДОСТУПНОСТИ РЕДАКТИРОВАНИЯ */}
-                {tournament?.status !== 'ongoing' && matches && matches.length > 0 && (
-                    <div className="matches-section-v2">
-                        <h4>⚔️ Матчи турнира</h4>
-                        <div className="warning-message-v2">
-                            ⚠️ Редактирование матчей возможно только в турнире со статусом "Идет"
-                        </div>
+                {/* 🚨 ОПАСНЫЕ ДЕЙСТВИЯ */}
+                <div className="danger-zone-section-v2">
+                    <h4>🚨 Опасные действия</h4>
+                    <div className="danger-zone-warning">
+                        <p>⚠️ Действия в этой секции необратимы. Будьте осторожны!</p>
                     </div>
-                )}
-
-                {/* 🎯 ЗАВЕРШЕННЫЙ ТУРНИР */}
-                {tournament?.status === 'completed' && (
-                    <div className="completed-section-v2">
-                        <div className="completed-status-v2">
-                            <span className="completed-icon">🏆</span>
-                            <div className="completed-text">
-                                <p>Турнир успешно завершен</p>
-                                <p>Все результаты сохранены</p>
+                    <div className="danger-actions">
+                        {/* 🗑️ УДАЛЕНИЕ ТУРНИРА - ТОЛЬКО ДЛЯ СОЗДАТЕЛЯ */}
+                        {tournament?.created_by === user?.id && (
+                            <button 
+                                className="action-btn-v2 danger-btn delete-tournament-btn"
+                                onClick={onDeleteTournament}
+                                disabled={isLoading}
+                                title="Удалить турнир полностью (только для создателя)"
+                            >
+                                🗑️ Удалить турнир
+                            </button>
+                        )}
+                        {tournament?.created_by !== user?.id && (
+                            <div className="creator-only-warning">
+                                <p>⚠️ Удаление турнира доступно только создателю</p>
                             </div>
-                        </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

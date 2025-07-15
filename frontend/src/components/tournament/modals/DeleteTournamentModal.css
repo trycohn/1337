@@ -1,0 +1,370 @@
+/* DeleteTournamentModal.css - Стили для модального окна удаления турнира */
+
+/* Overlay */
+.delete-tournament-modal-overlay__deletetournament {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+}
+
+/* Модальное окно */
+.delete-tournament-modal__deletetournament {
+    background: #000000;
+    border: 2px solid #ff0000;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+    animation: deleteModalSlideIn__deletetournament 0.3s ease-out;
+}
+
+@keyframes deleteModalSlideIn__deletetournament {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Заголовок */
+.delete-tournament-modal-header__deletetournament {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #333333;
+    background: #111111;
+}
+
+.delete-tournament-modal-header__deletetournament h3 {
+    margin: 0;
+    color: #ff0000;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.delete-tournament-modal-close__deletetournament {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.delete-tournament-modal-close__deletetournament:hover:not(:disabled) {
+    background: #ff0000;
+    color: #ffffff;
+}
+
+.delete-tournament-modal-close__deletetournament:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Контент */
+.delete-tournament-modal-content__deletetournament {
+    padding: 20px;
+}
+
+/* Предупреждение */
+.delete-tournament-warning__deletetournament {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.warning-icon__deletetournament {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.warning-text__deletetournament h4 {
+    margin: 0 0 8px 0;
+    color: #ff0000;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.warning-text__deletetournament p {
+    margin: 0 0 12px 0;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.tournament-info__deletetournament {
+    color: #ffffff;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tournament-info__deletetournament strong {
+    color: #ff0000;
+}
+
+.participants-count__deletetournament {
+    color: #cccccc;
+    font-size: 14px;
+}
+
+/* Последствия удаления */
+.delete-tournament-consequences__deletetournament {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #111111;
+    border-radius: 8px;
+}
+
+.delete-tournament-consequences__deletetournament h5 {
+    margin: 0 0 12px 0;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.delete-tournament-consequences__deletetournament ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #cccccc;
+}
+
+.delete-tournament-consequences__deletetournament li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Подтверждение */
+.delete-tournament-confirmation__deletetournament {
+    margin-bottom: 24px;
+}
+
+.delete-tournament-confirmation__deletetournament label {
+    display: block;
+    margin-bottom: 12px;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.delete-tournament-confirmation__deletetournament strong {
+    color: #ff0000;
+    font-weight: 600;
+}
+
+.confirmation-input__deletetournament {
+    width: 100%;
+    padding: 12px;
+    background: #111111;
+    border: 2px solid #333333;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.confirmation-input__deletetournament:focus {
+    outline: none;
+    border-color: #ff0000;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+}
+
+.confirmation-input__deletetournament.confirmed {
+    border-color: #00ff00;
+    box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.1);
+}
+
+.confirmation-input__deletetournament:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.confirmation-hint__deletetournament {
+    margin-top: 8px;
+    min-height: 20px;
+}
+
+.hint-success__deletetournament {
+    color: #00ff00;
+    font-size: 14px;
+}
+
+.hint-error__deletetournament {
+    color: #ff0000;
+    font-size: 14px;
+}
+
+/* Футер */
+.delete-tournament-modal-footer__deletetournament {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px;
+    border-top: 1px solid #333333;
+    background: #111111;
+}
+
+.delete-tournament-cancel-btn__deletetournament {
+    background: #111111;
+    border: 1px solid #333333;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.delete-tournament-cancel-btn__deletetournament:hover:not(:disabled) {
+    background: #333333;
+    border-color: #555555;
+}
+
+.delete-tournament-cancel-btn__deletetournament:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.delete-tournament-confirm-btn__deletetournament {
+    background: #ff0000;
+    border: 1px solid #ff0000;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.delete-tournament-confirm-btn__deletetournament.enabled:hover:not(:disabled) {
+    background: #cc0000;
+    border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 0, 0, 0.3);
+}
+
+.delete-tournament-confirm-btn__deletetournament.disabled {
+    background: #333333;
+    border-color: #333333;
+    color: #666666;
+    cursor: not-allowed;
+}
+
+.delete-tournament-confirm-btn__deletetournament:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Спиннер загрузки */
+.loading-spinner__deletetournament {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: spin__deletetournament 1s linear infinite;
+}
+
+@keyframes spin__deletetournament {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .delete-tournament-modal__deletetournament {
+        max-width: 95vw;
+        margin: 10px;
+    }
+    
+    .delete-tournament-modal-header__deletetournament,
+    .delete-tournament-modal-content__deletetournament,
+    .delete-tournament-modal-footer__deletetournament {
+        padding: 16px;
+    }
+    
+    .delete-tournament-warning__deletetournament {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .tournament-info__deletetournament {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .delete-tournament-modal-footer__deletetournament {
+        flex-direction: column;
+    }
+    
+    .delete-tournament-cancel-btn__deletetournament,
+    .delete-tournament-confirm-btn__deletetournament {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Доступность */
+@media (prefers-reduced-motion: reduce) {
+    .delete-tournament-modal__deletetournament {
+        animation: none;
+    }
+    
+    .delete-tournament-modal-close__deletetournament,
+    .confirmation-input__deletetournament,
+    .delete-tournament-cancel-btn__deletetournament,
+    .delete-tournament-confirm-btn__deletetournament {
+        transition: none;
+    }
+    
+    .loading-spinner__deletetournament {
+        animation: none;
+    }
+}
+
+/* Высокий контраст */
+@media (prefers-contrast: high) {
+    .delete-tournament-modal__deletetournament {
+        border-color: #ffffff;
+    }
+    
+    .delete-tournament-warning__deletetournament {
+        border-color: #ff0000;
+    }
+    
+    .confirmation-input__deletetournament {
+        border-width: 3px;
+    }
+} 

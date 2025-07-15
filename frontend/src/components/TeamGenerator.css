@@ -48,12 +48,13 @@
   border: 2px solid #374151;
 }
 .participant-avatar img {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   object-fit: cover;
 }
 .participant-avatar__not-in-team {
   margin-right: 0 !important;
+  margin-left: 0 !important;
 }
 .participant-info {
   flex: 1;
@@ -561,19 +562,17 @@
 .member-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 50% !important;
   overflow: hidden;
   margin-right: 12px;
-  border: 2px solid #4b5563;
+  border: none !important;
   transition: border-color 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-.team-member-row:hover .member-avatar {
-  border-color: #10b981;
-}
+
 .member-avatar img {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   object-fit: cover;
 }
 /* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ СѓС‡Р°СЃС‚РЅРёРєРµ */
