@@ -195,8 +195,8 @@ class TournamentService {
     static async deleteTournament(tournamentId, userId) {
         console.log(`🗑️ TournamentService: Удаление турнира ${tournamentId}`);
 
-        // Проверка прав доступа
-        await this._checkTournamentAccess(tournamentId, userId);
+        // Проверка прав доступа - только создатель может удалить турнир
+        await this._checkTournamentDeletionAccess(tournamentId, userId);
 
         const tournament = await TournamentRepository.getById(tournamentId);
         if (tournament.status !== 'active') {
@@ -250,27 +250,23 @@ class TournamentService {
         console.log(`🔄 [startTournament] Меняем статус турнира с "${tournament.status}" на "in_progress"`);
         await TournamentRepository.updateStatus(tournamentId, 'in_progress');
 
-        // Получаем обновленные данные турнира
-        const updatedTournament = await this.getTournamentById(tournamentId);
-        console.log(`✅ [startTournament] Турнир обновлен, новый статус: "${updatedTournament.status}"`);
-
-        // Отправляем обновление через WebSocket
-        broadcastTournamentUpdate(tournamentId, updatedTournament);
-
-        // Логируем старт турнира
+        // Логирование события
         await logTournamentEvent(tournamentId, userId, 'tournament_started', {
-            participantCount: updatedTournament.participant_count,
-            matchesCount: matchesCount
+            previous_status: tournament.status,
+            new_status: 'in_progress'
         });
 
-        // Отправляем объявление в чат турнира
+        // Отправляем уведомление в чат
         await sendTournamentChatAnnouncement(
             tournamentId,
-            `Турнир "${updatedTournament.name}" начат`
+            `🚀 Турнир начат! Удачи всем участникам!`
         );
 
         console.log('✅ TournamentService: Турнир начат');
-        return updatedTournament;
+        return { 
+            success: true, 
+            message: 'Турнир успешно начат' 
+        };
     }
 
     /**
@@ -683,6 +679,21 @@ class TournamentService {
             if (!isAdmin) {
                 throw new Error('Только создатель или администратор может выполнить это действие');
             }
+        }
+    }
+
+    /**
+     * Проверка прав доступа к удалению турнира (только создатель)
+     * @private
+     */
+    static async _checkTournamentDeletionAccess(tournamentId, userId) {
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.created_by !== userId) {
+            throw new Error('Только создатель может удалить турнир');
         }
     }
 

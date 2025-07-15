@@ -54,6 +54,9 @@ router.get('/:id', TournamentController.getTournamentById);
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, TournamentController.createTournament);
 
+// 🗑️ Удаление турнира
+router.delete('/:id', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.deleteTournament);
+
 // ⚖️ Обновление регламента турнира
 router.put('/:id/rules', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateRules);
 
