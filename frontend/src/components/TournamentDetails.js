@@ -1355,6 +1355,10 @@ function TournamentDetails() {
                 endpoint = `/api/tournaments/${id}/format`;
                 payload = { format: value };
                 break;
+            case 'bracket_type':
+                endpoint = `/api/tournaments/${id}/bracket-type`;
+                payload = { bracket_type: value };
+                break;
             case 'mix_rating_type':
                 endpoint = `/api/tournaments/${id}/rating-type`;
                 payload = { mix_rating_type: value };

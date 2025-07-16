@@ -6,6 +6,7 @@
  */
 
 const { SingleEliminationEngine } = require('./SingleEliminationEngine');
+const { DoubleEliminationEngine } = require('./DoubleEliminationEngine');
 const { SeedingFactory, SEEDING_TYPES } = require('../../utils/tournament/seedingAlgorithms');
 const { BracketMath } = require('../../utils/tournament/bracketMath');
 const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
@@ -429,9 +430,12 @@ class BracketGenerationService {
                     seedingOptions
                 );
                 
-            // Здесь можно добавить другие типы турниров в будущем
-            // case 'double_elimination':
-            //     return await DoubleEliminationEngine.generateBracket(...)
+            case 'double_elimination':
+                return await DoubleEliminationEngine.generateBracket(
+                    tournament.id,
+                    participants,
+                    seedingOptions
+                );
             
             default:
                 throw new Error(`Неподдерживаемый тип турнирной сетки: ${tournament.bracket_type}`);

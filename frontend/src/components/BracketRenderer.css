@@ -611,3 +611,314 @@
         transform: translate(-50%, -100%) scale(1);
     }
 } 
+
+/* ===== DOUBLE ELIMINATION STYLES ===== */
+.bracket-double-elimination {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    padding: 20px;
+    background-color: #000;
+    min-height: 100vh;
+}
+
+.winners-bracket,
+.losers-bracket,
+.grand-final-bracket {
+    background-color: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.bracket-title {
+    color: #fff;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.winners-bracket .bracket-title {
+    color: #00ff00;
+}
+
+.losers-bracket .bracket-title {
+    color: #ff6b6b;
+}
+
+.grand-final-bracket .bracket-title {
+    color: #ffcc00;
+}
+
+.bracket-rounds {
+    display: flex;
+    gap: 30px;
+    overflow-x: auto;
+    padding: 10px;
+}
+
+.bracket-round {
+    min-width: 200px;
+    flex-shrink: 0;
+}
+
+.round-header {
+    color: #fff;
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    text-align: center;
+    padding: 8px;
+    background-color: #222;
+    border-radius: 4px;
+}
+
+.round-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* ===== MATCH CARD VARIANTS ===== */
+.match-card-winner {
+    border-left: 4px solid #00ff00;
+    background-color: rgba(0, 255, 0, 0.05);
+}
+
+.match-card-loser {
+    border-left: 4px solid #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.05);
+}
+
+.match-card-grand-final {
+    border-left: 4px solid #ffcc00;
+    background-color: rgba(255, 204, 0, 0.05);
+    box-shadow: 0 4px 8px rgba(255, 204, 0, 0.2);
+}
+
+.match-card-single {
+    border-left: 4px solid #ff0000;
+    background-color: rgba(255, 0, 0, 0.05);
+}
+
+/* ===== BRACKET TYPE INDICATOR ===== */
+.bracket-type-indicator {
+    font-size: 1.2em;
+    margin-left: 8px;
+}
+
+.match-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.match-number {
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.9em;
+}
+
+/* ===== GRAND FINAL MATCHES ===== */
+.grand-final-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.grand-final-matches .match-card {
+    border: 2px solid #ffcc00;
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(255, 204, 0, 0.3);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .bracket-double-elimination {
+        padding: 10px;
+        gap: 20px;
+    }
+    
+    .bracket-rounds {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .bracket-round {
+        min-width: auto;
+    }
+    
+    .grand-final-matches .match-card {
+        transform: none;
+    }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes bracketTypeGlow {
+    0% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+}
+
+.match-card-winner:hover {
+    animation: bracketTypeGlow 2s infinite;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.match-card-loser:hover {
+    animation: bracketTypeGlow 2s infinite;
+    box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.match-card-grand-final:hover {
+    animation: bracketTypeGlow 2s infinite;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+}
+
+/* ===== SINGLE ELIMINATION STYLES ===== */
+.bracket-single-elimination {
+    display: flex;
+    gap: 30px;
+    padding: 20px;
+    background-color: #000;
+    overflow-x: auto;
+    min-height: 100vh;
+}
+
+.bracket-single-elimination .bracket-round {
+    min-width: 200px;
+    flex-shrink: 0;
+}
+
+.bracket-single-elimination .round-header {
+    color: #fff;
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    text-align: center;
+    padding: 8px;
+    background-color: #222;
+    border-radius: 4px;
+}
+
+.bracket-single-elimination .round-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* ===== ОБЩИЕ СТИЛИ ===== */
+.bracket-renderer {
+    width: 100%;
+    background-color: #000;
+    color: #fff;
+    min-height: 100vh;
+}
+
+.match-card {
+    background-color: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.match-card:hover {
+    background-color: #222;
+    border-color: #ff0000;
+    transform: translateY(-2px);
+}
+
+.match-participants {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.participant {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #222;
+    border-radius: 4px;
+}
+
+.participant-name {
+    color: #fff;
+    font-weight: 500;
+}
+
+.participant-score {
+    color: #ff0000;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.vs-separator {
+    text-align: center;
+    color: #666;
+    font-size: 0.9em;
+    margin: 4px 0;
+}
+
+.match-status {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: #666;
+    color: #fff;
+}
+
+.status-ready {
+    background-color: #0066cc;
+    color: #fff;
+}
+
+.status-in_progress {
+    background-color: #ff6600;
+    color: #fff;
+}
+
+.status-completed {
+    background-color: #00cc00;
+    color: #fff;
+}
+
+.edit-match-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: 1px solid #ff0000;
+    color: #ff0000;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+}
+
+.edit-match-btn:hover {
+    background-color: #ff0000;
+    color: #fff;
+} 

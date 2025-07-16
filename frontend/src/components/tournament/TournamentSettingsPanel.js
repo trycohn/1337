@@ -14,6 +14,7 @@ import './TournamentSettingsPanel.css';
 const TournamentSettingsPanel = ({
     tournament,
     isLoading,
+    isCreator,
     onUpdateSetting
 }) => {
     const [editingField, setEditingField] = useState(null);
@@ -37,6 +38,12 @@ const TournamentSettingsPanel = ({
         { value: 'single_elimination', label: 'Одиночное исключение' },
         { value: 'double_elimination', label: 'Двойное исключение' },
         { value: 'mix', label: 'Микс-турнир' }
+    ];
+
+    // 🎯 Типы турнирной сетки
+    const bracketTypes = [
+        { value: 'single_elimination', label: 'Одиночное исключение' },
+        { value: 'double_elimination', label: 'Двойное исключение' }
     ];
 
     // 🎯 Типы рейтинга для микс-турниров
@@ -102,6 +109,9 @@ const TournamentSettingsPanel = ({
 
     // Проверка возможности изменения настроек
     const canEdit = tournament?.status === 'active' && !isLoading;
+    
+    // 🔧 ИСПРАВЛЕНО: Проверка прав для изменения типа сетки (только создатель)
+    const canEditBracketType = canEdit && isCreator;
 
     // 🎮 Функция для определения игры CS2
     const isCS2Game = (gameName) => {
@@ -232,6 +242,63 @@ const TournamentSettingsPanel = ({
                     </div>
                 </div>
 
+                {/* 🎯 ТИП ТУРНИРНОЙ СЕТКИ */}
+                <div className="setting-item">
+                    <div className="setting-label">
+                        <span className="label-icon">🎯</span>
+                        <span>Тип сетки</span>
+                    </div>
+                    <div className="setting-content">
+                        {editingField === 'bracket_type' ? (
+                            <div className="edit-field">
+                                <select
+                                    value={newValues.bracket_type || tournament.bracket_type || 'single_elimination'}
+                                    onChange={(e) => setNewValues({ ...newValues, bracket_type: e.target.value })}
+                                    className="setting-select"
+                                    disabled={fieldLoading.bracket_type}
+                                >
+                                    {bracketTypes.map(type => (
+                                        <option key={type.value} value={type.value}>
+                                            {type.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="edit-actions">
+                                    <button 
+                                        className="save-btn"
+                                        onClick={() => handleSave('bracket_type')}
+                                        disabled={fieldLoading.bracket_type}
+                                    >
+                                        {fieldLoading.bracket_type ? '⏳' : '✅'}
+                                    </button>
+                                    <button 
+                                        className="cancel-btn"
+                                        onClick={handleCancel}
+                                        disabled={fieldLoading.bracket_type}
+                                    >
+                                        ❌
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="display-field">
+                                <span className="setting-value">
+                                    {bracketTypes.find(t => t.value === tournament.bracket_type)?.label || 'Одиночное исключение'}
+                                </span>
+                                {canEditBracketType && (
+                                    <button 
+                                        className="edit-btn"
+                                        onClick={() => handleEdit('bracket_type')}
+                                        title="Изменить тип сетки (только создатель)"
+                                    >
+                                        ✏️
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* 🎯 ТИП РЕЙТИНГА (только для микс-турниров) */}
                 {tournament.format === 'mix' && (
                     <div className="setting-item">
@@ -274,7 +341,7 @@ const TournamentSettingsPanel = ({
                             ) : (
                                 <div className="display-field">
                                     <span className="setting-value">
-                                        {ratingTypes.find(t => t.value === (tournament.mix_rating_type || 'faceit'))?.label}
+                                        {ratingTypes.find(t => t.value === tournament.mix_rating_type)?.label || 'FACEIT ELO'}
                                     </span>
                                     {canEdit && (
                                         <button 

@@ -707,6 +707,52 @@ class TournamentController {
             lobby_enabled: lobby_enabled
         });
     });
+
+    // 🏆 Обновление типа турнирной сетки
+    static updateBracketType = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const { bracket_type } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ ТИПА СЕТКИ
+        const validBracketTypes = ['single_elimination', 'double_elimination'];
+        if (!validBracketTypes.includes(bracket_type)) {
+            return res.status(400).json({ 
+                message: 'Некорректный тип турнирной сетки',
+                received_bracket_type: bracket_type,
+                valid_bracket_types: validBracketTypes
+            });
+        }
+        
+        console.log(`🏆 [updateBracketType] Обновление типа сетки турнира ${tournamentId} на "${bracket_type}"`);
+        
+        // 🔧 ПРОВЕРКА ПРАВ ДОСТУПА происходит в TournamentService._checkTournamentCreatorAccess
+        const tournament = await TournamentService.updateBracketType(
+            tournamentId, 
+            bracket_type, 
+            req.user.id
+        );
+        
+        const bracketTypeNames = {
+            'single_elimination': 'Одиночное исключение',
+            'double_elimination': 'Двойное исключение'
+        };
+        
+        res.json({
+            message: `Тип турнирной сетки успешно изменен на: ${bracketTypeNames[bracket_type]}`,
+            tournament,
+            bracket_type: bracket_type
+        });
+    });
 }
 
 module.exports = TournamentController; 

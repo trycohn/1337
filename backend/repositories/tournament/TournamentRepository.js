@@ -514,6 +514,38 @@ class TournamentRepository {
         console.log(`✅ TournamentRepository: тип участников турнира ${tournamentId} обновлен на '${participantType}'`);
         return result.rows[0];
     }
+
+    /**
+     * 🏆 Обновление типа турнирной сетки
+     */
+    static async updateBracketType(tournamentId, bracketType) {
+        console.log(`🏆 [TournamentRepository.updateBracketType] Обновление типа сетки турнира ${tournamentId} на "${bracketType}"`);
+        
+        const result = await pool.query(
+            'UPDATE tournaments SET bracket_type = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+            [bracketType, tournamentId]
+        );
+        
+        if (result.rows.length === 0) {
+            throw new Error('Турнир не найден');
+        }
+        
+        return result.rows[0];
+    }
+
+    /**
+     * 📊 Получение количества матчей в турнире
+     */
+    static async getMatchesCount(tournamentId) {
+        console.log(`📊 [TournamentRepository.getMatchesCount] Получение количества матчей для турнира ${tournamentId}`);
+        
+        const result = await pool.query(
+            'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+            [tournamentId]
+        );
+        
+        return parseInt(result.rows[0].count, 10);
+    }
 }
 
 module.exports = TournamentRepository;

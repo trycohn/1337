@@ -79,6 +79,9 @@ router.put('/:id/start-date', authenticateToken, verifyEmailRequired, verifyAdmi
 // Обновление настроек лобби
 router.put('/:id/lobby-enabled', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateLobbyEnabled);
 
+// 🏆 Обновление типа турнирной сетки
+router.put('/:id/bracket-type', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateBracketType);
+
 // 🎮 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей

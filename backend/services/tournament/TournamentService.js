@@ -719,6 +719,61 @@ class TournamentService {
     }
 
     /**
+     * 🏆 Обновление типа турнирной сетки
+     */
+    static async updateBracketType(tournamentId, bracketType, userId) {
+        console.log(`🏆 [TournamentService.updateBracketType] Обновление типа сетки турнира ${tournamentId} на "${bracketType}"`);
+        
+        // 🔧 ИСПРАВЛЕНО: Проверка прав доступа только для создателя турнира
+        const tournament = await this._checkTournamentCreatorAccess(tournamentId, userId);
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
+        if (tournament.status !== 'active') {
+            throw new Error('Изменение типа сетки доступно только для активных турниров');
+        }
+        
+        // Проверка на наличие сгенерированной сетки
+        const matchesCount = await TournamentRepository.getMatchesCount(tournamentId);
+        if (matchesCount > 0) {
+            throw new Error('Нельзя изменить тип сетки при наличии сгенерированных матчей');
+        }
+        
+        // Валидация типа сетки
+        const validBracketTypes = ['single_elimination', 'double_elimination'];
+        if (!validBracketTypes.includes(bracketType)) {
+            throw new Error(`Неподдерживаемый тип сетки: ${bracketType}`);
+        }
+        
+        // Обновление в базе данных
+        const updatedTournament = await TournamentRepository.updateBracketType(tournamentId, bracketType);
+        
+        // Логирование события
+        await logTournamentEvent(tournamentId, userId, 'bracket_type_changed', {
+            old_bracket_type: tournament.bracket_type,
+            new_bracket_type: bracketType
+        });
+        
+        // Уведомление в чат турнира
+        const bracketTypeNames = {
+            'single_elimination': 'Одиночное исключение',
+            'double_elimination': 'Двойное исключение'
+        };
+        
+        const message = `Тип турнирной сетки изменен на: ${bracketTypeNames[bracketType]}`;
+        await sendTournamentChatAnnouncement(tournamentId, message);
+        
+        // Broadcast обновления
+        await broadcastTournamentUpdate(tournamentId, {
+            type: 'bracket_type_updated',
+            bracket_type: bracketType,
+            message
+        });
+        
+        console.log(`✅ [TournamentService.updateBracketType] Тип сетки успешно обновлен на "${bracketType}"`);
+        return updatedTournament;
+    }
+
+    /**
      * Проверка прав доступа к турниру
      * @private
      */
@@ -749,6 +804,23 @@ class TournamentService {
         if (tournament.created_by !== userId) {
             throw new Error('Только создатель может удалить турнир');
         }
+    }
+
+    /**
+     * Проверка прав доступа создателя турнира
+     * @private
+     */
+    static async _checkTournamentCreatorAccess(tournamentId, userId) {
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            throw new Error('Турнир не найден');
+        }
+
+        if (tournament.created_by !== userId) {
+            throw new Error('Только создатель турнира может выполнить это действие');
+        }
+        
+        return tournament;
     }
 
     /**

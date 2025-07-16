@@ -405,6 +405,7 @@ const TournamentAdminPanel = ({
                     <TournamentSettingsPanel 
                         tournament={tournament}
                         isLoading={isLoading}
+                        isCreator={user?.id === tournament?.created_by}
                         onUpdateSetting={onUpdateTournamentSetting}
                     />
                 )}
