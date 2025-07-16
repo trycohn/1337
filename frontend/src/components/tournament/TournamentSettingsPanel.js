@@ -35,15 +35,15 @@ const TournamentSettingsPanel = ({
 
     // 🏆 Список форматов турниров
     const tournamentFormats = [
-        { value: 'single_elimination', label: 'Одиночное исключение' },
-        { value: 'double_elimination', label: 'Двойное исключение' },
+        { value: 'single_elimination', label: 'Single Elimination' },
+        { value: 'double_elimination', label: 'Double Elimination' },
         { value: 'mix', label: 'Микс-турнир' }
     ];
 
     // 🎯 Типы турнирной сетки
     const bracketTypes = [
-        { value: 'single_elimination', label: 'Одиночное исключение' },
-        { value: 'double_elimination', label: 'Двойное исключение' }
+        { value: 'single_elimination', label: 'Single Elimination' },
+        { value: 'double_elimination', label: 'Double Elimination' }
     ];
 
     // 🎯 Типы рейтинга для микс-турниров
@@ -283,7 +283,7 @@ const TournamentSettingsPanel = ({
                         ) : (
                             <div className="display-field">
                                 <span className="setting-value">
-                                    {bracketTypes.find(t => t.value === tournament.bracket_type)?.label || 'Одиночное исключение'}
+                                    {bracketTypes.find(t => t.value === tournament.bracket_type)?.label || 'Single Elimination'}
                                 </span>
                                 {canEditBracketType && (
                                     <button 

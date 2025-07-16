@@ -378,8 +378,8 @@ const TournamentInfoSection = ({
     // Функция для получения читаемого названия формата
     const getFormatDisplayName = (format) => {
         const formatNames = {
-            'single_elimination': 'Одиночное исключение',
-            'double_elimination': 'Двойное исключение',
+            'single_elimination': 'Single Elimination',
+            'double_elimination': 'Double Elimination',
             'round_robin': 'Круговой турнир',
             'swiss': 'Швейцарская система',
             'mix': 'Микс-турнир'

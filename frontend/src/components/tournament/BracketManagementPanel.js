@@ -838,16 +838,16 @@ const BracketManagementPanel = ({
                                                 disabled={loading}
                                             >
                                                 <option value="single_elimination">
-                                                    Одиночное исключение
+                                                    Single Elimination
                                                 </option>
                                                 <option value="double_elimination">
-                                                    Двойное исключение
+                                                    Double Elimination
                                                 </option>
                                             </select>
                                             <small className="option-description">
                                                 {selectedBracketType === 'single_elimination' 
-                                                    ? 'Участники исключаются после первого поражения' 
-                                                    : 'Участники исключаются после двух поражений (Winners + Losers Bracket)'}
+                                                    ? 'Participants are eliminated after their first loss' 
+                                                    : 'Participants are eliminated after two losses (Winners + Losers Bracket)'}
                                             </small>
                                         </div>
 

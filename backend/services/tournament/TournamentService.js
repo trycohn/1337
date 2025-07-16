@@ -623,8 +623,8 @@ class TournamentService {
         
         // Уведомление в чат турнира
         const formatNames = {
-            'single_elimination': 'Одиночное исключение',
-            'double_elimination': 'Двойное исключение',
+            'single_elimination': 'Single Elimination',
+            'double_elimination': 'Double Elimination',
             'mix': 'Микс-турнир'
         };
         
@@ -755,8 +755,8 @@ class TournamentService {
         
         // Уведомление в чат турнира
         const bracketTypeNames = {
-            'single_elimination': 'Одиночное исключение',
-            'double_elimination': 'Двойное исключение'
+            'single_elimination': 'Single Elimination',
+            'double_elimination': 'Double Elimination'
         };
         
         const message = `Тип турнирной сетки изменен на: ${bracketTypeNames[bracketType]}`;
