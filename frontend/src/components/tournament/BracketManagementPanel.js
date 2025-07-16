@@ -35,6 +35,16 @@ const BracketManagementPanel = ({
     const [mixTeamsLoading, setMixTeamsLoading] = useState(false);
     const [showTeamFormation, setShowTeamFormation] = useState(false);
 
+    // 🆕 Состояния для типа сетки
+    const [selectedBracketType, setSelectedBracketType] = useState(tournament?.bracket_type || 'single_elimination');
+
+    // 🆕 Обновляем selectedBracketType при изменении tournament
+    useEffect(() => {
+        if (tournament?.bracket_type) {
+            setSelectedBracketType(tournament.bracket_type);
+        }
+    }, [tournament?.bracket_type]);
+
     // 🔧 ОБРАТНАЯ СОВМЕСТИМОСТЬ: Определяем тип распределения для существующих турниров
     const getCurrentSeedingType = useCallback(() => {
         // Если у турнира есть новое поле seeding_type, используем его
@@ -268,13 +278,15 @@ const BracketManagementPanel = ({
                 thirdPlaceMatch,
                 seedingConfig,
                 isMixTournament,
-                teamsCount: mixTeams.length
+                teamsCount: mixTeams.length,
+                bracketType: selectedBracketType
             });
 
             const response = await api.post(`/api/tournaments/${tournament.id}/generate-bracket`, {
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
-                seedingOptions: seedingConfig
+                seedingOptions: seedingConfig,
+                bracketType: selectedBracketType
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -301,7 +313,7 @@ const BracketManagementPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading, isMixTournament, mixTournamentStatus, mixTeams]);
+    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading, isMixTournament, mixTournamentStatus, mixTeams, selectedBracketType]);
 
     // Регенерация турнирной сетки
     const handleRegenerateBracket = useCallback(async () => {
@@ -334,13 +346,15 @@ const BracketManagementPanel = ({
                 thirdPlaceMatch,
                 seedingConfig,
                 isMixTournament,
-                teamsCount: mixTeams.length
+                teamsCount: mixTeams.length,
+                bracketType: selectedBracketType
             });
 
             const response = await api.post(`/api/tournaments/${tournament.id}/regenerate-bracket`, {
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
-                seedingOptions: seedingConfig
+                seedingOptions: seedingConfig,
+                bracketType: selectedBracketType
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -367,7 +381,7 @@ const BracketManagementPanel = ({
         } finally {
             setLoading(false);
         }
-    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading, isMixTournament, mixTournamentStatus, mixTeams]);
+    }, [tournament?.id, selectedSeedingType, thirdPlaceMatch, seedingConfig, onBracketUpdate, loading, isMixTournament, mixTournamentStatus, mixTeams, selectedBracketType]);
 
     // Предварительный просмотр распределения
     const handlePreviewSeeding = useCallback(async () => {
@@ -813,6 +827,28 @@ const BracketManagementPanel = ({
                                                     </option>
                                                 ))}
                                             </select>
+                                        </div>
+
+                                        {/* 🆕 Выбор типа турнирной сетки */}
+                                        <div className="option-group">
+                                            <label>Тип турнирной сетки:</label>
+                                            <select 
+                                                value={selectedBracketType}
+                                                onChange={(e) => setSelectedBracketType(e.target.value)}
+                                                disabled={loading}
+                                            >
+                                                <option value="single_elimination">
+                                                    Одиночное исключение
+                                                </option>
+                                                <option value="double_elimination">
+                                                    Двойное исключение
+                                                </option>
+                                            </select>
+                                            <small className="option-description">
+                                                {selectedBracketType === 'single_elimination' 
+                                                    ? 'Участники исключаются после первого поражения' 
+                                                    : 'Участники исключаются после двух поражений (Winners + Losers Bracket)'}
+                                            </small>
                                         </div>
 
                                         {selectedSeedingType === 'ranking' && !isMixTournament && (

@@ -422,31 +422,44 @@ class BracketGenerationService {
      * @returns {Object} - Результат генерации
      */
     static async _generateBracketByType(tournament, participants, seedingOptions) {
-        switch (tournament.bracket_type) {
+        // 🆕 Используем тип сетки из опций если он задан, иначе из турнира
+        const bracketType = seedingOptions.bracketType || tournament.bracket_type;
+        
+        console.log(`🏗️ Генерация сетки типа: ${bracketType}`);
+        
+        let result;
+        switch (bracketType) {
             case 'single_elimination':
-                return await SingleEliminationEngine.generateBracket(
+                result = await SingleEliminationEngine.generateBracket(
                     tournament.id,
                     participants,
                     seedingOptions
                 );
+                break;
                 
             case 'double_elimination':
-                return await DoubleEliminationEngine.generateBracket(
+                result = await DoubleEliminationEngine.generateBracket(
                     tournament.id,
                     participants,
                     seedingOptions
                 );
+                break;
             
             default:
-                throw new Error(`Неподдерживаемый тип турнирной сетки: ${tournament.bracket_type}`);
+                throw new Error(`Неподдерживаемый тип турнирной сетки: ${bracketType}`);
         }
+        
+        // 🆕 Добавляем тип сетки в результат для последующего обновления
+        if (result && result.success) {
+            result.bracketType = bracketType;
+        }
+        
+        return result;
     }
     
     /**
      * 📊 Обновление данных турнира после генерации
-     * @param {Object} tournament - Данные турнира
-     * @param {Object} generationResult - Результат генерации
-     * @param {Object} client - Клиент БД
+     * @private
      */
     static async _updateTournamentAfterGeneration(tournament, generationResult, client) {
         // Обновляем количество исключенных участников
@@ -456,6 +469,15 @@ class BracketGenerationService {
         );
         
         console.log(`📊 Обновлены данные турнира: исключено ${generationResult.seedingInfo.participantsExcluded} участников`);
+        
+        // 🆕 Обновляем тип сетки если он изменился
+        if (generationResult.bracketType && generationResult.bracketType !== tournament.bracket_type) {
+            await client.query(
+                'UPDATE tournaments SET bracket_type = $1 WHERE id = $2',
+                [generationResult.bracketType, tournament.id]
+            );
+            console.log(`🏆 Тип сетки обновлён на: ${generationResult.bracketType}`);
+        }
     }
     
     /**

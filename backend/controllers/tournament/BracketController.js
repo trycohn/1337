@@ -34,6 +34,13 @@ class BracketController {
             
             console.log(`🎯 Опции генерации:`, options);
             
+            // 🆕 Обработка типа сетки
+            const bracketType = req.body.bracketType;
+            if (bracketType) {
+                console.log(`🏆 Тип сетки: ${bracketType}`);
+                options.bracketType = bracketType;
+            }
+            
             // Валидируем тип распределения
             if (!Object.values(SEEDING_TYPES).includes(options.seedingType)) {
                 return res.status(400).json({
@@ -109,6 +116,13 @@ class BracketController {
             };
             
             console.log(`🎯 Опции регенерации:`, options);
+            
+            // 🆕 Обработка изменения типа сетки
+            const bracketType = req.body.bracketType;
+            if (bracketType) {
+                console.log(`🏆 Изменение типа сетки на: ${bracketType}`);
+                options.bracketType = bracketType;
+            }
             
             // Регенерируем сетку
             const result = await BracketGenerationService.regenerateBracket(
