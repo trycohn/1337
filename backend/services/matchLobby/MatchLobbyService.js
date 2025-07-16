@@ -1,6 +1,6 @@
 // 🎮 MatchLobbyService - Сервис управления лобби матчей для CS2
 const pool = require('../../db');
-const NotificationService = require('../notification/NotificationService');
+const { sendNotification } = require('../../notifications');
 
 class MatchLobbyService {
     // 🔧 Создание настроек лобби для турнира
@@ -129,13 +129,14 @@ class MatchLobbyService {
                     invitations.push(invResult.rows[0]);
                     
                     // Отправляем уведомление
-                    await NotificationService.createNotification(
-                        captain.user_id,
-                        'match_lobby_invite',
-                        'Приглашение в лобби матча',
-                        `Вы приглашены в лобби матча турнира. Нажмите для входа.`,
-                        { lobbyId: lobby.id, matchId, tournamentId }
-                    );
+                    await sendNotification(captain.user_id, {
+                        id: Date.now(),
+                        user_id: captain.user_id,
+                        type: 'match_lobby_invite',
+                        message: `Вы приглашены в лобби матча турнира. Нажмите для входа.`,
+                        metadata: JSON.stringify({ lobbyId: lobby.id, matchId, tournamentId }),
+                        created_at: new Date()
+                    });
                 }
             }
             
