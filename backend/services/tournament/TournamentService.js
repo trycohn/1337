@@ -2,7 +2,6 @@ const pool = require('../../db');
 const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
 const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
 const MatchRepository = require('../../repositories/tournament/MatchRepository');
-const InvitationRepository = require('../../repositories/tournament/InvitationRepository');
 const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const ChatService = require('../tournament/ChatService');
 const MatchLobbyService = require('../matchLobby/MatchLobbyService');
