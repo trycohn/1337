@@ -232,6 +232,36 @@ function createSocketServer(httpServer) {
       console.log(`📖 [Socket.IO] Событие messages_read переотправлено в комнату ${userRoomName}`);
     });
 
+    // 🎮 Подключение к лобби матча
+    socket.on('join_lobby', async (data) => {
+      try {
+        console.log(`🎮 [Socket.IO] Запрос на подключение к лобби от ${socket.user.username}:`, data);
+        const { lobbyId } = data;
+        
+        if (!lobbyId) {
+          socket.emit('error', { message: 'Необходимо указать lobbyId' });
+          return;
+        }
+        
+        // Используем контроллер лобби для обработки
+        const MatchLobbyController = require('./controllers/matchLobby/MatchLobbyController');
+        await MatchLobbyController.handleSocketConnection(io, socket);
+        
+      } catch (error) {
+        console.error('❌ [Socket.IO] Ошибка подключения к лобби:', error);
+        socket.emit('error', { message: error.message || 'Ошибка подключения к лобби' });
+      }
+    });
+
+    // 🎮 Отключение от лобби матча
+    socket.on('leave_lobby', (data) => {
+      const { lobbyId } = data;
+      if (lobbyId) {
+        socket.leave(`lobby_${lobbyId}`);
+        console.log(`👋 [Socket.IO] ${socket.user.username} покинул лобби ${lobbyId}`);
+      }
+    });
+
     // 🚪 Отключение
     socket.on('disconnect', (reason) => {
       console.log(`🚪 [Socket.IO] Пользователь отключен: ${socket.user.username} (${reason})`);

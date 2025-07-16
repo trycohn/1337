@@ -34,7 +34,6 @@ const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
 const MixTeamController = require('../../controllers/tournament/MixTeamController');
 const { BracketController } = require('../../controllers/tournament/BracketController');
-const MatchLobbyController = require('../../controllers/matchLobby/MatchLobbyController');
 
 const router = express.Router();
 
@@ -76,10 +75,7 @@ router.put('/:id/format', authenticateToken, verifyEmailRequired, verifyAdminOrC
 // 📅 Обновление даты старта турнира
 router.put('/:id/start-date', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateStartDate);
 
-// Обновление настроек лобби
-router.put('/:id/lobby-enabled', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateLobbyEnabled);
-
-// 🎮 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
+// 🥊 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей
 router.post('/:id/clear-match-results', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.clearMatchResults);
@@ -204,27 +200,5 @@ router.get('/:id/bracket-statistics', authenticateToken, verifyAdminOrCreator, B
 
 // 🗑️ Очистка результатов турнирной сетки
 router.post('/:id/clear-bracket-results', authenticateToken, verifyAdminOrCreator, BracketController.clearBracketResults);
-
-// ===========================================
-// 🎮 РОУТЫ ЛОББИ МАТЧЕЙ (CS2)
-// ===========================================
-
-// 🔧 Обновление настроек лобби для турнира
-router.put('/:id/lobby-settings', authenticateToken, verifyAdminOrCreator, MatchLobbyController.updateLobbySettings);
-
-// 🏁 Создание лобби для матча
-router.post('/:tournamentId/matches/:matchId/create-lobby', authenticateToken, verifyAdminOrCreator, MatchLobbyController.createMatchLobby);
-
-// 🎯 Получение информации о лобби
-router.get('/lobby/:lobbyId', authenticateToken, MatchLobbyController.getLobbyInfo);
-
-// ✅ Установка готовности участника
-router.post('/lobby/:lobbyId/ready', authenticateToken, MatchLobbyController.setReadyStatus);
-
-// 🎲 Назначение первого выбирающего (только админ)
-router.post('/lobby/:lobbyId/set-first-picker', authenticateToken, verifyAdminOrCreator, MatchLobbyController.setFirstPicker);
-
-// 🗺️ Выбор или бан карты
-router.post('/lobby/:lobbyId/select-map', authenticateToken, MatchLobbyController.selectMap);
 
 module.exports = router; 

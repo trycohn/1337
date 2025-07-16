@@ -103,6 +103,15 @@ const TournamentSettingsPanel = ({
     // Проверка возможности изменения настроек
     const canEdit = tournament?.status === 'active' && !isLoading;
 
+    // 🎮 Функция для определения игры CS2
+    const isCS2Game = (gameName) => {
+        if (!gameName) return false;
+        const normalizedGame = gameName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normalizedGame === 'counterstrike2' || 
+               normalizedGame === 'cs2' || 
+               (gameName.toLowerCase().includes('counter') && gameName.toLowerCase().includes('strike') && gameName.includes('2'));
+    };
+
     return (
         <div className="tournament-settings-panel">
             <div className="section-header">
@@ -336,6 +345,62 @@ const TournamentSettingsPanel = ({
                         )}
                     </div>
                 </div>
+
+                {/* 🎮 НАСТРОЙКИ ЛОББИ (только для CS2) */}
+                {isCS2Game(tournament.game) && (
+                    <div className="setting-item">
+                        <div className="setting-label">
+                            <span className="label-icon">🎮</span>
+                            <span>Лобби матча</span>
+                        </div>
+                        <div className="setting-content">
+                            {editingField === 'lobby_enabled' ? (
+                                <div className="edit-field">
+                                    <select
+                                        value={newValues.lobby_enabled || tournament.lobby_enabled || false}
+                                        onChange={(e) => setNewValues({ ...newValues, lobby_enabled: e.target.value === 'true' })}
+                                        className="setting-select"
+                                        disabled={fieldLoading.lobby_enabled}
+                                    >
+                                        <option value="false">Выключено</option>
+                                        <option value="true">Включено</option>
+                                    </select>
+                                    <div className="edit-actions">
+                                        <button 
+                                            className="save-btn"
+                                            onClick={() => handleSave('lobby_enabled')}
+                                            disabled={fieldLoading.lobby_enabled}
+                                        >
+                                            {fieldLoading.lobby_enabled ? '⏳' : '✅'}
+                                        </button>
+                                        <button 
+                                            className="cancel-btn"
+                                            onClick={handleCancel}
+                                            disabled={fieldLoading.lobby_enabled}
+                                        >
+                                            ❌
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="display-field">
+                                    <span className="setting-value">
+                                        {tournament.lobby_enabled ? 'Включено' : 'Выключено'}
+                                    </span>
+                                    {canEdit && (
+                                        <button 
+                                            className="edit-btn"
+                                            onClick={() => handleEdit('lobby_enabled')}
+                                            title="Изменить настройки лобби"
+                                        >
+                                            ✏️
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ПРЕДУПРЕЖДЕНИЯ */}

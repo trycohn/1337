@@ -190,7 +190,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-/* ===== РЎР•РљР¦РР ===== */
+/* ===== РЎР•РљР¦РРЇ ===== */
 .participants-section-v2,
 .bracket-section-v2,
 .results-section-v2,
@@ -881,5 +881,68 @@
     .creator-only-warning p {
         font-size: 13px;
     }
+}
+ 
+/* 🎮 Секция управления лобби */
+.lobby-section-v2 {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #000;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+.lobby-section-v2 h4 {
+    font-size: 18px;
+    margin: 0 0 20px 0;
+    color: #fff;
+}
+
+.lobby-info {
+    background-color: #111;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.lobby-info p {
+    margin: 0 0 5px 0;
+    color: #fff;
+}
+
+.lobby-info small {
+    color: #999;
+    font-size: 12px;
+}
+
+.lobby-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.create-lobby-btn {
+    background-color: #00ff00;
+    color: #000;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.create-lobby-btn:hover:not(:disabled) {
+    background-color: #00cc00;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
+}
+
+.create-lobby-btn:disabled {
+    background-color: #666;
+    color: #999;
+    cursor: not-allowed;
 }
  

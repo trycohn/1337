@@ -2,11 +2,8 @@ const pool = require('../../db');
 const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
 const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
 const MatchRepository = require('../../repositories/tournament/MatchRepository');
-const InvitationRepository = require('../../repositories/tournament/InvitationRepository');
-const TeamRepository = require('../../repositories/tournament/TeamRepository');
-const ChatService = require('../tournament/ChatService');
-const MatchLobbyService = require('../matchLobby/MatchLobbyService');
-const { logTournamentEvent, logAdvancement } = require('./TournamentLogService');
+const TeamRepository = require('../../repositories/tournament/TeamRepository'); // Added TeamRepository
+const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
 
@@ -142,8 +139,7 @@ class TournamentService {
 
         const {
             name, game, format, participant_type, max_participants,
-            start_date, description, bracket_type, team_size, mix_rating_type,
-            lobby_enabled, lobby_match_format, selected_maps
+            start_date, description, bracket_type, team_size, mix_rating_type
         } = tournamentData;
 
         const tournament = await TournamentRepository.create({
@@ -158,27 +154,15 @@ class TournamentService {
             description: description || null,
             bracket_type: bracket_type || null,
             team_size: team_size || 1,
-            mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null,
-            lobby_enabled: lobby_enabled || false
+            mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null
         });
-
-        // Если включены настройки лобби, создаем их
-        if (lobby_enabled && selected_maps && selected_maps.length === 7) {
-            await MatchLobbyService.createLobbySettings(tournament.id, {
-                enabled: true,
-                matchFormat: lobby_match_format
-            });
-            
-            await MatchLobbyService.setTournamentMaps(tournament.id, selected_maps);
-        }
 
         // Логируем создание турнира
         await logTournamentEvent(tournament.id, userId, 'tournament_created', {
             name: tournament.name,
             game: tournament.game,
             format: tournament.format,
-            mix_rating_type: tournament.mix_rating_type,
-            lobby_enabled: tournament.lobby_enabled
+            mix_rating_type: tournament.mix_rating_type
         });
 
         console.log('✅ TournamentService: Турнир создан', tournament);
@@ -681,41 +665,6 @@ class TournamentService {
         );
         
         console.log(`✅ [updateStartDate] Дата старта турнира ${tournamentId} обновлена на "${startDate}"`);
-        return updatedTournament;
-    }
-
-    /**
-     * Обновление настроек лобби
-     */
-    static async updateLobbyEnabled(tournamentId, lobbyEnabled, userId) {
-        console.log(`🎮 [TournamentService] Обновление настроек лобби турнира ${tournamentId} на ${lobbyEnabled}`);
-
-        // Проверка прав доступа
-        await this._checkTournamentAccess(tournamentId, userId);
-
-        const tournament = await TournamentRepository.getById(tournamentId);
-        if (!tournament) {
-            throw new Error('Турнир не найден');
-        }
-
-        // Обновляем настройки лобби
-        const updatedTournament = await TournamentRepository.update(tournamentId, {
-            lobby_enabled: lobbyEnabled
-        });
-
-        // Обновляем настройки в таблице лобби
-        if (lobbyEnabled) {
-            await MatchLobbyService.createLobbySettings(tournamentId, {
-                enabled: true,
-                matchFormat: null
-            });
-        }
-
-        await logTournamentEvent(tournamentId, userId, 'lobby_settings_updated', {
-            lobby_enabled: lobbyEnabled
-        });
-
-        console.log('✅ [TournamentService] Настройки лобби обновлены');
         return updatedTournament;
     }
 

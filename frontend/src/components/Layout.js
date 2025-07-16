@@ -10,6 +10,7 @@ import { useLoader } from '../context/LoaderContext';
 import { useAuth } from '../context/AuthContext';
 import { ensureHttps } from '../utils/userHelpers';
 import { useSocket } from '../hooks/useSocket';
+import MatchLobbyNotification from './tournament/MatchLobby/MatchLobbyNotification';
 
 function Layout() {
     const { user, logout } = useAuth(); // Получаем пользователя из AuthContext
@@ -324,6 +325,8 @@ function Layout() {
             <main className={isMobile && location.pathname === '/messages' ? 'messenger-page' : ''}>
                 <Outlet />
             </main>
+            {/* Компонент уведомления о лобби матча */}
+            {user && socket && <MatchLobbyNotification socket={socket} user={user} />}
         </div>
     );
 }

@@ -1,0 +1,318 @@
+/* 🗺️ Стили для доски выбора карт */
+.lobby-map-selection-board {
+    margin: 40px 0;
+    padding: 30px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+/* Заголовок выбора */
+.lobby-selection-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.lobby-selection-header h3 {
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    color: #fff;
+}
+
+.lobby-current-action {
+    font-size: 18px;
+}
+
+.lobby-current-action p {
+    margin: 10px 0;
+}
+
+.lobby-action-type {
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+.lobby-action-type.pick {
+    background-color: #00ff00;
+    color: #000;
+}
+
+.lobby-action-type.ban {
+    background-color: #ff0000;
+    color: #fff;
+}
+
+.lobby-your-turn {
+    color: #00ff00;
+    font-weight: bold;
+    font-size: 20px;
+    animation: lobby-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes lobby-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.lobby-waiting {
+    color: #999;
+}
+
+.lobby-selection-complete {
+    color: #00ff00;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* Сетка карт */
+.lobby-maps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.lobby-map-item {
+    background-color: #000;
+    border: 2px solid #333;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.lobby-map-item.selectable {
+    cursor: pointer;
+}
+
+.lobby-map-item.selectable:hover {
+    border-color: #ff0000;
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(255, 0, 0, 0.3);
+}
+
+.lobby-map-item.map-picked {
+    border-color: #00ff00;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.lobby-map-item.map-banned {
+    opacity: 0.5;
+    border-color: #ff0000;
+}
+
+/* Миниатюра карты */
+.lobby-map-thumbnail {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    background-color: #222;
+}
+
+.lobby-map-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.lobby-selection-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.lobby-selection-overlay.pick {
+    background-color: rgba(0, 255, 0, 0.3);
+}
+
+.lobby-selection-overlay.ban {
+    background-color: rgba(255, 0, 0, 0.3);
+}
+
+/* Название карты */
+.lobby-map-name {
+    padding: 15px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* Кнопки действий */
+.lobby-map-actions {
+    padding: 0 15px 15px;
+    display: flex;
+    justify-content: center;
+}
+
+.lobby-action-button {
+    padding: 10px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.lobby-action-button.pick {
+    background-color: #00ff00;
+    color: #000;
+}
+
+.lobby-action-button.pick:hover {
+    background-color: #00cc00;
+    transform: scale(1.05);
+}
+
+.lobby-action-button.ban {
+    background-color: #ff0000;
+    color: #fff;
+}
+
+.lobby-action-button.ban:hover {
+    background-color: #cc0000;
+    transform: scale(1.05);
+}
+
+/* Информация о выборе */
+.lobby-selection-info {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.lobby-selection-badge {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.lobby-selection-badge.pick {
+    background-color: #00ff00;
+    color: #000;
+}
+
+.lobby-selection-badge.ban {
+    background-color: #ff0000;
+    color: #fff;
+}
+
+/* История выборов */
+.lobby-selection-history {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #000;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+.lobby-selection-history h4 {
+    font-size: 20px;
+    margin: 0 0 15px 0;
+    color: #fff;
+}
+
+.lobby-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lobby-history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #111;
+    border-radius: 5px;
+}
+
+.lobby-history-index {
+    color: #666;
+    min-width: 30px;
+}
+
+.lobby-history-action {
+    font-size: 20px;
+}
+
+.lobby-history-map {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Выбранные карты */
+.lobby-selected-maps {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #000;
+    border-radius: 10px;
+    border: 2px solid #00ff00;
+}
+
+.lobby-selected-maps h4 {
+    font-size: 20px;
+    margin: 0 0 15px 0;
+    color: #00ff00;
+}
+
+.lobby-picked-maps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lobby-picked-map {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #111;
+    border-radius: 5px;
+    border: 1px solid #00ff00;
+}
+
+.lobby-map-number {
+    color: #00ff00;
+    font-weight: bold;
+    min-width: 80px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .lobby-map-selection-board {
+        padding: 20px;
+    }
+
+    .lobby-maps-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .lobby-map-thumbnail {
+        height: 100px;
+    }
+
+    .lobby-map-name {
+        padding: 10px;
+        font-size: 16px;
+    }
+
+    .lobby-action-button {
+        padding: 8px 20px;
+        font-size: 14px;
+    }
+} 

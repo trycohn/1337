@@ -18,6 +18,17 @@ import './CreateTournament.css';
 // Регистрируем русскую локаль
 registerLocale('ru', ru);
 
+// Карты CS2 для лобби
+const CS2_MAPS = [
+  'de_mirage',
+  'de_inferno', 
+  'de_dust2',
+  'de_nuke',
+  'de_ancient',
+  'de_vertigo',
+  'de_anubis'
+];
+
 function CreateTournament() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth(); // 🆕 Получаем пользователя из AuthContext
@@ -36,7 +47,10 @@ function CreateTournament() {
     bracket_type: 'single_elimination',
     mix_rating_type: 'faceit',
     seeding_type: 'random',
-    seeding_config: {}
+    seeding_config: {},
+    lobby_enabled: false,
+    lobby_match_format: null,
+    selected_maps: []
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -131,7 +145,11 @@ function CreateTournament() {
             bracket_type: formData.format === 'mix' ? formData.bracket_type : 'single_elimination',
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
             seeding_type: formData.seeding_type,
-            seeding_config: formData.seeding_config
+            seeding_config: formData.seeding_config,
+            // Настройки лобби
+            lobby_enabled: isCS2Game(formData.game) ? formData.lobby_enabled : false,
+            lobby_match_format: formData.lobby_enabled ? formData.lobby_match_format : null,
+            selected_maps: formData.lobby_enabled ? formData.selected_maps : []
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -644,6 +662,89 @@ function CreateTournament() {
               <li><strong>Ручное:</strong> Полный контроль администратора над распределением</li>
             </ul>
           </div>
+
+          {/* Настройки лобби матча для CS2 */}
+          {isCS2Game(formData.game) && (
+            <div className="form-section lobby-settings">
+              <h3 className="section-title">🎮 Настройки лобби матча</h3>
+              
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="lobby_enabled"
+                    checked={formData.lobby_enabled}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      lobby_enabled: e.target.checked,
+                      selected_maps: e.target.checked ? CS2_MAPS : []
+                    }))}
+                    disabled={!verificationStatus.canCreate}
+                  />
+                  <span>Включить лобби матча для выбора карт</span>
+                </label>
+                <small className="form-hint">
+                  Участники смогут выбирать и банить карты перед началом матча
+                </small>
+              </div>
+
+              {formData.lobby_enabled && (
+                <>
+                  <div className="form-group">
+                    <label>Формат матчей по умолчанию</label>
+                    <select
+                      name="lobby_match_format"
+                      value={formData.lobby_match_format || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        lobby_match_format: e.target.value || null
+                      }))}
+                      disabled={!verificationStatus.canCreate}
+                    >
+                      <option value="">Выбор в лобби</option>
+                      <option value="bo1">Best of 1</option>
+                      <option value="bo3">Best of 3</option>
+                      <option value="bo5">Best of 5</option>
+                    </select>
+                    <small className="form-hint">
+                      Оставьте пустым, чтобы участники выбирали формат в лобби
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Карты турнира (выберите 7 карт)</label>
+                    <div className="maps-selection">
+                      {CS2_MAPS.map(map => (
+                        <label key={map} className="map-checkbox">
+                          <input
+                            type="checkbox"
+                            value={map}
+                            checked={formData.selected_maps.includes(map)}
+                            onChange={(e) => {
+                              const mapName = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                selected_maps: e.target.checked
+                                  ? [...prev.selected_maps, mapName]
+                                  : prev.selected_maps.filter(m => m !== mapName)
+                              }));
+                            }}
+                            disabled={!verificationStatus.canCreate}
+                          />
+                          <span>{map.replace('de_', '').charAt(0).toUpperCase() + map.replace('de_', '').slice(1)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {formData.lobby_enabled && formData.selected_maps.length !== 7 && (
+                      <small className="form-error">
+                        Необходимо выбрать ровно 7 карт (выбрано: {formData.selected_maps.length})
+                      </small>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="form-buttons">

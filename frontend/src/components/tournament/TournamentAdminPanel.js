@@ -38,7 +38,9 @@ const TournamentAdminPanel = ({
     // 🗑️ НОВЫЙ ПРОПС ДЛЯ УДАЛЕНИЯ ТУРНИРА
     onDeleteTournament,
     // 🆕 ДОБАВЛЕН ПРОПС USER ДЛЯ ПРОВЕРКИ СОЗДАТЕЛЯ
-    user
+    user,
+    // 🆕 НОВЫЙ ПРОПС ДЛЯ СОЗДАНИЯ ЛОББИ МАТЧА
+    onCreateMatchLobby
 }) => {
     if (!isCreatorOrAdmin) {
         return null;
@@ -132,6 +134,7 @@ const TournamentAdminPanel = ({
     const nextStageAction = getNextStageAction();
     const hasMatches = matches && matches.length > 0;
     const hasBracket = hasMatches;
+    const hasNoResults = matches?.some(m => m.status === 'completed') || matches?.some(m => m.status === 'ready');
 
     return (
         <div className="tournament-admin-panel-v2">
@@ -349,17 +352,17 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Создать турнирную сетку"
                             >
-                                ⚡ Сгенерировать сетку
+                                🎲 Генерировать сетку
                             </button>
                         )}
-
-                        {/* Перегенерация сетки */}
-                        {tournament?.status === 'active' && hasBracket && (
+                        
+                        {/* Регенерация сетки */}
+                        {tournament?.status === 'active' && hasBracket && hasNoResults && (
                             <button 
                                 className="action-btn-v2 regenerate-btn"
-                                onClick={onRegenerateBracket}
+                                onClick={() => onRegenerateBracket()}
                                 disabled={isLoading}
-                                title="Пересоздать турнирную сетку"
+                                title="Перегенерировать турнирную сетку"
                             >
                                 🔄 Перегенерировать сетку
                             </button>
@@ -372,6 +375,30 @@ const TournamentAdminPanel = ({
                         </div>
                     )}
                 </div>
+
+                {/* 🎮 УПРАВЛЕНИЕ ЛОББИ МАТЧЕЙ (для CS2) */}
+                {tournament?.lobby_enabled && tournament?.status === 'in_progress' && (
+                    <div className="lobby-section-v2">
+                        <h4>🎮 Управление лобби матчей</h4>
+                        <div className="lobby-info">
+                            <p>Лобби матчей включено для этого турнира</p>
+                            <small>Участники будут получать приглашения для выбора карт перед началом матча</small>
+                        </div>
+                        <div className="lobby-actions">
+                            {matches?.filter(m => m.status === 'ready' && !m.lobby_created).map(match => (
+                                <button
+                                    key={match.id}
+                                    className="action-btn-v2 create-lobby-btn"
+                                    onClick={() => onCreateMatchLobby && onCreateMatchLobby(match.id)}
+                                    disabled={isLoading}
+                                    title={`Создать лобби для матча ${match.team1_name} vs ${match.team2_name}`}
+                                >
+                                    🎮 Создать лобби: {match.team1_name} vs {match.team2_name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* 🆕 УПРАВЛЕНИЕ НАСТРОЙКАМИ ТУРНИРА */}
                 {tournament?.status === 'active' && (

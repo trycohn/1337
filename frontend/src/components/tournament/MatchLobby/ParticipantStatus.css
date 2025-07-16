@@ -1,0 +1,223 @@
+/* 👥 Стили для статусов участников лобби */
+.lobby-participant-status {
+    margin: 40px 0;
+}
+
+/* Контейнер участников */
+.lobby-participants-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 30px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+/* Статус команды */
+.lobby-team-status {
+    flex: 1;
+    padding: 20px;
+    background-color: #000;
+    border-radius: 10px;
+    border: 2px solid #333;
+    transition: all 0.3s ease;
+}
+
+.lobby-team-status.my-team {
+    border-color: #ff0000;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
+}
+
+/* Заголовок команды */
+.lobby-team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.lobby-team-header h3 {
+    font-size: 24px;
+    margin: 0;
+    color: #fff;
+}
+
+.lobby-my-team-badge {
+    background-color: #ff0000;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Статус готовности */
+.lobby-ready-status {
+    margin-bottom: 20px;
+}
+
+.lobby-status-ready,
+.lobby-status-not-ready {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 18px;
+}
+
+.lobby-status-ready {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid #00ff00;
+}
+
+.lobby-status-not-ready {
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+}
+
+.lobby-status-icon {
+    font-size: 24px;
+}
+
+.lobby-status-text {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Кнопка готовности */
+.lobby-ready-toggle-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.lobby-ready-toggle-btn.not-ready {
+    background-color: #00ff00;
+    color: #000;
+}
+
+.lobby-ready-toggle-btn.not-ready:hover {
+    background-color: #00cc00;
+    transform: scale(1.02);
+}
+
+.lobby-ready-toggle-btn.ready {
+    background-color: #ff0000;
+    color: #fff;
+}
+
+.lobby-ready-toggle-btn.ready:hover {
+    background-color: #cc0000;
+    transform: scale(1.02);
+}
+
+/* Разделитель VS */
+.lobby-vs-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background-color: #ff0000;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+}
+
+/* Общий статус */
+.lobby-overall-status {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.lobby-all-ready,
+.lobby-waiting-ready {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 18px;
+}
+
+.lobby-all-ready {
+    color: #00ff00;
+}
+
+.lobby-waiting-ready {
+    color: #999;
+}
+
+/* Информация для наблюдателей */
+.lobby-spectator-info {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.lobby-info-icon {
+    font-size: 20px;
+}
+
+/* Адаптивность */
+@media (max-width: 1024px) {
+    .lobby-participants-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .lobby-team-status {
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .lobby-vs-separator {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .lobby-participant-status {
+        margin: 20px 0;
+    }
+
+    .lobby-participants-container {
+        padding: 20px;
+    }
+
+    .lobby-team-status {
+        padding: 15px;
+    }
+
+    .lobby-team-header h3 {
+        font-size: 20px;
+    }
+
+    .lobby-ready-toggle-btn {
+        padding: 12px;
+        font-size: 14px;
+    }
+} 

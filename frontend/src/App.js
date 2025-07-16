@@ -18,6 +18,7 @@ import { UserProvider } from './context/UserContext'; // Импортируем 
 import { PrivateRoute } from './utils/PrivateRoute';
 import Messenger from './components/Messenger';
 import SocketTest from './components/SocketTest';
+import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -69,6 +70,7 @@ function App() {
                                 <Route path="/socket-test" element={<PrivateRoute component={SocketTest} />} /> {/* Тестирование Socket.IO */}
                                 <Route path="/auth-callback" element={<AuthCallback />} />
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
+                                <Route path="/lobby/:lobbyId" element={<PrivateRoute component={MatchLobbyPage} />} /> {/* Маршрут для лобби матча */}
                             </Route>
                         </Routes>
                     </Router>

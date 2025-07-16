@@ -669,44 +669,6 @@ class TournamentController {
             start_date: startDate
         });
     });
-
-    // 🎮 Обновление настроек лобби
-    static updateLobbyEnabled = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        
-        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
-        const tournamentId = parseInt(id, 10);
-        if (isNaN(tournamentId) || tournamentId <= 0) {
-            return res.status(400).json({ 
-                message: 'ID турнира должен быть положительным числом',
-                received_id: id
-            });
-        }
-        
-        const { lobby_enabled } = req.body;
-        
-        // 🔧 ВАЛИДАЦИЯ ЗНАЧЕНИЯ
-        if (typeof lobby_enabled !== 'boolean') {
-            return res.status(400).json({ 
-                message: 'lobby_enabled должен быть булевым значением',
-                received_value: lobby_enabled
-            });
-        }
-        
-        console.log(`🎮 [updateLobbyEnabled] Обновление настроек лобби турнира ${tournamentId} на "${lobby_enabled}"`);
-        
-        const tournament = await TournamentService.updateLobbyEnabled(
-            tournamentId, 
-            lobby_enabled, 
-            req.user.id
-        );
-        
-        res.json({
-            message: `Настройки лобби успешно ${lobby_enabled ? 'включены' : 'выключены'}`,
-            tournament,
-            lobby_enabled: lobby_enabled
-        });
-    });
 }
 
 module.exports = TournamentController; 

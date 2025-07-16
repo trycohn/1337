@@ -1,0 +1,153 @@
+/* 🎮 Стили для страницы лобби матча */
+.lobby-match-lobby-page {
+    min-height: 100vh;
+    background-color: #000;
+    color: #fff;
+    padding: 20px;
+}
+
+/* Хедер лобби */
+.lobby-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+.lobby-tournament-info h1 {
+    font-size: 32px;
+    margin: 0 0 20px 0;
+    color: #fff;
+}
+
+.lobby-match-info h2 {
+    font-size: 24px;
+    margin: 0 0 10px 0;
+    color: #ff0000;
+}
+
+.lobby-match-info p {
+    font-size: 18px;
+    color: #999;
+    margin: 0;
+}
+
+/* Выбор формата матча */
+.lobby-format-selection {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+.lobby-format-selection h3 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.lobby-format-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.lobby-format-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    background-color: #000;
+    color: #fff;
+    border: 2px solid #ff0000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lobby-format-button:hover {
+    background-color: #111;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+}
+
+.lobby-format-button:active {
+    transform: translateY(0);
+}
+
+/* Статус лобби */
+.lobby-status {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #111;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
+
+.lobby-status p {
+    font-size: 18px;
+    margin: 0;
+}
+
+/* Состояния загрузки и ошибок */
+.lobby-loading,
+.lobby-error {
+    text-align: center;
+    padding: 100px 20px;
+}
+
+.lobby-loading h2,
+.lobby-error h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+.lobby-error p {
+    font-size: 18px;
+    color: #999;
+    margin-bottom: 30px;
+}
+
+.lobby-error button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #000;
+    color: #fff;
+    border: 2px solid #ff0000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lobby-error button:hover {
+    background-color: #111;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .lobby-match-lobby-page {
+        padding: 15px;
+    }
+
+    .lobby-tournament-info h1 {
+        font-size: 24px;
+    }
+
+    .lobby-match-info h2 {
+        font-size: 20px;
+    }
+
+    .lobby-format-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .lobby-format-button {
+        width: 100%;
+        max-width: 300px;
+    }
+} 

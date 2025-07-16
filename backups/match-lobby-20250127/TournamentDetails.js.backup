@@ -1032,7 +1032,6 @@ function TournamentDetails() {
                                 onShowAdminSearchModal={openAdminSearchModal}
                                 onUpdateTournamentSetting={handleUpdateTournamentSetting}
                                 onDeleteTournament={openDeleteTournamentModal}
-                                onCreateMatchLobby={handleCreateMatchLobby}
                                 user={user}
                             />
                         ) : (
@@ -1362,10 +1361,6 @@ function TournamentDetails() {
             case 'start_date':
                 endpoint = `/api/tournaments/${id}/start-date`;
                 payload = { start_date: value };
-                break;
-            case 'lobby_enabled':
-                endpoint = `/api/tournaments/${id}/lobby-enabled`;
-                payload = { lobby_enabled: value };
                 break;
             default:
                 throw new Error(`Неизвестное поле настройки: ${field}`);
@@ -1749,56 +1744,6 @@ function TournamentDetails() {
         setShowThirdPlaceModal(false);
         setIsRegenerationMode(false); // Сбрасываем режим
     }, [isRegenerationMode]);
-
-    // 🎮 Создание лобби матча
-    const handleCreateMatchLobby = useCallback(async (matchId) => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-            
-            if (!token) {
-                throw new Error('Отсутствует токен авторизации');
-            }
-            
-            console.log('🎮 Создаем лобби для матча:', matchId);
-            
-            const response = await api.post(
-                `/api/tournaments/${id}/matches/${matchId}/create-lobby`,
-                {},
-                {
-                    headers: { 
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            
-            console.log('✅ Лобби матча создано:', response.data);
-            
-            setMessage('✅ Лобби матча успешно создано! Приглашения отправлены участникам.');
-            
-            // Обновляем данные турнира
-            await fetchTournamentData();
-            
-        } catch (error) {
-            console.error('❌ Ошибка создания лобби:', error);
-            
-            let errorMessage = 'Ошибка при создании лобби матча';
-            
-            if (error.response?.status === 403) {
-                errorMessage = 'У вас нет прав для создания лобби';
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error;
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            setMessage(`❌ ${errorMessage}`);
-        } finally {
-            setLoading(false);
-            setTimeout(() => setMessage(''), 5000);
-        }
-    }, [id, fetchTournamentData]);
 
     // Обработка ошибок загрузки
     if (loading) {
