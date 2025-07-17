@@ -6,8 +6,9 @@
 // Импорты React и связанные
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import axios from 'axios';
 import api from '../utils/api';
+import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_v5_simplified';
 import { useModalSystem } from '../hooks/useModalSystem';
 import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
@@ -101,9 +102,11 @@ class TournamentErrorBoundary extends React.Component {
 }
 
 // Константы
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 const CACHE_VALIDITY_PERIOD = 2 * 60 * 1000; // 2 минуты
 const MAPS_CACHE_VALIDITY_PERIOD = 24 * 60 * 60 * 1000; // 24 часа
+
+// 🎯 Кеширование для повышения производительности
+const CACHE_DURATION = 30000; // 30 секунд
 
 // Утилиты валидации
 const validateTournamentData = (data) => {
@@ -1164,18 +1167,15 @@ function TournamentDetails() {
             wsRef.current = null;
         }
 
-        // Создаем новое соединение
-        const socket = io(API_URL, {
-            query: { token },
-            transports: ['websocket', 'polling'],
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 10000
-        });
+        // 🆕 Используем готовый socketClient_v5_simplified
+        const socket = getSocketInstance();
+        
+        // Авторизуем socket с токеном
+        authenticateSocket(token);
 
         socket.on('connect', () => {
-            console.log('✅ Socket.IO соединение установлено');
-            socket.emit('watch_tournament', id);
+            console.log('✅ Socket.IO соединение установлено через socketClient_v5_simplified');
+            watchTournament(id);
             socket.emit('join_tournament_chat', id);
         });
 
@@ -1324,10 +1324,9 @@ function TournamentDetails() {
         wsRef.current = socket;
 
         return () => {
-            console.log('🔌 Закрываем Socket.IO соединение при размонтировании');
-            if (socket) {
-                socket.disconnect();
-            }
+            console.log('🔌 Отписываемся от турнира при размонтировании');
+            unwatchTournament(id);
+            // Примечание: socket.disconnect() не нужен для singleton, он остается для других компонентов
         };
     }, [id, user, tournament?.id, fetchTournamentData]);
 
