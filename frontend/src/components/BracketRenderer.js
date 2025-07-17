@@ -8,18 +8,25 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
     const groupedMatches = useMemo(() => {
         if (!matches || matches.length === 0) return { single: [], winners: [], losers: [], grandFinal: [] };
         
-        if (tournament.bracket_type === 'double_elimination') {
+        // 🔧 ИСПРАВЛЕНО: Добавляем проверки на undefined и bracket_type
+        const safeTournament = tournament || {};
+        const safeMatches = matches.filter(m => m && typeof m === 'object' && m.id);
+        
+        if (safeTournament.bracket_type === 'double_elimination') {
             return {
-                winners: matches.filter(m => m.bracket_type === 'winner').sort((a, b) => a.round - b.round || a.match_number - b.match_number),
-                losers: matches.filter(m => m.bracket_type === 'loser').sort((a, b) => a.round - b.round || a.match_number - b.match_number),
-                grandFinal: matches.filter(m => m.bracket_type === 'grand_final' || m.bracket_type === 'grand_final_reset').sort((a, b) => a.match_number - b.match_number)
+                winners: safeMatches.filter(m => (m.bracket_type || 'winner') === 'winner').sort((a, b) => a.round - b.round || a.match_number - b.match_number),
+                losers: safeMatches.filter(m => (m.bracket_type || 'winner') === 'loser').sort((a, b) => a.round - b.round || a.match_number - b.match_number),
+                grandFinal: safeMatches.filter(m => {
+                    const bracketType = m.bracket_type || 'winner';
+                    return bracketType === 'grand_final' || bracketType === 'grand_final_reset';
+                }).sort((a, b) => a.match_number - b.match_number)
             };
         } else {
             return {
-                single: matches.sort((a, b) => a.round - b.round || a.match_number - b.match_number)
+                single: safeMatches.sort((a, b) => a.round - b.round || a.match_number - b.match_number)
             };
         }
-    }, [matches, tournament.bracket_type]);
+    }, [matches, tournament?.bracket_type]);
 
     // Рендер single elimination
     const renderSingleElimination = () => {
@@ -138,7 +145,8 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
     // Основной рендер
     return (
         <div className="bracket-renderer">
-            {tournament.bracket_type === 'double_elimination' ? renderDoubleElimination() : renderSingleElimination()}
+            {/* 🔧 ИСПРАВЛЕНО: Безопасное обращение к tournament.bracket_type */}
+            {(tournament?.bracket_type || 'single_elimination') === 'double_elimination' ? renderDoubleElimination() : renderSingleElimination()}
         </div>
     );
 };
