@@ -522,7 +522,7 @@ class TournamentRepository {
         console.log(`🏆 [TournamentRepository.updateBracketType] Обновление типа сетки турнира ${tournamentId} на "${bracketType}"`);
         
         const result = await pool.query(
-            'UPDATE tournaments SET bracket_type = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+            'UPDATE tournaments SET bracket_type = $1 WHERE id = $2 RETURNING *',
             [bracketType, tournamentId]
         );
         
@@ -540,7 +540,7 @@ class TournamentRepository {
         console.log(`👥 [TournamentRepository.updateTeamSize] Обновление размера команды турнира ${tournamentId} на ${teamSize}`);
         
         const result = await pool.query(
-            'UPDATE tournaments SET team_size = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+            'UPDATE tournaments SET team_size = $1 WHERE id = $2 RETURNING *',
             [teamSize, tournamentId]
         );
         
