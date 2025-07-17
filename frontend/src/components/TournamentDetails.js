@@ -1792,48 +1792,6 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData]);
 
-    // Обработка ошибок загрузки
-    if (loading) {
-                        return (
-            <div className="tournament-loading" data-testid="tournament-loading">
-                <div className="loading-content">
-                    <h2>🔄 Загрузка турнира...</h2>
-                    <p>Пожалуйста, подождите</p>
-                </div>
-                                            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="auth-error-container" data-testid="tournament-error">
-                <div className="auth-error-message">
-                    <h2>⚠️ Ошибка загрузки турнира</h2>
-                    <p>{error}</p>
-                                                        <button 
-                        className="auth-error-button" 
-                        onClick={() => {
-                            setError(null);
-                            fetchTournamentData();
-                        }}
-                    >
-                        �� Попробовать снова
-                                                        </button>
-                                                    </div>
-                                            </div>
-        );
-    }
-
-    if (!tournament) {
-        return (
-            <div className="tournament-not-found" data-testid="tournament-not-found">
-                <h2>❓ Турнир не найден</h2>
-                <p>Турнир с указанным ID не существует или был удален.</p>
-                <button onClick={() => navigate('/')}>🏠 На главную</button>
-                                                        </div>
-        );
-    }
-
     // 👤 Обработчик добавления незарегистрированного участника
     const handleAddParticipant = useCallback(async () => {
         if (!newParticipantData.display_name?.trim()) {
@@ -1886,11 +1844,47 @@ function TournamentDetails() {
         }
     }, [newParticipantData, tournamentManagement, id, fetchTournamentData, closeModal, setMessage, setLoading]);
 
-    // 🆕 Функция переключения вкладок
-    const switchTab = useCallback((tabName) => {
-        setActiveTab(tabName);
-        console.log('🔄 Переключение на вкладку:', tabName);
-    }, []);
+    // Обработка ошибок загрузки
+    if (loading) {
+                        return (
+            <div className="tournament-loading" data-testid="tournament-loading">
+                <div className="loading-content">
+                    <h2>🔄 Загрузка турнира...</h2>
+                    <p>Пожалуйста, подождите</p>
+                </div>
+                                            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="auth-error-container" data-testid="tournament-error">
+                <div className="auth-error-message">
+                    <h2>⚠️ Ошибка загрузки турнира</h2>
+                    <p>{error}</p>
+                                                        <button 
+                        className="auth-error-button" 
+                        onClick={() => {
+                            setError(null);
+                            fetchTournamentData();
+                        }}
+                    >
+                        �� Попробовать снова
+                                                        </button>
+                                                    </div>
+                                            </div>
+        );
+    }
+
+    if (!tournament) {
+        return (
+            <div className="tournament-not-found" data-testid="tournament-not-found">
+                <h2>❓ Турнир не найден</h2>
+                <p>Турнир с указанным ID не существует или был удален.</p>
+                <button onClick={() => navigate('/')}>🏠 На главную</button>
+                                                        </div>
+        );
+    }
 
     // 🆕 Основной рендер с системой вкладок
     return (
