@@ -104,6 +104,18 @@ router.post('/:id/participate', authenticateToken, verifyEmailRequired, Particip
 // Отмена участия
 router.delete('/:id/participate', authenticateToken, verifyEmailRequired, ParticipantController.withdrawFromTournament);
 
+// 👤 Ручное добавление незарегистрированного участника (для администраторов)
+router.post('/:id/add-participant', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.addParticipant);
+
+// 🗑️ Удаление участника (для администраторов)
+router.delete('/:id/participants/:participantId', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.removeParticipant);
+
+// 📧 Отправка приглашения в турнир (для администраторов)
+router.post('/:id/invite', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.inviteToTournament);
+
+// 🤝 Обработка приглашения в турнир
+router.post('/:id/handle-invitation', authenticateToken, verifyEmailRequired, ParticipantController.handleInvitation);
+
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ** (БАЗОВЫЕ МЕТОДЫ)
 
 // Генерация микс команд
