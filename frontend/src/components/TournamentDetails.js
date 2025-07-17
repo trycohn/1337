@@ -284,7 +284,12 @@ function TournamentDetails() {
                     if (validation.isValid) {
                         console.log('✅ Используем валидные кешированные данные турнира');
                         setTournament(parsedTournament);
-                        setMatches(Array.isArray(parsedTournament.matches) ? parsedTournament.matches : []);
+                        
+                        // 🔧 ИСПРАВЛЕНО: Более надежная фильтрация matches
+                        const safeMatches = Array.isArray(parsedTournament.matches) ? 
+                            parsedTournament.matches.filter(match => match != null && match !== undefined && match.id) : [];
+                        console.log(`🎯 Фильтрация matches: ${parsedTournament.matches?.length || 0} -> ${safeMatches.length}`);
+                        setMatches(safeMatches);
                         
                         // Обновляем участников
                         if (Array.isArray(parsedTournament.participants)) {
@@ -294,7 +299,7 @@ function TournamentDetails() {
                         
                         setLoading(false);
                         return;
-                } else {
+                    } else {
                         console.warn('⚠️ Кешированные данные невалидны:', validation.error);
                         localStorage.removeItem(cacheKey);
                         localStorage.removeItem(cacheTimestampKey);
@@ -314,7 +319,12 @@ function TournamentDetails() {
 
             console.log('✅ Данные турнира получены и валидны');
             setTournament(tournamentData);
-            setMatches(Array.isArray(tournamentData.matches) ? tournamentData.matches : []);
+            
+            // 🔧 ИСПРАВЛЕНО: Более надежная фильтрация matches
+            const safeMatches = Array.isArray(tournamentData.matches) ? 
+                tournamentData.matches.filter(match => match != null && match !== undefined && match.id) : [];
+            console.log(`🎯 Фильтрация matches: ${tournamentData.matches?.length || 0} -> ${safeMatches.length}`);
+            setMatches(safeMatches);
             
             // Обновляем участников
             if (Array.isArray(tournamentData.participants)) {
@@ -336,9 +346,9 @@ function TournamentDetails() {
             // Очищаем поврежденный кеш
             localStorage.removeItem(cacheKey);
             localStorage.removeItem(cacheTimestampKey);
-            } finally {
-                setLoading(false);
-            }
+        } finally {
+            setLoading(false);
+        }
     }, [id, handleAuthError]);
 
     // Загрузка карт для игры
@@ -523,10 +533,16 @@ function TournamentDetails() {
             };
         };
 
-        // Формируем массив игр
+        // Формируем массив игр с дополнительными проверками
         const safeGames = matches
-            .filter(match => match != null) // Фильтруем undefined/null элементы
+            .filter(match => match != null && match !== undefined && match.id) // Более строгая фильтрация
             .map(match => {
+                // 🔧 ИСПРАВЛЕНО: Дополнительная проверка что match действительно объект
+                if (typeof match !== 'object' || match === null) {
+                    console.warn('⚠️ Пропускаем невалидный матч:', match);
+                    return null;
+                }
+
                 let status = 'SCHEDULED';
                 if (match.winner_team_id) {
                     status = 'DONE';
@@ -546,7 +562,8 @@ function TournamentDetails() {
                     name: match.name || `Матч ${match.id}`,
                     bracket_type: match.bracket_type || 'winner',
                     round: match.round !== undefined ? match.round : 0,
-                    is_third_place_match: match.bracket_type === 'placement', // Исправлено: используем bracket_type
+                    // 🔧 ИСПРАВЛЕНО: Добавляем проверку bracket_type перед использованием
+                    is_third_place_match: (match.bracket_type && match.bracket_type === 'placement') || false,
                     participants: [
                         createSafeParticipant(
                             match.team1_id,
@@ -562,7 +579,8 @@ function TournamentDetails() {
                         )
                     ]
                 };
-            });
+            })
+            .filter(game => game !== null); // Удаляем null значения после map
 
         console.log('✅ Безопасные игры для BracketRenderer созданы:', safeGames.length);
         return safeGames;
