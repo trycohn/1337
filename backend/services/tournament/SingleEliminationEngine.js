@@ -486,27 +486,44 @@ class SingleEliminationEngine {
     static async _generateThirdPlaceMatch(client, tournamentId, allMatches, bracketMath) {
         console.log(`🥉 Генерация матча за 3-е место`);
         
-        // Находим полуфинальные матчи (матчи раунда rounds-1)
+        // Находим финальный раунд (раунд с 1 матчем)
+        const finalRound = Math.max(...allMatches.map(match => match.round));
+        const finalMatches = allMatches.filter(match => match.round === finalRound);
+        
+        if (finalMatches.length !== 1) {
+            throw new Error(`Финальный раунд должен содержать ровно 1 матч, найдено: ${finalMatches.length}`);
+        }
+        
+        // Находим полуфинальные матчи (предпоследний раунд с 2 матчами)
+        const semifinalRound = finalRound - 1;
         const semifinalMatches = allMatches.filter(match => 
-            match.round === bracketMath.rounds - 1 && 
+            match.round === semifinalRound && 
             match.bracket_type === 'winner'
         );
         
+        console.log(`🔍 Ищем полуфинальные матчи в раунде ${semifinalRound}, найдено: ${semifinalMatches.length}`);
+        
         if (semifinalMatches.length !== 2) {
-            throw new Error(`Не найдены полуфинальные матчи для матча за 3-е место`);
+            // Дополнительная диагностика
+            const allRounds = [...new Set(allMatches.map(match => match.round))].sort((a, b) => a - b);
+            console.log(`📊 Все раунды турнира: ${allRounds.join(', ')}`);
+            console.log(`📊 Матчи по раундам:`);
+            allRounds.forEach(round => {
+                const matchesInRound = allMatches.filter(match => match.round === round);
+                console.log(`   Раунд ${round}: ${matchesInRound.length} матчей`);
+            });
+            
+            throw new Error(`Не найдены полуфинальные матчи для матча за 3-е место. Ожидалось: 2 матча в раунде ${semifinalRound}, найдено: ${semifinalMatches.length}`);
         }
         
         const thirdPlaceMatchData = {
             tournament_id: tournamentId,
-            round: bracketMath.rounds,
+            round: finalRound + 1, // Матч за 3-е место в следующем раунде после финала
             match_number: 1,
             team1_id: null, // Будет заполнено после полуфиналов
             team2_id: null,
             status: 'pending',
-            bracket_type: 'placement',
-            is_third_place_match: true,
-            source_match1_id: semifinalMatches[0].id,
-            source_match2_id: semifinalMatches[1].id
+            bracket_type: 'placement'
         };
         
         const thirdPlaceMatch = await this._insertMatch(client, thirdPlaceMatchData);
@@ -525,9 +542,8 @@ class SingleEliminationEngine {
         const query = `
             INSERT INTO matches (
                 tournament_id, round, match_number, team1_id, team2_id,
-                status, bracket_type, is_third_place_match, 
-                source_match1_id, source_match2_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                status, bracket_type
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
         
@@ -538,10 +554,7 @@ class SingleEliminationEngine {
             matchData.team1_id,
             matchData.team2_id,
             matchData.status || 'pending',
-            matchData.bracket_type || 'winner',
-            matchData.is_third_place_match || false,
-            matchData.source_match1_id,
-            matchData.source_match2_id
+            matchData.bracket_type || 'winner'
         ];
         
         const result = await client.query(query, values);
