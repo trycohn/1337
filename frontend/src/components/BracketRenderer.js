@@ -42,6 +42,49 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     }
 
+    // 🔧 УЛУЧШЕННАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ НАЗВАНИЯ РАУНДА
+    const getRoundName = (round, totalRounds, participantCount) => {
+        if (round === -1) return 'Предварительный раунд';
+        
+        // Специальная обработка для микс-турниров (обычно 4-8 команд)
+        if (participantCount <= 8) {
+            if (totalRounds === 1) return 'Финал';
+            if (totalRounds === 2) {
+                return round === 1 ? 'Полуфинал' : 'Финал';
+            }
+            if (totalRounds === 3) {
+                switch (round) {
+                    case 1: return 'Четвертьфинал';
+                    case 2: return 'Полуфинал';
+                    case 3: return 'Финал';
+                }
+            }
+        }
+        
+        // Для больших турниров определяем по позиции относительно финала
+        const roundsFromEnd = totalRounds - round;
+        
+        switch (roundsFromEnd) {
+            case 0:
+                return 'Финал';
+            case 1:
+                return 'Полуфинал';
+            case 2:
+                return 'Четвертьфинал';
+            case 3:
+                return '1/8 финала';
+            case 4:
+                return '1/16 финала';
+            case 5:
+                return '1/32 финала';
+            case 6:
+                return '1/64 финала';
+            default:
+                // Для очень ранних раундов или нестандартных случаев
+                return round === 1 ? 'Первый раунд' : `Раунд ${round}`;
+        }
+    };
+
     // Рендер single elimination
     const renderSingleElimination = () => {
         if (groupedMatches.single.length === 0) {
@@ -58,12 +101,16 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             return acc;
         }, {});
 
+        // Определяем общее количество раундов и участников
+        const totalRounds = Math.max(...Object.keys(rounds).map(Number));
+        const participantCount = tournament?.participants_count || 0;
+
         return (
             <div className="bracket-single-elimination">
                 {Object.entries(rounds).map(([round, roundMatches]) => (
                     <div key={round} className="bracket-round">
                         <h3 className="round-header">
-                            {round == -1 ? 'Предварительный раунд' : `Раунд ${round}`}
+                            {getRoundName(parseInt(round), totalRounds, participantCount)}
                         </h3>
                         <div className="round-matches">
                             {roundMatches.map(match => (
@@ -96,6 +143,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             acc[match.round].push(match);
             return acc;
         }, {});
+
+        // Определяем общее количество раундов для правильного наименования
+        const winnersTotalRounds = Object.keys(winnersRounds).length;
+        const losersTotalRounds = Object.keys(losersRounds).length;
+        const participantCount = tournament?.participants_count || 0;
                                         
         return (
             <div className="bracket-double-elimination">
@@ -105,7 +157,9 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     <div className="bracket-rounds">
                         {Object.entries(winnersRounds).map(([round, roundMatches]) => (
                             <div key={`winner-${round}`} className="bracket-round">
-                                <h3 className="round-header">WR {round}</h3>
+                                <h3 className="round-header">
+                                    WR {round}: {getRoundName(parseInt(round), winnersTotalRounds, participantCount)}
+                                </h3>
                                 <div className="round-matches">
                                     {roundMatches.map(match => (
                                         <MatchCard
@@ -130,7 +184,9 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     <div className="bracket-rounds">
                         {Object.entries(losersRounds).map(([round, roundMatches]) => (
                             <div key={`loser-${round}`} className="bracket-round">
-                                <h3 className="round-header">LR {round}</h3>
+                                <h3 className="round-header">
+                                    LR {round}: {getRoundName(parseInt(round), losersTotalRounds, participantCount)}
+                                </h3>
                                 <div className="round-matches">
                                     {roundMatches.map(match => (
                                         <MatchCard
@@ -200,25 +256,43 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const getParticipantData = (participantIndex) => {
         if (match.participants && match.participants[participantIndex]) {
             const participant = match.participants[participantIndex];
+            // 🔧 ИСПРАВЛЕНО: TBD не может быть победителем
+            const isTBD = !participant.name || participant.name === 'TBD';
             return {
                 name: participant.name || 'TBD',
                 score: participant.resultText || participant.score || 0,
-                isWinner: participant.isWinner || false
+                isWinner: !isTBD && (participant.isWinner || false)
             };
         }
         
         // Fallback для старого формата
         if (participantIndex === 0) {
+            // 🔧 ИСПРАВЛЕНО: Проверяем, что команда существует и матч завершен
+            const teamName = match.team1_name || match.team1_id;
+            const isTBD = !teamName || teamName === 'TBD';
+            const isWinner = !isTBD && 
+                            match.winner_team_id && 
+                            match.team1_id && 
+                            match.winner_team_id === match.team1_id;
+            
             return {
-                name: match.team1_name || match.team1_id || 'TBD',
+                name: teamName || 'TBD',
                 score: match.score1 || 0,
-                isWinner: match.winner_team_id === match.team1_id
+                isWinner: isWinner || false
             };
         } else {
+            // 🔧 ИСПРАВЛЕНО: Проверяем, что команда существует и матч завершен
+            const teamName = match.team2_name || match.team2_id;
+            const isTBD = !teamName || teamName === 'TBD';
+            const isWinner = !isTBD && 
+                            match.winner_team_id && 
+                            match.team2_id && 
+                            match.winner_team_id === match.team2_id;
+            
             return {
-                name: match.team2_name || match.team2_id || 'TBD',
+                name: teamName || 'TBD',
                 score: match.score2 || 0,
-                isWinner: match.winner_team_id === match.team2_id
+                isWinner: isWinner || false
             };
         }
     };
@@ -259,14 +333,20 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             </div>
             
             <div className="match-participants">
-                <div className={`participant ${participant1.isWinner ? 'winner' : ''}`}>
+                <div className={`participant ${
+                    participant1.isWinner ? 'winner' : 
+                    (participant1.name === 'TBD' ? 'tbd' : '')
+                }`}>
                     <span className="participant-name">
                         {participant1.name}
                     </span>
                     <span className="participant-score">{participant1.score}</span>
                 </div>
                 <div className="vs-separator">VS</div>
-                <div className={`participant ${participant2.isWinner ? 'winner' : ''}`}>
+                <div className={`participant ${
+                    participant2.isWinner ? 'winner' : 
+                    (participant2.name === 'TBD' ? 'tbd' : '')
+                }`}>
                     <span className="participant-name">
                         {participant2.name}
                     </span>

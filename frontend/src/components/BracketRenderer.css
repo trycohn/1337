@@ -862,7 +862,26 @@
     transition: all 0.3s ease;
 }
 
-/* 🔧 НОВОЕ: Стили для участников-победителей */
+/* 🔧 НОВОЕ: Стили для TBD участников */
+.participant.tbd {
+    background-color: #333 !important;
+    border-left: 3px solid #666 !important;
+    opacity: 0.7;
+}
+
+.participant.tbd .participant-name {
+    color: #aaa !important;
+    font-style: italic !important;
+    font-weight: normal !important;
+}
+
+.participant.tbd .participant-score {
+    color: #666 !important;
+    background-color: #444 !important;
+    font-weight: normal !important;
+}
+
+/* 🔧 ОБНОВЛЕНО: Стили для участников-победителей */
 .participant.winner {
     background-color: #004400 !important;
     border-left: 3px solid #00ff00 !important;
@@ -879,17 +898,29 @@
     background-color: #003300 !important;
 }
 
-.participant-name {
+/* 🔧 ОБНОВЛЕНО: Стили для обычных участников */
+.participant:not(.winner):not(.tbd) .participant-name {
     color: #fff;
     font-weight: 500;
 }
 
-.participant-score {
+.participant:not(.winner):not(.tbd) .participant-score {
     color: #ff0000;
     font-weight: bold;
+    background-color: #333;
+}
+
+.participant-name {
+    flex: 1;
+    margin-right: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.participant-score {
     font-size: 1.1em;
     padding: 4px 8px;
-    background-color: #333;
     border-radius: 4px;
     min-width: 30px;
     text-align: center;
