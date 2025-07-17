@@ -283,8 +283,10 @@ function TournamentDetails() {
                         setTournament(parsedTournament);
                         setMatches(Array.isArray(parsedTournament.matches) ? parsedTournament.matches : []);
                         
+                        // Обновляем участников
                         if (Array.isArray(parsedTournament.participants)) {
                             setOriginalParticipants(parsedTournament.participants);
+                            console.log('🔄 Обновлено участников из кеша:', parsedTournament.participants.length);
                         }
                         
                         setLoading(false);
@@ -311,8 +313,10 @@ function TournamentDetails() {
             setTournament(tournamentData);
             setMatches(Array.isArray(tournamentData.matches) ? tournamentData.matches : []);
             
+            // Обновляем участников
             if (Array.isArray(tournamentData.participants)) {
                 setOriginalParticipants(tournamentData.participants);
+                console.log('🔄 Обновлено участников:', tournamentData.participants.length);
             }
 
             // Сохраняем в кеш
@@ -895,7 +899,38 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             originalParticipants={originalParticipants}
                             onTeamsGenerated={handleTeamsGenerated}
-                            onTournamentUpdate={fetchTournamentData}
+                            onTournamentUpdate={async (updateInfo) => {
+                                // Обработка разных типов обновлений
+                                if (updateInfo?.action === 'remove_participant') {
+                                    // Мгновенное удаление участника из состояния
+                                    const participantId = updateInfo.participantId;
+                                    
+                                    console.log('🚀 Обновляем состояние турнира после удаления участника:', participantId);
+                                    
+                                    // Обновляем tournament.participants
+                                    setTournament(prev => ({
+                                        ...prev,
+                                        participants: prev.participants?.filter(p => p.id !== participantId) || []
+                                    }));
+                                    
+                                    // Обновляем originalParticipants
+                                    setOriginalParticipants(prev => prev.filter(p => p.id !== participantId));
+                                    
+                                    // Очищаем кеш для следующих запросов
+                                    const cacheKey = `tournament_cache_${id}`;
+                                    const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                                    localStorage.removeItem(cacheKey);
+                                    localStorage.removeItem(cacheTimestampKey);
+                                    
+                                    // Обновляем данные с сервера в фоне
+                                    setTimeout(() => {
+                                        fetchTournamentData();
+                                    }, 1000);
+                                } else {
+                                    // Обычное обновление данных
+                                    await fetchTournamentData();
+                                }
+                            }}
                         />
                     </div>
                 );
@@ -1809,6 +1844,31 @@ function TournamentDetails() {
             if (result.success) {
                 console.log('✅ Участник успешно добавлен:', result.data);
                 
+                // 🚀 МГНОВЕННОЕ ОБНОВЛЕНИЕ СОСТОЯНИЯ - добавляем участника в локальное состояние
+                const newParticipant = {
+                    id: result.data?.id || Date.now(), // временный ID если не вернулся с сервера
+                    name: newParticipantData.display_name,
+                    display_name: newParticipantData.display_name,
+                    email: newParticipantData.email || null,
+                    faceit_elo: newParticipantData.faceit_elo || null,
+                    cs2_premier_rank: newParticipantData.cs2_premier_rank || null,
+                    user_id: null, // незарегистрированный участник
+                    avatar_url: null,
+                    in_team: false,
+                    created_at: new Date().toISOString()
+                };
+                
+                // Обновляем состояние участников немедленно
+                setTournament(prev => ({
+                    ...prev,
+                    participants: [...(prev.participants || []), newParticipant]
+                }));
+                
+                // Обновляем originalParticipants для микс турниров
+                setOriginalParticipants(prev => [...prev, newParticipant]);
+                
+                console.log('🚀 Участник добавлен в локальное состояние мгновенно');
+                
                 // Закрываем модальное окно
                 closeModal('addParticipant');
                 
@@ -1820,14 +1880,16 @@ function TournamentDetails() {
                     cs2_premier_rank: ''
                 });
                 
-                // Очищаем кеш турнира
+                // Очищаем кеш турнира для следующих запросов
                 const cacheKey = `tournament_cache_${id}`;
                 const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
                 
-                // Обновляем данные турнира
-                await fetchTournamentData();
+                // Обновляем данные турнира в фоне для синхронизации с сервером
+                setTimeout(() => {
+                    fetchTournamentData();
+                }, 1000);
                 
                 setMessage(`✅ ${newParticipantData.display_name} добавлен в турнир`);
                 setTimeout(() => setMessage(''), 3000);

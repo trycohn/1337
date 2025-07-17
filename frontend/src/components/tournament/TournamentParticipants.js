@@ -154,14 +154,24 @@ const TournamentParticipants = ({
         if (!confirmed) return;
 
         try {
+            console.log('🗑️ Удаляем участника:', participantId, participantName);
             const result = await tournamentManagement.removeParticipant(participantId);
             
             if (result.success) {
                 setMessage(`✅ ${participantName} удален из турнира`);
                 
-                // Обновляем данные турнира
+                // 🚀 МГНОВЕННОЕ ОБНОВЛЕНИЕ СОСТОЯНИЯ - удаляем участника из локального состояния
+                // Вызываем обновление данных турнира для синхронизации с parent компонентом
                 if (onTournamentUpdate) {
-                    await onTournamentUpdate();
+                    // Создаем объект с информацией об удаленном участнике
+                    const updateInfo = {
+                        action: 'remove_participant',
+                        participantId: participantId,
+                        participantName: participantName
+                    };
+                    
+                    console.log('🚀 Уведомляем parent компонент об удалении участника');
+                    await onTournamentUpdate(updateInfo);
                 }
             } else {
                 setMessage(`❌ ${result.message || 'Ошибка при удалении участника'}`);
