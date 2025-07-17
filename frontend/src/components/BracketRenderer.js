@@ -3,7 +3,10 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import './BracketRenderer.css';
 import { safeParseBracketId } from '../utils/safeParseInt';
 
-const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
+const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selectedMatch, setSelectedMatch, format, onMatchClick }) => {
+    // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
+    const matches = games || [];
+    
     // Группировка матчей по типам bracket для double elimination
     const groupedMatches = useMemo(() => {
         if (!matches || matches.length === 0) return { single: [], winners: [], losers: [], grandFinal: [] };
@@ -28,8 +31,27 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
         }
     }, [matches, tournament?.bracket_type]);
 
+    // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
+    if (!matches || matches.length === 0) {
+        return (
+            <div className="bracket-renderer">
+                <div className="empty-bracket-message">
+                    🎯 Турнирная сетка пока не создана
+                </div>
+            </div>
+        );
+    }
+
     // Рендер single elimination
     const renderSingleElimination = () => {
+        if (groupedMatches.single.length === 0) {
+            return (
+                <div className="empty-bracket-message">
+                    🎯 Нет матчей для отображения
+                </div>
+            );
+        }
+
         const rounds = groupedMatches.single.reduce((acc, match) => {
             if (!acc[match.round]) acc[match.round] = [];
             acc[match.round].push(match);
@@ -50,6 +72,8 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
                                     match={match}
                                     tournament={tournament}
                                     onEditMatch={onEditMatch}
+                                    canEditMatches={canEditMatches}
+                                    onMatchClick={onMatchClick}
                                 />
                             ))}
                         </div>
@@ -73,7 +97,7 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
             return acc;
         }, {});
                                         
-                                        return (
+        return (
             <div className="bracket-double-elimination">
                 {/* Winners Bracket */}
                 <div className="winners-bracket">
@@ -89,6 +113,8 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
                                             match={match}
                                             tournament={tournament}
                                             onEditMatch={onEditMatch}
+                                            canEditMatches={canEditMatches}
+                                            onMatchClick={onMatchClick}
                                             bracketType="winner"
                                         />
                                     ))}
@@ -112,10 +138,12 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
                                             match={match}
                                             tournament={tournament}
                                             onEditMatch={onEditMatch}
+                                            canEditMatches={canEditMatches}
+                                            onMatchClick={onMatchClick}
                                             bracketType="loser"
                                         />
                                     ))}
-                                        </div>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -132,6 +160,8 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
                                     match={match}
                                     tournament={tournament}
                                     onEditMatch={onEditMatch}
+                                    canEditMatches={canEditMatches}
+                                    onMatchClick={onMatchClick}
                                     bracketType="grand_final"
                                 />
                             ))}
@@ -152,7 +182,7 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
 };
 
 // MatchCard компонент с поддержкой bracket_type
-const MatchCard = ({ match, tournament, onEditMatch, bracketType = 'single' }) => {
+const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, bracketType = 'single' }) => {
     const getBracketTypeStyle = () => {
         switch (bracketType) {
             case 'winner':
@@ -165,49 +195,101 @@ const MatchCard = ({ match, tournament, onEditMatch, bracketType = 'single' }) =
                 return 'match-card-single';
         }
     };
-                                                    
-                                                    return (
-        <div className={`match-card ${getBracketTypeStyle()}`}>
+
+    // 🔧 ИСПРАВЛЕНО: Обработка данных матча для нового формата
+    const getParticipantData = (participantIndex) => {
+        if (match.participants && match.participants[participantIndex]) {
+            const participant = match.participants[participantIndex];
+            return {
+                name: participant.name || 'TBD',
+                score: participant.resultText || participant.score || 0,
+                isWinner: participant.isWinner || false
+            };
+        }
+        
+        // Fallback для старого формата
+        if (participantIndex === 0) {
+            return {
+                name: match.team1_name || match.team1_id || 'TBD',
+                score: match.score1 || 0,
+                isWinner: match.winner_team_id === match.team1_id
+            };
+        } else {
+            return {
+                name: match.team2_name || match.team2_id || 'TBD',
+                score: match.score2 || 0,
+                isWinner: match.winner_team_id === match.team2_id
+            };
+        }
+    };
+
+    const participant1 = getParticipantData(0);
+    const participant2 = getParticipantData(1);
+
+    // 🔧 ИСПРАВЛЕНО: Обработка статуса матча
+    const getMatchStatus = () => {
+        if (match.state === 'DONE') return 'completed';
+        if (match.state === 'READY') return 'ready';
+        if (match.state === 'SCHEDULED') return 'pending';
+        
+        // Fallback для старого формата
+        if (match.status) return match.status;
+        if (match.winner_team_id) return 'completed';
+        if (match.team1_id && match.team2_id) return 'ready';
+        return 'pending';
+    };
+
+    const matchStatus = getMatchStatus();
+
+    return (
+        <div 
+            className={`match-card ${getBracketTypeStyle()}`}
+            onClick={() => onMatchClick && onMatchClick(match)}
+            style={{ cursor: onMatchClick ? 'pointer' : 'default' }}
+        >
             <div className="match-info">
-                <span className="match-number">#{match.match_number}</span>
+                <span className="match-number">#{match.match_number || match.id}</span>
                 {bracketType !== 'single' && (
                     <span className="bracket-type-indicator">
                         {bracketType === 'winner' && '🏆'}
                         {bracketType === 'loser' && '💔'}
                         {bracketType === 'grand_final' && '🏁'}
-                                                                </span>
-                                            )}
-                                        </div>
+                    </span>
+                )}
+            </div>
             
             <div className="match-participants">
-                <div className="participant">
+                <div className={`participant ${participant1.isWinner ? 'winner' : ''}`}>
                     <span className="participant-name">
-                        {match.team1_name || match.team1_id || 'TBD'}
-                                                                </span>
-                    <span className="participant-score">{match.score1 || 0}</span>
-                                                            </div>
+                        {participant1.name}
+                    </span>
+                    <span className="participant-score">{participant1.score}</span>
+                </div>
                 <div className="vs-separator">VS</div>
-                <div className="participant">
+                <div className={`participant ${participant2.isWinner ? 'winner' : ''}`}>
                     <span className="participant-name">
-                        {match.team2_name || match.team2_id || 'TBD'}
-                                                                </span>
-                    <span className="participant-score">{match.score2 || 0}</span>
-                                        </div>
-                                    </div>
+                        {participant2.name}
+                    </span>
+                    <span className="participant-score">{participant2.score}</span>
+                </div>
+            </div>
             
             <div className="match-status">
-                <span className={`status-badge status-${match.status}`}>
-                    {match.status === 'pending' && 'Ожидание'}
-                    {match.status === 'ready' && 'Готов'}
-                    {match.status === 'in_progress' && 'Идет'}
-                    {match.status === 'completed' && 'Завершен'}
+                <span className={`status-badge status-${matchStatus}`}>
+                    {matchStatus === 'pending' && 'Ожидание'}
+                    {matchStatus === 'ready' && 'Готов'}
+                    {matchStatus === 'in_progress' && 'Идет'}
+                    {matchStatus === 'completed' && 'Завершен'}
                 </span>
             </div>
             
-            {onEditMatch && (
+            {onEditMatch && canEditMatches && (
                 <button 
                     className="edit-match-btn"
-                    onClick={() => onEditMatch(match)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEditMatch(match);
+                    }}
                     title="Редактировать матч"
                 >
                     ✏️
