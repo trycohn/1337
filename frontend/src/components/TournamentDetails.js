@@ -524,43 +524,45 @@ function TournamentDetails() {
         };
 
         // Формируем массив игр
-        const safeGames = matches.map(match => {
-            let status = 'SCHEDULED';
-            if (match.winner_team_id) {
-                status = 'DONE';
-            } else if (match.team1_id && match.team2_id) {
-                status = 'READY';
-            }
+        const safeGames = matches
+            .filter(match => match != null) // Фильтруем undefined/null элементы
+            .map(match => {
+                let status = 'SCHEDULED';
+                if (match.winner_team_id) {
+                    status = 'DONE';
+                } else if (match.team1_id && match.team2_id) {
+                    status = 'READY';
+                }
 
-            const team1Result = match.score1 !== null ? match.score1 : null;
-            const team2Result = match.score2 !== null ? match.score2 : null;
+                const team1Result = match.score1 !== null ? match.score1 : null;
+                const team2Result = match.score2 !== null ? match.score2 : null;
 
-            return {
-                id: String(match.id),
-                nextMatchId: match.next_match_id ? String(match.next_match_id) : null,
-                tournamentRoundText: `Раунд ${match.round || '?'}`,
-                startTime: match.scheduled_time || '',
-                state: status,
-                name: match.name || `Матч ${match.id}`,
-                bracket_type: match.bracket_type || 'winner',
-                round: match.round !== undefined ? match.round : 0,
-                is_third_place_match: Boolean(match.is_third_place_match),
-                participants: [
-                    createSafeParticipant(
-                        match.team1_id,
-                        team1Result,
-                        match.winner_team_id === match.team1_id,
-                        match.team1_id ? 'PLAYED' : 'NO_SHOW'
-                    ),
-                    createSafeParticipant(
-                        match.team2_id,
-                        team2Result,
-                        match.winner_team_id === match.team2_id,
-                        match.team2_id ? 'PLAYED' : 'NO_SHOW'
-                    )
-                ]
-            };
-        });
+                return {
+                    id: String(match.id),
+                    nextMatchId: match.next_match_id ? String(match.next_match_id) : null,
+                    tournamentRoundText: `Раунд ${match.round || '?'}`,
+                    startTime: match.scheduled_time || '',
+                    state: status,
+                    name: match.name || `Матч ${match.id}`,
+                    bracket_type: match.bracket_type || 'winner',
+                    round: match.round !== undefined ? match.round : 0,
+                    is_third_place_match: match.bracket_type === 'placement', // Исправлено: используем bracket_type
+                    participants: [
+                        createSafeParticipant(
+                            match.team1_id,
+                            team1Result,
+                            match.winner_team_id === match.team1_id,
+                            match.team1_id ? 'PLAYED' : 'NO_SHOW'
+                        ),
+                        createSafeParticipant(
+                            match.team2_id,
+                            team2Result,
+                            match.winner_team_id === match.team2_id,
+                            match.team2_id ? 'PLAYED' : 'NO_SHOW'
+                        )
+                    ]
+                };
+            });
 
         console.log('✅ Безопасные игры для BracketRenderer созданы:', safeGames.length);
         return safeGames;
