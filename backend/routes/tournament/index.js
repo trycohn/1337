@@ -82,6 +82,9 @@ router.put('/:id/lobby-enabled', authenticateToken, verifyEmailRequired, verifyA
 // 🏆 Обновление типа турнирной сетки
 router.put('/:id/bracket-type', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateBracketType);
 
+// 👥 Обновление размера команды для микс-турниров
+router.put('/:id/team-size', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateTeamSize);
+
 // 🎮 **УПРАВЛЕНИЕ МАТЧАМИ** (БЕЗ ГЕНЕРАЦИИ СЕТКИ)
 
 // Очистка результатов матчей
@@ -126,6 +129,9 @@ router.post('/:id/form-teams', authenticateToken, verifyAdminOrCreator, MixTeamC
 
 // 🔄 Переформирование микс команд
 router.post('/:id/mix-regenerate-teams', authenticateToken, verifyAdminOrCreator, MixTeamController.regenerateMixTeams);
+
+// 👥 Обновление размера команды для микс-турниров
+router.patch('/:id/mix-team-size', authenticateToken, verifyAdminOrCreator, MixTeamController.updateTeamSize);
 
 // 🏆 Получение команд турнира
 router.get('/:id/teams', MixTeamController.getTeams);

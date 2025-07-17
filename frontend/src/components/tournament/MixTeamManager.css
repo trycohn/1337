@@ -443,3 +443,151 @@
     font-weight: 300;
     font-style: italic;
 } 
+
+/* 🆕 Стили для модального окна подтверждения (дублируем из TournamentSettingsPanel.css) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #111;
+    border: 2px solid #ff0000;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.team-size-confirm-modal h3 {
+    color: #ff0000;
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    text-align: center;
+}
+
+.modal-body {
+    color: #fff;
+}
+
+.modal-warning {
+    background: rgba(255, 255, 0, 0.1);
+    border: 1px solid #ffff00;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #ffff00;
+    text-align: center;
+}
+
+.consequences-warning {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.consequences-warning h4 {
+    color: #ff0000;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+}
+
+.consequences-warning ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.consequences-warning li {
+    color: #fff;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.action-note {
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.action-note p {
+    color: #00ffff;
+    margin: 0 0 10px 0;
+    font-weight: bold;
+}
+
+.action-note ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #fff;
+}
+
+.action-note li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.confirm-question {
+    text-align: center;
+    font-size: 16px;
+    color: #fff;
+    margin: 15px 0;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.confirm-btn,
+.cancel-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 2px solid;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.confirm-btn.danger {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.confirm-btn.danger:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.cancel-btn {
+    border-color: #888;
+    color: #888;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background: #888;
+    color: #000;
+}
+
+.confirm-btn:disabled,
+.cancel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+} 

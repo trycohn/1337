@@ -523,14 +523,31 @@ class TournamentService {
             throw new Error('Изменение размера команды доступно только для активных турниров');
         }
         
-        // Проверка на уже сформированные команды
+        // 🔧 НОВАЯ ЛОГИКА: Автоматическое удаление команд при изменении размера
         const teamsCount = await TournamentRepository.getTeamsCount(tournamentId);
+        let teamsDeleted = false;
+        let matchesDeleted = false;
+        
         if (teamsCount > 0) {
-            throw new Error('Нельзя изменить размер команды после формирования команд');
+            console.log(`🗑️ [TournamentService.updateTeamSize] Найдено ${teamsCount} команд, удаляем их при изменении размера`);
+            
+            // Сначала удаляем турнирную сетку если она есть
+            const matchesCount = await TournamentRepository.getMatchesCount(tournamentId);
+            if (matchesCount > 0) {
+                console.log(`🗑️ [TournamentService.updateTeamSize] Удаляем ${matchesCount} матчей турнирной сетки`);
+                await TournamentRepository.deleteMatches(tournamentId);
+                matchesDeleted = true;
+            }
+            
+            // Затем удаляем команды
+            await TournamentRepository.deleteTeams(tournamentId);
+            teamsDeleted = true;
+            
+            console.log(`✅ [TournamentService.updateTeamSize] Удалено ${teamsCount} команд и ${matchesCount} матчей`);
         }
         
         // Валидация размера команды
-        const validTeamSizes = [2, 5];
+        const validTeamSizes = [2, 3, 4, 5];
         if (!validTeamSizes.includes(teamSize)) {
             throw new Error(`Неподдерживаемый размер команды: ${teamSize}. Доступные: ${validTeamSizes.join(', ')}`);
         }
@@ -541,16 +558,27 @@ class TournamentService {
         // Логирование события
         await logTournamentEvent(tournamentId, userId, 'team_size_changed', {
             old_team_size: tournament.team_size,
-            new_team_size: teamSize
+            new_team_size: teamSize,
+            teams_deleted: teamsDeleted,
+            matches_deleted: matchesDeleted,
+            teams_count: teamsDeleted ? teamsCount : 0
         });
         
         // Уведомление в чат турнира
         const sizeNames = {
             2: '2 игрока',
+            3: '3 игрока',
+            4: '4 игрока',
             5: '5 игроков'
         };
         
-        const message = `👥 Размер команды изменен на: ${sizeNames[teamSize]}`;
+        let message = `👥 Размер команды изменен на: ${sizeNames[teamSize]}`;
+        
+        if (teamsDeleted) {
+            message += `\n🗑️ Удалено ${teamsCount} команд${matchesDeleted ? ' и турнирная сетка' : ''}`;
+            message += `\n🔄 Участники снова доступны для формирования новых команд`;
+        }
+        
         await sendTournamentChatAnnouncement(tournamentId, message);
         
         // Broadcast обновления
@@ -561,7 +589,14 @@ class TournamentService {
         });
         
         console.log(`✅ [TournamentService.updateTeamSize] Размер команды успешно обновлен на ${teamSize}`);
-        return updatedTournament;
+        
+        // Добавляем информацию об удалении команд к турниру
+        return {
+            ...updatedTournament,
+            teams_deleted: teamsDeleted,
+            matches_deleted: matchesDeleted,
+            deleted_teams_count: teamsDeleted ? teamsCount : 0
+        };
     }
 
     /**
@@ -829,7 +864,7 @@ class TournamentService {
     }
 
     /**
-     * Проверка прав доступа создателя турнира
+     * Проверка прав создателя турнира
      * @private
      */
     static async _checkTournamentCreatorAccess(tournamentId, userId) {

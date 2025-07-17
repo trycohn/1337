@@ -1,115 +1,72 @@
-/**
- * TournamentSettingsPanel.css v1.0.0
- * Стили для панели управления настройками турнира
- * 
- * @version 1.0.0
- * @updated 2025-01-25
- * @author 1337 Community Development Team
- * @features Монохромный дизайн, адаптивность, hover эффекты
- */
+/* TournamentSettingsPanel.css */
 
-/* ===== ОСНОВНАЯ ПАНЕЛЬ ===== */
 .tournament-settings-panel {
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
-    border-radius: 0;
-    margin-bottom: 20px;
-    overflow: hidden;
+    background: #111;
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
 }
 
-/* ===== ЗАГОЛОВОК СЕКЦИИ ===== */
-.tournament-settings-panel .section-header {
+.section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
-    background-color: #2a2a2a;
-    border-bottom: 1px solid #333333;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
 }
 
-.tournament-settings-panel .section-header h4 {
+.section-header h4 {
+    color: #fff;
     margin: 0;
-    color: #ffffff;
-    font-weight: 300;
-    font-size: 1.2em;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 18px;
 }
 
-.settings-info {
-    display: flex;
-    align-items: center;
+.settings-info .info-text {
+    color: #888;
+    font-size: 12px;
 }
 
-.info-text {
-    color: #cccccc;
-    font-size: 0.85em;
-    font-style: italic;
-}
-
-/* ===== СЕТКА НАСТРОЕК ===== */
 .settings-grid {
-    padding: 20px;
     display: grid;
     gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-/* ===== ЭЛЕМЕНТ НАСТРОЙКИ ===== */
 .setting-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 6px;
     padding: 15px;
-    background-color: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    transition: all 0.3s ease;
 }
 
-.setting-item:hover {
-    background-color: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-/* ===== МЕТКА НАСТРОЙКИ ===== */
 .setting-label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 140px;
-    flex-shrink: 0;
+    margin-bottom: 10px;
+    color: #fff;
+    font-weight: bold;
 }
 
 .label-icon {
-    font-size: 1.1em;
+    margin-right: 8px;
+    font-size: 16px;
 }
 
-.setting-label span:last-child {
-    color: #ffffff;
-    font-weight: 500;
-    font-size: 0.95em;
-}
-
-/* ===== КОНТЕНТ НАСТРОЙКИ ===== */
 .setting-content {
-    flex: 1;
-    min-width: 0;
+    color: #fff;
 }
 
-/* ===== ОТОБРАЖЕНИЕ ЗНАЧЕНИЯ ===== */
 .display-field {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    align-items: center;
 }
 
 .setting-value {
-    color: #ffffff;
-    font-size: 0.95em;
-    flex: 1;
-    min-width: 0;
-    word-break: break-word;
+    color: #fff;
+    font-size: 14px;
 }
 
 .edit-btn {
@@ -117,72 +74,51 @@
     border: 1px solid #ff0000;
     color: #ff0000;
     padding: 4px 8px;
-    font-size: 0.8em;
+    border-radius: 4px;
     cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
+    font-size: 12px;
 }
 
 .edit-btn:hover {
-    background-color: #111111;
-    transform: translateY(-1px);
+    background: #111;
 }
 
-/* ===== ПОЛЕ РЕДАКТИРОВАНИЯ ===== */
 .edit-field {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
 }
 
 .setting-select,
 .setting-input {
-    background-color: #000000;
-    color: #ffffff;
+    background: #000;
     border: 1px solid #ff0000;
+    color: #fff;
     padding: 8px 12px;
-    font-size: 0.9em;
-    border-radius: 2px;
+    border-radius: 4px;
     flex: 1;
-    min-width: 150px;
-    transition: all 0.3s ease;
 }
 
 .setting-select:focus,
 .setting-input:focus {
     outline: none;
-    border-color: #ffffff;
-    background-color: #111111;
+    border-color: #ff0000;
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
 }
 
-.setting-select:disabled,
-.setting-input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* ===== ДЕЙСТВИЯ РЕДАКТИРОВАНИЯ ===== */
 .edit-actions {
     display: flex;
     gap: 5px;
-    flex-shrink: 0;
 }
 
 .save-btn,
 .cancel-btn {
     background: transparent;
     border: 1px solid;
-    padding: 6px 10px;
-    font-size: 0.85em;
+    padding: 4px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.3s ease;
-    min-width: 35px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 12px;
 }
 
 .save-btn {
@@ -190,9 +126,8 @@
     color: #00ff00;
 }
 
-.save-btn:hover:not(:disabled) {
-    background-color: #00ff00;
-    color: #000000;
+.save-btn:hover {
+    background: rgba(0, 255, 0, 0.1);
 }
 
 .cancel-btn {
@@ -200,137 +135,168 @@
     color: #ff0000;
 }
 
-.cancel-btn:hover:not(:disabled) {
-    background-color: #ff0000;
-    color: #ffffff;
+.cancel-btn:hover {
+    background: rgba(255, 0, 0, 0.1);
 }
 
-.save-btn:disabled,
-.cancel-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* ===== ПРЕДУПРЕЖДЕНИЯ ===== */
 .settings-warnings {
-    padding: 15px 20px;
-    background-color: rgba(255, 165, 0, 0.1);
-    border-top: 1px solid #333333;
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    border-radius: 6px;
 }
 
 .warning-message {
-    color: #ffcc00;
-    font-size: 0.85em;
-    line-height: 1.4;
+    color: #ff0000;
+    font-size: 12px;
     margin: 0;
 }
 
-/* ===== АДАПТИВНОСТЬ ===== */
-@media (max-width: 768px) {
-    .tournament-settings-panel .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .settings-grid {
-        padding: 15px;
-        gap: 15px;
-    }
-
-    .setting-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .setting-label {
-        min-width: auto;
-        justify-content: flex-start;
-    }
-
-    .display-field {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-    .edit-field {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .setting-select,
-    .setting-input {
-        min-width: auto;
-        width: 100%;
-    }
-
-    .edit-actions {
-        justify-content: flex-end;
-    }
+/* 🆕 Стили для модального окна подтверждения */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
-/* ===== ТЕМНАЯ ТЕМА ===== */
-@media (prefers-color-scheme: dark) {
-    .tournament-settings-panel {
-        background-color: #0f0f0f;
-        border-color: #222222;
-    }
-
-    .tournament-settings-panel .section-header {
-        background-color: #1a1a1a;
-        border-bottom-color: #222222;
-    }
-
-    .setting-item {
-        background-color: rgba(255, 255, 255, 0.01);
-        border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .setting-item:hover {
-        background-color: rgba(255, 255, 255, 0.02);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
+.modal-content {
+    background: #111;
+    border: 2px solid #ff0000;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
-/* ===== АНИМАЦИИ ===== */
-@keyframes settingUpdate {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
+.team-size-confirm-modal h3 {
+    color: #ff0000;
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    text-align: center;
 }
 
-.setting-item.updating {
-    animation: settingUpdate 0.5s ease-in-out;
+.modal-body {
+    color: #fff;
 }
 
-/* ===== ACCESSIBILITY ===== */
-.edit-btn:focus,
-.save-btn:focus,
-.cancel-btn:focus {
-    outline: 2px solid #ff0000;
-    outline-offset: 2px;
+.modal-warning {
+    background: rgba(255, 255, 0, 0.1);
+    border: 1px solid #ffff00;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #ffff00;
+    text-align: center;
 }
 
-.setting-select:focus,
-.setting-input:focus {
-    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.3);
+.consequences-warning {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
 }
 
-/* ===== СОСТОЯНИЯ ЗАГРУЗКИ ===== */
-.edit-field.loading {
-    opacity: 0.7;
-    pointer-events: none;
+.consequences-warning h4 {
+    color: #ff0000;
+    margin: 0 0 10px 0;
+    font-size: 14px;
 }
 
-.save-btn.loading,
-.cancel-btn.loading {
-    animation: pulse 1s infinite;
+.consequences-warning ul {
+    margin: 0;
+    padding-left: 20px;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+.consequences-warning li {
+    color: #fff;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.action-note {
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.action-note p {
+    color: #00ffff;
+    margin: 0 0 10px 0;
+    font-weight: bold;
+}
+
+.action-note ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #fff;
+}
+
+.action-note li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.confirm-question {
+    text-align: center;
+    font-size: 16px;
+    color: #fff;
+    margin: 15px 0;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.confirm-btn,
+.cancel-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 2px solid;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.confirm-btn.danger {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.confirm-btn.danger:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.cancel-btn {
+    border-color: #888;
+    color: #888;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background: #888;
+    color: #000;
+}
+
+.confirm-btn:disabled,
+.cancel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 } 

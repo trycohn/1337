@@ -564,6 +564,22 @@ class TournamentRepository {
         
         return parseInt(result.rows[0].count, 10);
     }
+
+    /**
+     * 🗑️ Удаление всех матчей турнира
+     */
+    static async deleteMatches(tournamentId) {
+        console.log(`🗑️ [TournamentRepository.deleteMatches] Удаление всех матчей для турнира ${tournamentId}`);
+        
+        const result = await pool.query(
+            'DELETE FROM matches WHERE tournament_id = $1',
+            [tournamentId]
+        );
+        
+        console.log(`✅ [TournamentRepository.deleteMatches] Удалено ${result.rowCount} матчей`);
+        
+        return result.rowCount;
+    }
 }
 
 module.exports = TournamentRepository;

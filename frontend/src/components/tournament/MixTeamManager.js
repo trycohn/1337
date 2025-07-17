@@ -27,6 +27,10 @@ const MixTeamManager = ({
     const [isLoading, setIsLoading] = useState(false);
     const [generationSummary, setGenerationSummary] = useState(null);
     const [teamSize, setTeamSize] = useState(tournament?.team_size || 5);
+    
+    // 🆕 Состояние для модального окна подтверждения изменения размера команды
+    const [showTeamSizeConfirmModal, setShowTeamSizeConfirmModal] = useState(false);
+    const [pendingTeamSize, setPendingTeamSize] = useState(null);
 
     /**
      * Загружает команды турнира
@@ -185,7 +189,59 @@ const MixTeamManager = ({
     }, [tournament?.id, isCreatorOrAdmin, ratingType, setMessage, onTeamsUpdated, onTournamentUpdated]);
 
     /**
-     * Обновление размера команды
+     * Обработчик изменения размера команды - показывает модальное окно подтверждения
+     */
+    const handleTeamSizeChange = (newSize) => {
+        if (newSize === teamSize) return; // Не делаем ничего, если размер не изменился
+        
+        setPendingTeamSize(newSize);
+        setShowTeamSizeConfirmModal(true);
+    };
+
+    /**
+     * Подтверждение изменения размера команды
+     */
+    const confirmTeamSizeChange = async () => {
+        setShowTeamSizeConfirmModal(false);
+        await updateTeamSize(pendingTeamSize);
+        setPendingTeamSize(null);
+    };
+
+    /**
+     * Отмена изменения размера команды
+     */
+    const cancelTeamSizeChange = () => {
+        setShowTeamSizeConfirmModal(false);
+        setPendingTeamSize(null);
+    };
+
+    /**
+     * Обработка клика по overlay (закрытие модального окна)
+     */
+    const handleOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            cancelTeamSizeChange();
+        }
+    };
+
+    /**
+     * Обработка нажатия клавиши Escape
+     */
+    useEffect(() => {
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape' && showTeamSizeConfirmModal) {
+                cancelTeamSizeChange();
+            }
+        };
+
+        if (showTeamSizeConfirmModal) {
+            document.addEventListener('keydown', handleEscapeKey);
+            return () => document.removeEventListener('keydown', handleEscapeKey);
+        }
+    }, [showTeamSizeConfirmModal]);
+
+    /**
+     * Обновление размера команды (внутренняя функция)
      */
     const updateTeamSize = useCallback(async (newSize) => {
         if (!tournament?.id || !isCreatorOrAdmin) return;
@@ -206,16 +262,19 @@ const MixTeamManager = ({
 
             if (response.ok) {
                 setTeamSize(newSize);
+                
+                let message = `⚙️ ${result.message}`;
+                
                 setMessage({
                     type: 'success',
-                    text: `⚙️ ${result.message}`
+                    text: message
                 });
 
                 if (onTournamentUpdated && result.tournament) {
                     onTournamentUpdated(result.tournament);
                 }
 
-                // Очищаем команды, так как размер изменился
+                // Очищаем команды, так как размер изменился (автоматически удалены на сервере)
                 setTeams([]);
                 setGenerationSummary(null);
             } else {
@@ -256,8 +315,9 @@ const MixTeamManager = ({
                             <label>Размер команды:</label>
                             <select 
                                 value={teamSize} 
-                                onChange={(e) => updateTeamSize(parseInt(e.target.value))}
-                                disabled={teams.length > 0}
+                                onChange={(e) => handleTeamSizeChange(parseInt(e.target.value))}
+                                disabled={false}
+                                title="Изменение размера команды автоматически распустит существующие команды"
                             >
                                 <option value={2}>2 игрока</option>
                                 <option value={3}>3 игрока</option>
@@ -375,6 +435,58 @@ const MixTeamManager = ({
                     <div className="no-participants-icon">👥</div>
                     <h4>Нет участников</h4>
                     <p>Добавьте участников в турнир для формирования команд</p>
+                </div>
+            )}
+
+            {/* 🆕 Модальное окно подтверждения изменения размера команды */}
+            {showTeamSizeConfirmModal && (
+                <div className="modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modal-content team-size-confirm-modal">
+                        <h3>⚠️ Подтверждение изменения размера команды</h3>
+                        
+                        <div className="modal-body">
+                            <p className="modal-warning">
+                                Вы собираетесь изменить размер команды с <strong>{teamSize}</strong> на <strong>{pendingTeamSize}</strong> игроков.
+                            </p>
+                            
+                            <div className="consequences-warning">
+                                <h4>⚡ Это действие приведет к:</h4>
+                                <ul>
+                                    <li>🗑️ <strong>Расформированию всех существующих команд</strong> ({teams.length} команд)</li>
+                                    <li>🏗️ <strong>Удалению турнирной сетки</strong> (если она создана)</li>
+                                    <li>🔄 <strong>Возвращению участников в статус "без команды"</strong></li>
+                                    <li>📋 <strong>Необходимости заново формировать команды</strong></li>
+                                </ul>
+                            </div>
+                            
+                            <div className="action-note">
+                                <p>💡 После изменения размера команды вам потребуется:</p>
+                                <ol>
+                                    <li>Заново сформировать команды из участников</li>
+                                    <li>Создать новую турнирную сетку</li>
+                                </ol>
+                            </div>
+                            
+                            <p className="confirm-question">
+                                <strong>Вы действительно хотите продолжить?</strong>
+                            </p>
+                        </div>
+                        
+                        <div className="modal-actions">
+                            <button 
+                                className="confirm-btn danger" 
+                                onClick={confirmTeamSizeChange}
+                            >
+                                ✅ Да, изменить размер команды
+                            </button>
+                            <button 
+                                className="cancel-btn" 
+                                onClick={cancelTeamSizeChange}
+                            >
+                                ❌ Отмена
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

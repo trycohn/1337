@@ -744,9 +744,9 @@ class TournamentController {
         
         // 🔧 ВАЛИДАЦИЯ РАЗМЕРА КОМАНДЫ
         const teamSize = parseInt(team_size, 10);
-        if (isNaN(teamSize) || ![2, 5].includes(teamSize)) {
+        if (isNaN(teamSize) || ![2, 3, 4, 5].includes(teamSize)) {
             return res.status(400).json({ 
-                message: 'Размер команды должен быть 2 или 5',
+                message: 'Размер команды должен быть 2, 3, 4 или 5',
                 received_team_size: team_size
             });
         }
@@ -761,11 +761,20 @@ class TournamentController {
         
         const sizeNames = {
             2: '2 игрока',
+            3: '3 игрока',
+            4: '4 игрока',
             5: '5 игроков'
         };
         
+        let message = `Размер команды успешно изменен на: ${sizeNames[teamSize]}`;
+        
+        // Если были удалены команды, добавляем информацию об этом
+        if (tournament.teams_deleted) {
+            message += `. Существующие команды распущены, участники снова доступны для формирования новых команд.`;
+        }
+        
         res.json({
-            message: `Размер команды успешно изменен на: ${sizeNames[teamSize]}`,
+            message,
             tournament,
             team_size: teamSize
         });

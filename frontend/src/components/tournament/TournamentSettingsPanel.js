@@ -20,6 +20,10 @@ const TournamentSettingsPanel = ({
     const [editingField, setEditingField] = useState(null);
     const [newValues, setNewValues] = useState({});
     const [fieldLoading, setFieldLoading] = useState({});
+    
+    // 🆕 Состояние для модального окна подтверждения изменения размера команды
+    const [showTeamSizeConfirmModal, setShowTeamSizeConfirmModal] = useState(false);
+    const [pendingTeamSize, setPendingTeamSize] = useState(null);
 
     // 🎮 Список доступных игр (можно расширить)
     const availableGames = [
@@ -56,6 +60,8 @@ const TournamentSettingsPanel = ({
     // 🆕 Размеры команд для микс-турниров
     const teamSizes = [
         { value: 2, label: '2 игрока' },
+        { value: 3, label: '3 игрока' },
+        { value: 4, label: '4 игрока' },
         { value: 5, label: '5 игроков' }
     ];
 
@@ -75,9 +81,24 @@ const TournamentSettingsPanel = ({
     const handleSave = async (field) => {
         const value = newValues[field];
         
-        if (!value || value.trim() === '') {
-            alert('Значение не может быть пустым');
-            return;
+        // 🔧 СПЕЦИАЛЬНАЯ ОБРАБОТКА для team_size - показываем модальное окно подтверждения
+        if (field === 'team_size') {
+            // Для team_size значение должно быть числом
+            if (!value || isNaN(value) || value <= 0) {
+                alert('Размер команды должен быть положительным числом');
+                return;
+            }
+            
+            // Показываем модальное окно подтверждения
+            setPendingTeamSize(value);
+            setShowTeamSizeConfirmModal(true);
+            return; // Не продолжаем сохранение, ждем подтверждения
+        } else {
+            // Для строковых полей
+            if (!value || (typeof value === 'string' && value.trim() === '')) {
+                alert('Значение не может быть пустым');
+                return;
+            }
         }
 
         setFieldLoading({ ...fieldLoading, [field]: true });
@@ -93,6 +114,53 @@ const TournamentSettingsPanel = ({
             setFieldLoading({ ...fieldLoading, [field]: false });
         }
     };
+
+    // 🆕 Подтверждение изменения размера команды
+    const handleConfirmTeamSizeChange = async () => {
+        setFieldLoading({ ...fieldLoading, team_size: true });
+        setShowTeamSizeConfirmModal(false);
+
+        try {
+            await onUpdateSetting('team_size', pendingTeamSize);
+            setEditingField(null);
+            setNewValues({});
+        } catch (error) {
+            console.error('Ошибка обновления размера команды:', error);
+            alert('Ошибка обновления: ' + (error.message || 'Неизвестная ошибка'));
+        } finally {
+            setFieldLoading({ ...fieldLoading, team_size: false });
+            setPendingTeamSize(null);
+        }
+    };
+
+    // 🆕 Отмена изменения размера команды
+    const handleCancelTeamSizeChange = () => {
+        setShowTeamSizeConfirmModal(false);
+        setPendingTeamSize(null);
+        // Возвращаем значение обратно к текущему
+        setNewValues({ ...newValues, team_size: tournament.team_size });
+    };
+
+    // 🆕 Обработка клика по overlay (закрытие модального окна)
+    const handleOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            handleCancelTeamSizeChange();
+        }
+    };
+
+    // 🆕 Обработка нажатия клавиши Escape
+    React.useEffect(() => {
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape' && showTeamSizeConfirmModal) {
+                handleCancelTeamSizeChange();
+            }
+        };
+
+        if (showTeamSizeConfirmModal) {
+            document.addEventListener('keydown', handleEscapeKey);
+            return () => document.removeEventListener('keydown', handleEscapeKey);
+        }
+    }, [showTeamSizeConfirmModal]);
 
     const handleDateChange = (value) => {
         setNewValues({
@@ -541,6 +609,60 @@ const TournamentSettingsPanel = ({
                     ⚠️ Некоторые настройки могут быть недоступны при наличии участников или созданной турнирной сетки
                 </div>
             </div>
+
+            {/* 🆕 Модальное окно подтверждения изменения размера команды */}
+            {showTeamSizeConfirmModal && (
+                <div className="modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modal-content team-size-confirm-modal">
+                        <h3>⚠️ Подтверждение изменения размера команды</h3>
+                        
+                        <div className="modal-body">
+                            <p className="modal-warning">
+                                Вы собираетесь изменить размер команды с <strong>{tournament.team_size || 5}</strong> на <strong>{pendingTeamSize}</strong> игроков.
+                            </p>
+                            
+                            <div className="consequences-warning">
+                                <h4>⚡ Это действие приведет к:</h4>
+                                <ul>
+                                    <li>🗑️ <strong>Расформированию всех существующих команд</strong></li>
+                                    <li>🏗️ <strong>Удалению турнирной сетки</strong> (если она создана)</li>
+                                    <li>🔄 <strong>Возвращению участников в статус "без команды"</strong></li>
+                                    <li>📋 <strong>Необходимости заново формировать команды</strong></li>
+                                </ul>
+                            </div>
+                            
+                            <div className="action-note">
+                                <p>💡 После изменения размера команды вам потребуется:</p>
+                                <ol>
+                                    <li>Заново сформировать команды из участников</li>
+                                    <li>Создать новую турнирную сетку</li>
+                                </ol>
+                            </div>
+                            
+                            <p className="confirm-question">
+                                <strong>Вы действительно хотите продолжить?</strong>
+                            </p>
+                        </div>
+                        
+                        <div className="modal-actions">
+                            <button 
+                                className="confirm-btn danger" 
+                                onClick={handleConfirmTeamSizeChange}
+                                disabled={fieldLoading.team_size}
+                            >
+                                {fieldLoading.team_size ? '⏳ Изменяю...' : '✅ Да, изменить размер команды'}
+                            </button>
+                            <button 
+                                className="cancel-btn" 
+                                onClick={handleCancelTeamSizeChange}
+                                disabled={fieldLoading.team_size}
+                            >
+                                ❌ Отмена
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
