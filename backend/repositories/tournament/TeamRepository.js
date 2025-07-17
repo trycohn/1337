@@ -374,7 +374,7 @@ class TeamRepository {
             LEFT JOIN users u ON ttm.user_id = u.id
             LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
             WHERE ttm.team_id = $1
-            ORDER BY ttm.is_captain DESC, ttm.created_at ASC
+            ORDER BY ttm.is_captain DESC, tp.created_at ASC
         `, [teamId]);
 
         return result.rows;
@@ -423,7 +423,7 @@ class TeamRepository {
                             WHERE ttm.team_id = $1
                             ORDER BY 
                                 COALESCE(tp.faceit_elo, u.faceit_elo, 1000) DESC,
-                                ttm.created_at ASC
+                                tp.created_at ASC
                             LIMIT 1
                         )
                     `, [teamId]);
@@ -514,7 +514,7 @@ class TeamRepository {
                                 'premier_rating', tp.cs2_premier_rank,
                                 'user_faceit_rating', u.faceit_elo,
                                 'user_premier_rating', u.cs2_premier_rank
-                            ) ORDER BY ttm.is_captain DESC, ttm.created_at ASC
+                            ) ORDER BY ttm.is_captain DESC, tp.created_at ASC
                         ) FILTER (WHERE ttm.id IS NOT NULL), 
                         '[]'
                     ) as members
