@@ -101,8 +101,9 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             return acc;
         }, {});
 
-        // Определяем общее количество раундов и участников
-        const totalRounds = Math.max(...Object.keys(rounds).map(Number));
+        // 🔧 ИСПРАВЛЕНО: Определяем общее количество раундов ИСКЛЮЧАЯ предварительный раунд
+        const regularRounds = Object.keys(rounds).map(Number).filter(r => r >= 1);
+        const totalRounds = regularRounds.length > 0 ? Math.max(...regularRounds) : 1;
         const participantCount = tournament?.participants_count || 0;
 
         return (

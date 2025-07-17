@@ -396,7 +396,7 @@
     }
 }
 
-/* рџ—‘пёЏ РЈР”РђР›РЇР•Рњ РЎРўРђР Р«Р• РЎРџР•Р¦РР¤РР§РќР«Р• РЎРўРР›Р Р”Р›РЇ Р—РђР’Р•Р РЁР•РќРќР«РҐ РњРђРўР§Р•Р™ */
+/* рџ—‘пёЏ РЈР”РђР›РЇР•Рњ РЎРўРђР Р«Р• РЎРџР•Р¦РР Р•РќР• РЎРўРР›Р Р”Р›РЇ Р—РђР’Р•Р РЁР•РќРќР«РҐ РњРђРўР§Р•Р™ */
 /* РЈР±РёСЂР°РµРј СЃС‚Р°СЂС‹Рµ СЃС‚РёР»Рё match-view-block С‚Р°Рє РєР°Рє РѕРЅРё Р±РѕР»СЊС€Рµ РЅРµ РёСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ */
 .match-view-block {
     display: none;
@@ -657,32 +657,78 @@
     color: #ffcc00;
 }
 
+/* 🔧 НОВОЕ: Улучшенные стили для раундов в double elimination */
 .bracket-rounds {
     display: flex;
-    gap: 30px;
+    gap: 50px;
     overflow-x: auto;
     padding: 10px;
+    align-items: center; /* 🔧 Вертикальное центрирование раундов */
 }
 
 .bracket-round {
-    min-width: 200px;
+    min-width: 250px;
     flex-shrink: 0;
-}
-
-.round-header {
-    color: #fff;
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    text-align: center;
-    padding: 8px;
-    background-color: #222;
-    border-radius: 4px;
-}
-
-.round-matches {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    position: relative;
+}
+
+/* 🔧 НОВОЕ: Хедеры раундов для double elimination */
+.bracket-rounds .round-header {
+    color: #fff;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 10px 14px;
+    background-color: #333;
+    border-radius: 6px;
+    border: 1px solid #666;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.winners-bracket .round-header {
+    border-color: #00ff00;
+    background-color: #001100;
+}
+
+.losers-bracket .round-header {
+    border-color: #ff6b6b;
+    background-color: #220000;
+}
+
+/* 🔧 НОВОЕ: Контейнеры матчей для double elimination */
+.bracket-rounds .round-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    min-height: 300px;
+}
+
+/* ===== GRAND FINAL MATCHES ===== */
+.grand-final-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.grand-final-matches .match-card {
+    border: 2px solid #ffcc00;
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(255, 204, 0, 0.3);
 }
 
 /* ===== MATCH CARD VARIANTS ===== */
@@ -726,19 +772,17 @@
     font-size: 0.9em;
 }
 
-/* ===== GRAND FINAL MATCHES ===== */
-.grand-final-matches {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 400px;
-    margin: 0 auto;
+/* ===== СТАРЫЕ ОБЩИЕ СТИЛИ (совместимость) ===== */
+.round-header {
+    color: #ffffff; /* Базовый стиль для совместимости */
+    font-weight: bold;
+    text-align: center;
 }
 
-.grand-final-matches .match-card {
-    border: 2px solid #ffcc00;
-    transform: scale(1.05);
-    box-shadow: 0 8px 16px rgba(255, 204, 0, 0.3);
+.round-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -748,17 +792,47 @@
         gap: 20px;
     }
     
+    .bracket-single-elimination {
+        padding: 10px;
+        gap: 30px;
+        align-items: flex-start; /* На мобильных убираем центрирование */
+    }
+    
     .bracket-rounds {
         flex-direction: column;
         gap: 15px;
+        align-items: stretch; /* На мобильных растягиваем по ширине */
     }
     
-    .bracket-round {
+    .bracket-round,
+    .bracket-single-elimination .bracket-round {
         min-width: auto;
+        width: 100%;
     }
     
     .grand-final-matches .match-card {
         transform: none;
+    }
+    
+    /* Мобильные стили для хедеров */
+    .bracket-single-elimination .round-header,
+    .bracket-rounds .round-header {
+        position: static; /* Убираем sticky на мобильных */
+        font-size: 1em;
+        padding: 8px 12px;
+        margin-bottom: 15px;
+    }
+    
+    /* Уменьшаем минимальную высоту на мобильных */
+    .bracket-single-elimination .round-matches,
+    .bracket-rounds .round-matches {
+        min-height: 200px;
+    }
+    
+    .match-card {
+        min-width: auto;
+        width: 100%;
+        max-width: 300px;
     }
 }
 
@@ -787,32 +861,75 @@
 /* ===== SINGLE ELIMINATION STYLES ===== */
 .bracket-single-elimination {
     display: flex;
-    gap: 30px;
+    gap: 50px;
     padding: 20px;
     background-color: #000;
     overflow-x: auto;
     min-height: 100vh;
+    align-items: center; /* 🔧 НОВОЕ: Вертикальное центрирование всех раундов */
+    justify-content: flex-start;
 }
 
 .bracket-single-elimination .bracket-round {
-    min-width: 200px;
+    min-width: 250px;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
+/* 🔧 НОВОЕ: Фиксированные хедеры раундов сверху */
 .bracket-single-elimination .round-header {
     color: #fff;
-    font-size: 1.1em;
-    margin-bottom: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 20px;
     text-align: center;
-    padding: 8px;
+    padding: 12px 16px;
     background-color: #222;
-    border-radius: 4px;
+    border-radius: 8px;
+    border: 1px solid #ff0000;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* 🔧 НОВОЕ: Контейнер для матчей с вертикальным центрированием */
 .bracket-single-elimination .round-matches {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
+    justify-content: center; /* 🔧 Центрируем матчи вертикально */
+    align-items: center;
+    flex: 1;
+    min-height: 400px; /* Минимальная высота для выравнивания */
+}
+
+/* 🔧 АДАПТИВНАЯ ВЫСОТА ДЛЯ РАЗНЫХ КОЛИЧЕСТВ МАТЧЕЙ */
+.bracket-single-elimination .round-matches:has(.match-card:nth-child(1):last-child) {
+    /* Только 1 матч - финал */
+    min-height: 200px;
+    justify-content: center;
+}
+
+.bracket-single-elimination .round-matches:has(.match-card:nth-child(2):last-child) {
+    /* 2 матча - полуфинал */
+    min-height: 300px;
+    justify-content: center;
+}
+
+.bracket-single-elimination .round-matches:has(.match-card:nth-child(4):last-child) {
+    /* 4 матча - четвертьфинал */
+    min-height: 500px;
+    justify-content: space-evenly;
+}
+
+.bracket-single-elimination .round-matches:has(.match-card:nth-child(n+5)) {
+    /* 5+ матчей - ранние раунды */
+    min-height: 600px;
+    justify-content: space-evenly;
 }
 
 /* ===== ОБЩИЕ СТИЛИ ===== */
