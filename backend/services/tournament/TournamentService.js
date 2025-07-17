@@ -451,40 +451,117 @@ class TournamentService {
     }
 
     /**
-     * Обновление размера команды
+     * 🏆 Обновление типа турнирной сетки
+     */
+    static async updateBracketType(tournamentId, bracketType, userId) {
+        console.log(`🏆 [TournamentService.updateBracketType] Обновление типа сетки турнира ${tournamentId} на "${bracketType}"`);
+        
+        // 🔧 ИСПРАВЛЕНО: Проверка прав доступа только для создателя турнира
+        const tournament = await this._checkTournamentCreatorAccess(tournamentId, userId);
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
+        if (tournament.status !== 'active') {
+            throw new Error('Изменение типа сетки доступно только для активных турниров');
+        }
+        
+        // Проверка на наличие сгенерированной сетки
+        const matchesCount = await TournamentRepository.getMatchesCount(tournamentId);
+        if (matchesCount > 0) {
+            throw new Error('Нельзя изменить тип сетки при наличии сгенерированных матчей');
+        }
+        
+        // Валидация типа сетки
+        const validBracketTypes = ['single_elimination', 'double_elimination'];
+        if (!validBracketTypes.includes(bracketType)) {
+            throw new Error(`Неподдерживаемый тип сетки: ${bracketType}`);
+        }
+        
+        // Обновление в базе данных
+        const updatedTournament = await TournamentRepository.updateBracketType(tournamentId, bracketType);
+        
+        // Логирование события
+        await logTournamentEvent(tournamentId, userId, 'bracket_type_changed', {
+            old_bracket_type: tournament.bracket_type,
+            new_bracket_type: bracketType
+        });
+        
+        // Уведомление в чат турнира
+        const bracketTypeNames = {
+            'single_elimination': 'Single Elimination',
+            'double_elimination': 'Double Elimination'
+        };
+        
+        const message = `Тип турнирной сетки изменен на: ${bracketTypeNames[bracketType]}`;
+        await sendTournamentChatAnnouncement(tournamentId, message);
+        
+        // Broadcast обновления
+        await broadcastTournamentUpdate(tournamentId, {
+            type: 'bracket_type_updated',
+            bracket_type: bracketType,
+            message
+        });
+        
+        console.log(`✅ [TournamentService.updateBracketType] Тип сетки успешно обновлен на "${bracketType}"`);
+        return updatedTournament;
+    }
+
+    /**
+     * 👥 Обновление размера команды для микс-турниров
      */
     static async updateTeamSize(tournamentId, teamSize, userId) {
-        console.log(`📏 TournamentService: Обновление размера команды турнира ${tournamentId}`);
-
-        if (!teamSize || ![2, 5].includes(parseInt(teamSize, 10))) {
-            throw new Error('Неверный размер команды. Допустимые значения: 2 или 5');
-        }
-
-        await this._checkTournamentAccess(tournamentId, userId);
-
-        const tournament = await TournamentRepository.getById(tournamentId);
+        console.log(`👥 [TournamentService.updateTeamSize] Обновление размера команды турнира ${tournamentId} на ${teamSize}`);
+        
+        // 🔧 Проверка прав доступа - только создатель турнира
+        const tournament = await this._checkTournamentCreatorAccess(tournamentId, userId);
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
         if (tournament.format !== 'mix') {
-            throw new Error('Изменение размера команды доступно только для mix-турниров');
+            throw new Error('Изменение размера команды доступно только для микс-турниров');
         }
-
-        if (!['active', 'pending'].includes(tournament.status)) {
-            throw new Error('Изменение размера команды доступно только для турниров в статусе active или pending');
+        
+        if (tournament.status !== 'active') {
+            throw new Error('Изменение размера команды доступно только для активных турниров');
         }
-
-        // Проверяем, не сгенерирована ли уже сетка
-        const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
-        if (matchesCount > 0) {
-            throw new Error('Нельзя изменить размер команды после генерации сетки турнира');
-        }
-
-        // Проверяем, не созданы ли уже команды
+        
+        // Проверка на уже сформированные команды
         const teamsCount = await TournamentRepository.getTeamsCount(tournamentId);
         if (teamsCount > 0) {
-            // Удаляем существующие команды
-            await TournamentRepository.deleteTeams(tournamentId);
+            throw new Error('Нельзя изменить размер команды после формирования команд');
         }
-
-        return await TournamentRepository.updateTeamSize(tournamentId, teamSize);
+        
+        // Валидация размера команды
+        const validTeamSizes = [2, 5];
+        if (!validTeamSizes.includes(teamSize)) {
+            throw new Error(`Неподдерживаемый размер команды: ${teamSize}. Доступные: ${validTeamSizes.join(', ')}`);
+        }
+        
+        // Обновление в базе данных
+        const updatedTournament = await TournamentRepository.updateTeamSize(tournamentId, teamSize);
+        
+        // Логирование события
+        await logTournamentEvent(tournamentId, userId, 'team_size_changed', {
+            old_team_size: tournament.team_size,
+            new_team_size: teamSize
+        });
+        
+        // Уведомление в чат турнира
+        const sizeNames = {
+            2: '2 игрока',
+            5: '5 игроков'
+        };
+        
+        const message = `👥 Размер команды изменен на: ${sizeNames[teamSize]}`;
+        await sendTournamentChatAnnouncement(tournamentId, message);
+        
+        // Broadcast обновления
+        await broadcastTournamentUpdate(tournamentId, {
+            type: 'team_size_updated',
+            team_size: teamSize,
+            message
+        });
+        
+        console.log(`✅ [TournamentService.updateTeamSize] Размер команды успешно обновлен на ${teamSize}`);
+        return updatedTournament;
     }
 
     /**
@@ -715,61 +792,6 @@ class TournamentService {
         });
 
         console.log('✅ [TournamentService] Настройки лобби обновлены');
-        return updatedTournament;
-    }
-
-    /**
-     * 🏆 Обновление типа турнирной сетки
-     */
-    static async updateBracketType(tournamentId, bracketType, userId) {
-        console.log(`🏆 [TournamentService.updateBracketType] Обновление типа сетки турнира ${tournamentId} на "${bracketType}"`);
-        
-        // 🔧 ИСПРАВЛЕНО: Проверка прав доступа только для создателя турнира
-        const tournament = await this._checkTournamentCreatorAccess(tournamentId, userId);
-        
-        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
-        if (tournament.status !== 'active') {
-            throw new Error('Изменение типа сетки доступно только для активных турниров');
-        }
-        
-        // Проверка на наличие сгенерированной сетки
-        const matchesCount = await TournamentRepository.getMatchesCount(tournamentId);
-        if (matchesCount > 0) {
-            throw new Error('Нельзя изменить тип сетки при наличии сгенерированных матчей');
-        }
-        
-        // Валидация типа сетки
-        const validBracketTypes = ['single_elimination', 'double_elimination'];
-        if (!validBracketTypes.includes(bracketType)) {
-            throw new Error(`Неподдерживаемый тип сетки: ${bracketType}`);
-        }
-        
-        // Обновление в базе данных
-        const updatedTournament = await TournamentRepository.updateBracketType(tournamentId, bracketType);
-        
-        // Логирование события
-        await logTournamentEvent(tournamentId, userId, 'bracket_type_changed', {
-            old_bracket_type: tournament.bracket_type,
-            new_bracket_type: bracketType
-        });
-        
-        // Уведомление в чат турнира
-        const bracketTypeNames = {
-            'single_elimination': 'Single Elimination',
-            'double_elimination': 'Double Elimination'
-        };
-        
-        const message = `Тип турнирной сетки изменен на: ${bracketTypeNames[bracketType]}`;
-        await sendTournamentChatAnnouncement(tournamentId, message);
-        
-        // Broadcast обновления
-        await broadcastTournamentUpdate(tournamentId, {
-            type: 'bracket_type_updated',
-            bracket_type: bracketType,
-            message
-        });
-        
-        console.log(`✅ [TournamentService.updateBracketType] Тип сетки успешно обновлен на "${bracketType}"`);
         return updatedTournament;
     }
 

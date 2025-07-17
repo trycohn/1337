@@ -1363,6 +1363,10 @@ function TournamentDetails() {
                 endpoint = `/api/tournaments/${id}/rating-type`;
                 payload = { mix_rating_type: value };
                 break;
+            case 'team_size':
+                endpoint = `/api/tournaments/${id}/team-size`;
+                payload = { team_size: value };
+                break;
             case 'start_date':
                 endpoint = `/api/tournaments/${id}/start-date`;
                 payload = { start_date: value };

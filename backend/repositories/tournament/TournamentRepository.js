@@ -534,6 +534,24 @@ class TournamentRepository {
     }
 
     /**
+     * 👥 Обновление размера команды для микс-турниров
+     */
+    static async updateTeamSize(tournamentId, teamSize) {
+        console.log(`👥 [TournamentRepository.updateTeamSize] Обновление размера команды турнира ${tournamentId} на ${teamSize}`);
+        
+        const result = await pool.query(
+            'UPDATE tournaments SET team_size = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+            [teamSize, tournamentId]
+        );
+        
+        if (result.rows.length === 0) {
+            throw new Error('Турнир не найден');
+        }
+        
+        return result.rows[0];
+    }
+
+    /**
      * 📊 Получение количества матчей в турнире
      */
     static async getMatchesCount(tournamentId) {

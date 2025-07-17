@@ -53,6 +53,12 @@ const TournamentSettingsPanel = ({
         { value: 'mixed', label: 'Случайный микс' }
     ];
 
+    // 🆕 Размеры команд для микс-турниров
+    const teamSizes = [
+        { value: 2, label: '2 игрока' },
+        { value: 5, label: '5 игроков' }
+    ];
+
     const handleEdit = (field) => {
         setEditingField(field);
         setNewValues({
@@ -348,6 +354,65 @@ const TournamentSettingsPanel = ({
                                             className="edit-btn"
                                             onClick={() => handleEdit('mix_rating_type')}
                                             title="Изменить тип рейтинга"
+                                        >
+                                            ✏️
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* 🆕 РАЗМЕР КОМАНДЫ (только для микс-турниров и только для создателя) */}
+                {tournament.format === 'mix' && isCreator && (
+                    <div className="setting-item">
+                        <div className="setting-label">
+                            <span className="label-icon">👥</span>
+                            <span>Размер команды</span>
+                        </div>
+                        <div className="setting-content">
+                            {editingField === 'team_size' ? (
+                                <div className="edit-field">
+                                    <select
+                                        value={newValues.team_size || tournament.team_size || 5}
+                                        onChange={(e) => setNewValues({ ...newValues, team_size: parseInt(e.target.value) })}
+                                        className="setting-select"
+                                        disabled={fieldLoading.team_size}
+                                    >
+                                        {teamSizes.map(size => (
+                                            <option key={size.value} value={size.value}>
+                                                {size.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="edit-actions">
+                                        <button 
+                                            className="save-btn"
+                                            onClick={() => handleSave('team_size')}
+                                            disabled={fieldLoading.team_size}
+                                        >
+                                            {fieldLoading.team_size ? '⏳' : '✅'}
+                                        </button>
+                                        <button 
+                                            className="cancel-btn"
+                                            onClick={handleCancel}
+                                            disabled={fieldLoading.team_size}
+                                        >
+                                            ❌
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="display-field">
+                                    <span className="setting-value">
+                                        {teamSizes.find(s => s.value === tournament.team_size)?.label || '5 игроков'}
+                                    </span>
+                                    {canEdit && (
+                                        <button 
+                                            className="edit-btn"
+                                            onClick={() => handleEdit('team_size')}
+                                            title="Изменить размер команды (только создатель)"
                                         >
                                             ✏️
                                         </button>

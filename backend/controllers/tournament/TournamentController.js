@@ -467,33 +467,6 @@ class TournamentController {
         });
     });
 
-    // 📏 Обновление размера команды
-    static updateTeamSize = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        
-        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
-        const tournamentId = parseInt(id, 10);
-        if (isNaN(tournamentId) || tournamentId <= 0) {
-            return res.status(400).json({ 
-                message: 'ID турнира должен быть положительным числом',
-                received_id: id
-            });
-        }
-        
-        const { teamSize } = req.body;
-        
-        const tournament = await TournamentService.updateTeamSize(
-            tournamentId, 
-            teamSize, 
-            req.user.id
-        );
-        
-        res.json({
-            message: `Размер команды успешно обновлен до ${teamSize}`,
-            tournament
-        });
-    });
-
     // 🎯 Обновление типа рейтинга для микс-турниров
     static updateRatingType = asyncHandler(async (req, res) => {
         const { id } = req.params;
@@ -751,6 +724,50 @@ class TournamentController {
             message: `Тип турнирной сетки успешно изменен на: ${bracketTypeNames[bracket_type]}`,
             tournament,
             bracket_type: bracket_type
+        });
+    });
+
+    // 👥 Обновление размера команды для микс-турниров
+    static updateTeamSize = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+        
+        const { team_size } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ РАЗМЕРА КОМАНДЫ
+        const teamSize = parseInt(team_size, 10);
+        if (isNaN(teamSize) || ![2, 5].includes(teamSize)) {
+            return res.status(400).json({ 
+                message: 'Размер команды должен быть 2 или 5',
+                received_team_size: team_size
+            });
+        }
+        
+        console.log(`👥 [updateTeamSize] Обновление размера команды турнира ${tournamentId} на ${teamSize}`);
+        
+        const tournament = await TournamentService.updateTeamSize(
+            tournamentId, 
+            teamSize, 
+            req.user.id
+        );
+        
+        const sizeNames = {
+            2: '2 игрока',
+            5: '5 игроков'
+        };
+        
+        res.json({
+            message: `Размер команды успешно изменен на: ${sizeNames[teamSize]}`,
+            tournament,
+            team_size: teamSize
         });
     });
 }

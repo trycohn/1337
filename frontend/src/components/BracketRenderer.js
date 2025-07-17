@@ -65,8 +65,8 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
             acc[match.round].push(match);
             return acc;
         }, {});
-
-        return (
+                                        
+                                        return (
             <div className="bracket-double-elimination">
                 {/* Winners Bracket */}
                 <div className="winners-bracket">
@@ -108,7 +108,7 @@ const BracketRenderer = ({ matches, tournament, onEditMatch }) => {
                                             bracketType="loser"
                                         />
                                     ))}
-                                </div>
+                                        </div>
                             </div>
                         ))}
                     </div>
@@ -157,8 +157,8 @@ const MatchCard = ({ match, tournament, onEditMatch, bracketType = 'single' }) =
                 return 'match-card-single';
         }
     };
-
-    return (
+                                                    
+                                                    return (
         <div className={`match-card ${getBracketTypeStyle()}`}>
             <div className="match-info">
                 <span className="match-number">#{match.match_number}</span>
@@ -167,25 +167,25 @@ const MatchCard = ({ match, tournament, onEditMatch, bracketType = 'single' }) =
                         {bracketType === 'winner' && '🏆'}
                         {bracketType === 'loser' && '💔'}
                         {bracketType === 'grand_final' && '🏁'}
-                    </span>
-                )}
-            </div>
+                                                                </span>
+                                            )}
+                                        </div>
             
             <div className="match-participants">
                 <div className="participant">
                     <span className="participant-name">
                         {match.team1_name || match.team1_id || 'TBD'}
-                    </span>
+                                                                </span>
                     <span className="participant-score">{match.score1 || 0}</span>
-                </div>
+                                                            </div>
                 <div className="vs-separator">VS</div>
                 <div className="participant">
                     <span className="participant-name">
                         {match.team2_name || match.team2_id || 'TBD'}
-                    </span>
+                                                                </span>
                     <span className="participant-score">{match.score2 || 0}</span>
-                </div>
-            </div>
+                                        </div>
+                                    </div>
             
             <div className="match-status">
                 <span className={`status-badge status-${match.status}`}>
