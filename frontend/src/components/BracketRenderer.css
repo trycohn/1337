@@ -681,25 +681,15 @@
     font-weight: bold;
     margin-bottom: 20px;
     text-align: center;
-    padding: 10px 14px;
-    background-color: #333;
-    border-radius: 6px;
-    border: 1px solid #666;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
     white-space: nowrap;
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.winners-bracket .round-header {
-    border-color: #00ff00;
-    background-color: #001100;
-}
-
-.losers-bracket .round-header {
-    border-color: #ff6b6b;
-    background-color: #220000;
+    box-shadow: none;
 }
 
 /* 🔧 НОВОЕ: Контейнеры матчей для double elimination */
@@ -819,8 +809,11 @@
     .bracket-rounds .round-header {
         position: static; /* Убираем sticky на мобильных */
         font-size: 1em;
-        padding: 8px 12px;
+        padding: 0;
         margin-bottom: 15px;
+        background: none;
+        border: none;
+        box-shadow: none;
     }
     
     /* Уменьшаем минимальную высоту на мобильных */
@@ -885,15 +878,15 @@
     font-weight: bold;
     margin-bottom: 20px;
     text-align: center;
-    padding: 12px 16px;
-    background-color: #222;
-    border-radius: 8px;
-    border: 1px solid #ff0000;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
     white-space: nowrap;
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: none;
 }
 
 /* 🔧 НОВОЕ: Контейнер для матчей с вертикальным центрированием */
