@@ -640,4 +640,29 @@
     content: "⏳";
     animation: spin 1s linear infinite;
     margin-right: 6px;
+}
+
+/* Информационное сообщение */
+.info-message {
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 10px 15px;
+    margin: 5px 0;
+    color: #ffffff;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-message span {
+    color: #cccccc;
+    font-weight: 300;
+}
+
+.info-message::before {
+    content: "ℹ️";
+    font-size: 16px;
+    color: #4CAF50;
 } 

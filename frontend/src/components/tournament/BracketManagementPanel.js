@@ -45,6 +45,13 @@ const BracketManagementPanel = ({
         }
     }, [tournament?.bracket_type]);
 
+    // 🆕 Автоматически устанавливаем thirdPlaceMatch для Double Elimination
+    useEffect(() => {
+        if (selectedBracketType === 'double_elimination') {
+            setThirdPlaceMatch(true);
+        }
+    }, [selectedBracketType]);
+
     // 🔧 ОБРАТНАЯ СОВМЕСТИМОСТЬ: Определяем тип распределения для существующих турниров
     const getCurrentSeedingType = useCallback(() => {
         // Если у турнира есть новое поле seeding_type, используем его
@@ -743,17 +750,29 @@ const BracketManagementPanel = ({
                                             </div>
                                         )}
 
-                                        <div className="option-group">
-                                            <label>
-                                                <input 
-                                                    type="checkbox"
-                                                    checked={thirdPlaceMatch}
-                                                    onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                                    disabled={loading}
-                                                />
-                                                Добавить матч за 3-е место
-                                            </label>
-                                        </div>
+                                        {/* Чекбокс для матча за 3-е место - скрываем для Double Elimination */}
+                                        {selectedBracketType !== 'double_elimination' && (
+                                            <div className="option-group">
+                                                <label>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={thirdPlaceMatch}
+                                                        onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                                        disabled={loading}
+                                                    />
+                                                    Добавить матч за 3-е место
+                                                </label>
+                                            </div>
+                                        )}
+
+                                        {/* Информация о матче за 3-е место для Double Elimination */}
+                                        {selectedBracketType === 'double_elimination' && (
+                                            <div className="option-group">
+                                                <div className="info-message">
+                                                    <span>ℹ️ В Double Elimination формате матч за 3-е место включен по умолчанию</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="action-buttons">
                                             <button 
@@ -885,17 +904,29 @@ const BracketManagementPanel = ({
                                             </>
                                         )}
 
-                                        <div className="option-group">
-                                            <label>
-                                                <input 
-                                                    type="checkbox"
-                                                    checked={thirdPlaceMatch}
-                                                    onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                                                    disabled={loading}
-                                                />
-                                                Добавить матч за 3-е место
-                                            </label>
-                                        </div>
+                                        {/* Чекбокс для матча за 3-е место - скрываем для Double Elimination */}
+                                        {selectedBracketType !== 'double_elimination' && (
+                                            <div className="option-group">
+                                                <label>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={thirdPlaceMatch}
+                                                        onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                                                        disabled={loading}
+                                                    />
+                                                    Добавить матч за 3-е место
+                                                </label>
+                                            </div>
+                                        )}
+
+                                        {/* Информация о матче за 3-е место для Double Elimination */}
+                                        {selectedBracketType === 'double_elimination' && (
+                                            <div className="option-group">
+                                                <div className="info-message">
+                                                    <span>ℹ️ В Double Elimination формате матч за 3-е место включен по умолчанию</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="action-buttons-extended">
                                             <button 
