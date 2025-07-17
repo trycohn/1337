@@ -1834,6 +1834,64 @@ function TournamentDetails() {
         );
     }
 
+    // 👤 Обработчик добавления незарегистрированного участника
+    const handleAddParticipant = useCallback(async () => {
+        if (!newParticipantData.display_name?.trim()) {
+            setMessage('❌ Укажите имя участника');
+            setTimeout(() => setMessage(''), 3000);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            console.log('👤 Добавляем участника:', newParticipantData);
+
+            const result = await tournamentManagement.addUnregisteredParticipant(newParticipantData);
+            
+            if (result.success) {
+                console.log('✅ Участник успешно добавлен:', result.data);
+                
+                // Закрываем модальное окно
+                closeModal('addParticipant');
+                
+                // Очищаем форму
+                setNewParticipantData({
+                    display_name: '',
+                    email: '',
+                    faceit_elo: '',
+                    cs2_premier_rank: ''
+                });
+                
+                // Очищаем кеш турнира
+                const cacheKey = `tournament_cache_${id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+                
+                // Обновляем данные турнира
+                await fetchTournamentData();
+                
+                setMessage(`✅ ${newParticipantData.display_name} добавлен в турнир`);
+                setTimeout(() => setMessage(''), 3000);
+            } else {
+                setMessage(`❌ ${result.error || 'Ошибка при добавлении участника'}`);
+                setTimeout(() => setMessage(''), 5000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при добавлении участника:', error);
+            setMessage(`❌ Ошибка при добавлении участника: ${error.message}`);
+            setTimeout(() => setMessage(''), 5000);
+        } finally {
+            setLoading(false);
+        }
+    }, [newParticipantData, tournamentManagement, id, fetchTournamentData, closeModal, setMessage, setLoading]);
+
+    // 🆕 Функция переключения вкладок
+    const switchTab = useCallback((tabName) => {
+        setActiveTab(tabName);
+        console.log('🔄 Переключение на вкладку:', tabName);
+    }, []);
+
     // 🆕 Основной рендер с системой вкладок
     return (
         <TournamentErrorBoundary>
@@ -1903,8 +1961,8 @@ function TournamentDetails() {
                         onClose={() => closeModal('addParticipant')}
                         newParticipantData={newParticipantData}
                         setNewParticipantData={setNewParticipantData}
-                        onSubmit={() => {}}
-                        isLoading={false}
+                        onSubmit={handleAddParticipant}
+                        isLoading={loading}
                     />
                 )}
 
