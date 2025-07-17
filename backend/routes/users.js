@@ -1123,7 +1123,7 @@ async function calculateTournamentResult(tournamentId, userId, participantType) 
         // Находим финальный матч
         const finalMatch = matches.find(match => {
             const maxRound = Math.max(...matches.map(m => m.round || 0));
-            return (match.round === maxRound && !match.is_third_place_match && match.winner_team_id !== null);
+            return (match.round === maxRound && match.bracket_type !== 'placement' && match.winner_team_id !== null);
         });
 
         // Проверяем, выиграл ли игрок турнир (1 место)
@@ -1138,7 +1138,7 @@ async function calculateTournamentResult(tournamentId, userId, participantType) 
         }
 
         // Проверяем матч за 3 место
-        const thirdPlaceMatch = matches.find(m => m.is_third_place_match === true);
+        const thirdPlaceMatch = matches.find(m => m.bracket_type === 'placement');
         if (thirdPlaceMatch) {
             if (thirdPlaceMatch.winner_team_id === participantId) {
                 const wins = matches.filter(m => m.winner_team_id === participantId).length;

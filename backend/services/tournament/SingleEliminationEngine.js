@@ -663,7 +663,7 @@ class SingleEliminationEngine {
             const mainRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
             
             for (let round = 1; round <= mainRounds; round++) {
-                const roundMatches = matchesByRound[round]?.filter(m => !m.is_third_place_match) || [];
+                const roundMatches = matchesByRound[round]?.filter(m => m.bracket_type !== 'placement') || [];
                 const actualMatches = roundMatches.length;
                 
                 // Для первого раунда используем firstRoundMatches из bracketMath
@@ -700,7 +700,7 @@ class SingleEliminationEngine {
             
             // 4. Проверка матча за 3-е место
             if (bracketMath.hasThirdPlaceMatch) {
-                const thirdPlaceMatches = matches.filter(m => m.is_third_place_match);
+                const thirdPlaceMatches = matches.filter(m => m.bracket_type === 'placement');
                 if (thirdPlaceMatches.length !== 1) {
                     errors.push(`Неверное количество матчей за 3-е место: ${thirdPlaceMatches.length}, ожидалось: 1`);
                 }
