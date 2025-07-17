@@ -12,9 +12,19 @@ class ParticipantService {
      * 🆕 ОТПРАВКА СПЕЦИАЛЬНЫХ WEBSOCKET СОБЫТИЙ ДЛЯ УЧАСТНИКОВ
      */
     static async _broadcastParticipantUpdate(tournamentId, action, participantData, userId = null) {
+        console.log(`🎯 [_broadcastParticipantUpdate] Начинаем отправку WebSocket события`);
+        console.log(`📊 Параметры:`, {
+            tournamentId: parseInt(tournamentId),
+            action,
+            participantData,
+            userId
+        });
+        
         try {
             // Получаем io из глобального объекта или server
             const io = global.io || require('../../socketio-server').getIO();
+            
+            console.log(`🔌 Socket.IO instance найден:`, !!io);
             
             if (io) {
                 const updateData = {
@@ -25,14 +35,20 @@ class ParticipantService {
                     userId: userId
                 };
                 
+                console.log(`📡 Отправляем событие participant_update:`, updateData);
+                
                 // Отправляем специальное событие для оптимизированного обновления участников
                 io.emit('participant_update', updateData);
+                
+                console.log(`✅ Событие participant_update отправлено успешно`);
                 console.log(`🎯 Специальное событие participant_update отправлено: ${action} участника ${participantData.name || participantData.id}`);
             } else {
+                console.error(`❌ Socket.IO instance не найден!`);
                 console.warn('⚠️ Socket.IO instance не найден для отправки participant_update');
             }
         } catch (error) {
             console.error('❌ Ошибка отправки WebSocket события participant_update:', error);
+            console.error('Stack trace:', error.stack);
         }
     }
 
@@ -481,6 +497,7 @@ class ParticipantService {
      */
     static async addParticipant(tournamentId, adminUserId, participantData) {
         console.log(`➕ ParticipantService: Добавление участника в турнир ${tournamentId} администратором ${adminUserId}`);
+        console.log(`📋 Данные участника:`, participantData);
         
         // Проверяем права доступа
         await this._checkAdminAccess(tournamentId, adminUserId);
@@ -508,6 +525,8 @@ class ParticipantService {
             cs2_premier_rank: cs2_premier_rank || null
         });
         
+        console.log(`✅ Участник создан в базе данных:`, newParticipant);
+        
         // Логируем событие
         await logTournamentEvent(tournamentId, adminUserId, 'participant_added', {
             participantId: newParticipant.id,
@@ -515,7 +534,16 @@ class ParticipantService {
             addedByAdmin: true
         });
         
+        console.log(`📝 Событие турнира зарегистрировано: participant_added`);
+        
         // 🆕 Отправляем специальное WebSocket событие
+        console.log(`📡 Отправляем WebSocket событие participant_update с данными:`, {
+            tournamentId,
+            action: 'added',
+            participant: newParticipant,
+            adminUserId
+        });
+        
         await this._broadcastParticipantUpdate(tournamentId, 'added', newParticipant, adminUserId);
         
         console.log(`✅ Участник ${participantName} добавлен в турнир ${tournamentId}`);

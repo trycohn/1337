@@ -1189,56 +1189,108 @@ function TournamentDetails() {
 
         // 🆕 СПЕЦИАЛЬНЫЙ ОБРАБОТЧИК ДЛЯ УЧАСТНИКОВ
         socket.on('participant_update', (updateData) => {
-            console.log('👥 Получено обновление участника через WebSocket:', updateData);
+            console.log('👥 [WebSocket] Получено событие participant_update:', updateData);
+            console.log('👥 [WebSocket] Текущий ID турнира:', parseInt(id));
+            console.log('👥 [WebSocket] ID турнира в событии:', updateData.tournamentId);
             
             if (updateData.tournamentId === parseInt(id)) {
                 const { action, participant } = updateData;
                 
+                console.log('✅ [WebSocket] Событие для текущего турнира, действие:', action);
+                console.log('✅ [WebSocket] Данные участника:', participant);
+                
                 if (action === 'added') {
+                    console.log('➕ [WebSocket] Добавляем участника в состояние');
+                    
                     // Добавляем участника в состояние
                     setTournament(prev => {
                         if (!prev) return prev;
+                        
+                        // Проверяем, не добавлен ли уже этот участник
+                        const existingParticipant = prev.participants?.find(p => p.id === participant.id);
+                        if (existingParticipant) {
+                            console.log('⚠️ [WebSocket] Участник уже существует в состоянии');
+                            return prev;
+                        }
+                        
+                        const newParticipants = [...(prev.participants || []), participant];
+                        console.log('✅ [WebSocket] Обновляем tournament.participants:', newParticipants.length);
+                        
                         return {
                             ...prev,
-                            participants: [...(prev.participants || []), participant]
+                            participants: newParticipants
                         };
                     });
                     
-                    setOriginalParticipants(prev => [...prev, participant]);
+                    setOriginalParticipants(prev => {
+                        // Проверяем, не добавлен ли уже этот участник
+                        const existingParticipant = prev.find(p => p.id === participant.id);
+                        if (existingParticipant) {
+                            console.log('⚠️ [WebSocket] Участник уже существует в originalParticipants');
+                            return prev;
+                        }
+                        
+                        const newOriginalParticipants = [...prev, participant];
+                        console.log('✅ [WebSocket] Обновляем originalParticipants:', newOriginalParticipants.length);
+                        
+                        return newOriginalParticipants;
+                    });
                     
-                    console.log('✅ Участник добавлен через WebSocket:', participant.name);
+                    console.log('✅ [WebSocket] Участник добавлен через WebSocket:', participant.name);
                     
                 } else if (action === 'removed') {
+                    console.log('➖ [WebSocket] Удаляем участника из состояния');
+                    
                     // Удаляем участника из состояния
                     setTournament(prev => {
                         if (!prev) return prev;
+                        
+                        const newParticipants = prev.participants?.filter(p => p.id !== participant.id) || [];
+                        console.log('✅ [WebSocket] Обновляем tournament.participants после удаления:', newParticipants.length);
+                        
                         return {
                             ...prev,
-                            participants: prev.participants?.filter(p => p.id !== participant.id) || []
+                            participants: newParticipants
                         };
                     });
                     
-                    setOriginalParticipants(prev => prev.filter(p => p.id !== participant.id));
+                    setOriginalParticipants(prev => {
+                        const newOriginalParticipants = prev.filter(p => p.id !== participant.id);
+                        console.log('✅ [WebSocket] Обновляем originalParticipants после удаления:', newOriginalParticipants.length);
+                        
+                        return newOriginalParticipants;
+                    });
                     
-                    console.log('✅ Участник удален через WebSocket:', participant.name);
+                    console.log('✅ [WebSocket] Участник удален через WebSocket:', participant.name);
                     
                 } else if (action === 'updated') {
+                    console.log('🔄 [WebSocket] Обновляем данные участника');
+                    
                     // Обновляем данные участника
                     setTournament(prev => {
                         if (!prev) return prev;
+                        
+                        const newParticipants = prev.participants?.map(p => 
+                            p.id === participant.id ? { ...p, ...participant } : p
+                        ) || [];
+                        console.log('✅ [WebSocket] Обновляем tournament.participants:', newParticipants.length);
+                        
                         return {
                             ...prev,
-                            participants: prev.participants?.map(p => 
-                                p.id === participant.id ? { ...p, ...participant } : p
-                            ) || []
+                            participants: newParticipants
                         };
                     });
                     
-                    setOriginalParticipants(prev => prev.map(p => 
-                        p.id === participant.id ? { ...p, ...participant } : p
-                    ));
+                    setOriginalParticipants(prev => {
+                        const newOriginalParticipants = prev.map(p => 
+                            p.id === participant.id ? { ...p, ...participant } : p
+                        );
+                        console.log('✅ [WebSocket] Обновляем originalParticipants:', newOriginalParticipants.length);
+                        
+                        return newOriginalParticipants;
+                    });
                     
-                    console.log('✅ Участник обновлен через WebSocket:', participant.name);
+                    console.log('✅ [WebSocket] Участник обновлен через WebSocket:', participant.name);
                 }
                 
                 // Очищаем кеш для корректности следующих запросов
@@ -1246,6 +1298,10 @@ function TournamentDetails() {
                 const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
                 localStorage.removeItem(cacheKey);
                 localStorage.removeItem(cacheTimestampKey);
+                
+                console.log('🧹 [WebSocket] Кеш очищен для следующих запросов');
+            } else {
+                console.log('❌ [WebSocket] Событие для другого турнира, игнорируем');
             }
         });
 

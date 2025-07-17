@@ -37,10 +37,24 @@ const TournamentParticipants = ({
     const getParticipantsList = useCallback(() => {
         if (tournament?.format === 'mix' && tournament?.status === 'in_progress') {
             // Для микс турниров в процессе показываем оригинальных участников
+            console.log('📋 [TournamentParticipants] Используем originalParticipants для микс турнира:', originalParticipants?.length || 0);
             return originalParticipants || [];
         }
+        
+        console.log('📋 [TournamentParticipants] Используем tournament.participants:', tournament?.participants?.length || 0);
         return tournament?.participants || [];
     }, [tournament, originalParticipants]);
+
+    // Получаем список участников
+    const participantsList = getParticipantsList();
+    
+    // Логируем изменения списка участников
+    useEffect(() => {
+        console.log('🔄 [TournamentParticipants] Список участников изменился:', {
+            count: participantsList.length,
+            participants: participantsList.map(p => ({ id: p.id, name: p.name }))
+        });
+    }, [participantsList]);
 
     // Поиск пользователей для приглашения
     const searchParticipants = useCallback(async (query) => {
@@ -207,8 +221,6 @@ const TournamentParticipants = ({
         // Для всех остальных типов турниров показываем список участников
         return true;
     }, [tournament]);
-
-    const participantsList = getParticipantsList();
 
     return (
         <div className="tournament-participants">
