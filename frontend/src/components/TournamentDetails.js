@@ -1187,9 +1187,80 @@ function TournamentDetails() {
             console.error('❌ Ошибка Socket.IO соединения:', error);
         });
 
+        // 🆕 СПЕЦИАЛЬНЫЙ ОБРАБОТЧИК ДЛЯ УЧАСТНИКОВ
+        socket.on('participant_update', (updateData) => {
+            console.log('👥 Получено обновление участника через WebSocket:', updateData);
+            
+            if (updateData.tournamentId === parseInt(id)) {
+                const { action, participant } = updateData;
+                
+                if (action === 'added') {
+                    // Добавляем участника в состояние
+                    setTournament(prev => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            participants: [...(prev.participants || []), participant]
+                        };
+                    });
+                    
+                    setOriginalParticipants(prev => [...prev, participant]);
+                    
+                    console.log('✅ Участник добавлен через WebSocket:', participant.name);
+                    
+                } else if (action === 'removed') {
+                    // Удаляем участника из состояния
+                    setTournament(prev => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            participants: prev.participants?.filter(p => p.id !== participant.id) || []
+                        };
+                    });
+                    
+                    setOriginalParticipants(prev => prev.filter(p => p.id !== participant.id));
+                    
+                    console.log('✅ Участник удален через WebSocket:', participant.name);
+                    
+                } else if (action === 'updated') {
+                    // Обновляем данные участника
+                    setTournament(prev => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            participants: prev.participants?.map(p => 
+                                p.id === participant.id ? { ...p, ...participant } : p
+                            ) || []
+                        };
+                    });
+                    
+                    setOriginalParticipants(prev => prev.map(p => 
+                        p.id === participant.id ? { ...p, ...participant } : p
+                    ));
+                    
+                    console.log('✅ Участник обновлен через WebSocket:', participant.name);
+                }
+                
+                // Очищаем кеш для корректности следующих запросов
+                const cacheKey = `tournament_cache_${id}`;
+                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                localStorage.removeItem(cacheKey);
+                localStorage.removeItem(cacheTimestampKey);
+            }
+        });
+
         socket.on('tournament_update', (tournamentData) => {
             if (tournamentData.tournamentId === parseInt(id) || tournamentData.id === parseInt(id)) {
                 console.log('📡 Получено обновление турнира через WebSocket');
+                
+                // 🆕 ПРОВЕРЯЕМ ТИП ОБНОВЛЕНИЯ
+                if (tournamentData.lastUpdate?.type === 'participant_update') {
+                    // Участники уже обработаны выше, пропускаем полную перезагрузку
+                    console.log('🔄 Обновление участников уже обработано, пропускаем полную перезагрузку');
+                    return;
+                }
+                
+                // Для других типов обновлений делаем полную перезагрузку
                 fetchTournamentData();
             }
         });

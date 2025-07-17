@@ -9,6 +9,34 @@ const { broadcastTournamentUpdate } = require('../../notifications');
 
 class ParticipantService {
     /**
+     * 🆕 ОТПРАВКА СПЕЦИАЛЬНЫХ WEBSOCKET СОБЫТИЙ ДЛЯ УЧАСТНИКОВ
+     */
+    static async _broadcastParticipantUpdate(tournamentId, action, participantData, userId = null) {
+        try {
+            // Получаем io из глобального объекта или server
+            const io = global.io || require('../../socketio-server').getIO();
+            
+            if (io) {
+                const updateData = {
+                    tournamentId: parseInt(tournamentId),
+                    action: action, // 'added', 'removed', 'updated'
+                    participant: participantData,
+                    timestamp: new Date().toISOString(),
+                    userId: userId
+                };
+                
+                // Отправляем специальное событие для оптимизированного обновления участников
+                io.emit('participant_update', updateData);
+                console.log(`🎯 Специальное событие participant_update отправлено: ${action} участника ${participantData.name || participantData.id}`);
+            } else {
+                console.warn('⚠️ Socket.IO instance не найден для отправки participant_update');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка отправки WebSocket события participant_update:', error);
+        }
+    }
+
+    /**
      * Участие в турнире
      */
     static async participateInTournament(tournamentId, userId, username, options = {}) {
@@ -79,6 +107,9 @@ class ParticipantService {
         await sendTournamentEventNotification(tournamentId, 'participant_left', {
             participantName: username
         });
+
+        // 🆕 Отправляем специальное WebSocket событие
+        await this._broadcastParticipantUpdate(tournamentId, 'removed', participant, userId);
 
         // Обновляем данные турнира через WebSocket
         const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
@@ -152,6 +183,9 @@ class ParticipantService {
             removedParticipantName: removedParticipant.name
         });
 
+        // 🆕 Отправляем специальное WebSocket событие
+        await this._broadcastParticipantUpdate(tournamentId, 'removed', removedParticipant, adminUserId);
+
         console.log('✅ ParticipantService: Участник удален администратором');
         return removedParticipant;
     }
@@ -163,7 +197,7 @@ class ParticipantService {
         console.log(`👤 [ParticipantService] Обработка одиночного участия пользователя ${userId} в турнире ${tournament.id}`);
 
         // Добавляем участника в турнир
-        await ParticipantRepository.create({
+        const participant = await ParticipantRepository.create({
             tournament_id: tournament.id,
             user_id: userId,
             name: username
@@ -178,6 +212,11 @@ class ParticipantService {
             tournament.id,
             `🎮 ${username} присоединился к турниру!`
         );
+
+        // 🆕 Отправляем специальное WebSocket событие
+        await this._broadcastParticipantUpdate(tournament.id, 'added', participant, userId);
+        
+        return participant;
     }
 
     /**
@@ -475,6 +514,9 @@ class ParticipantService {
             participantName: participantName,
             addedByAdmin: true
         });
+        
+        // 🆕 Отправляем специальное WebSocket событие
+        await this._broadcastParticipantUpdate(tournamentId, 'added', newParticipant, adminUserId);
         
         console.log(`✅ Участник ${participantName} добавлен в турнир ${tournamentId}`);
         return newParticipant;
