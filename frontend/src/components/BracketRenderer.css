@@ -36,7 +36,7 @@
 .bracket-renderer-wrapper.dragging {
     cursor: grabbing !important;
 }
-/* РЎРѕРґРµСЂР¶РёРјРѕРµ СЃРµС‚РєРё СЃ РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊСЋ С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёРё */
+/* Содержимое сетки с возможностью трансформации */
 .bracket-renderer-content {
     width: fit-content;
     min-width: 100%;
@@ -50,7 +50,7 @@
     transform-origin: 0 0;
     pointer-events: all;
     min-height: 500px;
-    color: #000000; /* Р¦РІРµС‚ С€СЂРёС„С‚Р° РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ - С‡РµСЂРЅС‹Р№ */
+    color: #ffffff; /* 🔧 ИСПРАВЛЕНО: Цвет шрифта по умолчанию - белый для видимости на черном фоне */
 }
 /* РљРѕРЅС‚СЂРѕР»С‹ РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ Рё РЅР°РІРёРіР°С†РёРё */
 .bracket-controls {
@@ -99,7 +99,7 @@
     width: 16px;
     height: 16px;
 }
-/* Р—Р°РіРѕР»РѕРІРєРё СЃРµС‚РѕРє */
+/* Заголовки сеток */
 .bracket-title {
     position: relative;
     top: -10px;
@@ -112,7 +112,7 @@
     margin: 0 0 5px 0;
     white-space: nowrap;
     display: inline-block;
-    color: #000000;
+    color: #ffffff; /* 🔧 ИСПРАВЛЕНО: Цвет заголовков - белый */
     text-align: center;
     border: none;
 }
@@ -162,11 +162,12 @@
     height: 100%;
     gap: 5px;
 }
+/* 🔧 ИСПРАВЛЕНО: Цвет заголовков раундов - белый для видимости */
 .round-column h3 {
     font-size: 1em;
     font-weight: bold;
     margin-bottom: 5px;
-    color: #555;
+    color: #ffffff; /* 🔧 ИЗМЕНЕНО: с #555 на #ffffff */
     white-space: nowrap;
 }
 /* РњР°С‚С‡Рё */
@@ -426,29 +427,31 @@
     font-weight: bold;
     color: #1f1f1f;
 }
+/* Название команды */
 .team-name {
     flex-grow: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     margin-right: 10px;
-    color: #000000;
+    color: #000000; /* 🔧 СОХРАНЕНО: Цвет названия команды остается черным для карточек матчей */
 }
 .custom-seed .team-name {
-    color: #000000;
+    color: #000000; /* 🔧 СОХРАНЕНО: Цвет названия команды в карточках матчей */
     border: none;
     font-size: 16px;
     padding: 4px 4px;
     font-weight: 700;
     margin: 2px !important;
 }
+/* Счет команды */
 .team-score {
     min-width: 20px;
     text-align: center;
     padding: 2px 5px;
     background-color: #f0f0f0;
     border-radius: 3px;
-    color: #000000;
+    color: #000000; /* 🔧 СОХРАНЕНО: Цвет счета остается черным для карточек */
     margin-left: auto;
 }
 .custom-seed .team-score {
@@ -474,10 +477,11 @@
     gap: 40px;
     width: 100%;
 }
+/* 🔧 ИСПРАВЛЕНО: Цвет заголовков раундов - белый для видимости */
 .match-title {
     font-size: 1em;
     margin-bottom: 5px;
-    color: #555;
+    color: #ffffff; /* 🔧 ИЗМЕНЕНО: с #555 на #ffffff */
     font-weight: bold;
     text-align: center;
     border: none;
@@ -502,7 +506,7 @@
     align-items: center;
     height: 100%;
     font-size: 18px;
-    color: #777;
+    color: #ffffff; /* 🔧 ИСПРАВЛЕНО: с #777 на #ffffff */
     text-align: center;
     padding: 20px;
 }
@@ -513,9 +517,9 @@
     align-items: center;
     height: 200px;
     font-size: 18px;
-    color: #777;
-    background-color: #f9f9f9;
-    border: 1px solid #eee;
+    color: #ffffff; /* 🔧 ИСПРАВЛЕНО: с #777 на #ffffff */
+    background-color: #111; /* 🔧 ИСПРАВЛЕНО: с #f9f9f9 на #111 */
+    border: 1px solid #333; /* 🔧 ИСПРАВЛЕНО: с #eee на #333 */
     border-radius: 5px;
     padding: 20px;
     text-align: center;
@@ -526,9 +530,9 @@
     align-items: center;
     height: 200px;
     font-size: 18px;
-    color: #c62828;
-    background-color: #ffebee;
-    border: 1px solid #ffcdd2;
+    color: #ff4444; /* 🔧 ИСПРАВЛЕНО: с #c62828 на #ff4444 для лучшей видимости */
+    background-color: #220000; /* 🔧 ИСПРАВЛЕНО: с #ffebee на #220000 */
+    border: 1px solid #ff4444; /* 🔧 ИСПРАВЛЕНО: с #ffcdd2 на #ff4444 */
     border-radius: 5px;
     padding: 20px;
     text-align: center;
@@ -537,18 +541,18 @@
 .bracket-error {
     text-align: center;
     padding: 20px;
-    background-color: #fff3f3;
-    border: 1px solid #ffcccc;
+    background-color: #220000; /* 🔧 ИСПРАВЛЕНО: с #fff3f3 на #220000 */
+    border: 1px solid #ff4444; /* 🔧 ИСПРАВЛЕНО: с #ffcccc на #ff4444 */
     border-radius: 5px;
     margin: 20px 0;
-    color: #d84a4a;
+    color: #ff4444; /* 🔧 ИСПРАВЛЕНО: с #d84a4a на #ff4444 */
     font-size: 16px;
     line-height: 1.5;
 }
 .empty-bracket-message {
-    border: 1px solid #dee2e6;
+    border: 1px solid #333; /* 🔧 ИСПРАВЛЕНО: с #dee2e6 на #333 */
     border-radius: 5px;
-    color: #6c757d;
+    color: #ffffff; /* 🔧 ИСПРАВЛЕНО: с #6c757d на #ffffff */
     font-size: 16px;
     margin: 20px auto;
     max-width: 500px;
