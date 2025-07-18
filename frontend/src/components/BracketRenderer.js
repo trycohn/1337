@@ -64,7 +64,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     if (!matches || matches.length === 0) {
         return (
             <div className="bracket-renderer">
-                <div className="empty-bracket-message">
+                <div className="bracket-empty-message">
                     🎯 Турнирная сетка пока не создана
                 </div>
             </div>
@@ -116,14 +116,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         return (
             <div
                 key={match.id}
-                className="match-container"
+                className="bracket-match-container"
+                data-match-type={position.matchType}
                 style={{
                     position: 'absolute',
                     left: position.x,
                     top: position.y,
                     width: position.width,
                     height: position.height,
-                    zIndex: 2
+                    zIndex: position.zIndex || 20
                 }}
             >
                 <MatchCard
@@ -156,14 +157,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     headers.push(
                         <div
                             key={`winner-header-${round}`}
-                            className="round-header-absolute winners-bracket-header"
+                            className="bracket-round-header-absolute bracket-winners-bracket-header"
                             style={{
                                 position: 'absolute',
                                 left: position.x,
-                                top: position.y - 40
+                                top: position.y - 40,
+                                zIndex: 10
                             }}
                         >
-                            <h3 className="round-header">{roundName}</h3>
+                            <h3 className="bracket-round-header">{roundName}</h3>
                         </div>
                     );
                 }
@@ -181,14 +183,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     headers.push(
                         <div
                             key={`loser-header-${round}`}
-                            className="round-header-absolute losers-bracket-header"
+                            className="bracket-round-header-absolute bracket-losers-bracket-header"
                             style={{
                                 position: 'absolute',
                                 left: position.x,
-                                top: position.y - 40
+                                top: position.y - 40,
+                                zIndex: 10
                             }}
                         >
-                            <h3 className="round-header">{roundName}</h3>
+                            <h3 className="bracket-round-header">{roundName}</h3>
                         </div>
                     );
                 }
@@ -203,14 +206,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                 headers.push(
                     <div
                         key="grand-final-header"
-                        className="round-header-absolute grand-final-header"
+                        className="bracket-round-header-absolute bracket-grand-final-header"
                         style={{
                             position: 'absolute',
                             left: position.x,
-                            top: position.y - 40
+                            top: position.y - 40,
+                            zIndex: 10
                         }}
                     >
-                        <h3 className="round-header">🏁 Grand Final</h3>
+                        <h3 className="bracket-round-header">🏁 Grand Final</h3>
                     </div>
                 );
             }
@@ -246,7 +250,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     
     // Рендер Single Elimination (существующая логика)
     return (
-        <div className="bracket-renderer-container" ref={containerRef}>
+        <div className="bracket-renderer-container bracket-single-elimination" ref={containerRef}>
             <div className="bracket-renderer" style={{ position: 'relative', minHeight: dimensions.height }}>
                 {/* SVG слой для соединений */}
                 <BracketConnections
@@ -271,14 +275,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                             return (
                                 <div
                                     key={`header-${round}`}
-                                    className="round-header-absolute"
+                                    className="bracket-round-header-absolute"
                                     style={{
                                         position: 'absolute',
                                         left: firstPosition.x,
-                                        top: 10
+                                        top: 10,
+                                        zIndex: 10
                                     }}
                                 >
-                                    <h3 className="round-header">{roundName}</h3>
+                                    <h3 className="bracket-round-header">{roundName}</h3>
                                 </div>
                             );
                         })}
@@ -299,22 +304,22 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const getBracketTypeStyle = () => {
         // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match || matchType === 'third-place') {
-            return 'match-card-third-place';
+            return 'bracket-match-card-third-place';
         }
         
         if (matchType === 'final') {
-            return 'match-card-final';
+            return 'bracket-match-card-final';
         }
         
         switch (match.bracket_type) {
             case 'winner':
-                return 'match-card-winner';
+                return 'bracket-match-card-winner';
             case 'loser':
-                return 'match-card-loser';
+                return 'bracket-match-card-loser';
             case 'grand_final':
-                return 'match-card-grand-final';
+                return 'bracket-match-card-grand-final';
             default:
-                return 'match-card-single';
+                return 'bracket-match-card-single';
         }
     };
 
@@ -383,46 +388,64 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     return (
         <div 
-            className={`match-card ${getBracketTypeStyle()}`}
+            className={`bracket-match-card ${getBracketTypeStyle()}`}
             onClick={() => onMatchClick && onMatchClick(match)}
             style={{ cursor: onMatchClick ? 'pointer' : 'default' }}
         >
-            <div className="match-info">
-                <span className="match-title">{getMatchTitle()}</span>
-                {(match.bracket_type === 'placement' || match.is_third_place_match) && (
-                    <span className="bracket-type-indicator">🥉</span>
-                )}
-                {matchType === 'final' && (
-                    <span className="bracket-type-indicator">🏆</span>
-                )}
+            <div className="bracket-match-info">
+                <span className="bracket-match-title">{getMatchTitle()}</span>
+                <div className="bracket-match-indicators">
+                    {(match.bracket_type === 'placement' || match.is_third_place_match) && (
+                        <span className="bracket-type-indicator">🥉</span>
+                    )}
+                    {matchType === 'final' && (
+                        <span className="bracket-type-indicator">🏆</span>
+                    )}
+                    <span className="bracket-match-number">#{match.match_number || match.id}</span>
+                </div>
             </div>
             
-            <div className="match-participants">
-                <div className={`participant ${
+            <div className="bracket-match-participants">
+                <div className={`bracket-participant ${
                     participant1.isWinner ? 'winner' : 
                     (participant1.name === 'TBD' ? 'tbd' : '')
                 }`}>
-                    <span className="participant-name">
+                    <span className="bracket-participant-name">
                         {participant1.name}
                     </span>
-                    <span className="participant-score">{participant1.score}</span>
+                    <span className="bracket-participant-score">{participant1.score}</span>
                 </div>
-                <div className="vs-separator">VS</div>
-                <div className={`participant ${
+                <div className="bracket-vs-separator">VS</div>
+                <div className={`bracket-participant ${
                     participant2.isWinner ? 'winner' : 
                     (participant2.name === 'TBD' ? 'tbd' : '')
                 }`}>
-                    <span className="participant-name">
+                    <span className="bracket-participant-name">
                         {participant2.name}
                     </span>
-                    <span className="participant-score">{participant2.score}</span>
+                    <span className="bracket-participant-score">{participant2.score}</span>
                 </div>
+            </div>
+            
+            <div className="bracket-match-status">
+                <span className={`bracket-status-badge bracket-status-${matchStatus}`}>
+                    {matchStatus === 'completed' ? 'Завершен' : 
+                     matchStatus === 'ready' ? 'Готов' : 'Ожидание'}
+                </span>
             </div>
             
             {/* Индикатор готовности к редактированию */}
             {canEditMatches && matchStatus === 'ready' && (
-                <div className="match-edit-indicator">
-                    ✏️
+                <div className="bracket-edit-match-indicator">
+                    <button 
+                        className="bracket-edit-match-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEditMatch && onEditMatch(match);
+                        }}
+                    >
+                        ✏️
+                    </button>
                 </div>
             )}
         </div>
