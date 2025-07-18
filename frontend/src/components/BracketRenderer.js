@@ -42,73 +42,47 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     }
 
-    // 🔧 УЛУЧШЕННАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ НАЗВАНИЯ РАУНДА
+    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ НАЗВАНИЯ РАУНДА
     const getRoundName = (round, totalRounds, participantCount) => {
         console.log(`🔍 getRoundName: round=${round}, totalRounds=${totalRounds}, participantCount=${participantCount}`);
         
+        // Предварительный раунд всегда имеет приоритет
         if (round === -1) {
             console.log('✅ Предварительный раунд обнаружен');
             return 'Предварительный раунд';
         }
         
-        // Специальная обработка для микс-турниров (обычно 4-8 команд)
-        if (participantCount <= 8) {
-            console.log(`🎯 Микс-турнир detected: participantCount=${participantCount}, totalRounds=${totalRounds}`);
-            if (totalRounds === 1) {
-                console.log('✅ Одиночный раунд -> Финал');
-                return 'Финал';
-            }
-            if (totalRounds === 2) {
-                const result = round === 1 ? 'Полуфинал' : 'Финал';
-                console.log(`✅ Два раунда: round=${round} -> ${result}`);
-                return result;
-            }
-            if (totalRounds === 3) {
-                switch (round) {
-                    case 1: 
-                        console.log('✅ Раунд 1 из 3 -> Четвертьфинал');
-                        return 'Четвертьфинал';
-                    case 2: 
-                        console.log('✅ Раунд 2 из 3 -> Полуфинал');
-                        return 'Полуфинал';
-                    case 3: 
-                        console.log('✅ Раунд 3 из 3 -> Финал');
-                        return 'Финал';
-                }
-            }
-        }
-        
-        // Для больших турниров определяем по позиции относительно финала
+        // Простая логика: определяем по позиции относительно финала
         const roundsFromEnd = totalRounds - round;
-        console.log(`🎯 Большой турнир: roundsFromEnd=${roundsFromEnd}`);
+        console.log(`🎯 roundsFromEnd=${roundsFromEnd} (totalRounds=${totalRounds} - round=${round})`);
         
-        switch (roundsFromEnd) {
-            case 0:
-                console.log('✅ Финальный раунд');
-                return 'Финал';
-            case 1:
-                console.log('✅ Полуфинал');
-                return 'Полуфинал';
-            case 2:
-                console.log('✅ Четвертьфинал');
-                return 'Четвертьфинал';
-            case 3:
-                console.log('✅ 1/8 финала');
-                return '1/8 финала';
-            case 4:
-                console.log('✅ 1/16 финала');
-                return '1/16 финала';
-            case 5:
-                console.log('✅ 1/32 финала');
-                return '1/32 финала';
-            case 6:
-                console.log('✅ 1/64 финала');
-                return '1/64 финала';
-            default:
-                // Для очень ранних раундов или нестандартных случаев
-                const result = round === 1 ? 'Первый раунд' : `Раунд ${round}`;
-                console.log(`✅ Дефолтный случай: ${result}`);
-                return result;
+        // Базовая логика для всех турниров
+        if (roundsFromEnd === 0) {
+            console.log('✅ Финальный раунд');
+            return 'Финал';
+        } else if (roundsFromEnd === 1) {
+            console.log('✅ Полуфинал');
+            return 'Полуфинал';
+        } else if (roundsFromEnd === 2) {
+            console.log('✅ Четвертьфинал');
+            return 'Четвертьфинал';
+        } else if (roundsFromEnd === 3) {
+            console.log('✅ 1/8 финала');
+            return '1/8 финала';
+        } else if (roundsFromEnd === 4) {
+            console.log('✅ 1/16 финала');
+            return '1/16 финала';
+        } else if (roundsFromEnd === 5) {
+            console.log('✅ 1/32 финала');
+            return '1/32 финала';
+        } else if (roundsFromEnd === 6) {
+            console.log('✅ 1/64 финала');
+            return '1/64 финала';
+        } else {
+            // Для очень ранних раундов или нестандартных случаев
+            const result = round === 1 ? 'Первый раунд' : `Раунд ${round}`;
+            console.log(`✅ Дефолтный случай: ${result}`);
+            return result;
         }
     };
 
