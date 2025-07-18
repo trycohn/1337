@@ -72,7 +72,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
         return (
-            <div className="bracket-renderer-container" {...handlers}>
+            <div className="bracket-renderer-container">
                 <div className="bracket-empty-message">
                     🎯 Турнирная сетка пока не создана
                 </div>
@@ -239,15 +239,14 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         // Рендер Double Elimination
         return (
             <div 
-                className={`bracket-renderer-container bracket-double-elimination ${isDragging ? 'dragging' : ''}`} 
-                {...handlers}
+                className={`bracket-renderer-container bracket-double-elimination ${isDragging ? 'dragging' : ''}`}
             >
                 {renderNavigationPanel()}
                 
                 <div 
                     className="bracket-renderer"
                     ref={rendererRef}
-                    style={handlers.style}
+                    {...handlers}
                 >
                     {/* Winners Bracket */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
@@ -282,11 +281,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     )}
                     
                     {/* Grand Final */}
-                    {groupedMatches.grand_finals && Object.keys(groupedMatches.grand_finals).length > 0 && (
+                    {groupedMatches.grand_final && Object.keys(groupedMatches.grand_final).length > 0 && (
                         <div className="bracket-grand-final-section">
-                            <div className="bracket-section-title">🏆 Grand Final</div>
+                            <div className="bracket-section-title">🏅 Grand Final</div>
                             <div className="bracket-rounds-container">
-                                {Object.entries(groupedMatches.grand_finals)
+                                {Object.entries(groupedMatches.grand_final)
                                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                     .map(([round, matches]) => {
                                         const context = getRoundContext(parseInt(round), matches, 'grand_final');
@@ -304,21 +303,20 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     // Рендер Single Elimination
     return (
         <div 
-            className={`bracket-renderer-container bracket-single-elimination ${isDragging ? 'dragging' : ''}`} 
-            {...handlers}
+            className={`bracket-renderer-container bracket-single-elimination ${isDragging ? 'dragging' : ''}`}
         >
             {renderNavigationPanel()}
             
             <div 
                 className="bracket-renderer"
                 ref={rendererRef}
-                style={handlers.style}
+                {...handlers}
             >
                 <div className="bracket-rounds-container">
                     {Object.entries(groupedMatches)
                         .sort(([a], [b]) => parseInt(a) - parseInt(b))
                         .map(([round, roundData]) => {
-                            const context = getRoundContext(parseInt(round), roundData);
+                            const context = getRoundContext(parseInt(round), roundData, 'regular');
                             const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                             return renderSingleEliminationRound(round, roundData, roundName);
                         })}

@@ -1,21 +1,22 @@
 /**
- * 🎯 КОМБИНИРОВАННЫЙ HOOK ДЛЯ ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ v2.0
+ * 🎯 КОМБИНИРОВАННЫЙ HOOK ДЛЯ ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ v2.1
  * 
- * Объединяет функциональность перетаскивания и масштабирования
- * Предоставляет единый API для интерактивного управления контентом
+ * Объединяет функции перетаскивания и масштабирования в один hook
+ * Оптимизирован для работы с внутренним элементом .bracket-renderer
+ * Контейнер остается неподвижным, перетаскивается только содержимое
  * 
- * @param {Object} options - опции для настройки поведения
+ * @param {Object} options - конфигурация hook
  * @param {Object} options.initialPosition - начальная позиция {x, y}
- * @param {number} options.initialZoom - начальный масштаб
- * @param {number} options.minZoom - минимальный масштаб
+ * @param {number} options.initialZoom - начальный масштаб (по умолчанию 0.6)
+ * @param {number} options.minZoom - минимальный масштаб 
  * @param {number} options.maxZoom - максимальный масштаб
  * @param {number} options.zoomStep - шаг масштабирования
- * @param {boolean} options.requireCtrl - требовать Ctrl/Cmd для масштабирования колесом
- * @param {Array} options.excludeSelectors - CSS селекторы для исключения из перетаскивания
- * @param {Function} options.onDragStart - колбэк при начале перетаскивания
- * @param {Function} options.onDragMove - колбэк при перетаскивании
- * @param {Function} options.onDragEnd - колбэк при окончании перетаскивания
- * @param {Function} options.onZoomChange - колбэк при изменении масштаба
+ * @param {boolean} options.requireCtrl - требовать Ctrl для масштабирования колесом
+ * @param {Array} options.excludeSelectors - CSS селекторы исключаемых элементов
+ * @param {Function} options.onDragStart - колбэк начала перетаскивания
+ * @param {Function} options.onDragMove - колбэк перемещения
+ * @param {Function} options.onDragEnd - колбэк окончания перетаскивания
+ * @param {Function} options.onZoomChange - колбэк изменения масштаба
  */
 
 import { useRef, useCallback, useMemo } from 'react';
@@ -52,22 +53,22 @@ const useDragAndZoom = ({
         dragHandlers
     } = useDrag({
         initialPosition,
-        excludeSelectors,
         onDragStart,
         onDragMove,
-        onDragEnd
+        onDragEnd,
+        excludeSelectors
     });
     
     // Используем hook для масштабирования
     const {
         zoom,
+        zoomPercentage,
+        setZoom,
         zoomIn,
         zoomOut,
-        setZoom,
         resetZoom: resetZoomLevel,
         canZoomIn,
         canZoomOut,
-        zoomPercentage,
         zoomHandlers
     } = useZoom({
         initialZoom,

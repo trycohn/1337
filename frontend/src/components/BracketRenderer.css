@@ -15,6 +15,7 @@
     border-radius: 8px;
     font-family: 'Montserrat', sans-serif;
     color: #fff;
+    /* Контейнер остается неподвижным */
     cursor: grab;
     user-select: none;
     /* Оптимизация для перетаскивания */
@@ -22,9 +23,7 @@
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    /* Обеспечиваем полную ширину родительского блока */
-    min-width: 100%;
-    max-width: 100%;
+    /* Занимаем всю ширину родительского bracket-section */
     box-sizing: border-box;
     /* Отключаем drag для изображений и других элементов */
     -webkit-user-drag: none;
@@ -44,9 +43,11 @@
     position: absolute;
     top: 0;
     left: 0;
-    /* Размеры для правильного позиционирования */
-    width: 100%;
-    height: 100%;
+    /* Размеры контента - может быть больше контейнера */
+    width: auto;
+    height: auto;
+    min-width: 100%;
+    min-height: 100%;
     transform-origin: top left;
     will-change: transform;
     /* Улучшенная производительность перетаскивания */
@@ -54,16 +55,12 @@
     -webkit-backface-visibility: hidden;
     perspective: 1000px;
     -webkit-perspective: 1000px;
-    /* Размеры для контента */
-    min-width: 100%;
-    min-height: 100%;
+    /* Только этот элемент двигается при перетаскивании */
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
     padding: 40px;
     box-sizing: border-box;
-    /* Обеспечиваем что контент может выходить за границы */
-    overflow: visible;
     /* Отключаем выделение текста */
     user-select: none;
     -webkit-user-select: none;
@@ -102,7 +99,7 @@
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    /* Исключаем из перетаскивания */
+    /* Привязана к контейнеру, не к перетаскиваемому элементу */
     pointer-events: auto;
     /* Отключаем выделение текста */
     user-select: none;
@@ -638,27 +635,36 @@
 }
 
 /* ===== ПУСТЫЕ СОСТОЯНИЯ ===== */
+/* ===== СООБЩЕНИЯ О СОСТОЯНИИ ===== */
 .bracket-empty-message {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    font-size: 18px;
-    color: #666;
-    font-weight: 500;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     text-align: center;
+    font-size: 24px;
+    color: #999;
+    padding: 40px;
+    background: rgba(17, 17, 17, 0.8);
+    border-radius: 12px;
+    border: 2px solid #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    /* Центрируем в контейнере */
+    z-index: 100;
 }
 
 .bracket-loading-message {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    font-size: 18px;
-    color: #666;
-    font-weight: 500;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     text-align: center;
-    animation: bracket-loading-pulse 2s infinite;
+    font-size: 18px;
+    color: #fff;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    animation: bracket-loading-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes bracket-loading-pulse {
