@@ -146,18 +146,26 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                 {/* 🔧 НОВОЕ: Заголовки раундов в одну линию сверху */}
                 <div className="bracket-headers">
                     {sortedRounds.map(([round, roundMatches]) => {
-                        // 🔧 ИСПРАВЛЕНО: Проверяем, есть ли матч за 3-е место в этом раунде
+                        // 🔧 ИСПРАВЛЕНО: Определяем название раунда правильно
                         const hasThirdPlaceMatch = roundMatches.some(match => 
                             match.bracket_type === 'placement' || match.is_third_place_match
                         );
+                        const hasFinalMatch = roundMatches.some(match => 
+                            match.match_number === 1 && (match.bracket_type !== 'placement' && !match.is_third_place_match)
+                        );
+                        
+                        // Если в раунде есть финальный матч, раунд называется "Финал"
+                        let roundName;
+                        if (hasThirdPlaceMatch || hasFinalMatch) {
+                            roundName = 'Финал';
+                        } else {
+                            roundName = getRoundName(parseInt(round), totalRounds, participantCount, false);
+                        }
                         
                         return (
                             <div key={`header-${round}`} className="round-header-container">
                                 <h3 className="round-header">
-                                    {hasThirdPlaceMatch ? 
-                                        'Матч за 3-е место / Финал' : 
-                                        getRoundName(parseInt(round), totalRounds, participantCount, false)
-                                    }
+                                    {roundName}
                                 </h3>
                             </div>
                         );
@@ -316,20 +324,17 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     // 🔧 ИСПРАВЛЕНО: Определяем название матча
     const getMatchTitle = () => {
+        // Матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match) {
             return 'Матч за 3-е место';
         }
         
-        // Для финального раунда, если это не матч за 3-е место
-        if (match.round && tournament?.participants_count) {
-            const totalRounds = Math.max(...(tournament.matches || []).map(m => m.round || 0));
-            const roundsFromEnd = totalRounds - match.round;
-            
-            if (roundsFromEnd === 0 && match.match_number === 1) {
-                return 'Финал';
-            }
+        // Финальный матч: match_number === 1 и НЕ матч за 3-е место
+        if (match.match_number === 1 && match.bracket_type !== 'placement' && !match.is_third_place_match) {
+            return 'Финал';
         }
         
+        // Обычные матчи
         return `Матч #${match.match_number || match.id}`;
     };
 
