@@ -34,6 +34,7 @@
   border-radius: 6px;
   position: relative;
   transition: transform 0.1s ease;
+  min-width: 200px;
 }
 .participant-card:hover {
   transform: translateY(-2px);
@@ -1036,7 +1037,6 @@
 
 .setting-value {
     font-weight: 600;
-    color: #ff0000;
     padding: 4px 12px;
     border-radius: 6px;
     font-size: 0.9rem;
