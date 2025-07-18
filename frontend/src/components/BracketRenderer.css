@@ -1,32 +1,45 @@
 ﻿/**
  * BracketRenderer.css
  * Стили для отображения турнирных сеток с префиксом bracket-
- * Версия: 3.1 - с вертикальным центрированием для классической сетки
+ * Версия: 3.2 - с поддержкой drag & drop и панелью навигации
  */
 
 /* ===== БАЗОВЫЕ КОНТЕЙНЕРЫ ===== */
 .bracket-renderer-container {
     position: relative;
     width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
+    height: 100vh;
+    overflow: hidden;
     background-color: #000;
     border: 1px solid #333;
     border-radius: 8px;
-    padding: 20px;
     font-family: 'Montserrat', sans-serif;
     color: #fff;
-    min-height: 600px;
+    cursor: grab;
+    user-select: none;
+}
+
+.bracket-renderer-container:active {
+    cursor: grabbing;
+}
+
+.bracket-renderer-container.dragging {
+    cursor: grabbing;
 }
 
 .bracket-renderer {
+    position: absolute;
+    top: 0;
+    left: 0;
     display: flex;
     flex-direction: column;
     gap: 20px;
     min-width: fit-content;
-    width: 100%;
+    min-height: fit-content;
     background-color: #000;
-    min-height: 600px;
+    padding: 20px;
+    transition: transform 0.1s ease-out;
+    transform-origin: top left;
 }
 
 /* ===== КОНТЕЙНЕРЫ ДЛЯ РАЗНЫХ ТИПОВ ТУРНИРОВ ===== */
@@ -34,11 +47,115 @@
     gap: 40px;
     background: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
     min-height: 800px;
+    min-width: 1200px;
 }
 
 .bracket-single-elimination {
     gap: 20px;
     min-height: 600px;
+    min-width: 800px;
+}
+
+/* ===== ПАНЕЛЬ НАВИГАЦИИ ===== */
+.bracket-navigation-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    min-width: 160px;
+}
+
+.bracket-navigation-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.bracket-nav-button {
+    background: #111;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.bracket-nav-button:hover {
+    background: #222;
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.bracket-nav-button:active {
+    background: #ff0000;
+    color: #000;
+}
+
+.bracket-nav-button.active {
+    background: #ff0000;
+    border-color: #ff0000;
+    color: #fff;
+}
+
+.bracket-nav-button:disabled {
+    background: #333;
+    border-color: #444;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.bracket-nav-button:disabled:hover {
+    background: #333;
+    border-color: #444;
+    color: #666;
+}
+
+.bracket-zoom-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.bracket-zoom-controls .bracket-nav-button {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 0.7em;
+}
+
+.bracket-zoom-level {
+    font-size: 0.7em;
+    color: #aaa;
+    text-align: center;
+    padding: 2px 0;
+}
+
+.bracket-position-indicator {
+    font-size: 0.7em;
+    color: #aaa;
+    text-align: center;
+    padding: 2px 0;
+    border-top: 1px solid #333;
+    margin-top: 5px;
+    padding-top: 8px;
 }
 
 /* ===== СИСТЕМА РАУНДОВ НА FLEXBOX ===== */
@@ -145,6 +262,7 @@
     transition: all 0.3s ease;
     z-index: 20;
     flex-shrink: 0;
+    pointer-events: auto;
 }
 
 .bracket-match-container:hover {
@@ -191,6 +309,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    pointer-events: auto;
 }
 
 .bracket-match-card:hover {
@@ -437,47 +556,6 @@
     color: #fff;
 }
 
-/* ===== КОНТРОЛЫ СЕТКИ ===== */
-.bracket-controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 100;
-    border-radius: 4px;
-    padding: 5px;
-    display: flex;
-    pointer-events: auto;
-}
-
-.bracket-controls button {
-    font-family: 'Montserrat';
-    font-size: 14px;
-    font-weight: bold;
-    color: #ffffff !important;
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: 1px solid #ff0000;
-    background: #000000;
-    cursor: pointer !important;
-    transition: all 0.3s ease;
-    margin: 0 2px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-}
-
-.bracket-controls button:hover {
-    color: #d5d5d5 !important;
-    background: #111111;
-    border: 1px solid #a60000;
-}
-
-.bracket-controls button:active {
-    color: #000000 !important;
-    background: #ffffff;
-}
-
 /* ===== СООБЩЕНИЯ ===== */
 .bracket-empty-message {
     display: flex;
@@ -651,12 +729,19 @@
     .bracket-match-container {
         max-width: 220px;
     }
+    
+    .bracket-navigation-panel {
+        top: 10px;
+        right: 10px;
+        min-width: 140px;
+    }
 }
 
 @media (max-width: 768px) {
     .bracket-renderer-container {
-        padding: 10px;
-        min-height: 400px;
+        height: 100vh;
+        border-radius: 0;
+        border: none;
     }
     
     .bracket-renderer {
@@ -665,8 +750,6 @@
     
     .bracket-rounds-container {
         gap: 20px;
-        flex-direction: column;
-        align-items: stretch;
         min-height: 300px;
     }
     
@@ -681,17 +764,6 @@
     
     .bracket-match-card {
         min-height: 100px;
-    }
-    
-    .bracket-controls {
-        position: static;
-        justify-content: center;
-        margin-bottom: 20px;
-    }
-    
-    .bracket-controls button {
-        font-size: 12px;
-        padding: 6px 12px;
     }
     
     .bracket-round-header {
@@ -726,6 +798,23 @@
     
     .bracket-matches-list.single-match {
         padding: 30px 0;
+    }
+    
+    .bracket-navigation-panel {
+        top: 5px;
+        right: 5px;
+        min-width: 120px;
+        padding: 8px;
+    }
+    
+    .bracket-nav-button {
+        padding: 6px 8px;
+        font-size: 0.75em;
+    }
+    
+    .bracket-zoom-controls .bracket-nav-button {
+        padding: 4px 6px;
+        font-size: 0.7em;
     }
 }
 
@@ -764,6 +853,20 @@
     
     .bracket-matches-list.single-match {
         padding: 20px 0;
+    }
+    
+    .bracket-navigation-panel {
+        min-width: 100px;
+        padding: 6px;
+    }
+    
+    .bracket-navigation-title {
+        font-size: 0.8em;
+    }
+    
+    .bracket-nav-button {
+        padding: 5px 6px;
+        font-size: 0.7em;
     }
 }
 

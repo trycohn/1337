@@ -14,6 +14,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = games || [];
     const containerRef = useRef(null);
+    const rendererRef = useRef(null);
+    const isDraggingRef = useRef(false);
+    const dragStartRef = useRef({ x: 0, y: 0 });
+    const lastPosRef = useRef({ x: 0, y: 0 });
+    
+    // Состояние для позиции и масштаба сетки
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [isDragging, setIsDragging] = useState(false);
     
     // Получаем формат турнира
     const tournamentFormat = useMemo(() => {
@@ -27,10 +36,123 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         return tournamentFormat.groupMatches(matches);
     }, [matches, tournamentFormat]);
     
+    // Обработчики drag & drop
+    const handleMouseDown = useCallback((e) => {
+        // Игнорируем клики по матчам и кнопкам
+        if (e.target.closest('.bracket-match-container') || 
+            e.target.closest('.bracket-navigation-panel') ||
+            e.target.closest('.bracket-nav-button')) {
+            return;
+        }
+        
+        isDraggingRef.current = true;
+        setIsDragging(true);
+        dragStartRef.current = { x: e.clientX, y: e.clientY };
+        lastPosRef.current = { ...position };
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        e.preventDefault();
+    }, [position]);
+    
+    const handleMouseMove = useCallback((e) => {
+        if (!isDraggingRef.current) return;
+        
+        const deltaX = e.clientX - dragStartRef.current.x;
+        const deltaY = e.clientY - dragStartRef.current.y;
+        
+        setPosition({
+            x: lastPosRef.current.x + deltaX,
+            y: lastPosRef.current.y + deltaY
+        });
+    }, []);
+    
+    const handleMouseUp = useCallback(() => {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    }, [handleMouseMove]);
+    
+    // Обработчики кнопок навигации
+    const handleZoomIn = useCallback(() => {
+        setZoom(prev => Math.min(prev * 1.2, 3));
+    }, []);
+    
+    const handleZoomOut = useCallback(() => {
+        setZoom(prev => Math.max(prev / 1.2, 0.3));
+    }, []);
+    
+    const handleZoomReset = useCallback(() => {
+        setZoom(1);
+    }, []);
+    
+    const handlePositionReset = useCallback(() => {
+        setPosition({ x: 0, y: 0 });
+    }, []);
+    
+    const handleCenterView = useCallback(() => {
+        if (!containerRef.current || !rendererRef.current) return;
+        
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const rendererRect = rendererRef.current.getBoundingClientRect();
+        
+        const centerX = (containerRect.width - rendererRect.width * zoom) / 2;
+        const centerY = (containerRect.height - rendererRect.height * zoom) / 2;
+        
+        setPosition({ x: centerX, y: centerY });
+    }, [zoom]);
+    
+    const handleFitToScreen = useCallback(() => {
+        if (!containerRef.current || !rendererRef.current) return;
+        
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const rendererRect = rendererRef.current.getBoundingClientRect();
+        
+        const scaleX = containerRect.width / rendererRect.width;
+        const scaleY = containerRect.height / rendererRect.height;
+        const newZoom = Math.min(scaleX, scaleY, 1) * 0.9; // 90% для отступов
+        
+        setZoom(newZoom);
+        
+        // Центрируем после масштабирования
+        setTimeout(() => {
+            const centerX = (containerRect.width - rendererRect.width * newZoom) / 2;
+            const centerY = (containerRect.height - rendererRect.height * newZoom) / 2;
+            setPosition({ x: centerX, y: centerY });
+        }, 100);
+    }, []);
+    
+    // Обработчик колесика мыши для zoom
+    const handleWheel = useCallback((e) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            setZoom(prev => Math.max(0.3, Math.min(3, prev * delta)));
+        }
+    }, []);
+    
+    // Эффект для добавления обработчиков событий
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        
+        container.addEventListener('mousedown', handleMouseDown);
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        
+        return () => {
+            container.removeEventListener('mousedown', handleMouseDown);
+            container.removeEventListener('wheel', handleWheel);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [handleMouseDown, handleWheel, handleMouseMove, handleMouseUp]);
+    
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
         return (
-            <div className="bracket-renderer-container">
+            <div className="bracket-renderer-container" ref={containerRef}>
                 <div className="bracket-empty-message">
                     🎯 Турнирная сетка пока не создана
                 </div>
@@ -160,13 +282,94 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     };
 
+    // Рендер панели навигации
+    const renderNavigationPanel = () => (
+        <div className="bracket-navigation-panel">
+            <div className="bracket-navigation-title">
+                🎯 Навигация
+            </div>
+            
+            <div className="bracket-zoom-controls">
+                <button 
+                    className="bracket-nav-button"
+                    onClick={handleZoomOut}
+                    disabled={zoom <= 0.3}
+                    title="Уменьшить масштаб"
+                >
+                    🔍−
+                </button>
+                <button 
+                    className="bracket-nav-button"
+                    onClick={handleZoomIn}
+                    disabled={zoom >= 3}
+                    title="Увеличить масштаб"
+                >
+                    🔍+
+                </button>
+            </div>
+            
+            <div className="bracket-zoom-level">
+                {Math.round(zoom * 100)}%
+            </div>
+            
+            <button 
+                className="bracket-nav-button"
+                onClick={handleZoomReset}
+                title="Сбросить масштаб"
+            >
+                🔄 Сброс
+            </button>
+            
+            <button 
+                className="bracket-nav-button"
+                onClick={handleCenterView}
+                title="Центрировать сетку"
+            >
+                🎯 Центр
+            </button>
+            
+            <button 
+                className="bracket-nav-button"
+                onClick={handleFitToScreen}
+                title="Вписать в экран"
+            >
+                📐 Вписать
+            </button>
+            
+            <button 
+                className="bracket-nav-button"
+                onClick={handlePositionReset}
+                title="Сбросить позицию"
+            >
+                🏠 Домой
+            </button>
+            
+            <div className="bracket-position-indicator">
+                X: {Math.round(position.x)}
+                <br />
+                Y: {Math.round(position.y)}
+            </div>
+        </div>
+    );
+
     // Основной рендер с поддержкой разных форматов
     if (tournament?.bracket_type === 'double_elimination') {
         // Рендер Double Elimination
         return (
-            <div className="bracket-renderer-container bracket-double-elimination" ref={containerRef}>
-                <div className="bracket-renderer">
-                    
+            <div 
+                className={`bracket-renderer-container bracket-double-elimination ${isDragging ? 'dragging' : ''}`} 
+                ref={containerRef}
+            >
+                {renderNavigationPanel()}
+                
+                <div 
+                    className="bracket-renderer"
+                    ref={rendererRef}
+                    style={{ 
+                        transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                        transformOrigin: 'top left'
+                    }}
+                >
                     {/* Winners Bracket */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
                         <div className="bracket-winners-section">
@@ -237,8 +440,20 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     
     // Рендер Single Elimination
     return (
-        <div className="bracket-renderer-container bracket-single-elimination" ref={containerRef}>
-            <div className="bracket-renderer">
+        <div 
+            className={`bracket-renderer-container bracket-single-elimination ${isDragging ? 'dragging' : ''}`} 
+            ref={containerRef}
+        >
+            {renderNavigationPanel()}
+            
+            <div 
+                className="bracket-renderer"
+                ref={rendererRef}
+                style={{ 
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                    transformOrigin: 'top left'
+                }}
+            >
                 <div className="bracket-rounds-container">
                     {Object.entries(groupedMatches)
                         .sort(([a], [b]) => parseInt(a) - parseInt(b))
@@ -349,11 +564,19 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     };
 
     const matchStatus = getMatchStatus();
+    
+    // Предотвращаем перетаскивание при клике на матч
+    const handleMatchClick = (e) => {
+        e.stopPropagation();
+        if (onMatchClick) {
+            onMatchClick(match);
+        }
+    };
 
     return (
         <div 
             className={`bracket-match-card ${getBracketTypeStyle()}`}
-            onClick={() => onMatchClick && onMatchClick(match)}
+            onClick={handleMatchClick}
             style={{ cursor: onMatchClick ? 'pointer' : 'default' }}
         >
             <div className="bracket-match-info">
