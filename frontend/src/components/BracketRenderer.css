@@ -1220,3 +1220,307 @@
     border-radius: 8px;
     margin: 20px 0;
 } 
+
+/* ===== НОВАЯ СИСТЕМА ПОЗИЦИОНИРОВАНИЯ ===== */
+.bracket-renderer-container {
+    width: 100%;
+    overflow: auto;
+    background-color: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.bracket-renderer {
+    position: relative;
+    min-width: 1200px;
+    min-height: 800px;
+    background-color: #000;
+}
+
+/* Контейнер для матча с абсолютным позиционированием */
+.match-container {
+    position: absolute;
+    transition: all 0.3s ease;
+}
+
+.match-container:hover {
+    z-index: 10 !important;
+}
+
+/* Заголовки раундов с абсолютным позиционированием */
+.round-header-absolute {
+    position: absolute;
+    z-index: 1;
+    text-align: center;
+}
+
+.round-header-absolute .round-header {
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 5px 10px;
+    margin: 0;
+}
+
+/* SVG соединения */
+.bracket-connections {
+    pointer-events: none;
+}
+
+.bracket-connections path {
+    transition: all 0.3s ease;
+}
+
+.bracket-connections g {
+    pointer-events: all;
+}
+
+/* ===== СТИЛИ ДЛЯ ФИНАЛЬНОГО МАТЧА ===== */
+.match-card-final {
+    background-color: #1a1a1a;
+    border: 2px solid #ffcc00;
+    animation: finalGlow 3s ease-in-out infinite;
+}
+
+.match-card-final:hover {
+    background-color: #222;
+    border-color: #ffdd33;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+}
+
+.match-card-final .match-title {
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+@keyframes finalGlow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
+    }
+}
+
+/* ===== MATCH CARD VARIANTS ===== */
+.match-card-winner {
+    border-left: 4px solid #00ff00;
+    background-color: rgba(0, 255, 0, 0.05);
+}
+
+.match-card-loser {
+    border-left: 4px solid #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.05);
+}
+
+.match-card-grand-final {
+    border-left: 4px solid #ffcc00;
+    background-color: rgba(255, 204, 0, 0.05);
+}
+
+/* 🔧 НОВОЕ: Стили для матча за 3-е место */
+.match-card-third-place {
+    border-left: 4px solid #cd7f32;
+    background-color: rgba(205, 127, 50, 0.05);
+    border: 2px solid #cd7f32;
+}
+
+.match-card-third-place:hover {
+    animation: bracketTypeGlow 2s infinite;
+    box-shadow: 0 0 12px rgba(205, 127, 50, 0.6);
+    border-color: #daa520;
+}
+
+.match-card-third-place .match-title {
+    color: #daa520;
+    font-weight: bold;
+}
+
+.match-card-third-place .bracket-type-indicator {
+    margin-left: 5px;
+    font-size: 1.2em;
+}
+
+/* Индикатор редактирования */
+.match-edit-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 1.2em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.match-card:hover .match-edit-indicator {
+    opacity: 0.7;
+}
+
+.match-edit-indicator:hover {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.match-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #333;
+}
+
+.match-title {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bracket-type-indicator {
+    font-size: 1.1em;
+    opacity: 0.8;
+    margin-left: 8px;
+}
+
+.match-number {
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.9em;
+} 
+
+/* Double Elimination специфичные стили */
+.bracket-double-elimination {
+    overflow: auto;
+    background: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+}
+
+.bracket-double-elimination .bracket-renderer {
+    padding: 20px;
+}
+
+/* Заголовки для разных bracket */
+.winners-bracket-header .round-header {
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.losers-bracket-header .round-header {
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.grand-final-header .round-header {
+    color: #ffcc00;
+    text-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+    font-size: 1.5em;
+}
+
+/* Стили для разных типов матчей в Double Elimination */
+.match-container[data-match-type="winner"] {
+    border: 2px solid #001100;
+}
+
+.match-container[data-match-type="loser"] {
+    border: 2px solid #220000;
+}
+
+.match-container[data-match-type="grand-final-main"] {
+    border: 3px solid #ffcc00;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+}
+
+.match-container[data-match-type="grand-final-reset"] {
+    border: 3px solid #ff9900;
+    box-shadow: 0 0 20px rgba(255, 153, 0, 0.5);
+}
+
+/* Анимация для grand final матчей */
+@keyframes grandFinalPulse {
+    0% {
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 204, 0, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+    }
+}
+
+.match-container[data-match-type="grand-final-main"]:hover,
+.match-container[data-match-type="grand-final-reset"]:hover {
+    animation: grandFinalPulse 2s infinite;
+}
+
+/* Индикаторы bracket типов */
+.bracket-type-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #111;
+    border: 1px solid #ff0000;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    font-weight: bold;
+    z-index: 3;
+}
+
+.bracket-type-badge.winners {
+    background: #001100;
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.bracket-type-badge.losers {
+    background: #220000;
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.bracket-type-badge.grand-final {
+    background: #1a1a00;
+    border-color: #ffcc00;
+    color: #ffcc00;
+}
+
+/* Дополнительные стили для соединений */
+.bracket-connections path {
+    transition: all 0.3s ease;
+}
+
+.bracket-connections path:hover {
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* Адаптивность для Double Elimination */
+@media (max-width: 1200px) {
+    .bracket-double-elimination .match-container {
+        width: 200px;
+        font-size: 0.9em;
+    }
+    
+    .bracket-double-elimination .round-header {
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 768px) {
+    .bracket-double-elimination {
+        min-width: 1400px; /* Фиксированная ширина для мобильных */
+    }
+    
+    .bracket-double-elimination .match-container {
+        width: 180px;
+        font-size: 0.85em;
+    }
+} 
