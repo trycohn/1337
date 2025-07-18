@@ -5,7 +5,6 @@ import { safeParseBracketId } from '../utils/safeParseInt';
 import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
 import { DoubleEliminationFormat } from '../utils/tournament/formats/DoubleEliminationFormat';
-import BracketConnections from './tournament/BracketConnections';
 
 // Регистрируем форматы
 formatManager.register(new SingleEliminationFormat());
@@ -15,7 +14,6 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = games || [];
     const containerRef = useRef(null);
-    const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
     
     // Получаем формат турнира
     const tournamentFormat = useMemo(() => {
@@ -29,41 +27,10 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         return tournamentFormat.groupMatches(matches);
     }, [matches, tournamentFormat]);
     
-    // Рассчитываем позиции матчей
-    const matchPositions = useMemo(() => {
-        return tournamentFormat.calculatePositions(groupedMatches);
-    }, [groupedMatches, tournamentFormat]);
-    
-    // Рассчитываем соединения
-    const connections = useMemo(() => {
-        return tournamentFormat.calculateConnections(matches, matchPositions);
-    }, [matches, matchPositions, tournamentFormat]);
-    
-    // Обновляем размеры контейнера
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (containerRef.current) {
-                const rect = containerRef.current.getBoundingClientRect();
-                // Увеличиваем размеры для Double Elimination
-                const minWidth = tournament?.bracket_type === 'double_elimination' ? 1600 : 1200;
-                const minHeight = tournament?.bracket_type === 'double_elimination' ? 1200 : 800;
-                
-                setDimensions({
-                    width: Math.max(rect.width, minWidth),
-                    height: Math.max(rect.height, minHeight)
-                });
-            }
-        };
-        
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
-    }, [tournament?.bracket_type]);
-    
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
         return (
-            <div className="bracket-renderer">
+            <div className="bracket-renderer-container">
                 <div className="bracket-empty-message">
                     🎯 Турнирная сетка пока не создана
                 </div>
@@ -105,195 +72,164 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             participantCount: tournament?.participants_count || 0
         };
     };
-    
-    // Рендер матча с новой системой позиционирования
-    const renderMatch = (match, position) => {
-        if (!position) return null;
+
+    // Рендер раунда для Single Elimination
+    const renderSingleEliminationRound = (round, roundData, roundName) => {
+        const allMatches = [...(roundData.regular || []), ...(roundData.special || [])];
+        const matchesCount = allMatches.length;
         
-        const matchLabel = tournamentFormat.getMatchLabel(match, tournament);
-        const config = tournamentFormat.getVisualizationConfig();
+        // Определяем класс для количества матчей
+        const matchesClass = matchesCount > 4 ? 'many-matches' : 'few-matches';
+        const columnClass = matchesCount > 4 ? 'has-many-matches' : 'has-few-matches';
         
         return (
-            <div
-                key={match.id}
-                className="bracket-match-container"
-                data-match-type={position.matchType}
-                style={{
-                    position: 'absolute',
-                    left: position.x,
-                    top: position.y,
-                    width: position.width,
-                    height: position.height,
-                    zIndex: position.zIndex || 20
-                }}
-            >
-                <MatchCard
-                    match={match}
-                    tournament={tournament}
-                    onEditMatch={onEditMatch}
-                    canEditMatches={canEditMatches}
-                    onMatchClick={onMatchClick}
-                    customLabel={matchLabel}
-                    matchType={position.matchType}
-                />
+            <div key={round} className={`bracket-round-column ${columnClass}`}>
+                <div className="bracket-round-header">
+                    {roundName}
+                </div>
+                <div className={`bracket-matches-list ${matchesClass}`}>
+                    {allMatches.map(match => (
+                        <div
+                            key={match.id}
+                            className="bracket-match-container"
+                            data-match-type={match.bracket_type === 'placement' ? 'third-place' : 'regular'}
+                        >
+                            <MatchCard
+                                match={match}
+                                tournament={tournament}
+                                onEditMatch={onEditMatch}
+                                canEditMatches={canEditMatches}
+                                onMatchClick={onMatchClick}
+                                matchType={match.bracket_type === 'placement' ? 'third-place' : 'regular'}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     };
-    
-    // Рендер заголовков раундов для Double Elimination
-    const renderDoubleEliminationHeaders = () => {
-        if (tournament?.bracket_type !== 'double_elimination') return null;
+
+    // Рендер раунда для Double Elimination
+    const renderDoubleEliminationRound = (round, matches, bracketType, roundName) => {
+        const matchesCount = matches.length;
+        const matchesClass = matchesCount > 4 ? 'many-matches' : 'few-matches';
+        const columnClass = matchesCount > 4 ? 'has-many-matches' : 'has-few-matches';
         
-        const headers = [];
-        
-        // Заголовки Winners Bracket
-        if (groupedMatches.winners) {
-            Object.entries(groupedMatches.winners).forEach(([round, matches]) => {
-                const firstMatch = matches[0];
-                const position = firstMatch ? matchPositions.get(firstMatch.id) : null;
-                if (position) {
-                    const context = getRoundContext(parseInt(round), matches, 'winner');
-                    const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                    headers.push(
+        return (
+            <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`}>
+                <div className={`bracket-round-header bracket-${bracketType}s-bracket-header`}>
+                    {roundName}
+                </div>
+                <div className={`bracket-matches-list ${matchesClass}`}>
+                    {matches.map(match => (
                         <div
-                            key={`winner-header-${round}`}
-                            className="bracket-round-header-absolute bracket-winners-bracket-header"
-                            style={{
-                                position: 'absolute',
-                                left: position.x,
-                                top: position.y - 40,
-                                zIndex: 10
-                            }}
+                            key={match.id}
+                            className="bracket-match-container"
+                            data-match-type={match.bracket_type}
                         >
-                            <h3 className="bracket-round-header">{roundName}</h3>
+                            <MatchCard
+                                match={match}
+                                tournament={tournament}
+                                onEditMatch={onEditMatch}
+                                canEditMatches={canEditMatches}
+                                onMatchClick={onMatchClick}
+                                matchType={match.bracket_type}
+                            />
                         </div>
-                    );
-                }
-            });
-        }
-        
-        // Заголовки Losers Bracket
-        if (groupedMatches.losers) {
-            Object.entries(groupedMatches.losers).forEach(([round, matches]) => {
-                const firstMatch = matches[0];
-                const position = firstMatch ? matchPositions.get(firstMatch.id) : null;
-                if (position) {
-                    const context = getRoundContext(parseInt(round), matches, 'loser');
-                    const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                    headers.push(
-                        <div
-                            key={`loser-header-${round}`}
-                            className="bracket-round-header-absolute bracket-losers-bracket-header"
-                            style={{
-                                position: 'absolute',
-                                left: position.x,
-                                top: position.y - 40,
-                                zIndex: 10
-                            }}
-                        >
-                            <h3 className="bracket-round-header">{roundName}</h3>
-                        </div>
-                    );
-                }
-            });
-        }
-        
-        // Заголовок Grand Final
-        if (groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0) {
-            const firstMatch = groupedMatches.grandFinal[0];
-            const position = firstMatch ? matchPositions.get(firstMatch.id) : null;
-            if (position) {
-                headers.push(
-                    <div
-                        key="grand-final-header"
-                        className="bracket-round-header-absolute bracket-grand-final-header"
-                        style={{
-                            position: 'absolute',
-                            left: position.x,
-                            top: position.y - 40,
-                            zIndex: 10
-                        }}
-                    >
-                        <h3 className="bracket-round-header">🏁 Grand Final</h3>
-                    </div>
-                );
-            }
-        }
-        
-        return headers;
+                    ))}
+                </div>
+            </div>
+        );
     };
-    
+
     // Основной рендер с поддержкой разных форматов
     if (tournament?.bracket_type === 'double_elimination') {
         // Рендер Double Elimination
         return (
             <div className="bracket-renderer-container bracket-double-elimination" ref={containerRef}>
-                <div className="bracket-renderer" style={{ position: 'relative', minHeight: dimensions.height }}>
-                    {/* SVG слой для соединений */}
-                    <BracketConnections
-                        connections={connections}
-                        dimensions={dimensions}
-                    />
+                <div className="bracket-renderer">
                     
-                    {/* Заголовки раундов */}
-                    {renderDoubleEliminationHeaders()}
+                    {/* Winners Bracket */}
+                    {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
+                        <div className="bracket-winners-section">
+                            <div className="bracket-section-title">🏆 Winners Bracket</div>
+                            <div className="bracket-rounds-container">
+                                {Object.entries(groupedMatches.winners)
+                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                    .map(([round, matches]) => {
+                                        const context = getRoundContext(parseInt(round), matches, 'winner');
+                                        const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                        return renderDoubleEliminationRound(round, matches, 'winner', roundName);
+                                    })}
+                            </div>
+                        </div>
+                    )}
                     
-                    {/* Все матчи */}
-                    {matches.map(match => {
-                        const position = matchPositions.get(match.id);
-                        return renderMatch(match, position);
-                    })}
+                    {/* Losers Bracket */}
+                    {groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0 && (
+                        <div className="bracket-losers-section">
+                            <div className="bracket-section-title">🥈 Losers Bracket</div>
+                            <div className="bracket-rounds-container">
+                                {Object.entries(groupedMatches.losers)
+                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                    .map(([round, matches]) => {
+                                        const context = getRoundContext(parseInt(round), matches, 'loser');
+                                        const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                        return renderDoubleEliminationRound(round, matches, 'loser', roundName);
+                                    })}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Grand Final */}
+                    {groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0 && (
+                        <div className="bracket-grand-final-section">
+                            <div className="bracket-section-title">🏁 Grand Final</div>
+                            <div className="bracket-rounds-container">
+                                <div className="bracket-round-column has-few-matches">
+                                    <div className="bracket-round-header bracket-grand-final-header">
+                                        Grand Final
+                                    </div>
+                                    <div className="bracket-matches-list few-matches">
+                                        {groupedMatches.grandFinal.map(match => (
+                                            <div
+                                                key={match.id}
+                                                className="bracket-match-container"
+                                                data-match-type={match.bracket_type}
+                                            >
+                                                <MatchCard
+                                                    match={match}
+                                                    tournament={tournament}
+                                                    onEditMatch={onEditMatch}
+                                                    canEditMatches={canEditMatches}
+                                                    onMatchClick={onMatchClick}
+                                                    matchType={match.bracket_type}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         );
     }
     
-    // Рендер Single Elimination (существующая логика)
+    // Рендер Single Elimination
     return (
         <div className="bracket-renderer-container bracket-single-elimination" ref={containerRef}>
-            <div className="bracket-renderer" style={{ position: 'relative', minHeight: dimensions.height }}>
-                {/* SVG слой для соединений */}
-                <BracketConnections
-                    connections={connections}
-                    dimensions={dimensions}
-                />
-                
-                {/* Заголовки раундов */}
-                <div className="bracket-headers">
+            <div className="bracket-renderer">
+                <div className="bracket-rounds-container">
                     {Object.entries(groupedMatches)
                         .sort(([a], [b]) => parseInt(a) - parseInt(b))
                         .map(([round, roundData]) => {
                             const context = getRoundContext(parseInt(round), roundData);
                             const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                            
-                            // Находим позицию первого матча раунда для размещения заголовка
-                            const firstMatch = [...(roundData.special || []), ...(roundData.regular || [])][0];
-                            const firstPosition = firstMatch ? matchPositions.get(firstMatch.id) : null;
-                            
-                            if (!firstPosition) return null;
-                            
-                            return (
-                                <div
-                                    key={`header-${round}`}
-                                    className="bracket-round-header-absolute"
-                                    style={{
-                                        position: 'absolute',
-                                        left: firstPosition.x,
-                                        top: 10,
-                                        zIndex: 10
-                                    }}
-                                >
-                                    <h3 className="bracket-round-header">{roundName}</h3>
-                                </div>
-                            );
+                            return renderSingleEliminationRound(round, roundData, roundName);
                         })}
                 </div>
-                
-                {/* Все матчи */}
-                {matches.map(match => {
-                    const position = matchPositions.get(match.id);
-                    return renderMatch(match, position);
-                })}
             </div>
         </div>
     );
@@ -317,6 +253,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             case 'loser':
                 return 'bracket-match-card-loser';
             case 'grand_final':
+            case 'grand_final_reset':
                 return 'bracket-match-card-grand-final';
             default:
                 return 'bracket-match-card-single';
@@ -333,6 +270,15 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         // Матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match) {
             return 'Матч за 3-е место';
+        }
+        
+        // Grand Final
+        if (match.bracket_type === 'grand_final') {
+            return 'Grand Final';
+        }
+        
+        if (match.bracket_type === 'grand_final_reset') {
+            return 'Grand Final Reset';
         }
         
         // Финальный матч: match_number === 1 и НЕ матч за 3-е место
@@ -397,6 +343,9 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 <div className="bracket-match-indicators">
                     {(match.bracket_type === 'placement' || match.is_third_place_match) && (
                         <span className="bracket-type-indicator">🥉</span>
+                    )}
+                    {(match.bracket_type === 'grand_final' || match.bracket_type === 'grand_final_reset') && (
+                        <span className="bracket-type-indicator">🏆</span>
                     )}
                     {matchType === 'final' && (
                         <span className="bracket-type-indicator">🏆</span>
