@@ -56,106 +56,139 @@
     min-width: 800px;
 }
 
-/* ===== ПАНЕЛЬ НАВИГАЦИИ ===== */
+/* ===== НАВИГАЦИОННАЯ ПАНЕЛЬ С ИКОНКАМИ ===== */
 .bracket-navigation-panel {
     position: absolute;
     top: 20px;
     right: 20px;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.9);
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    background: rgba(17, 17, 17, 0.95);
+    border: 2px solid #333;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    min-width: 160px;
+    min-width: 180px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .bracket-navigation-title {
+    text-align: center;
     font-size: 0.9em;
     font-weight: 600;
     color: #fff;
-    text-align: center;
-    margin-bottom: 5px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
     border-bottom: 1px solid #333;
-    padding-bottom: 5px;
 }
 
-.bracket-nav-button {
-    background: #111;
-    border: 1px solid #333;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8em;
-    font-weight: 500;
-    transition: all 0.3s ease;
+.bracket-nav-group {
+    margin-bottom: 16px;
+}
+
+.bracket-nav-group:last-child {
+    margin-bottom: 0;
+}
+
+.bracket-nav-row {
     display: flex;
     align-items: center;
-    gap: 6px;
     justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
-.bracket-nav-button:hover {
-    background: #222;
-    border-color: #ff0000;
-    color: #ff0000;
+.bracket-nav-row:last-child {
+    margin-bottom: 0;
 }
 
-.bracket-nav-button:active {
-    background: #ff0000;
-    color: #000;
-}
-
-.bracket-nav-button.active {
-    background: #ff0000;
-    border-color: #ff0000;
-    color: #fff;
-}
-
-.bracket-nav-button:disabled {
-    background: #333;
-    border-color: #444;
-    color: #666;
-    cursor: not-allowed;
-}
-
-.bracket-nav-button:disabled:hover {
-    background: #333;
-    border-color: #444;
-    color: #666;
-}
-
-.bracket-zoom-controls {
+.bracket-nav-icon-button {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(145deg, #222, #111);
+    border: 2px solid #333;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 18px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
 }
 
-.bracket-zoom-controls .bracket-nav-button {
-    flex: 1;
-    padding: 6px 8px;
-    font-size: 0.7em;
+.bracket-nav-icon-button:hover {
+    background: linear-gradient(145deg, #333, #222);
+    border-color: #ff0000;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 0, 0, 0.3);
 }
 
-.bracket-zoom-level {
-    font-size: 0.7em;
-    color: #aaa;
+.bracket-nav-icon-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.bracket-nav-icon-button:disabled {
+    background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+    border-color: #222;
+    color: #555;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.bracket-nav-icon-button:disabled:hover {
+    background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+    border-color: #222;
+    transform: none;
+    box-shadow: none;
+}
+
+.bracket-nav-icon {
+    font-size: 18px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.bracket-zoom-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 16px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
     text-align: center;
-    padding: 2px 0;
+    padding: 0 8px;
 }
 
-.bracket-position-indicator {
-    font-size: 0.7em;
-    color: #aaa;
+.bracket-position-display {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #ccc;
     text-align: center;
-    padding: 2px 0;
-    border-top: 1px solid #333;
-    margin-top: 5px;
-    padding-top: 8px;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 8px;
+}
+
+.bracket-nav-hint {
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    font-style: italic;
+    line-height: 1.3;
 }
 
 /* ===== СИСТЕМА РАУНДОВ НА FLEXBOX ===== */
@@ -716,54 +749,87 @@
     pointer-events: auto;
 }
 
+/* ===== АНИМАЦИИ ДЛЯ ИКОНОК ===== */
+@keyframes bracket-icon-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.bracket-nav-icon-button:hover .bracket-nav-icon {
+    animation: bracket-icon-pulse 0.6s ease-in-out;
+}
+
+/* ===== СПЕЦИАЛЬНЫЕ ЭФФЕКТЫ ДЛЯ ИКОНОК ===== */
+.bracket-nav-icon-button:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(255, 0, 0, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
 /* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 1200px) {
     .bracket-rounds-container {
-        gap: 40px;
+        gap: 30px;
     }
     
     .bracket-round-column {
-        min-width: 240px;
+        min-width: 200px;
     }
     
     .bracket-match-container {
-        max-width: 220px;
+        margin-bottom: 15px;
     }
     
     .bracket-navigation-panel {
-        top: 10px;
-        right: 10px;
-        min-width: 140px;
+        top: 15px;
+        right: 15px;
+        padding: 14px;
+        min-width: 170px;
+    }
+    
+    .bracket-nav-icon-button {
+        width: 42px;
+        height: 42px;
+        font-size: 17px;
+    }
+    
+    .bracket-zoom-display {
+        min-width: 55px;
+        height: 30px;
+        font-size: 12px;
     }
 }
 
 @media (max-width: 768px) {
     .bracket-renderer-container {
-        height: 100vh;
-        border-radius: 0;
-        border: none;
+        touch-action: none;
     }
     
     .bracket-renderer {
-        min-height: 400px;
+        padding: 15px;
     }
     
     .bracket-rounds-container {
         gap: 20px;
-        min-height: 300px;
     }
     
     .bracket-round-column {
-        min-width: auto;
-        width: 100%;
+        min-width: 180px;
     }
     
     .bracket-match-container {
-        max-width: 100%;
+        margin-bottom: 12px;
     }
     
     .bracket-match-card {
-        min-height: 100px;
+        min-width: 160px;
     }
     
     .bracket-round-header {
@@ -775,98 +841,122 @@
     }
     
     .bracket-participant-name {
-        font-size: 0.8em;
+        font-size: 0.7em;
     }
     
     .bracket-section-title {
-        font-size: 1.2em;
+        font-size: 1em;
     }
     
     .bracket-matches-list {
-        min-height: 200px;
+        gap: 12px;
     }
     
     .bracket-matches-list.many-matches {
-        gap: 15px;
-        padding: 15px 0;
+        justify-content: space-evenly;
     }
     
     .bracket-matches-list.few-matches {
-        gap: 30px;
-        padding: 20px 0;
+        justify-content: center;
     }
     
     .bracket-matches-list.single-match {
-        padding: 30px 0;
+        justify-content: center;
     }
     
     .bracket-navigation-panel {
-        top: 5px;
-        right: 5px;
-        min-width: 120px;
-        padding: 8px;
+        top: 10px;
+        right: 10px;
+        padding: 12px;
+        min-width: 160px;
     }
     
-    .bracket-nav-button {
-        padding: 6px 8px;
-        font-size: 0.75em;
+    .bracket-nav-icon-button {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
     }
     
-    .bracket-zoom-controls .bracket-nav-button {
-        padding: 4px 6px;
-        font-size: 0.7em;
+    .bracket-zoom-display {
+        min-width: 50px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .bracket-position-display {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+    
+    .bracket-nav-hint {
+        font-size: 10px;
     }
 }
 
 @media (max-width: 480px) {
     .bracket-match-card {
-        padding: 10px;
-        min-height: 90px;
+        min-width: 140px;
     }
     
     .bracket-participant {
-        padding: 4px 6px;
-        min-height: 28px;
+        padding: 6px 8px;
     }
     
     .bracket-participant-name {
-        font-size: 0.75em;
+        font-size: 0.65em;
     }
     
     .bracket-match-title {
-        font-size: 0.75em;
+        font-size: 0.7em;
     }
     
     .bracket-matches-list {
-        min-height: 150px;
+        gap: 10px;
     }
     
     .bracket-matches-list.many-matches {
-        gap: 10px;
-        padding: 10px 0;
+        justify-content: space-evenly;
     }
     
     .bracket-matches-list.few-matches {
-        gap: 20px;
-        padding: 15px 0;
+        justify-content: center;
     }
     
     .bracket-matches-list.single-match {
-        padding: 20px 0;
+        justify-content: center;
     }
     
     .bracket-navigation-panel {
-        min-width: 100px;
-        padding: 6px;
+        top: 5px;
+        right: 5px;
+        padding: 10px;
+        min-width: 140px;
+    }
+    
+    .bracket-nav-icon-button {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
     }
     
     .bracket-navigation-title {
         font-size: 0.8em;
+        margin-bottom: 12px;
     }
     
-    .bracket-nav-button {
-        padding: 5px 6px;
-        font-size: 0.7em;
+    .bracket-nav-hint {
+        font-size: 10px;
+    }
+    
+    .bracket-zoom-display {
+        min-width: 45px;
+        height: 26px;
+        font-size: 11px;
+    }
+    
+    .bracket-position-display {
+        font-size: 10px;
+        padding: 5px 8px;
     }
 }
 

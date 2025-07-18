@@ -36,12 +36,16 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         return tournamentFormat.groupMatches(matches);
     }, [matches, tournamentFormat]);
     
-    // Обработчики drag & drop
+    // Обработчики управления перетаскиванием и зумом
     const handleMouseDown = useCallback((e) => {
-        // Игнорируем клики по матчам и кнопкам
-        if (e.target.closest('.bracket-match-container') || 
-            e.target.closest('.bracket-navigation-panel') ||
-            e.target.closest('.bracket-nav-button')) {
+        if (e.button !== 0) return;
+        
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        if (e.target.classList.contains('bracket-match-card') || 
+            e.target.closest('.bracket-match-card')) {
             return;
         }
         
@@ -75,6 +79,21 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         document.removeEventListener('mouseup', handleMouseUp);
     }, [handleMouseMove]);
     
+    // Обработчик скролла мышкой для зума
+    const handleWheel = useCallback((e) => {
+        // Проверяем, что зажата клавиша Ctrl или Meta (Cmd на Mac)
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            
+            const delta = e.deltaY * -0.01;
+            const newZoom = Math.min(Math.max(zoom + delta, 0.3), 3);
+            
+            if (newZoom !== zoom) {
+                setZoom(newZoom);
+            }
+        }
+    }, [zoom]);
+    
     // Обработчики кнопок навигации
     const handleZoomIn = useCallback(() => {
         setZoom(prev => Math.min(prev * 1.2, 3));
@@ -88,65 +107,34 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         setZoom(1);
     }, []);
     
-    const handlePositionReset = useCallback(() => {
+    const handleCenterView = useCallback(() => {
         setPosition({ x: 0, y: 0 });
     }, []);
     
-    const handleCenterView = useCallback(() => {
-        if (!containerRef.current || !rendererRef.current) return;
-        
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const rendererRect = rendererRef.current.getBoundingClientRect();
-        
-        const centerX = (containerRect.width - rendererRect.width * zoom) / 2;
-        const centerY = (containerRect.height - rendererRect.height * zoom) / 2;
-        
-        setPosition({ x: centerX, y: centerY });
-    }, [zoom]);
-    
     const handleFitToScreen = useCallback(() => {
-        if (!containerRef.current || !rendererRef.current) return;
-        
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const rendererRect = rendererRef.current.getBoundingClientRect();
-        
-        const scaleX = containerRect.width / rendererRect.width;
-        const scaleY = containerRect.height / rendererRect.height;
-        const newZoom = Math.min(scaleX, scaleY, 1) * 0.9; // 90% для отступов
-        
-        setZoom(newZoom);
-        
-        // Центрируем после масштабирования
-        setTimeout(() => {
-            const centerX = (containerRect.width - rendererRect.width * newZoom) / 2;
-            const centerY = (containerRect.height - rendererRect.height * newZoom) / 2;
-            setPosition({ x: centerX, y: centerY });
-        }, 100);
+        setZoom(0.6);
+        setPosition({ x: 0, y: 0 });
     }, []);
     
-    // Обработчик колесика мыши для zoom
-    const handleWheel = useCallback((e) => {
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            setZoom(prev => Math.max(0.3, Math.min(3, prev * delta)));
-        }
+    const handlePositionReset = useCallback(() => {
+        setPosition({ x: 0, y: 0 });
+        setZoom(1);
     }, []);
     
     // Эффект для добавления обработчиков событий
     useEffect(() => {
         const container = containerRef.current;
-        if (!container) return;
-        
-        container.addEventListener('mousedown', handleMouseDown);
-        container.addEventListener('wheel', handleWheel, { passive: false });
-        
-        return () => {
-            container.removeEventListener('mousedown', handleMouseDown);
-            container.removeEventListener('wheel', handleWheel);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
+        if (container) {
+            container.addEventListener('mousedown', handleMouseDown);
+            container.addEventListener('wheel', handleWheel, { passive: false });
+            
+            return () => {
+                container.removeEventListener('mousedown', handleMouseDown);
+                container.removeEventListener('wheel', handleWheel);
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
     }, [handleMouseDown, handleWheel, handleMouseMove, handleMouseUp]);
     
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
@@ -285,69 +273,69 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     // Рендер панели навигации
     const renderNavigationPanel = () => (
         <div className="bracket-navigation-panel">
-            <div className="bracket-navigation-title">
-                🎯 Навигация
+            <div className="bracket-navigation-title">Навигация</div>
+            
+            <div className="bracket-nav-group">
+                <div className="bracket-nav-row">
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={() => setZoom(Math.max(zoom - 0.1, 0.3))}
+                        disabled={zoom <= 0.3}
+                        title="Уменьшить масштаб"
+                    >
+                        <span className="bracket-nav-icon">−</span>
+                    </button>
+                    
+                    <div className="bracket-zoom-display">
+                        {Math.round(zoom * 100)}%
+                    </div>
+                    
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={() => setZoom(Math.min(zoom + 0.1, 3))}
+                        disabled={zoom >= 3}
+                        title="Увеличить масштаб"
+                    >
+                        <span className="bracket-nav-icon">+</span>
+                    </button>
+                </div>
             </div>
-            
-            <div className="bracket-zoom-controls">
-                <button 
-                    className="bracket-nav-button"
-                    onClick={handleZoomOut}
-                    disabled={zoom <= 0.3}
-                    title="Уменьшить масштаб"
-                >
-                    🔍−
-                </button>
-                <button 
-                    className="bracket-nav-button"
-                    onClick={handleZoomIn}
-                    disabled={zoom >= 3}
-                    title="Увеличить масштаб"
-                >
-                    🔍+
-                </button>
+
+            <div className="bracket-nav-group">
+                <div className="bracket-nav-row">
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={() => { setPosition({ x: 0, y: 0 }); setZoom(1); }}
+                        title="Сбросить"
+                    >
+                        <span className="bracket-nav-icon">⌂</span>
+                    </button>
+                    
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={() => setPosition({ x: 0, y: 0 })}
+                        title="Центрировать"
+                    >
+                        <span className="bracket-nav-icon">⊙</span>
+                    </button>
+                    
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={() => { setZoom(0.6); setPosition({ x: 0, y: 0 }); }}
+                        title="Уместить на экран"
+                    >
+                        <span className="bracket-nav-icon">⌑</span>
+                    </button>
+                </div>
             </div>
-            
-            <div className="bracket-zoom-level">
-                {Math.round(zoom * 100)}%
-            </div>
-            
-            <button 
-                className="bracket-nav-button"
-                onClick={handleZoomReset}
-                title="Сбросить масштаб"
-            >
-                🔄 Сброс
-            </button>
-            
-            <button 
-                className="bracket-nav-button"
-                onClick={handleCenterView}
-                title="Центрировать сетку"
-            >
-                🎯 Центр
-            </button>
-            
-            <button 
-                className="bracket-nav-button"
-                onClick={handleFitToScreen}
-                title="Вписать в экран"
-            >
-                📐 Вписать
-            </button>
-            
-            <button 
-                className="bracket-nav-button"
-                onClick={handlePositionReset}
-                title="Сбросить позицию"
-            >
-                🏠 Домой
-            </button>
-            
-            <div className="bracket-position-indicator">
-                X: {Math.round(position.x)}
-                <br />
-                Y: {Math.round(position.y)}
+
+            <div className="bracket-nav-group">
+                <div className="bracket-position-display">
+                    X: {Math.round(position.x)} Y: {Math.round(position.y)}
+                </div>
+                <div className="bracket-nav-hint">
+                    Ctrl + колесо мыши для зума
+                </div>
             </div>
         </div>
     );
