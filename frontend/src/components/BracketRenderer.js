@@ -19,9 +19,9 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     const dragStartRef = useRef({ x: 0, y: 0 });
     const lastPosRef = useRef({ x: 0, y: 0 });
     
-    // Состояние для позиции и масштаба сетки
+    // Состояние для управления позицией и масштабом
     const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
+    const [zoom, setZoom] = useState(0.6); // Устанавливаем 60% масштаб по умолчанию
     const [isDragging, setIsDragging] = useState(false);
     
     // Получаем формат турнира
@@ -83,18 +83,18 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         document.removeEventListener('mouseup', handleMouseUp);
     }, [handleMouseMove]);
     
-    // Обработчик скролла мышкой для зума
+    // Обработчик колеса мыши для зума
     const handleWheel = useCallback((e) => {
-        // Проверяем, что зажата клавиша Ctrl или Meta (Cmd на Mac)
+        // Проверяем, что нажата клавиша Ctrl (или Cmd на Mac)
         if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             
-            const delta = e.deltaY * -0.01;
-            const newZoom = Math.min(Math.max(zoom + delta, 0.3), 3);
+            const zoomStep = 0.05; // Шаг масштабирования 5%
+            const newZoom = e.deltaY > 0 ? zoom - zoomStep : zoom + zoomStep;
             
-            if (newZoom !== zoom) {
-                setZoom(newZoom);
-            }
+            // Ограничиваем масштаб от 30% до 300%
+            const clampedZoom = Math.max(0.3, Math.min(3, newZoom));
+            setZoom(clampedZoom);
         }
     }, [zoom]);
     
@@ -116,13 +116,13 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     }, []);
     
     const handleFitToScreen = useCallback(() => {
-        setZoom(0.6);
         setPosition({ x: 0, y: 0 });
+        setZoom(0.6); // 60% масштаб для оптимального просмотра
     }, []);
     
     const handlePositionReset = useCallback(() => {
         setPosition({ x: 0, y: 0 });
-        setZoom(1);
+        setZoom(0.6); // Сбрасываем на 60% масштаб
     }, []);
     
     // Эффект для добавления обработчиков событий
