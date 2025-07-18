@@ -45,7 +45,8 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         const y = e.clientY - rect.top;
         
         if (e.target.classList.contains('bracket-match-card') || 
-            e.target.closest('.bracket-match-card')) {
+            e.target.closest('.bracket-match-card') ||
+            e.target.closest('.bracket-navigation-panel')) {
             return;
         }
         
@@ -65,10 +66,13 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         const deltaX = e.clientX - dragStartRef.current.x;
         const deltaY = e.clientY - dragStartRef.current.y;
         
-        setPosition({
+        // Разрешаем перемещение без ограничений в любом направлении
+        const newPosition = {
             x: lastPosRef.current.x + deltaX,
             y: lastPosRef.current.y + deltaY
-        });
+        };
+        
+        setPosition(newPosition);
     }, []);
     
     const handleMouseUp = useCallback(() => {
@@ -96,11 +100,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     
     // Обработчики кнопок навигации
     const handleZoomIn = useCallback(() => {
-        setZoom(prev => Math.min(prev * 1.2, 3));
+        setZoom(prev => Math.min(prev + 0.1, 3));
     }, []);
     
     const handleZoomOut = useCallback(() => {
-        setZoom(prev => Math.max(prev / 1.2, 0.3));
+        setZoom(prev => Math.max(prev - 0.1, 0.3));
     }, []);
     
     const handleZoomReset = useCallback(() => {
@@ -120,6 +124,54 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         setPosition({ x: 0, y: 0 });
         setZoom(1);
     }, []);
+    
+    // Новая функция: найти сетку
+    const handleFindBracket = useCallback(() => {
+        // Возвращаем к видимой части сетки
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (!containerRect) return;
+        
+        // Центрируем сетку с учетом текущего зума
+        const centerX = (containerRect.width / 2) - (800 * zoom / 2);
+        const centerY = (containerRect.height / 2) - (600 * zoom / 2);
+        
+        setPosition({ x: centerX, y: centerY });
+    }, [zoom]);
+    
+    // Проверка, далеко ли сетка от центра
+    const isBracketFarFromCenter = useMemo(() => {
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (!containerRect) return false;
+        
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const distance = Math.sqrt(
+            Math.pow(position.x - centerX, 2) + 
+            Math.pow(position.y - centerY, 2)
+        );
+        
+        return distance > 500; // Если расстояние больше 500px
+    }, [position]);
+    
+    // Получение направления к сетке
+    const getBracketDirection = useMemo(() => {
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (!containerRect) return '';
+        
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const deltaX = position.x - centerX;
+        const deltaY = position.y - centerY;
+        
+        let direction = '';
+        if (Math.abs(deltaY) > Math.abs(deltaX)) {
+            direction = deltaY > 0 ? '↓' : '↑';
+        } else {
+            direction = deltaX > 0 ? '→' : '←';
+        }
+        
+        return direction;
+    }, [position]);
     
     // Эффект для добавления обработчиков событий
     useEffect(() => {
@@ -279,7 +331,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                 <div className="bracket-nav-row">
                     <button 
                         className="bracket-nav-icon-button"
-                        onClick={() => setZoom(Math.max(zoom - 0.1, 0.3))}
+                        onClick={handleZoomOut}
                         disabled={zoom <= 0.3}
                         title="Уменьшить масштаб"
                     >
@@ -292,7 +344,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     
                     <button 
                         className="bracket-nav-icon-button"
-                        onClick={() => setZoom(Math.min(zoom + 0.1, 3))}
+                        onClick={handleZoomIn}
                         disabled={zoom >= 3}
                         title="Увеличить масштаб"
                     >
@@ -305,36 +357,63 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                 <div className="bracket-nav-row">
                     <button 
                         className="bracket-nav-icon-button"
-                        onClick={() => { setPosition({ x: 0, y: 0 }); setZoom(1); }}
-                        title="Сбросить"
+                        onClick={handlePositionReset}
+                        title="Сбросить позицию и масштаб"
                     >
                         <span className="bracket-nav-icon">⌂</span>
                     </button>
                     
                     <button 
                         className="bracket-nav-icon-button"
-                        onClick={() => setPosition({ x: 0, y: 0 })}
-                        title="Центрировать"
+                        onClick={handleCenterView}
+                        title="Центрировать сетку"
                     >
                         <span className="bracket-nav-icon">⊙</span>
                     </button>
                     
                     <button 
                         className="bracket-nav-icon-button"
-                        onClick={() => { setZoom(0.6); setPosition({ x: 0, y: 0 }); }}
-                        title="Уместить на экран"
+                        onClick={handleFitToScreen}
+                        title="Уместить сетку на экран"
                     >
                         <span className="bracket-nav-icon">⌑</span>
                     </button>
                 </div>
             </div>
+            
+            {isBracketFarFromCenter && (
+                <div className="bracket-nav-group">
+                    <div className="bracket-nav-row">
+                        <button 
+                            className="bracket-nav-icon-button bracket-find-button"
+                            onClick={handleFindBracket}
+                            title="Найти сетку"
+                        >
+                            <span className="bracket-nav-icon">🔍</span>
+                        </button>
+                        
+                        <div className="bracket-direction-indicator" title="Направление к сетке">
+                            {getBracketDirection}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="bracket-nav-group">
                 <div className="bracket-position-display">
-                    X: {Math.round(position.x)} Y: {Math.round(position.y)}
+                    <div className="bracket-coordinates">
+                        X: {Math.round(position.x)} Y: {Math.round(position.y)}
+                    </div>
+                    {Math.abs(position.x) > 1000 || Math.abs(position.y) > 1000 ? (
+                        <div className="bracket-distance-warning">
+                            Сетка далеко от центра
+                        </div>
+                    ) : null}
                 </div>
                 <div className="bracket-nav-hint">
                     Ctrl + колесо мыши для зума
+                    <br />
+                    Перетаскивание без ограничений
                 </div>
             </div>
         </div>

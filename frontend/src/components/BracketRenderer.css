@@ -4,7 +4,7 @@
  * Версия: 3.2 - с поддержкой drag & drop и панелью навигации
  */
 
-/* ===== БАЗОВЫЕ КОНТЕЙНЕРЫ ===== */
+/* ===== ОСНОВНЫЕ КОНТЕЙНЕРЫ ===== */
 .bracket-renderer-container {
     position: relative;
     width: 100%;
@@ -40,6 +40,10 @@
     padding: 20px;
     transition: transform 0.1s ease-out;
     transform-origin: top left;
+    /* Убираем любые ограничения на позиционирование */
+    max-width: none;
+    max-height: none;
+    will-change: transform;
 }
 
 /* ===== КОНТЕЙНЕРЫ ДЛЯ РАЗНЫХ ТИПОВ ТУРНИРОВ ===== */
@@ -70,6 +74,8 @@
     backdrop-filter: blur(10px);
     min-width: 180px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .bracket-navigation-title {
@@ -149,6 +155,25 @@
     box-shadow: none;
 }
 
+/* ===== СПЕЦИАЛЬНАЯ КНОПКА ПОИСКА СЕТКИ ===== */
+.bracket-find-button {
+    background: linear-gradient(145deg, #ff4444, #cc0000) !important;
+    border-color: #ff6666 !important;
+    animation: bracket-pulse-find 2s infinite;
+}
+
+.bracket-find-button:hover {
+    background: linear-gradient(145deg, #ff6666, #ff2222) !important;
+    border-color: #ff8888 !important;
+    box-shadow: 0 6px 20px rgba(255, 68, 68, 0.5) !important;
+}
+
+@keyframes bracket-pulse-find {
+    0% { box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3); }
+    50% { box-shadow: 0 4px 12px rgba(255, 68, 68, 0.7); }
+    100% { box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3); }
+}
+
 .bracket-nav-icon {
     font-size: 18px;
     font-weight: 700;
@@ -171,6 +196,29 @@
     padding: 0 8px;
 }
 
+/* ===== ИНДИКАТОР НАПРАВЛЕНИЯ ===== */
+.bracket-direction-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(145deg, #444, #222);
+    border: 2px solid #666;
+    border-radius: 50%;
+    color: #ffcc00;
+    font-size: 24px;
+    font-weight: 900;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    animation: bracket-direction-pulse 1.5s infinite;
+}
+
+@keyframes bracket-direction-pulse {
+    0% { transform: scale(1); color: #ffcc00; }
+    50% { transform: scale(1.1); color: #ffff00; }
+    100% { transform: scale(1); color: #ffcc00; }
+}
+
 .bracket-position-display {
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid #333;
@@ -181,6 +229,31 @@
     text-align: center;
     font-family: 'Courier New', monospace;
     margin-bottom: 8px;
+}
+
+/* ===== КООРДИНАТЫ И ПРЕДУПРЕЖДЕНИЯ ===== */
+.bracket-coordinates {
+    font-size: 12px;
+    color: #ccc;
+    margin-bottom: 4px;
+}
+
+.bracket-distance-warning {
+    font-size: 10px;
+    color: #ff6666;
+    font-weight: 600;
+    text-align: center;
+    padding: 2px 6px;
+    background: rgba(255, 102, 102, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 102, 102, 0.3);
+    animation: bracket-warning-blink 2s infinite;
+}
+
+@keyframes bracket-warning-blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
 }
 
 .bracket-nav-hint {
@@ -800,6 +873,12 @@
         font-size: 17px;
     }
     
+    .bracket-direction-indicator {
+        width: 42px;
+        height: 42px;
+        font-size: 22px;
+    }
+    
     .bracket-zoom-display {
         min-width: 55px;
         height: 30px;
@@ -877,6 +956,12 @@
         font-size: 16px;
     }
     
+    .bracket-direction-indicator {
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
+    }
+    
     .bracket-zoom-display {
         min-width: 50px;
         height: 28px;
@@ -886,6 +971,11 @@
     .bracket-position-display {
         font-size: 11px;
         padding: 6px 10px;
+    }
+    
+    .bracket-distance-warning {
+        font-size: 9px;
+        padding: 2px 4px;
     }
     
     .bracket-nav-hint {
@@ -939,6 +1029,12 @@
         font-size: 14px;
     }
     
+    .bracket-direction-indicator {
+        width: 34px;
+        height: 34px;
+        font-size: 18px;
+    }
+    
     .bracket-navigation-title {
         font-size: 0.8em;
         margin-bottom: 12px;
@@ -957,6 +1053,15 @@
     .bracket-position-display {
         font-size: 10px;
         padding: 5px 8px;
+    }
+    
+    .bracket-coordinates {
+        font-size: 10px;
+    }
+    
+    .bracket-distance-warning {
+        font-size: 8px;
+        padding: 1px 3px;
     }
 }
 
