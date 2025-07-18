@@ -1,7 +1,7 @@
 ﻿/**
  * BracketRenderer.css
  * Стили для отображения турнирных сеток с префиксом bracket-
- * Версия: 3.0 - с гибкой системой позиционирования на Flexbox
+ * Версия: 3.1 - с вертикальным центрированием для классической сетки
  */
 
 /* ===== БАЗОВЫЕ КОНТЕЙНЕРЫ ===== */
@@ -16,7 +16,7 @@
     padding: 20px;
     font-family: 'Montserrat', sans-serif;
     color: #fff;
-    min-height: 400px;
+    min-height: 600px;
 }
 
 .bracket-renderer {
@@ -26,43 +26,50 @@
     min-width: fit-content;
     width: 100%;
     background-color: #000;
+    min-height: 600px;
 }
 
 /* ===== КОНТЕЙНЕРЫ ДЛЯ РАЗНЫХ ТИПОВ ТУРНИРОВ ===== */
 .bracket-double-elimination {
     gap: 40px;
     background: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+    min-height: 800px;
 }
 
 .bracket-single-elimination {
     gap: 20px;
-    min-height: 400px;
+    min-height: 600px;
 }
 
 /* ===== СИСТЕМА РАУНДОВ НА FLEXBOX ===== */
 .bracket-rounds-container {
     display: flex;
     gap: 60px;
-    align-items: flex-start;
+    align-items: stretch;
     justify-content: flex-start;
-    min-height: 400px;
+    min-height: 500px;
     padding: 20px 0;
 }
 
 .bracket-round-column {
     display: flex;
     flex-direction: column;
-    gap: 15px;
     min-width: 280px;
     flex-shrink: 0;
+    height: 100%;
 }
 
 .bracket-round-column.has-many-matches {
-    gap: 20px;
+    /* Для раундов с большим количеством матчей */
 }
 
 .bracket-round-column.has-few-matches {
-    gap: 30px;
+    /* Для раундов с малым количеством матчей */
+}
+
+.bracket-round-column.has-single-match {
+    /* Для раундов с одним матчем (финал) */
+    align-items: center;
     justify-content: center;
 }
 
@@ -70,16 +77,13 @@
 .bracket-round-header {
     text-align: center;
     padding: 10px 0;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     font-size: 1.1em;
     font-weight: 600;
     color: #fff;
     white-space: nowrap;
     border-bottom: 2px solid #333;
-    position: sticky;
-    top: 0;
-    background-color: #000;
-    z-index: 10;
+    flex-shrink: 0;
 }
 
 .bracket-winners-bracket-header .bracket-round-header {
@@ -101,32 +105,46 @@
     font-size: 1.3em;
 }
 
-/* ===== КОНТЕЙНЕРЫ МАТЧЕЙ ===== */
+/* ===== КОНТЕЙНЕРЫ МАТЧЕЙ С ВЕРТИКАЛЬНЫМ ЦЕНТРИРОВАНИЕМ ===== */
 .bracket-matches-list {
     display: flex;
     flex-direction: column;
-    gap: 20px;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    flex: 1;
+    min-height: 400px;
+    position: relative;
 }
 
+/* Для первых раундов с большим количеством матчей */
 .bracket-matches-list.many-matches {
-    gap: 15px;
-    justify-content: flex-start;
+    gap: 20px;
+    justify-content: space-evenly;
+    padding: 20px 0;
 }
 
+/* Для финальных раундов с малым количеством матчей */
 .bracket-matches-list.few-matches {
-    gap: 40px;
+    gap: 50px;
     justify-content: center;
+    padding: 40px 0;
 }
 
+/* Для единичных матчей (финал) */
+.bracket-matches-list.single-match {
+    gap: 0;
+    justify-content: center;
+    padding: 60px 0;
+}
+
+/* ===== КОНТЕЙНЕРЫ МАТЧЕЙ ===== */
 .bracket-match-container {
     position: relative;
     width: 100%;
     max-width: 260px;
     transition: all 0.3s ease;
     z-index: 20;
+    flex-shrink: 0;
 }
 
 .bracket-match-container:hover {
@@ -537,6 +555,7 @@
 
 .bracket-grand-final-section .bracket-rounds-container {
     justify-content: center;
+    min-height: 300px;
 }
 
 /* ===== АНИМАЦИИ ===== */
@@ -637,12 +656,18 @@
 @media (max-width: 768px) {
     .bracket-renderer-container {
         padding: 10px;
+        min-height: 400px;
+    }
+    
+    .bracket-renderer {
+        min-height: 400px;
     }
     
     .bracket-rounds-container {
         gap: 20px;
         flex-direction: column;
         align-items: stretch;
+        min-height: 300px;
     }
     
     .bracket-round-column {
@@ -684,6 +709,24 @@
     .bracket-section-title {
         font-size: 1.2em;
     }
+    
+    .bracket-matches-list {
+        min-height: 200px;
+    }
+    
+    .bracket-matches-list.many-matches {
+        gap: 15px;
+        padding: 15px 0;
+    }
+    
+    .bracket-matches-list.few-matches {
+        gap: 30px;
+        padding: 20px 0;
+    }
+    
+    .bracket-matches-list.single-match {
+        padding: 30px 0;
+    }
 }
 
 @media (max-width: 480px) {
@@ -703,6 +746,24 @@
     
     .bracket-match-title {
         font-size: 0.75em;
+    }
+    
+    .bracket-matches-list {
+        min-height: 150px;
+    }
+    
+    .bracket-matches-list.many-matches {
+        gap: 10px;
+        padding: 10px 0;
+    }
+    
+    .bracket-matches-list.few-matches {
+        gap: 20px;
+        padding: 15px 0;
+    }
+    
+    .bracket-matches-list.single-match {
+        padding: 20px 0;
     }
 }
 

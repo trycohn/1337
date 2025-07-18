@@ -78,9 +78,17 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         const allMatches = [...(roundData.regular || []), ...(roundData.special || [])];
         const matchesCount = allMatches.length;
         
-        // Определяем класс для количества матчей
-        const matchesClass = matchesCount > 4 ? 'many-matches' : 'few-matches';
-        const columnClass = matchesCount > 4 ? 'has-many-matches' : 'has-few-matches';
+        // Определяем класс для количества матчей и вертикального выравнивания
+        let matchesClass = 'few-matches';
+        let columnClass = 'has-few-matches';
+        
+        if (matchesCount === 1) {
+            matchesClass = 'single-match';
+            columnClass = 'has-single-match';
+        } else if (matchesCount >= 4) {
+            matchesClass = 'many-matches';
+            columnClass = 'has-many-matches';
+        }
         
         return (
             <div key={round} className={`bracket-round-column ${columnClass}`}>
@@ -112,8 +120,18 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
     // Рендер раунда для Double Elimination
     const renderDoubleEliminationRound = (round, matches, bracketType, roundName) => {
         const matchesCount = matches.length;
-        const matchesClass = matchesCount > 4 ? 'many-matches' : 'few-matches';
-        const columnClass = matchesCount > 4 ? 'has-many-matches' : 'has-few-matches';
+        
+        // Определяем класс для количества матчей и вертикального выравнивания
+        let matchesClass = 'few-matches';
+        let columnClass = 'has-few-matches';
+        
+        if (matchesCount === 1) {
+            matchesClass = 'single-match';
+            columnClass = 'has-single-match';
+        } else if (matchesCount >= 4) {
+            matchesClass = 'many-matches';
+            columnClass = 'has-many-matches';
+        }
         
         return (
             <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`}>
@@ -186,11 +204,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                         <div className="bracket-grand-final-section">
                             <div className="bracket-section-title">🏁 Grand Final</div>
                             <div className="bracket-rounds-container">
-                                <div className="bracket-round-column has-few-matches">
+                                <div className="bracket-round-column has-single-match">
                                     <div className="bracket-round-header bracket-grand-final-header">
                                         Grand Final
                                     </div>
-                                    <div className="bracket-matches-list few-matches">
+                                    <div className="bracket-matches-list single-match">
                                         {groupedMatches.grandFinal.map(match => (
                                             <div
                                                 key={match.id}
