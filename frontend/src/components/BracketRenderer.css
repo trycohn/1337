@@ -9,7 +9,7 @@
     position: relative;
     width: 100%;
     height: 100vh;
-    overflow: hidden; /* Возвращаем для правильного отображения */
+    overflow: hidden;
     background-color: #000;
     border: 1px solid #333;
     border-radius: 8px;
@@ -17,12 +17,19 @@
     color: #fff;
     cursor: grab;
     user-select: none;
-    /* Оптимизация для современного перетаскивания */
-    touch-action: none;
+    /* Оптимизация для перетаскивания */
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    /* Обеспечиваем полную ширину родительского блока */
+    min-width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    /* Отключаем drag для изображений и других элементов */
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -ms-user-drag: none;
 }
 
 .bracket-renderer-container:active {
@@ -37,9 +44,9 @@
     position: absolute;
     top: 0;
     left: 0;
-    /* Оптимизация для производительности */
-    width: auto;
-    height: auto;
+    /* Размеры для правильного позиционирования */
+    width: 100%;
+    height: 100%;
     transform-origin: top left;
     will-change: transform;
     /* Улучшенная производительность перетаскивания */
@@ -48,13 +55,20 @@
     perspective: 1000px;
     -webkit-perspective: 1000px;
     /* Размеры для контента */
-    min-width: fit-content;
-    min-height: fit-content;
+    min-width: 100%;
+    min-height: 100%;
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
     padding: 40px;
     box-sizing: border-box;
+    /* Обеспечиваем что контент может выходить за границы */
+    overflow: visible;
+    /* Отключаем выделение текста */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .bracket-double-elimination {
@@ -90,7 +104,11 @@
     gap: 8px;
     /* Исключаем из перетаскивания */
     pointer-events: auto;
-    touch-action: auto;
+    /* Отключаем выделение текста */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .bracket-nav-icon-button {
@@ -110,9 +128,13 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     position: relative;
     overflow: hidden;
-    /* Оптимизация для touch */
-    touch-action: manipulation;
+    /* Оптимизация для кнопок */
     -webkit-tap-highlight-color: transparent;
+    /* Отключаем выделение текста */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .bracket-nav-icon-button:hover {
@@ -325,7 +347,12 @@
     z-index: 1;
     margin: 0 auto;
     /* Исключаем из перетаскивания */
-    touch-action: auto;
+    pointer-events: auto;
+    /* Отключаем выделение текста */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .bracket-match-container:hover {
@@ -368,8 +395,12 @@
     flex-direction: column;
     justify-content: space-between;
     /* Исключаем из перетаскивания */
-    touch-action: auto;
     pointer-events: auto;
+    /* Отключаем выделение текста */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .bracket-match-card:hover {
@@ -592,7 +623,12 @@
     font-size: 14px;
     box-shadow: 0 2px 8px rgba(255, 0, 0, 0.3);
     /* Исключаем из перетаскивания */
-    touch-action: auto;
+    pointer-events: auto;
+    /* Отключаем выделение текста */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .bracket-edit-match-btn:hover {

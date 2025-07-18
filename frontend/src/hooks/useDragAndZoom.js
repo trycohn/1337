@@ -103,16 +103,9 @@ const useDragAndZoom = ({
                 transformOrigin: 'top left'
             },
             // Объединяем обработчики drag и zoom
-            onPointerDown: dragHandlers.onPointerDown,
+            onMouseDown: dragHandlers.onMouseDown,
             onWheel: zoomHandlers.onWheel,
-            onTouchStart: (e) => {
-                // Если два касания - это zoom, иначе потенциальный drag
-                if (e.touches.length === 2) {
-                    zoomHandlers.onTouchStart(e);
-                } else {
-                    dragHandlers.onPointerDown(e);
-                }
-            },
+            onTouchStart: zoomHandlers.onTouchStart,
             onTouchMove: zoomHandlers.onTouchMove,
             onTouchEnd: zoomHandlers.onTouchEnd
         };
