@@ -219,6 +219,7 @@
     min-height: 100%;
     /* Оптимизация для плавного масштабирования */
     will-change: transform;
+    /* Все колонки раундов будут одинаковой высоты */
 }
 
 .bracket-round-column {
@@ -226,24 +227,27 @@
     flex-direction: column;
     min-width: 280px;
     flex-shrink: 0;
-    height: 100%;
-    justify-content: center;
+    /* Убираем высоту и justify-content - будет растягиваться */
+    /* flex: 1 - не нужно, пусть контент определяет ширину */
 }
 
+/* Убираем старые классы с разным justify-content */
 .bracket-round-column.has-many-matches {
-    justify-content: flex-start;
+    /* Стили убраны - теперь структура едина */
 }
 
 .bracket-round-column.has-few-matches {
-    justify-content: center;
+    /* Стили убраны - теперь структура едина */
 }
 
 .bracket-round-column.has-single-match {
-    justify-content: center;
+    /* Стили убраны - теперь структура едина */
 }
 
 /* ===== ЗАГОЛОВКИ РАУНДОВ ===== */
 .bracket-round-header {
+    /* Заголовок всегда сверху */
+    flex-shrink: 0;
     text-align: center;
     font-size: 16px;
     font-weight: 700;
@@ -313,24 +317,28 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    flex-grow: 1;
+    /* Занимает всю оставшуюся высоту колонки */
+    flex: 1;
+    /* Центрирование по вертикали */
     justify-content: center;
     align-items: center;
     padding: 20px 0;
+    /* Минимальная высота для правильного отображения */
+    min-height: 0;
 }
 
 .bracket-matches-list.many-matches {
-    gap: 15px;
-    justify-content: center;
+    /* Для многих матчей - выравнивание по началу */
+    justify-content: flex-start;
 }
 
 .bracket-matches-list.few-matches {
-    gap: 25px;
+    /* Для немногих матчей - центрирование */
     justify-content: center;
 }
 
 .bracket-matches-list.single-match {
-    gap: 30px;
+    /* Для одного матча - центрирование */
     justify-content: center;
 }
 
