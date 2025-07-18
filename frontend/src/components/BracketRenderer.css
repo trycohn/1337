@@ -745,12 +745,50 @@
 .match-card-grand-final {
     border-left: 4px solid #ffcc00;
     background-color: rgba(255, 204, 0, 0.05);
-    box-shadow: 0 4px 8px rgba(255, 204, 0, 0.2);
+}
+
+/* 🔧 НОВОЕ: Стили для матча за 3-е место */
+.match-card-third-place {
+    border-left: 4px solid #cd7f32;
+    background-color: rgba(205, 127, 50, 0.05);
+    border: 2px solid #cd7f32;
+}
+
+.match-card-third-place:hover {
+    animation: bracketTypeGlow 2s infinite;
+    box-shadow: 0 0 12px rgba(205, 127, 50, 0.6);
+    border-color: #daa520;
+}
+
+.match-card-third-place .match-title {
+    color: #daa520;
+    font-weight: bold;
+}
+
+.match-card-third-place .bracket-type-indicator {
+    color: #daa520;
+    font-size: 1.2em;
+}
+
+/* 🔧 НОВОЕ: Анимация для матча за 3-е место */
+@keyframes thirdPlaceGlow {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(205, 127, 50, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(218, 165, 32, 0.8);
+    }
+}
+
+.match-card-third-place .match-info {
+    border-bottom: 1px solid rgba(205, 127, 50, 0.3);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
 }
 
 .match-card-single {
-    border-left: 4px solid #ff0000;
-    background-color: rgba(255, 0, 0, 0.05);
+    border-left: 4px solid #333;
+    background-color: rgba(51, 51, 51, 0.05);
 }
 
 /* ===== BRACKET TYPE INDICATOR ===== */
@@ -763,7 +801,24 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #333;
+}
+
+.match-title {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bracket-type-indicator {
+    font-size: 1.1em;
+    opacity: 0.8;
+    margin-left: 8px;
 }
 
 .match-number {

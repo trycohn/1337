@@ -25,8 +25,24 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                 }).sort((a, b) => a.match_number - b.match_number)
             };
         } else {
+            // 🔧 ИСПРАВЛЕНО: Специальная сортировка для single elimination с учетом матча за 3-е место
+            const sortedMatches = safeMatches.sort((a, b) => {
+                // Сначала сортируем по раундам
+                if (a.round !== b.round) {
+                    return a.round - b.round;
+                }
+                
+                // В одном раунде: матч за 3-е место (match_number=0) идет перед финалом (match_number=1)
+                if (a.match_number !== undefined && b.match_number !== undefined) {
+                    return a.match_number - b.match_number;
+                }
+                
+                // Fallback: обычная сортировка
+                return (a.id || 0) - (b.id || 0);
+            });
+            
             return {
-                single: safeMatches.sort((a, b) => a.round - b.round || a.match_number - b.match_number)
+                single: sortedMatches
             };
         }
     }, [matches, tournament?.bracket_type]);
@@ -42,9 +58,15 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     }
 
-    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ НАЗВАНИЯ РАУНДА
-    const getRoundName = (round, totalRounds, participantCount) => {
-        console.log(`🔍 getRoundName: round=${round}, totalRounds=${totalRounds}, participantCount=${participantCount}`);
+    // 🔧 УЛУЧШЕННАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ НАЗВАНИЯ РАУНДА
+    const getRoundName = (round, totalRounds, participantCount, isThirdPlaceMatch = false) => {
+        console.log(`🔍 getRoundName: round=${round}, totalRounds=${totalRounds}, participantCount=${participantCount}, isThirdPlaceMatch=${isThirdPlaceMatch}`);
+        
+        // 🔧 ИСПРАВЛЕНО: Обрабатываем матч за 3-е место отдельно
+        if (isThirdPlaceMatch) {
+            console.log('🥉 Матч за 3-е место обнаружен');
+            return 'Матч за 3-е место';
+        }
         
         // Предварительный раунд всегда имеет приоритет
         if (round === -1) {
@@ -123,13 +145,23 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             <div className="bracket-single-elimination">
                 {/* 🔧 НОВОЕ: Заголовки раундов в одну линию сверху */}
                 <div className="bracket-headers">
-                    {sortedRounds.map(([round, roundMatches]) => (
-                        <div key={`header-${round}`} className="round-header-container">
-                            <h3 className="round-header">
-                                {getRoundName(parseInt(round), totalRounds, participantCount)}
-                            </h3>
-                        </div>
-                    ))}
+                    {sortedRounds.map(([round, roundMatches]) => {
+                        // 🔧 ИСПРАВЛЕНО: Проверяем, есть ли матч за 3-е место в этом раунде
+                        const hasThirdPlaceMatch = roundMatches.some(match => 
+                            match.bracket_type === 'placement' || match.is_third_place_match
+                        );
+                        
+                        return (
+                            <div key={`header-${round}`} className="round-header-container">
+                                <h3 className="round-header">
+                                    {hasThirdPlaceMatch ? 
+                                        'Матч за 3-е место / Финал' : 
+                                        getRoundName(parseInt(round), totalRounds, participantCount, false)
+                                    }
+                                </h3>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* 🔧 НОВОЕ: Контейнер для матчей без заголовков */}
@@ -265,6 +297,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
 // MatchCard компонент с поддержкой bracket_type
 const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, bracketType = 'single' }) => {
     const getBracketTypeStyle = () => {
+        // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
+        if (match.bracket_type === 'placement' || match.is_third_place_match) {
+            return 'match-card-third-place';
+        }
+        
         switch (bracketType) {
             case 'winner':
                 return 'match-card-winner';
@@ -275,6 +312,25 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             default:
                 return 'match-card-single';
         }
+    };
+
+    // 🔧 ИСПРАВЛЕНО: Определяем название матча
+    const getMatchTitle = () => {
+        if (match.bracket_type === 'placement' || match.is_third_place_match) {
+            return 'Матч за 3-е место';
+        }
+        
+        // Для финального раунда, если это не матч за 3-е место
+        if (match.round && tournament?.participants_count) {
+            const totalRounds = Math.max(...(tournament.matches || []).map(m => m.round || 0));
+            const roundsFromEnd = totalRounds - match.round;
+            
+            if (roundsFromEnd === 0 && match.match_number === 1) {
+                return 'Финал';
+            }
+        }
+        
+        return `Матч #${match.match_number || match.id}`;
     };
 
     // 🔧 ИСПРАВЛЕНО: Обработка данных матча для нового формата
@@ -347,7 +403,10 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             style={{ cursor: onMatchClick ? 'pointer' : 'default' }}
         >
             <div className="match-info">
-                <span className="match-number">#{match.match_number || match.id}</span>
+                <span className="match-title">{getMatchTitle()}</span>
+                {(match.bracket_type === 'placement' || match.is_third_place_match) && (
+                    <span className="bracket-type-indicator">🥉</span>
+                )}
                 {bracketType !== 'single' && (
                     <span className="bracket-type-indicator">
                         {bracketType === 'winner' && '🏆'}

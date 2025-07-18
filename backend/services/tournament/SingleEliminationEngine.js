@@ -516,10 +516,12 @@ class SingleEliminationEngine {
             throw new Error(`Не найдены полуфинальные матчи для матча за 3-е место. Ожидалось: 2 матча в раунде ${semifinalRound}, найдено: ${semifinalMatches.length}`);
         }
         
+        // 🔧 ИСПРАВЛЕНО: Матч за 3-е место должен быть в том же раунде, что и финал
+        // но с меньшим match_number для правильной сортировки (отображается перед финалом)
         const thirdPlaceMatchData = {
             tournament_id: tournamentId,
-            round: finalRound + 1, // Матч за 3-е место в следующем раунде после финала
-            match_number: 1,
+            round: finalRound, // 🔧 ИЗМЕНЕНО: тот же раунд, что и финал
+            match_number: 0, // 🔧 ИЗМЕНЕНО: меньший номер матча для отображения перед финалом
             team1_id: null, // Будет заполнено после полуфиналов
             team2_id: null,
             status: 'pending',
@@ -528,7 +530,7 @@ class SingleEliminationEngine {
         
         const thirdPlaceMatch = await this._insertMatch(client, thirdPlaceMatchData);
         
-        console.log(`✅ Матч за 3-е место создан: ID ${thirdPlaceMatch.id}`);
+        console.log(`✅ Матч за 3-е место создан: ID ${thirdPlaceMatch.id}, раунд ${finalRound}, match_number 0`);
         return thirdPlaceMatch;
     }
     
