@@ -681,15 +681,25 @@
     font-weight: bold;
     margin-bottom: 20px;
     text-align: center;
-    padding: 0;
-    background: none;
-    border: none;
-    border-radius: 0;
+    padding: 10px 14px;
+    background-color: #333;
+    border-radius: 6px;
+    border: 1px solid #666;
     white-space: nowrap;
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.winners-bracket .round-header {
+    border-color: #00ff00;
+    background-color: #001100;
+}
+
+.losers-bracket .round-header {
+    border-color: #ff6b6b;
+    background-color: #220000;
 }
 
 /* 🔧 НОВОЕ: Контейнеры матчей для double elimination */
@@ -784,14 +794,39 @@
     
     .bracket-single-elimination {
         padding: 10px;
+        gap: 15px;
+    }
+    
+    /* 🔧 НОВОЕ: Мобильные стили для заголовков */
+    .bracket-headers {
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    
+    .round-header-container {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .bracket-single-elimination .round-header {
+        font-size: 1.1em;
+        padding: 8px 0;
+    }
+    
+    /* 🔧 НОВОЕ: Мобильные стили для контента */
+    .bracket-content {
+        flex-direction: column;
         gap: 30px;
-        align-items: flex-start; /* На мобильных убираем центрирование */
+        padding: 0 10px;
+        align-items: stretch;
     }
     
     .bracket-rounds {
         flex-direction: column;
         gap: 15px;
-        align-items: stretch; /* На мобильных растягиваем по ширине */
+        align-items: stretch;
     }
     
     .bracket-round,
@@ -804,16 +839,12 @@
         transform: none;
     }
     
-    /* Мобильные стили для хедеров */
-    .bracket-single-elimination .round-header,
+    /* Старые мобильные стили для double elimination */
     .bracket-rounds .round-header {
-        position: static; /* Убираем sticky на мобильных */
+        position: static;
         font-size: 1em;
-        padding: 0;
+        padding: 8px 12px;
         margin-bottom: 15px;
-        background: none;
-        border: none;
-        box-shadow: none;
     }
     
     /* Уменьшаем минимальную высоту на мобильных */
@@ -854,13 +885,53 @@
 /* ===== SINGLE ELIMINATION STYLES ===== */
 .bracket-single-elimination {
     display: flex;
-    gap: 50px;
+    flex-direction: column;
     padding: 20px;
     background-color: #000;
     overflow-x: auto;
     min-height: 100vh;
-    align-items: center; /* 🔧 НОВОЕ: Вертикальное центрирование всех раундов */
+    gap: 20px;
+}
+
+/* 🔧 НОВОЕ: Контейнер для заголовков раундов в одну линию */
+.bracket-headers {
+    display: flex;
+    gap: 50px;
+    align-items: center;
     justify-content: flex-start;
+    padding: 0 20px;
+    margin-bottom: 10px;
+}
+
+.round-header-container {
+    min-width: 250px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+/* 🔧 НОВОЕ: Заголовки раундов без фона и границ */
+.bracket-single-elimination .round-header {
+    color: #fff;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0;
+    padding: 10px 0;
+    text-align: center;
+    white-space: nowrap;
+    background: none; /* Убираем фон */
+    border: none; /* Убираем границы */
+    border-radius: 0; /* Убираем скругления */
+    box-shadow: none; /* Убираем тени */
+}
+
+/* 🔧 НОВОЕ: Контейнер для содержимого матчей */
+.bracket-content {
+    display: flex;
+    gap: 50px;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 20px;
 }
 
 .bracket-single-elimination .bracket-round {
@@ -871,33 +942,15 @@
     position: relative;
 }
 
-/* 🔧 НОВОЕ: Фиксированные хедеры раундов сверху */
-.bracket-single-elimination .round-header {
-    color: #fff;
-    font-size: 1.2em;
-    font-weight: bold;
-    margin-bottom: 20px;
-    text-align: center;
-    padding: 0;
-    background: none;
-    border: none;
-    border-radius: 0;
-    white-space: nowrap;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: none;
-}
-
-/* 🔧 НОВОЕ: Контейнер для матчей с вертикальным центрированием */
+/* 🔧 ОБНОВЛЕНО: Контейнер для матчей с вертикальным центрированием */
 .bracket-single-elimination .round-matches {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    justify-content: center; /* 🔧 Центрируем матчи вертикально */
+    justify-content: center;
     align-items: center;
     flex: 1;
-    min-height: 400px; /* Минимальная высота для выравнивания */
+    min-height: 400px;
 }
 
 /* 🔧 АДАПТИВНАЯ ВЫСОТА ДЛЯ РАЗНЫХ КОЛИЧЕСТВ МАТЧЕЙ */

@@ -106,27 +106,41 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         const totalRounds = regularRounds.length > 0 ? Math.max(...regularRounds) : 1;
         const participantCount = tournament?.participants_count || 0;
 
+        // Сортируем раунды по порядку
+        const sortedRounds = Object.entries(rounds).sort(([a], [b]) => parseInt(a) - parseInt(b));
+
         return (
             <div className="bracket-single-elimination">
-                {Object.entries(rounds).map(([round, roundMatches]) => (
-                    <div key={round} className="bracket-round">
-                        <h3 className="round-header">
-                            {getRoundName(parseInt(round), totalRounds, participantCount)}
-                        </h3>
-                        <div className="round-matches">
-                            {roundMatches.map(match => (
-                                <MatchCard
-                                    key={match.id}
-                                    match={match}
-                                    tournament={tournament}
-                                    onEditMatch={onEditMatch}
-                                    canEditMatches={canEditMatches}
-                                    onMatchClick={onMatchClick}
-                                />
-                            ))}
+                {/* 🔧 НОВОЕ: Заголовки раундов в одну линию сверху */}
+                <div className="bracket-headers">
+                    {sortedRounds.map(([round, roundMatches]) => (
+                        <div key={`header-${round}`} className="round-header-container">
+                            <h3 className="round-header">
+                                {getRoundName(parseInt(round), totalRounds, participantCount)}
+                            </h3>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+
+                {/* 🔧 НОВОЕ: Контейнер для матчей без заголовков */}
+                <div className="bracket-content">
+                    {sortedRounds.map(([round, roundMatches]) => (
+                        <div key={round} className="bracket-round">
+                            <div className="round-matches">
+                                {roundMatches.map(match => (
+                                    <MatchCard
+                                        key={match.id}
+                                        match={match}
+                                        tournament={tournament}
+                                        onEditMatch={onEditMatch}
+                                        canEditMatches={canEditMatches}
+                                        onMatchClick={onMatchClick}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     };
