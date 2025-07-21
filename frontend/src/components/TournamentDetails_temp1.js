@@ -131,6 +131,8 @@ const HYBRID_CONFIG = {
     }
 };
 
+}, [id]);
+
 // 🎯 Кеширование для повышения производительности
 const CACHE_DURATION = 30000; // 30 секунд
 
@@ -194,17 +196,6 @@ function TournamentDetails() {
     const [deleteTournamentModal, setDeleteTournamentModal] = useState(false);
     const [isDeletingTournament, setIsDeletingTournament] = useState(false);
 
-    // 🆕 ГИБРИДНАЯ СИСТЕМА СОСТОЯНИЯ
-    const [hybridState, setHybridState] = useState({
-        isWebSocketConnected: false,
-        lastWebSocketEvent: null,
-        cacheStrategy: 'normal',
-        pendingOperations: new Set(),
-        fallbackActive: false,
-        updateQueue: [],
-        retryCount: 0
-    });
-
     // Данные для модальных окон
     const [newParticipantData, setNewParticipantData] = useState({
         display_name: '',
@@ -255,47 +246,6 @@ function TournamentDetails() {
     const closeModal = useCallback((modalName) => {
         setModals(prev => ({ ...prev, [modalName]: false }));
     }, []);
-
-    // 🆕 АДАПТИВНОЕ ОПРЕДЕЛЕНИЕ ВРЕМЕНИ КЕШИРОВАНИЯ
-    const getAdaptiveCacheTime = useCallback(() => {
-        if (hybridState.pendingOperations.size > 0) {
-            return 1000; // CACHE_CRITICAL: 1 секунда - критические операции
-        }
-        
-        if (tournament?.status === 'in_progress') {
-            return 10000; // CACHE_ACTIVE: 10 секунд - когда турнир активный
-        }
-        
-        if (hybridState.cacheStrategy === 'updating') {
-            return 5000; // CACHE_UPDATING: 5 секунд - во время операций
-        }
-        
-        return 30000; // CACHE_NORMAL: 30 секунд - обычное состояние
-    }, [tournament?.status, hybridState.pendingOperations.size, hybridState.cacheStrategy]);
-
-    // 🆕 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА КЕША С АДАПТИВНОСТЬЮ
-    const clearAdaptiveCache = useCallback((reason = 'manual') => {
-        const cacheKey = `tournament_cache_${id}`;
-        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-        localStorage.removeItem(cacheKey);
-        localStorage.removeItem(cacheTimestampKey);
-        
-        console.log(`🧹 [AdaptiveCache] Кеш очищен по причине: ${reason}`);
-        
-        // Временно переключаемся на критический режим кеширования
-        setHybridState(prev => ({
-            ...prev,
-            cacheStrategy: 'updating'
-        }));
-        
-        // Возвращаемся к нормальному режиму через 10 секунд
-        setTimeout(() => {
-            setHybridState(prev => ({
-                ...prev,
-                cacheStrategy: 'normal'
-            }));
-        }, 10000);
-    }, [id]);
 
     // Утилитарные функции
     const handleAuthError = useCallback((error, context = '') => {
@@ -1703,12 +1653,11 @@ function TournamentDetails() {
 
     // 🔧 ГИБРИДНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА
     const handleStartTournament = useCallback(async () => {
-        // 🆕 РЕГИСТРИРУЕМ КРИТИЧЕСКУЮ ОПЕРАЦИЮ
-        const operationId = 'startTournament';
-        
         try {
             setLoading(true);
             
+            // 🆕 РЕГИСТРИРУЕМ КРИТИЧЕСКУЮ ОПЕРАЦИЮ
+            const operationId = 'startTournament';
             setHybridState(prev => ({
                 ...prev,
                 pendingOperations: new Set(prev.pendingOperations).add(operationId),

@@ -2,7 +2,6 @@ const pool = require('../../db');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
-const TournamentService = require('../TournamentService'); // Added import for TournamentService
 
 /**
  * 🎯 BracketService v4.0 - ТОЛЬКО УТИЛИТЫ
@@ -67,11 +66,6 @@ class BracketService {
             
             const duration = Date.now() - startTime;
             console.log(`✅ [BracketService v4.0] Результаты очищены за ${duration}ms`);
-            
-            // 🆕 ДОБАВЛЕНО: WebSocket уведомление для очистки результатов
-            const updatedTournament = await TournamentService.getTournamentById(tournamentId);
-            broadcastTournamentUpdate(tournamentId, updatedTournament);
-            console.log(`📡 [clearMatchResults] WebSocket обновление отправлено`);
             
             return {
                 success: true,
