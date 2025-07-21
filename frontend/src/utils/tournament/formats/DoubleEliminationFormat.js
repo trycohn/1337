@@ -245,11 +245,11 @@ export class DoubleEliminationFormat extends TournamentFormat {
    */
   getMatchLabel(match, context) {
     if (match.bracket_type === 'grand_final') {
-      return '🏁 Grand Final';
+      return '🏆 Матч за 1-е место'; // 🆕 Изменено с "🏁 Grand Final"
     }
     
     if (match.bracket_type === 'grand_final_reset') {
-      return '🔄 Grand Final Reset';
+      return '🔄 Grand Final Reset'; // Остается прежним
     }
     
     // Можно добавить специальные метки для финалов winners/losers

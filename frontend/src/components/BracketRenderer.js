@@ -373,8 +373,12 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         }
         
         // Для grand final матчей (Double Elimination)
-        if (match.bracket_type === 'grand_final' || match.bracket_type === 'grand_final_reset') {
-            return match.bracket_type === 'grand_final_reset' ? 'Grand Final Reset' : 'Grand Final';
+        if (match.bracket_type === 'grand_final') {
+            return 'Матч за 1-е место'; // 🆕 Изменено с "Grand Final"
+        }
+        
+        if (match.bracket_type === 'grand_final_reset') {
+            return 'Grand Final Reset'; // Остается прежним для reset матча
         }
         
         // Стандартные матчи

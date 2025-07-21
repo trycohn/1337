@@ -276,7 +276,10 @@ const MatchDetailsModal = ({
                             <span className="modal-system-badge modal-system-badge-success">🏆 За 1-е место</span>
                         )}
                         {selectedMatch.bracket_type === 'grand_final' && (
-                            <span className="modal-system-badge modal-system-badge-success">🏆 Финал</span>
+                            <span className="modal-system-badge modal-system-badge-success">🏆 За 1-е место</span>
+                        )}
+                        {selectedMatch.bracket_type === 'grand_final_reset' && (
+                            <span className="modal-system-badge modal-system-badge-warning">🔄 Grand Final Reset</span>
                         )}
                         {isCS2 && (
                             <span className="modal-system-badge">🗺️ CS2</span>
