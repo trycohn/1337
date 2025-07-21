@@ -1016,7 +1016,6 @@ const TournamentInfoSection = ({
             <TournamentProgressBar 
                 matches={matches}
                 tournamentStatus={tournament?.status}
-                tournamentName={tournament?.name}
                 compact={true}
             />
 

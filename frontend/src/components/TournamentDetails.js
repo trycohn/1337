@@ -989,8 +989,6 @@ function TournamentDetails() {
                             <TournamentProgressBar 
                                 matches={matches}
                                 tournamentStatus={tournament?.status}
-                                tournamentName={tournament?.name}
-                                showDetails={true}
                             />
                         )}
 
@@ -1139,8 +1137,6 @@ function TournamentDetails() {
                             <TournamentProgressBar 
                                 matches={matches}
                                 tournamentStatus={tournament?.status}
-                                tournamentName={tournament?.name}
-                                showDetails={false}
                             />
                         )}
 
