@@ -24,38 +24,49 @@ class SingleEliminationEngine {
     static async generateBracket(tournamentId, participants, options = {}) {
         const startTime = Date.now();
         console.log(`⚡ [SingleEliminationEngine] Начало генерации турнирной сетки для турнира ${tournamentId}`);
+        console.log(`👥 [SingleEliminationEngine] Получено участников: ${participants.length}`);
         
         try {
             // 1. Валидация входных данных
             this._validateInput(tournamentId, participants, options);
             
-            // 2. Расчет математических параметров с поддержкой bye-проходов
+            // 2. Расчет математических параметров - используем ВСЕХ участников
             const bracketMath = BracketMath.calculateSingleEliminationParams(
-                participants.length, 
+                participants.length,  // 🔧 ИСПРАВЛЕНО: используем реальное количество участников
                 { thirdPlaceMatch: options.thirdPlaceMatch || false }
             );
             
-            console.log(`📊 Математические параметры:`, {
+            console.log(`📊 Математические параметры для ${participants.length} участников:`, {
                 originalParticipants: bracketMath.originalParticipantCount,
                 actualParticipants: bracketMath.actualParticipants,
-                excludedParticipants: bracketMath.excludedParticipants, // Теперь всегда 0
+                excludedParticipants: bracketMath.excludedParticipants,
                 needsPreliminaryRound: bracketMath.needsPreliminaryRound,
                 preliminaryMatches: bracketMath.preliminaryMatches,
-                firstRoundByes: bracketMath.firstRoundByes,
+                preliminaryParticipants: bracketMath.preliminaryParticipants,
+                directAdvancers: bracketMath.directAdvancers,
                 totalMatches: bracketMath.totalMatches,
                 rounds: bracketMath.rounds
             });
             
-            // 3. Применение алгоритма распределения - используем ВСЕХ участников
+            // 3. Применение алгоритма распределения - используем ВСЕХ участников без ограничений
             const seedingType = options.seedingType || SEEDING_TYPES.RANDOM;
+            console.log(`🎲 Применяем распределение типа ${seedingType} для ${participants.length} участников`);
+            
             const seededParticipants = SeedingFactory.createSeeding(
                 seedingType,
-                participants, // 🔧 ИСПРАВЛЕНО: передаем всех участников
-                participants.length, // 🔧 ИСПРАВЛЕНО: количество = всем участникам
+                participants, // Все участники
+                participants.length, // 🔧 КРИТИЧЕСКИ ВАЖНО: передаем именно participants.length, а НЕ bracketMath.actualParticipants
                 options.seedingOptions || {}
             );
             
-            console.log(`🎲 Распределение участников: тип ${seedingType}, количество ${seededParticipants.length}`);
+            // 🔧 ДОБАВЛЯЕМ ПРОВЕРКУ: убеждаемся что не потеряли участников
+            if (seededParticipants.length !== participants.length) {
+                console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Потеряли участников!`);
+                console.error(`   Было: ${participants.length}, стало: ${seededParticipants.length}`);
+                throw new Error(`Потерян ${participants.length - seededParticipants.length} участник(ов) при распределении`);
+            }
+            
+            console.log(`✅ Распределение участников: тип ${seedingType}, количество ${seededParticipants.length} (сохранены ВСЕ)`);
             
             // 4. Генерация структуры матчей с поддержкой bye-проходов
             const matches = await this._generateMatches(
@@ -73,6 +84,7 @@ class SingleEliminationEngine {
             
             const duration = Date.now() - startTime;
             console.log(`✅ [SingleEliminationEngine] Сетка успешно сгенерирована за ${duration}ms`);
+            console.log(`🎉 ИТОГ: Использовано ${seededParticipants.length} из ${participants.length} участников (потерь: 0)`);
             
             return {
                 success: true,
@@ -82,7 +94,8 @@ class SingleEliminationEngine {
                 seedingInfo: {
                     type: seedingType,
                     participantsUsed: seededParticipants.length,
-                    participantsExcluded: 0 // 🔧 ИСПРАВЛЕНО: никого не исключаем
+                    participantsExcluded: 0, // 🔧 ИСПРАВЛЕНО: никого не исключаем
+                    participantsOriginal: participants.length // 🆕 ДОБАВЛЕНО: исходное количество
                 },
                 generationTime: duration,
                 generatedAt: new Date().toISOString()
@@ -383,6 +396,13 @@ class SingleEliminationEngine {
      */
     static async _placeParticipantsInStartingMatches(client, allMatches, participants, bracketMath) {
         console.log(`👥 [placeParticipantsInStartingMatches] Размещение ${participants.length} участников`);
+        console.log(`📊 BracketMath: directAdvancers=${bracketMath.directAdvancers}, preliminaryParticipants=${bracketMath.preliminaryParticipants}`);
+        
+        // 🔧 ДОБАВЛЯЕМ ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ УЧАСТНИКОВ
+        console.log(`📋 Список всех участников для размещения:`);
+        participants.forEach((p, index) => {
+            console.log(`   ${index + 1}. ID: ${p.id}, Name: ${p.name || p.username || 'Unknown'}`);
+        });
         
         const updatePromises = [];
         
@@ -395,6 +415,11 @@ class SingleEliminationEngine {
             const directParticipants = participants.slice(0, bracketMath.directAdvancers);
             const firstRoundMatches = allMatches.filter(m => m.round === 1);
             
+            console.log(`👤 DIRECT PARTICIPANTS (проходят напрямую в первый раунд):`);
+            directParticipants.forEach((p, index) => {
+                console.log(`   ${index + 1}. ID: ${p.id}, Name: ${p.name || p.username || 'Unknown'}`);
+            });
+            
             // 🔧 ВАЖНО: DirectAdvancers размещаются в team1_id матчей первого раунда ПО ПОРЯДКУ
             for (let i = 0; i < directParticipants.length && i < firstRoundMatches.length; i++) {
                 const participant = directParticipants[i];
@@ -406,17 +431,26 @@ class SingleEliminationEngine {
                 );
                 updatePromises.push(updatePromise);
                 
-                console.log(`👤 DirectAdvancer: ${participant.name || participant.id} -> Первый раунд матч ${match.id} (team1_id) [согласованно с логикой связывания]`);
+                console.log(`✅ DirectAdvancer: ${participant.name || participant.id} -> Первый раунд матч ${match.id} (team1_id) [согласованно с логикой связывания]`);
             }
             
             // 2. Размещаем остальных участников в предварительном раунде
             const preliminaryParticipants = participants.slice(bracketMath.directAdvancers);
             const preliminaryMatches = allMatches.filter(m => m.round === 0);
             
+            console.log(`⚔️ PRELIMINARY PARTICIPANTS (играют в предварительном раунде):`);
+            preliminaryParticipants.forEach((p, index) => {
+                console.log(`   ${index + 1}. ID: ${p.id}, Name: ${p.name || p.username || 'Unknown'}`);
+            });
+            
+            console.log(`🥊 Размещаем в ${preliminaryMatches.length} предварительных матчах:`);
+            
             for (let i = 0; i < preliminaryMatches.length; i++) {
                 const match = preliminaryMatches[i];
                 const participant1 = preliminaryParticipants[i * 2];
                 const participant2 = preliminaryParticipants[i * 2 + 1];
+                
+                console.log(`🥊 Предварительный матч ${match.id} (M${match.match_number}):`);
                 
                 if (participant1) {
                     const updatePromise1 = client.query(
@@ -424,7 +458,9 @@ class SingleEliminationEngine {
                         [participant1.id, match.id]
                     );
                     updatePromises.push(updatePromise1);
-                    console.log(`👤 Preliminary: ${participant1.name || participant1.id} -> Предварительный матч ${match.id} (team1)`);
+                    console.log(`   👤 Team1: ${participant1.name || participant1.id} (ID: ${participant1.id})`);
+                } else {
+                    console.log(`   ❌ Team1: ОТСУТСТВУЕТ`);
                 }
                 
                 if (participant2) {
@@ -433,7 +469,9 @@ class SingleEliminationEngine {
                         [participant2.id, match.id]
                     );
                     updatePromises.push(updatePromise2);
-                    console.log(`👤 Preliminary: ${participant2.name || participant2.id} -> Предварительный матч ${match.id} (team2)`);
+                    console.log(`   👤 Team2: ${participant2.name || participant2.id} (ID: ${participant2.id})`);
+                } else {
+                    console.log(`   ❌ Team2: ОТСУТСТВУЕТ`);
                 }
             }
             
@@ -443,10 +481,14 @@ class SingleEliminationEngine {
             
             const firstRoundMatches = allMatches.filter(m => m.round === 1);
             
+            console.log(`📋 Размещение в ${firstRoundMatches.length} матчах первого раунда:`);
+            
             for (let i = 0; i < firstRoundMatches.length; i++) {
                 const match = firstRoundMatches[i];
                 const participant1 = participants[i * 2];
                 const participant2 = participants[i * 2 + 1];
+                
+                console.log(`🥊 Первый раунд матч ${match.id} (M${match.match_number}):`);
                 
                 if (participant1) {
                     const updatePromise1 = client.query(
@@ -454,7 +496,9 @@ class SingleEliminationEngine {
                         [participant1.id, match.id]
                     );
                     updatePromises.push(updatePromise1);
-                    console.log(`👤 ${participant1.name || participant1.id} -> Первый раунд матч ${match.id} (team1)`);
+                    console.log(`   👤 Team1: ${participant1.name || participant1.id} (ID: ${participant1.id})`);
+                } else {
+                    console.log(`   ❌ Team1: ОТСУТСТВУЕТ`);
                 }
                 
                 if (participant2) {
@@ -463,7 +507,9 @@ class SingleEliminationEngine {
                         [participant2.id, match.id]
                     );
                     updatePromises.push(updatePromise2);
-                    console.log(`👤 ${participant2.name || participant2.id} -> Первый раунд матч ${match.id} (team2)`);
+                    console.log(`   👤 Team2: ${participant2.name || participant2.id} (ID: ${participant2.id})`);
+                } else {
+                    console.log(`   ❌ Team2: ОТСУТСТВУЕТ`);
                 }
             }
         }
@@ -472,6 +518,16 @@ class SingleEliminationEngine {
         if (updatePromises.length > 0) {
             await Promise.all(updatePromises);
             console.log(`✅ Размещено участников: ${updatePromises.length} обновлений (согласованно с логикой связывания)`);
+        }
+        
+        // 🔧 ФИНАЛЬНАЯ ПРОВЕРКА: подсчитываем размещенных участников
+        const participantsPlaced = Math.floor(updatePromises.length);
+        console.log(`🎉 ИТОГ РАЗМЕЩЕНИЯ: размещено ${participantsPlaced} позиций из ${participants.length} участников`);
+        
+        if (participantsPlaced < participants.length) {
+            console.error(`⚠️ ВНИМАНИЕ: Возможно потеряли участников при размещении!`);
+            console.error(`   Участников получено: ${participants.length}`);
+            console.error(`   Позиций размещено: ${participantsPlaced}`);
         }
     }
     

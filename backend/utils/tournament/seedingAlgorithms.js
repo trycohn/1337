@@ -24,13 +24,22 @@ class SeedingAlgorithms {
     /**
      * 🎲 Случайное распределение участников (по умолчанию)
      * @param {Array} participants - Массив участников
-     * @param {number} maxParticipants - Максимальное количество (степень двойки)
+     * @param {number} maxParticipants - Максимальное количество (должно равняться participants.length)
      * @returns {Array} - Перемешанный массив участников
      */
     static randomSeeding(participants, maxParticipants) {
         this._validateParticipants(participants);
         
-        // Берем только нужное количество участников
+        console.log(`🎲 [randomSeeding] Получено: ${participants.length} участников, максимум: ${maxParticipants}`);
+        
+        // 🔧 КРИТИЧЕСКИ ВАЖНО: для Single Elimination используем ВСЕ участники
+        // maxParticipants должен равняться participants.length для Single Elimination
+        if (maxParticipants > participants.length) {
+            console.warn(`⚠️ [randomSeeding] maxParticipants (${maxParticipants}) больше чем доступно участников (${participants.length})`);
+            maxParticipants = participants.length;
+        }
+        
+        // 🆕 ДЛЯ SINGLE ELIMINATION: всегда используем ВСЕХ участников
         const selectedParticipants = participants.slice(0, maxParticipants);
         
         // Применяем алгоритм Fisher-Yates для случайного перемешивания
@@ -40,7 +49,16 @@ class SeedingAlgorithms {
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         
-        console.log(`🎲 Случайное распределение: ${shuffled.length} участников`);
+        console.log(`✅ [randomSeeding] Случайное распределение: ${shuffled.length} участников (потерь: ${participants.length - shuffled.length})`);
+        
+        // 🔧 ДОБАВЛЯЕМ ПРОВЕРКУ: убеждаемся что не потеряли участников
+        if (shuffled.length !== participants.length) {
+            console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА в randomSeeding: Потеряли участников!`);
+            console.error(`   Было: ${participants.length}, стало: ${shuffled.length}`);
+            console.error(`   maxParticipants был: ${maxParticipants}`);
+            throw new Error(`randomSeeding потерял ${participants.length - shuffled.length} участник(ов)`);
+        }
+        
         return this._addSeedingInfo(shuffled, 'random');
     }
     
@@ -56,6 +74,14 @@ class SeedingAlgorithms {
         
         const { ratingType = 'faceit_elo', direction = 'desc' } = options;
         
+        console.log(`🏆 [rankingSeeding] Получено: ${participants.length} участников, максимум: ${maxParticipants}, рейтинг: ${ratingType}`);
+        
+        // 🔧 КРИТИЧЕСКИ ВАЖНО: для Single Elimination используем ВСЕ участники
+        if (maxParticipants > participants.length) {
+            console.warn(`⚠️ [rankingSeeding] maxParticipants (${maxParticipants}) больше чем доступно участников (${participants.length})`);
+            maxParticipants = participants.length;
+        }
+        
         // Сортируем участников по рейтингу
         const sorted = [...participants].sort((a, b) => {
             const ratingA = this._getRating(a, ratingType);
@@ -68,10 +94,19 @@ class SeedingAlgorithms {
             }
         });
         
-        // Берем топ участников
+        // 🆕 ДЛЯ SINGLE ELIMINATION: всегда используем ВСЕХ участников
         const selectedParticipants = sorted.slice(0, maxParticipants);
         
-        console.log(`🏆 Распределение по рейтингу (${ratingType}): ${selectedParticipants.length} участников`);
+        console.log(`✅ [rankingSeeding] Распределение по рейтингу (${ratingType}): ${selectedParticipants.length} участников (потерь: ${participants.length - selectedParticipants.length})`);
+        
+        // 🔧 ДОБАВЛЯЕМ ПРОВЕРКУ: убеждаемся что не потеряли участников
+        if (selectedParticipants.length !== participants.length) {
+            console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА в rankingSeeding: Потеряли участников!`);
+            console.error(`   Было: ${participants.length}, стало: ${selectedParticipants.length}`);
+            console.error(`   maxParticipants был: ${maxParticipants}`);
+            throw new Error(`rankingSeeding потерял ${participants.length - selectedParticipants.length} участник(ов)`);
+        }
+        
         return this._addSeedingInfo(selectedParticipants, 'ranking', { ratingType, direction });
     }
     
@@ -87,7 +122,15 @@ class SeedingAlgorithms {
         
         const { ratingType = 'faceit_elo' } = options;
         
-        // Сначала сортируем по рейтингу
+        console.log(`⚖️ [balancedSeeding] Получено: ${participants.length} участников, максимум: ${maxParticipants}, рейтинг: ${ratingType}`);
+        
+        // 🔧 КРИТИЧЕСКИ ВАЖНО: для Single Elimination используем ВСЕ участники
+        if (maxParticipants > participants.length) {
+            console.warn(`⚠️ [balancedSeeding] maxParticipants (${maxParticipants}) больше чем доступно участников (${participants.length})`);
+            maxParticipants = participants.length;
+        }
+        
+        // Сначала сортируем по рейтингу - используем исправленный rankingSeeding
         const sorted = this.rankingSeeding(participants, maxParticipants, { 
             ratingType, 
             direction: 'desc' 
@@ -96,7 +139,16 @@ class SeedingAlgorithms {
         // Применяем алгоритм змейки для балансировки
         const balanced = this._applySnakeDraft(sorted);
         
-        console.log(`⚖️ Сбалансированное распределение: ${balanced.length} участников`);
+        console.log(`✅ [balancedSeeding] Сбалансированное распределение: ${balanced.length} участников (потерь: ${participants.length - balanced.length})`);
+        
+        // 🔧 ДОБАВЛЯЕМ ПРОВЕРКУ: убеждаемся что не потеряли участников
+        if (balanced.length !== participants.length) {
+            console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА в balancedSeeding: Потеряли участников!`);
+            console.error(`   Было: ${participants.length}, стало: ${balanced.length}`);
+            console.error(`   maxParticipants был: ${maxParticipants}`);
+            throw new Error(`balancedSeeding потерял ${participants.length - balanced.length} участник(ов)`);
+        }
+        
         return this._addSeedingInfo(balanced, 'balanced', { ratingType });
     }
     
