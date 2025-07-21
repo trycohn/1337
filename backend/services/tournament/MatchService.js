@@ -84,7 +84,7 @@ class MatchService {
         const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
 
         // Отправляем обновления через WebSocket
-        broadcastTournamentUpdate(tournamentId, updatedTournament);
+        broadcastTournamentUpdate(tournamentId, updatedTournament, 'updateMatchResult');
 
         // Отправляем объявление в чат турнира
         await this._sendMatchResultAnnouncement(match, resultData, tournament);
@@ -175,7 +175,7 @@ class MatchService {
         const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
 
         // Отправляем обновления через WebSocket
-        broadcastTournamentUpdate(tournamentId, updatedTournament);
+        broadcastTournamentUpdate(tournamentId, updatedTournament, 'updateSpecificMatchResult');
 
         console.log('✅ MatchService: Результат матча обновлен');
         return { 

@@ -248,4 +248,26 @@ router.post('/lobby/:lobbyId/set-first-picker', authenticateToken, verifyAdminOr
 // 🗺️ Выбор или бан карты
 router.post('/lobby/:lobbyId/select-map', authenticateToken, MatchLobbyController.selectMap);
 
+// 📊 **МОНИТОРИНГ И ДИАГНОСТИКА**
+
+// 🔍 WebSocket статистика (только для разработки и администраторов)
+router.get('/websocket/stats', authenticateToken, async (req, res) => {
+    try {
+        const websocketMonitor = require('../../utils/tournament/websocketMonitor');
+        const stats = websocketMonitor.getStats();
+        
+        res.json({
+            success: true,
+            data: stats,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Ошибка получения WebSocket статистики:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка получения статистики WebSocket'
+        });
+    }
+});
+
 module.exports = router; 

@@ -1,6 +1,7 @@
 // notifications.js
 
 const pool = require('./db');
+const websocketMonitor = require('./utils/tournament/websocketMonitor');
 
 // Функция для отправки уведомления конкретному пользователю
 const sendNotification = async (userId, notification) => {
@@ -201,47 +202,90 @@ const broadcastNotification = (notification) => {
 };
 
 // Функция для отправки обновлений турнира всем клиентам на странице турнира
-const broadcastTournamentUpdate = (tournamentId, tournamentData) => {
+const broadcastTournamentUpdate = (tournamentId, tournamentData, sourceFunction = 'unknown') => {
   try {
     // 🔧 ИСПРАВЛЕНИЕ: Делаем функцию более безопасной
     const app = global.app;
     if (!app) {
       console.log(`⚠️ [broadcastTournamentUpdate] Global app не найден, пропускаем Socket.IO уведомление для турнира ${tournamentId}`);
-      return;
+      return false;
     }
     
     const io = app.get('io');
     if (!io) {
       console.log(`⚠️ [broadcastTournamentUpdate] Socket.IO instance не найден, пропускаем уведомление для турнира ${tournamentId}`);
-      return;
+      return false;
     }
+
+    // 🆕 ЛОГИРОВАНИЕ ЧЕРЕЗ МОНИТОР
+    const eventId = websocketMonitor.logBroadcast(tournamentId, 'tournament_update', tournamentData, sourceFunction);
     
     // 🔧 ДОБАВЛЯЕМ ТАЙМАУТ для предотвращения зависания
     const broadcastPromise = new Promise((resolve, reject) => {
       try {
-        io.to(`tournament_${tournamentId}`).emit('tournament_update', tournamentData);
+        // 🎯 ДОБАВЛЯЕМ МЕТАДАННЫЕ К СОБЫТИЮ
+        const enhancedData = {
+          ...tournamentData,
+          _metadata: {
+            eventId,
+            timestamp: new Date().toISOString(),
+            source: sourceFunction,
+            updateType: determineUpdateType(tournamentData)
+          }
+        };
+
+        io.to(`tournament_${tournamentId}`).emit('tournament_update', enhancedData);
         resolve();
       } catch (error) {
         reject(error);
       }
     });
     
-    // Устанавливаем таймаут в 2 секунды
+    // Устанавливаем таймаут в 3 секунды
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Broadcast timeout')), 2000);
+      setTimeout(() => reject(new Error('Broadcast timeout')), 3000);
     });
     
     Promise.race([broadcastPromise, timeoutPromise])
       .then(() => {
-        console.log(`✅ [broadcastTournamentUpdate] Обновление турнира ${tournamentId} отправлено через Socket.IO`);
+        console.log(`✅ [broadcastTournamentUpdate] Обновление турнира ${tournamentId} отправлено через Socket.IO (eventId: ${eventId})`);
+        
+        // 🔄 АВТОМАТИЧЕСКАЯ ПРОВЕРКА ДОСТАВКИ (в фоне)
+        setTimeout(async () => {
+          const roomSize = io.sockets.adapter.rooms.get(`tournament_${tournamentId}`)?.size || 0;
+          if (roomSize > 0) {
+            const deliveryResult = await websocketMonitor.verifyEventDelivery(eventId, roomSize, 2000);
+            if (!deliveryResult.success) {
+              console.warn(`⚠️ [broadcastTournamentUpdate] Не все клиенты получили событие ${eventId}:`, deliveryResult);
+            }
+          }
+        }, 500);
       })
       .catch((error) => {
         console.warn(`⚠️ [broadcastTournamentUpdate] Не удалось отправить обновление турнира ${tournamentId}:`, error.message);
       });
+
+    return true;
       
   } catch (error) {
     console.warn(`⚠️ [broadcastTournamentUpdate] Ошибка при отправке обновления турнира ${tournamentId}:`, error.message);
     // НЕ выбрасываем ошибку, чтобы не блокировать основной процесс
+    return false;
+  }
+};
+
+// 🆕 ОПРЕДЕЛЕНИЕ ТИПА ОБНОВЛЕНИЯ ДЛЯ БОЛЕЕ ЭФФЕКТИВНОЙ ОБРАБОТКИ НА ФРОНТЕНДЕ
+const determineUpdateType = (tournamentData) => {
+  if (tournamentData.status) {
+    return 'status_change';
+  } else if (tournamentData.participants) {
+    return 'participants_update';
+  } else if (tournamentData.matches) {
+    return 'matches_update';
+  } else if (tournamentData.teams || tournamentData.mixed_teams) {
+    return 'teams_update';
+  } else {
+    return 'general_update';
   }
 };
 

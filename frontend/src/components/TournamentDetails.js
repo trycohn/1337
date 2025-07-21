@@ -102,8 +102,86 @@ class TournamentErrorBoundary extends React.Component {
 }
 
 // Константы
-const CACHE_VALIDITY_PERIOD = 2 * 60 * 1000; // 2 минуты
+const CACHE_VALIDITY_PERIOD = 30 * 1000; // 🔧 АДАПТИВНОЕ КЕШИРОВАНИЕ: 30 секунд для быстрого обновления
 const MAPS_CACHE_VALIDITY_PERIOD = 24 * 60 * 60 * 1000; // 24 часа
+
+// 🆕 КОНФИГУРАЦИЯ ГИБРИДНОГО РЕШЕНИЯ
+const HYBRID_CONFIG = {
+    // Адаптивное кеширование
+    CACHE_NORMAL: 30 * 1000,     // 30 секунд - обычное состояние
+    CACHE_ACTIVE: 10 * 1000,     // 10 секунд - когда турнир активный
+    CACHE_UPDATING: 5 * 1000,    // 5 секунд - во время операций
+    CACHE_CRITICAL: 1 * 1000,    // 1 секунда - критические операции (старт/стоп)
+    
+    // WebSocket мониторинг
+    WEBSOCKET_TIMEOUT: 3000,     // Таймаут ожидания WebSocket
+    FALLBACK_DELAY: 2000,        // Задержка перед fallback
+    
+    // Retry логика
+    MAX_RETRIES: 3,
+    RETRY_DELAY: 1000,
+    
+    // Типы обновлений
+    UPDATE_TYPES: {
+        STATUS_CHANGE: 'status_change',
+        PARTICIPANTS: 'participants_update', 
+        MATCHES: 'matches_update',
+        TEAMS: 'teams_update',
+        GENERAL: 'general_update'
+    }
+};
+
+// 🆕 СОСТОЯНИЕ ГИБРИДНОЙ СИСТЕМЫ
+const [hybridState, setHybridState] = useState({
+    isWebSocketConnected: false,
+    lastWebSocketEvent: null,
+    cacheStrategy: 'normal',
+    pendingOperations: new Set(),
+    fallbackActive: false,
+    updateQueue: [],
+    retryCount: 0
+});
+
+// 🆕 АДАПТИВНОЕ ОПРЕДЕЛЕНИЕ ВРЕМЕНИ КЕШИРОВАНИЯ
+const getAdaptiveCacheTime = useCallback(() => {
+    if (hybridState.pendingOperations.size > 0) {
+        return HYBRID_CONFIG.CACHE_CRITICAL;
+    }
+    
+    if (tournament?.status === 'in_progress') {
+        return HYBRID_CONFIG.CACHE_ACTIVE;
+    }
+    
+    if (hybridState.cacheStrategy === 'updating') {
+        return HYBRID_CONFIG.CACHE_UPDATING;
+    }
+    
+    return HYBRID_CONFIG.CACHE_NORMAL;
+}, [tournament?.status, hybridState.pendingOperations.size, hybridState.cacheStrategy]);
+
+// 🆕 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА КЕША С АДАПТИВНОСТЬЮ
+const clearAdaptiveCache = useCallback((reason = 'manual') => {
+    const cacheKey = `tournament_cache_${id}`;
+    const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+    localStorage.removeItem(cacheKey);
+    localStorage.removeItem(cacheTimestampKey);
+    
+    console.log(`🧹 [AdaptiveCache] Кеш очищен по причине: ${reason}`);
+    
+    // Временно переключаемся на критический режим кеширования
+    setHybridState(prev => ({
+        ...prev,
+        cacheStrategy: 'updating'
+    }));
+    
+    // Возвращаемся к нормальному режиму через 10 секунд
+    setTimeout(() => {
+        setHybridState(prev => ({
+            ...prev,
+            cacheStrategy: 'normal'
+        }));
+    }, 10000);
+}, [id]);
 
 // 🎯 Кеширование для повышения производительности
 const CACHE_DURATION = 30000; // 30 секунд
@@ -253,103 +331,155 @@ function TournamentDetails() {
         );
     }, [tournament]);
 
-    // Загрузка данных турнира с улучшенной обработкой ошибок
-    const fetchTournamentData = useCallback(async () => {
+    // 🆕 УЛУЧШЕННАЯ ЗАГРУЗКА ДАННЫХ С АДАПТИВНЫМ КЕШИРОВАНИЕМ
+    const fetchTournamentDataHybrid = useCallback(async (forceRefresh = false, operation = null) => {
         if (!id) {
             setError('Не указан ID турнира');
             return;
         }
 
-        console.log('🔄 Начинаем загрузку данных турнира', id);
+        console.log('🔄 [Hybrid] Начинаем загрузку данных турнира', {
+            id,
+            forceRefresh,
+            operation,
+            cacheStrategy: hybridState.cacheStrategy
+        });
+
         setLoading(true);
         setError(null);
 
-        // Проверяем кеш
+        // Добавляем операцию в состояние
+        if (operation) {
+            setHybridState(prev => ({
+                ...prev,
+                pendingOperations: new Set(prev.pendingOperations).add(operation)
+            }));
+        }
+
+        // Определяем адаптивное время кеширования
+        const adaptiveCacheTime = getAdaptiveCacheTime();
+        
+        // Проверяем кеш (если не принудительное обновление)
         const cacheKey = `tournament_cache_${id}`;
         const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
         
         try {
-            const cachedTournament = localStorage.getItem(cacheKey);
-            const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
-            
-            // Валидация кеша
-            if (cachedTournament && cacheTimestamp) {
-                const now = Date.now();
-                const timestamp = parseInt(cacheTimestamp, 10);
+            if (!forceRefresh) {
+                const cachedTournament = localStorage.getItem(cacheKey);
+                const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
                 
-                if (!isNaN(timestamp) && (now - timestamp) < CACHE_VALIDITY_PERIOD) {
-                    const parsedTournament = JSON.parse(cachedTournament);
-                    const validation = validateTournamentData(parsedTournament);
+                if (cachedTournament && cacheTimestamp) {
+                    const now = Date.now();
+                    const timestamp = parseInt(cacheTimestamp, 10);
                     
-                    if (validation.isValid) {
-                        console.log('✅ Используем валидные кешированные данные турнира');
-                        setTournament(parsedTournament);
-                        
-                        // 🔧 ИСПРАВЛЕНО: Более надежная фильтрация matches
-                        const safeMatches = Array.isArray(parsedTournament.matches) ? 
-                            parsedTournament.matches.filter(match => match != null && match !== undefined && match.id) : [];
-                        console.log(`🎯 Фильтрация matches: ${parsedTournament.matches?.length || 0} -> ${safeMatches.length}`);
-                        setMatches(safeMatches);
-                        
-                        // Обновляем участников
-                        if (Array.isArray(parsedTournament.participants)) {
-                            setOriginalParticipants(parsedTournament.participants);
-                            console.log('🔄 Обновлено участников из кеша:', parsedTournament.participants.length);
+                    if (!isNaN(timestamp) && (now - timestamp) < adaptiveCacheTime) {
+                        try {
+                            const parsedTournament = JSON.parse(cachedTournament);
+                            const validation = validateTournamentData(parsedTournament);
+                            
+                            if (validation.isValid) {
+                                console.log(`✅ [Hybrid] Данные загружены из кеша (${adaptiveCacheTime/1000}s TTL)`);
+                                setTournament(parsedTournament);
+                                setOriginalParticipants(parsedTournament.participants || []);
+                                setMatches(parsedTournament.matches || []);
+                                setLoading(false);
+                                
+                                // Удаляем операцию из состояния
+                                if (operation) {
+                                    setHybridState(prev => {
+                                        const newPending = new Set(prev.pendingOperations);
+                                        newPending.delete(operation);
+                                        return { ...prev, pendingOperations: newPending };
+                                    });
+                                }
+                                return;
+                            }
+                        } catch (parseError) {
+                            console.warn('⚠️ [Hybrid] Поврежденный кеш, загружаем с сервера');
+                            localStorage.removeItem(cacheKey);
+                            localStorage.removeItem(cacheTimestampKey);
                         }
-                        
-                        setLoading(false);
-                        return;
-                    } else {
-                        console.warn('⚠️ Кешированные данные невалидны:', validation.error);
-                        localStorage.removeItem(cacheKey);
-                        localStorage.removeItem(cacheTimestampKey);
                     }
                 }
             }
 
-            // Загрузка с сервера
-            console.log('🌐 Загружаем данные турнира с сервера...');
-            const response = await api.get(`/api/tournaments/${id}`);
-            const tournamentData = response.data;
-
-            const validation = validateTournamentData(tournamentData);
-            if (!validation.isValid) {
-                throw new Error(validation.error);
-            }
-
-            console.log('✅ Данные турнира получены и валидны');
-            setTournament(tournamentData);
+            // Загружаем с сервера с retry логикой
+            let retryCount = 0;
+            const maxRetries = HYBRID_CONFIG.MAX_RETRIES;
             
-            // 🔧 ИСПРАВЛЕНО: Более надежная фильтрация matches
-            const safeMatches = Array.isArray(tournamentData.matches) ? 
-                tournamentData.matches.filter(match => match != null && match !== undefined && match.id) : [];
-            console.log(`🎯 Фильтрация matches: ${tournamentData.matches?.length || 0} -> ${safeMatches.length}`);
-            setMatches(safeMatches);
-            
-            // Обновляем участников
-            if (Array.isArray(tournamentData.participants)) {
-                setOriginalParticipants(tournamentData.participants);
-                console.log('🔄 Обновлено участников:', tournamentData.participants.length);
+            while (retryCount <= maxRetries) {
+                try {
+                    const response = await api.get(`/api/tournaments/${id}`);
+                    
+                    if (response.data) {
+                        const validation = validateTournamentData(response.data);
+                        if (!validation.isValid) {
+                            throw new Error(`Некорректные данные турнира: ${validation.error}`);
+                        }
+
+                        console.log(`✅ [Hybrid] Данные загружены с сервера (попытка ${retryCount + 1})`);
+                        
+                        // Сохраняем в кеш
+                        localStorage.setItem(cacheKey, JSON.stringify(response.data));
+                        localStorage.setItem(cacheTimestampKey, Date.now().toString());
+                        
+                        // Обновляем состояние
+                        setTournament(response.data);
+                        setOriginalParticipants(response.data.participants || []);
+                        setMatches(response.data.matches || []);
+                        
+                        // Сбрасываем счетчик retry
+                        setHybridState(prev => ({ ...prev, retryCount: 0 }));
+                        
+                        break; // Успешно загружено
+                    }
+                } catch (apiError) {
+                    retryCount++;
+                    console.warn(`⚠️ [Hybrid] Ошибка загрузки (попытка ${retryCount}/${maxRetries + 1}):`, apiError.message);
+                    
+                    if (retryCount > maxRetries) {
+                        throw apiError; // Исчерпаны попытки
+                    }
+                    
+                    // Экспоненциальная задержка
+                    await new Promise(resolve => 
+                        setTimeout(resolve, HYBRID_CONFIG.RETRY_DELAY * Math.pow(2, retryCount - 1))
+                    );
+                }
             }
-
-            // Сохраняем в кеш
-            localStorage.setItem(cacheKey, JSON.stringify(tournamentData));
-            localStorage.setItem(cacheTimestampKey, Date.now().toString());
-
+            
         } catch (error) {
-            console.error('❌ Ошибка загрузки турнира:', error);
+            console.error('❌ [Hybrid] Критическая ошибка загрузки данных:', error);
             
-            if (!handleAuthError(error, 'загрузке турнира')) {
-                setError(error.message || 'Ошибка загрузки турнира');
+            if (handleAuthError(error, 'загрузке данных турнира')) {
+                return;
             }
             
-            // Очищаем поврежденный кеш
-            localStorage.removeItem(cacheKey);
-            localStorage.removeItem(cacheTimestampKey);
+            setError(`Ошибка загрузки турнира: ${error.message}`);
+            
+            // Активируем fallback режим
+            setHybridState(prev => ({ 
+                ...prev, 
+                fallbackActive: true,
+                retryCount: prev.retryCount + 1 
+            }));
+            
         } finally {
             setLoading(false);
+            
+            // Удаляем операцию из состояния
+            if (operation) {
+                setHybridState(prev => {
+                    const newPending = new Set(prev.pendingOperations);
+                    newPending.delete(operation);
+                    return { ...prev, pendingOperations: newPending };
+                });
+            }
         }
-    }, [id, handleAuthError]);
+    }, [id, hybridState.cacheStrategy, getAdaptiveCacheTime, handleAuthError]);
+
+    // Обновляем основную функцию загрузки
+    const fetchTournamentData = fetchTournamentDataHybrid;
 
     // Загрузка карт для игры
     const fetchMapsForGame = useCallback(async (gameName) => {
@@ -1327,17 +1457,95 @@ function TournamentDetails() {
 
         socket.on('tournament_update', (tournamentData) => {
             if (tournamentData.tournamentId === parseInt(id) || tournamentData.id === parseInt(id)) {
-                console.log('📡 Получено обновление турнира через WebSocket');
+                console.log('📡 [Hybrid] Получено обновление турнира через WebSocket:', tournamentData);
                 
-                // 🆕 ПРОВЕРЯЕМ ТИП ОБНОВЛЕНИЯ
+                // Обновляем состояние WebSocket
+                setHybridState(prev => ({
+                    ...prev,
+                    isWebSocketConnected: true,
+                    lastWebSocketEvent: Date.now(),
+                    fallbackActive: false
+                }));
+
+                // 🆕 ОБРАБОТКА МЕТАДАННЫХ СОБЫТИЯ
+                const metadata = tournamentData._metadata;
+                if (metadata) {
+                    console.log('📊 [Hybrid] Метаданные события:', {
+                        eventId: metadata.eventId,
+                        source: metadata.source,
+                        updateType: metadata.updateType,
+                        timestamp: metadata.timestamp
+                    });
+                }
+
+                // 🆕 СПЕЦИАЛИЗИРОВАННАЯ ОБРАБОТКА ПО ТИПУ ОБНОВЛЕНИЯ
+                const updateType = metadata?.updateType || HYBRID_CONFIG.UPDATE_TYPES.GENERAL;
+                
+                switch (updateType) {
+                    case HYBRID_CONFIG.UPDATE_TYPES.STATUS_CHANGE:
+                        console.log('⚡ [Hybrid] МГНОВЕННОЕ обновление статуса турнира:', {
+                            oldStatus: tournament?.status,
+                            newStatus: tournamentData.status,
+                            source: metadata?.source
+                        });
+                        
+                        // Мгновенно обновляем статус
+                        setTournament(prev => ({
+                            ...prev,
+                            status: tournamentData.status
+                        }));
+                        
+                        // Очищаем кеш для следующих запросов
+                        clearAdaptiveCache('status_change');
+                        
+                        // В фоне синхронизируем полные данные через небольшую задержку
+                        setTimeout(() => {
+                            fetchTournamentData(true, 'status_sync');
+                        }, 1000);
+                        
+                        return; // Не делаем полную перезагрузку сразу
+
+                    case HYBRID_CONFIG.UPDATE_TYPES.PARTICIPANTS:
+                        console.log('👥 [Hybrid] Обновление участников');
+                        // Участники уже обработаны выше в participant_update
+                        return;
+
+                    case HYBRID_CONFIG.UPDATE_TYPES.MATCHES:
+                        console.log('⚔️ [Hybrid] Обновление матчей');
+                        if (tournamentData.matches) {
+                            setMatches(tournamentData.matches);
+                            clearAdaptiveCache('matches_update');
+                        }
+                        break;
+
+                    case HYBRID_CONFIG.UPDATE_TYPES.TEAMS:
+                        console.log('🏆 [Hybrid] Обновление команд');
+                        if (tournamentData.teams || tournamentData.mixed_teams) {
+                            setTournament(prev => ({
+                                ...prev,
+                                teams: tournamentData.teams || tournamentData.mixed_teams,
+                                mixed_teams: tournamentData.mixed_teams || tournamentData.teams
+                            }));
+                            clearAdaptiveCache('teams_update');
+                        }
+                        break;
+
+                    case HYBRID_CONFIG.UPDATE_TYPES.GENERAL:
+                    default:
+                        console.log('🔄 [Hybrid] Общее обновление турнира');
+                        break;
+                }
+                
+                // 🆕 ПРОВЕРЯЕМ ТИП ОБНОВЛЕНИЯ УЧАСТНИКОВ (обратная совместимость)
                 if (tournamentData.lastUpdate?.type === 'participant_update') {
-                    // Участники уже обработаны выше, пропускаем полную перезагрузку
-                    console.log('🔄 Обновление участников уже обработано, пропускаем полную перезагрузку');
+                    console.log('🔄 [Hybrid] Обновление участников уже обработано, пропускаем полную перезагрузку');
                     return;
                 }
                 
-                // Для других типов обновлений делаем полную перезагрузку
-                fetchTournamentData();
+                // Для остальных типов обновлений делаем полную перезагрузку с задержкой
+                setTimeout(() => {
+                    fetchTournamentData(true, 'websocket_general');
+                }, HYBRID_CONFIG.FALLBACK_DELAY);
             }
         });
 
@@ -1493,26 +1701,93 @@ function TournamentDetails() {
         return user && (isCreator || adminRequestStatus === 'accepted');
     }, [user, isCreator, adminRequestStatus, tournament?.status]);
 
-    // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (ЧЕРЕЗ ХУК)
+    // 🔧 ГИБРИДНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА
     const handleStartTournament = useCallback(async () => {
         try {
             setLoading(true);
+            
+            // 🆕 РЕГИСТРИРУЕМ КРИТИЧЕСКУЮ ОПЕРАЦИЮ
+            const operationId = 'startTournament';
+            setHybridState(prev => ({
+                ...prev,
+                pendingOperations: new Set(prev.pendingOperations).add(operationId),
+                cacheStrategy: 'critical'
+            }));
+            
+            // 🆕 ПРИНУДИТЕЛЬНАЯ ОЧИСТКА КЕША ПЕРЕД КРИТИЧЕСКОЙ ОПЕРАЦИЕЙ
+            clearAdaptiveCache('start_tournament_pre');
+            console.log('🧹 [Hybrid] Кеш принудительно очищен перед запуском турнира');
+            
+            // 🆕 ТАЙМЕР ОЖИДАНИЯ WEBSOCKET ОБНОВЛЕНИЯ
+            let websocketReceived = false;
+            const websocketTimeout = setTimeout(() => {
+                if (!websocketReceived) {
+                    console.warn('⚠️ [Hybrid] WebSocket обновление не получено, используем fallback');
+                    setHybridState(prev => ({ ...prev, fallbackActive: true }));
+                    fetchTournamentData(true, 'start_fallback');
+                }
+            }, HYBRID_CONFIG.WEBSOCKET_TIMEOUT);
+            
+            // 🆕 ПОДПИСЫВАЕМСЯ НА WEBSOCKET ОБНОВЛЕНИЯ СТАТУСА
+            const handleStatusUpdate = (data) => {
+                if (data._metadata?.updateType === HYBRID_CONFIG.UPDATE_TYPES.STATUS_CHANGE && 
+                    data._metadata?.source === 'startTournament') {
+                    websocketReceived = true;
+                    clearTimeout(websocketTimeout);
+                    console.log('✅ [Hybrid] WebSocket обновление статуса получено');
+                }
+            };
+            
             const result = await tournamentManagement.startTournament();
             
             if (result.success) {
                 setMessage('✅ Турнир успешно запущен!');
-                await fetchTournamentData();
+                
+                // 🆕 ОЖИДАЕМ WEBSOCKET ОБНОВЛЕНИЕ ИЛИ ИСПОЛЬЗУЕМ FALLBACK
+                if (!websocketReceived) {
+                    setTimeout(() => {
+                        if (!websocketReceived) {
+                            console.log('🔄 [Hybrid] Fallback: загружаем данные через API');
+                            clearAdaptiveCache('start_tournament_fallback');
+                            fetchTournamentData(true, 'start_tournament_success');
+                        }
+                    }, HYBRID_CONFIG.FALLBACK_DELAY);
+                }
+                
             } else {
+                clearTimeout(websocketTimeout);
                 setMessage(`❌ ${result.error || 'Ошибка при запуске турнира'}`);
+                
+                // Очищаем кеш при ошибке
+                clearAdaptiveCache('start_tournament_error');
             }
         } catch (error) {
-            console.error('❌ Ошибка при запуске турнира:', error);
+            console.error('❌ [Hybrid] Ошибка при запуске турнира:', error);
             setMessage('❌ Ошибка при запуске турнира');
+            
+            // Очищаем кеш при ошибке и принудительно обновляем
+            clearAdaptiveCache('start_tournament_exception');
+            setTimeout(() => {
+                fetchTournamentData(true, 'start_tournament_error_recovery');
+            }, 1000);
+            
         } finally {
             setLoading(false);
+            
+            // Удаляем операцию из состояния
+            setHybridState(prev => {
+                const newPending = new Set(prev.pendingOperations);
+                newPending.delete(operationId);
+                return { 
+                    ...prev, 
+                    pendingOperations: newPending,
+                    cacheStrategy: newPending.size > 0 ? 'updating' : 'normal'
+                };
+            });
+            
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [tournamentManagement, fetchTournamentData]);
+    }, [tournamentManagement, clearAdaptiveCache, fetchTournamentData]);
 
     // 🆕 ОБРАБОТЧИК ОБНОВЛЕНИЯ НАСТРОЕК ТУРНИРА
     const handleUpdateTournamentSetting = useCallback(async (field, value) => {

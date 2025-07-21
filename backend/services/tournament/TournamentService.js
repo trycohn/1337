@@ -200,6 +200,11 @@ class TournamentService {
 
         const updatedTournament = await TournamentRepository.update(tournamentId, updateData);
 
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для общих обновлений турнира
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateTournament');
+        console.log(`📡 [updateTournament] WebSocket обновление отправлено`);
+
         console.log('✅ TournamentService: Турнир обновлен');
         return updatedTournament;
     }
@@ -269,6 +274,14 @@ class TournamentService {
         console.log(`🔄 [startTournament] Меняем статус турнира с "${tournament.status}" на "in_progress"`);
         await TournamentRepository.updateStatus(tournamentId, 'in_progress');
 
+        // 🆕 ИСПРАВЛЕНИЕ: Получаем обновленные данные турнира и отправляем WebSocket событие
+        const updatedTournament = await this.getTournamentById(tournamentId);
+        console.log(`✅ [startTournament] Турнир обновлен, новый статус: "${updatedTournament.status}"`);
+
+        // Отправляем обновление через WebSocket (аналогично endTournament)
+        broadcastTournamentUpdate(tournamentId, updatedTournament, 'startTournament');
+        console.log(`📡 [startTournament] WebSocket обновление отправлено`);
+
         // Логирование события
         await logTournamentEvent(tournamentId, userId, 'tournament_started', {
             previous_status: tournament.status,
@@ -335,7 +348,7 @@ class TournamentService {
         console.log(`✅ [endTournament] Турнир обновлен, новый статус: "${updatedTournament.status}"`);
 
         // Отправляем обновление через WebSocket
-        broadcastTournamentUpdate(tournamentId, updatedTournament);
+        broadcastTournamentUpdate(tournamentId, updatedTournament, 'endTournament');
 
         // Логируем завершение турнира
         await logTournamentEvent(tournamentId, userId, 'tournament_ended', {
@@ -387,6 +400,11 @@ class TournamentService {
             `🔄 Администратор сбросил результаты матчей и восстановил изначальную структуру турнирной сетки. Статус турнира изменен на "Активный".`
         );
 
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для сброса результатов
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'resetMatchResults');
+        console.log(`📡 [resetMatchResults] WebSocket обновление отправлено`);
+
         console.log('✅ TournamentService: Результаты матчей сброшены');
         return result;
     }
@@ -406,7 +424,14 @@ class TournamentService {
         console.log(`📝 TournamentService: Обновление описания турнира ${tournamentId}`);
 
         await this._checkTournamentAccess(tournamentId, userId);
-        return await TournamentRepository.updateDescription(tournamentId, description);
+        const updatedTournament = await TournamentRepository.updateDescription(tournamentId, description);
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления описания
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateDescription');
+        console.log(`📡 [updateDescription] WebSocket обновление отправлено`);
+
+        return updatedTournament;
     }
 
     /**
@@ -422,7 +447,14 @@ class TournamentService {
             throw new Error('Турнир неактивен');
         }
 
-        return await TournamentRepository.updateFullDescription(tournamentId, fullDescription);
+        const updatedTournament = await TournamentRepository.updateFullDescription(tournamentId, fullDescription);
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления полного описания
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateFullDescription');
+        console.log(`📡 [updateFullDescription] WebSocket обновление отправлено`);
+
+        return updatedTournament;
     }
 
     /**
@@ -437,7 +469,14 @@ class TournamentService {
     // 🔧 ИСПРАВЛЕНО: Убрана проверка статуса турнира
     // Регламент можно редактировать в любом статусе турнира (active, completed, in_progress)
     
-        return await TournamentRepository.updateRules(tournamentId, rules);
+        const updatedTournament = await TournamentRepository.updateRules(tournamentId, rules);
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления регламента
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateRules');
+        console.log(`📡 [updateRules] WebSocket обновление отправлено`);
+
+        return updatedTournament;
     }
 
     /**
@@ -447,7 +486,14 @@ class TournamentService {
         console.log(`💰 TournamentService: Обновление призового фонда турнира ${tournamentId}`);
 
         await this._checkTournamentAccess(tournamentId, userId);
-        return await TournamentRepository.updatePrizePool(tournamentId, prizePool);
+        const updatedTournament = await TournamentRepository.updatePrizePool(tournamentId, prizePool);
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления призового фонда
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updatePrizePool');
+        console.log(`📡 [updatePrizePool] WebSocket обновление отправлено`);
+
+        return updatedTournament;
     }
 
     /**
@@ -499,7 +545,7 @@ class TournamentService {
             type: 'bracket_type_updated',
             bracket_type: bracketType,
             message
-        });
+        }, 'updateBracketType');
         
         console.log(`✅ [TournamentService.updateBracketType] Тип сетки успешно обновлен на "${bracketType}"`);
         return updatedTournament;
@@ -586,7 +632,7 @@ class TournamentService {
             type: 'team_size_updated',
             team_size: teamSize,
             message
-        });
+        }, 'updateTeamSize');
         
         console.log(`✅ [TournamentService.updateTeamSize] Размер команды успешно обновлен на ${teamSize}`);
         
@@ -648,6 +694,11 @@ class TournamentService {
             tournamentId,
             `🎯 Тип рейтинга изменен на: ${typeNames[mixRatingType]}`
         );
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления типа рейтинга
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateRatingType');
+        console.log(`📡 [updateRatingType] WebSocket обновление отправлено`);
         
         console.log(`✅ [updateRatingType] Тип рейтинга турнира ${tournamentId} обновлен на ${mixRatingType}`);
         return updatedTournament;
@@ -692,6 +743,11 @@ class TournamentService {
             tournamentId,
             `🎮 Дисциплина турнира изменена на: ${game}`
         );
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления дисциплины
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateGame');
+        console.log(`📡 [updateGame] WebSocket обновление отправлено`);
         
         console.log(`✅ [updateGame] Дисциплина турнира ${tournamentId} обновлена на "${game}"`);
         return updatedTournament;
@@ -744,6 +800,11 @@ class TournamentService {
             tournamentId,
             `🏆 Формат турнира изменен на: ${formatNames[format]}`
         );
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления формата
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateFormat');
+        console.log(`📡 [updateFormat] WebSocket обновление отправлено`);
         
         console.log(`✅ [updateFormat] Формат турнира ${tournamentId} обновлен на "${format}"`);
         return updatedTournament;
@@ -790,6 +851,11 @@ class TournamentService {
             tournamentId,
             `📅 Дата старта турнира изменена на: ${startDate.toLocaleString('ru-RU')}`
         );
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления даты старта
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateStartDate');
+        console.log(`📡 [updateStartDate] WebSocket обновление отправлено`);
         
         console.log(`✅ [updateStartDate] Дата старта турнира ${tournamentId} обновлена на "${startDate}"`);
         return updatedTournament;
@@ -825,6 +891,11 @@ class TournamentService {
         await logTournamentEvent(tournamentId, userId, 'lobby_settings_updated', {
             lobby_enabled: lobbyEnabled
         });
+
+        // 🆕 ДОБАВЛЕНО: WebSocket уведомление для обновления настроек лобби
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateLobbyEnabled');
+        console.log(`📡 [updateLobbyEnabled] WebSocket обновление отправлено`);
 
         console.log('✅ [TournamentService] Настройки лобби обновлены');
         return updatedTournament;
