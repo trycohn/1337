@@ -48,6 +48,9 @@ import './tournament/BracketManagementPanel.css';
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
 import PodiumSection from './tournament/PodiumSection';
 
+// 🆕 Прогресс-бар турнира
+import TournamentProgressBar from './tournament/TournamentProgressBar';
+
 // Ленивая загрузка BracketRenderer с улучшенной обработкой ошибок
 const LazyBracketRenderer = React.lazy(() => 
     import('./BracketRenderer').catch(err => {
@@ -973,11 +976,22 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
+                            matches={matches}
                         />
 
                         {/* 🏆 ПОДИУМ С ПРИЗЕРАМИ для завершенных турниров */}
                         {tournament?.status === 'completed' && games.length > 0 && (
                             <PodiumSection tournament={tournament} matches={matches} />
+                        )}
+
+                        {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА */}
+                        {tournament && (
+                            <TournamentProgressBar 
+                                matches={matches}
+                                tournamentStatus={tournament?.status}
+                                tournamentName={tournament?.name}
+                                showDetails={true}
+                            />
                         )}
 
                         {/* Турнирная сетка */}
@@ -1120,6 +1134,16 @@ function TournamentDetails() {
                             }}
                         />
 
+                        {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА НА ВКЛАДКЕ СЕТКА */}
+                        {tournament && (
+                            <TournamentProgressBar 
+                                matches={matches}
+                                tournamentStatus={tournament?.status}
+                                tournamentName={tournament?.name}
+                                showDetails={false}
+                            />
+                        )}
+
                         {games.length > 0 ? (
                             <TournamentErrorBoundary>
                                 <Suspense fallback={
@@ -1241,6 +1265,7 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
+                            matches={matches}
                         />
                     </div>
                 );

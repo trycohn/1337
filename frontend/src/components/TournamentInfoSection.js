@@ -3,6 +3,7 @@ import './TournamentInfoSection.css';
 import { ensureHttps } from '../utils/userHelpers';
 import ParticipationConfirmModal from './tournament/modals/ParticipationConfirmModal';
 import TeamSelectionModal from './modals/TeamSelectionModal';
+import TournamentProgressBar from './tournament/TournamentProgressBar';
 import axios from 'axios'; // Added axios import
 
 const TournamentInfoSection = ({ 
@@ -11,7 +12,8 @@ const TournamentInfoSection = ({
     isCreator, 
     isAdminOrCreator,
     onParticipationUpdate, // Колбэк для обновления данных турнира
-    userTeams = [] // Команды пользователя
+    userTeams = [], // Команды пользователя
+    matches = [] // 🆕 Матчи турнира для прогресс-бара
 }) => {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingRegulations, setIsEditingRegulations] = useState(false);
@@ -1009,6 +1011,14 @@ const TournamentInfoSection = ({
             <div className="section-header">
                 <h2>📋 Информация о турнире</h2>
             </div>
+
+            {/* 🆕 КОМПАКТНЫЙ ПРОГРЕСС-БАР */}
+            <TournamentProgressBar 
+                matches={matches}
+                tournamentStatus={tournament?.status}
+                tournamentName={tournament?.name}
+                compact={true}
+            />
 
             {/* Основная информация о турнире */}
             <div className="tournament-meta-grid">

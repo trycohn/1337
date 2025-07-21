@@ -1,0 +1,394 @@
+/* TournamentProgressBar - Монохромный прогресс-бар турнира */
+
+.tournament-progress-bar {
+    background: #000000;
+    border: 1px solid #1a1a1a;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.tournament-progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ff0000, transparent);
+    animation: scanline 3s infinite;
+}
+
+@keyframes scanline {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Заголовок прогресс-бара */
+.progress-header {
+    margin-bottom: 20px;
+}
+
+.progress-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.progress-title h3 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+.progress-percentage {
+    color: #ff0000;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.progress-status {
+    color: #cccccc;
+    font-size: 0.9rem;
+    font-weight: 300;
+}
+
+/* Основной прогресс-бар */
+.progress-bar-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.progress-bar-background {
+    width: 100%;
+    height: 8px;
+    background: #111111;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000, #ff3333);
+    border-radius: 4px;
+    position: relative;
+    transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    overflow: hidden;
+}
+
+.progress-bar-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        transparent 100%
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Индикаторы этапов */
+.progress-milestones {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    right: 0;
+    height: 16px;
+}
+
+.milestone {
+    position: absolute;
+    transform: translateX(-50%);
+}
+
+.milestone-dot {
+    width: 8px;
+    height: 8px;
+    background: #111111;
+    border: 2px solid #555555;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.milestone.completed .milestone-dot {
+    background: #ff0000;
+    border-color: #ff0000;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+}
+
+.milestone-label {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #888888;
+    font-size: 0.7rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.milestone.completed .milestone-label {
+    color: #ffffff;
+}
+
+/* Детали прогресса */
+.progress-details {
+    margin-top: 20px;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #111111;
+    border-radius: 8px;
+    border: 1px solid #1a1a1a;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-value {
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.stat-label {
+    color: #888888;
+    font-size: 0.8rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-divider {
+    color: #333333;
+    font-size: 1rem;
+}
+
+/* Фазовые индикаторы */
+.phase-indicators {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.phase-indicator {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 12px;
+    background: #111111;
+    border: 1px solid #1a1a1a;
+    border-radius: 6px;
+    color: #666666;
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.phase-indicator.completed {
+    background: #1a1a1a;
+    color: #cccccc;
+    border-color: #333333;
+}
+
+.phase-indicator.active {
+    background: #ff0000;
+    color: #ffffff;
+    border-color: #ff0000;
+    font-weight: 500;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.3);
+}
+
+.phase-indicator.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        transparent 25%, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        transparent 50%, 
+        transparent 75%, 
+        rgba(255, 255, 255, 0.1) 75%
+    );
+    animation: stripes 1s linear infinite;
+}
+
+@keyframes stripes {
+    0% { transform: translateX(-20px); }
+    100% { transform: translateX(20px); }
+}
+
+/* Состояния турнира */
+.tournament-progress-bar.registration {
+    border-color: #333333;
+}
+
+.tournament-progress-bar.starting {
+    border-color: #555555;
+}
+
+.tournament-progress-bar.active {
+    border-color: #ff0000;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.1);
+}
+
+.tournament-progress-bar.semifinals {
+    border-color: #ff3333;
+    box-shadow: 0 0 25px rgba(255, 0, 0, 0.15);
+}
+
+.tournament-progress-bar.final {
+    border-color: #ff0000;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+}
+
+.tournament-progress-bar.completed {
+    border-color: #555555;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+}
+
+.tournament-progress-bar.completed .progress-bar-fill {
+    background: linear-gradient(90deg, #333333, #555555);
+}
+
+.tournament-progress-bar.completed .progress-percentage {
+    color: #ffffff;
+    text-shadow: none;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .tournament-progress-bar {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .progress-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .progress-title h3 {
+        font-size: 1.1rem;
+    }
+    
+    .progress-percentage {
+        font-size: 1.3rem;
+    }
+    
+    .progress-stats {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .phase-indicators {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .phase-indicator {
+        min-width: unset;
+    }
+    
+    .milestone-label {
+        font-size: 0.6rem;
+    }
+}
+
+/* Анимация появления */
+.tournament-progress-bar {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Компактная версия */
+.tournament-progress-bar.compact {
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.tournament-progress-bar.compact .progress-title h4 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+.tournament-progress-bar.compact .progress-percentage {
+    font-size: 1.2rem;
+}
+
+.tournament-progress-bar.compact .progress-bar-container {
+    margin-bottom: 12px;
+}
+
+.tournament-progress-bar.compact .progress-stats.compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    margin-bottom: 0;
+}
+
+.tournament-progress-bar.compact .stat-text {
+    color: #cccccc;
+    font-size: 0.85rem;
+    font-weight: 300;
+}
+
+.tournament-progress-bar.compact .stat-numbers {
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+} 
