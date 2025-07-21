@@ -375,15 +375,11 @@
     filter: brightness(0.9);
 }
 
-.bracket-match-container[data-match-type="grand-final-main"] {
+.bracket-match-container[data-match-type="grand-final-main"],
+.bracket-match-container[data-match-type="grand-final-reset"],
+.bracket-match-container[data-match-type="final"] {
     animation: bracket-final-glow 4s infinite;
     transform: scale(1.05);
-}
-
-.bracket-match-container[data-match-type="grand-final-reset"] {
-    animation: bracket-final-glow 4s infinite;
-    transform: scale(1.05);
-    margin-top: 20px;
 }
 
 /* ===== КАРТОЧКИ МАТЧЕЙ ===== */
@@ -773,9 +769,9 @@
 }
 
 .bracket-match-card-final:hover {
-    border-color: #ff0000;
-    box-shadow: 0 10px 32px rgba(255, 0, 0, 0.5);
-    transform: translateY(-3px);
+    border-color: #ffd700;
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.6);
+    animation: bracket-final-glow 2s infinite;
 }
 
 .bracket-match-container[data-match-type="grand-final-main"]:hover,

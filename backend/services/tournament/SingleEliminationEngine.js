@@ -200,6 +200,16 @@ class SingleEliminationEngine {
             
             // Создаем матчи для текущего раунда
             for (let matchNumber = 1; matchNumber <= matchesInRound; matchNumber++) {
+                
+                // 🆕 ОПРЕДЕЛЯЕМ ТИП МАТЧА: финальный матч получает специальную пометку
+                let bracketType = 'winner';
+                
+                // Финальный матч = последний раунд (totalRounds) и единственный матч в раунде
+                if (round === totalRounds && matchesInRound === 1) {
+                    bracketType = 'final';
+                    console.log(`🏆 Матч ${matchNumber} в раунде ${round} помечен как ФИНАЛЬНЫЙ матч (за 1-е место)`);
+                }
+                
                 const matchData = {
                     tournament_id: tournamentId,
                     round: round,
@@ -207,7 +217,7 @@ class SingleEliminationEngine {
                     team1_id: null, // Будет заполнено позже для стартовых матчей
                     team2_id: null, // Будет заполнено позже для стартовых матчей
                     status: 'pending',
-                    bracket_type: 'winner'
+                    bracket_type: bracketType // 🆕 Используем определенный тип матча
                 };
                 
                 const matchPromise = this._insertMatch(client, matchData);

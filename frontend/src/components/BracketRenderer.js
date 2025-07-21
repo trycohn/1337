@@ -123,7 +123,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                         <div
                             key={match.id}
                             className="bracket-match-container"
-                            data-match-type={match.bracket_type === 'placement' ? 'third-place' : 'regular'}
+                            data-match-type={
+                                match.bracket_type === 'placement' ? 'third-place' :
+                                match.bracket_type === 'final' ? 'final' :
+                                'regular'
+                            }
                         >
                             <MatchCard
                                 match={match}
@@ -334,7 +338,8 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             return 'bracket-match-card-third-place';
         }
         
-        if (matchType === 'final') {
+        // 🆕 ФИНАЛЬНЫЙ МАТЧ (матч за 1-е место)
+        if (match.bracket_type === 'final' || matchType === 'final') {
             return 'bracket-match-card-final';
         }
         
@@ -357,12 +362,17 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             return customLabel;
         }
         
+        // 🆕 ФИНАЛЬНЫЙ МАТЧ (матч за 1-е место)
+        if (match.bracket_type === 'final' || matchType === 'final') {
+            return 'Матч за 1-е место';
+        }
+        
         // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match) {
             return 'Матч за 3-е место';
         }
         
-        // Для grand final матчей
+        // Для grand final матчей (Double Elimination)
         if (match.bracket_type === 'grand_final' || match.bracket_type === 'grand_final_reset') {
             return match.bracket_type === 'grand_final_reset' ? 'Grand Final Reset' : 'Grand Final';
         }
@@ -433,10 +443,10 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                     {(match.bracket_type === 'placement' || match.is_third_place_match) && (
                         <span className="bracket-type-indicator">🥉</span>
                     )}
-                    {(match.bracket_type === 'grand_final' || match.bracket_type === 'grand_final_reset') && (
+                    {(match.bracket_type === 'final' || matchType === 'final') && (
                         <span className="bracket-type-indicator">🏆</span>
                     )}
-                    {matchType === 'final' && (
+                    {(match.bracket_type === 'grand_final' || match.bracket_type === 'grand_final_reset') && (
                         <span className="bracket-type-indicator">🏆</span>
                     )}
                     <span className="bracket-match-number">#{match.match_number || match.id}</span>

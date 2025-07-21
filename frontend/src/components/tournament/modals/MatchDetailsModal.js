@@ -272,6 +272,9 @@ const MatchDetailsModal = ({
                         {selectedMatch.is_third_place_match && (
                             <span className="modal-system-badge modal-system-badge-warning">🥉 За 3-е место</span>
                         )}
+                        {selectedMatch.bracket_type === 'final' && (
+                            <span className="modal-system-badge modal-system-badge-success">🏆 За 1-е место</span>
+                        )}
                         {selectedMatch.bracket_type === 'grand_final' && (
                             <span className="modal-system-badge modal-system-badge-success">🏆 Финал</span>
                         )}
