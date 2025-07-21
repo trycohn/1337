@@ -131,23 +131,17 @@ class SingleEliminationEngine {
             console.log(`🏗️ [НОВАЯ АРХИТЕКТУРА] Создание полной турнирной сетки с предустановленными связями`);
             console.log(`📊 Параметры: ${participants.length} участников, ${bracketMath.totalMatches} матчей, ${bracketMath.rounds} раундов`);
             
-            // 🆕 ШАГ 1: Создаем ВСЕ матчи турнира (пустые, без участников)
+            // 🆕 ШАГ 1: Создаем ВСЕ матчи турнира (пустые, без участников), включая матч за третье место
             const allMatches = await this._createAllTournamentMatches(client, tournamentId, bracketMath);
             console.log(`✅ Создано ${allMatches.length} матчей для всего турнира`);
             
-            // 🆕 ШАГ 2: Устанавливаем ВСЕ связи next_match_id между матчами
+            // 🆕 ШАГ 2: Устанавливаем ВСЕ связи next_match_id и loser_next_match_id между матчами
             await this._establishAllConnections(client, allMatches, participants, bracketMath);
             console.log(`🔗 Установлены все связи между матчами`);
             
             // 🆕 ШАГ 3: Размещаем участников ТОЛЬКО в стартовых матчах
             await this._placeParticipantsInStartingMatches(client, allMatches, participants, bracketMath);
             console.log(`👥 Участники размещены в стартовых матчах`);
-            
-            // 🆕 ШАГ 4: Генерируем матч за 3-е место (если нужен)
-            if (bracketMath.hasThirdPlaceMatch) {
-                const thirdPlaceMatch = await this._generateThirdPlaceMatch(client, tournamentId, allMatches, bracketMath);
-                allMatches.push(thirdPlaceMatch);
-            }
             
             await client.query('COMMIT');
             
@@ -229,6 +223,26 @@ class SingleEliminationEngine {
         const insertedMatches = await Promise.all(matchPromises);
         allMatches.push(...insertedMatches);
         
+        // 🔧 ДОБАВЛЯЕМ: Создание матча за 3-е место (если нужен)
+        if (bracketMath.hasThirdPlaceMatch) {
+            console.log(`🥉 Создаем матч за 3-е место в раунде ${totalRounds}`);
+            
+            const thirdPlaceMatchData = {
+                tournament_id: tournamentId,
+                round: totalRounds, // Тот же раунд, что и финал
+                match_number: 0, // Меньший номер для отображения перед финалом
+                team1_id: null, // Будет заполнено проигравшими полуфинала
+                team2_id: null,
+                status: 'pending',
+                bracket_type: 'placement'
+            };
+            
+            const thirdPlaceMatch = await this._insertMatch(client, thirdPlaceMatchData);
+            allMatches.push(thirdPlaceMatch);
+            
+            console.log(`✅ Матч за 3-е место создан: ID ${thirdPlaceMatch.id}, раунд ${totalRounds}, match_number 0`);
+        }
+        
         // Сортируем матчи по раунду и номеру для удобства
         allMatches.sort((a, b) => {
             if (a.round !== b.round) return a.round - b.round;
@@ -278,6 +292,38 @@ class SingleEliminationEngine {
             } else {
                 // 🔧 СТАНДАРТНАЯ ЛОГИКА для основных раундов
                 await this._linkStandardRounds(client, currentRoundMatches, nextRoundMatches, updatePromises);
+            }
+        }
+        
+        // 🔧 НОВАЯ ЛОГИКА: Связываем полуфинальные матчи с матчем за 3-е место
+        if (bracketMath.hasThirdPlaceMatch) {
+            console.log(`🥉 Устанавливаем связи полуфинальных матчей с матчем за 3-е место`);
+            
+            // Находим матч за третье место
+            const thirdPlaceMatch = allMatches.find(match => match.bracket_type === 'placement');
+            
+            if (thirdPlaceMatch) {
+                // Находим полуфинальные матчи (предпоследний раунд)
+                const semifinalRound = totalRounds - 1;
+                const semifinalMatches = allMatches.filter(match => 
+                    match.round === semifinalRound && 
+                    match.bracket_type === 'winner'
+                );
+                
+                console.log(`🔍 Найдены полуфинальные матчи: ${semifinalMatches.length} шт. в раунде ${semifinalRound}`);
+                
+                // Устанавливаем loser_next_match_id для каждого полуфинального матча
+                for (const semifinalMatch of semifinalMatches) {
+                    const updatePromise = client.query(
+                        'UPDATE matches SET loser_next_match_id = $1 WHERE id = $2',
+                        [thirdPlaceMatch.id, semifinalMatch.id]
+                    );
+                    updatePromises.push(updatePromise);
+                    
+                    console.log(`🔗 Полуфинал ${semifinalMatch.id} (проигравший) -> Матч за 3-е место ${thirdPlaceMatch.id}`);
+                }
+            } else {
+                console.error(`❌ Матч за 3-е место не найден!`);
             }
         }
         
@@ -580,65 +626,6 @@ class SingleEliminationEngine {
             console.error(`   Участников получено: ${participants.length}`);
             console.error(`   Позиций размещено: ${participantsPlaced}`);
         }
-    }
-    
-    /**
-     * 🥉 Генерация матча за 3-е место
-     * @param {Object} client - Клиент БД
-     * @param {number} tournamentId - ID турнира
-     * @param {Array} allMatches - Все матчи
-     * @param {Object} bracketMath - Математические параметры
-     * @returns {Object} - Матч за 3-е место
-     */
-    static async _generateThirdPlaceMatch(client, tournamentId, allMatches, bracketMath) {
-        console.log(`🥉 Генерация матча за 3-е место`);
-        
-        // Находим финальный раунд (раунд с 1 матчем)
-        const finalRound = Math.max(...allMatches.map(match => match.round));
-        const finalMatches = allMatches.filter(match => match.round === finalRound);
-        
-        if (finalMatches.length !== 1) {
-            throw new Error(`Финальный раунд должен содержать ровно 1 матч, найдено: ${finalMatches.length}`);
-        }
-        
-        // Находим полуфинальные матчи (предпоследний раунд с 2 матчами)
-        const semifinalRound = finalRound - 1;
-        const semifinalMatches = allMatches.filter(match => 
-            match.round === semifinalRound && 
-            match.bracket_type === 'winner'
-        );
-        
-        console.log(`🔍 Ищем полуфинальные матчи в раунде ${semifinalRound}, найдено: ${semifinalMatches.length}`);
-        
-        if (semifinalMatches.length !== 2) {
-            // Дополнительная диагностика
-            const allRounds = [...new Set(allMatches.map(match => match.round))].sort((a, b) => a - b);
-            console.log(`📊 Все раунды турнира: ${allRounds.join(', ')}`);
-            console.log(`📊 Матчи по раундам:`);
-            allRounds.forEach(round => {
-                const matchesInRound = allMatches.filter(match => match.round === round);
-                console.log(`   Раунд ${round}: ${matchesInRound.length} матчей`);
-            });
-            
-            throw new Error(`Не найдены полуфинальные матчи для матча за 3-е место. Ожидалось: 2 матча в раунде ${semifinalRound}, найдено: ${semifinalMatches.length}`);
-        }
-        
-        // 🔧 ИСПРАВЛЕНО: Матч за 3-е место должен быть в том же раунде, что и финал
-        // но с меньшим match_number для правильной сортировки (отображается перед финалом)
-        const thirdPlaceMatchData = {
-            tournament_id: tournamentId,
-            round: finalRound, // 🔧 ИЗМЕНЕНО: тот же раунд, что и финал
-            match_number: 0, // 🔧 ИЗМЕНЕНО: меньший номер матча для отображения перед финалом
-            team1_id: null, // Будет заполнено после полуфиналов
-            team2_id: null,
-            status: 'pending',
-            bracket_type: 'placement'
-        };
-        
-        const thirdPlaceMatch = await this._insertMatch(client, thirdPlaceMatchData);
-        
-        console.log(`✅ Матч за 3-е место создан: ID ${thirdPlaceMatch.id}, раунд ${finalRound}, match_number 0`);
-        return thirdPlaceMatch;
     }
     
     /**
