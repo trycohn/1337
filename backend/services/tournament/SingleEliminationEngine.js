@@ -279,84 +279,94 @@ class SingleEliminationEngine {
     }
     
     /**
-     * 🔧 ИСПРАВЛЕННАЯ ФУНКЦИЯ: Связывание предварительного раунда с первым раундом (v3)
-     * Учитывает размещение DirectAdvancers и связывает предварительные матчи только со свободными позициями
+     * 🔧 ИСПРАВЛЕННАЯ ФУНКЦИЯ: Связывание предварительного раунда с первым раундом (v4)
+     * Новая логика: учитывает что DirectAdvancers заполняют ВСЕ позиции в первом раунде последовательно
      * @private
      */
     static async _linkPreliminaryToFirstRound_v3(client, preliminaryMatches, firstRoundMatches, participants, bracketMath, updatePromises) {
-        console.log(`🎯 [linkPreliminaryToFirstRound_v3] ${preliminaryMatches.length} предварительных -> ${firstRoundMatches.length} первого раунда`);
+        console.log(`🎯 [linkPreliminaryToFirstRound_v4] ${preliminaryMatches.length} предварительных -> ${firstRoundMatches.length} первого раунда`);
         console.log(`📊 DirectAdvancers: ${bracketMath.directAdvancers}, Preliminary participants: ${bracketMath.preliminaryParticipants}`);
         
-        // 🔧 ШАГ 1: Определяем план размещения DirectAdvancers в первом раунде
+        // 🔧 ШАГ 1: Определяем план размещения DirectAdvancers в первом раунде (соответствует логике в _placeParticipantsInStartingMatches)
         const directAdvancers = participants.slice(0, bracketMath.directAdvancers);
         console.log(`👥 DirectAdvancers: ${directAdvancers.map(p => p.name || p.id).join(', ')}`);
         
-        // 🔧 ШАГ 2: Создаем карту занятости позиций в первом раунде
-        // Логика: DirectAdvancers заполняют позиции team1_id в матчах первого раунда по порядку
-        const occupancyMap = [];
+        // 🔧 ШАГ 2: Рассчитываем размещение DirectAdvancers по новой логике
+        // DirectAdvancers заполняют позиции: team1, team2, team1 следующего матча, team2 следующего матча и т.д.
+        const occupancyPlan = [];
+        let directAdvancerIndex = 0;
         
-        for (let i = 0; i < firstRoundMatches.length; i++) {
-            const match = firstRoundMatches[i];
+        for (let matchIndex = 0; matchIndex < firstRoundMatches.length; matchIndex++) {
+            const match = firstRoundMatches[matchIndex];
+            const plan = {
+                matchId: match.id,
+                matchNumber: match.match_number,
+                team1_directAdvancer: null,
+                team2_directAdvancer: null,
+                team1_needsWinner: false,
+                team2_needsWinner: false
+            };
             
-            if (i < bracketMath.directAdvancers) {
-                // DirectAdvancer займет team1_id в этом матче
-                occupancyMap.push({
-                    matchId: match.id,
-                    matchNumber: match.match_number,
-                    team1_occupied: true,  // DirectAdvancer
-                    team2_occupied: false, // Свободно для победителя предварительного
-                    availablePosition: 'team2_id'
-                });
-                console.log(`🎯 Матч ${match.id} (M${match.match_number}): team1_id = DirectAdvancer, team2_id = свободно`);
+            // Заполняем team1_id DirectAdvancer'ом (если есть)
+            if (directAdvancerIndex < directAdvancers.length) {
+                plan.team1_directAdvancer = directAdvancers[directAdvancerIndex];
+                directAdvancerIndex++;
             } else {
-                // В этом матче обе позиции свободны для победителей предварительных
-                occupancyMap.push({
-                    matchId: match.id,
-                    matchNumber: match.match_number,
-                    team1_occupied: false, // Свободно для победителя предварительного
-                    team2_occupied: false, // Свободно для победителя предварительного
-                    availablePosition: 'both'
-                });
-                console.log(`🎯 Матч ${match.id} (M${match.match_number}): обе позиции свободны`);
+                plan.team1_needsWinner = true;
+            }
+            
+            // Заполняем team2_id DirectAdvancer'ом (если есть)
+            if (directAdvancerIndex < directAdvancers.length) {
+                plan.team2_directAdvancer = directAdvancers[directAdvancerIndex];
+                directAdvancerIndex++;
+            } else {
+                plan.team2_needsWinner = true;
+            }
+            
+            occupancyPlan.push(plan);
+            
+            console.log(`🎯 Матч ${match.id} (M${match.match_number}):`);
+            console.log(`   Team1: ${plan.team1_directAdvancer ? plan.team1_directAdvancer.name || plan.team1_directAdvancer.id : 'Нужен победитель предварительного'}`);
+            console.log(`   Team2: ${plan.team2_directAdvancer ? plan.team2_directAdvancer.name || plan.team2_directAdvancer.id : 'Нужен победитель предварительного'}`);
+        }
+        
+        // 🔧 ШАГ 3: Связываем предварительные матчи со свободными позициями
+        let preliminaryMatchIndex = 0;
+        
+        for (let matchIndex = 0; matchIndex < occupancyPlan.length && preliminaryMatchIndex < preliminaryMatches.length; matchIndex++) {
+            const plan = occupancyPlan[matchIndex];
+            
+            // Проверяем team2_id (сначала заполняем team2, потом team1 если нужно)
+            if (plan.team2_needsWinner && preliminaryMatchIndex < preliminaryMatches.length) {
+                const preliminaryMatch = preliminaryMatches[preliminaryMatchIndex];
+                
+                const updateQuery = 'UPDATE matches SET next_match_id = $1 WHERE id = $2';
+                const updatePromise = client.query(updateQuery, [plan.matchId, preliminaryMatch.id]);
+                updatePromises.push(updatePromise);
+                
+                console.log(`🎯 Предварительный матч ${preliminaryMatch.id} (M${preliminaryMatch.match_number}) -> Первый раунд матч ${plan.matchId} (M${plan.matchNumber}) [team2_id]`);
+                
+                preliminaryMatchIndex++;
+            }
+            
+            // Проверяем team1_id (если все еще есть предварительные матчи)
+            if (plan.team1_needsWinner && preliminaryMatchIndex < preliminaryMatches.length) {
+                const preliminaryMatch = preliminaryMatches[preliminaryMatchIndex];
+                
+                const updateQuery = 'UPDATE matches SET next_match_id = $1 WHERE id = $2';
+                const updatePromise = client.query(updateQuery, [plan.matchId, preliminaryMatch.id]);
+                updatePromises.push(updatePromise);
+                
+                console.log(`🎯 Предварительный матч ${preliminaryMatch.id} (M${preliminaryMatch.match_number}) -> Первый раунд матч ${plan.matchId} (M${plan.matchNumber}) [team1_id]`);
+                
+                preliminaryMatchIndex++;
             }
         }
         
-        // 🔧 ШАГ 3: Создаем план связывания предварительных матчей
-        let currentFirstRoundMatchIndex = 0;
-        let positionInMatch = 'team2_id'; // Начинаем с team2_id в первом матче (где team1_id занят DirectAdvancer)
-        
-        for (let i = 0; i < preliminaryMatches.length; i++) {
-            const preliminaryMatch = preliminaryMatches[i];
-            const occupancy = occupancyMap[currentFirstRoundMatchIndex];
-            
-            if (!occupancy) {
-                console.error(`❌ Не найдена информация о занятости для матча ${currentFirstRoundMatchIndex}`);
-                continue;
-            }
-            
-            // Связываем предварительный матч с целевым матчем первого раунда
-            const updatePromise = client.query(
-                'UPDATE matches SET next_match_id = $1 WHERE id = $2',
-                [occupancy.matchId, preliminaryMatch.id]
-            );
-            updatePromises.push(updatePromise);
-            
-            console.log(`🎯 Предварительный матч ${preliminaryMatch.id} (M${preliminaryMatch.match_number}) -> Первый раунд матч ${occupancy.matchId} (M${occupancy.matchNumber}) [${positionInMatch}]`);
-            
-            // 🔧 ШАГ 4: Переходим к следующей позиции
-            if (occupancy.team1_occupied && !occupancy.team2_occupied) {
-                // В этом матче team1_id занят DirectAdvancer, team2_id мы только что заняли
-                // Переходим к следующему матчу
-                currentFirstRoundMatchIndex++;
-                positionInMatch = 'team1_id'; // В следующем матче начинаем с team1_id
-            } else if (positionInMatch === 'team1_id') {
-                // Мы заняли team1_id, теперь занимаем team2_id в том же матче
-                positionInMatch = 'team2_id';
-            } else {
-                // Мы заняли team2_id, переходим к следующему матчу
-                currentFirstRoundMatchIndex++;
-                positionInMatch = 'team1_id';
-            }
+        // 🔧 ШАГ 4: Проверяем что все предварительные матчи связаны
+        if (preliminaryMatchIndex !== preliminaryMatches.length) {
+            console.error(`❌ ОШИБКА: Связано ${preliminaryMatchIndex} из ${preliminaryMatches.length} предварительных матчей`);
+            throw new Error(`Не удалось связать все предварительные матчи: связано ${preliminaryMatchIndex} из ${preliminaryMatches.length}`);
         }
         
         console.log(`✅ Связано ${preliminaryMatches.length} предварительных матчей с первым раундом (учтены DirectAdvancers)`);
@@ -420,18 +430,49 @@ class SingleEliminationEngine {
                 console.log(`   ${index + 1}. ID: ${p.id}, Name: ${p.name || p.username || 'Unknown'}`);
             });
             
-            // 🔧 ВАЖНО: DirectAdvancers размещаются в team1_id матчей первого раунда ПО ПОРЯДКУ
-            for (let i = 0; i < directParticipants.length && i < firstRoundMatches.length; i++) {
-                const participant = directParticipants[i];
+            console.log(`🎯 Размещаем ${directParticipants.length} DirectAdvancers в ${firstRoundMatches.length} матчах первого раунда:`);
+            
+            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: DirectAdvancers заполняют ВСЕ позиции в первом раунде
+            let directAdvancerIndex = 0;
+            
+            for (let i = 0; i < firstRoundMatches.length && directAdvancerIndex < directParticipants.length; i++) {
                 const match = firstRoundMatches[i];
                 
-                const updatePromise = client.query(
-                    'UPDATE matches SET team1_id = $1 WHERE id = $2',
-                    [participant.id, match.id]
-                );
-                updatePromises.push(updatePromise);
+                console.log(`🥊 Первый раунд матч ${match.id} (M${match.match_number}):`);
                 
-                console.log(`✅ DirectAdvancer: ${participant.name || participant.id} -> Первый раунд матч ${match.id} (team1_id) [согласованно с логикой связывания]`);
+                // Размещаем первого DirectAdvancer в team1_id
+                if (directAdvancerIndex < directParticipants.length) {
+                    const participant = directParticipants[directAdvancerIndex];
+                    const updatePromise = client.query(
+                        'UPDATE matches SET team1_id = $1 WHERE id = $2',
+                        [participant.id, match.id]
+                    );
+                    updatePromises.push(updatePromise);
+                    console.log(`   ✅ Team1: ${participant.name || participant.id} (DirectAdvancer ${directAdvancerIndex + 1})`);
+                    directAdvancerIndex++;
+                }
+                
+                // Размещаем второго DirectAdvancer в team2_id (если есть)
+                if (directAdvancerIndex < directParticipants.length) {
+                    const participant = directParticipants[directAdvancerIndex];
+                    const updatePromise = client.query(
+                        'UPDATE matches SET team2_id = $1 WHERE id = $2',
+                        [participant.id, match.id]
+                    );
+                    updatePromises.push(updatePromise);
+                    console.log(`   ✅ Team2: ${participant.name || participant.id} (DirectAdvancer ${directAdvancerIndex + 1})`);
+                    directAdvancerIndex++;
+                } else {
+                    console.log(`   🔄 Team2: Займет победитель предварительного раунда`);
+                }
+            }
+            
+            // 🔧 ПРОВЕРКА: все ли DirectAdvancers размещены
+            if (directAdvancerIndex !== directParticipants.length) {
+                console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Размещено ${directAdvancerIndex} из ${directParticipants.length} DirectAdvancers!`);
+                throw new Error(`Не удалось разместить всех DirectAdvancers: размещено ${directAdvancerIndex} из ${directParticipants.length}`);
+            } else {
+                console.log(`✅ Все ${directParticipants.length} DirectAdvancers успешно размещены в первом раунде`);
             }
             
             // 2. Размещаем остальных участников в предварительном раунде
