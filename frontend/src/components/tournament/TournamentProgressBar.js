@@ -40,13 +40,36 @@ const calculateTournamentProgress = (matches = [], tournamentStatus) => {
         match.team1_id && match.team2_id
     );
 
-    const completedMatches = realMatches.filter(match => 
-        match.status === 'completed' && match.winner_team_id
-    );
+    // 🔧 ИСПРАВЛЕНО: правильная проверка завершенных матчей
+    const completedMatches = realMatches.filter(match => {
+        // Проверяем по state (DONE или SCORE_DONE) или по наличию счета
+        const hasValidState = match.state === 'DONE' || match.state === 'SCORE_DONE';
+        const hasScore = (match.score1 !== null && match.score1 !== undefined) || 
+                        (match.score2 !== null && match.score2 !== undefined);
+        
+        return hasValidState || hasScore;
+    });
 
     const totalMatches = realMatches.length;
     const completed = completedMatches.length;
     
+    // 🔧 ОТЛАДКА: логируем данные для проверки
+    console.log('🏆 TournamentProgressBar Debug:', {
+        tournamentStatus,
+        totalMatches: matches.length,
+        realMatches: realMatches.length,
+        completedMatches: completed,
+        percentage: totalMatches > 0 ? Math.round((completed / totalMatches) * 100) : 0,
+        sampleMatch: realMatches[0] ? {
+            id: realMatches[0].id,
+            state: realMatches[0].state,
+            score1: realMatches[0].score1,
+            score2: realMatches[0].score2,
+            team1_id: realMatches[0].team1_id,
+            team2_id: realMatches[0].team2_id
+        } : null
+    });
+
     // Избегаем деления на ноль
     const percentage = totalMatches > 0 ? Math.round((completed / totalMatches) * 100) : 0;
 
