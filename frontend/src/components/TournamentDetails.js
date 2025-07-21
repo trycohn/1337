@@ -1697,8 +1697,8 @@ function TournamentDetails() {
     const canEditMatches = useMemo(() => {
         // Разрешаем редактирование только если:
         // 1. Пользователь авторизован И (является создателем ИЛИ админом)
-        // 2. Турнир находится в статусе "ongoing" (Идет)
-        return user && (isCreator || adminRequestStatus === 'accepted');
+        // 2. Турнир находится в статусе "in_progress" (Идет)
+        return user && (isCreator || adminRequestStatus === 'accepted') && tournament?.status === 'in_progress';
     }, [user, isCreator, adminRequestStatus, tournament?.status]);
 
     // 🔧 ГИБРИДНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА

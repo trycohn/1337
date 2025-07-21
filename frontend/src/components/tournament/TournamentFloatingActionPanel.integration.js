@@ -68,7 +68,7 @@ function TournamentDetails() {
 
     // Завершить турнир
     const handleEndTournament = useCallback(async () => {
-        if (!tournament || tournament.status !== 'ongoing') {
+        if (!tournament || tournament.status !== 'in_progress') {
             setMessage('❌ Турнир должен быть в статусе "Идет"');
             return;
         }
@@ -165,7 +165,7 @@ function TournamentDetails() {
 
     // Очистить результаты матчей
     const handleClearResults = useCallback(async () => {
-        if (!tournament || tournament.status !== 'ongoing') {
+        if (!tournament || tournament.status !== 'in_progress') {
             setMessage('❌ Результаты можно очищать только для идущих турниров');
             return;
         }

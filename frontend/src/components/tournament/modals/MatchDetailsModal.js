@@ -132,8 +132,8 @@ const MatchDetailsModal = ({
                            selectedMatch.status === 'completed' || 
                            selectedMatch.status === 'DONE';
 
-    // 🆕 Проверка статуса турнира для редактирования
-    const canEditByTournamentStatus = tournament?.status === 'ongoing';
+    // 🔧 ПРОВЕРКА СТАТУСА ТУРНИРА И ПРАВ РЕДАКТИРОВАНИЯ
+    const canEditByTournamentStatus = tournament?.status === 'in_progress'; // ✅ ИСПРАВЛЕНО: соответствует бэкенду
     const tournamentStatusMessage = !canEditByTournamentStatus 
         ? 'Редактирование матчей возможно только в турнире со статусом "Идет"'
         : null;

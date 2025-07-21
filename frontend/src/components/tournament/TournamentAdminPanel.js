@@ -411,7 +411,7 @@ const TournamentAdminPanel = ({
                 )}
 
                 {/* 🎯 УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ */}
-                {tournament?.status === 'ongoing' && matches?.some(m => m.status === 'completed') && (
+                {tournament?.status === 'in_progress' && matches?.some(m => m.status === 'completed') && (
                     <div className="results-section-v2">
                         <h4>📊 Управление результатами</h4>
                         <div className="results-actions">
@@ -436,7 +436,7 @@ const TournamentAdminPanel = ({
                 )}
 
                 {/* 🎯 УПРАВЛЕНИЕ МАТЧАМИ */}
-                {tournament?.status === 'ongoing' && matches?.some(m => m.status === 'completed') && (
+                {tournament?.status === 'in_progress' && matches?.some(m => m.status === 'completed') && (
                     <div className="matches-section-v2">
                         <h4>⚔️ Управление матчами</h4>
                         <div className="matches-actions">
