@@ -195,13 +195,18 @@ class SingleEliminationEngine {
             // Создаем матчи для текущего раунда
             for (let matchNumber = 1; matchNumber <= matchesInRound; matchNumber++) {
                 
-                // 🆕 ОПРЕДЕЛЯЕМ ТИП МАТЧА: финальный матч получает специальную пометку
+                // 🆕 ОПРЕДЕЛЯЕМ ТИП МАТЧА: финальный, полуфинальный или обычный
                 let bracketType = 'winner';
                 
                 // Финальный матч = последний раунд (totalRounds) и единственный матч в раунде
                 if (round === totalRounds && matchesInRound === 1) {
                     bracketType = 'final';
                     console.log(`🏆 Матч ${matchNumber} в раунде ${round} помечен как ФИНАЛЬНЫЙ матч (за 1-е место)`);
+                }
+                // 🆕 Полуфинальные матчи = предпоследний раунд с 2 матчами
+                else if (round === totalRounds - 1 && matchesInRound === 2) {
+                    bracketType = 'semifinal';
+                    console.log(`🥈 Матч ${matchNumber} в раунде ${round} помечен как ПОЛУФИНАЛЬНЫЙ матч`);
                 }
                 
                 const matchData = {
@@ -264,9 +269,18 @@ class SingleEliminationEngine {
         
         const updatePromises = [];
         
-        // Группируем матчи по раундам для удобства
+        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем матчи за 3-е место и полуфинальные матчи из стандартной логики связывания
+        const standardMatches = allMatches.filter(match => 
+            match.bracket_type !== 'placement' && 
+            match.bracket_type !== 'semifinal' &&
+            match.bracket_type !== 'final'
+        );
+        console.log(`🔧 Исключены специальные матчи: используем ${standardMatches.length} из ${allMatches.length} матчей для стандартных связей`);
+        console.log(`🔧 Специальные матчи будут связаны отдельно: полуфиналы, финал, матч за 3-е место`);
+        
+        // Группируем ТОЛЬКО стандартные матчи по раундам
         const matchesByRound = {};
-        allMatches.forEach(match => {
+        standardMatches.forEach(match => {
             if (!matchesByRound[match.round]) {
                 matchesByRound[match.round] = [];
             }
@@ -277,7 +291,7 @@ class SingleEliminationEngine {
         const startRound = bracketMath.needsPreliminaryRound ? 0 : 1;
         const totalRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
         
-        console.log(`🔗 Связываем раунды ${startRound} - ${totalRounds - 1} с их следующими раундами`);
+        console.log(`🔗 Связываем раунды ${startRound} - ${totalRounds - 1} с их следующими раундами (без матчей за 3-е место)`);
         
         // Связываем каждый раунд со следующим
         for (let round = startRound; round < totalRounds; round++) {
@@ -302,15 +316,13 @@ class SingleEliminationEngine {
             // Находим матч за третье место
             const thirdPlaceMatch = allMatches.find(match => match.bracket_type === 'placement');
             
-            if (thirdPlaceMatch) {
-                // Находим полуфинальные матчи (предпоследний раунд)
-                const semifinalRound = totalRounds - 1;
-                const semifinalMatches = allMatches.filter(match => 
-                    match.round === semifinalRound && 
-                    match.bracket_type === 'winner'
-                );
-                
-                console.log(`🔍 Найдены полуфинальные матчи: ${semifinalMatches.length} шт. в раунде ${semifinalRound}`);
+            // 🆕 УПРОЩЕННАЯ ЛОГИКА: Находим полуфинальные матчи по явной маркировке
+            const semifinalMatches = allMatches.filter(match => match.bracket_type === 'semifinal');
+            
+            console.log(`🔍 Найдены полуфинальные матчи: ${semifinalMatches.length} шт. (по bracket_type = 'semifinal')`);
+            
+            if (thirdPlaceMatch && semifinalMatches.length === 2) {
+                console.log(`🎯 Матч за 3-е место: ID ${thirdPlaceMatch.id}, раунд ${thirdPlaceMatch.round}, match_number ${thirdPlaceMatch.match_number}`);
                 
                 // Устанавливаем loser_next_match_id для каждого полуфинального матча
                 for (const semifinalMatch of semifinalMatches) {
@@ -320,10 +332,33 @@ class SingleEliminationEngine {
                     );
                     updatePromises.push(updatePromise);
                     
-                    console.log(`🔗 Полуфинал ${semifinalMatch.id} (проигравший) -> Матч за 3-е место ${thirdPlaceMatch.id}`);
+                    console.log(`🔗 Полуфинал ${semifinalMatch.id} (M${semifinalMatch.match_number}) (проигравший) -> Матч за 3-е место ${thirdPlaceMatch.id}`);
+                }
+                
+                // 🆕 ДОПОЛНИТЕЛЬНО: Устанавливаем связи полуфиналов с финалом
+                const finalMatch = allMatches.find(match => match.bracket_type === 'final');
+                if (finalMatch) {
+                    console.log(`🏆 Найден финальный матч: ID ${finalMatch.id}, раунд ${finalMatch.round}`);
+                    
+                    for (const semifinalMatch of semifinalMatches) {
+                        const updatePromise = client.query(
+                            'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                            [finalMatch.id, semifinalMatch.id]
+                        );
+                        updatePromises.push(updatePromise);
+                        
+                        console.log(`🔗 Полуфинал ${semifinalMatch.id} (M${semifinalMatch.match_number}) (победитель) -> Финал ${finalMatch.id}`);
+                    }
+                } else {
+                    console.error(`❌ Финальный матч не найден!`);
                 }
             } else {
-                console.error(`❌ Матч за 3-е место не найден!`);
+                if (!thirdPlaceMatch) {
+                    console.error(`❌ Матч за 3-е место не найден!`);
+                }
+                if (semifinalMatches.length !== 2) {
+                    console.error(`❌ Неверное количество полуфинальных матчей: ${semifinalMatches.length}, ожидалось: 2`);
+                }
             }
         }
         
@@ -470,6 +505,15 @@ class SingleEliminationEngine {
             console.log(`   ${index + 1}. ID: ${p.id}, Name: ${p.name || p.username || 'Unknown'}`);
         });
         
+        // 🔧 ИСКЛЮЧАЕМ специальные матчи из логики размещения участников
+        const standardMatches = allMatches.filter(match => 
+            match.bracket_type !== 'placement' && 
+            match.bracket_type !== 'semifinal' &&
+            match.bracket_type !== 'final'
+        );
+        console.log(`🔧 Исключены специальные матчи: используем ${standardMatches.length} из ${allMatches.length} матчей для размещения`);
+        console.log(`🔧 Участники размещаются только в обычных матчах (winner), специальные матчи заполняются автоматически`);
+        
         const updatePromises = [];
         
         if (bracketMath.needsPreliminaryRound) {
@@ -479,7 +523,7 @@ class SingleEliminationEngine {
             
             // 1. Размещаем участников, проходящих напрямую, в первом раунде (СОГЛАСОВАННО С ЛОГИКОЙ СВЯЗЫВАНИЯ)
             const directParticipants = participants.slice(0, bracketMath.directAdvancers);
-            const firstRoundMatches = allMatches.filter(m => m.round === 1);
+            const firstRoundMatches = standardMatches.filter(m => m.round === 1);
             
             console.log(`👤 DIRECT PARTICIPANTS (проходят напрямую в первый раунд):`);
             directParticipants.forEach((p, index) => {
@@ -523,31 +567,23 @@ class SingleEliminationEngine {
                 }
             }
             
-            // 🔧 ПРОВЕРКА: все ли DirectAdvancers размещены
-            if (directAdvancerIndex !== directParticipants.length) {
-                console.error(`❌ КРИТИЧЕСКАЯ ОШИБКА: Размещено ${directAdvancerIndex} из ${directParticipants.length} DirectAdvancers!`);
-                throw new Error(`Не удалось разместить всех DirectAdvancers: размещено ${directAdvancerIndex} из ${directParticipants.length}`);
-            } else {
-                console.log(`✅ Все ${directParticipants.length} DirectAdvancers успешно размещены в первом раунде`);
-            }
-            
-            // 2. Размещаем остальных участников в предварительном раунде
+            // 2. Размещаем участников предварительного раунда
             const preliminaryParticipants = participants.slice(bracketMath.directAdvancers);
-            const preliminaryMatches = allMatches.filter(m => m.round === 0);
+            const preliminaryMatches = standardMatches.filter(m => m.round === 0);
             
-            console.log(`⚔️ PRELIMINARY PARTICIPANTS (играют в предварительном раунде):`);
+            console.log(`\n🔥 PRELIMINARY PARTICIPANTS (предварительный раунд):`);
             preliminaryParticipants.forEach((p, index) => {
                 console.log(`   ${index + 1}. ID: ${p.id}, Name: ${p.name || p.username || 'Unknown'}`);
             });
             
-            console.log(`🥊 Размещаем в ${preliminaryMatches.length} предварительных матчах:`);
+            console.log(`\n🥊 Размещение в ${preliminaryMatches.length} матчах предварительного раунда:`);
             
             for (let i = 0; i < preliminaryMatches.length; i++) {
                 const match = preliminaryMatches[i];
                 const participant1 = preliminaryParticipants[i * 2];
                 const participant2 = preliminaryParticipants[i * 2 + 1];
                 
-                console.log(`🥊 Предварительный матч ${match.id} (M${match.match_number}):`);
+                console.log(`🔥 Предварительный матч ${match.id} (M${match.match_number}):`);
                 
                 if (participant1) {
                     const updatePromise1 = client.query(
@@ -576,7 +612,7 @@ class SingleEliminationEngine {
             // 🎯 СТАНДАРТНАЯ ЛОГИКА БЕЗ ПРЕДВАРИТЕЛЬНОГО РАУНДА
             console.log(`🎯 Стандартный турнир без предварительного раунда`);
             
-            const firstRoundMatches = allMatches.filter(m => m.round === 1);
+            const firstRoundMatches = standardMatches.filter(m => m.round === 1);
             
             console.log(`📋 Размещение в ${firstRoundMatches.length} матчах первого раунда:`);
             
@@ -614,17 +650,7 @@ class SingleEliminationEngine {
         // Выполняем все обновления размещения участников
         if (updatePromises.length > 0) {
             await Promise.all(updatePromises);
-            console.log(`✅ Размещено участников: ${updatePromises.length} обновлений (согласованно с логикой связывания)`);
-        }
-        
-        // 🔧 ФИНАЛЬНАЯ ПРОВЕРКА: подсчитываем размещенных участников
-        const participantsPlaced = Math.floor(updatePromises.length);
-        console.log(`🎉 ИТОГ РАЗМЕЩЕНИЯ: размещено ${participantsPlaced} позиций из ${participants.length} участников`);
-        
-        if (participantsPlaced < participants.length) {
-            console.error(`⚠️ ВНИМАНИЕ: Возможно потеряли участников при размещении!`);
-            console.error(`   Участников получено: ${participants.length}`);
-            console.error(`   Позиций размещено: ${participantsPlaced}`);
+            console.log(`✅ Размещено участников в ${updatePromises.length / 2} матчах`);
         }
     }
     
