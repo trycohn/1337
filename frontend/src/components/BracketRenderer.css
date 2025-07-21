@@ -429,19 +429,19 @@
 }
 
 .bracket-match-card-grand-final {
-    border-color: #ff0000;
-    box-shadow: 0 6px 16px rgba(255, 0, 0, 0.4);
+    border-color: #ffd700;
+    box-shadow: 0 6px 16px #ffd70066;
     animation: bracket-final-glow 4s infinite;
 }
 
 .bracket-match-card-third-place {
-    border-color: #ff0000;
-    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+    border-color: #ff5700;
+    box-shadow: 0 4px 12px #ff57004d;
 }
 
 .bracket-match-card-final {
-    border-color: #ff0000;
-    box-shadow: 0 6px 16px rgba(255, 0, 0, 0.4);
+    border-color: #ffd700;
+    box-shadow: 0 6px 16px #ffd70066;
     animation: bracket-type-glow 3s infinite;
 }
 
