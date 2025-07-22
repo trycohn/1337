@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './AdminPanel.css';
@@ -26,18 +26,7 @@ function AdminPanel() {
         admin_comment: ''
     });
 
-    useEffect(() => {
-        checkAdminAccess();
-    }, []);
-
-    useEffect(() => {
-        if (user && user.role === 'admin') {
-            fetchRequests();
-            fetchStats();
-        }
-    }, [user, statusFilter, pagination.page]);
-
-    const checkAdminAccess = async () => {
+    const checkAdminAccess = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -61,9 +50,9 @@ function AdminPanel() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]);
 
-    const fetchRequests = async () => {
+    const fetchRequests = useCallback(async () => {
         try {
             const response = await api.get(`/api/admin/organization-requests?status=${statusFilter}&page=${pagination.page}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -73,9 +62,9 @@ function AdminPanel() {
         } catch (err) {
             console.error('Ошибка загрузки заявок:', err);
         }
-    };
+    }, [statusFilter, pagination.page]);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             const response = await api.get('/api/admin/stats', {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -84,7 +73,18 @@ function AdminPanel() {
         } catch (err) {
             console.error('Ошибка загрузки статистики:', err);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        checkAdminAccess();
+    }, [checkAdminAccess]);
+
+    useEffect(() => {
+        if (user && user.role === 'admin') {
+            fetchRequests();
+            fetchStats();
+        }
+    }, [user, fetchRequests, fetchStats]);
 
     const fetchRequestDetails = async (requestId) => {
         try {

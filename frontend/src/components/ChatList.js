@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './ChatList.css';
 import { formatDate } from '../utils/dateHelpers';
-import { Link } from 'react-router-dom';
-import api from '../axios';
 import { ensureHttps } from '../utils/userHelpers';
 
 function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat }) {
