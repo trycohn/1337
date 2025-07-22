@@ -83,6 +83,90 @@ class BracketService {
         }
     }
     
+    /**
+     * 🗑️ Полное удаление турнирной сетки (все матчи)
+     */
+    static async clearBracket(tournamentId, userId = null) {
+        const startTime = Date.now();
+        console.log(`🗑️ [BracketService v4.0] Полное удаление сетки турнира ${tournamentId}`);
+        
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // 1. Проверяем турнир
+            const tournamentResult = await client.query(
+                'SELECT * FROM tournaments WHERE id = $1 FOR UPDATE',
+                [tournamentId]
+            );
+            
+            if (tournamentResult.rows.length === 0) {
+                throw new Error('Турнир не найден');
+            }
+            
+            const tournament = tournamentResult.rows[0];
+            
+            // 2. Получаем количество матчей для логирования
+            const matchCountResult = await client.query(
+                'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            const matchCount = parseInt(matchCountResult.rows[0].count);
+            
+            // 3. Полностью удаляем все матчи турнира
+            const deleteResult = await client.query(
+                'DELETE FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            console.log(`🗑️ Полностью удалено матчей: ${deleteResult.rowCount}`);
+            
+            // 4. Сбрасываем статус турнира на active
+            await client.query(
+                'UPDATE tournaments SET status = $1 WHERE id = $2',
+                ['active', tournamentId]
+            );
+            
+            await client.query('COMMIT');
+            
+            // 5. Логируем событие если передан userId
+            if (userId) {
+                await logTournamentEvent(tournamentId, userId, 'bracket_cleared', {
+                    deletedMatches: deleteResult.rowCount
+                });
+            }
+            
+            // 6. Отправляем уведомление в чат
+            if (deleteResult.rowCount > 0) {
+                await sendTournamentChatAnnouncement(
+                    tournamentId,
+                    `🗑️ Турнирная сетка полностью удалена (${deleteResult.rowCount} матчей). Необходимо создать новую сетку для продолжения турнира.`
+                );
+            }
+            
+            // 7. Отправляем WebSocket обновление
+            const updatedTournament = await this._getTournamentData(tournamentId);
+            broadcastTournamentUpdate(tournamentId, updatedTournament);
+            
+            const duration = Date.now() - startTime;
+            console.log(`✅ [BracketService v4.0] Сетка полностью удалена за ${duration}ms`);
+            
+            return {
+                success: true,
+                message: `Турнирная сетка полностью удалена (${deleteResult.rowCount} матчей)`,
+                deletedMatches: deleteResult.rowCount,
+                duration: duration
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ [BracketService v4.0] Ошибка удаления сетки:`, error.message);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+    
     // ==========================================
     // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     // ==========================================
