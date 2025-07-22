@@ -184,7 +184,7 @@ class TournamentRepository {
             // Для каждой команды получаем участников с ПОЛНЫМИ полями рейтинга
             const teams = await Promise.all(teamsResult.rows.map(async (team) => {
                 const membersResult = await pool.query(
-                    `SELECT tm.team_id, tm.user_id, tm.participant_id, 
+                    `SELECT tm.team_id, tm.user_id, tm.participant_id, tm.is_captain, tm.captain_rating,
                             tp.name, u.username, u.avatar_url, 
                             tp.faceit_elo, tp.cs2_premier_rank,
                             u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
@@ -193,7 +193,7 @@ class TournamentRepository {
                      LEFT JOIN tournament_participants tp ON tm.participant_id = tp.id
                      LEFT JOIN users u ON tm.user_id = u.id
                      WHERE tm.team_id = $1
-                     ORDER BY tm.participant_id`,
+                     ORDER BY tm.is_captain DESC, tm.participant_id`,
                     [team.id]
                 );
 
