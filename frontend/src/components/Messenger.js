@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../axios';
 import './Messenger.css';
 import ChatList from './ChatList';
@@ -10,9 +10,7 @@ function Messenger() {
     const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [socket, setSocket] = useState(null);
     const [newMessage, setNewMessage] = useState('');
     const [unreadCounts, setUnreadCounts] = useState({});
     const messagesEndRef = useRef(null);
@@ -28,120 +26,53 @@ function Messenger() {
 
     const activeChatRef = useRef(null);
 
-    // Отслеживаем изменение размера окна
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768);
-        };
-        
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    // Добавляем класс к main элементу для переопределения стилей
-    useEffect(() => {
-        const mainElement = document.querySelector('main');
-        if (mainElement) {
-            mainElement.classList.add('messenger-page');
-        }
-        
-        return () => {
-            if (mainElement) {
-                mainElement.classList.remove('messenger-page');
-            }
-        };
-    }, []);
-
     // 🚀 Socket.IO подключение с новым hook
     const socketHook = useSocket();
 
-    // Инициализация Socket.IO (только один раз)
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        console.log('🚀 [Messenger] Подключение к Socket.IO...');
-        
-        // Подключаемся к Socket.IO
-        const connected = socketHook.connect(token);
-        
-        if (connected) {
-            console.log('✅ [Messenger] Socket.IO инициализирован');
-            
-            // Обработчики событий
-            const handleError = (error) => {
-                console.error('❌ [Messenger] Socket.IO ошибка:', error);
-                setError('Ошибка подключения к серверу чата');
-            };
-            
-            // Подписываемся на события
-            socketHook.on('new_message', handleNewMessage);
-            socketHook.on('read_status', updateMessageReadStatus);
-            socketHook.on('notification_update', handleNotificationUpdate);
-            socketHook.on('error', handleError);
-
-            // Устанавливаем сокет для совместимости
-            setSocket(socketHook.getSocket());
-            
-            // Загружаем чаты
-            fetchChats();
-
-            // Cleanup - отписываемся от событий
-            return () => {
-                console.log('🧹 [Messenger] Отписываемся от Socket.IO событий');
-                socketHook.off('new_message', handleNewMessage);
-                socketHook.off('read_status', updateMessageReadStatus);
-                socketHook.off('notification_update', handleNotificationUpdate);
-                socketHook.off('error', handleError);
-            };
+    // Пометка конкретного сообщения как прочитанного
+    const markMessageAsRead = useCallback(async (messageId) => {
+        if (!socketHook.connected) return;
+        // Используем прямой доступ к сокету для этого специфичного API
+        const socket = socketHook.getSocket();
+        if (socket) {
+            socket.emit('read_status', { message_id: messageId });
         }
-    }, []); // Убрали все зависимости для одноразового выполнения
-    
-    // Обновляем онлайн статус каждую минуту
-    useEffect(() => {
-        if (!activeChat) return;
-        
-        // При первом рендере и смене чата сразу получаем статус
-        const lastFetchedChatId = activeChatRef.current;
-        if (lastFetchedChatId !== activeChat.id) {
-            fetchChatUserInfo(activeChat.id);
-        }
-        
-        // Устанавливаем интервал обновления статуса раз в 3 минуты
-        const intervalId = setInterval(() => {
-            if (activeChat) {
-                fetchChatUserInfo(activeChat.id);
+    }, [socketHook]);
+
+    // Загрузка чатов
+    const fetchChats = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('No token available');
+                return;
             }
-        }, 180000); // Каждые 3 минуты
-        
-        return () => clearInterval(intervalId);
-    }, [activeChat?.id]);
-    
-    // Прокрутка до последнего сообщения при добавлении новых
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            
+            console.log('🔄 [Messenger] Загружаем список чатов...');
+            const response = await api.get('/api/chats', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            console.log('✅ [Messenger] Чаты загружены:', response.data);
+            setChats(response.data);
+            
+            // Загружаем количество непрочитанных сообщений для каждого чата
+            const chatIds = response.data.map(chat => chat.id);
+            if (chatIds.length > 0) {
+                const unreadResponse = await api.get('/api/chats/unread-count-by-chat', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                console.log('✅ [Messenger] Счетчики непрочитанных загружены:', unreadResponse.data);
+                setUnreadCounts(unreadResponse.data);
+            }
+        } catch (error) {
+            console.error('❌ [Messenger] Ошибка загрузки чатов:', error);
+            setError('Не удалось загрузить чаты');
         }
-    }, [messages]);
-    
-    // Загружаем сообщения при смене активного чата
-    useEffect(() => {
-        activeChatRef.current = activeChat ? activeChat.id : null;
+    }, []);
 
-        if (activeChat) {
-            console.log('🔄 [Messenger] Активный чат изменен на:', activeChat.id);
-            
-            // Присоединяемся к комнате чата через Socket.IO
-            console.log('🔗 [Messenger] Присоединяемся к комнате чата:', activeChat.id);
-            socketHook.chat.join(activeChat.id);
-            
-            fetchMessages(activeChat.id);
-            markChatAsRead(activeChat.id);
-        }
-    }, [activeChat]);
-    
-    // Обработка нового сообщения: обновляем сообщения и динамически обновляем, сортируя список чатов
-    const handleNewMessage = (message) => {
+    // Обработка нового сообщения
+    const handleNewMessage = useCallback((message) => {
         console.log('📨 [Messenger] Получено новое сообщение:', message);
         const chatId = Number(message.chat_id);
         console.log('📨 [Messenger] Chat ID:', chatId, 'Active chat:', activeChatRef.current);
@@ -186,7 +117,153 @@ function Messenger() {
                 [chatId]: (prev[chatId] || 0) + 1
             }));
         }
-    };
+    }, [markMessageAsRead]);
+
+    // Загрузка информации о пользователе чата
+    const fetchChatUserInfo = useCallback(async (chatId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.get(`/api/chats/${chatId}/info`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обновляем информацию о чате
+            setChats(prevChats => 
+                prevChats.map(chat => 
+                    chat.id === chatId 
+                        ? { ...chat, ...response.data }
+                        : chat
+                )
+            );
+        } catch (error) {
+            console.error('❌ [Messenger] Ошибка загрузки информации о чате:', error);
+        }
+    }, []);
+
+    // Пометка чата как прочитанного
+    const markChatAsRead = useCallback(async (chatId) => {
+        try {
+            const token = localStorage.getItem('token');
+            console.log('👁️ [Messenger] Помечаем чат как прочитанный:', chatId);
+            await api.post(`/api/chats/${chatId}/read`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Обнуляем счетчик непрочитанных для этого чата
+            setUnreadCounts(prev => ({
+                ...prev,
+                [chatId]: 0
+            }));
+        } catch (error) {
+            console.error('❌ [Messenger] Ошибка пометки чата как прочитанного:', error);
+        }
+    }, []);
+
+    // Отслеживаем изменение размера окна
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Добавляем класс к main элементу для переопределения стилей
+    useEffect(() => {
+        const mainElement = document.querySelector('main');
+        if (mainElement) {
+            mainElement.classList.add('messenger-page');
+        }
+        
+        return () => {
+            if (mainElement) {
+                mainElement.classList.remove('messenger-page');
+            }
+        };
+    }, []);
+
+    // Инициализация Socket.IO (только один раз)
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        console.log('🚀 [Messenger] Подключение к Socket.IO...');
+        
+        // Подключаемся к Socket.IO
+        const connected = socketHook.connect(token);
+        
+        if (connected) {
+            console.log('✅ [Messenger] Socket.IO инициализирован');
+            
+            // Обработчики событий
+            const handleError = (error) => {
+                console.error('❌ [Messenger] Socket.IO ошибка:', error);
+                setError('Ошибка подключения к серверу чата');
+            };
+            
+            // Подписываемся на события
+            socketHook.on('new_message', handleNewMessage);
+            socketHook.on('read_status', updateMessageReadStatus);
+            socketHook.on('notification_update', handleNotificationUpdate);
+            socketHook.on('error', handleError);
+            
+            // Загружаем чаты
+            fetchChats();
+
+            // Cleanup - отписываемся от событий
+            return () => {
+                console.log('🧹 [Messenger] Отписываемся от Socket.IO событий');
+                socketHook.off('new_message', handleNewMessage);
+                socketHook.off('read_status', updateMessageReadStatus);
+                socketHook.off('notification_update', handleNotificationUpdate);
+                socketHook.off('error', handleError);
+            };
+        }
+    }, [fetchChats, handleNewMessage, socketHook]);
+    
+    // Обновляем онлайн статус каждую минуту
+    useEffect(() => {
+        if (!activeChat) return;
+        
+        // При первом рендере и смене чата сразу получаем статус
+        const lastFetchedChatId = activeChatRef.current;
+        if (lastFetchedChatId !== activeChat.id) {
+            fetchChatUserInfo(activeChat.id);
+        }
+        
+        // Устанавливаем интервал обновления статуса раз в 3 минуты
+        const intervalId = setInterval(() => {
+            if (activeChat) {
+                fetchChatUserInfo(activeChat.id);
+            }
+        }, 180000); // Каждые 3 минуты
+        
+        return () => clearInterval(intervalId);
+    }, [activeChat, fetchChatUserInfo]);
+    
+    // Прокрутка до последнего сообщения при добавлении новых
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
+    
+    // Загружаем сообщения при смене активного чата
+    useEffect(() => {
+        activeChatRef.current = activeChat ? activeChat.id : null;
+
+        if (activeChat) {
+            console.log('🔄 [Messenger] Активный чат изменен на:', activeChat.id);
+            
+            // Присоединяемся к комнате чата через Socket.IO
+            console.log('🔗 [Messenger] Присоединяемся к комнате чата:', activeChat.id);
+            socketHook.chat.join(activeChat.id);
+            
+            fetchMessages(activeChat.id);
+            markChatAsRead(activeChat.id);
+        }
+    }, [activeChat, markChatAsRead, socketHook.chat]);
     
     // Обновление статуса прочтения сообщения
     const updateMessageReadStatus = (data) => {
@@ -198,37 +275,6 @@ function Messenger() {
                         : msg
                 )
             );
-        }
-    };
-    
-    // Получение списка чатов
-    const fetchChats = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/api/chats', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            setChats(response.data);
-            
-            // Обновляем счетчики непрочитанных сообщений
-            const counts = {};
-            response.data.forEach(chat => {
-                counts[chat.id] = chat.unread_count || 0;
-            });
-            setUnreadCounts(counts);
-            
-            // Если есть чаты, но активный чат не выбран, выбираем первый
-            if (response.data.length > 0 && !activeChat) {
-                setActiveChat(response.data[0]);
-            }
-            
-            setError('');
-        } catch (err) {
-            setError(err.response?.data?.error || 'Ошибка загрузки списка чатов');
-        } finally {
-            setLoading(false);
         }
     };
     
@@ -249,31 +295,6 @@ function Messenger() {
         }
     };
     
-    // Получение информации о пользователе чата для отображения онлайн статуса
-    const fetchChatUserInfo = async (chatId) => {
-        try {
-            // Находим текущий чат
-            const chat = chats.find(c => c.id === chatId);
-            if (!chat || !chat.user_id) return;
-            
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/api/users/profile/${chat.user_id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            // Обновляем онлайн статус в активном чате
-            if (response.data && response.data.online_status) {
-                setActiveChat(prev => ({
-                    ...prev,
-                    online_status: response.data.online_status
-                }));
-            }
-        } catch (err) {
-            console.error('Ошибка получения статуса онлайн:', err);
-            // Не показываем ошибку пользователю, так как это не критично
-        }
-    };
-    
     // Отправка сообщения
     const sendMessage = () => {
         if (!activeChat || !newMessage.trim()) {
@@ -289,44 +310,6 @@ function Messenger() {
         // Используем новый API Socket.IO
         socketHook.chat.sendMessage(activeChat.id, newMessage.trim());
         setNewMessage('');
-    };
-    
-    // Пометка чата как прочитанного
-    const markChatAsRead = async (chatId) => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post(`/api/chats/${chatId}/read`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            // Обнуляем счетчик непрочитанных сообщений для этого чата
-            setUnreadCounts(prevCounts => ({
-                ...prevCounts,
-                [chatId]: 0
-            }));
-
-            // Отправляем событие через Socket.IO для обновления счетчика в Layout.js
-            if (socketHook.connected) {
-                const socket = socketHook.getSocket();
-                if (socket) {
-                    socket.emit('messages_read', { chat_id: chatId });
-                    console.log('📖 [Messenger] Отправлено событие messages_read для чата:', chatId);
-                }
-            }
-            
-        } catch (err) {
-            console.error('Ошибка при пометке чата как прочитанного:', err);
-        }
-    };
-    
-    // Пометка конкретного сообщения как прочитанного
-    const markMessageAsRead = async (messageId) => {
-        if (!socketHook.connected) return;
-        // Используем прямой доступ к сокету для этого специфичного API
-        const socket = socketHook.getSocket();
-        if (socket) {
-            socket.emit('read_status', { message_id: messageId });
-        }
     };
     
     // Переназначаем отправку вложения на показ модалки

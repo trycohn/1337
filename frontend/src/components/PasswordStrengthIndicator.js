@@ -91,39 +91,6 @@ function PasswordStrengthIndicator({ password, confirmPassword }) {
     };
 
     const strength = analyzePasswordStrength(password);
-    const passwordsMatch = password && confirmPassword && password === confirmPassword;
-
-    // Определение цвета и текста для полосы прогресса
-    const getStrengthColor = () => {
-        switch (strength.level) {
-            case 'strong':
-                return '#4CAF50'; // Зеленый
-            case 'medium':
-                return '#FF9800'; // Оранжевый
-            case 'weak':
-                return '#F44336'; // Красный
-            default:
-                return '#E0E0E0'; // Серый
-        }
-    };
-
-    const getStrengthText = () => {
-        switch (strength.level) {
-            case 'strong':
-                return 'Надежный пароль';
-            case 'medium':
-                return 'Средний пароль';
-            case 'weak':
-                return 'Слабый пароль';
-            default:
-                return 'Введите пароль';
-        }
-    };
-
-    const getStrengthWidth = () => {
-        const maxScore = 7;
-        return Math.min((strength.score / maxScore) * 100, 100);
-    };
 
     if (!password) {
         return null;

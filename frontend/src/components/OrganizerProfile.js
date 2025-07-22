@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../axios';
 import './OrganizerProfile.css';
@@ -11,11 +11,7 @@ function OrganizerProfile() {
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('about');
 
-    useEffect(() => {
-        fetchOrganizerData();
-    }, [slug]);
-
-    const fetchOrganizerData = async () => {
+    const fetchOrganizerData = useCallback(async () => {
         try {
             setLoading(true);
             const response = await api.get(`/api/organizers/${slug}`);
@@ -26,7 +22,11 @@ function OrganizerProfile() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [slug]);
+
+    useEffect(() => {
+        fetchOrganizerData();
+    }, [fetchOrganizerData]);
 
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('ru-RU', {
