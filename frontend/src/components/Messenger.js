@@ -56,15 +56,18 @@ function Messenger() {
             console.log('✅ [Messenger] Чаты загружены:', response.data);
             setChats(response.data);
             
-            // Загружаем количество непрочитанных сообщений для каждого чата
-            const chatIds = response.data.map(chat => chat.id);
-            if (chatIds.length > 0) {
-                const unreadResponse = await api.get('/api/chats/unread-count-by-chat', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                console.log('✅ [Messenger] Счетчики непрочитанных загружены:', unreadResponse.data);
-                setUnreadCounts(unreadResponse.data);
-            }
+            // Инициализируем счетчики непрочитанных из данных чатов (если они есть)
+            const initialUnreadCounts = {};
+            response.data.forEach(chat => {
+                if (chat.unread_count !== undefined) {
+                    initialUnreadCounts[chat.id] = chat.unread_count;
+                }
+            });
+            
+            console.log('📊 [Messenger] Инициализация счетчиков:', initialUnreadCounts);
+            setUnreadCounts(initialUnreadCounts);
+            
+            setError('');
         } catch (error) {
             console.error('❌ [Messenger] Ошибка загрузки чатов:', error);
             setError('Не удалось загрузить чаты');
