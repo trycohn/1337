@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './AdminPanel.css';
 import { ensureHttps } from '../utils/userHelpers';
+import { useAuth } from '../context/AuthContext'; // Добавляем AuthContext
 
 function AdminPanel() {
     const navigate = useNavigate();
+    const { user: authUser } = useAuth(); // Используем пользователя из AuthContext
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [requests, setRequests] = useState([]);
@@ -28,29 +30,28 @@ function AdminPanel() {
 
     const checkAdminAccess = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
+            // Используем пользователя из AuthContext вместо запроса к API
+            if (!authUser) {
+                console.log('❌ Нет пользователя в AuthContext, редирект на авторизацию');
                 navigate('/auth');
                 return;
             }
 
-            const response = await api.get('/api/users/me', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data.role !== 'admin') {
+            if (authUser.role !== 'admin') {
+                console.log('❌ Пользователь не админ, редирект на главную');
                 navigate('/');
                 return;
             }
 
-            setUser(response.data);
+            console.log('✅ Админские права подтверждены для:', authUser.username);
+            setUser(authUser);
         } catch (err) {
             console.error('Ошибка проверки доступа:', err);
             navigate('/auth');
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, [navigate, authUser]); // Добавляем authUser в зависимости
 
     const fetchRequests = useCallback(async () => {
         try {

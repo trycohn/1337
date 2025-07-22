@@ -4,18 +4,21 @@
 // ✅ Упрощена логика без дублирования кода
 
 // Импорты React и связанные
-import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../utils/api';
-import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_v5_simplified';
 import { useModalSystem } from '../hooks/useModalSystem';
-import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
+import './TournamentDetails.css';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
-import { enrichMatchWithParticipantNames, validateParticipantData } from '../utils/participantHelpers';
+import BracketRenderer from './BracketRenderer';
+import { safeNavigateToTournament, validateApiResponse, handleApiError } from '../utils/apiUtils';
+import { ensureHttps } from '../utils/userHelpers';
+import { useLoader } from '../context/LoaderContext';
+import { formatDate } from '../utils/dateHelpers';
+import { useAuth } from '../context/AuthContext'; // Импорт AuthContext
 
 // Утилиты и хелперы
-import { ensureHttps } from '../utils/userHelpers';
 import { 
     isCounterStrike2, 
     gameHasMaps, 
@@ -24,26 +27,12 @@ import {
     getDefaultCS2Maps 
 } from '../utils/mapHelpers';
 
-// Контекст
-import { useUser } from '../context/UserContext';
-
-// Стили
-import './TournamentDetails.css';
-
 // Компоненты
 import TournamentInfoSection from './TournamentInfoSection';
-import MatchResultModal from './tournament/modals/MatchResultModal';
-import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
-import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
-import AddParticipantModal from './tournament/modals/AddParticipantModal';
-import ThirdPlaceMatchModal from './tournament/modals/ThirdPlaceMatchModal';
-import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
-import TournamentAdminPanel from './tournament/TournamentAdminPanel';
-import TournamentParticipants from './tournament/TournamentParticipants';
-import TournamentWinners from './tournament/TournamentWinners';
-import BracketManagementPanel from './tournament/BracketManagementPanel';
-import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
-import './tournament/BracketManagementPanel.css';
+// import TournamentStats from './TournamentStats'; - УДАЛЕН, файл не существует
+// import TournamentChat from './TournamentChat'; - УДАЛЕН, файл не существует
+// import TournamentCreatePanel from './tournament/TournamentCreatePanel'; - УДАЛЕН, файл не существует
+// import MixTournament from './MixTournament'; - УДАЛЕН, файл не существует
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
 import PodiumSection from './tournament/PodiumSection';
@@ -51,21 +40,12 @@ import PodiumSection from './tournament/PodiumSection';
 // 🆕 Прогресс-бар турнира
 import TournamentProgressBar from './tournament/TournamentProgressBar';
 
-// Ленивая загрузка BracketRenderer с улучшенной обработкой ошибок
-const LazyBracketRenderer = React.lazy(() => 
-    import('./BracketRenderer').catch(err => {
-        console.error('❌ Ошибка при загрузке BracketRenderer:', err);
-        return { 
-            default: () => (
-                <div className="bracket-error" data-testid="bracket-load-error">
-                    <h3>⚠️ Ошибка загрузки турнирной сетки</h3>
-                    <p>Не удалось загрузить компонент турнирной сетки. Пожалуйста, обновите страницу.</p>
-                    <button onClick={() => window.location.reload()}>🔄 Обновить страницу</button>
-                </div>
-            ) 
-        };
-    })
-);
+// Ленивая загрузка модальных компонентов
+const ParticipantSearchModal = lazy(() => import('./tournament/modals/ParticipantSearchModal'));
+const TournamentSettingsPanel = lazy(() => import('./tournament/TournamentSettingsPanel'));
+const TournamentAdminPanel = lazy(() => import('./tournament/TournamentAdminPanel'));
+const BracketManagementPanel = lazy(() => import('./tournament/BracketManagementPanel'));
+const MixTeamManager = lazy(() => import('./tournament/MixTeamManager'));
 
 // Error Boundary для обработки ошибок рендеринга
 class TournamentErrorBoundary extends React.Component {
@@ -154,11 +134,14 @@ const validateTournamentData = (data) => {
 function TournamentDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user: authUser } = useAuth(); // Используем пользователя из AuthContext
     
     // Состояния
     const [tournament, setTournament] = useState(null);
-    const [user, setUser] = useState(null);
     const [teams, setTeams] = useState([]);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [isParticipating, setIsParticipating] = useState(false);
     const [adminRequestStatus, setAdminRequestStatus] = useState(null);
@@ -166,8 +149,6 @@ function TournamentDetails() {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [availableMaps, setAvailableMaps] = useState({});
     const [originalParticipants, setOriginalParticipants] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [isCreator, setIsCreator] = useState(false);
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
 
@@ -1266,40 +1247,33 @@ function TournamentDetails() {
         }
     };
 
-    // Загрузка данных пользователя
+    // Загрузка данных пользователя - ИСПОЛЬЗУЕМ AUTHCONTEXT ВМЕСТО ЗАПРОСА
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            console.log('🔄 Загружаем данные пользователя и команды...');
-            api.get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
-                .then((userResponse) => {
-                    console.log('✅ Пользователь загружен:', userResponse.data.username);
-                    setUser(userResponse.data);
-                    
-                    // Загружаем команды пользователя
-                    return api.get('/api/teams/my-teams', { 
-                        headers: { Authorization: `Bearer ${token}` } 
-                    });
+        if (authUser) {
+            console.log('✅ Пользователь получен из AuthContext:', authUser.username);
+            setUser(authUser);
+            
+            // Загружаем только команды пользователя
+            const token = localStorage.getItem('token');
+            if (token) {
+                api.get('/api/teams/my-teams', { 
+                    headers: { Authorization: `Bearer ${token}` } 
                 })
                 .then((res) => {
                     console.log('✅ Команды загружены:', res.data.length);
                     setTeams(Array.isArray(res.data) ? res.data : []);
                 })
                 .catch((error) => {
-                    console.error('❌ Ошибка загрузки пользователя или команд:', error);
-                    if (error.response?.status === 403) {
-                        console.log('🔐 Ошибка аутентификации, очищаем токен');
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        setError('Сессия истекла. Пожалуйста, войдите в систему заново.');
-                        setTimeout(() => navigate('/'), 1000);
-                    }
+                    console.error('❌ Ошибка загрузки команд:', error);
+                    // Не очищаем токен здесь, так как пользователь уже есть из AuthContext
+                    setError('Не удалось загрузить команды');
                 });
+            }
         } else {
             setUser(null);
             setTeams([]);
         }
-    }, []); // Убираем handleAuthError из зависимостей чтобы избежать дублирования
+    }, [authUser]); // Зависимость от пользователя из AuthContext
 
     // Загрузка данных турнира
     useEffect(() => {

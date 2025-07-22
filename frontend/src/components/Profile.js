@@ -674,26 +674,22 @@ function Profile() {
         return 0;
     };
 
-    const fetchUserData = async (token) => {
-        try {
-            const response = await api.get('/api/users/me', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            // setUser(response.data); // Убран - используем AuthContext
-            setNewUsername(response.data.username);
+    // УБИРАЕМ ЗАПРОС К /api/users/me - используем данные из AuthContext
+    const initializeUserData = () => {
+        if (user) {
+            console.log('✅ Инициализация профиля из AuthContext:', user.username);
+            setNewUsername(user.username);
             
             // Извлекаем ранг Premier из данных пользователя
-            if (response.data.cs2_premier_rank) {
-                setPremierRank(response.data.cs2_premier_rank);
+            if (user.cs2_premier_rank) {
+                setPremierRank(user.cs2_premier_rank);
             }
             
             // Автоматически загружаем статистику CS2 только при первой привязке Steam
             // (только если есть steam_id и нет cs2_premier_rank)
-            if (response.data.steam_id && response.data.cs2_premier_rank === 0) {
-                fetchCs2Stats(response.data.steam_id);
+            if (user.steam_id && user.cs2_premier_rank === 0) {
+                fetchCs2Stats(user.steam_id);
             }
-        } catch (err) {
-            setError(err.response?.data?.message || 'Ошибка загрузки данных пользователя');
         }
     };
 
@@ -722,80 +718,80 @@ function Profile() {
 
     const fetchStats = async (token) => {
         try {
-            // 🔄 АВТОМАТИЧЕСКИЙ ПЕРЕСЧЕТ статистики при каждой загрузке профиля
+            // 🔄 ВКЛЮЧАЕМ ОБРАТНО автоматический пересчет статистики С ЗАЩИТОЙ ОТ ЧАСТЫХ ЗАПРОСОВ
             setIsRecalculating(true);
             setRecalculationStatus('Проверяем статистику турниров...');
             setRecalculationError('');
             
-            try {
-                const recalcResponse = await api.post('/api/users/recalculate-tournament-stats', {}, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                
-                if (recalcResponse.data.success) {
-                    const details = recalcResponse.data.details;
-                    
-                    // Показываем детальный статус
-                    if (details.total === 0) {
-                        setRecalculationStatus('Турниры не найдены');
-                    } else if (details.errors === 0) {
-                        setRecalculationStatus(
-                            `✅ ${recalcResponse.data.statusMessage || `Обновлено: ${details.updated} из ${details.total} турниров`}`
-                        );
-                    } else {
-                        setRecalculationStatus(
-                            `⚠️ ${recalcResponse.data.statusMessage || `Обновлено: ${details.updated} из ${details.total}, ошибок: ${details.errors}`}`
-                        );
-                    }
-                    
-                    console.log('✅ Статистика автоматически пересчитана:', {
-                        total: details.total,
-                        updated: details.updated,
-                        skipped: details.skipped,
-                        errors: details.errors
-                    });
-                } else {
-                    setRecalculationError('Не удалось обновить статистику');
+            // Добавляем защиту от частых запросов - не чаще раза в 30 секунд
+            const lastRecalcTime = localStorage.getItem('lastRecalcTime');
+            const now = Date.now();
+            const RECALC_COOLDOWN = 30000; // 30 секунд
+            
+            let shouldRecalculate = true;
+            if (lastRecalcTime) {
+                const timeSinceLastRecalc = now - parseInt(lastRecalcTime);
+                if (timeSinceLastRecalc < RECALC_COOLDOWN) {
+                    console.log('🛡️ [Profile] Пропускаем пересчет - cooldown активен');
+                    setRecalculationStatus('✅ Статистика актуальна (недавно обновлена)');
+                    shouldRecalculate = false;
                 }
-            } catch (recalcErr) {
-                console.log('⚠️ Автоматический пересчет статистики пропущен:', recalcErr.response?.data);
-                
-                const errorData = recalcErr.response?.data;
-                
-                // Детальная обработка ошибок
-                if (errorData?.needsTableCreation) {
-                    setRecalculationError('⚠️ Система статистики требует настройки. Обратитесь к администратору.');
-                } else if (errorData?.sqlErrorCode === '23505') {
-                    setRecalculationError('⚠️ Конфликт данных при обновлении. Попробуйте позже.');
-                } else if (errorData?.sqlErrorCode === '23503') {
-                    setRecalculationError('⚠️ Проблема целостности данных. Обратитесь к администратору.');
-                } else if (recalcErr.response?.status === 500) {
-                    setRecalculationError('⚠️ Сервер временно недоступен. Попробуйте позже.');
-                } else {
-                    setRecalculationError('⚠️ Пересчет статистики временно недоступен');
-                }
-                
-                // Graceful degradation - продолжаем выполнение даже если пересчет не удался
             }
             
-            // Небольшая задержка для лучшего UX - пользователь видит процесс
-            setTimeout(() => {
-                if (!recalculationError) {
-                    setRecalculationStatus('Загружаем обновленную статистику...');
+            if (shouldRecalculate) {
+                try {
+                    localStorage.setItem('lastRecalcTime', now.toString());
+                    const recalcResponse = await api.post('/api/users/recalculate-tournament-stats', {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    if (recalcResponse.data.success) {
+                        const details = recalcResponse.data.details;
+                        
+                        // Показываем детальный статус
+                        if (details.total === 0) {
+                            setRecalculationStatus('Турниры не найдены');
+                        } else if (details.errors === 0) {
+                            setRecalculationStatus(
+                                `✅ ${recalcResponse.data.statusMessage || `Обновлено: ${details.updated} из ${details.total} турниров`}`
+                            );
+                        } else {
+                            setRecalculationStatus(
+                                `⚠️ ${recalcResponse.data.statusMessage || `Обновлено: ${details.updated} из ${details.total}, ошибок: ${details.errors}`}`
+                            );
+                        }
+                        
+                        console.log('✅ Статистика автоматически пересчитана:', {
+                            total: details.total,
+                            updated: details.updated,
+                            skipped: details.skipped,
+                            errors: details.errors
+                        });
+                    }
+                } catch (recalcError) {
+                    console.warn('⚠️ Ошибка автоматического пересчета:', recalcError);
+                    setRecalculationError('⚠️ Пересчет статистики пропущен (сервер занят)');
+                    
+                    // Graceful degradation - продолжаем выполнение даже если пересчет не удался
                 }
-            }, 500);
+            }
             
+            console.log('📊 Загружаем статистику пользователя...');
             const response = await api.get('/api/users/stats', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStats(response.data);
             
             // Показываем финальный статус успеха
-            if (!recalculationError) {
+            if (!recalculationError && shouldRecalculate) {
                 setRecalculationStatus('✅ Статистика актуальна');
                 setTimeout(() => {
                     setRecalculationStatus('');
                 }, 3000); // Показываем успех 3 секунды
+            } else if (!shouldRecalculate) {
+                setTimeout(() => {
+                    setRecalculationStatus('');
+                }, 2000); // Показываем статус 2 секунды
             }
             
         } catch (err) {
@@ -1207,8 +1203,11 @@ function Profile() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token && user) {
-            // Убрали fetchUserData - пользователь берется из AuthContext
+            // Инициализируем данные профиля из AuthContext
+            initializeUserData();
+            // Загружаем статистику
             fetchStats(token);
+            
             const urlParams = new URLSearchParams(window.location.search);
             const steamId = urlParams.get('steamId');
             if (steamId) {
@@ -1304,7 +1303,7 @@ function Profile() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('faceit') === 'success') {
-            fetchUserData(localStorage.getItem('token'));
+            initializeUserData();
         } else if (params.get('error')) {
             setError(`Ошибка привязки FACEIT: ${params.get('error')}`);
         }
