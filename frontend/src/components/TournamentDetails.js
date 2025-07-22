@@ -976,7 +976,6 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
-                            matches={matches}
                         />
 
                         {/* 🏆 ПОДИУМ С ПРИЗЕРАМИ для завершенных турниров */}
@@ -1261,7 +1260,6 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
-                            matches={matches}
                         />
                     </div>
                 );
