@@ -10,8 +10,7 @@ import { useAuth } from '../context/AuthContext'; // 🆕 Добавляем Aut
 import { 
   safeNavigateToTournament, 
   validateApiResponse, 
-  handleApiError, 
-  API_RESPONSE_STRUCTURES 
+  handleApiError
 } from '../utils/apiUtils';
 import './CreateTournament.css';
 
@@ -53,16 +52,6 @@ function CreateTournament() {
     selected_maps: []
   });
   const { runWithLoader } = useLoaderAutomatic();
-
-  // 🆕 Проверка статуса верификации пользователя
-  const isUserVerified = () => {
-    if (!user) return false;
-    return user.email && user.is_verified;
-  };
-
-  const hasUserEmail = () => {
-    return user && user.email;
-  };
 
   const getVerificationStatus = () => {
     if (!user) return { canCreate: false, reason: 'not_logged_in' };
@@ -183,7 +172,7 @@ function CreateTournament() {
         
       } catch (error) {
         // 🔧 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК с использованием новых утилит
-        const errorMessage = handleApiError(
+        handleApiError(
           error, 
           'Создание турнира',
           (message) => {

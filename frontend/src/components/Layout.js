@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,7 +14,6 @@ import MatchLobbyNotification from './tournament/MatchLobby/MatchLobbyNotificati
 
 function Layout() {
     const { user, logout } = useAuth(); // Получаем пользователя из AuthContext
-    const [error, setError] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
@@ -25,7 +24,7 @@ function Layout() {
 
 
     // Функция для получения количества непрочитанных сообщений
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -44,10 +43,10 @@ function Layout() {
         } catch (error) {
             console.error('❌ [Layout] Ошибка получения количества непрочитанных сообщений:', error);
         }
-    };
+    }, []);
 
     // Функция для пометки всех сообщений как увиденных
-    const markAllMessagesSeen = async () => {
+    const markAllMessagesSeen = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
@@ -62,7 +61,7 @@ function Layout() {
         } catch (error) {
             console.error('❌ [Layout] Ошибка пометки сообщений как увиденных:', error);
         }
-    };
+    }, []);
 
     // Загрузка счетчика при готовности пользователя
     useEffect(() => {
@@ -70,7 +69,7 @@ function Layout() {
             console.log('📊 [Layout] Пользователь загружен, получаем счетчик сообщений');
             fetchUnreadCount();
         }
-    }, [user]);
+    }, [user, fetchUnreadCount]);
 
     // 🚀 Socket.IO подключение с новым hook
     const socket = useSocket();
@@ -129,7 +128,7 @@ function Layout() {
                 socket.off('messages_read', handleMessagesRead);
             };
         }
-    }, [user?.id]); // Только user.id в зависимостях
+    }, [socket, user, fetchUnreadCount]);
 
     // Обновляем счетчик при каждом переходе между страницами
     useEffect(() => {
@@ -148,7 +147,7 @@ function Layout() {
             // Сохраняем текущий путь как предыдущий для следующего раза
             setPrevPathname(location.pathname);
         }
-    }, [location.pathname, user]);
+    }, [location.pathname, user, prevPathname, markAllMessagesSeen, fetchUnreadCount]);
 
     // Обновляем счетчик при получении фокуса окна
     useEffect(() => {
@@ -173,7 +172,7 @@ function Layout() {
             window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [user]);
+    }, [user, fetchUnreadCount]);
 
     useEffect(() => {
         setLoading(true);
