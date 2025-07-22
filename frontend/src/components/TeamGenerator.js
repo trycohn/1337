@@ -597,9 +597,10 @@ const TeamGenerator = ({
                                                         </div>
                                                         <div className="member-info">
                                                             <div 
-                                                                className={`member-name ${formattedName.isLongName ? 'member-name-long' : ''}`}
+                                                                className={`member-name ${formattedName.isLongName ? 'member-name-long' : ''} ${member.is_captain ? 'captain-name' : ''}`}
                                                                 title={formattedName.isTruncated ? formattedName.originalName : undefined}
                                                             >
+                                                                {member.is_captain && <span className="captain-crown">👑 </span>}
                                                                 {member.user_id ? (
                                                                     <a href={`/user/${member.user_id}`} className="member-profile-link">
                                                                         {formattedName.displayName}
@@ -615,7 +616,7 @@ const TeamGenerator = ({
                                                                     
                                                                     return (
                                                                         <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
-                                                                            🎯 {ratingType === 'faceit' 
+                                                                            {ratingType === 'faceit' 
                                                                                 ? `${ratingInfo.rating} ELO`
                                                                                 : `${ratingInfo.rating} Ранг`
                                                                             }
