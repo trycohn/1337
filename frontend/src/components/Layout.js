@@ -21,7 +21,7 @@ function Layout() {
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [prevPathname, setPrevPathname] = useState(location.pathname);
-    
+
     // Ref для защиты от частых запросов
     const lastFetchTime = useRef(0);
     const FETCH_COOLDOWN = 1000; // 1 секунда между запросами
@@ -179,7 +179,7 @@ function Layout() {
         if (!user) return;
 
         let focusTimeout;
-        
+
         const handleFocus = () => {
             console.log('📊 [Layout] Окно получило фокус, обновляем счетчик');
             clearTimeout(focusTimeout);
