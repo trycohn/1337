@@ -4,7 +4,7 @@
 // ✅ Упрощена логика без дублирования кода
 
 // Импорты React и связанные
-import React, { useState, useEffect, useCallback, useMemo, useRef, lazy } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../utils/api';
