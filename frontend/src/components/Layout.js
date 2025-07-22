@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -21,10 +21,22 @@ function Layout() {
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [prevPathname, setPrevPathname] = useState(location.pathname);
+    
+    // Ref для защиты от частых запросов
+    const lastFetchTime = useRef(0);
+    const FETCH_COOLDOWN = 1000; // 1 секунда между запросами
 
+    // Создаем стабильную ссылку на функцию
+    const fetchUnreadCountRef = useRef();
 
-    // Функция для получения количества непрочитанных сообщений
+    // Функция для получения количества непрочитанных сообщений с защитой от частых запросов
     const fetchUnreadCount = useCallback(async () => {
+        const now = Date.now();
+        if (now - lastFetchTime.current < FETCH_COOLDOWN) {
+            console.log('📊 [Layout] Пропускаем запрос - слишком частый вызов');
+            return;
+        }
+        
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -32,6 +44,7 @@ function Layout() {
                 return;
             }
             
+            lastFetchTime.current = now;
             console.log('📊 [Layout] Запрашиваем счетчик непрочитанных сообщений...');
             const response = await api.get('/api/chats/unread-count', {
                 headers: { Authorization: `Bearer ${token}` }
@@ -44,6 +57,11 @@ function Layout() {
             console.error('❌ [Layout] Ошибка получения количества непрочитанных сообщений:', error);
         }
     }, []);
+
+    // Обновляем ref при изменении функции
+    useEffect(() => {
+        fetchUnreadCountRef.current = fetchUnreadCount;
+    }, [fetchUnreadCount]);
 
     // Функция для пометки всех сообщений как увиденных
     const markAllMessagesSeen = useCallback(async () => {
@@ -63,13 +81,13 @@ function Layout() {
         }
     }, []);
 
-    // Загрузка счетчика при готовности пользователя
+    // Загрузка счетчика при готовности пользователя (только один раз при загрузке)
     useEffect(() => {
-        if (user) {
+        if (user && fetchUnreadCountRef.current) {
             console.log('📊 [Layout] Пользователь загружен, получаем счетчик сообщений');
-            fetchUnreadCount();
+            fetchUnreadCountRef.current();
         }
-    }, [user, fetchUnreadCount]);
+    }, [user]);
 
     // 🚀 Socket.IO подключение с новым hook
     const socket = useSocket();
@@ -107,12 +125,18 @@ function Layout() {
 
             const handleReadStatus = () => {
                 console.log('📬 [Layout] Получено событие read_status, обновляем счетчик');
-                fetchUnreadCount();
+                // Используем стабильную ссылку на функцию
+                if (fetchUnreadCountRef.current) {
+                    setTimeout(() => fetchUnreadCountRef.current(), 100);
+                }
             };
 
             const handleMessagesRead = (data) => {
                 console.log('📖 [Layout] Получено событие messages_read для чата:', data.chat_id);
-                fetchUnreadCount();
+                // Используем стабильную ссылку на функцию
+                if (fetchUnreadCountRef.current) {
+                    setTimeout(() => fetchUnreadCountRef.current(), 100);
+                }
             };
 
             // Подписываемся на события сообщений
@@ -128,40 +152,49 @@ function Layout() {
                 socket.off('messages_read', handleMessagesRead);
             };
         }
-    }, [socket, user, fetchUnreadCount]);
+    }, [socket, user]);
 
     // Обновляем счетчик при каждом переходе между страницами
     useEffect(() => {
-        if (user) {
+        if (user && prevPathname !== location.pathname) {
             console.log('📊 [Layout] Переход на страницу:', location.pathname, 'с предыдущей:', prevPathname);
             
             // Если переходим на страницу чатов, помечаем все сообщения как увиденные
             if (location.pathname === '/messages') {
                 console.log('📊 [Layout] Переход на страницу чатов, помечаем все как увиденные');
                 markAllMessagesSeen();
-            } else {
-                // Для всех остальных страниц обновляем счетчик
-                fetchUnreadCount();
+            } else if (prevPathname === '/messages' && fetchUnreadCountRef.current) {
+                // Если уходим со страницы чатов, обновляем счетчик
+                console.log('📊 [Layout] Уход со страницы чатов, обновляем счетчик');
+                setTimeout(() => fetchUnreadCountRef.current(), 500);
             }
             
             // Сохраняем текущий путь как предыдущий для следующего раза
             setPrevPathname(location.pathname);
         }
-    }, [location.pathname, user, prevPathname, markAllMessagesSeen, fetchUnreadCount]);
+    }, [location.pathname, user, prevPathname, markAllMessagesSeen]);
 
-    // Обновляем счетчик при получении фокуса окна
+    // Обновляем счетчик при получении фокуса окна (с ограничением частоты)
     useEffect(() => {
         if (!user) return;
 
+        let focusTimeout;
+        
         const handleFocus = () => {
             console.log('📊 [Layout] Окно получило фокус, обновляем счетчик');
-            fetchUnreadCount();
+            clearTimeout(focusTimeout);
+            if (fetchUnreadCountRef.current) {
+                focusTimeout = setTimeout(() => fetchUnreadCountRef.current(), 1000); // Задержка 1 секунда
+            }
         };
 
         const handleVisibilityChange = () => {
             if (!document.hidden) {
                 console.log('📊 [Layout] Страница стала видимой, обновляем счетчик');
-                fetchUnreadCount();
+                clearTimeout(focusTimeout);
+                if (fetchUnreadCountRef.current) {
+                    focusTimeout = setTimeout(() => fetchUnreadCountRef.current(), 1000); // Задержка 1 секунда
+                }
             }
         };
 
@@ -171,8 +204,9 @@ function Layout() {
         return () => {
             window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearTimeout(focusTimeout);
         };
-    }, [user, fetchUnreadCount]);
+    }, [user]);
 
     useEffect(() => {
         setLoading(true);
