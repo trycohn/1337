@@ -252,7 +252,7 @@ export class DoubleEliminationFormat extends TournamentFormat {
       case 'grand_final':
         return 'grand-final-main';
       case 'grand_final_reset':
-        return 'grand-final-reset';
+        return 'grand-final-triumph';
       case 'loser':
         return 'loser';
       case 'winner':
@@ -271,7 +271,7 @@ export class DoubleEliminationFormat extends TournamentFormat {
     }
     
     if (match.bracket_type === 'grand_final_reset') {
-      return '🔄 Grand Final Reset'; // Остается прежним
+      return '🔄 Grand Final Triumph'; // Переименовано: более торжественное название
     }
     
     // Можно добавить специальные метки для финалов winners/losers
@@ -374,7 +374,7 @@ export class DoubleEliminationFormat extends TournamentFormat {
         winner: '#001100',
         loser: '#220000',
         'grand-final': '#1a1a00',
-        'grand-final-reset': '#1a0d00'
+        'grand-final-triumph': '#1a0d00'
       }
     };
   }

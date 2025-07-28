@@ -448,7 +448,7 @@
 }
 
 .bracket-match-container[data-match-type="grand-final-main"],
-.bracket-match-container[data-match-type="grand-final-reset"],
+.bracket-match-container[data-match-type="grand-final-triumph"],
 .bracket-match-container[data-match-type="final"] {
     animation: bracket-final-glow 4s infinite;
     transform: scale(1.05);

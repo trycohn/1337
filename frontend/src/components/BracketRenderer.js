@@ -345,7 +345,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                             <div className="bracket-rounds-container bracket-render-grand-final-container">
                                 {groupedMatches.grandFinal.map((match, index) => {
                                     const context = getRoundContext(1, [match], 'grand_final');
-                                    const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Reset' : 'Grand Final';
+                                    const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Triumph' : 'Grand Final';
                                     return renderDoubleEliminationRound(1, [match], 'grand_final', roundName, context);
                                 })}
                             </div>
@@ -430,7 +430,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         }
         
         if (match.bracket_type === 'grand_final_reset') {
-            return 'Grand Final Reset'; // Остается прежним для reset матча
+            return 'Grand Final Triumph'; // Переименовано: более торжественное название для reset матча
         }
         
         // Стандартные матчи
