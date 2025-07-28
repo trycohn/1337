@@ -227,11 +227,10 @@ class DoubleEliminationEngine {
                         round, 
                         match_number, 
                         bracket_type,
-                        status,
-                        bracket_position
-                    ) VALUES ($1, $2, $3, 'winner', 'pending', $4)
+                        status
+                    ) VALUES ($1, $2, $3, 'winner', 'pending')
                     RETURNING *
-                `, [tournamentId, round, matchNumber, `WB_R${round}_M${i+1}`]);
+                `, [tournamentId, round, matchNumber]);
                 
                 matches.push(result.rows[0]);
                 matchNumber++;
@@ -263,11 +262,10 @@ class DoubleEliminationEngine {
                         round, 
                         match_number, 
                         bracket_type,
-                        status,
-                        bracket_position
-                    ) VALUES ($1, $2, $3, 'loser', 'pending', $4)
+                        status
+                    ) VALUES ($1, $2, $3, 'loser', 'pending')
                     RETURNING *
-                `, [tournamentId, round, matchNumber, `LB_R${round}_M${i+1}`]);
+                `, [tournamentId, round, matchNumber]);
                 
                 matches.push(result.rows[0]);
                 matchNumber++;
@@ -314,9 +312,8 @@ class DoubleEliminationEngine {
                 round, 
                 match_number, 
                 bracket_type,
-                status,
-                bracket_position
-            ) VALUES ($1, 999, 9999, 'grand_final', 'pending', 'GF_MAIN')
+                status
+            ) VALUES ($1, 999, 9999, 'grand_final', 'pending')
             RETURNING *
         `, [tournamentId]);
         
@@ -329,9 +326,8 @@ class DoubleEliminationEngine {
                 round, 
                 match_number, 
                 bracket_type,
-                status,
-                bracket_position
-            ) VALUES ($1, 999, 9998, 'grand_final_reset', 'pending', 'GF_RESET')
+                status
+            ) VALUES ($1, 999, 9998, 'grand_final_reset', 'pending')
             RETURNING *
         `, [tournamentId]);
         
