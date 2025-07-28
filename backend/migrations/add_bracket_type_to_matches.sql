@@ -18,10 +18,10 @@ BEGIN
         RAISE NOTICE '🔄 Удалено старое ограничение matches_bracket_type_check';
     END IF;
     
-    -- Добавляем обновленное ограничение с поддержкой 'final'
+    -- Добавляем обновленное ограничение с поддержкой 'final' и 'grand_final_reset'
     ALTER TABLE matches ADD CONSTRAINT matches_bracket_type_check 
-        CHECK (bracket_type IN ('winner', 'loser', 'grand_final', 'placement', 'final'));
-    RAISE NOTICE '✅ Добавлено обновленное ограничение matches_bracket_type_check с поддержкой final';
+        CHECK (bracket_type IN ('winner', 'loser', 'grand_final', 'grand_final_reset', 'placement', 'final'));
+    RAISE NOTICE '✅ Добавлено обновленное ограничение matches_bracket_type_check с поддержкой final и grand_final_reset';
 END $$;
 
 -- Добавляем индекс для оптимизации поиска
