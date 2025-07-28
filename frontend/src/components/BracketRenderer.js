@@ -263,8 +263,33 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         </div>
     );
 
+    // ОТЛАДКА: Проверяем значение bracket_type
+    console.log('=== BRACKET RENDERER DEBUG ===');
+    console.log('tournament:', tournament);
+    console.log('tournament.bracket_type:', tournament?.bracket_type);
+    console.log('Type of bracket_type:', typeof tournament?.bracket_type);
+    console.log('Exact comparison double_elimination:', tournament?.bracket_type === 'double_elimination');
+    console.log('groupedMatches:', groupedMatches);
+    console.log('groupedMatches.winners keys:', groupedMatches.winners ? Object.keys(groupedMatches.winners) : 'No winners');
+    console.log('groupedMatches.losers keys:', groupedMatches.losers ? Object.keys(groupedMatches.losers) : 'No losers');
+    console.log('groupedMatches.grandFinal:', groupedMatches.grandFinal);
+    console.log('===============================');
+
     // Основной рендер с поддержкой разных форматов
-    if (tournament?.bracket_type === 'double_elimination') {
+    // РАСШИРЕННАЯ ПРОВЕРКА: учитываем разные варианты написания
+    const isDoubleElimination = tournament?.bracket_type === 'double_elimination' || 
+                               tournament?.bracket_type === 'doubleElimination' ||
+                               tournament?.bracket_type === 'DOUBLE_ELIMINATION' ||
+                               (groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0) ||
+                               (groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0);
+    
+    if (isDoubleElimination) {
+        console.log('🎯 RENDERING DOUBLE ELIMINATION');
+        console.log('Reason for DE rendering:', {
+            bracket_type_match: tournament?.bracket_type === 'double_elimination',
+            has_losers: groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0,
+            has_grand_final: groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0
+        });
         // Рендер Double Elimination с четким разделением сеток
         return (
             <div 
@@ -349,6 +374,9 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     }
     
+    console.log('🔄 RENDERING SINGLE ELIMINATION (fallback)');
+    console.log('tournament.bracket_type:', tournament?.bracket_type);
+    console.log('Expected: double_elimination, Got:', tournament?.bracket_type);
     // Рендер Single Elimination
     return (
         <div 
