@@ -458,16 +458,37 @@ class MixTeamService {
 
             console.log(`👥 Найдено ${participants.length} участников для формирования команд`);
 
-            // 🔍 3. Проверяем достаточность участников
+            // 🔍 3. Проверяем достаточность участников ДЛЯ ФОРМИРОВАНИЯ КОМАНД И СЕТКИ
             const teamSize = parseInt(tournament.team_size, 10) || 5;
             const fullTeams = Math.floor(participants.length / teamSize);
             const playersInTeams = fullTeams * teamSize;
 
+            // ⚠️ КРИТИЧЕСКАЯ ПРОВЕРКА #1: Достаточно ли участников для формирования команд
             if (fullTeams === 0) {
                 throw new Error(`Недостаточно участников для формирования команд. Нужно минимум ${teamSize}, а есть ${participants.length}`);
             }
 
+            // 🆕 КРИТИЧЕСКАЯ ПРОВЕРКА #2: Достаточно ли команд для турнирной сетки
+            if (fullTeams < 2) {
+                const participantsNeeded = teamSize * 2; // Минимум 2 команды для сетки
+                const currentParticipants = participants.length;
+                const missingParticipants = participantsNeeded - currentParticipants;
+                
+                throw new Error(
+                    `Недостаточно команд для турнирной сетки. ` +
+                    `Для турнира с командами ${teamSize}v${teamSize} нужно минимум ${participantsNeeded} участников (2 команды). ` +
+                    `Сейчас ${currentParticipants} участников (${fullTeams} команда). ` +
+                    `Добавьте еще ${missingParticipants} участников.`
+                );
+            }
+
             console.log(`📊 Статистика: ${participants.length} участников → ${fullTeams} команд по ${teamSize} игроков (${playersInTeams} в командах, ${participants.length - playersInTeams} останется)`);
+
+            // 🆕 ПРЕДУПРЕЖДЕНИЕ О НЕИСПОЛЬЗОВАННЫХ УЧАСТНИКАХ
+            const unusedParticipants = participants.length - playersInTeams;
+            if (unusedParticipants > 0) {
+                console.warn(`⚠️ [generateTeams] ${unusedParticipants} участников не попадут в турнир из-за неполной команды`);
+            }
 
             // 🔍 4. Очищаем существующие команды
             console.log(`🗑️ Удаляем существующие команды турнира ${tournamentId}...`);

@@ -422,6 +422,149 @@ class BracketMath {
             teamsExcluded: fullTeams - actualTeams
         };
     }
+
+    /**
+     * 🆕 Расчет минимальных требований для Mix турниров
+     * @param {number} teamSize - Размер команды (2, 5, и т.д.)
+     * @param {string} bracketType - Тип сетки ('single_elimination', 'double_elimination')
+     * @returns {Object} - Подробные минимальные требования
+     */
+    static calculateMixTournamentMinimumRequirements(teamSize = 5, bracketType = 'single_elimination') {
+        // Валидация входных данных
+        if (!Number.isInteger(teamSize) || teamSize < 1) {
+            throw new Error('Размер команды должен быть целым числом >= 1');
+        }
+
+        const supportedBracketTypes = ['single_elimination', 'double_elimination'];
+        if (!supportedBracketTypes.includes(bracketType)) {
+            throw new Error(`Неподдерживаемый тип сетки: ${bracketType}`);
+        }
+
+        // Минимальные требования для сетки: 2 команды
+        const minTeamsForBracket = 2;
+        const minParticipantsForBracket = minTeamsForBracket * teamSize;
+
+        // Максимальные ограничения для разных типов сеток
+        const maxParticipantsByType = {
+            'single_elimination': 1024 * teamSize, // 1024 команды максимум
+            'double_elimination': 128 * teamSize   // 128 команд максимум
+        };
+
+        const maxParticipants = maxParticipantsByType[bracketType];
+        const maxTeams = Math.floor(maxParticipants / teamSize);
+
+        // Рекомендуемые количества для хорошего турнира
+        const recommendedTeamCounts = [4, 8, 16, 32, 64]; // Степени двойки для лучшей сетки
+        const recommendedParticipantCounts = recommendedTeamCounts.map(teams => teams * teamSize);
+
+        return {
+            teamSize,
+            bracketType,
+            
+            // Абсолютные минимумы
+            minimumRequirements: {
+                participants: minParticipantsForBracket,
+                teams: minTeamsForBracket,
+                description: `Минимум ${minParticipantsForBracket} участников для формирования ${minTeamsForBracket} команд по ${teamSize} игроков`
+            },
+
+            // Максимальные ограничения
+            maximumLimits: {
+                participants: maxParticipants,
+                teams: maxTeams,
+                description: `Максимум ${maxParticipants} участников (${maxTeams} команд) для ${bracketType}`
+            },
+
+            // Рекомендуемые значения
+            recommendedCounts: {
+                participants: recommendedParticipantCounts,
+                teams: recommendedTeamCounts,
+                description: 'Рекомендуемые количества для оптимальной турнирной сетки (степени двойки)'
+            },
+
+            // Примеры для популярных форматов
+            examples: this._generateMixTournamentExamples(teamSize),
+
+            // Диагностические функции
+            validation: {
+                isValidParticipantCount: (count) => {
+                    return count >= minParticipantsForBracket && count <= maxParticipants;
+                },
+                getTeamCount: (participantCount) => {
+                    return Math.floor(participantCount / teamSize);
+                },
+                getUnusedParticipants: (participantCount) => {
+                    return participantCount % teamSize;
+                },
+                getDiagnostic: (participantCount) => {
+                    const teams = Math.floor(participantCount / teamSize);
+                    const unused = participantCount % teamSize;
+                    const canFormBracket = teams >= 2;
+                    
+                    return {
+                        participantCount,
+                        teamsFormed: teams,
+                        unusedParticipants: unused,
+                        canFormBracket,
+                        nextMilestone: canFormBracket ? 
+                            recommendedParticipantCounts.find(rec => rec > participantCount) || maxParticipants :
+                            minParticipantsForBracket,
+                        message: canFormBracket ? 
+                            `✅ Можно создать турнир с ${teams} командами (${unused} участников останется)` :
+                            `❌ Недостаточно для турнира. Нужно еще ${minParticipantsForBracket - participantCount} участников`
+                    };
+                }
+            }
+        };
+    }
+
+    /**
+     * 🆕 Генерация примеров для популярных форматов Mix турниров
+     * @param {number} teamSize - Размер команды
+     * @returns {Array} - Массив примеров
+     */
+    static _generateMixTournamentExamples(teamSize) {
+        const popularFormats = {
+            2: 'CS2 Wingman 2v2',
+            5: 'CS2 Classic 5v5',
+            6: 'Valorant 6v6'
+        };
+
+        const formatName = popularFormats[teamSize] || `${teamSize}v${teamSize}`;
+        const examples = [];
+
+        // Примеры для разных количеств команд
+        const teamCounts = [2, 4, 8, 16];
+        
+        teamCounts.forEach(teams => {
+            const participants = teams * teamSize;
+            examples.push({
+                teams,
+                participants,
+                format: formatName,
+                description: `${teams} команд × ${teamSize} игроков = ${participants} участников`,
+                bracketStructure: this._describeBracketStructure(teams)
+            });
+        });
+
+        return examples;
+    }
+
+    /**
+     * 🆕 Описание структуры турнирной сетки
+     * @param {number} teams - Количество команд
+     * @returns {string} - Описание структуры
+     */
+    static _describeBracketStructure(teams) {
+        if (teams === 2) return 'Финал (1 матч)';
+        if (teams === 4) return 'Полуфинал + Финал (3 матча)';
+        if (teams === 8) return 'Четвертьфинал + Полуфинал + Финал (7 матчей)';
+        if (teams === 16) return '1/8 + 1/4 + 1/2 + Финал (15 матчей)';
+        
+        const rounds = Math.log2(teams);
+        const matches = teams - 1;
+        return `${rounds} раундов, ${matches} матчей`;
+    }
 }
 
 module.exports = {
@@ -430,5 +573,8 @@ module.exports = {
     // Экспорт основных функций для удобства
     calculateSingleEliminationParams: BracketMath.calculateSingleEliminationParams.bind(BracketMath),
     generateSeedingPositions: BracketMath.generateSeedingPositions.bind(BracketMath),
-    calculateMixTournamentParams: BracketMath.calculateMixTournamentParams.bind(BracketMath)
+    calculateMixTournamentParams: BracketMath.calculateMixTournamentParams.bind(BracketMath),
+    
+    // 🆕 Экспорт новых функций для анализа минимальных требований
+    calculateMixTournamentMinimumRequirements: BracketMath.calculateMixTournamentMinimumRequirements.bind(BracketMath)
 }; 
