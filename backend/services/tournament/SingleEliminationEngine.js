@@ -305,7 +305,18 @@ class SingleEliminationEngine {
         // Связываем каждый раунд со следующим
         for (let round = startRound; round < totalRounds; round++) {
             const currentRoundMatches = matchesByRound[round] || [];
-            const nextRoundMatches = matchesByRound[round + 1] || [];
+            let nextRoundMatches = matchesByRound[round + 1] || [];
+            
+            // 🆕 ИСПРАВЛЕНИЕ: Если следующий раунд пуст, но это может быть финальный раунд, включаем финальные матчи
+            if (nextRoundMatches.length === 0 && round + 1 <= totalRounds) {
+                const finalMatches = allMatches.filter(match => 
+                    match.round === round + 1 && match.bracket_type === 'final'
+                );
+                if (finalMatches.length > 0) {
+                    nextRoundMatches = finalMatches;
+                    console.log(`🔧 Для связывания раунда ${round} включены финальные матчи: ${finalMatches.length} шт.`);
+                }
+            }
             
             console.log(`🔗 Раунд ${round} -> Раунд ${round + 1}: ${currentRoundMatches.length} -> ${nextRoundMatches.length} матчей`);
             
@@ -579,7 +590,16 @@ class SingleEliminationEngine {
             
             // 1. Размещаем участников, проходящих напрямую, в первом раунде (СОГЛАСОВАННО С ЛОГИКОЙ СВЯЗЫВАНИЯ)
             const directParticipants = participants.slice(0, bracketMath.directAdvancers);
-            const firstRoundMatches = standardMatches.filter(m => m.round === 1);
+            let firstRoundMatches = standardMatches.filter(m => m.round === 1);
+            
+            // 🆕 ИСПРАВЛЕНИЕ: Если нет матчей первого раунда в стандартных (они могут быть финальными), включаем финальные матчи
+            if (firstRoundMatches.length === 0) {
+                const finalMatches = allMatches.filter(m => m.round === 1 && m.bracket_type === 'final');
+                if (finalMatches.length > 0) {
+                    firstRoundMatches = finalMatches;
+                    console.log(`🔧 Для размещения DirectAdvancers включены финальные матчи: ${finalMatches.length} шт.`);
+                }
+            }
             
             console.log(`👤 DIRECT PARTICIPANTS (проходят напрямую в первый раунд):`);
             directParticipants.forEach((p, index) => {
@@ -594,7 +614,7 @@ class SingleEliminationEngine {
             for (let i = 0; i < firstRoundMatches.length && directAdvancerIndex < directParticipants.length; i++) {
                 const match = firstRoundMatches[i];
                 
-                console.log(`🥊 Первый раунд матч ${match.id} (M${match.match_number}):`);
+                console.log(`🥊 Первый раунд матч ${match.id} (M${match.match_number}) [${match.bracket_type}]:`);
                 
                 // Размещаем первого DirectAdvancer в team1_id
                 if (directAdvancerIndex < directParticipants.length) {
