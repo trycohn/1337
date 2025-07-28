@@ -265,7 +265,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
 
     // Основной рендер с поддержкой разных форматов
     if (tournament?.bracket_type === 'double_elimination') {
-        // Рендер Double Elimination
+        // Рендер Double Elimination с четким разделением сеток
         return (
             <div 
                 className={`bracket-renderer-container bracket-double-elimination ${isDragging ? 'dragging' : ''}`}
@@ -277,11 +277,14 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     ref={rendererRef}
                     {...handlers}
                 >
-                    {/* Winners Bracket */}
+                    {/* ===== UPPER BRACKET (WINNERS) ===== */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
-                        <div className="bracket-winners-section">
-                            <div className="bracket-section-title">🏆 Winners Bracket</div>
-                            <div className="bracket-rounds-container">
+                        <div className="bracket-upper-section">
+                            <div className="bracket-section-header">
+                                <div className="bracket-section-title">🏆 Winners Bracket</div>
+                                <div className="bracket-section-subtitle">Верхняя сетка турнира</div>
+                            </div>
+                            <div className="bracket-rounds-container bracket-winners-container">
                                 {Object.entries(groupedMatches.winners)
                                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                     .map(([round, matches]) => {
@@ -293,11 +296,27 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                         </div>
                     )}
                     
-                    {/* Losers Bracket */}
+                    {/* ===== HORIZONTAL DIVIDER ===== */}
+                    {groupedMatches.winners && groupedMatches.losers && 
+                     Object.keys(groupedMatches.winners).length > 0 && 
+                     Object.keys(groupedMatches.losers).length > 0 && (
+                        <div className="bracket-horizontal-divider">
+                            <div className="bracket-divider-line"></div>
+                            <div className="bracket-divider-text">
+                                <span className="bracket-divider-label">Переход в нижнюю сетку</span>
+                            </div>
+                            <div className="bracket-divider-line"></div>
+                        </div>
+                    )}
+                    
+                    {/* ===== LOWER BRACKET (LOSERS) ===== */}
                     {groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0 && (
-                        <div className="bracket-losers-section">
-                            <div className="bracket-section-title">💀 Losers Bracket</div>
-                            <div className="bracket-rounds-container">
+                        <div className="bracket-lower-section">
+                            <div className="bracket-section-header">
+                                <div className="bracket-section-title">💀 Losers Bracket</div>
+                                <div className="bracket-section-subtitle">Нижняя сетка на выбывание</div>
+                            </div>
+                            <div className="bracket-rounds-container bracket-losers-container">
                                 {Object.entries(groupedMatches.losers)
                                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                     .map(([round, matches]) => {
@@ -309,18 +328,19 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                         </div>
                     )}
                     
-                    {/* Grand Final */}
-                    {groupedMatches.grand_final && Object.keys(groupedMatches.grand_final).length > 0 && (
+                    {/* ===== GRAND FINAL SECTION ===== */}
+                    {groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0 && (
                         <div className="bracket-grand-final-section">
-                            <div className="bracket-section-title">🏅 Grand Final</div>
-                            <div className="bracket-rounds-container">
-                                {Object.entries(groupedMatches.grand_final)
-                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                    .map(([round, matches]) => {
-                                        const context = getRoundContext(parseInt(round), matches, 'grand_final');
-                                        const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                        return renderDoubleEliminationRound(round, matches, 'grand_final', roundName, context);
-                                    })}
+                            <div className="bracket-section-header">
+                                <div className="bracket-section-title">🏅 Grand Final</div>
+                                <div className="bracket-section-subtitle">Финальное противостояние</div>
+                            </div>
+                            <div className="bracket-rounds-container bracket-grand-final-container">
+                                {groupedMatches.grandFinal.map((match, index) => {
+                                    const context = getRoundContext(1, [match], 'grand_final');
+                                    const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Reset' : 'Grand Final';
+                                    return renderDoubleEliminationRound(1, [match], 'grand_final', roundName, context);
+                                })}
                             </div>
                         </div>
                     )}
