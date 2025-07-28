@@ -1004,6 +1004,7 @@ function TournamentDetails() {
                                     }>
                                         <LazyBracketRenderer
                                             games={games}
+                                            tournament={tournament}
                                             canEditMatches={canEditMatches}
                                             selectedMatch={selectedMatch}
                                             setSelectedMatch={(match) => {
@@ -1149,6 +1150,7 @@ function TournamentDetails() {
                                 }>
                                     <LazyBracketRenderer
                                         games={games}
+                                        tournament={tournament}
                                         canEditMatches={canEditMatches}
                                         selectedMatch={selectedMatch}
                                         setSelectedMatch={(match) => {
