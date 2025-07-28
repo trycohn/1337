@@ -79,6 +79,23 @@ const BracketManagementPanel = ({
         return tournament?.format === 'mix';
     }, [tournament]);
 
+    // 🆕 ПОЛУЧЕНИЕ ОТОБРАЖАЕМОГО НАЗВАНИЯ ТИПА СЕТКИ
+    const getBracketTypeDisplayName = useCallback((bracketType) => {
+        const bracketTypes = [
+            { value: 'single_elimination', label: 'Single Elimination' },
+            { value: 'double_elimination', label: 'Double Elimination' }
+        ];
+        
+        const found = bracketTypes.find(type => type.value === bracketType);
+        return found ? found.label : 'Single Elimination';
+    }, []);
+
+    // 🆕 ПРОВЕРКА НАЛИЧИЯ МАТЧА ЗА 3-Е МЕСТО
+    const hasThirdPlaceMatch = useMemo(() => {
+        if (!matches || matches.length === 0) return false;
+        return matches.some(match => match.bracket_type === 'placement' || match.is_third_place_match);
+    }, [matches]);
+
     // 🆕 ПОЛУЧЕНИЕ КОМАНД ДЛЯ МИКС ТУРНИРА
     const loadMixTeams = useCallback(async () => {
         if (!isMixTournament || !tournament?.id) return;
@@ -578,6 +595,10 @@ const BracketManagementPanel = ({
                         <div className="bracket-info">
                             <p>🎮 Микс турнир: команды формируются из соло участников</p>
                             <ul>
+                                <li>🏗️ Формат сетки: {getBracketTypeDisplayName(tournament?.bracket_type)}</li>
+                                {(hasThirdPlaceMatch || tournament?.bracket_type === 'double_elimination') && (
+                                    <li>🥉 Матч за 3-е место: включен</li>
+                                )}
                                 <li>Соло участников: {tournament?.participants?.length || 0}</li>
                                 <li>Размер команды: {tournament?.team_size || 5}</li>
                                 <li>Команд сформировано: {mixTeamsLoading ? 'Загрузка...' : mixTeams.length}</li>
@@ -658,6 +679,10 @@ const BracketManagementPanel = ({
                                 <div className="bracket-info">
                                     <p>🎯 Создание турнирной сетки</p>
                                     <ul>
+                                        <li>🏗️ Формат сетки: {getBracketTypeDisplayName(selectedBracketType)}</li>
+                                        {(thirdPlaceMatch || selectedBracketType === 'double_elimination') && (
+                                            <li>🥉 Матч за 3-е место: включен</li>
+                                        )}
                                         {isMixTournament ? (
                                             <>
                                                 <li>Команд готово: {mixTeams.length}</li>
@@ -792,6 +817,10 @@ const BracketManagementPanel = ({
                                 <div className="bracket-info">
                                     <p>📊 Статистика турнирной сетки</p>
                                     <ul>
+                                        <li>🏗️ Формат сетки: {getBracketTypeDisplayName(tournament?.bracket_type)}</li>
+                                        {hasThirdPlaceMatch && (
+                                            <li>🥉 Матч за 3-е место: включен</li>
+                                        )}
                                         <li>Всего матчей: {bracketStatistics?.totalMatches}</li>
                                         <li>Завершено: {bracketStatistics?.completedMatches}</li>
                                         <li>Прогресс: {bracketStatistics?.completionPercentage}%</li>
