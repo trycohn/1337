@@ -279,12 +279,12 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                 >
                     {/* ===== UPPER BRACKET (WINNERS) ===== */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
-                        <div className="bracket-upper-section">
-                            <div className="bracket-section-header">
-                                <div className="bracket-section-title">🏆 Winners Bracket</div>
-                                <div className="bracket-section-subtitle">Верхняя сетка турнира</div>
+                        <div className="bracket-render-upper-section">
+                            <div className="bracket-render-section-header">
+                                <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
+                                <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
                             </div>
-                            <div className="bracket-rounds-container bracket-winners-container">
+                            <div className="bracket-rounds-container bracket-render-winners-container">
                                 {Object.entries(groupedMatches.winners)
                                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                     .map(([round, matches]) => {
@@ -300,23 +300,23 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     {groupedMatches.winners && groupedMatches.losers && 
                      Object.keys(groupedMatches.winners).length > 0 && 
                      Object.keys(groupedMatches.losers).length > 0 && (
-                        <div className="bracket-horizontal-divider">
-                            <div className="bracket-divider-line"></div>
-                            <div className="bracket-divider-text">
-                                <span className="bracket-divider-label">Переход в нижнюю сетку</span>
+                        <div className="bracket-render-horizontal-divider">
+                            <div className="bracket-render-divider-line"></div>
+                            <div className="bracket-render-divider-text">
+                                <span className="bracket-render-divider-label">Переход в нижнюю сетку</span>
                             </div>
-                            <div className="bracket-divider-line"></div>
+                            <div className="bracket-render-divider-line"></div>
                         </div>
                     )}
                     
                     {/* ===== LOWER BRACKET (LOSERS) ===== */}
                     {groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0 && (
-                        <div className="bracket-lower-section">
-                            <div className="bracket-section-header">
-                                <div className="bracket-section-title">💀 Losers Bracket</div>
-                                <div className="bracket-section-subtitle">Нижняя сетка на выбывание</div>
+                        <div className="bracket-render-lower-section">
+                            <div className="bracket-render-section-header">
+                                <div className="bracket-render-section-title bracket-render-losers-title">💀 Losers Bracket</div>
+                                <div className="bracket-render-section-subtitle bracket-render-losers-subtitle">Нижняя сетка на выбывание</div>
                             </div>
-                            <div className="bracket-rounds-container bracket-losers-container">
+                            <div className="bracket-rounds-container bracket-render-losers-container">
                                 {Object.entries(groupedMatches.losers)
                                     .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                     .map(([round, matches]) => {
@@ -331,11 +331,11 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     {/* ===== GRAND FINAL SECTION ===== */}
                     {groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0 && (
                         <div className="bracket-grand-final-section">
-                            <div className="bracket-section-header">
-                                <div className="bracket-section-title">🏅 Grand Final</div>
-                                <div className="bracket-section-subtitle">Финальное противостояние</div>
+                            <div className="bracket-render-section-header">
+                                <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
+                                <div className="bracket-render-section-subtitle bracket-render-grand-final-subtitle">Финальное противостояние</div>
                             </div>
-                            <div className="bracket-rounds-container bracket-grand-final-container">
+                            <div className="bracket-rounds-container bracket-render-grand-final-container">
                                 {groupedMatches.grandFinal.map((match, index) => {
                                     const context = getRoundContext(1, [match], 'grand_final');
                                     const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Reset' : 'Grand Final';
