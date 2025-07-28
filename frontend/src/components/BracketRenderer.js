@@ -165,10 +165,26 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             roundType = 'grand-final';
         }
         
+        // Определяем правильный CSS класс для заголовка раунда
+        let headerClass = 'bracket-round-header';
+        switch (bracketType) {
+            case 'winner':
+                headerClass += ' bracket-winners-bracket-header';
+                break;
+            case 'loser':
+                headerClass += ' bracket-losers-bracket-header';
+                break;
+            case 'grand_final':
+                headerClass += ' bracket-grand-final-bracket-header';
+                break;
+            default:
+                headerClass += ' bracket-default-bracket-header';
+        }
+        
         return (
             <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`}>
                 <div 
-                    className={`bracket-round-header bracket-${bracketType}s-bracket-header`}
+                    className={headerClass}
                     data-round-type={roundType}
                 >
                     {roundName}
