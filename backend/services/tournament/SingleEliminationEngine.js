@@ -345,8 +345,27 @@ class SingleEliminationEngine {
                 // Большие турниры: ищем явно помеченные полуфинальные матчи
                 semifinalMatches = allMatches.filter(match => match.bracket_type === 'semifinal');
                 console.log(`🔍 Большой турнир: найдены полуфинальные матчи: ${semifinalMatches.length} шт. (по bracket_type = 'semifinal')`);
+            } else if (bracketMath.needsPreliminaryRound) {
+                // 🆕 СПЕЦИАЛЬНЫЙ СЛУЧАЙ: Турниры с предварительным раундом (например, 3 участника)
+                // В матч за 3-е место попадают: проигравший предварительного + проигравший финала
+                const preliminaryMatches = allMatches.filter(match => 
+                    match.round === 0 && match.bracket_type === 'winner'
+                );
+                const finalMatch = allMatches.find(match => match.bracket_type === 'final');
+                
+                semifinalMatches = [];
+                if (preliminaryMatches.length > 0) {
+                    semifinalMatches.push(...preliminaryMatches);
+                }
+                if (finalMatch) {
+                    semifinalMatches.push(finalMatch);
+                }
+                
+                console.log(`🔍 Турнир с предварительным раундом: найдены матчи для 3-го места: ${semifinalMatches.length} шт.`);
+                console.log(`   - Предварительные матчи: ${preliminaryMatches.length} шт. (проигравшие → 3-е место)`);
+                console.log(`   - Финальный матч: ${finalMatch ? 1 : 0} шт. (проигравший → 3-е место)`);
             } else {
-                // Малые турниры: ищем матчи предпоследнего раунда с bracket_type = 'winner'
+                // Малые турниры без предварительного раунда: ищем матчи предпоследнего раунда с bracket_type = 'winner'
                 const semifinalRound = totalRounds - 1;
                 semifinalMatches = allMatches.filter(match => 
                     match.round === semifinalRound && 
@@ -355,10 +374,14 @@ class SingleEliminationEngine {
                 console.log(`🔍 Малый турнир: найдены матчи предпоследнего раунда: ${semifinalMatches.length} шт. в раунде ${semifinalRound} (bracket_type = 'winner')`);
             }
             
-            if (thirdPlaceMatch && semifinalMatches.length === 2) {
+            // 🔧 ОБНОВЛЕННАЯ ПРОВЕРКА: Для турниров с предварительным раундом принимаем любое количество матчей > 0
+            const expectedMatches = bracketMath.needsPreliminaryRound ? 
+                (semifinalMatches.length > 0 ? semifinalMatches.length : -1) : 2;
+                
+            if (thirdPlaceMatch && (expectedMatches === -1 ? false : semifinalMatches.length === expectedMatches || semifinalMatches.length > 0)) {
                 console.log(`🎯 Матч за 3-е место: ID ${thirdPlaceMatch.id}, раунд ${thirdPlaceMatch.round}, match_number ${thirdPlaceMatch.match_number}`);
                 
-                // Устанавливаем loser_next_match_id для каждого матча предпоследнего раунда
+                // Устанавливаем loser_next_match_id для каждого найденного матча
                 for (const semifinalMatch of semifinalMatches) {
                     const updatePromise = client.query(
                         'UPDATE matches SET loser_next_match_id = $1 WHERE id = $2',
@@ -366,7 +389,7 @@ class SingleEliminationEngine {
                     );
                     updatePromises.push(updatePromise);
                     
-                    console.log(`🔗 Матч ${semifinalMatch.id} (M${semifinalMatch.match_number}) (проигравший) -> Матч за 3-е место ${thirdPlaceMatch.id}`);
+                    console.log(`🔗 Матч ${semifinalMatch.id} (M${semifinalMatch.match_number}) [${semifinalMatch.bracket_type}] (проигравший) -> Матч за 3-е место ${thirdPlaceMatch.id}`);
                 }
                 
                 // 🆕 ДОПОЛНИТЕЛЬНО: Устанавливаем связи с финалом только для настоящих полуфинальных матчей
@@ -386,6 +409,30 @@ class SingleEliminationEngine {
                         }
                     } else {
                         console.error(`❌ Финальный матч не найден!`);
+                    }
+                } else if (bracketMath.needsPreliminaryRound) {
+                    // 🆕 СПЕЦИАЛЬНЫЙ СЛУЧАЙ: Турниры с предварительным раундом
+                    // Устанавливаем связи с финалом только для НЕфинальных матчей (т.е. предварительных)
+                    const finalMatch = allMatches.find(match => match.bracket_type === 'final');
+                    if (finalMatch) {
+                        console.log(`🏆 Турнир с предварительным раундом: найден финальный матч ID ${finalMatch.id}, раунд ${finalMatch.round}`);
+                        
+                        for (const semifinalMatch of semifinalMatches) {
+                            // Проверяем что это не финальный матч (иначе будет циклическая ссылка)
+                            if (semifinalMatch.bracket_type !== 'final') {
+                                const updatePromise = client.query(
+                                    'UPDATE matches SET next_match_id = $1 WHERE id = $2',
+                                    [finalMatch.id, semifinalMatch.id]
+                                );
+                                updatePromises.push(updatePromise);
+                                
+                                console.log(`🔗 Предварительный матч ${semifinalMatch.id} (M${semifinalMatch.match_number}) [${semifinalMatch.bracket_type}] (победитель) -> Финал ${finalMatch.id}`);
+                            } else {
+                                console.log(`🔧 Пропускаем установку next_match_id для финального матча ${semifinalMatch.id} (избегаем циклической ссылки)`);
+                            }
+                        }
+                    } else {
+                        console.error(`❌ Финальный матч не найден в турнире с предварительным раундом!`);
                     }
                 } else {
                     // 🔧 ИСПРАВЛЕНО: В малых турнирах также явно устанавливаем связи с финалом
@@ -410,8 +457,8 @@ class SingleEliminationEngine {
                 if (!thirdPlaceMatch) {
                     console.error(`❌ Матч за 3-е место не найден!`);
                 }
-                if (semifinalMatches.length !== 2) {
-                    console.error(`❌ Неверное количество матчей предпоследнего раунда: ${semifinalMatches.length}, ожидалось: 2`);
+                if (semifinalMatches.length !== expectedMatches) { // Используем expectedMatches
+                    console.error(`❌ Неверное количество матчей предпоследнего раунда: ${semifinalMatches.length}, ожидалось: ${expectedMatches}`);
                 }
             }
         }
