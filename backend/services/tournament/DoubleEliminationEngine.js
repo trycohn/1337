@@ -1,17 +1,25 @@
 /**
- * ⚡ ДВИЖОК DOUBLE ELIMINATION V2.0
+ * ⚡ ДВИЖОК DOUBLE ELIMINATION V3.0 - ТАБЛИЧНЫЙ ПОДХОД
  * 
  * Полноценный движок для генерации турнирной сетки Double Elimination
- * с математически точными расчетами и профессиональной логикой продвижения
+ * с использованием предрасчитанных табличных структур
  * 
- * Особенности:
- * - Два параллельных bracket: Winners и Losers
- * - Каждый участник исключается после 2-х поражений
- * - Grand Final может состоять из 1 или 2 матчей
- * - Поддержка bye-проходов для степеней двойки
+ * Особенности v3.0:
+ * - Использует предрасчитанные таблицы для точной генерации
+ * - Поддержка размеров: 4, 8, 16, 32, 64, 128 участников
+ * - Математически корректные структуры Losers Bracket
+ * - Правильные связи Winners → Losers с маппингом
+ * - Включает "Малый финал лузеров"
  */
 
 const { SeedingFactory, SEEDING_TYPES } = require('../../utils/tournament/seedingAlgorithms');
+const { 
+    getDoubleEliminationStructure, 
+    validateStructure, 
+    calculateTargetLosersRound,
+    getLosersRoundDescription,
+    getSupportedSizes 
+} = require('../../utils/tournament/doubleEliminationStructures');
 const pool = require('../../db');
 
 /**
@@ -101,42 +109,67 @@ class DoubleEliminationEngine {
     }
     
     /**
-     * 📊 Расчет параметров Double Elimination с математической точностью
+     * 📊 Получение параметров Double Elimination из табличных структур  
      * @param {number} participantCount - Количество участников
      * @returns {Object} - Параметры double elimination
      */
     static _calculateDoubleEliminationParams(participantCount) {
-        // Округляем до ближайшей степени двойки (вверх)
-        const powerOfTwo = Math.pow(2, Math.ceil(Math.log2(participantCount)));
-        
-        // Основные параметры
-        const winnersRounds = Math.log2(powerOfTwo);
-        const losersRounds = (winnersRounds - 1) * 2;
-        
-        // Расчет матчей в каждой сетке
-        const winnersMatches = powerOfTwo - 1;
-        const losersMatches = powerOfTwo - 2;
-        const grandFinalMatches = 2; // Максимум 2 матча (основной + reset)
-        
-        // Общее количество матчей
-        const totalMatches = winnersMatches + losersMatches + grandFinalMatches;
-        
-        // Bye-проходы (если участников меньше степени двойки)
-        const byesNeeded = powerOfTwo - participantCount;
-        
-        return {
-            participants: powerOfTwo,
-            actualParticipants: participantCount,
-            winnersRounds,
-            losersRounds,
-            totalRounds: winnersRounds + losersRounds + 1, // +1 для гранд финала
-            winnersMatches,
-            losersMatches,
-            grandFinalMatches,
-            totalMatches,
-            byesNeeded,
-            hasGrandFinalReset: true // Всегда возможен reset в DE
-        };
+        try {
+            // Получаем структуру из предрасчитанных таблиц
+            const structure = getDoubleEliminationStructure(participantCount);
+            
+            // Валидируем структуру
+            const validation = validateStructure(structure);
+            if (!validation.isValid) {
+                throw new Error(`Некорректная структура турнира: ${validation.errors.join(', ')}`);
+            }
+            
+            console.log(`📊 Использована табличная структура для ${structure.participants} участников:`);
+            console.log(`   - Winners: ${structure.winnersRounds} раундов, ${structure.winnersStructure.join('+')} = ${validation.statistics.winnersMatches} матчей`);
+            console.log(`   - Losers: ${structure.losersRounds} раундов, ${structure.losersStructure.join('+')} = ${validation.statistics.losersMatches} матчей`);
+            console.log(`   - Grand Final: ${validation.statistics.grandFinalMatches} матча`);
+            console.log(`   - Общий итог: ${validation.statistics.totalMatches} матчей`);
+            
+            return {
+                // Основные параметры
+                participants: structure.participants,
+                actualParticipants: structure.actualParticipants,
+                byesNeeded: structure.byesNeeded,
+                
+                // Структуры раундов
+                winnersRounds: structure.winnersRounds,
+                losersRounds: structure.losersRounds,
+                winnersStructure: structure.winnersStructure,
+                losersStructure: structure.losersStructure,
+                
+                // Количество матчей
+                winnersMatches: validation.statistics.winnersMatches,
+                losersMatches: validation.statistics.losersMatches,
+                grandFinalMatches: validation.statistics.grandFinalMatches,
+                totalMatches: validation.statistics.totalMatches,
+                
+                // Маппинг связей Winners → Losers
+                winnersToLosersMapping: structure.winnersToLosersMapping,
+                
+                // Дополнительная информация
+                description: structure.description,
+                hasGrandFinalReset: true,
+                
+                // Валидация
+                validation: validation
+            };
+            
+        } catch (error) {
+            // Проверяем поддерживаемые размеры
+            const supportedSizes = getSupportedSizes();
+            const maxSupported = Math.max(...supportedSizes);
+            
+            if (participantCount > maxSupported) {
+                throw new Error(`Слишком много участников для Double Elimination: ${participantCount}. Максимум поддерживается: ${maxSupported}`);
+            } else {
+                throw new Error(`Ошибка получения структуры Double Elimination: ${error.message}. Поддерживаемые размеры: ${supportedSizes.join(', ')}`);
+            }
+        }
     }
     
     /**
@@ -172,8 +205,7 @@ class DoubleEliminationEngine {
             const losersResult = await this._createLosersMatches(
                 client, 
                 tournamentId, 
-                bracketMath.losersRounds,
-                bracketMath.losersMatches,
+                bracketMath,
                 currentMatchNumber
             );
             const losersMatches = losersResult.matches;
@@ -251,19 +283,22 @@ class DoubleEliminationEngine {
     }
     
     /**
-     * 💔 Создание матчей Losers Bracket с правильной структурой
+     * 💔 Создание матчей Losers Bracket по табличной структуре
      */
-    static async _createLosersMatches(client, tournamentId, rounds, totalMatches, startMatchNumber) {
+    static async _createLosersMatches(client, tournamentId, bracketMath, startMatchNumber) {
         const matches = [];
         let matchNumber = startMatchNumber;
         
-        console.log(`💔 Создание Losers Bracket: ${rounds} раундов, ${totalMatches} матчей`);
+        const { losersStructure, losersRounds } = bracketMath;
         
-        for (let round = 1; round <= rounds; round++) {
-            // Правильная логика для количества матчей в Losers Bracket
-            const matchesInRound = this._calculateLosersRoundMatches(round, rounds);
+        console.log(`💔 Создание Losers Bracket по табличной структуре: ${losersRounds} раундов`);
+        console.log(`   Структура: [${losersStructure.join(', ')}] = ${bracketMath.losersMatches} матчей`);
+        
+        for (let round = 1; round <= losersRounds; round++) {
+            const matchesInRound = losersStructure[round - 1];
+            const roundDescription = getLosersRoundDescription(round, bracketMath);
             
-            console.log(`   Losers Раунд ${round}: ${matchesInRound} матчей`);
+            console.log(`   Losers Раунд ${round}: ${matchesInRound} матчей (${roundDescription})`);
             
             for (let i = 0; i < matchesInRound; i++) {
                 const result = await client.query(`
@@ -282,29 +317,9 @@ class DoubleEliminationEngine {
             }
         }
         
+        console.log(`✅ Создано ${matches.length} матчей Losers Bracket (ожидалось ${bracketMath.losersMatches})`);
+        
         return { matches, nextMatchNumber: matchNumber };
-    }
-    
-    /**
-     * 📊 Правильный расчет количества матчей в раунде Losers Bracket
-     */
-    static _calculateLosersRoundMatches(round, totalRounds) {
-        // В Double Elimination структура Losers Bracket следует специфичной логике:
-        // - Нечетные раунды (1, 3, 5...): только проигравшие из Winners
-        // - Четные раунды (2, 4, 6...): проигравшие из Winners + победители предыдущего раунда Losers
-        
-        const winnersRounds = Math.log2(Math.pow(2, Math.ceil(totalRounds / 2)));
-        const initialParticipants = Math.pow(2, winnersRounds);
-        
-        if (round % 2 === 1) {
-            // Нечетные раунды: проигравшие из Winners Bracket
-            const winnersRoundFeeding = Math.floor((round + 1) / 2) + 1;
-            return Math.pow(2, winnersRounds - winnersRoundFeeding);
-        } else {
-            // Четные раунды: смешанный
-            const winnersRoundFeeding = Math.floor(round / 2) + 1;
-            return Math.pow(2, winnersRounds - winnersRoundFeeding);
-        }
     }
     
     /**
@@ -531,23 +546,18 @@ class DoubleEliminationEngine {
     }
     
     /**
-     * 🎯 Расчет целевого раунда Losers для проигравших из Winners
+     * 🎯 Расчет целевого раунда Losers с использованием табличного маппинга
      */
     static _calculateTargetLosersRound(winnersRound, bracketMath) {
-        // В Double Elimination проигравшие из Winners Bracket попадают в Losers Bracket
-        // по определенной формуле, зависящей от структуры турнира
+        const targetRound = calculateTargetLosersRound(winnersRound, bracketMath);
         
-        const totalWinnersRounds = bracketMath.winnersRounds;
-        
-        // Проигравшие из раунда 1 Winners идут в раунд 1 Losers
-        // Проигравшие из раунда 2 Winners идут в раунд 3 Losers
-        // И так далее...
-        
-        if (winnersRound === 1) {
-            return 1;
-        } else {
-            return (winnersRound - 1) * 2 + 1;
+        if (!targetRound) {
+            console.log(`⚠️ Не найден целевой раунд Losers для Winners R${winnersRound}`);
+            return null;
         }
+        
+        console.log(`🎯 Winners R${winnersRound} → Losers R${targetRound} (по табличному маппингу)`);
+        return targetRound;
     }
     
     /**
@@ -640,15 +650,27 @@ class DoubleEliminationEngine {
     }
     
     /**
-     * 🔍 Валидация сгенерированной сетки
+     * 🔍 Валидация сгенерированной сетки с использованием табличной валидации
      */
     static _validateGeneratedBracket(matches, bracketMath) {
         const errors = [];
         
         if (!Array.isArray(matches)) {
             errors.push('Матчи должны быть массивом');
+            return {
+                isValid: false,
+                errors,
+                statistics: { totalMatches: 0 }
+            };
         }
         
+        // Используем встроенную валидацию из табличной структуры
+        const structureValidation = bracketMath.validation;
+        if (!structureValidation.isValid) {
+            errors.push(`Структурная валидация не прошла: ${structureValidation.errors.join(', ')}`);
+        }
+        
+        // Проверяем соответствие созданных матчей ожидаемому количеству
         if (matches.length !== bracketMath.totalMatches) {
             errors.push(`Количество матчей не совпадает: ожидается ${bracketMath.totalMatches}, получено ${matches.length}`);
         }
@@ -656,22 +678,32 @@ class DoubleEliminationEngine {
         // Проверка наличия всех типов bracket
         const requiredBracketTypes = ['winner', 'loser', 'grand_final', 'grand_final_reset'];
         requiredBracketTypes.forEach(type => {
-            if (!matches.some(m => m.bracket_type === type)) {
+            const matchesOfType = matches.filter(m => m.bracket_type === type);
+            if (matchesOfType.length === 0) {
                 errors.push(`Отсутствуют матчи типа ${type}`);
             }
         });
         
-        // Проверка структуры Winners Bracket
+        // Подробная проверка по типам матчей
         const winnersMatches = matches.filter(m => m.bracket_type === 'winner');
+        const losersMatches = matches.filter(m => m.bracket_type === 'loser');
+        const grandFinalMatches = matches.filter(m => m.bracket_type.includes('grand_final'));
+        
         if (winnersMatches.length !== bracketMath.winnersMatches) {
-            errors.push(`Неверное количество матчей Winners Bracket: ${winnersMatches.length}, ожидается ${bracketMath.winnersMatches}`);
+            errors.push(`Winners Bracket: ожидается ${bracketMath.winnersMatches} матчей, получено ${winnersMatches.length}`);
         }
         
-        // Проверка структуры Losers Bracket
-        const losersMatches = matches.filter(m => m.bracket_type === 'loser');
         if (losersMatches.length !== bracketMath.losersMatches) {
-            errors.push(`Неверное количество матчей Losers Bracket: ${losersMatches.length}, ожидается ${bracketMath.losersMatches}`);
+            errors.push(`Losers Bracket: ожидается ${bracketMath.losersMatches} матчей, получено ${losersMatches.length}`);
         }
+        
+        if (grandFinalMatches.length !== bracketMath.grandFinalMatches) {
+            errors.push(`Grand Final: ожидается ${bracketMath.grandFinalMatches} матчей, получено ${grandFinalMatches.length}`);
+        }
+        
+        // Проверка структуры раундов
+        console.log(`🔍 Валидация: создано матчей Winners=${winnersMatches.length}, Losers=${losersMatches.length}, GF=${grandFinalMatches.length}`);
+        console.log(`🔍 Ожидалось: Winners=${bracketMath.winnersMatches}, Losers=${bracketMath.losersMatches}, GF=${bracketMath.grandFinalMatches}`);
         
         return {
             isValid: errors.length === 0,
@@ -680,7 +712,8 @@ class DoubleEliminationEngine {
                 totalMatches: matches.length,
                 winnersMatches: winnersMatches.length,
                 losersMatches: losersMatches.length,
-                grandFinalMatches: matches.filter(m => m.bracket_type.includes('grand_final')).length
+                grandFinalMatches: grandFinalMatches.length,
+                description: bracketMath.description || 'Табличная структура Double Elimination'
             }
         };
     }
