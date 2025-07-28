@@ -155,26 +155,36 @@ class DoubleEliminationEngine {
             
             console.log(`🏗️ [DoubleEliminationEngine] Генерация ${bracketMath.totalMatches} матчей`);
             
+            let currentMatchNumber = 1;
+            
             // 1. Создаем матчи Winners Bracket
-            const winnersMatches = await this._createWinnersMatches(
+            const winnersResult = await this._createWinnersMatches(
                 client, 
                 tournamentId, 
                 bracketMath.winnersRounds,
-                bracketMath.winnersMatches
+                bracketMath.winnersMatches,
+                currentMatchNumber
             );
+            const winnersMatches = winnersResult.matches;
+            currentMatchNumber = winnersResult.nextMatchNumber;
             
             // 2. Создаем матчи Losers Bracket
-            const losersMatches = await this._createLosersMatches(
+            const losersResult = await this._createLosersMatches(
                 client, 
                 tournamentId, 
                 bracketMath.losersRounds,
-                bracketMath.losersMatches
+                bracketMath.losersMatches,
+                currentMatchNumber
             );
+            const losersMatches = losersResult.matches;
+            currentMatchNumber = losersResult.nextMatchNumber;
             
             // 3. Создаем Grand Final матчи
             const grandFinalMatches = await this._createGrandFinalMatches(
                 client, 
-                tournamentId
+                tournamentId,
+                bracketMath,
+                currentMatchNumber
             );
             
             // 4. Устанавливаем связи между матчами
@@ -209,9 +219,9 @@ class DoubleEliminationEngine {
     /**
      * 🏆 Создание матчей Winners Bracket
      */
-    static async _createWinnersMatches(client, tournamentId, rounds, totalMatches) {
+    static async _createWinnersMatches(client, tournamentId, rounds, totalMatches, startMatchNumber) {
         const matches = [];
-        let matchNumber = 1;
+        let matchNumber = startMatchNumber;
         
         console.log(`🏆 Создание Winners Bracket: ${rounds} раундов, ${totalMatches} матчей`);
         
@@ -237,15 +247,15 @@ class DoubleEliminationEngine {
             }
         }
         
-        return matches;
+        return { matches, nextMatchNumber: matchNumber };
     }
     
     /**
      * 💔 Создание матчей Losers Bracket с правильной структурой
      */
-    static async _createLosersMatches(client, tournamentId, rounds, totalMatches) {
+    static async _createLosersMatches(client, tournamentId, rounds, totalMatches, startMatchNumber) {
         const matches = [];
-        let matchNumber = 1000; // Начинаем с 1000 для losers bracket
+        let matchNumber = startMatchNumber;
         
         console.log(`💔 Создание Losers Bracket: ${rounds} раундов, ${totalMatches} матчей`);
         
@@ -272,7 +282,7 @@ class DoubleEliminationEngine {
             }
         }
         
-        return matches;
+        return { matches, nextMatchNumber: matchNumber };
     }
     
     /**
@@ -300,10 +310,13 @@ class DoubleEliminationEngine {
     /**
      * 🏁 Создание Grand Final матчей
      */
-    static async _createGrandFinalMatches(client, tournamentId) {
+    static async _createGrandFinalMatches(client, tournamentId, bracketMath, startMatchNumber) {
         const matches = [];
         
         console.log(`🏁 Создание Grand Final матчей`);
+        
+        // Определяем правильный раунд для Grand Final
+        const grandFinalRound = Math.max(bracketMath.winnersRounds, bracketMath.losersRounds) + 1;
         
         // Grand Final (основной)
         const grandFinalResult = await client.query(`
@@ -313,11 +326,12 @@ class DoubleEliminationEngine {
                 match_number, 
                 bracket_type,
                 status
-            ) VALUES ($1, 999, 9999, 'grand_final', 'pending')
+            ) VALUES ($1, $2, $3, 'grand_final', 'pending')
             RETURNING *
-        `, [tournamentId]);
+        `, [tournamentId, grandFinalRound, startMatchNumber]);
         
         matches.push(grandFinalResult.rows[0]);
+        startMatchNumber++;
         
         // Grand Final Reset (если winner losers bracket выиграет)
         const grandFinalResetResult = await client.query(`
@@ -327,11 +341,12 @@ class DoubleEliminationEngine {
                 match_number, 
                 bracket_type,
                 status
-            ) VALUES ($1, 999, 9998, 'grand_final_reset', 'pending')
+            ) VALUES ($1, $2, $3, 'grand_final_reset', 'pending')
             RETURNING *
-        `, [tournamentId]);
+        `, [tournamentId, grandFinalRound, startMatchNumber]);
         
         matches.push(grandFinalResetResult.rows[0]);
+        startMatchNumber++;
         
         return matches;
     }
