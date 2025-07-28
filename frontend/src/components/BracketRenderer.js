@@ -80,26 +80,27 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     }
     
-    // Функция для получения контекста раунда
+    // Получение контекста раунда с расширенной информацией
     const getRoundContext = (round, roundData, bracketType) => {
-        const totalMatches = matches.length;
-        const isLastRound = round === Math.max(...Object.keys(groupedMatches).map(Number));
-        const isSecondLastRound = round === Math.max(...Object.keys(groupedMatches).map(Number)) - 1;
+        const groupedRounds = Object.keys(groupedMatches[bracketType] || {}).map(Number);
+        const totalRounds = Math.max(...groupedRounds);
+        const matchesInRound = Array.isArray(roundData) ? roundData.length : Object.keys(roundData).length;
+        const isLastRound = round === totalRounds;
         
         return {
-            totalMatches,
-            isLastRound,
-            isSecondLastRound,
             bracketType,
-            matchesInRound: Array.isArray(roundData) ? roundData.length : 
-                           (roundData?.regular?.length || 0) + (roundData?.special?.length || 0)
+            totalRounds,
+            matchesInRound,
+            isLastRound,
+            currentRound: round,
+            allRounds: groupedRounds
         };
     };
 
     // Рендер раунда для Single Elimination
     const renderSingleEliminationRound = (round, roundData, roundName) => {
-        const allMatches = [...(roundData.regular || []), ...(roundData.special || [])];
-        const matchesCount = allMatches.length;
+        const matchesArray = Array.isArray(roundData) ? roundData : Object.values(roundData).flat();
+        const matchesCount = matchesArray.length;
         
         // Определяем класс для количества матчей и вертикального выравнивания
         let matchesClass = 'few-matches';
@@ -119,15 +120,10 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                     {roundName}
                 </div>
                 <div className={`bracket-matches-list ${matchesClass}`}>
-                    {allMatches.map(match => (
+                    {matchesArray.map(match => (
                         <div
                             key={match.id}
                             className="bracket-match-container"
-                            data-match-type={
-                                match.bracket_type === 'placement' ? 'third-place' :
-                                match.bracket_type === 'final' ? 'final' :
-                                'regular'
-                            }
                         >
                             <MatchCard
                                 match={match}
@@ -135,7 +131,8 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                                 onEditMatch={onEditMatch}
                                 canEditMatches={canEditMatches}
                                 onMatchClick={onMatchClick}
-                                matchType={match.bracket_type === 'placement' ? 'third-place' : 'regular'}
+                                customLabel={match.bracket_type === 'placement' ? '3rd Place' : null}
+                                matchType={match.bracket_type}
                             />
                         </div>
                     ))}
@@ -144,8 +141,8 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         );
     };
 
-    // Рендер раунда для Double Elimination
-    const renderDoubleEliminationRound = (round, matches, bracketType, roundName) => {
+    // Рендер раунда для Double Elimination с улучшенной поддержкой стилей
+    const renderDoubleEliminationRound = (round, matches, bracketType, roundName, context) => {
         const matchesCount = matches.length;
         
         // Определяем класс для количества матчей и вертикального выравнивания
@@ -160,9 +157,20 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             columnClass = 'has-many-matches';
         }
         
+        // Определяем тип раунда для специальной стилизации
+        let roundType = 'regular';
+        if (bracketType === 'loser' && context?.isLastRound) {
+            roundType = 'losers-small-final';
+        } else if (bracketType === 'grand_final') {
+            roundType = 'grand-final';
+        }
+        
         return (
             <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`}>
-                <div className={`bracket-round-header bracket-${bracketType}s-bracket-header`}>
+                <div 
+                    className={`bracket-round-header bracket-${bracketType}s-bracket-header`}
+                    data-round-type={roundType}
+                >
                     {roundName}
                 </div>
                 <div className={`bracket-matches-list ${matchesClass}`}>
@@ -179,6 +187,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                                 canEditMatches={canEditMatches}
                                 onMatchClick={onMatchClick}
                                 matchType={match.bracket_type}
+                                customLabel={roundType === 'losers-small-final' ? 'Small Final' : null}
                             />
                         </div>
                     ))}
@@ -262,7 +271,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                                     .map(([round, matches]) => {
                                         const context = getRoundContext(parseInt(round), matches, 'winner');
                                         const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                        return renderDoubleEliminationRound(round, matches, 'winner', roundName);
+                                        return renderDoubleEliminationRound(round, matches, 'winner', roundName, context);
                                     })}
                             </div>
                         </div>
@@ -278,7 +287,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                                     .map(([round, matches]) => {
                                         const context = getRoundContext(parseInt(round), matches, 'loser');
                                         const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                        return renderDoubleEliminationRound(round, matches, 'loser', roundName);
+                                        return renderDoubleEliminationRound(round, matches, 'loser', roundName, context);
                                     })}
                             </div>
                         </div>
@@ -294,7 +303,7 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                                     .map(([round, matches]) => {
                                         const context = getRoundContext(parseInt(round), matches, 'grand_final');
                                         const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                        return renderDoubleEliminationRound(round, matches, 'grand_final', roundName);
+                                        return renderDoubleEliminationRound(round, matches, 'grand_final', roundName, context);
                                     })}
                             </div>
                         </div>

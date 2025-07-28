@@ -88,20 +88,34 @@ export class DoubleEliminationFormat extends TournamentFormat {
   }
 
   /**
-   * Получение названия раунда для Double Elimination
+   * Получение названия раунда для Double Elimination с улучшенной логикой
    */
   getRoundName(round, context) {
-    const { bracketType, totalRounds } = context;
+    const { bracketType, totalRounds, matchesInRound, isLastRound } = context;
     
     if (bracketType === 'grand_final') {
       return 'Grand Final';
     }
     
     if (bracketType === 'loser') {
-      return `Losers Round ${round}`;
+      // Специальная обработка для малого финала лузеров
+      if (isLastRound || round === totalRounds) {
+        return 'Losers Small Final';
+      }
+      
+      // Более описательные названия для Losers Bracket
+      if (round === 1) {
+        return 'Losers First Round';
+      } else if (round === 2) {
+        return 'Losers Second Round';
+      } else if (round === totalRounds - 1) {
+        return 'Losers Semi-Final';
+      } else {
+        return `Losers Round ${round}`;
+      }
     }
     
-    // Winners bracket названия
+    // Winners bracket названия с улучшенной логикой
     const roundsFromEnd = totalRounds - round;
     
     switch (roundsFromEnd) {
@@ -111,6 +125,14 @@ export class DoubleEliminationFormat extends TournamentFormat {
         return 'Winners Semi-Final';
       case 2:
         return 'Winners Quarter-Final';
+      case 3:
+        return 'Winners Round of 16';
+      case 4:
+        return 'Winners Round of 32';
+      case 5:
+        return 'Winners Round of 64';
+      case 6:
+        return 'Winners Round of 128';
       default:
         return `Winners Round ${round}`;
     }

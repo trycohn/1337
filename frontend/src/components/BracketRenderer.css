@@ -702,295 +702,282 @@
     margin: 20px;
 }
 
-/* ===== СЕКЦИИ ТУРНИРА ===== */
+/* ===== СЕКЦИИ ТУРНИРА DOUBLE ELIMINATION ===== */
 .bracket-winners-section,
 .bracket-losers-section,
 .bracket-grand-final-section {
     width: 100%;
-    margin-bottom: 40px;
+    margin-bottom: 50px;
+    position: relative;
+    padding: 30px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, rgba(17, 17, 17, 0.8), rgba(0, 0, 0, 0.9));
+    backdrop-filter: blur(10px);
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
-/* ===== ЗАГОЛОВКИ СЕКЦИЙ ===== */
+/* Специфические стили для каждой секции */
+.bracket-winners-section {
+    border-color: rgba(0, 255, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 255, 0, 0.1);
+}
+
+.bracket-losers-section {
+    border-color: rgba(255, 100, 100, 0.3);
+    box-shadow: 0 4px 20px rgba(255, 100, 100, 0.1);
+    margin-top: 60px; /* Дополнительный отступ от Winners */
+    position: relative;
+}
+
+/* Визуальный разделитель между Winners и Losers */
+.bracket-losers-section::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 5%;
+    right: 5%;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 0, 0, 0.5) 20%, 
+        rgba(255, 0, 0, 0.8) 50%, 
+        rgba(255, 0, 0, 0.5) 80%, 
+        transparent 100%
+    );
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.bracket-grand-final-section {
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 6px 30px rgba(255, 215, 0, 0.2);
+    margin-top: 60px;
+    position: relative;
+}
+
+/* Разделитель перед Grand Final */
+.bracket-grand-final-section::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 5%;
+    right: 5%;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 215, 0, 0.5) 20%, 
+        rgba(255, 215, 0, 0.8) 50%, 
+        rgba(255, 215, 0, 0.5) 80%, 
+        transparent 100%
+    );
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+/* ===== ЗАГОЛОВКИ СЕКЦИЙ С УЛУЧШЕННОЙ ТИПОГРАФИКОЙ ===== */
 .bracket-section-title {
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 24px;
+    font-weight: 900;
     text-align: center;
-    margin-bottom: 30px;
-    padding: 15px 30px;
+    margin-bottom: 35px;
+    padding: 20px 40px;
     background: linear-gradient(145deg, #222, #111);
-    border: 2px solid #ff0000;
-    border-radius: 25px;
+    border: 3px solid #ff0000;
+    border-radius: 30px;
     color: #fff;
-    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Убираем цветовую дифференциацию секций */
+/* Анимированный фон для заголовков */
+.bracket-section-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 0, 0, 0.1), 
+        transparent
+    );
+    transition: left 0.5s ease;
+}
+
+.bracket-section-title:hover::before {
+    left: 100%;
+}
+
+/* Специфические стили заголовков */
 .bracket-winners-section .bracket-section-title {
     color: #fff;
-    border-color: #ff0000;
-    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    border-color: #00ff00;
+    text-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    background: linear-gradient(145deg, 
+        rgba(0, 100, 0, 0.2), 
+        rgba(0, 50, 0, 0.3)
+    );
 }
 
 .bracket-losers-section .bracket-section-title {
     color: #fff;
-    border-color: #ff0000;
-    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    border-color: #ff6464;
+    text-shadow: 0 0 15px rgba(255, 100, 100, 0.6);
+    background: linear-gradient(145deg, 
+        rgba(100, 0, 0, 0.2), 
+        rgba(50, 0, 0, 0.3)
+    );
 }
 
 .bracket-grand-final-section .bracket-section-title {
     color: #fff;
-    border-color: #ff0000;
-    text-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
-    animation: bracket-grand-final-pulse 2s infinite;
+    border-color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    background: linear-gradient(145deg, 
+        rgba(100, 100, 0, 0.2), 
+        rgba(50, 50, 0, 0.3)
+    );
+    animation: bracket-grand-final-pulse 3s infinite;
+}
+
+/* ===== ЗАГОЛОВКИ РАУНДОВ С УЛУЧШЕННОЙ ВИЗУАЛИЗАЦИЕЙ ===== */
+.bracket-round-header {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 12px 20px;
+    background: linear-gradient(145deg, rgba(17, 17, 17, 0.9), rgba(0, 0, 0, 0.8));
+    border: 2px solid #333;
+    border-radius: 20px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.5px;
+    min-width: 180px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Градиентная полоска для заголовков раундов */
+.bracket-round-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 0, 0, 0.8) 50%, 
+        transparent 100%
+    );
+}
+
+/* Специфические стили для Winners Bracket раундов */
+.bracket-winners-bracket-header {
+    border-color: rgba(0, 255, 0, 0.5);
+    background: linear-gradient(145deg, 
+        rgba(0, 50, 0, 0.3), 
+        rgba(0, 20, 0, 0.5)
+    );
+}
+
+.bracket-winners-bracket-header::after {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(0, 255, 0, 0.6) 50%, 
+        transparent 100%
+    );
+}
+
+/* Специфические стили для Losers Bracket раундов */
+.bracket-losers-bracket-header {
+    border-color: rgba(255, 100, 100, 0.5);
+    background: linear-gradient(145deg, 
+        rgba(50, 0, 0, 0.3), 
+        rgba(20, 0, 0, 0.5)
+    );
+}
+
+.bracket-losers-bracket-header::after {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 100, 100, 0.6) 50%, 
+        transparent 100%
+    );
+}
+
+/* Специальные стили для малого финала лузеров */
+.bracket-losers-bracket-header[data-round-type="losers-small-final"] {
+    border-color: rgba(255, 150, 0, 0.7);
+    background: linear-gradient(145deg, 
+        rgba(80, 40, 0, 0.4), 
+        rgba(40, 20, 0, 0.6)
+    );
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 150, 0, 0.5);
+    animation: bracket-losers-final-glow 2s infinite;
+}
+
+.bracket-losers-bracket-header[data-round-type="losers-small-final"]::after {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 150, 0, 0.8) 50%, 
+        transparent 100%
+    );
+}
+
+/* Grand Final заголовки */
+.bracket-grand-final-bracket-header {
+    border-color: rgba(255, 215, 0, 0.7);
+    background: linear-gradient(145deg, 
+        rgba(80, 80, 0, 0.4), 
+        rgba(40, 40, 0, 0.6)
+    );
+    font-weight: 800;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+}
+
+.bracket-grand-final-bracket-header::after {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 215, 0, 0.8) 50%, 
+        transparent 100%
+    );
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes bracket-grand-final-pulse {
+    0%, 100% {
+        box-shadow: 
+            0 6px 20px rgba(0, 0, 0, 0.6),
+            0 0 0 0 rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        box-shadow: 
+            0 8px 25px rgba(0, 0, 0, 0.8),
+            0 0 20px 5px rgba(255, 215, 0, 0.2);
+    }
+}
+
+@keyframes bracket-losers-final-glow {
+    0%, 100% {
+        text-shadow: 0 0 10px rgba(255, 150, 0, 0.5);
+        border-color: rgba(255, 150, 0, 0.7);
+    }
+    50% {
+        text-shadow: 0 0 15px rgba(255, 150, 0, 0.8);
+        border-color: rgba(255, 150, 0, 1);
+    }
 }
 
 /* ===== HOVER ЭФФЕКТЫ ДЛЯ РАЗНЫХ ТИПОВ МАТЧЕЙ ===== */
-.bracket-match-card-winner:hover {
-    border-color: #ff0000;
-    box-shadow: 0 8px 24px rgba(255, 0, 0, 0.4);
-}
-
-.bracket-match-card-loser:hover {
-    border-color: #ff0000;
-    box-shadow: 0 6px 16px rgba(255, 0, 0, 0.3);
-    opacity: 1;
-}
-
-.bracket-match-card-grand-final:hover {
-    border-color: #ff0000;
-    box-shadow: 0 10px 32px rgba(255, 0, 0, 0.6);
-    transform: translateY(-3px);
-}
-
-.bracket-match-card-third-place:hover {
-    border-color: #ff0000;
-    box-shadow: 0 8px 24px rgba(255, 0, 0, 0.4);
-}
-
-.bracket-match-card-final:hover {
-    border-color: #ffd700;
-    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.6);
-    animation: bracket-final-glow 2s infinite;
-}
-
-.bracket-match-container[data-match-type="grand-final-main"]:hover,
-.bracket-match-container[data-match-type="grand-final-reset"]:hover {
-    transform: scale(1.03);
-    z-index: 20;
-}
-
-/* ===== SVG СОЕДИНЕНИЯ ===== */
-.bracket-connections {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-}
-
-.bracket-connections path {
-    fill: none;
-    stroke: #333;
-    stroke-width: 2;
-}
-
-.bracket-connections g {
-    opacity: 0.8;
-}
-
-/* ===== АДАПТИВНЫЕ СТИЛИ ===== */
-@media (max-width: 1200px) {
-    .bracket-navigation-panel {
-        right: 15px;
-        top: 15px;
-        padding: 6px 10px;
-        gap: 6px;
-    }
-    
-    .bracket-nav-icon-button {
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
-    }
-    
-    .bracket-zoom-display {
-        min-width: 45px;
-        height: 28px;
-        font-size: 11px;
-        padding: 0 6px;
-        margin: 0 3px;
-    }
-    
-    .bracket-rounds-container {
-        gap: 30px;
-    }
-    
-    .bracket-round-column {
-        min-width: 240px;
-    }
-    
-    .bracket-match-container {
-        min-height: 70px;
-    }
-    
-    .bracket-match-card {
-        padding: 12px;
-    }
-    
-    .bracket-round-header {
-        font-size: 14px;
-    }
-    
-    .bracket-match-title {
-        font-size: 13px;
-    }
-    
-    .bracket-participant-name {
-        font-size: 13px;
-    }
-    
-    .bracket-section-title {
-        font-size: 18px;
-    }
-}
-
-@media (max-width: 768px) {
-    .bracket-navigation-panel {
-        right: 10px;
-        top: 10px;
-        padding: 4px 8px;
-        gap: 4px;
-    }
-    
-    .bracket-nav-icon-button {
-        width: 34px;
-        height: 34px;
-        font-size: 14px;
-    }
-    
-    .bracket-zoom-display {
-        min-width: 40px;
-        height: 26px;
-        font-size: 10px;
-        padding: 0 4px;
-        margin: 0 2px;
-    }
-    
-    .bracket-renderer {
-        padding: 20px;
-    }
-    
-    .bracket-rounds-container {
-        gap: 20px;
-    }
-    
-    .bracket-round-column {
-        min-width: 200px;
-    }
-    
-    .bracket-match-container {
-        min-height: 60px;
-    }
-    
-    .bracket-match-card {
-        padding: 10px;
-    }
-    
-    .bracket-round-header {
-        font-size: 13px;
-    }
-    
-    .bracket-match-title {
-        font-size: 12px;
-    }
-    
-    .bracket-participant-name {
-        font-size: 12px;
-    }
-    
-    .bracket-section-title {
-        font-size: 16px;
-    }
-}
-
-@media (max-width: 480px) {
-    .bracket-navigation-panel {
-        right: 5px;
-        top: 5px;
-        padding: 2px 6px;
-    }
-    
-    .bracket-nav-icon-button {
-        width: 30px;
-        height: 30px;
-        font-size: 12px;
-    }
-    
-    .bracket-zoom-display {
-        min-width: 35px;
-        height: 24px;
-        font-size: 9px;
-        padding: 0 3px;
-        margin: 0 1px;
-    }
-    
-    .bracket-match-card {
-        padding: 8px;
-    }
-    
-    .bracket-participant {
-        padding: 6px 8px;
-    }
-    
-    .bracket-participant-name {
-        font-size: 11px;
-    }
-    
-    .bracket-match-title {
-        font-size: 11px;
-    }
-    
-    .bracket-rounds-container {
-        gap: 15px;
-    }
-    
-    .bracket-round-column {
-        min-width: 180px;
-    }
-    
-    .bracket-section-title {
-        font-size: 14px;
-    }
-}
-
-/* ===== СОВМЕСТИМОСТЬ С LEGACY КОДОМ ===== */
-.match-container {
-    /* Совместимость с legacy кодом */
-}
-
-.match-card {
-    /* Совместимость с legacy кодом */
-}
-
-.custom-seed {
-    /* Совместимость с legacy кодом */
-}
-
-.round-header-absolute {
-    /* Совместимость с legacy кодом */
-}
-
-.empty-bracket-message {
-    /* Совместимость с legacy кодом */
-}
-
-.bracket-debug {
-    /* Отладочные стили */
-}
-
-.bracket-debug::before {
-    /* Отладочные стили */
-}
