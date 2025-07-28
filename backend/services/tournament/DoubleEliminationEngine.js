@@ -341,24 +341,33 @@ class DoubleEliminationEngine {
      */
     static async _establishDoubleEliminationConnections(client, winnersMatches, losersMatches, grandFinalMatches, bracketMath) {
         console.log(`🔗 Установка связей Double Elimination`);
+        console.log(`📊 Статистика: Winners: ${winnersMatches.length}, Losers: ${losersMatches.length}, Grand Final: ${grandFinalMatches.length}`);
         
         // 1. Связи внутри Winners Bracket
+        console.log(`\n1️⃣ Связывание Winners Bracket...`);
         await this._linkWinnersBracket(client, winnersMatches);
         
         // 2. Связи внутри Losers Bracket
+        console.log(`\n2️⃣ Связывание Losers Bracket...`);
         await this._linkLosersBracket(client, losersMatches);
         
         // 3. Связи проигравших из Winners в Losers
+        console.log(`\n3️⃣ Связывание Winners → Losers (проигравшие)...`);
         await this._linkWinnersToLosers(client, winnersMatches, losersMatches, bracketMath);
         
         // 4. Связи с Grand Final
+        console.log(`\n4️⃣ Связывание с Grand Final...`);
         await this._linkToGrandFinal(client, winnersMatches, losersMatches, grandFinalMatches);
+        
+        console.log(`✅ Все связи Double Elimination установлены`);
     }
     
     /**
      * 🏆 Связывание Winners Bracket
      */
     static async _linkWinnersBracket(client, winnersMatches) {
+        console.log(`🏆 Связывание Winners Bracket (${winnersMatches.length} матчей)`);
+        
         // Группируем матчи по раундам
         const winnersByRound = {};
         winnersMatches.forEach(match => {
@@ -370,6 +379,7 @@ class DoubleEliminationEngine {
         
         // Связываем соседние раунды
         const rounds = Object.keys(winnersByRound).map(Number).sort((a, b) => a - b);
+        console.log(`🏆 Winners раунды: ${rounds.join(', ')}`);
         
         for (let i = 0; i < rounds.length - 1; i++) {
             const currentRound = rounds[i];
@@ -378,6 +388,8 @@ class DoubleEliminationEngine {
             const currentMatches = winnersByRound[currentRound];
             const nextMatches = winnersByRound[nextRound];
             
+            console.log(`🔗 Связывание Winners R${currentRound} (${currentMatches.length} матчей) → R${nextRound} (${nextMatches.length} матчей)`);
+            
             // Каждые 2 матча текущего раунда ведут к 1 матчу следующего
             for (let j = 0; j < currentMatches.length; j++) {
                 const nextMatchIndex = Math.floor(j / 2);
@@ -385,6 +397,8 @@ class DoubleEliminationEngine {
                     await client.query(`
                         UPDATE matches SET next_match_id = $1 WHERE id = $2
                     `, [nextMatches[nextMatchIndex].id, currentMatches[j].id]);
+                    
+                    console.log(`  🔗 Winners матч ${currentMatches[j].id} → матч ${nextMatches[nextMatchIndex].id}`);
                 }
             }
         }
@@ -394,6 +408,8 @@ class DoubleEliminationEngine {
      * 💔 Связывание Losers Bracket
      */
     static async _linkLosersBracket(client, losersMatches) {
+        console.log(`💔 Связывание Losers Bracket (${losersMatches.length} матчей)`);
+        
         // Группируем матчи по раундам
         const losersByRound = {};
         losersMatches.forEach(match => {
@@ -405,6 +421,7 @@ class DoubleEliminationEngine {
         
         // Связываем соседние раунды в Losers Bracket
         const rounds = Object.keys(losersByRound).map(Number).sort((a, b) => a - b);
+        console.log(`💔 Losers раунды: ${rounds.join(', ')}`);
         
         for (let i = 0; i < rounds.length - 1; i++) {
             const currentRound = rounds[i];
@@ -413,22 +430,30 @@ class DoubleEliminationEngine {
             const currentMatches = losersByRound[currentRound];
             const nextMatches = losersByRound[nextRound];
             
+            console.log(`🔗 Связывание Losers R${currentRound} (${currentMatches.length} матчей) → R${nextRound} (${nextMatches.length} матчей)`);
+            
             // Логика зависит от четности раунда
             if (currentRound % 2 === 0) {
                 // Четные раунды: 1 к 1 продвижение
+                console.log(`  📋 Четный раунд R${currentRound}: связывание 1 к 1`);
                 for (let j = 0; j < currentMatches.length && j < nextMatches.length; j++) {
                     await client.query(`
                         UPDATE matches SET next_match_id = $1 WHERE id = $2
                     `, [nextMatches[j].id, currentMatches[j].id]);
+                    
+                    console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${nextMatches[j].id}`);
                 }
             } else {
                 // Нечетные раунды: 2 к 1 продвижение
+                console.log(`  📋 Нечетный раунд R${currentRound}: связывание 2 к 1`);
                 for (let j = 0; j < currentMatches.length; j++) {
                     const nextMatchIndex = Math.floor(j / 2);
                     if (nextMatches[nextMatchIndex]) {
                         await client.query(`
                             UPDATE matches SET next_match_id = $1 WHERE id = $2
                         `, [nextMatches[nextMatchIndex].id, currentMatches[j].id]);
+                        
+                        console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${nextMatches[nextMatchIndex].id}`);
                     }
                 }
             }
@@ -439,6 +464,8 @@ class DoubleEliminationEngine {
      * 🔄 Связывание проигравших из Winners в Losers
      */
     static async _linkWinnersToLosers(client, winnersMatches, losersMatches, bracketMath) {
+        console.log(`🔄 Связывание проигравших Winners → Losers`);
+        
         // Группируем матчи по раундам
         const winnersByRound = {};
         winnersMatches.forEach(match => {
@@ -456,26 +483,36 @@ class DoubleEliminationEngine {
             losersByRound[match.round].push(match);
         });
         
+        console.log(`📊 Winners раунды: ${Object.keys(winnersByRound).join(', ')}`);
+        console.log(`📊 Losers раунды: ${Object.keys(losersByRound).join(', ')}`);
+        
         // Связываем проигравших из Winners в соответствующие раунды Losers
         const winnersRounds = Object.keys(winnersByRound).map(Number).sort((a, b) => a - b);
         
-        winnersRounds.forEach(winnersRound => {
+        for (const winnersRound of winnersRounds) {
             const winnersMatches = winnersByRound[winnersRound];
             
             // Проигравшие из каждого раунда Winners идут в определенный раунд Losers
             const targetLosersRound = this._calculateTargetLosersRound(winnersRound, bracketMath);
             const targetLosersMatches = losersByRound[targetLosersRound];
             
+            console.log(`🎯 Winners R${winnersRound} (${winnersMatches.length} матчей) → Losers R${targetLosersRound} (${targetLosersMatches?.length || 0} матчей)`);
+            
             if (targetLosersMatches) {
-                winnersMatches.forEach(async (winnerMatch, index) => {
+                for (let index = 0; index < winnersMatches.length; index++) {
+                    const winnerMatch = winnersMatches[index];
                     const targetLoserMatch = targetLosersMatches[index] || targetLosersMatches[0];
                     
                     await client.query(`
                         UPDATE matches SET loser_next_match_id = $1 WHERE id = $2
                     `, [targetLoserMatch.id, winnerMatch.id]);
-                });
+                    
+                    console.log(`🔗 Winners R${winnersRound} матч ${winnerMatch.id} (проигравший) → Losers R${targetLosersRound} матч ${targetLoserMatch.id}`);
+                }
+            } else {
+                console.log(`⚠️ Не найдены матчи в Losers R${targetLosersRound} для Winners R${winnersRound}`);
             }
-        });
+        }
     }
     
     /**
@@ -502,6 +539,8 @@ class DoubleEliminationEngine {
      * 🏁 Связывание с Grand Final
      */
     static async _linkToGrandFinal(client, winnersMatches, losersMatches, grandFinalMatches) {
+        console.log(`🏁 Связывание с Grand Final`);
+        
         // Финалист Winners Bracket идет в Grand Final
         const winnersFinal = winnersMatches.find(m => m.round === Math.max(...winnersMatches.map(m => m.round)));
         
@@ -514,12 +553,16 @@ class DoubleEliminationEngine {
             await client.query(`
                 UPDATE matches SET next_match_id = $1 WHERE id = $2
             `, [grandFinal.id, winnersFinal.id]);
+            
+            console.log(`🔗 Winners Final матч ${winnersFinal.id} → Grand Final ${grandFinal.id}`);
         }
         
         if (losersFinal && grandFinal) {
             await client.query(`
                 UPDATE matches SET next_match_id = $1 WHERE id = $2
             `, [grandFinal.id, losersFinal.id]);
+            
+            console.log(`🔗 Losers Final матч ${losersFinal.id} → Grand Final ${grandFinal.id}`);
         }
     }
     
