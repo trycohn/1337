@@ -56,20 +56,52 @@ class BracketGenerationService {
             // 5. Очищаем существующую сетку
             await this._clearExistingBracket(tournamentId, client);
             
-            // 6. Подготавливаем опции распределения
+            // 🆕 6. Обновляем тип турнирной сетки если передан новый тип
+            if (options.bracketType && options.bracketType !== tournament.bracket_type) {
+                console.log(`🏆 [BracketGenerationService] Обновление типа сетки: ${tournament.bracket_type} → ${options.bracketType}`);
+                
+                // Валидация типа сетки
+                const validBracketTypes = ['single_elimination', 'double_elimination'];
+                if (!validBracketTypes.includes(options.bracketType)) {
+                    throw new Error(`Неподдерживаемый тип сетки: ${options.bracketType}`);
+                }
+                
+                // Сохраняем старое значение для логирования
+                const oldBracketType = tournament.bracket_type;
+                
+                // Обновляем в базе данных
+                await client.query(
+                    'UPDATE tournaments SET bracket_type = $1 WHERE id = $2',
+                    [options.bracketType, tournamentId]
+                );
+                
+                // Обновляем объект tournament для дальнейшего использования
+                tournament.bracket_type = options.bracketType;
+                
+                // 🆕 Логируем событие изменения типа сетки
+                await logTournamentEvent(tournamentId, userId, 'bracket_type_changed', {
+                    old_bracket_type: oldBracketType,
+                    new_bracket_type: options.bracketType,
+                    during_regeneration: true
+                });
+                
+                console.log(`✅ [BracketGenerationService] Тип сетки обновлен на "${options.bracketType}"`);
+            }
+            
+            // 7. Подготавливаем опции распределения
             const seedingOptions = this._prepareSeedingOptions(tournament, options);
             
-            // 7. Генерируем сетку в зависимости от типа
+            // 8. Генерируем сетку в зависимости от типа
             const generationResult = await this._generateBracketByType(tournament, participants, seedingOptions);
             
             if (!generationResult.success) {
                 throw new Error(generationResult.error);
             }
             
-            // 8. Обновляем статус турнира
+            // 9. Обновляем статус турнира
             await this._updateTournamentAfterGeneration(tournament, generationResult, client);
             
-            // 9. Логируем событие
+            // 10. Логируем событие
             await logTournamentEvent(tournamentId, userId, 'bracket_generated', {
                 bracketType: tournament.bracket_type,
                 participants: participants.length,
@@ -83,7 +115,7 @@ class BracketGenerationService {
             const duration = Date.now() - startTime;
             console.log(`✅ [BracketGenerationService] Сетка успешно сгенерирована за ${duration}ms`);
             
-            // 10. Отправляем WebSocket обновления
+            // 11. Отправляем WebSocket обновления
             const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
             broadcastTournamentUpdate(tournamentId, updatedTournament);
             
