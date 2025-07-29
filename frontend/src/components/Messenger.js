@@ -34,20 +34,30 @@ function Messenger() {
         fetchChats: 0,
         createChat: 0  // Добавляем счетчик для создания чата
     });
+
+    // 🆕 Добавляем отслеживание последнего активного чата для исключений
+    const lastActiveChatId = useRef(null);
     
     const REQUEST_COOLDOWNS = {
-        fetchMessages: 1000,      // 1 секунда между запросами сообщений
-        markChatAsRead: 500,      // 0.5 секунды между пометками как прочитанное
+        fetchMessages: 300,       // 0.3 секунды (было 1000)
+        markChatAsRead: 200,      // 0.2 секунды (было 500)
         fetchChatUserInfo: 10000, // 10 секунд между запросами информации о пользователе
-        fetchChats: 2000,         // 2 секунды между обновлениями списка чатов
+        fetchChats: 1000,         // 1 секунда (было 2000)
         createChat: 10000         // 10 секунд между созданиями чатов
     };
 
     // Функция проверки возможности выполнения запроса
-    const canMakeRequest = useCallback((requestType) => {
+    const canMakeRequest = useCallback((requestType, chatId = null) => {
         const now = Date.now();
         const lastTime = lastRequestTimes.current[requestType] || 0;
         const cooldown = REQUEST_COOLDOWNS[requestType] || 1000;
+        
+        // 🆕 ИСКЛЮЧЕНИЕ: при смене активного чата разрешаем запросы без cooldown
+        if (chatId && chatId !== lastActiveChatId.current) {
+            console.log(`✅ [Messenger] ${requestType} разрешен для нового чата: ${chatId}`);
+            lastRequestTimes.current[requestType] = now;
+            return true;
+        }
         
         if (now - lastTime < cooldown) {
             console.log(`🛡️ [Messenger] Запрос ${requestType} заблокирован (cooldown ${cooldown}ms)`);
@@ -101,13 +111,12 @@ function Messenger() {
                 }
             });
             
-            console.log('📊 [Messenger] Инициализация счетчиков:', initialUnreadCounts);
             setUnreadCounts(initialUnreadCounts);
-            
             setError('');
-        } catch (error) {
-            console.error('❌ [Messenger] Ошибка загрузки чатов:', error);
-            setError('Не удалось загрузить чаты');
+            
+        } catch (err) {
+            console.error('❌ [Messenger] Ошибка загрузки чатов:', err);
+            setError(err.response?.data?.error || 'Ошибка загрузки чатов');
         }
     }, [canMakeRequest]);
 
@@ -161,7 +170,7 @@ function Messenger() {
 
     // Загрузка информации о пользователе чата С ЗАЩИТОЙ ОТ ЧАСТЫХ ЗАПРОСОВ
     const fetchChatUserInfo = useCallback(async (chatId) => {
-        if (!canMakeRequest('fetchChatUserInfo')) {
+        if (!canMakeRequest('fetchChatUserInfo', chatId)) {
             console.log('🛡️ [Messenger] fetchChatUserInfo заблокирован cooldown-ом');
             return;
         }
@@ -189,7 +198,7 @@ function Messenger() {
 
     // Пометка чата как прочитанного С ЗАЩИТОЙ ОТ ЧАСТЫХ ЗАПРОСОВ
     const markChatAsRead = useCallback(async (chatId) => {
-        if (!canMakeRequest('markChatAsRead')) {
+        if (!canMakeRequest('markChatAsRead', chatId)) {
             console.log('🛡️ [Messenger] markChatAsRead заблокирован cooldown-ом');
             return;
         }
@@ -309,6 +318,7 @@ function Messenger() {
     // Загружаем сообщения при смене активного чата
     useEffect(() => {
         activeChatRef.current = activeChat ? activeChat.id : null;
+        lastActiveChatId.current = activeChat ? activeChat.id : null; // Обновляем последний активный чат
 
         if (activeChat) {
             console.log('🔄 [Messenger] Активный чат изменен на:', activeChat.id);
@@ -337,8 +347,8 @@ function Messenger() {
     
     // Получение сообщений для конкретного чата С ЗАЩИТОЙ ОТ ЧАСТЫХ ЗАПРОСОВ
     const fetchMessages = async (chatId) => {
-        if (!canMakeRequest('fetchMessages')) {
-            console.log('🛡️ [Messenger] fetchMessages заблокирован cooldown-ом');
+        if (!canMakeRequest('fetchMessages', chatId)) {
+            console.log('��️ [Messenger] fetchMessages заблокирован cooldown-ом');
             return;
         }
         
@@ -492,7 +502,7 @@ function Messenger() {
     
     // Функция для создания нового чата С ЗАЩИТОЙ ОТ ЧАСТЫХ ВЫЗОВОВ
     const createChat = async (userId) => {
-        if (!canMakeRequest('createChat')) {
+        if (!canMakeRequest('createChat', userId)) {
             console.log('🛡️ [Messenger] createChat заблокирован cooldown-ом');
             return;
         }
@@ -505,9 +515,13 @@ function Messenger() {
             });
             
             console.log('✅ [Messenger] Новый чат создан:', response.data);
-            // Обновляем список чатов и переключаемся на новый чат
+            
+            // Обновляем список чатов
             await fetchChats();
+            
+            // Активируем новый чат
             setActiveChat(response.data);
+            setError('');
             
         } catch (err) {
             console.error('❌ [Messenger] Ошибка создания чата:', err);
