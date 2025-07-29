@@ -185,10 +185,10 @@ router.post('/:id/respond-admin-request', authenticateToken, verifyAdminOrCreato
 router.post('/:id/invite-admin', authenticateToken, verifyAdminOrCreator, AdminController.inviteAdmin);
 
 // Принятие приглашения администратора
-router.post('/:id/accept-admin-invitation', authenticateToken, verifyAdminOrCreator, AdminController.acceptAdminInvitation);
+router.post('/:id/accept-admin-invitation', authenticateToken, verifyEmailRequired, AdminController.acceptAdminInvitation);
 
 // Отклонение приглашения администратора
-router.post('/:id/decline-admin-invitation', authenticateToken, verifyAdminOrCreator, AdminController.declineAdminInvitation);
+router.post('/:id/decline-admin-invitation', authenticateToken, verifyEmailRequired, AdminController.declineAdminInvitation);
 
 // Удаление администратора
 router.delete('/:id/admins/:userId', authenticateToken, verifyAdminOrCreator, AdminController.removeAdmin);
