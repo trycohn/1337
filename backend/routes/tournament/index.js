@@ -196,6 +196,9 @@ router.delete('/:id/admins/:userId', authenticateToken, verifyAdminOrCreator, Ad
 // Очистка истекших приглашений (глобальная операция)
 router.post('/admin-invitations/cleanup-expired', authenticateToken, verifyAdminOrCreator, AdminController.cleanupExpiredInvitations);
 
+// 📧 Получение приглашений администратора для текущего пользователя
+router.get('/admin-invitations/my', authenticateToken, AdminController.getUserInvitations);
+
 // Получение статистики приглашений (глобальная операция)
 router.get('/admin-invitations/stats', authenticateToken, verifyAdminOrCreator, AdminController.getInvitationStats);
 

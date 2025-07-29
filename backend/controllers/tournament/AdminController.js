@@ -124,6 +124,13 @@ class AdminController {
         
         res.json(stats);
     });
+
+    // 📧 Получение приглашений администратора для текущего пользователя
+    static getUserInvitations = asyncHandler(async (req, res) => {
+        const invitations = await AdminService.getUserAdminInvitations(req.user.id);
+        
+        res.json(invitations);
+    });
 }
 
 module.exports = AdminController; 

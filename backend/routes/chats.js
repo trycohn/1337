@@ -599,6 +599,35 @@ router.post('/mark-all-seen', authenticateToken, async (req, res) => {
     }
 });
 
+// 🆕 Получение информации о чате
+router.get('/:chatId/info', authenticateToken, async (req, res) => {
+    const { chatId } = req.params;
+    
+    try {
+        // Проверяем что пользователь является участником чата
+        const participantCheck = await pool.query(`
+            SELECT * FROM chat_participants 
+            WHERE chat_id = $1 AND user_id = $2
+        `, [chatId, req.user.id]);
+        
+        if (participantCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'У вас нет доступа к этому чату' });
+        }
+        
+        // Получаем информацию о чате
+        const chatInfo = await getChatInfo(chatId, req.user.id);
+        
+        if (!chatInfo) {
+            return res.status(404).json({ error: 'Чат не найден' });
+        }
+        
+        res.json(chatInfo);
+    } catch (err) {
+        console.error('Ошибка получения информации о чате:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении информации о чате' });
+    }
+});
+
 // Вспомогательная функция для получения информации о чате
 async function getChatInfo(chatId, userId) {
     const result = await pool.query(`

@@ -704,6 +704,30 @@ class AdminService {
             tournament_name: invitation.tournament_name
         };
     }
+
+    /**
+     * Получение приглашений администратора для конкретного пользователя
+     */
+    static async getUserAdminInvitations(userId) {
+        console.log(`📧 AdminService: Получение приглашений администратора для пользователя ${userId}`);
+
+        const invitationsResult = await pool.query(`
+            SELECT 
+                ai.*,
+                t.name as tournament_name,
+                u_inviter.username as inviter_username,
+                u_inviter.avatar_url as inviter_avatar
+            FROM admin_invitations ai
+            JOIN tournaments t ON ai.tournament_id = t.id
+            JOIN users u_inviter ON ai.inviter_id = u_inviter.id
+            WHERE ai.invitee_id = $1 
+              AND ai.status = 'pending'
+              AND ai.expires_at > NOW()
+            ORDER BY ai.created_at DESC
+        `, [userId]);
+
+        return invitationsResult.rows;
+    }
 }
 
 module.exports = AdminService; 
