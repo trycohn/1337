@@ -346,7 +346,8 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
             case 'admin_invitation':
                 // 🆕 Специальная обработка приглашений администраторов
                 const invitationId = message.metadata?.invitation_id;
-                const canRespondToInvitation = invitationId && message.metadata?.actions;
+                // 🔧 ИСПРАВЛЕНО: более мягкая проверка - достаточно наличия invitation_id
+                const canRespondToInvitation = invitationId && message.message_type === 'admin_invitation';
                 const invitationButtonTexts = getActionButtonsText();
                 const isInvitationProcessed = isNotificationProcessed();
                 
