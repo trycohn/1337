@@ -93,10 +93,16 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
             // 🆕 Обработка приглашений администраторов
             if (message.message_type === 'admin_invitation' && message.metadata?.invitation_id) {
                 const invitationId = message.metadata.invitation_id;
-                const endpoint = actionType === 'accept' ? 'accept' : 'decline';
+                const tournamentId = message.metadata.tournament_id;
+                const endpoint = actionType === 'accept' ? 'accept-admin-invitation' : 'decline-admin-invitation';
+                
+                if (!tournamentId) {
+                    alert('Ошибка: отсутствует ID турнира в приглашении');
+                    return;
+                }
                 
                 response = await axios.post(
-                    `/api/tournaments/admin-invitations/${invitationId}/${endpoint}`,
+                    `/api/tournaments/${tournamentId}/${endpoint}`,
                     {},
                     {
                         headers: {

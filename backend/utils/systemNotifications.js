@@ -244,14 +244,14 @@ async function sendAdminInviteNotification(recipientId, tournamentName, inviterU
                 label: '✅ Принять',
                 action: 'accept_admin_invitation',
                 style: 'success',
-                endpoint: `/api/tournaments/admin-invitations/${invitationId}/accept`
+                endpoint: `/api/tournaments/${tournamentId}/accept-admin-invitation`
             },
             {
                 type: 'decline', 
                 label: '❌ Отклонить',
                 action: 'decline_admin_invitation',
                 style: 'danger',
-                endpoint: `/api/tournaments/admin-invitations/${invitationId}/decline`
+                endpoint: `/api/tournaments/${tournamentId}/decline-admin-invitation`
             },
             {
                 type: 'view_tournament',
