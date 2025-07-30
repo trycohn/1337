@@ -276,6 +276,9 @@ function Layout() {
             {loading && <Loader />}
             <header className="header">
                     <div className="nav-container">
+                        <Link to="/" className="site-logo">
+                            <h1>1337</h1>
+                        </Link>
                         <button className="hamburger" onClick={toggleMenu}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>

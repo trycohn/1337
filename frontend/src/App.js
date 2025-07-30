@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import Home from './components/Home';
+import HomePage from './pages/HomePage'; // Заменяем Home на HomePage
 import TournamentDetails from './components/TournamentDetails';
 import TournamentsPage from './pages/TournamentsPage';
 import Layout from './components/Layout'; // Импортируем Layout как корневой компонент
@@ -53,7 +53,7 @@ function App() {
                     <Router>
                         <Routes>
                             <Route path="/" element={<Layout />}>
-                                <Route index element={<Home />} />
+                                <Route index element={<HomePage />} /> {/* Заменяем Home на HomePage */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
                                 <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />

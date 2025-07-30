@@ -21,4 +21,36 @@
     text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
 } 
 
+/* Логотип сайта */
+.site-logo {
+  text-decoration: none;
+  margin-right: 30px;
+}
+
+.site-logo h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ff0000;
+  margin: 0;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.site-logo:hover h1 {
+  transform: scale(1.05);
+  text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .site-logo {
+    margin-right: auto;
+  }
+  
+  .site-logo h1 {
+    font-size: 1.5rem;
+  }
+}
+
  
