@@ -151,6 +151,14 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
             alert(successMessage);
             setResponded(true);
             
+            // 🆕 Перезагружаем страницу после принятия приглашения администратора
+            if (message.message_type === 'admin_invitation' && actionType === 'accept') {
+                setTimeout(() => {
+                    console.log('🔄 Обновляем страницу для применения прав администратора...');
+                    window.location.reload();
+                }, 1500); // Даем время показать сообщение об успехе
+            }
+            
             // Обновляем метаданные сообщения для отображения статуса
             if (message.content_meta) {
                 message.content_meta.action = actionType;

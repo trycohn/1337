@@ -1597,7 +1597,7 @@ function TournamentDetails() {
         // Проверка прав администратора
         setIsCreator(user.id === tournament.created_by);
         const isAdmin = Array.isArray(tournament.admins) ? 
-            tournament.admins.some(admin => admin?.id === user.id) : false;
+            tournament.admins.some(admin => admin?.user_id === user.id) : false;
         setIsAdminOrCreator(user.id === tournament.created_by || isAdmin);
 
         // Проверка статуса запроса на администрирование

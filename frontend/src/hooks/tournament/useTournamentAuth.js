@@ -53,7 +53,7 @@ export const useTournamentAuth = (tournament, tournamentId) => {
         const isCreatorCheck = user.id === tournament.created_by;
         setIsCreator(isCreatorCheck);
         
-        const isAdmin = tournament.admins?.some(admin => admin.id === user.id);
+        const isAdmin = tournament.admins?.some(admin => admin.user_id === user.id);
         setIsAdminOrCreator(isCreatorCheck || isAdmin);
 
         // Проверка статуса запроса на администрирование
