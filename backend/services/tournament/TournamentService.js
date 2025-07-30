@@ -1116,6 +1116,45 @@ class TournamentService {
             return false;
         }
     }
+
+    // Получение победителей последних турниров
+    static async getWinners(limit = 5) {
+        try {
+            const result = await pool.query(`
+                SELECT 
+                    t.id,
+                    t.name as tournament_name,
+                    t.game,
+                    t.completed_at as date,
+                    CASE 
+                        WHEN t.tournament_type = 'team' THEN tt.name
+                        ELSE u.username
+                    END as winner_name,
+                    CASE 
+                        WHEN t.tournament_type = 'team' THEN tt.id
+                        ELSE tp.user_id
+                    END as winner_id,
+                    '$' || COALESCE(t.prize_pool, 50000) as prize
+                FROM tournaments t
+                LEFT JOIN tournament_participants tp ON tp.tournament_id = t.id AND tp.placement = 1
+                LEFT JOIN users u ON u.id = tp.user_id
+                LEFT JOIN tournament_teams tt ON tt.tournament_id = t.id 
+                    AND EXISTS (
+                        SELECT 1 FROM tournament_team_members ttm 
+                        WHERE ttm.team_id = tt.id AND ttm.participant_id = tp.id
+                    )
+                WHERE t.status = 'completed' 
+                    AND t.completed_at IS NOT NULL
+                ORDER BY t.completed_at DESC
+                LIMIT $1
+            `, [limit]);
+
+            return result.rows;
+        } catch (error) {
+            console.error('Ошибка при получении победителей:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = TournamentService; 

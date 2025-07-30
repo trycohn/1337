@@ -313,6 +313,7 @@ const achievementsRouter = require('./routes/achievements'); // Роуты дл�
 const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
 // 🔗 СИСТЕМА РЕФЕРАЛЬНЫХ ПРИГЛАШЕНИЙ v1.0.0
 const referralsRouter = require('./routes/referrals');
+const statsRouter = require('./routes/stats'); // API для статистики платформы
 
 // Маршруты API
 app.use('/api/auth', authRouter);
@@ -323,6 +324,7 @@ app.use('/api/tournaments', modularTournamentsRouter); // 🎯 ЕДИНСТВЕ�
 app.use('/api/tournamentPlayers', tournamentPlayersRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/statistics', statisticsRouter);
+app.use('/api/stats', statsRouter); // Маршрут для общей статистики платформы
 app.use('/api/dota-stats', dotaStatsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/playerStats', playerStatsRouter);

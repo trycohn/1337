@@ -46,6 +46,9 @@ router.get('/games', TournamentController.getGames);
 // 🎯 Получение доступных типов распределения (ДОЛЖНО БЫТЬ ПЕРЕД /:id!)
 router.get('/seeding-types', BracketController.getSeedingTypes);
 
+// Получение победителей турниров (ДОЛЖНО БЫТЬ ПЕРЕД /:id!)
+router.get('/winners', TournamentController.getWinners);
+
 // Получение всех турниров
 router.get('/', TournamentController.getAllTournaments);
 

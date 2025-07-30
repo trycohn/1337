@@ -779,6 +779,21 @@ class TournamentController {
             team_size: teamSize
         });
     });
+
+    // Получение победителей последних турниров
+    static getWinners = asyncHandler(async (req, res) => {
+        try {
+            const limit = parseInt(req.query.limit) || 5;
+
+            // Получаем последние завершенные турниры с победителями
+            const result = await TournamentService.getWinners(limit);
+
+            res.json(result);
+        } catch (error) {
+            console.error('Ошибка при получении победителей:', error);
+            res.status(500).json({ error: 'Ошибка при получении победителей' });
+        }
+    });
 }
 
 module.exports = TournamentController; 
