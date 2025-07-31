@@ -135,7 +135,7 @@
 
 .teams-header h2 {
     margin: 0;
-    color: #333;
+    color: #ffffff;
     font-size: 28px;
 }
 
@@ -256,9 +256,8 @@
 }
 
 .temporary-badge {
-    background: #e3f2fd;
-    color: #1565c0;
-    border: 1px solid #bbdefb;
+    background: #000000;
+    border: 1px solid #ffffff;
 }
 
 /* РЈС‡Р°СЃС‚РЅРёРєРё РєРѕРјР°РЅРґС‹ */
