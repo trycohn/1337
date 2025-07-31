@@ -17,21 +17,11 @@ import './CreateTournament.css';
 // Регистрируем русскую локаль
 registerLocale('ru', ru);
 
-// Карты CS2 для лобби
-const CS2_MAPS = [
-  'de_mirage',
-  'de_inferno', 
-  'de_dust2',
-  'de_nuke',
-  'de_ancient',
-  'de_vertigo',
-  'de_anubis'
-];
-
 function CreateTournament() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth(); // 🆕 Получаем пользователя из AuthContext
   const [games, setGames] = useState([]);
+  const [cs2Maps, setCs2Maps] = useState([]); // 🆕 Добавляем состояние для карт CS2
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -79,6 +69,13 @@ function CreateTournament() {
         console.log('Ответ от сервера:', response.data);
         setGames(response.data);
         console.log('Состояние games обновлено:', response.data);
+        
+        // 🆕 Загружаем карты CS2 из БД
+        console.log('Загрузка карт CS2...');
+        const mapsResponse = await axios.get('/api/maps?game=Counter-Strike 2');
+        console.log('Карты CS2 из БД:', mapsResponse.data);
+        setCs2Maps(mapsResponse.data);
+        console.log('Загружено карт CS2:', mapsResponse.data.length);
       } catch (error) {
         console.error('Ошибка загрузки игр:', error);
         console.error('Детали ошибки:', error.response?.data);
@@ -666,7 +663,7 @@ function CreateTournament() {
                     onChange={(e) => setFormData(prev => ({ 
                       ...prev, 
                       lobby_enabled: e.target.checked,
-                      selected_maps: e.target.checked ? CS2_MAPS : []
+                      selected_maps: e.target.checked ? cs2Maps.map(m => m.name) : []
                     }))}
                     disabled={!verificationStatus.canCreate}
                   />
@@ -703,12 +700,12 @@ function CreateTournament() {
                   <div className="form-group">
                     <label>Карты турнира (выберите 7 карт)</label>
                     <div className="maps-selection">
-                      {CS2_MAPS.map(map => (
-                        <label key={map} className="map-checkbox">
+                      {cs2Maps.map(map => (
+                        <label key={map.id} className="map-checkbox">
                           <input
                             type="checkbox"
-                            value={map}
-                            checked={formData.selected_maps.includes(map)}
+                            value={map.name}
+                            checked={formData.selected_maps.includes(map.name)}
                             onChange={(e) => {
                               const mapName = e.target.value;
                               setFormData(prev => ({
@@ -720,7 +717,7 @@ function CreateTournament() {
                             }}
                             disabled={!verificationStatus.canCreate}
                           />
-                          <span>{map.replace('de_', '').charAt(0).toUpperCase() + map.replace('de_', '').slice(1)}</span>
+                          <span>{map.display_name || map.name.replace('de_', '').charAt(0).toUpperCase() + map.name.replace('de_', '').slice(1)}</span>
                         </label>
                       ))}
                     </div>

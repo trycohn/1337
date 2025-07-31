@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import './MapSelectionBoard.css';
 
 // Карты CS2
-const CS2_MAPS_INFO = {
+const MAP_INFO = {
     'de_mirage': { displayName: 'Mirage', thumbnail: '/images/maps/de_mirage.jpg' },
     'de_inferno': { displayName: 'Inferno', thumbnail: '/images/maps/de_inferno.jpg' },
     'de_dust2': { displayName: 'Dust II', thumbnail: '/images/maps/de_dust2.jpg' },
@@ -109,7 +109,7 @@ function MapSelectionBoard({
             <div className="lobby-maps-grid">
                 {maps.map((mapData) => {
                     const mapName = mapData.map_name;
-                    const mapInfo = CS2_MAPS_INFO[mapName] || { 
+                    const mapInfo = MAP_INFO[mapName] || { 
                         displayName: mapName, 
                         thumbnail: '/images/maps/default.jpg' 
                     };
@@ -179,7 +179,7 @@ function MapSelectionBoard({
                     <h4>📜 История выборов:</h4>
                     <div className="lobby-history-list">
                         {selections.map((selection, index) => {
-                            const mapInfo = CS2_MAPS_INFO[selection.map_name] || { 
+                            const mapInfo = MAP_INFO[selection.map_name] || { 
                                 displayName: selection.map_name 
                             };
                             return (
@@ -204,7 +204,7 @@ function MapSelectionBoard({
                         {selections
                             .filter(s => s.action_type === 'pick')
                             .map((selection, index) => {
-                                const mapInfo = CS2_MAPS_INFO[selection.map_name] || { 
+                                const mapInfo = MAP_INFO[selection.map_name] || { 
                                     displayName: selection.map_name 
                                 };
                                 return (
