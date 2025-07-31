@@ -1228,7 +1228,7 @@ header.header {
 
 .sort-select {
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.1);
+    background: #000000;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
     color: #ffffff;
@@ -1239,7 +1239,7 @@ header.header {
 }
 
 .sort-select:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: #111111;
     border-color: #ff0000;
 }
 
