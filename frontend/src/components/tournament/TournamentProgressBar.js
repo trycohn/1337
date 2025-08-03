@@ -12,9 +12,10 @@ import './TournamentProgressBar.css';
  * Рассчитывает прогресс турнира на основе завершенных матчей
  * @param {Array} matches - Массив матчей турнира
  * @param {String} tournamentStatus - Статус турнира
+ * @param {Object} tournament - Объект турнира с метаданными
  * @returns {Object} Объект с данными прогресса
  */
-const calculateTournamentProgress = (matches = [], tournamentStatus) => {
+const calculateTournamentProgress = (matches = [], tournamentStatus, tournament = null) => {
     // Если турнир не начался
     if (tournamentStatus === 'registration') {
         return {
@@ -35,10 +36,35 @@ const calculateTournamentProgress = (matches = [], tournamentStatus) => {
         };
     }
 
-    // Фильтруем только реальные матчи (исключаем технические)
-    const realMatches = matches.filter(match => 
-        match.team1_id && match.team2_id
-    );
+    // 🔧 ИСПРАВЛЕНО: определяем тип турнира для правильного подсчета
+    const bracketType = tournament?.bracket_type || 'single_elimination';
+    const isDoubleElimination = bracketType === 'double_elimination' || 
+                               bracketType === 'doubleElimination' ||
+                               bracketType === 'DOUBLE_ELIMINATION';
+
+    let realMatches;
+    let totalMatches;
+
+    if (isDoubleElimination) {
+        // 🏆 DOUBLE ELIMINATION: все созданные матчи потенциально играбельны
+        // Не фильтруем по team1_id/team2_id, т.к. многие матчи заполняются по ходу турнира
+        realMatches = matches.filter(match => 
+            // Исключаем только технические/служебные матчи если они есть
+            match.bracket_type && 
+            ['winner', 'loser', 'grand_final', 'grand_final_reset'].includes(match.bracket_type)
+        );
+        totalMatches = realMatches.length;
+        
+        console.log(`🏆 DE турнир: всего матчей в структуре: ${totalMatches}`);
+    } else {
+        // 🎯 SINGLE ELIMINATION: фильтруем только матчи с участниками
+        realMatches = matches.filter(match => 
+            match.team1_id && match.team2_id
+        );
+        totalMatches = realMatches.length;
+        
+        console.log(`🎯 SE турнир: матчи с участниками: ${totalMatches}`);
+    }
 
     // 🔧 ИСПРАВЛЕНО: правильная проверка завершенных матчей
     const completedMatches = realMatches.filter(match => {
@@ -46,25 +72,29 @@ const calculateTournamentProgress = (matches = [], tournamentStatus) => {
         const hasValidState = match.state === 'DONE' || match.state === 'SCORE_DONE';
         const hasScore = (match.score1 !== null && match.score1 !== undefined) || 
                         (match.score2 !== null && match.score2 !== undefined);
+        const hasWinner = match.winner_team_id !== null && match.winner_team_id !== undefined;
         
-        return hasValidState || hasScore;
+        return hasValidState || hasScore || hasWinner;
     });
 
-    const totalMatches = realMatches.length;
     const completed = completedMatches.length;
     
     // 🔧 ОТЛАДКА: логируем данные для проверки
     console.log('🏆 TournamentProgressBar Debug:', {
         tournamentStatus,
-        totalMatches: matches.length,
+        bracketType,
+        isDoubleElimination,
+        totalMatchesFromDB: matches.length,
         realMatches: realMatches.length,
         completedMatches: completed,
         percentage: totalMatches > 0 ? Math.round((completed / totalMatches) * 100) : 0,
         sampleMatch: realMatches[0] ? {
             id: realMatches[0].id,
+            bracket_type: realMatches[0].bracket_type,
             state: realMatches[0].state,
             score1: realMatches[0].score1,
             score2: realMatches[0].score2,
+            winner_team_id: realMatches[0].winner_team_id,
             team1_id: realMatches[0].team1_id,
             team2_id: realMatches[0].team2_id
         } : null
@@ -76,6 +106,8 @@ const calculateTournamentProgress = (matches = [], tournamentStatus) => {
     let statusText = `${completed} из ${totalMatches} матчей`;
     if (totalMatches === 0) {
         statusText = 'Матчи не созданы';
+    } else if (isDoubleElimination) {
+        statusText = `${completed} из ${totalMatches} матчей (DE)`;
     }
 
     return {
@@ -91,17 +123,19 @@ const calculateTournamentProgress = (matches = [], tournamentStatus) => {
  * @param {Object} props
  * @param {Array} props.matches - Массив матчей турнира
  * @param {String} props.tournamentStatus - Статус турнира
+ * @param {Object} props.tournament - Объект турнира с метаданными
  * @param {Boolean} props.compact - Компактная версия
  * @returns {JSX.Element}
  */
 const TournamentProgressBar = ({ 
     matches = [], 
     tournamentStatus = 'registration',
+    tournament = null,
     compact = false 
 }) => {
     const progressData = useMemo(() => 
-        calculateTournamentProgress(matches, tournamentStatus),
-        [matches, tournamentStatus]
+        calculateTournamentProgress(matches, tournamentStatus, tournament),
+        [matches, tournamentStatus, tournament]
     );
 
     const { percentage, statusText } = progressData;

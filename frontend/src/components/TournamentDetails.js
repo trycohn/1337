@@ -989,6 +989,7 @@ function TournamentDetails() {
                             <TournamentProgressBar 
                                 matches={matches}
                                 tournamentStatus={tournament?.status}
+                                tournament={tournament}
                             />
                         )}
 
@@ -1138,6 +1139,7 @@ function TournamentDetails() {
                             <TournamentProgressBar 
                                 matches={matches}
                                 tournamentStatus={tournament?.status}
+                                tournament={tournament}
                             />
                         )}
 
