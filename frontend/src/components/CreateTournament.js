@@ -128,7 +128,7 @@ function CreateTournament() {
             start_date: formData.start_date,
             prize_pool: formData.prize_pool,
             rules: formData.rules,
-            bracket_type: formData.format === 'mix' ? formData.bracket_type : 'single_elimination',
+            bracket_type: formData.bracket_type, // 🔧 ИСПРАВЛЕНО: передаем bracket_type как есть для всех типов турниров
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
             seeding_type: formData.seeding_type,
             seeding_config: formData.seeding_config,
@@ -205,7 +205,7 @@ function CreateTournament() {
         team_size: format === 'mix' ? 5 : prev.team_size,
         game: format === 'mix' ? 'counter strike 2' : prev.game, // Исправлено: используем точное название из БД
         participant_type: format === 'mix' ? 'solo' : 'team',
-        bracket_type: format === 'mix' ? 'single_elimination' : 'single_elimination',
+        // 🔧 ИСПРАВЛЕНО: НЕ сбрасываем bracket_type, оставляем выбор пользователя
         mix_rating_type: format === 'mix' ? 'faceit' : prev.mix_rating_type,
         seeding_type: 'random',
         seeding_config: {}
@@ -512,6 +512,30 @@ function CreateTournament() {
           </div>
         </div>
 
+        {/* Настройки турнирной сетки */}
+        <div className="form-section">
+          <h3 className="section-title">Турнирная сетка</h3>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Тип турнирной сетки</label>
+              <select
+                name="bracket_type"
+                value={formData.bracket_type}
+                onChange={handleInputChange}
+                disabled={!verificationStatus.canCreate}
+                required
+              >
+                <option value="single_elimination">Single Elimination</option>
+                <option value="double_elimination">Double Elimination</option>
+              </select>
+              <small className="form-hint">
+                {formData.bracket_type === 'single_elimination' && 'Классическая система на выбывание - проигравший исключается из турнира'}
+                {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания - каждый участник может проиграть один раз'}
+              </small>
+            </div>
+          </div>
+        </div>
+
         {/* Настройки Mix турнира */}
         {formData.format === 'mix' && (
           <div className="form-section">
@@ -549,20 +573,6 @@ function CreateTournament() {
                   {formData.mix_rating_type === 'premier' && 'Команды будут сформированы на основе CS2 Premier ранга участников'}
                   {formData.mix_rating_type === 'mixed' && 'Участники будут распределены случайно, без учета рейтинга'}
                 </small>
-              </div>
-              
-              <div className="form-group">
-                <label>Тип турнирной сетки</label>
-                <select
-                  name="bracket_type"
-                  value={formData.bracket_type}
-                  onChange={handleInputChange}
-                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
-                  required
-                >
-                  <option value="single_elimination">Single Elimination</option>
-                  <option value="double_elimination">Double Elimination</option>
-                </select>
               </div>
             </div>
           </div>

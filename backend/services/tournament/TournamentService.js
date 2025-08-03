@@ -155,7 +155,7 @@ class TournamentService {
             max_participants: max_participants || null,
             start_date: start_date || null,
             description: description || null,
-            bracket_type: bracket_type || null,
+            bracket_type: bracket_type || 'single_elimination', // 🔧 ИСПРАВЛЕНО: устанавливаем single_elimination по умолчанию
             team_size: team_size || 1,
             mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null,
             lobby_enabled: lobby_enabled || false
