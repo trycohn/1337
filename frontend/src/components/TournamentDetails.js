@@ -697,6 +697,9 @@ function TournamentDetails() {
                     round: match.round !== undefined ? match.round : 0,
                     // 🔧 ИСПРАВЛЕНО: Добавляем проверку bracket_type перед использованием
                     is_third_place_match: (match.bracket_type && match.bracket_type === 'placement') || false,
+                    // 🆕 ДОБАВЛЕНО: Передаем tournament_match_number для локальной нумерации
+                    tournament_match_number: match.tournament_match_number,
+                    match_number: match.match_number,
                     participants: [
                         createSafeParticipant(
                             match.team1_id,
