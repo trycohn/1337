@@ -270,7 +270,7 @@
     gap: 12px;
     padding: 10px;
     border-radius: 6px;
-    background-color: #2a2a2a;
+    background-color: #111111;
     border: 1px solid #333333;
 }
 .participants-modal .participant-item:hover {
