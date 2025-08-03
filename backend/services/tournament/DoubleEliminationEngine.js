@@ -593,25 +593,170 @@ class DoubleEliminationEngine {
     
     /**
      * 👥 Размещение участников в первом раунде Winners Bracket
+     * 🆕 УЛУЧШЕННЫЙ АЛГОРИТМ: равномерное распределение, исключение BYE vs BYE матчей
      */
     static async _placeParticipantsInWinnersBracket(client, winnersMatches, participants, bracketMath) {
         console.log(`👥 Размещение ${participants.length} участников в Winners Bracket`);
+        console.log(`📊 Сетка рассчитана на ${bracketMath.participants} участников (bye-раунды: ${bracketMath.byesNeeded})`);
         
         const firstRoundMatches = winnersMatches.filter(m => m.round === 1);
+        console.log(`🥊 Матчей в первом раунде: ${firstRoundMatches.length}`);
         
-        for (let i = 0; i < firstRoundMatches.length && i * 2 < participants.length; i++) {
+        // 🆕 УЛУЧШЕННЫЙ АЛГОРИТМ: равномерное распределение участников
+        const optimizedPlacement = this._calculateOptimizedPlacement(participants, firstRoundMatches.length);
+        
+        console.log(`🎯 Оптимизированное размещение (исключаем BYE vs BYE):`);
+        for (let i = 0; i < optimizedPlacement.length; i++) {
+            const placement = optimizedPlacement[i];
+            console.log(`   Матч ${i + 1}: ${placement.team1?.name || placement.team1?.id || 'BYE'} vs ${placement.team2?.name || placement.team2?.id || 'BYE'}`);
+        }
+        
+        // Применяем оптимизированное размещение
+        for (let i = 0; i < firstRoundMatches.length; i++) {
             const match = firstRoundMatches[i];
-            const team1 = participants[i * 2];
-            const team2 = participants[i * 2 + 1] || null;
+            const placement = optimizedPlacement[i];
             
             await client.query(`
                 UPDATE matches 
                 SET team1_id = $1, team2_id = $2 
                 WHERE id = $3
-            `, [team1.id, team2?.id || null, match.id]);
+            `, [placement.team1?.id || null, placement.team2?.id || null, match.id]);
             
-            console.log(`✅ Winners Bracket матч ${match.match_number}: ${team1.name || team1.id} vs ${team2?.name || team2?.id || 'BYE'}`);
+            const team1Name = placement.team1?.name || placement.team1?.id || 'BYE';
+            const team2Name = placement.team2?.name || placement.team2?.id || 'BYE';
+            
+            console.log(`✅ Winners Bracket матч ${match.match_number}: ${team1Name} vs ${team2Name}`);
         }
+    }
+    
+    /**
+     * 🧮 Расчет оптимизированного размещения участников
+     * Исключает BYE vs BYE матчи путем равномерного распределения
+     * @param {Array} participants - Участники турнира
+     * @param {number} totalMatches - Количество матчей в первом раунде
+     * @returns {Array} - Массив объектов {team1, team2} для каждого матча
+     */
+    static _calculateOptimizedPlacement(participants, totalMatches) {
+        const placement = [];
+        const totalSlots = totalMatches * 2; // Всего позиций в матчах
+        const byesNeeded = totalSlots - participants.length;
+        
+        console.log(`🧮 Расчет размещения: ${participants.length} участников, ${totalMatches} матчей (${totalSlots} позиций), ${byesNeeded} bye-раундов`);
+        
+        if (byesNeeded === 0) {
+            // Идеальный случай: участников ровно столько, сколько позиций
+            console.log(`✅ Идеальное заполнение: без bye-раундов`);
+            for (let i = 0; i < totalMatches; i++) {
+                placement.push({
+                    team1: participants[i * 2],
+                    team2: participants[i * 2 + 1]
+                });
+            }
+        } else if (byesNeeded >= totalMatches) {
+            // Критический случай: bye-раундов больше чем матчей
+            // Распределяем участников по одному на матч, остальные матчи - BYE vs BYE
+            console.log(`⚠️ Критическое заполнение: ${byesNeeded} bye-раундов для ${totalMatches} матчей`);
+            for (let i = 0; i < totalMatches; i++) {
+                if (i < participants.length) {
+                    placement.push({
+                        team1: participants[i],
+                        team2: null // BYE
+                    });
+                } else {
+                    placement.push({
+                        team1: null, // BYE
+                        team2: null  // BYE
+                    });
+                }
+            }
+        } else {
+            // 🎯 ОСНОВНОЙ АЛГОРИТМ: умное распределение bye-раундов
+            console.log(`🎯 Умное распределение: ${byesNeeded} bye-раундов равномерно по ${totalMatches} матчам`);
+            
+            // Вычисляем, сколько матчей будет с одним bye, а сколько без bye
+            const matchesWithBye = byesNeeded;
+            const matchesWithoutBye = totalMatches - byesNeeded;
+            
+            console.log(`   - Матчей без bye: ${matchesWithoutBye}`);
+            console.log(`   - Матчей с одним bye: ${matchesWithBye}`);
+            
+            // Создаем список позиций для равномерного распределения bye
+            const byePositions = this._calculateEvenByeDistribution(totalMatches, byesNeeded);
+            console.log(`   - Позиции bye-раундов: [${byePositions.join(', ')}]`);
+            
+            let participantIndex = 0;
+            
+            for (let matchIndex = 0; matchIndex < totalMatches; matchIndex++) {
+                const hasByeInThisMatch = byePositions.includes(matchIndex);
+                
+                if (hasByeInThisMatch) {
+                    // Матч с одним bye
+                    placement.push({
+                        team1: participants[participantIndex++],
+                        team2: null // BYE
+                    });
+                } else {
+                    // Матч без bye (два участника)
+                    placement.push({
+                        team1: participants[participantIndex++],
+                        team2: participants[participantIndex++]
+                    });
+                }
+            }
+        }
+        
+        // Валидация результата
+        const actualParticipants = placement.reduce((count, match) => {
+            return count + (match.team1 ? 1 : 0) + (match.team2 ? 1 : 0);
+        }, 0);
+        
+        const byeVsByeMatches = placement.filter(match => !match.team1 && !match.team2).length;
+        
+        console.log(`✅ Валидация размещения:`);
+        console.log(`   - Участников размещено: ${actualParticipants} (ожидалось: ${participants.length})`);
+        console.log(`   - BYE vs BYE матчей: ${byeVsByeMatches}`);
+        
+        if (actualParticipants !== participants.length) {
+            console.error(`❌ ОШИБКА: потеряны участники в размещении!`);
+        }
+        
+        return placement;
+    }
+    
+    /**
+     * 📐 Расчет равномерного распределения bye-раундов по матчам
+     * @param {number} totalMatches - Общее количество матчей
+     * @param {number} byesNeeded - Количество bye-раундов
+     * @returns {Array} - Массив индексов матчей, которые получат bye
+     */
+    static _calculateEvenByeDistribution(totalMatches, byesNeeded) {
+        if (byesNeeded === 0) return [];
+        if (byesNeeded >= totalMatches) return Array.from({length: totalMatches}, (_, i) => i);
+        
+        // Равномерное распределение bye по матчам
+        const step = totalMatches / byesNeeded;
+        const byePositions = [];
+        
+        for (let i = 0; i < byesNeeded; i++) {
+            const position = Math.floor(i * step);
+            byePositions.push(position);
+        }
+        
+        // Если есть дубликаты, распределяем их равномерно
+        const uniquePositions = [...new Set(byePositions)];
+        if (uniquePositions.length < byesNeeded) {
+            // Добавляем недостающие позиции
+            const remaining = byesNeeded - uniquePositions.length;
+            for (let i = 0; i < remaining; i++) {
+                let position = (uniquePositions[uniquePositions.length - 1] + 1 + i) % totalMatches;
+                while (uniquePositions.includes(position)) {
+                    position = (position + 1) % totalMatches;
+                }
+                uniquePositions.push(position);
+            }
+        }
+        
+        return uniquePositions.slice(0, byesNeeded).sort((a, b) => a - b);
     }
     
     /**
