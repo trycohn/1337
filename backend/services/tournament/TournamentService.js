@@ -938,8 +938,7 @@ class TournamentService {
                     winner_team_id = NULL,
                     score1 = NULL,
                     score2 = NULL,
-                    status = 'pending',
-                    updated_at = CURRENT_TIMESTAMP
+                    status = 'pending'
                 WHERE tournament_id = $1
                   AND (winner_team_id IS NOT NULL 
                        OR score1 IS NOT NULL 
@@ -967,8 +966,7 @@ class TournamentService {
                 const updateQuery = `
                     UPDATE matches 
                     SET team1_id = $1,
-                        team2_id = $2,
-                        updated_at = CURRENT_TIMESTAMP
+                        team2_id = $2
                     WHERE id = $3 
                       AND tournament_id = $4
                       AND round = 1
