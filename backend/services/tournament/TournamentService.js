@@ -934,17 +934,17 @@ class TournamentService {
             console.log(`🔄 [manualBracketEdit] Сбрасываем результаты всех матчей турнира ${tournamentId}`);
             
             const clearResultsQuery = `
-                UPDATE matches 
-                SET winner_team_id = NULL,
+                UPDATE matches SET 
+                    winner_team_id = NULL,
                     score1 = NULL,
                     score2 = NULL,
-                    state = 'PENDING',
+                    status = 'pending',
                     updated_at = CURRENT_TIMESTAMP
                 WHERE tournament_id = $1
                   AND (winner_team_id IS NOT NULL 
                        OR score1 IS NOT NULL 
                        OR score2 IS NOT NULL 
-                       OR state != 'PENDING')
+                       OR status != 'pending')
             `;
             
             const clearResult = await client.query(clearResultsQuery, [tournamentId]);
