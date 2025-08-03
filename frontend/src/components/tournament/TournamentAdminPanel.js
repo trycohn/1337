@@ -8,7 +8,9 @@
  * @features Аватары участников, ELO рейтинги, кнопки в заголовке, масштабируемость
  */
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import ManualBracketEditor from './ManualBracketEditor';
 import { Link } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
 import TournamentSettingsPanel from './TournamentSettingsPanel';
@@ -42,6 +44,28 @@ const TournamentAdminPanel = ({
     // 🆕 НОВЫЙ ПРОПС ДЛЯ СОЗДАНИЯ ЛОББИ МАТЧА
     onCreateMatchLobby
 }) => {
+    // 🆕 Состояние для модального окна ручного редактирования сетки
+    const [showManualBracketEditor, setShowManualBracketEditor] = useState(false);
+    
+    // ✏️ Обработчики для ручного редактирования сетки
+    const handleManualBracketSave = useCallback(async (result) => {
+        try {
+            console.log('✅ Ручное редактирование сохранено:', result);
+            // Показываем уведомление об успехе
+            alert(`Расстановка участников обновлена!\nОбновлено матчей: ${result.updatedMatches}\nОчищено результатов: ${result.clearedResults}`);
+            
+            // Перезагружаем страницу для отображения изменений
+            window.location.reload();
+        } catch (error) {
+            console.error('❌ Ошибка при сохранении ручного редактирования:', error);
+            alert('Ошибка при сохранении изменений: ' + (error.response?.data?.message || error.message));
+        }
+    }, []);
+
+    const handleCloseManualBracketEditor = useCallback(() => {
+        setShowManualBracketEditor(false);
+    }, []);
+
     if (!isCreatorOrAdmin) {
         return null;
     }
@@ -458,6 +482,18 @@ const TournamentAdminPanel = ({
                         <p>⚠️ Действия в этой секции необратимы. Будьте осторожны!</p>
                     </div>
                     <div className="danger-actions">
+                        {/* ✏️ РУЧНОЕ РЕДАКТИРОВАНИЕ СЕТКИ - ТОЛЬКО ДЛЯ СОЗДАТЕЛЯ */}
+                        {tournament?.created_by === user?.id && matches && matches.length > 0 && (
+                            <button 
+                                className="action-btn-v2 danger-btn manual-bracket-btn"
+                                onClick={() => setShowManualBracketEditor(true)}
+                                disabled={isLoading}
+                                title="Изменить расстановку участников вручную (все результаты будут сброшены)"
+                            >
+                                ✏️ Изменить расстановку
+                            </button>
+                        )}
+                        
                         {/* 🗑️ УДАЛЕНИЕ ТУРНИРА - ТОЛЬКО ДЛЯ СОЗДАТЕЛЯ */}
                         {tournament?.created_by === user?.id && (
                             <button 
@@ -469,14 +505,27 @@ const TournamentAdminPanel = ({
                                 🗑️ Удалить турнир
                             </button>
                         )}
+                        
                         {tournament?.created_by !== user?.id && (
                             <div className="creator-only-warning">
-                                <p>⚠️ Удаление турнира доступно только создателю</p>
+                                <p>⚠️ Критические действия доступны только создателю турнира</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* 🎯 МОДАЛЬНОЕ ОКНО РУЧНОГО РЕДАКТИРОВАНИЯ СЕТКИ */}
+            {showManualBracketEditor && (
+                <ManualBracketEditor
+                    tournament={tournament}
+                    participants={participants}
+                    matches={matches}
+                    onSave={handleManualBracketSave}
+                    onClose={handleCloseManualBracketEditor}
+                    isLoading={isLoading}
+                />
+            )}
         </div>
     );
 };

@@ -232,6 +232,9 @@ router.get('/:id/bracket-statistics', authenticateToken, verifyAdminOrCreator, B
 // 🗑️ Очистка результатов турнирной сетки
 router.post('/:id/clear-bracket-results', authenticateToken, verifyAdminOrCreator, BracketController.clearBracketResults);
 
+// 🆕 Ручное редактирование сетки
+router.post('/:id/manual-bracket-edit', authenticateToken, verifyAdminOrCreator, TournamentController.manualBracketEdit);
+
 // ===========================================
 // 🎮 РОУТЫ ЛОББИ МАТЧЕЙ (CS2)
 // ===========================================

@@ -902,6 +902,144 @@ class TournamentService {
     }
 
     /**
+     * ✏️ Ручное редактирование сетки турнира
+     */
+    static async manualBracketEdit(tournamentId, bracketData, userId) {
+        console.log(`✏️ TournamentService: Ручное редактирование сетки турнира ${tournamentId}`);
+
+        // Проверка прав доступа - только создатель турнира
+        const tournament = await this._checkTournamentCreatorAccess(tournamentId, userId);
+        
+        // 🔧 ВАЛИДАЦИЯ УСЛОВИЙ
+        if (tournament.status === 'completed') {
+            throw new Error('Нельзя редактировать сетку завершенного турнира');
+        }
+        
+        // Проверка наличия сгенерированной сетки
+        const matchesCount = await MatchRepository.getCountByTournamentId(tournamentId);
+        if (matchesCount === 0) {
+            throw new Error('Нельзя редактировать несуществующую сетку. Сначала сгенерируйте сетку турнира');
+        }
+
+        console.log(`📊 [manualBracketEdit] Турнир ${tournamentId}: найдено ${matchesCount} матчей для редактирования`);
+
+        const client = await pool.connect();
+        let updatedMatches = 0;
+        let clearedResults = 0;
+
+        try {
+            await client.query('BEGIN');
+
+            // 🔄 ШАГ 1: Сброс всех результатов матчей
+            console.log(`🔄 [manualBracketEdit] Сбрасываем результаты всех матчей турнира ${tournamentId}`);
+            
+            const clearResultsQuery = `
+                UPDATE matches 
+                SET winner_team_id = NULL,
+                    score1 = NULL,
+                    score2 = NULL,
+                    state = 'PENDING',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE tournament_id = $1
+                  AND (winner_team_id IS NOT NULL 
+                       OR score1 IS NOT NULL 
+                       OR score2 IS NOT NULL 
+                       OR state != 'PENDING')
+            `;
+            
+            const clearResult = await client.query(clearResultsQuery, [tournamentId]);
+            clearedResults = clearResult.rowCount;
+            
+            console.log(`✅ [manualBracketEdit] Очищено результатов: ${clearedResults}`);
+
+            // ✏️ ШАГ 2: Обновление расстановки участников
+            console.log(`✏️ [manualBracketEdit] Обновляем расстановку участников в ${bracketData.length} матчах`);
+            
+            for (const matchUpdate of bracketData) {
+                const { matchId, team1_id, team2_id } = matchUpdate;
+                
+                // Валидация данных матча
+                if (!matchId || typeof matchId !== 'number') {
+                    console.warn(`⚠️ [manualBracketEdit] Пропускаем невалидный matchId: ${matchId}`);
+                    continue;
+                }
+
+                const updateQuery = `
+                    UPDATE matches 
+                    SET team1_id = $1,
+                        team2_id = $2,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $3 
+                      AND tournament_id = $4
+                      AND round = 1
+                `;
+                
+                const result = await client.query(updateQuery, [
+                    team1_id || null,
+                    team2_id || null,
+                    matchId,
+                    tournamentId
+                ]);
+                
+                if (result.rowCount > 0) {
+                    updatedMatches++;
+                    console.log(`✅ [manualBracketEdit] Обновлен матч ${matchId}: team1=${team1_id}, team2=${team2_id}`);
+                } else {
+                    console.warn(`⚠️ [manualBracketEdit] Не найден матч ${matchId} в первом раунде турнира ${tournamentId}`);
+                }
+            }
+
+            // 🔄 ШАГ 3: Возвращаем турнир в активное состояние если он был в процессе
+            if (tournament.status === 'in_progress') {
+                await client.query(
+                    'UPDATE tournaments SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                    ['active', tournamentId]
+                );
+                console.log(`🔄 [manualBracketEdit] Статус турнира изменен с "in_progress" на "active"`);
+            }
+
+            await client.query('COMMIT');
+
+            // 📝 Логирование события
+            await logTournamentEvent(tournamentId, userId, 'manual_bracket_edit', {
+                updatedMatches,
+                clearedResults,
+                previousStatus: tournament.status,
+                bracketDataCount: bracketData.length
+            });
+
+            // 💬 Уведомление в чат турнира
+            await sendTournamentChatAnnouncement(
+                tournamentId,
+                `✏️ Администратор вручную изменил расстановку участников. ` +
+                `Обновлено матчей: ${updatedMatches}, очищено результатов: ${clearedResults}. ` +
+                `Турнир готов к проведению с новой расстановкой.`
+            );
+
+            // 🆕 WebSocket уведомление об изменениях
+            const fullTournamentData = await this.getTournamentById(tournamentId);
+            broadcastTournamentUpdate(tournamentId, fullTournamentData, 'manualBracketEdit');
+            console.log(`📡 [manualBracketEdit] WebSocket обновление отправлено`);
+
+            console.log(`✅ TournamentService: Ручное редактирование завершено. Обновлено матчей: ${updatedMatches}, очищено результатов: ${clearedResults}`);
+            
+            return {
+                success: true,
+                updatedMatches,
+                clearedResults,
+                message: 'Расстановка участников успешно обновлена'
+            };
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ [manualBracketEdit] Ошибка при редактировании сетки турнира ${tournamentId}:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
      * Проверка прав доступа к турниру
      * @private
      */

@@ -142,7 +142,49 @@ class TournamentController {
         
         await TournamentService.deleteTournament(tournamentId, req.user.id);
         
-        res.json({ message: 'Турнир успешно удален' });
+        res.json({ 
+            message: 'Турнир успешно удален',
+            success: true 
+        });
+    });
+
+    // ✏️ Ручное редактирование сетки (критическое действие)
+    static manualBracketEdit = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { bracketData } = req.body;
+        
+        // 🔧 ВАЛИДАЦИЯ ID ТУРНИРА
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+
+        // 🔧 ВАЛИДАЦИЯ ДАННЫХ СЕТКИ
+        if (!Array.isArray(bracketData) || bracketData.length === 0) {
+            return res.status(400).json({ 
+                message: 'Некорректные данные сетки',
+                received_data: bracketData
+            });
+        }
+
+        console.log(`✏️ [manualBracketEdit] Ручное редактирование сетки турнира ${tournamentId}`);
+        console.log(`📊 [manualBracketEdit] Получено ${bracketData.length} изменений матчей`);
+
+        const result = await TournamentService.manualBracketEdit(
+            tournamentId, 
+            bracketData, 
+            req.user.id
+        );
+        
+        res.json({
+            message: 'Расстановка участников успешно обновлена',
+            success: true,
+            updatedMatches: result.updatedMatches,
+            clearedResults: result.clearedResults
+        });
     });
 
     // 🚀 Запуск турнира

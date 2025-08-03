@@ -1,0 +1,548 @@
+/* 🎨 Основной контейнер редактора */
+.manual-bracket-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.manual-bracket-editor {
+  background: #000;
+  border: 2px solid #ff0000;
+  border-radius: 8px;
+  width: 90vw;
+  max-width: 1200px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+
+/* 📋 Заголовок редактора */
+.editor-header {
+  padding: 20px;
+  border-bottom: 1px solid #333;
+  background: #111;
+}
+
+.editor-header h2 {
+  margin: 0 0 10px 0;
+  color: #fff;
+  font-size: 24px;
+}
+
+.warning-text {
+  color: #ff6666;
+  font-size: 14px;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid #ff0000;
+  border-radius: 4px;
+}
+
+/* 🔄 Переключатель режимов */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-top: 15px;
+}
+
+.mode-btn {
+  padding: 10px 20px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #ff0000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mode-btn:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.mode-btn:last-child {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
+.mode-btn:hover {
+  background: #ff0000;
+  color: #000;
+}
+
+.mode-btn.active {
+  background: #ff0000;
+  color: #000;
+}
+
+/* 📝 Основное тело редактора */
+.editor-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #000;
+}
+
+/* 🎯 Drag & Drop редактор */
+.drag-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-controls {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preview-btn {
+  padding: 8px 16px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-btn:hover,
+.preview-btn.active {
+  background: #ff0000;
+  color: #000;
+  border-color: #ff0000;
+}
+
+/* 🎲 Позиции участников */
+.bracket-positions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+}
+
+.position-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.position-label {
+  font-size: 12px;
+  color: #ccc;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 👤 Слоты участников */
+.participant-slot {
+  min-height: 80px;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 12px;
+  background: #111;
+  cursor: move;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.participant-slot.empty {
+  border-style: dashed;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-text {
+  color: #666;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.participant-slot.filled {
+  border-color: #ff0000;
+  background: rgba(255, 0, 0, 0.05);
+}
+
+.participant-slot.filled:hover {
+  background: rgba(255, 0, 0, 0.1);
+  border-color: #ff3333;
+  transform: translateY(-2px);
+}
+
+.participant-slot.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3);
+}
+
+.participant-slot.drop-target {
+  border-color: #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+  animation: pulse-green 1s infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% { 
+    border-color: #00ff00;
+    box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4);
+  }
+  50% { 
+    border-color: #66ff66;
+    box-shadow: 0 0 0 8px rgba(0, 255, 0, 0);
+  }
+}
+
+.participant-slot.preview {
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+/* 👤 Информация о участнике */
+.participant-info {
+  flex: 1;
+}
+
+.participant-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.participant-details {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.participant-details .elo,
+.participant-details .rank {
+  background: rgba(255, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #ff0000;
+}
+
+/* 🎯 Ручка для перетаскивания */
+.drag-handle {
+  color: #666;
+  font-size: 18px;
+  cursor: move;
+  padding: 4px;
+  border-radius: 3px;
+  transition: color 0.2s ease;
+}
+
+.participant-slot:hover .drag-handle {
+  color: #ff0000;
+}
+
+/* 📊 Табличный редактор */
+.table-bracket-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-box {
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  border-color: #ff0000;
+  outline: none;
+  background: rgba(255, 0, 0, 0.05);
+}
+
+.available-count {
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 📋 Таблица позиций */
+.positions-table {
+  flex: 1;
+  margin-top: 15px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 80px;
+  background: #111;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-header > div {
+  padding: 12px 8px;
+  color: #ccc;
+  border-right: 1px solid #333;
+}
+
+.table-header > div:last-child {
+  border-right: none;
+}
+
+.table-body {
+  max-height: calc(100% - 45px);
+  overflow-y: auto;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 80px;
+  border-bottom: 1px solid #222;
+  transition: background 0.2s ease;
+}
+
+.table-row:hover {
+  background: rgba(255, 0, 0, 0.05);
+}
+
+.table-row > div {
+  padding: 12px 8px;
+  border-right: 1px solid #222;
+  display: flex;
+  align-items: center;
+}
+
+.table-row > div:last-child {
+  border-right: none;
+  justify-content: center;
+}
+
+.col-position {
+  color: #666;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.match-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.match-title {
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.match-slot {
+  color: #ccc;
+  font-size: 12px;
+}
+
+.participant-select {
+  width: 100%;
+  padding: 6px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.participant-select:focus {
+  border-color: #ff0000;
+  outline: none;
+}
+
+.btn-clear {
+  padding: 4px 8px;
+  background: transparent;
+  color: #ff6666;
+  border: 1px solid #ff6666;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-clear:hover {
+  background: #ff6666;
+  color: #000;
+}
+
+/* 🔻 Подвал редактора */
+.editor-footer {
+  padding: 20px;
+  border-top: 1px solid #333;
+  background: #111;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.changes-indicator {
+  flex: 1;
+}
+
+.changes-badge {
+  color: #ff6666;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.changes-badge::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #ff0000;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.editor-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-secondary,
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-secondary {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #444;
+  border-color: #666;
+}
+
+.btn-primary {
+  background: #ff0000;
+  color: #000;
+  border: 1px solid #ff0000;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #ff3333;
+  border-color: #ff3333;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 📱 Мобильная адаптация */
+@media (max-width: 768px) {
+  .manual-bracket-editor-overlay {
+    padding: 10px;
+  }
+
+  .manual-bracket-editor {
+    width: 100vw;
+    height: 90vh;
+  }
+
+  .editor-header {
+    padding: 15px;
+  }
+
+  .editor-header h2 {
+    font-size: 20px;
+  }
+
+  .mode-toggle {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .mode-btn {
+    border-radius: 0;
+    border-bottom: none;
+  }
+
+  .mode-btn:first-child {
+    border-radius: 4px 4px 0 0;
+  }
+
+  .mode-btn:last-child {
+    border-radius: 0 0 4px 4px;
+    border-bottom: 1px solid #ff0000;
+  }
+
+  .bracket-positions {
+    grid-template-columns: 1fr;
+  }
+
+  .table-header {
+    grid-template-columns: 60px 1fr 80px;
+  }
+
+  .table-row {
+    grid-template-columns: 60px 1fr 80px;
+  }
+
+  .col-match {
+    display: none;
+  }
+
+  .editor-footer {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .editor-actions {
+    justify-content: center;
+  }
+} 
