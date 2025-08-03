@@ -267,7 +267,7 @@ const MatchDetailsModal = ({
                             <span className="modal-system-badge">Раунд {selectedMatch.round}</span>
                         )}
                         {selectedMatch.match_number && (
-                            <span className="modal-system-badge">Матч #{selectedMatch.match_number}</span>
+                            <span className="modal-system-badge">Матч #{selectedMatch.tournament_match_number || selectedMatch.match_number}</span>
                         )}
                         {selectedMatch.is_third_place_match && (
                             <span className="modal-system-badge modal-system-badge-warning">🥉 За 3-е место</span>

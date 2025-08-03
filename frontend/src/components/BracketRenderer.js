@@ -433,8 +433,9 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             return 'Grand Final Triumph'; // Переименовано: более торжественное название для reset матча
         }
         
-        // Стандартные матчи
-        return `Матч ${match.match_number || match.id}`;
+        // Стандартные матчи - используем локальный номер
+        const displayNumber = match.tournament_match_number || match.match_number || match.id;
+        return `Матч ${displayNumber}`;
     };
 
     // 🔧 ИСПРАВЛЕНО: Определяем данные участников

@@ -257,7 +257,7 @@ const ManualBracketEditor = ({
       .sort((a, b) => a.match_number - b.match_number);
 
     sortedMatches.forEach(match => {
-      const matchTitle = `Матч ${match.match_number}`;
+      const matchTitle = `Матч ${match.tournament_match_number || match.match_number}`;
       
       // Группируем участников по матчам, сохраняя bracket_type
       matchesData.push({

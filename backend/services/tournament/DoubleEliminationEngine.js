@@ -188,9 +188,10 @@ class DoubleEliminationEngine {
             
             console.log(`🏗️ [DoubleEliminationEngine] Генерация ${bracketMath.totalMatches} матчей`);
             
-            // 🆕 ПРИНУДИТЕЛЬНАЯ ЛОКАЛЬНАЯ НУМЕРАЦИЯ ДЛЯ КАЖДОГО ТУРНИРА
+            // 🆕 ЛОКАЛЬНАЯ НУМЕРАЦИЯ МАТЧЕЙ ВНУТРИ ТУРНИРА
             let currentMatchNumber = 1;
-            console.log(`🔢 [DoubleEliminationEngine] ПРИНУДИТЕЛЬНО устанавливаем currentMatchNumber = ${currentMatchNumber} для турнира ${tournamentId}`);
+            let currentTournamentMatchNumber = 1;
+            console.log(`🔢 [DoubleEliminationEngine] Используем tournament_match_number для турнира ${tournamentId}`);
             
             // 1. Создаем матчи Winners Bracket
             const winnersResult = await this._createWinnersMatches(
@@ -198,36 +199,40 @@ class DoubleEliminationEngine {
                 tournamentId, 
                 bracketMath.winnersRounds,
                 bracketMath.winnersMatches,
-                currentMatchNumber
+                currentMatchNumber,
+                currentTournamentMatchNumber
             );
             const winnersMatches = winnersResult.matches;
             currentMatchNumber = winnersResult.nextMatchNumber;
+            currentTournamentMatchNumber = winnersResult.nextTournamentMatchNumber;
             
-            console.log(`✅ [DoubleEliminationEngine] Winners Bracket создан: ${winnersMatches.length} матчей, следующий номер: ${currentMatchNumber}`);
+            console.log(`✅ [DoubleEliminationEngine] Winners Bracket создан: ${winnersMatches.length} матчей`);
             
             // 2. Создаем матчи Losers Bracket
             const losersResult = await this._createLosersMatches(
                 client, 
                 tournamentId, 
                 bracketMath,
-                currentMatchNumber
+                currentMatchNumber,
+                currentTournamentMatchNumber
             );
             const losersMatches = losersResult.matches;
             currentMatchNumber = losersResult.nextMatchNumber;
+            currentTournamentMatchNumber = losersResult.nextTournamentMatchNumber;
             
-            console.log(`✅ [DoubleEliminationEngine] Losers Bracket создан: ${losersMatches.length} матчей, следующий номер: ${currentMatchNumber}`);
+            console.log(`✅ [DoubleEliminationEngine] Losers Bracket создан: ${losersMatches.length} матчей`);
             
             // 3. Создаем Grand Final матчи
             const grandFinalResult = await this._createGrandFinalMatches(
                 client, 
                 tournamentId,
                 bracketMath,
-                currentMatchNumber
+                currentMatchNumber,
+                currentTournamentMatchNumber
             );
             const grandFinalMatches = grandFinalResult.matches;
-            currentMatchNumber = grandFinalResult.nextMatchNumber;
             
-            console.log(`✅ [DoubleEliminationEngine] Grand Final матчи созданы: ${grandFinalMatches.length} матчей, следующий номер: ${currentMatchNumber}`);
+            console.log(`✅ [DoubleEliminationEngine] Grand Final матчи созданы: ${grandFinalMatches.length} матчей`);
             
             // 4. Устанавливаем связи между матчами
             await this._establishDoubleEliminationConnections(
@@ -261,45 +266,53 @@ class DoubleEliminationEngine {
     /**
      * 🏆 Создание матчей Winners Bracket
      */
-    static async _createWinnersMatches(client, tournamentId, rounds, totalMatches, startMatchNumber) {
+    static async _createWinnersMatches(client, tournamentId, rounds, totalMatches, startMatchNumber, startTournamentMatchNumber) {
         const matches = [];
         let matchNumber = startMatchNumber;
+        let tournamentMatchNumber = startTournamentMatchNumber;
         
         console.log(`🏆 Создание Winners Bracket: ${rounds} раундов, ${totalMatches} матчей, старт с номера ${startMatchNumber}`);
         
         for (let round = 1; round <= rounds; round++) {
             const matchesInRound = Math.pow(2, rounds - round);
             
-            console.log(`   🔢 Раунд ${round}: ${matchesInRound} матчей (номера ${matchNumber}-${matchNumber + matchesInRound - 1})`);
+            console.log(`   🔢 Раунд ${round}: ${matchesInRound} матчей (номера ${matchNumber}-${matchNumber + matchesInRound - 1}, локальные ${tournamentMatchNumber}-${tournamentMatchNumber + matchesInRound - 1})`);
             
             for (let i = 0; i < matchesInRound; i++) {
                 const result = await client.query(`
                     INSERT INTO matches (
                         tournament_id, 
                         round, 
-                        match_number, 
+                        match_number,
+                        tournament_match_number,
                         bracket_type,
                         status
-                    ) VALUES ($1, $2, $3, 'winner', 'pending')
+                    ) VALUES ($1, $2, $3, $4, 'winner', 'pending')
                     RETURNING *
-                `, [tournamentId, round, matchNumber]);
+                `, [tournamentId, round, matchNumber, tournamentMatchNumber]);
                 
                 matches.push(result.rows[0]);
-                console.log(`     ✅ Создан матч ID ${result.rows[0].id} с номером ${matchNumber} (WB R${round})`);
+                console.log(`     ✅ Создан матч ID ${result.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (WB R${round})`);
                 matchNumber++;
+                tournamentMatchNumber++;
             }
         }
         
         console.log(`🏆 Winners Bracket завершен: номера ${startMatchNumber}-${matchNumber-1}, следующий номер: ${matchNumber}`);
-        return { matches, nextMatchNumber: matchNumber };
+        return { 
+            matches, 
+            nextMatchNumber: matchNumber,
+            nextTournamentMatchNumber: tournamentMatchNumber
+        };
     }
     
     /**
      * 💔 Создание матчей Losers Bracket по табличной структуре
      */
-    static async _createLosersMatches(client, tournamentId, bracketMath, startMatchNumber) {
+    static async _createLosersMatches(client, tournamentId, bracketMath, startMatchNumber, startTournamentMatchNumber) {
         const matches = [];
         let matchNumber = startMatchNumber;
+        let tournamentMatchNumber = startTournamentMatchNumber;
         
         const { losersStructure, losersRounds } = bracketMath;
         
@@ -310,40 +323,47 @@ class DoubleEliminationEngine {
             const matchesInRound = losersStructure[round - 1];
             const roundDescription = getLosersRoundDescription(round, bracketMath);
             
-            console.log(`   🔢 Losers Раунд ${round}: ${matchesInRound} матчей (${roundDescription}) номера ${matchNumber}-${matchNumber + matchesInRound - 1}`);
+            console.log(`   🔢 Losers Раунд ${round}: ${matchesInRound} матчей (${roundDescription}) номера ${matchNumber}-${matchNumber + matchesInRound - 1}, локальные ${tournamentMatchNumber}-${tournamentMatchNumber + matchesInRound - 1}`);
             
             for (let i = 0; i < matchesInRound; i++) {
                 const result = await client.query(`
                     INSERT INTO matches (
                         tournament_id, 
                         round, 
-                        match_number, 
+                        match_number,
+                        tournament_match_number,
                         bracket_type,
                         status
-                    ) VALUES ($1, $2, $3, 'loser', 'pending')
+                    ) VALUES ($1, $2, $3, $4, 'loser', 'pending')
                     RETURNING *
-                `, [tournamentId, round, matchNumber]);
+                `, [tournamentId, round, matchNumber, tournamentMatchNumber]);
                 
                 matches.push(result.rows[0]);
-                console.log(`     ✅ Создан матч ID ${result.rows[0].id} с номером ${matchNumber} (LB R${round})`);
+                console.log(`     ✅ Создан матч ID ${result.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (LB R${round})`);
                 matchNumber++;
+                tournamentMatchNumber++;
             }
         }
         
         console.log(`💔 Losers Bracket завершен: номера ${startMatchNumber}-${matchNumber-1}, следующий номер: ${matchNumber}`);
         console.log(`✅ Создано ${matches.length} матчей Losers Bracket (ожидалось ${bracketMath.losersMatches})`);
         
-        return { matches, nextMatchNumber: matchNumber };
+        return { 
+            matches, 
+            nextMatchNumber: matchNumber,
+            nextTournamentMatchNumber: tournamentMatchNumber
+        };
     }
     
     /**
      * 🏁 Создание Grand Final матчей
      */
-    static async _createGrandFinalMatches(client, tournamentId, bracketMath, startMatchNumber) {
+    static async _createGrandFinalMatches(client, tournamentId, bracketMath, startMatchNumber, startTournamentMatchNumber) {
         const matches = [];
         let matchNumber = startMatchNumber;
+        let tournamentMatchNumber = startTournamentMatchNumber;
         
-        console.log(`🏁 Создание Grand Final матчей, старт с номера ${startMatchNumber}`);
+        console.log(`🏁 Создание Grand Final матчей, старт с номера ${startMatchNumber} (локальный ${startTournamentMatchNumber})`);
         
         // Определяем правильный раунд для Grand Final
         const grandFinalRound = Math.max(bracketMath.winnersRounds, bracketMath.losersRounds) + 1;
@@ -353,35 +373,43 @@ class DoubleEliminationEngine {
             INSERT INTO matches (
                 tournament_id, 
                 round, 
-                match_number, 
+                match_number,
+                tournament_match_number,
                 bracket_type,
                 status
-            ) VALUES ($1, $2, $3, 'grand_final', 'pending')
+            ) VALUES ($1, $2, $3, $4, 'grand_final', 'pending')
             RETURNING *
-        `, [tournamentId, grandFinalRound, matchNumber]);
+        `, [tournamentId, grandFinalRound, matchNumber, tournamentMatchNumber]);
         
         matches.push(grandFinalResult.rows[0]);
-        console.log(`     ✅ Создан Grand Final ID ${grandFinalResult.rows[0].id} с номером ${matchNumber} (GF R${grandFinalRound})`);
+        console.log(`     ✅ Создан Grand Final ID ${grandFinalResult.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (GF R${grandFinalRound})`);
         matchNumber++;
+        tournamentMatchNumber++;
         
         // Grand Final Reset (если winner losers bracket выиграет)
         const grandFinalResetResult = await client.query(`
             INSERT INTO matches (
                 tournament_id, 
                 round, 
-                match_number, 
+                match_number,
+                tournament_match_number,
                 bracket_type,
                 status
-            ) VALUES ($1, $2, $3, 'grand_final_reset', 'pending')
+            ) VALUES ($1, $2, $3, $4, 'grand_final_reset', 'pending')
             RETURNING *
-        `, [tournamentId, grandFinalRound, matchNumber]);
+        `, [tournamentId, grandFinalRound, matchNumber, tournamentMatchNumber]);
         
         matches.push(grandFinalResetResult.rows[0]);
-        console.log(`     ✅ Создан Grand Final Reset ID ${grandFinalResetResult.rows[0].id} с номером ${matchNumber} (GF Reset R${grandFinalRound})`);
+        console.log(`     ✅ Создан Grand Final Reset ID ${grandFinalResetResult.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (GF Reset R${grandFinalRound})`);
         matchNumber++;
+        tournamentMatchNumber++;
         
         console.log(`🏁 Grand Final завершен: номера ${startMatchNumber}-${matchNumber-1}, следующий номер: ${matchNumber}`);
-        return { matches, nextMatchNumber: matchNumber };
+        return { 
+            matches, 
+            nextMatchNumber: matchNumber,
+            nextTournamentMatchNumber: tournamentMatchNumber
+        };
     }
     
     /**
