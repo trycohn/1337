@@ -126,41 +126,70 @@
 }
 
 /* 🎲 Позиции участников */
-.bracket-positions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 15px;
+.matches-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   max-height: calc(100% - 60px);
   overflow-y: auto;
 }
 
-.position-wrapper {
+/* 🏆 Строка матча */
+.match-row {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.position-label {
-  font-size: 12px;
-  color: #ccc;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* 👤 Слоты участников */
-.participant-slot {
-  min-height: 80px;
-  border: 2px solid #333;
-  border-radius: 6px;
-  padding: 12px;
+  align-items: center;
+  gap: 15px;
+  padding: 8px 12px;
   background: #111;
+  border: 1px solid #333;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.match-row:hover {
+  border-color: #ff0000;
+  background: rgba(255, 0, 0, 0.02);
+}
+
+.match-title {
+  min-width: 80px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+.match-participants {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.vs-separator {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff0000;
+  padding: 0 5px;
+  text-align: center;
+  min-width: 30px;
+}
+
+/* 👤 Слоты участников - компактные */
+.participant-slot {
+  min-height: 50px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px 10px;
+  background: #000;
   cursor: move;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .participant-slot.empty {
@@ -174,7 +203,7 @@
 .empty-text {
   color: #666;
   font-style: italic;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .participant-slot.filled {
@@ -185,13 +214,13 @@
 .participant-slot.filled:hover {
   background: rgba(255, 0, 0, 0.1);
   border-color: #ff3333;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .participant-slot.dragging {
   opacity: 0.5;
-  transform: rotate(2deg);
-  box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3);
+  transform: rotate(1deg);
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
 }
 
 .participant-slot.drop-target {
@@ -207,7 +236,7 @@
   }
   50% { 
     border-color: #66ff66;
-    box-shadow: 0 0 0 8px rgba(0, 255, 0, 0);
+    box-shadow: 0 0 0 4px rgba(0, 255, 0, 0);
   }
 }
 
@@ -216,41 +245,48 @@
   transform: scale(1.02);
 }
 
-/* 👤 Информация о участнике */
+/* 👤 Информация о участнике - компактная */
 .participant-info {
   flex: 1;
+  min-width: 0;
 }
 
 .participant-name {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #fff;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .participant-details {
   display: flex;
-  gap: 10px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 10px;
   color: #ccc;
+  flex-wrap: wrap;
 }
 
 .participant-details .elo,
 .participant-details .rank {
   background: rgba(255, 0, 0, 0.2);
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 1px 4px;
+  border-radius: 2px;
   border: 1px solid #ff0000;
+  white-space: nowrap;
 }
 
-/* 🎯 Ручка для перетаскивания */
+/* 🎯 Ручка для перетаскивания - компактная */
 .drag-handle {
   color: #666;
-  font-size: 18px;
+  font-size: 14px;
   cursor: move;
-  padding: 4px;
-  border-radius: 3px;
+  padding: 2px;
+  border-radius: 2px;
   transition: color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .participant-slot:hover .drag-handle {
@@ -290,7 +326,7 @@
   font-weight: 500;
 }
 
-/* 📋 Таблица позиций */
+/* 📋 Таблица позиций - компактная */
 .positions-table {
   flex: 1;
   margin-top: 15px;
@@ -301,17 +337,17 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 80px;
+  grid-template-columns: 60px 1fr 1fr 60px;
   background: #111;
   border-bottom: 1px solid #333;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .table-header > div {
-  padding: 12px 8px;
+  padding: 8px 6px;
   color: #ccc;
   border-right: 1px solid #333;
 }
@@ -321,15 +357,16 @@
 }
 
 .table-body {
-  max-height: calc(100% - 45px);
+  max-height: calc(100% - 35px);
   overflow-y: auto;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 80px;
+  grid-template-columns: 60px 1fr 1fr 60px;
   border-bottom: 1px solid #222;
   transition: background 0.2s ease;
+  min-height: 40px;
 }
 
 .table-row:hover {
@@ -337,7 +374,7 @@
 }
 
 .table-row > div {
-  padding: 12px 8px;
+  padding: 6px 6px;
   border-right: 1px solid #222;
   display: flex;
   align-items: center;
@@ -351,34 +388,34 @@
 .col-position {
   color: #666;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .match-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .match-title {
   color: #fff;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .match-slot {
   color: #ccc;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .participant-select {
   width: 100%;
-  padding: 6px;
+  padding: 4px;
   background: #111;
   border: 1px solid #333;
   border-radius: 3px;
   color: #fff;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .participant-select:focus {
@@ -387,13 +424,13 @@
 }
 
 .btn-clear {
-  padding: 4px 8px;
+  padding: 2px 6px;
   background: transparent;
   color: #ff6666;
   border: 1px solid #ff6666;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   transition: all 0.2s ease;
 }
 
@@ -520,19 +557,55 @@
     border-bottom: 1px solid #ff0000;
   }
 
-  .bracket-positions {
-    grid-template-columns: 1fr;
+  /* Мобильная адаптация для матчей */
+  .match-row {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
   }
 
+  .match-title {
+    min-width: auto;
+    text-align: left;
+  }
+
+  .match-participants {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .vs-separator {
+    font-size: 10px;
+    min-width: auto;
+  }
+
+  .participant-slot {
+    min-height: 45px;
+  }
+
+  .participant-name {
+    font-size: 13px;
+  }
+
+  .participant-details {
+    font-size: 9px;
+  }
+
+  /* Мобильная адаптация для таблицы */
   .table-header {
-    grid-template-columns: 60px 1fr 80px;
+    grid-template-columns: 50px 1fr 50px;
   }
 
   .table-row {
-    grid-template-columns: 60px 1fr 80px;
+    grid-template-columns: 50px 1fr 50px;
+    min-height: 35px;
   }
 
   .col-match {
+    display: none;
+  }
+
+  .match-info {
     display: none;
   }
 
