@@ -692,7 +692,7 @@ function TournamentDetails() {
                     tournamentRoundText: `Раунд ${match.round || '?'}`,
                     startTime: match.scheduled_time || '',
                     state: status,
-                    name: match.name || `Матч ${match.id}`,
+                    name: match.name || `Матч ${match.tournament_match_number || match.match_number || match.id}`,
                     bracket_type: match.bracket_type || 'winner',
                     round: match.round !== undefined ? match.round : 0,
                     // 🔧 ИСПРАВЛЕНО: Добавляем проверку bracket_type перед использованием

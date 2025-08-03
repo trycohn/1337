@@ -506,7 +506,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                     {(match.bracket_type === 'grand_final' || match.bracket_type === 'grand_final_reset') && (
                         <span className="bracket-type-indicator">🏆</span>
                     )}
-                    <span className="bracket-match-number">#{match.match_number || match.id}</span>
+                    <span className="bracket-match-number">#{match.tournament_match_number || match.match_number || match.id}</span>
                 </div>
             </div>
             
