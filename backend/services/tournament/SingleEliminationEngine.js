@@ -169,11 +169,14 @@ class SingleEliminationEngine {
         const allMatches = [];
         const matchPromises = [];
         
+        // 🆕 ГЛОБАЛЬНАЯ НУМЕРАЦИЯ МАТЧЕЙ ВНУТРИ ТУРНИРА (начинаем с 1)
+        let globalMatchNumber = 1;
+        
         // Определяем стартовый раунд и количество раундов
         const startRound = bracketMath.needsPreliminaryRound ? 0 : 1;
         const totalRounds = bracketMath.needsPreliminaryRound ? bracketMath.mainRounds : bracketMath.rounds;
         
-        console.log(`📊 Создаем раунды ${startRound} - ${totalRounds}`);
+        console.log(`📊 Создаем раунды ${startRound} - ${totalRounds}, глобальная нумерация матчей`);
         
         // Создаем матчи для каждого раунда
         for (let round = startRound; round <= totalRounds; round++) {
@@ -190,10 +193,10 @@ class SingleEliminationEngine {
                 matchesInRound = Math.pow(2, totalRounds - round);
             }
             
-            console.log(`🔧 Раунд ${round}: создаем ${matchesInRound} матчей`);
+            console.log(`🔧 Раунд ${round}: создаем ${matchesInRound} матчей (номера ${globalMatchNumber}-${globalMatchNumber + matchesInRound - 1})`);
             
             // Создаем матчи для текущего раунда
-            for (let matchNumber = 1; matchNumber <= matchesInRound; matchNumber++) {
+            for (let i = 0; i < matchesInRound; i++) {
                 
                 // 🆕 ОПРЕДЕЛЯЕМ ТИП МАТЧА: финальный, полуфинальный или обычный
                 let bracketType = 'winner';
@@ -201,24 +204,24 @@ class SingleEliminationEngine {
                 // Финальный матч = последний раунд (totalRounds) и единственный матч в раунде
                 if (round === totalRounds && matchesInRound === 1) {
                     bracketType = 'final';
-                    console.log(`🏆 Матч ${matchNumber} в раунде ${round} помечен как ФИНАЛЬНЫЙ матч (за 1-е место)`);
+                    console.log(`🏆 Матч №${globalMatchNumber} в раунде ${round} помечен как ФИНАЛЬНЫЙ матч (за 1-е место)`);
                 }
                 // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА: Полуфинальные матчи только при достаточном количестве участников
                 // Полуфинал = предпоследний раунд с 2 матчами И участников >= 8 (настоящий полуфинал)
                 else if (round === totalRounds - 1 && matchesInRound === 2 && bracketMath.originalParticipants >= 8) {
                     bracketType = 'semifinal';
-                    console.log(`🥈 Матч ${matchNumber} в раунде ${round} помечен как ПОЛУФИНАЛЬНЫЙ матч`);
+                    console.log(`🥈 Матч №${globalMatchNumber} в раунде ${round} помечен как ПОЛУФИНАЛЬНЫЙ матч`);
                 }
                 // 🔧 АЛЬТЕРНАТИВА: В малых турнирах предпоследний раунд остается обычным матчем
                 else if (round === totalRounds - 1 && matchesInRound === 2 && bracketMath.originalParticipants < 8) {
                     bracketType = 'winner'; // Остается обычным матчем
-                    console.log(`🎯 Матч ${matchNumber} в раунде ${round} - обычный матч (турнир слишком мал для полуфинала)`);
+                    console.log(`🎯 Матч №${globalMatchNumber} в раунде ${round} - обычный матч (турнир слишком мал для полуфинала)`);
                 }
                 
                 const matchData = {
                     tournament_id: tournamentId,
                     round: round,
-                    match_number: matchNumber,
+                    match_number: globalMatchNumber, // 🆕 Используем глобальный номер вместо локального
                     team1_id: null, // Будет заполнено позже для стартовых матчей
                     team2_id: null, // Будет заполнено позже для стартовых матчей
                     status: 'pending',
@@ -227,6 +230,9 @@ class SingleEliminationEngine {
                 
                 const matchPromise = this._insertMatch(client, matchData);
                 matchPromises.push(matchPromise);
+                
+                // 🆕 ИНКРЕМЕНТИРУЕМ ГЛОБАЛЬНЫЙ НОМЕР
+                globalMatchNumber++;
             }
         }
         
@@ -236,12 +242,12 @@ class SingleEliminationEngine {
         
         // 🔧 ДОБАВЛЯЕМ: Создание матча за 3-е место (если нужен)
         if (bracketMath.hasThirdPlaceMatch) {
-            console.log(`🥉 Создаем матч за 3-е место в раунде ${totalRounds}`);
+            console.log(`🥉 Создаем матч за 3-е место в раунде ${totalRounds}, номер ${globalMatchNumber}`);
             
             const thirdPlaceMatchData = {
                 tournament_id: tournamentId,
                 round: totalRounds, // Тот же раунд, что и финал
-                match_number: 0, // Меньший номер для отображения перед финалом
+                match_number: globalMatchNumber, // 🆕 Используем глобальный номер
                 team1_id: null, // Будет заполнено проигравшими полуфинала
                 team2_id: null,
                 status: 'pending',
@@ -251,7 +257,10 @@ class SingleEliminationEngine {
             const thirdPlaceMatch = await this._insertMatch(client, thirdPlaceMatchData);
             allMatches.push(thirdPlaceMatch);
             
-            console.log(`✅ Матч за 3-е место создан: ID ${thirdPlaceMatch.id}, раунд ${totalRounds}, match_number 0`);
+            console.log(`✅ Матч за 3-е место создан: ID ${thirdPlaceMatch.id}, раунд ${totalRounds}, match_number ${globalMatchNumber}`);
+            
+            // 🆕 ИНКРЕМЕНТИРУЕМ ГЛОБАЛЬНЫЙ НОМЕР И ПОСЛЕ МАТЧА ЗА 3-Е МЕСТО
+            globalMatchNumber++;
         }
         
         // Сортируем матчи по раунду и номеру для удобства
