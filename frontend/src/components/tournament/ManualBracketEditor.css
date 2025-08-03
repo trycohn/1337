@@ -147,6 +147,17 @@
   flex-direction: column;
 }
 
+/* 🆕 Специальные стили для типов сетки Double Elimination */
+.match-row.bracket-winner {
+  border-left: 3px solid #00ff00;
+  background: rgba(0, 255, 0, 0.02);
+}
+
+.match-row.bracket-loser {
+  border-left: 3px solid #ff6b6b;
+  background: rgba(255, 107, 107, 0.02);
+}
+
 .match-row:hover {
   border-color: #ff0000;
   background: rgba(255, 0, 0, 0.02);
@@ -158,6 +169,153 @@
   font-weight: 600;
   color: #fff;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 🆕 Значки типа сетки */
+.bracket-type-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.match-row.bracket-winner .bracket-type-badge {
+  background: #00ff00;
+  color: #000;
+}
+
+.match-row.bracket-loser .bracket-type-badge {
+  background: #ff6b6b;
+  color: #fff;
+}
+
+/* 🆕 Заголовки секций для Double Elimination */
+.bracket-section-header {
+  margin: 20px 0 15px 0;
+  padding: 12px 16px;
+  border-radius: 6px;
+  text-align: center;
+  position: relative;
+}
+
+.bracket-section-header.winners {
+  background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), rgba(0, 255, 0, 0.05));
+  border: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.bracket-section-header.losers {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.bracket-section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.bracket-section-header.winners h3 {
+  color: #00ff00;
+}
+
+.bracket-section-header.losers h3 {
+  color: #ff6b6b;
+}
+
+/* 🔄 Разделитель между сетками */
+.bracket-divider {
+  display: flex;
+  align-items: center;
+  margin: 25px 0;
+  padding: 15px 0;
+  position: relative;
+}
+
+.divider-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #ff0000, transparent);
+  position: relative;
+}
+
+.divider-line::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(to right, transparent, rgba(255, 0, 0, 0.3), transparent);
+  border-radius: 2px;
+  animation: divider-pulse 2s ease-in-out infinite;
+}
+
+.divider-text {
+  padding: 8px 20px;
+  background: #000;
+  border: 2px solid #ff0000;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  box-shadow: 0 4px 8px rgba(255, 0, 0, 0.2);
+}
+
+/* 🌟 Анимация разделителя */
+@keyframes divider-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.2);
+  }
+}
+
+/* 📱 Мобильная адаптация для новых элементов */
+@media (max-width: 768px) {
+  .bracket-section-header {
+    margin: 15px 0 10px 0;
+    padding: 8px 12px;
+  }
+  
+  .bracket-section-header h3 {
+    font-size: 14px;
+  }
+  
+  .bracket-divider {
+    margin: 20px 0;
+    padding: 10px 0;
+  }
+  
+  .divider-text {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .bracket-type-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+  
+  .match-title {
+    font-size: 12px;
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 
 .match-participants {

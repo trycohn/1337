@@ -66,10 +66,17 @@ const DraggableParticipant = ({ participant, position, onSwap, isPreview = false
 };
 
 // 🏆 Компонент строки матча для Drag & Drop
-const DraggableMatchRow = ({ match, matchIndex, onSwap }) => {
+const DraggableMatchRow = ({ match, matchIndex, onSwap, bracketType }) => {
   return (
-    <div className="match-row">
-      <div className="match-title">{match.matchTitle}</div>
+    <div className={`match-row ${bracketType ? `bracket-${bracketType}` : ''}`}>
+      <div className="match-title">
+        {match.matchTitle}
+        {bracketType && (
+          <span className="bracket-type-badge">
+            {bracketType === 'winner' ? 'WB' : 'LB'}
+          </span>
+        )}
+      </div>
       <div className="match-participants">
         <DraggableParticipant
           participant={match.participant1}
@@ -83,6 +90,21 @@ const DraggableMatchRow = ({ match, matchIndex, onSwap }) => {
           onSwap={onSwap}
         />
       </div>
+    </div>
+  );
+};
+
+// 🔄 Компонент разделителя для Double Elimination
+const BracketDivider = ({ type }) => {
+  const dividerText = type === 'winners-to-losers' ? 
+    '🏆 Winners Bracket | 💥 Losers Bracket' : 
+    '🔄 Переход к Losers Bracket';
+    
+  return (
+    <div className="bracket-divider">
+      <div className="divider-line"></div>
+      <div className="divider-text">{dividerText}</div>
+      <div className="divider-line"></div>
     </div>
   );
 };
@@ -237,10 +259,11 @@ const ManualBracketEditor = ({
     sortedMatches.forEach(match => {
       const matchTitle = `Матч ${match.match_number}`;
       
-      // Группируем участников по матчам
+      // Группируем участников по матчам, сохраняя bracket_type
       matchesData.push({
         matchId: match.id,
         matchTitle,
+        bracketType: match.bracket_type, // 🆕 Сохраняем тип сетки
         participant1: match.team1_id ? participants.find(p => p.id === match.team1_id) : null,
         participant2: match.team2_id ? participants.find(p => p.id === match.team2_id) : null,
       });
@@ -249,7 +272,42 @@ const ManualBracketEditor = ({
     setBracketPositions(matchesData);
   }, [matches, participants]);
 
-  // 🔄 Обработка перестановки участников (Drag & Drop)
+  // 🎯 Определение типа турнира
+  const isDoubleElimination = useMemo(() => {
+    if (!tournament?.bracket_type) return false;
+    
+    const bracketType = tournament.bracket_type.toLowerCase();
+    return bracketType === 'double_elimination' || 
+           bracketType === 'doubleelimination' || 
+           bracketType === 'double-elimination';
+  }, [tournament?.bracket_type]);
+
+  // 🆕 Группировка матчей по типу сетки для Double Elimination
+  const groupedMatches = useMemo(() => {
+    if (!isDoubleElimination) {
+      return { all: bracketPositions };
+    }
+
+    const winners = [];
+    const losers = [];
+    
+    bracketPositions.forEach((match, index) => {
+      const matchWithIndex = { ...match, originalIndex: index };
+      
+      if (match.bracketType === 'winner') {
+        winners.push(matchWithIndex);
+      } else if (match.bracketType === 'loser') {
+        losers.push(matchWithIndex);
+      } else {
+        // Если bracket_type не определен, добавляем в winners по умолчанию
+        winners.push(matchWithIndex);
+      }
+    });
+
+    return { winners, losers };
+  }, [bracketPositions, isDoubleElimination]);
+
+  // 🔄 Обработка перестановки участников (Drag & Drop) - обновленная для поддержки группировки
   const handleSwap = useCallback((fromPosition, toPosition) => {
     const { matchIndex: fromMatchIndex, slot: fromSlot } = fromPosition;
     const { matchIndex: toMatchIndex, slot: toSlot } = toPosition;
@@ -257,27 +315,38 @@ const ManualBracketEditor = ({
     setBracketPositions(prev => {
       const newPositions = [...prev];
       
+      // Получаем реальные индексы матчей (учитываем группировку)
+      let actualFromIndex = fromMatchIndex;
+      let actualToIndex = toMatchIndex;
+      
+      if (isDoubleElimination) {
+        // Находим реальные индексы в исходном массиве
+        const allMatches = [...groupedMatches.winners, ...groupedMatches.losers];
+        actualFromIndex = allMatches[fromMatchIndex]?.originalIndex ?? fromMatchIndex;
+        actualToIndex = allMatches[toMatchIndex]?.originalIndex ?? toMatchIndex;
+      }
+      
       // Получаем участников для обмена
-      const fromParticipant = fromSlot === 1 ? newPositions[fromMatchIndex].participant1 : newPositions[fromMatchIndex].participant2;
-      const toParticipant = toSlot === 1 ? newPositions[toMatchIndex].participant1 : newPositions[toMatchIndex].participant2;
+      const fromParticipant = fromSlot === 1 ? newPositions[actualFromIndex].participant1 : newPositions[actualFromIndex].participant2;
+      const toParticipant = toSlot === 1 ? newPositions[actualToIndex].participant1 : newPositions[actualToIndex].participant2;
       
       // Меняем местами
       if (fromSlot === 1) {
-        newPositions[fromMatchIndex].participant1 = toParticipant;
+        newPositions[actualFromIndex].participant1 = toParticipant;
       } else {
-        newPositions[fromMatchIndex].participant2 = toParticipant;
+        newPositions[actualFromIndex].participant2 = toParticipant;
       }
       
       if (toSlot === 1) {
-        newPositions[toMatchIndex].participant1 = fromParticipant;
+        newPositions[actualToIndex].participant1 = fromParticipant;
       } else {
-        newPositions[toMatchIndex].participant2 = fromParticipant;
+        newPositions[actualToIndex].participant2 = fromParticipant;
       }
       
       return newPositions;
     });
     setHasChanges(true);
-  }, []);
+  }, [isDoubleElimination, groupedMatches]);
 
   // 📝 Обработка изменения позиции (Table)
   const handlePositionChange = useCallback((index, participant) => {
@@ -384,14 +453,61 @@ const ManualBracketEditor = ({
                 </div>
 
                 <div className="matches-container">
-                  {bracketPositions.map((match, index) => (
-                    <DraggableMatchRow
-                      key={match.matchId}
-                      match={match}
-                      matchIndex={index}
-                      onSwap={handleSwap}
-                    />
-                  ))}
+                  {isDoubleElimination ? (
+                    // 🏆 Отображение для Double Elimination с разделителем
+                    <>
+                      {/* Winners Bracket */}
+                      {groupedMatches.winners.length > 0 && (
+                        <>
+                          <div className="bracket-section-header winners">
+                            <h3>🏆 Winners Bracket</h3>
+                          </div>
+                          {groupedMatches.winners.map((match, index) => (
+                            <DraggableMatchRow
+                              key={match.matchId}
+                              match={match}
+                              matchIndex={index}
+                              onSwap={handleSwap}
+                              bracketType="winner"
+                            />
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* Разделитель между сетками */}
+                      {groupedMatches.winners.length > 0 && groupedMatches.losers.length > 0 && (
+                        <BracketDivider type="winners-to-losers" />
+                      )}
+                      
+                      {/* Losers Bracket */}
+                      {groupedMatches.losers.length > 0 && (
+                        <>
+                          <div className="bracket-section-header losers">
+                            <h3>💥 Losers Bracket</h3>
+                          </div>
+                          {groupedMatches.losers.map((match, index) => (
+                            <DraggableMatchRow
+                              key={match.matchId}
+                              match={match}
+                              matchIndex={groupedMatches.winners.length + index}
+                              onSwap={handleSwap}
+                              bracketType="loser"
+                            />
+                          ))}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    // 🎯 Обычное отображение для Single Elimination
+                    groupedMatches.all.map((match, index) => (
+                      <DraggableMatchRow
+                        key={match.matchId}
+                        match={match}
+                        matchIndex={index}
+                        onSwap={handleSwap}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
             </DndProvider>
