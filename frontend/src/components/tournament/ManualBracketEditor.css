@@ -144,6 +144,7 @@
   border: 1px solid #333;
   border-radius: 6px;
   transition: all 0.2s ease;
+  flex-direction: column;
 }
 
 .match-row:hover {
@@ -177,7 +178,7 @@
 
 /* 👤 Слоты участников - компактные */
 .participant-slot {
-  min-height: 50px;
+  min-height: 40px;
   border: 1px solid #333;
   border-radius: 4px;
   padding: 8px 10px;
@@ -189,7 +190,7 @@
   justify-content: space-between;
   position: relative;
   flex: 1;
-  min-width: 0;
+  min-width:200px;
 }
 
 .participant-slot.empty {
