@@ -677,7 +677,8 @@ function TournamentDetails() {
                 }
 
                 let status = 'SCHEDULED';
-                if (match.winner_team_id) {
+                // 🆕 ИСПРАВЛЕНО: Проверяем статус из БД для BYE матчей
+                if (match.status === 'completed' || match.winner_team_id) {
                     status = 'DONE';
                 } else if (match.team1_id && match.team2_id) {
                     status = 'READY';
@@ -692,6 +693,8 @@ function TournamentDetails() {
                     tournamentRoundText: `Раунд ${match.round || '?'}`,
                     startTime: match.scheduled_time || '',
                     state: status,
+                    // 🆕 ДОБАВЛЕНО: Передаем оригинальный статус из БД для BYE матчей
+                    status: match.status,
                     name: match.name || `Матч ${match.tournament_match_number || match.match_number || match.id}`,
                     bracket_type: match.bracket_type || 'winner',
                     round: match.round !== undefined ? match.round : 0,
