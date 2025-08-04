@@ -39,7 +39,9 @@ function CreateTournament() {
     seeding_config: {},
     lobby_enabled: false,
     lobby_match_format: null,
-    selected_maps: []
+    selected_maps: [],
+    // 🆕 НОВОЕ: Опция Full Double Elimination
+    full_double_elimination: false
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -135,7 +137,9 @@ function CreateTournament() {
             // Настройки лобби
             lobby_enabled: isCS2Game(formData.game) ? formData.lobby_enabled : false,
             lobby_match_format: formData.lobby_enabled ? formData.lobby_match_format : null,
-            selected_maps: formData.lobby_enabled ? formData.selected_maps : []
+            selected_maps: formData.lobby_enabled ? formData.selected_maps : [],
+            // 🆕 НОВОЕ: Опция Full Double Elimination
+            full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -533,6 +537,27 @@ function CreateTournament() {
                 {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания - каждый участник может проиграть один раз'}
               </small>
             </div>
+
+            {/* 🆕 НОВОЕ: Опция Full Double Elimination */}
+            {formData.bracket_type === 'double_elimination' && (
+              <div className="form-group full-width">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="full_double_elimination"
+                    checked={formData.full_double_elimination}
+                    onChange={handleInputChange}
+                    disabled={!verificationStatus.canCreate}
+                  />
+                  <span className="checkbox-text">
+                    🏆 Включить Full Double Elimination?
+                  </span>
+                </label>
+                <small className="form-hint">
+                  <strong>Full Double Elimination:</strong> Если участник из нижней сетки (Losers Bracket) выиграет Гранд Финал, то будет проведен дополнительный матч "Grand Final Triumph" для определения чемпиона. Преимущество по умолчанию принадлежит участнику из Winners Bracket.
+                </small>
+              </div>
+            )}
           </div>
         </div>
 

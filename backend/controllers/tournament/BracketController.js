@@ -29,7 +29,9 @@ class BracketController {
             const options = {
                 seedingType: req.body.seedingType || 'random',
                 thirdPlaceMatch: req.body.thirdPlaceMatch || false,
-                seedingOptions: req.body.seedingOptions || {}
+                seedingOptions: req.body.seedingOptions || {},
+                // 🆕 НОВОЕ: Опция Full Double Elimination
+                fullDoubleElimination: req.body.fullDoubleElimination || false
             };
             
             console.log(`🎯 Опции генерации:`, options);
@@ -112,7 +114,9 @@ class BracketController {
                 seedingType: req.body.seedingType || 'random',
                 thirdPlaceMatch: req.body.thirdPlaceMatch || false,
                 seedingOptions: req.body.seedingOptions || {},
-                forceRegenerate: true // Принудительная регенерация
+                forceRegenerate: true, // Принудительная регенерация
+                // 🆕 НОВОЕ: Опция Full Double Elimination
+                fullDoubleElimination: req.body.fullDoubleElimination || false
             };
             
             console.log(`🎯 Опции регенерации:`, options);

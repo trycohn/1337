@@ -37,6 +37,9 @@ const BracketManagementPanel = ({
 
     // 🆕 Состояния для типа сетки
     const [selectedBracketType, setSelectedBracketType] = useState(tournament?.bracket_type || 'single_elimination');
+    
+    // 🆕 Состояние для Full Double Elimination
+    const [fullDoubleElimination, setFullDoubleElimination] = useState(tournament?.full_double_elimination || false);
 
     // 🆕 Обновляем selectedBracketType при изменении tournament
     useEffect(() => {
@@ -44,6 +47,13 @@ const BracketManagementPanel = ({
             setSelectedBracketType(tournament.bracket_type);
         }
     }, [tournament?.bracket_type]);
+
+    // 🆕 Обновляем fullDoubleElimination при изменении tournament
+    useEffect(() => {
+        if (tournament?.full_double_elimination !== undefined) {
+            setFullDoubleElimination(tournament.full_double_elimination);
+        }
+    }, [tournament?.full_double_elimination]);
 
     // 🆕 Автоматически устанавливаем thirdPlaceMatch для Double Elimination
     useEffect(() => {
@@ -310,7 +320,9 @@ const BracketManagementPanel = ({
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
                 seedingOptions: seedingConfig,
-                bracketType: selectedBracketType
+                bracketType: selectedBracketType,
+                // 🆕 НОВОЕ: Опция Full Double Elimination
+                fullDoubleElimination: selectedBracketType === 'double_elimination' ? fullDoubleElimination : false
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -378,7 +390,9 @@ const BracketManagementPanel = ({
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
                 seedingOptions: seedingConfig,
-                bracketType: selectedBracketType
+                bracketType: selectedBracketType,
+                // 🆕 НОВОЕ: Опция Full Double Elimination
+                fullDoubleElimination: selectedBracketType === 'double_elimination' ? fullDoubleElimination : false
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -787,6 +801,24 @@ const BracketManagementPanel = ({
                                                     />
                                                     Добавить матч за 3-е место
                                                 </label>
+                                            </div>
+                                        )}
+
+                                        {/* 🆕 НОВОЕ: Опция Full Double Elimination - показываем только для Double Elimination */}
+                                        {selectedBracketType === 'double_elimination' && (
+                                            <div className="option-group">
+                                                <label>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={fullDoubleElimination}
+                                                        onChange={(e) => setFullDoubleElimination(e.target.checked)}
+                                                        disabled={loading}
+                                                    />
+                                                    🏆 Включить Full Double Elimination?
+                                                </label>
+                                                <small>
+                                                    <strong>Full Double Elimination:</strong> Если участник из нижней сетки (Losers Bracket) выиграет Гранд Финал, то будет проведен дополнительный матч "Grand Final Triumph" для определения чемпиона. Преимущество по умолчанию принадлежит участнику из Winners Bracket.
+                                                </small>
                                             </div>
                                         )}
 

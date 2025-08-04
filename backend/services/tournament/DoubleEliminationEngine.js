@@ -228,7 +228,8 @@ class DoubleEliminationEngine {
                 tournamentId,
                 bracketMath,
                 currentMatchNumber,
-                currentTournamentMatchNumber
+                currentTournamentMatchNumber,
+                options // 🆕 НОВОЕ: Передаем опции для проверки fullDoubleElimination
             );
             const grandFinalMatches = grandFinalResult.matches;
             
@@ -372,17 +373,21 @@ class DoubleEliminationEngine {
     /**
      * 🏁 Создание Grand Final матчей
      */
-    static async _createGrandFinalMatches(client, tournamentId, bracketMath, startMatchNumber, startTournamentMatchNumber) {
+    static async _createGrandFinalMatches(client, tournamentId, bracketMath, startMatchNumber, startTournamentMatchNumber, options = {}) {
         const matches = [];
         let matchNumber = startMatchNumber;
         let tournamentMatchNumber = startTournamentMatchNumber;
         
+        // 🆕 НОВОЕ: Проверяем опцию Full Double Elimination
+        const fullDoubleElimination = options.fullDoubleElimination || false;
+        
         console.log(`🏁 Создание Grand Final матчей, старт с номера ${startMatchNumber} (локальный ${startTournamentMatchNumber})`);
+        console.log(`🎯 Full Double Elimination: ${fullDoubleElimination ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'}`);
         
         // Определяем правильный раунд для Grand Final
         const grandFinalRound = Math.max(bracketMath.winnersRounds, bracketMath.losersRounds) + 1;
         
-        // Grand Final (основной)
+        // Grand Final (основной) - создается всегда
         const grandFinalResult = await client.query(`
             INSERT INTO matches (
                 tournament_id, 
@@ -400,23 +405,27 @@ class DoubleEliminationEngine {
         matchNumber++;
         tournamentMatchNumber++;
         
-        // Grand Final Reset (если winner losers bracket выиграет)
-        const grandFinalResetResult = await client.query(`
-            INSERT INTO matches (
-                tournament_id, 
-                round, 
-                match_number,
-                tournament_match_number,
-                bracket_type,
-                status
-            ) VALUES ($1, $2, $3, $4, 'grand_final_reset', 'pending')
-            RETURNING *
-        `, [tournamentId, grandFinalRound, matchNumber, tournamentMatchNumber]);
-        
-        matches.push(grandFinalResetResult.rows[0]);
-        console.log(`     ✅ Создан Grand Final Reset ID ${grandFinalResetResult.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (GF Reset R${grandFinalRound})`);
-        matchNumber++;
-        tournamentMatchNumber++;
+        // 🆕 УСЛОВНОЕ СОЗДАНИЕ: Grand Final Triumph только если включен Full Double Elimination
+        if (fullDoubleElimination) {
+            const grandFinalResetResult = await client.query(`
+                INSERT INTO matches (
+                    tournament_id, 
+                    round, 
+                    match_number,
+                    tournament_match_number,
+                    bracket_type,
+                    status
+                ) VALUES ($1, $2, $3, $4, 'grand_final_reset', 'pending')
+                RETURNING *
+            `, [tournamentId, grandFinalRound, matchNumber, tournamentMatchNumber]);
+            
+            matches.push(grandFinalResetResult.rows[0]);
+            console.log(`     ✅ Создан Grand Final Triumph ID ${grandFinalResetResult.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (GF Triumph R${grandFinalRound})`);
+            matchNumber++;
+            tournamentMatchNumber++;
+        } else {
+            console.log(`     ⏭️ Grand Final Triumph ПРОПУЩЕН (Full Double Elimination выключен)`);
+        }
         
         console.log(`🏁 Grand Final завершен: номера ${startMatchNumber}-${matchNumber-1}, следующий номер: ${matchNumber}`);
         return { 

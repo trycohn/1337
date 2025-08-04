@@ -371,7 +371,11 @@ class BracketGenerationService {
                 return await DoubleEliminationEngine.generateBracket(
                     tournament.id,
                     participants,
-                    seedingOptions
+                    {
+                        ...seedingOptions,
+                        // 🆕 НОВОЕ: Передаем опцию Full Double Elimination
+                        fullDoubleElimination: tournament.full_double_elimination || false
+                    }
                 );
                 
             default:
