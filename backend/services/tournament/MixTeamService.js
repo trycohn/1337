@@ -248,8 +248,12 @@ class MixTeamService {
             const player2Id = pair.player2.id || pair.player2.participant_id;
             
             if (!used.has(player1Id) && !used.has(player2Id)) {
+                // 🆕 ОПРЕДЕЛЯЕМ КАПИТАНА КОМАНДЫ ДЛЯ НАЗВАНИЯ
+                const captainInfo = this.determineCaptain([pair.player1, pair.player2], ratingType);
+                const teamName = captainInfo?.captain?.name ? `${captainInfo.captain.name} team` : `Команда ${teams.length + 1}`;
+                
                 teams.push({
-                    name: `Команда ${teams.length + 1}`,
+                    name: teamName,
                     members: [pair.player1, pair.player2],
                     totalRating: pair.pairRating,
                     averageRating: pair.averageRating
@@ -258,7 +262,7 @@ class MixTeamService {
                 used.add(player1Id);
                 used.add(player2Id);
                 
-                console.log(`✅ Пара ${teams.length}: ${pair.player1.name} (${pair.rating1}) + ${pair.player2.name} (${pair.rating2}) = ${Math.round(pair.averageRating)} средний`);
+                console.log(`✅ Команда "${teamName}": ${pair.player1.name} (${pair.rating1}) + ${pair.player2.name} (${pair.rating2}) = ${Math.round(pair.averageRating)} средний`);
             }
         }
         
@@ -319,9 +323,16 @@ class MixTeamService {
             }
         }
         
-        // Обновляем средние рейтинги команд
-        teams.forEach(team => {
+        // Обновляем средние рейтинги команд и названия на основе капитанов
+        teams.forEach((team, index) => {
             team.averageRating = team.totalRating / team.members.length;
+            
+            // 🆕 ОПРЕДЕЛЯЕМ КАПИТАНА И ОБНОВЛЯЕМ НАЗВАНИЕ КОМАНДЫ
+            const captainInfo = this.determineCaptain(team.members, ratingType);
+            const teamName = captainInfo?.captain?.name ? `${captainInfo.captain.name} team` : `Команда ${index + 1}`;
+            team.name = teamName;
+            
+            console.log(`🏆 Команда "${teamName}": ${team.members.length} участников, средний рейтинг ${Math.round(team.averageRating)}`);
         });
         
         return teams;
