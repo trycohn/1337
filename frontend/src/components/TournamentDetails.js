@@ -700,6 +700,8 @@ function TournamentDetails() {
                     // 🆕 ДОБАВЛЕНО: Передаем tournament_match_number для локальной нумерации
                     tournament_match_number: match.tournament_match_number,
                     match_number: match.match_number,
+                    // 🆕 ДОБАВЛЕНО: Передаем maps_data для отображения счета карт
+                    maps_data: match.maps_data || [],
                     participants: [
                         createSafeParticipant(
                             match.team1_id,

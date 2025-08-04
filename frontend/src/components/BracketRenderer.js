@@ -455,9 +455,23 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         // 🔧 УЛУЧШЕНО: Проверяем, является ли участник TBD
         const isTBD = !participant.id || participant.id === 'tbd' || participant.name === 'TBD';
         
+        // 🆕 НОВОЕ: Логика отображения счета одной карты
+        let displayScore = participant.score !== null && participant.score !== undefined ? participant.score : participant.resultText;
+        
+        // Если матч завершен и играется только на одной карте - показываем счет этой карты
+        if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length === 1) {
+            const mapData = match.maps_data[0];
+            if (mapData && (mapData.score1 !== null || mapData.score2 !== null)) {
+                // Показываем счет соответствующего участника из карты
+                displayScore = participantIndex === 0 ? 
+                    (mapData.score1 !== null ? mapData.score1 : displayScore) : 
+                    (mapData.score2 !== null ? mapData.score2 : displayScore);
+            }
+        }
+        
         return {
             name: participant.name || 'TBD',
-            score: participant.score !== null && participant.score !== undefined ? participant.score : participant.resultText,
+            score: displayScore,
             // 🔧 ИСПРАВЛЕНО: TBD не может быть победителем
             isWinner: !isTBD && participant.isWinner,
             status: participant.status || 'PLAYED'
