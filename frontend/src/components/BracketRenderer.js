@@ -483,15 +483,17 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     // 🔧 ИСПРАВЛЕНО: Функция определения статуса матча
     const getMatchStatus = () => {
-        // 🆕 Проверяем статус из БД для BYE vs BYE матчей
-        if (match.state === 'DONE' || match.state === 'SCORE_DONE' || 
-            (match.status === 'completed' && participant1.name === 'BYE' && participant2.name === 'BYE')) {
+        // 🆕 Приоритетная проверка статуса из БД для всех завершенных матчей
+        if (match.status === 'completed' || match.state === 'DONE' || match.state === 'SCORE_DONE') {
             return 'completed';
         }
+        
+        // Проверяем готовность матча (оба участника есть и это не BYE vs BYE)
         if (participant1.name !== 'TBD' && participant2.name !== 'TBD' && 
             !(participant1.name === 'BYE' && participant2.name === 'BYE')) {
             return 'ready';
         }
+        
         return 'pending';
     };
 

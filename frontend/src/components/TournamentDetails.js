@@ -655,12 +655,16 @@ function TournamentDetails() {
         const createSafeParticipant = (teamId, resultText, isWinner, status = 'PLAYED') => {
             const participantInfo = getParticipantInfo(teamId);
 
+            // 🆕 ИСПРАВЛЕНО: Правильное определение BYE участников
+            const isBYE = !teamId;
+            const participantName = isBYE ? 'BYE' : (participantInfo?.name || 'TBD');
+
             return {
                 id: teamId ? String(teamId) : 'tbd',
                 resultText: resultText !== null ? String(resultText) : null,
                 isWinner: Boolean(isWinner),
                 status: status || 'NO_SHOW',
-                name: participantInfo?.name || 'TBD',
+                name: participantName,
                 score: resultText,
                 avatarUrl: participantInfo?.avatar_url ? ensureHttps(participantInfo.avatar_url) : null
             };
