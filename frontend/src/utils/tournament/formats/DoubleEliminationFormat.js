@@ -36,6 +36,8 @@ export class DoubleEliminationFormat extends TournamentFormat {
           break;
         
         case 'loser':
+        case 'loser_semifinal':    // 🆕 Малый финал лузеров
+        case 'loser_final':        // 🆕 Финал лузеров
           grouped.losers.push(match);
           break;
           

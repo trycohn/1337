@@ -296,7 +296,9 @@ const ManualBracketEditor = ({
       
       if (match.bracketType === 'winner') {
         winners.push(matchWithIndex);
-      } else if (match.bracketType === 'loser') {
+      } else if (match.bracketType === 'loser' || 
+                 match.bracketType === 'loser_semifinal' || 
+                 match.bracketType === 'loser_final') {
         losers.push(matchWithIndex);
       } else {
         // Если bracket_type не определен, добавляем в winners по умолчанию
