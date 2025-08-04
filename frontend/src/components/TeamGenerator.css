@@ -314,6 +314,9 @@
 .member-name {
   font-weight: 500;
   color: #ffffff;
+}
+
+.member-info .member-name {
   font-size: 0.875rem !important;
 }
 
@@ -589,12 +592,7 @@
   object-fit: cover;
 }
 /* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ СѓС‡Р°СЃС‚РЅРёРєРµ */
-.member-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+
 .member-name {
   font-weight: 600;
   color: #ffffff;
