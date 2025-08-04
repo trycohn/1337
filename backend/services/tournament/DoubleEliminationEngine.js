@@ -308,6 +308,7 @@ class DoubleEliminationEngine {
     
     /**
      * 💔 Создание матчей Losers Bracket по табличной структуре
+     * 🆕 С поддержкой специальных названий матчей
      */
     static async _createLosersMatches(client, tournamentId, bracketMath, startMatchNumber, startTournamentMatchNumber) {
         const matches = [];
@@ -326,6 +327,9 @@ class DoubleEliminationEngine {
             console.log(`   🔢 Losers Раунд ${round}: ${matchesInRound} матчей (${roundDescription}) номера ${matchNumber}-${matchNumber + matchesInRound - 1}, локальные ${tournamentMatchNumber}-${tournamentMatchNumber + matchesInRound - 1}`);
             
             for (let i = 0; i < matchesInRound; i++) {
+                // 🆕 Определяем тип и названия матча
+                const matchInfo = this._determineLoserMatchInfo(round, i, matchesInRound, losersRounds);
+                
                 const result = await client.query(`
                     INSERT INTO matches (
                         tournament_id, 
@@ -333,13 +337,23 @@ class DoubleEliminationEngine {
                         match_number,
                         tournament_match_number,
                         bracket_type,
+                        round_name,
+                        match_title,
                         status
-                    ) VALUES ($1, $2, $3, $4, 'loser', 'pending')
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
                     RETURNING *
-                `, [tournamentId, round, matchNumber, tournamentMatchNumber]);
+                `, [
+                    tournamentId, 
+                    round, 
+                    matchNumber, 
+                    tournamentMatchNumber,
+                    matchInfo.bracketType,
+                    matchInfo.roundName, 
+                    matchInfo.matchTitle
+                ]);
                 
                 matches.push(result.rows[0]);
-                console.log(`     ✅ Создан матч ID ${result.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (LB R${round})`);
+                console.log(`     ✅ Создан ${matchInfo.description} ID ${result.rows[0].id} с номером ${matchNumber} (локальный ${tournamentMatchNumber}) (LB R${round})`);
                 matchNumber++;
                 tournamentMatchNumber++;
             }
@@ -866,7 +880,7 @@ class DoubleEliminationEngine {
             errors.push(`Количество матчей не совпадает: ожидается ${bracketMath.totalMatches}, получено ${matches.length}`);
         }
         
-        // Проверка наличия всех типов bracket
+        // Проверка наличия всех типов bracket (🆕 включая специальные типы)
         const requiredBracketTypes = ['winner', 'loser', 'grand_final', 'grand_final_reset'];
         requiredBracketTypes.forEach(type => {
             const matchesOfType = matches.filter(m => m.bracket_type === type);
@@ -875,9 +889,13 @@ class DoubleEliminationEngine {
             }
         });
         
-        // Подробная проверка по типам матчей
+        // Подробная проверка по типам матчей (🆕 включая специальные матчи лузеров)
         const winnersMatches = matches.filter(m => m.bracket_type === 'winner');
-        const losersMatches = matches.filter(m => m.bracket_type === 'loser');
+        const losersMatches = matches.filter(m => 
+            m.bracket_type === 'loser' || 
+            m.bracket_type === 'loser_semifinal' || 
+            m.bracket_type === 'loser_final'
+        );
         const grandFinalMatches = matches.filter(m => m.bracket_type.includes('grand_final'));
         
         if (winnersMatches.length !== bracketMath.winnersMatches) {
@@ -1012,6 +1030,46 @@ class DoubleEliminationEngine {
         } else {
             throw new Error('Следующий матч в Losers Bracket уже заполнен');
         }
+    }
+    
+    /**
+     * 🎯 Определение типа и названий матча в Losers Bracket
+     * 🆕 Интегрированная логика специальных матчей
+     * 
+     * @param {number} round - Номер раунда
+     * @param {number} matchIndex - Индекс матча в раунде  
+     * @param {number} matchesInRound - Количество матчей в раунде
+     * @param {number} totalLosersRounds - Общее количество раундов Losers
+     * @returns {Object} - Информация о матче
+     */
+    static _determineLoserMatchInfo(round, matchIndex, matchesInRound, totalLosersRounds) {
+        // 🥉 Предпоследний раунд, единственный матч = Малый финал лузеров
+        if (round === totalLosersRounds - 1 && matchesInRound === 1) {
+            return {
+                bracketType: 'loser_semifinal',
+                roundName: 'Малый финал лузеров',
+                matchTitle: 'Малый финал лузеров',
+                description: 'Малый финал лузеров'
+            };
+        }
+        
+        // 🥈 Последний раунд = Финал лузеров
+        if (round === totalLosersRounds && matchesInRound === 1) {
+            return {
+                bracketType: 'loser_final',
+                roundName: 'Финал лузеров',
+                matchTitle: 'Финал лузеров',
+                description: 'Финал лузеров'
+            };
+        }
+        
+        // 💔 Обычный матч лузеров
+        return {
+            bracketType: 'loser',
+            roundName: `Раунд ${round} (Losers)`,
+            matchTitle: `Losers R${round} Матч ${matchIndex + 1}`,
+            description: 'обычный матч лузеров'
+        };
     }
 }
 
