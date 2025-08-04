@@ -270,6 +270,11 @@ class TournamentService {
             throw new Error(errorMessage);
         }
 
+        // 🆕 АВТОМАТИЧЕСКОЕ ЗАВЕРШЕНИЕ BYE МАТЧЕЙ
+        console.log(`🎯 [startTournament] Автоматическое завершение BYE матчей...`);
+        const byeResults = await this._autoCompleteBYEMatches(tournamentId);
+        console.log(`✅ [startTournament] BYE матчи завершены:`, byeResults);
+
         // Изменение статуса турнира
         console.log(`🔄 [startTournament] Меняем статус турнира с "${tournament.status}" на "in_progress"`);
         await TournamentRepository.updateStatus(tournamentId, 'in_progress');
@@ -1290,6 +1295,154 @@ class TournamentService {
             console.error('Ошибка при получении победителей:', error);
             throw error;
         }
+    }
+
+    /**
+     * 🆕 АВТОМАТИЧЕСКОЕ ЗАВЕРШЕНИЕ BYE МАТЧЕЙ
+     * Завершает все матчи где один или оба участника - BYE
+     * @param {number} tournamentId - ID турнира
+     * @returns {Object} - Статистика завершенных матчей
+     */
+    static async _autoCompleteBYEMatches(tournamentId) {
+        const pool = require('../../db');
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            // Получаем все незавершенные матчи турнира
+            const matchesResult = await client.query(`
+                SELECT id, round, match_number, team1_id, team2_id, 
+                       winner_team_id, next_match_id, loser_next_match_id, 
+                       bracket_type, status
+                FROM matches 
+                WHERE tournament_id = $1 
+                  AND winner_team_id IS NULL
+                  AND status = 'pending'
+                ORDER BY round, match_number
+            `, [tournamentId]);
+            
+            const matches = matchesResult.rows;
+            console.log(`🔍 [_autoCompleteBYEMatches] Найдено ${matches.length} незавершенных матчей`);
+            
+            const stats = {
+                totalProcessed: 0,
+                singleBYEMatches: 0,
+                doubleBYEMatches: 0,
+                regularMatches: 0,
+                advancedParticipants: 0
+            };
+            
+            for (const match of matches) {
+                const { id, team1_id, team2_id, next_match_id, loser_next_match_id } = match;
+                const isSingleBYE = (team1_id && !team2_id) || (!team1_id && team2_id);
+                const isDoubleBYE = !team1_id && !team2_id;
+                
+                stats.totalProcessed++;
+                
+                if (isSingleBYE) {
+                    // Матч с одним реальным участником против BYE
+                    const winnerId = team1_id || team2_id;
+                    console.log(`🎯 [BYE] Матч ${match.match_number}: Участник ${winnerId} проходит автоматически`);
+                    
+                    // Завершаем матч победой реального участника
+                    await client.query(`
+                        UPDATE matches 
+                        SET winner_team_id = $1, score1 = 1, score2 = 0, 
+                            status = 'completed'
+                        WHERE id = $2
+                    `, [winnerId, id]);
+                    
+                    // Продвигаем победителя в следующий матч
+                    if (next_match_id) {
+                        await this._advanceWinnerToNextMatch(client, winnerId, next_match_id);
+                        stats.advancedParticipants++;
+                    }
+                    
+                    stats.singleBYEMatches++;
+                    
+                } else if (isDoubleBYE) {
+                    // Матч BYE vs BYE - передаем BYE дальше
+                    console.log(`🔄 [BYE] Матч ${match.match_number}: BYE vs BYE - передаем BYE в следующий матч`);
+                    
+                    // Завершаем матч как BYE
+                    await client.query(`
+                        UPDATE matches 
+                        SET winner_team_id = NULL, score1 = 0, score2 = 0, 
+                            status = 'completed'
+                        WHERE id = $1
+                    `, [id]);
+                    
+                    // В следующий матч передаем NULL (BYE)
+                    if (next_match_id) {
+                        await this._advanceBYEToNextMatch(client, next_match_id);
+                    }
+                    
+                    stats.doubleBYEMatches++;
+                    
+                } else {
+                    // Обычный матч с двумя реальными участниками
+                    stats.regularMatches++;
+                }
+            }
+            
+            await client.query('COMMIT');
+            console.log(`✅ [_autoCompleteBYEMatches] Завершено:`, stats);
+            
+            return stats;
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ [_autoCompleteBYEMatches] Ошибка:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * 🎯 Продвижение победителя в следующий матч
+     */
+    static async _advanceWinnerToNextMatch(client, winnerId, nextMatchId) {
+        // Определяем свободную позицию в следующем матче
+        const nextMatchResult = await client.query(
+            'SELECT team1_id, team2_id FROM matches WHERE id = $1',
+            [nextMatchId]
+        );
+        
+        if (nextMatchResult.rows.length === 0) {
+            console.warn(`⚠️ Следующий матч ${nextMatchId} не найден`);
+            return;
+        }
+        
+        const nextMatch = nextMatchResult.rows[0];
+        
+        if (!nextMatch.team1_id) {
+            // Размещаем в первую позицию
+            await client.query(
+                'UPDATE matches SET team1_id = $1 WHERE id = $2',
+                [winnerId, nextMatchId]
+            );
+            console.log(`   ↗️ Участник ${winnerId} размещен в team1 матча ${nextMatchId}`);
+        } else if (!nextMatch.team2_id) {
+            // Размещаем во вторую позицию
+            await client.query(
+                'UPDATE matches SET team2_id = $1 WHERE id = $2',
+                [winnerId, nextMatchId]
+            );
+            console.log(`   ↗️ Участник ${winnerId} размещен в team2 матча ${nextMatchId}`);
+        } else {
+            console.warn(`⚠️ Матч ${nextMatchId} уже заполнен: team1=${nextMatch.team1_id}, team2=${nextMatch.team2_id}`);
+        }
+    }
+
+    /**
+     * 🔄 Продвижение BYE в следующий матч
+     */
+    static async _advanceBYEToNextMatch(client, nextMatchId) {
+        // Для BYE матчей просто логируем - следующий матч останется с незаполненными позициями
+        console.log(`   ↗️ BYE передан в матч ${nextMatchId} (позиция останется пустой)`);
+        // В реальности BYE не добавляется в следующий матч - позиция остается NULL
     }
 }
 
