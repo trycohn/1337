@@ -718,15 +718,20 @@
     padding-top: 24px;
     border-top: 1px solid #1a1a1a;
     grid-area: participants-section;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .participants-list {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 12px;
     margin-top: 16px;
+    width: 100%;
+    max-width: 100%;
 }
 
 .participant-item {
@@ -741,6 +746,9 @@
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 200px;
 }
 
 .participant-item::before {
@@ -781,6 +789,11 @@
     font-weight: 500;
     color: #ffffff;
     font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
 }
 
 /* Participant Actions Modal */
@@ -971,6 +984,26 @@
     .edit-actions .cancel-btn {
         width: 100%;
         justify-content: center;
+    }
+    
+    .participants-list {
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .participant-item {
+        max-width: 150px;
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .participant-avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .participant-name {
+        font-size: 0.8rem;
     }
 }
 
