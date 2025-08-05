@@ -324,39 +324,7 @@
     border-bottom: none;
 }
 
-/* Предварительный просмотр команд */
-.teams-preview {
-    margin-top: 20px;
-    padding: 15px;
-}
 
-.teams-preview h4 {
-    margin: 0 0 15px 0;
-    color: #ffffff;
-    font-size: 1.1em;
-}
-
-.teams-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.team-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-}
-
-.team-item strong {
-    color: #ffffff;
-}
-
-.team-item span {
-    color: #6c757d;
-    font-size: 0.9em;
-}
 
 /* Информационные блоки */
 .bracket-info {

@@ -659,28 +659,6 @@ const BracketManagementPanel = ({
                                 </div>
                             </div>
                         )}
-
-                        {/* Отображение команд */}
-                        {mixTeams.length > 0 && (
-                            <div className="teams-preview">
-                                <h4>👥 Сформированные команды ({mixTeams.length})</h4>
-                                <div className="teams-list">
-                                    {mixTeams.slice(0, 3).map((team, index) => (
-                                        <div key={team.id} className="team-item">
-                                            <strong>{team.name}</strong>
-                                            {team.members && (
-                                                <span> ({team.members.length} игроков)</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                    {mixTeams.length > 3 && (
-                                        <div className="team-item">
-                                            <span>... и еще {mixTeams.length - 3} команд</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
 
