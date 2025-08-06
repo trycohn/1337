@@ -1,0 +1,125 @@
+name: Manual Deploy & Rollback
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Выберите действие'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+        - deploy
+        - rollback
+        - status
+        - restart-backend
+        - restart-nginx
+      commit_hash:
+        description: 'Хеш коммита для отката (только для rollback)'
+        required: false
+        type: string
+
+jobs:
+  manual-action:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Execute Action on VDS
+      uses: appleboy/ssh-action@v0.1.9
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /var/www/1337community.com
+          
+          case "${{ github.event.inputs.action }}" in
+            "deploy")
+              echo "🚀 РУЧНОЕ РАЗВЕРТЫВАНИЕ"
+              echo "📦 Обновление кода..."
+              git pull
+              
+              echo "⏹️ Остановка backend..."
+              pm2 stop 1337-backend || true
+              pm2 delete 1337-backend || true
+              
+              echo "📋 Установка зависимостей..."
+              npm install
+              
+              echo "🔧 Backend setup..."
+              cd backend && npm install
+              pm2 start server.js --name "1337-backend"
+              
+              echo "🎨 Frontend setup..."
+              cd ../frontend
+              npm install --legacy-peer-deps
+              npm run build
+              
+              echo "🔄 Nginx reload..."
+              sudo nginx -s reload
+              
+              echo "✅ Развертывание завершено!"
+              pm2 status
+              ;;
+              
+            "rollback")
+              echo "⏪ ОТКАТ К ПРЕДЫДУЩЕЙ ВЕРСИИ"
+              COMMIT_HASH="${{ github.event.inputs.commit_hash }}"
+              
+              if [ -n "$COMMIT_HASH" ]; then
+                echo "📦 Откат к коммиту: $COMMIT_HASH"
+                git reset --hard $COMMIT_HASH
+              else
+                echo "📦 Откат к предыдущему коммиту"
+                git reset --hard HEAD~1
+              fi
+              
+              echo "🔧 Пересборка после отката..."
+              pm2 stop 1337-backend || true
+              pm2 delete 1337-backend || true
+              npm install
+              cd backend && npm install
+              pm2 start server.js --name "1337-backend"
+              cd ../frontend
+              npm install --legacy-peer-deps
+              npm run build
+              sudo nginx -s reload
+              
+              echo "✅ Откат завершен!"
+              ;;
+              
+            "status")
+              echo "📊 СТАТУС СЕРВИСОВ"
+              echo "=== PM2 STATUS ==="
+              pm2 status
+              echo ""
+              echo "=== NGINX STATUS ==="
+              sudo systemctl status nginx --no-pager -l
+              echo ""
+              echo "=== DISK USAGE ==="
+              df -h
+              echo ""
+              echo "=== MEMORY USAGE ==="
+              free -h
+              echo ""
+              echo "=== LAST 10 BACKEND LOGS ==="
+              pm2 logs 1337-backend --lines 10 --nostream
+              ;;
+              
+            "restart-backend")
+              echo "🔄 ПЕРЕЗАПУСК BACKEND"
+              pm2 restart 1337-backend
+              echo "✅ Backend перезапущен"
+              pm2 status
+              ;;
+              
+            "restart-nginx")
+              echo "🔄 ПЕРЕЗАПУСК NGINX"
+              sudo nginx -s reload
+              echo "✅ Nginx перезапущен"
+              sudo systemctl status nginx --no-pager -l
+              ;;
+              
+            *)
+              echo "❌ Неизвестное действие: ${{ github.event.inputs.action }}"
+              exit 1
+              ;;
+          esac

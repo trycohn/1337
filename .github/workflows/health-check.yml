@@ -1,0 +1,127 @@
+name: Health Check VDS
+on:
+  schedule:
+    # Проверка каждые 30 минут
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check VDS Health
+      uses: appleboy/ssh-action@v0.1.9
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          echo "🏥 ПРОВЕРКА ЗДОРОВЬЯ СИСТЕМЫ"
+          echo "Время: $(date)"
+          echo "================================"
+          
+          # Проверка PM2 процесса
+          echo "🔍 Проверка PM2 процесса..."
+          PM2_STATUS=$(pm2 jlist | jq -r '.[0].pm2_env.status' 2>/dev/null || echo "error")
+          
+          if [ "$PM2_STATUS" = "online" ]; then
+            echo "✅ Backend процесс работает"
+          else
+            echo "❌ Backend процесс не работает! Статус: $PM2_STATUS"
+            echo "🔄 Попытка перезапуска..."
+            cd /var/www/1337community.com/backend
+            pm2 start server.js --name "1337-backend" || pm2 restart 1337-backend
+          fi
+          
+          # Проверка Nginx
+          echo "🔍 Проверка Nginx..."
+          if systemctl is-active --quiet nginx; then
+            echo "✅ Nginx работает"
+          else
+            echo "❌ Nginx не работает!"
+            echo "🔄 Попытка запуска Nginx..."
+            sudo systemctl start nginx
+          fi
+          
+          # Проверка доступности API
+          echo "🔍 Проверка API..."
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:3001/api/tournaments || echo "000")
+          
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ API доступен (HTTP $HTTP_STATUS)"
+          else
+            echo "❌ API недоступен (HTTP $HTTP_STATUS)"
+          fi
+          
+          # Проверка использования ресурсов
+          echo "🔍 Проверка ресурсов..."
+          
+          # Память
+          MEMORY_USAGE=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}')
+          echo "💾 Использование памяти: $MEMORY_USAGE%"
+          
+          if (( $(echo "$MEMORY_USAGE > 90" | bc -l) )); then
+            echo "⚠️ ВНИМАНИЕ: Высокое использование памяти!"
+          fi
+          
+          # Диск
+          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+          echo "💿 Использование диска: $DISK_USAGE%"
+          
+          if [ "$DISK_USAGE" -gt 85 ]; then
+            echo "⚠️ ВНИМАНИЕ: Мало свободного места на диске!"
+          fi
+          
+          # CPU Load
+          LOAD_AVG=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
+          echo "⚡ Средняя нагрузка: $LOAD_AVG"
+          
+          # Проверка логов на ошибки
+          echo "🔍 Проверка последних ошибок..."
+          ERROR_COUNT=$(pm2 logs 1337-backend --lines 100 --nostream 2>/dev/null | grep -i "error\|exception\|failed" | wc -l)
+          
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "⚠️ Найдено $ERROR_COUNT ошибок в логах за последние 100 строк"
+            echo "📋 Последние ошибки:"
+            pm2 logs 1337-backend --lines 100 --nostream | grep -i "error\|exception\|failed" | tail -5
+          else
+            echo "✅ Критических ошибок в логах не найдено"
+          fi
+          
+          echo "================================"
+          echo "🏁 Проверка завершена"
+          
+    - name: Create Issue on Failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 VDS Health Check Failed',
+            body: `
+            ## 🚨 Проблема с VDS сервером
+            
+            **Время:** ${new Date().toISOString()}
+            **Workflow:** ${context.workflow}
+            **Run ID:** ${context.runId}
+            
+            Автоматическая проверка здоровья системы выявила проблемы.
+            
+            ### Действия:
+            1. Проверьте логи workflow
+            2. Подключитесь к серверу: \`ssh root@80.87.200.23\`
+            3. Проверьте статус сервисов: \`pm2 status && systemctl status nginx\`
+            4. При необходимости выполните ручное развертывание
+            
+            ### Быстрая диагностика:
+            \`\`\`bash
+            pm2 logs 1337-backend --lines 20
+            systemctl status nginx
+            df -h
+            free -h
+            \`\`\`
+            `,
+            labels: ['bug', 'urgent', 'vds']
+          })
