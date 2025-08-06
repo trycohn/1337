@@ -31,10 +31,27 @@ class TournamentResultsService {
             if (tournament.format === 'mix') {
                 const teamsQuery = `
                     SELECT 
-                        id, name, captain_id, members
-                    FROM tournament_teams 
-                    WHERE tournament_id = $1
-                    ORDER BY id
+                        tt.id, 
+                        tt.name,
+                        COALESCE(
+                            json_agg(
+                                json_build_object(
+                                    'id', ttm.id,
+                                    'user_id', ttm.user_id,
+                                    'participant_id', ttm.participant_id,
+                                    'name', COALESCE(tp.name, u.username),
+                                    'username', u.username
+                                ) ORDER BY ttm.id
+                            ) FILTER (WHERE ttm.id IS NOT NULL), 
+                            '[]'::json
+                        ) as members
+                    FROM tournament_teams tt
+                    LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                    LEFT JOIN users u ON ttm.user_id = u.id
+                    LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                    WHERE tt.tournament_id = $1
+                    GROUP BY tt.id, tt.name
+                    ORDER BY tt.id
                 `;
                 const teamsResult = await pool.query(teamsQuery, [tournamentId]);
                 tournament.teams = teamsResult.rows;
