@@ -40,7 +40,7 @@ class TournamentController {
         
         console.log(`✅ [getTournamentById] Валидация пройдена, ищем турнир с ID: ${tournamentId}`);
         
-        const tournament = await TournamentService.getTournamentById(tournamentId);
+        const tournament = await TournamentService.getTournamentDetails(tournamentId);
         
         if (!tournament) {
             console.log(`❌ [getTournamentById] Турнир с ID ${tournamentId} не найден`);

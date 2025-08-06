@@ -8,27 +8,48 @@ import './TournamentResults.css';
  * Отображает итоговые места участников и историю матчей
  */
 const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
-    // Вычисляем итоговые места участников
+    // Вычисляем итоговые места участников/команд
     const finalStandings = useMemo(() => {
-        if (!tournament || !matches || !participants) return [];
+        if (!tournament || !matches) return [];
 
         // Получаем всех участников с их результатами
         const standingsMap = new Map();
         
-        // Инициализируем всех участников
-        participants.forEach(participant => {
-            standingsMap.set(participant.id, {
-                id: participant.id,
-                name: participant.name || participant.username,
-                avatar_url: participant.avatar_url,
-                user_id: participant.user_id,
-                place: null,
-                status: 'участвовал',
-                elimination_round: null,
-                wins: 0,
-                losses: 0
+        // Для микс турниров работаем с командами, для остальных - с участниками
+        if (tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) {
+            // Инициализируем команды микс турнира
+            tournament.teams.forEach(team => {
+                standingsMap.set(team.id, {
+                    id: team.id,
+                    name: team.name,
+                    avatar_url: team.avatar_url,
+                    user_id: null, // У команды нет конкретного user_id
+                    place: null,
+                    status: 'участвовала',
+                    elimination_round: null,
+                    wins: 0,
+                    losses: 0,
+                    type: 'team',
+                    members: team.members || []
+                });
             });
-        });
+        } else if (participants && participants.length > 0) {
+            // Инициализируем индивидуальных участников
+            participants.forEach(participant => {
+                standingsMap.set(participant.id, {
+                    id: participant.id,
+                    name: participant.name || participant.username,
+                    avatar_url: participant.avatar_url,
+                    user_id: participant.user_id,
+                    place: null,
+                    status: 'участвовал',
+                    elimination_round: null,
+                    wins: 0,
+                    losses: 0,
+                    type: 'individual'
+                });
+            });
+        }
 
         // Анализируем матчи для определения мест
         const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
@@ -73,10 +94,19 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
             .filter(match => match.status === 'completed' && match.winner_team_id)
             .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
             .map(match => {
-                const team1 = participants.find(p => p.id === match.team1_id);
-                const team2 = participants.find(p => p.id === match.team2_id);
-                const winner = match.winner_team_id === match.team1_id ? team1 : team2;
-                const loser = match.winner_team_id === match.team1_id ? team2 : team1;
+                let team1, team2, winner, loser;
+                
+                // Для микс турниров ищем команды, для остальных - участников
+                if (tournament.format === 'mix' && tournament.teams) {
+                    team1 = tournament.teams.find(t => t.id === match.team1_id);
+                    team2 = tournament.teams.find(t => t.id === match.team2_id);
+                } else {
+                    team1 = participants.find(p => p.id === match.team1_id);
+                    team2 = participants.find(p => p.id === match.team2_id);
+                }
+                
+                winner = match.winner_team_id === match.team1_id ? team1 : team2;
+                loser = match.winner_team_id === match.team1_id ? team2 : team1;
                 
                 return {
                     id: match.id,
@@ -172,7 +202,7 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                     
                     <div className="participants-list">
                         {participants.map(participant => (
-                            <div key={participant.id} className="participant-card">
+                            <div key={participant.id} className={`participant-card ${participant.type === 'team' ? 'team-card' : ''}`}>
                                 <div className="participant-avatar">
                                     <img 
                                         src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
@@ -194,14 +224,43 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                                         ) : (
                                             <span>{participant.name}</span>
                                         )}
+                                        {participant.type === 'team' && (
+                                            <span className="team-badge">👥 Команда</span>
+                                        )}
                                     </div>
+                                    
+                                    {/* Показываем членов команды для микс турниров */}
+                                    {participant.type === 'team' && participant.members && participant.members.length > 0 && (
+                                        <div className="team-members">
+                                            <span className="members-label">Состав:</span>
+                                            <div className="members-list">
+                                                {participant.members.map((member, index) => (
+                                                    <span key={member.id || index} className="member-name">
+                                                        {member.user_id ? (
+                                                            <Link 
+                                                                to={`/user/${member.user_id}`} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="member-link"
+                                                            >
+                                                                {member.username || member.name}
+                                                            </Link>
+                                                        ) : (
+                                                            <span>{member.username || member.name}</span>
+                                                        )}
+                                                        {index < participant.members.length - 1 && ', '}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     <div className="participant-stats">
                                         <span className="wins">Побед: {participant.wins}</span>
                                         <span className="losses">Поражений: {participant.losses}</span>
                                         {participant.elimination_round && (
                                             <span className="elimination">
-                                                Выбыл в раунде {participant.elimination_round}
+                                                {participant.type === 'team' ? 'Выбыла' : 'Выбыл'} в раунде {participant.elimination_round}
                                             </span>
                                         )}
                                     </div>
