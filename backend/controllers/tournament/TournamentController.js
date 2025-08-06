@@ -3,6 +3,7 @@ const ParticipantService = require('../../services/tournament/ParticipantService
 const BracketService = require('../../services/tournament/BracketService');
 const ChatService = require('../../services/tournament/ChatService');
 const TournamentValidator = require('../../validators/tournament/TournamentValidator');
+const { validateTournamentDescription, validateTournamentRules } = require('../../utils/htmlValidator');
 const { asyncHandler } = require('../../utils/asyncHandler');
 
 class TournamentController {
@@ -416,9 +417,28 @@ class TournamentController {
         
         const { description } = req.body;
         
+        // 🛡️ ВАЛИДАЦИЯ HTML БЕЗОПАСНОСТИ
+        if (description) {
+            const validation = validateTournamentDescription(description);
+            if (!validation.isValid) {
+                return res.status(400).json({
+                    error: 'Описание не прошло проверку безопасности',
+                    details: validation.errors
+                });
+            }
+            
+            // Логируем предупреждения
+            if (validation.warnings && validation.warnings.length > 0) {
+                console.warn(`⚠️ Предупреждения при валидации описания турнира ${tournamentId}:`, validation.warnings);
+            }
+            
+            // Используем санитизированную версию
+            req.body.description = validation.sanitizedContent;
+        }
+        
         const tournament = await TournamentService.updateDescription(
             tournamentId, 
-            description, 
+            req.body.description, 
             req.user.id
         );
         
@@ -470,9 +490,28 @@ class TournamentController {
         
         const { rules } = req.body;
         
+        // 🛡️ ВАЛИДАЦИЯ HTML БЕЗОПАСНОСТИ
+        if (rules) {
+            const validation = validateTournamentRules(rules);
+            if (!validation.isValid) {
+                return res.status(400).json({
+                    error: 'Регламент не прошел проверку безопасности',
+                    details: validation.errors
+                });
+            }
+            
+            // Логируем предупреждения
+            if (validation.warnings && validation.warnings.length > 0) {
+                console.warn(`⚠️ Предупреждения при валидации регламента турнира ${tournamentId}:`, validation.warnings);
+            }
+            
+            // Используем санитизированную версию
+            req.body.rules = validation.sanitizedContent;
+        }
+        
         const tournament = await TournamentService.updateRules(
             tournamentId, 
-            rules, 
+            req.body.rules, 
             req.user.id
         );
         

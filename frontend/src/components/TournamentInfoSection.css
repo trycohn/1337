@@ -1365,4 +1365,114 @@
         font-size: 0.8rem;
         padding: 4px 8px;
     }
-} 
+}
+
+/* =================================
+   RICH TEXT EDITOR ИНТЕГРАЦИЯ
+   ================================= */
+
+.tournament-description-editor,
+.tournament-rules-editor {
+    margin-top: 12px;
+}
+
+.tournament-description-editor .safe-rich-editor-container,
+.tournament-rules-editor .safe-rich-editor-container {
+    border-color: #333;
+    background: #000;
+}
+
+.tournament-description-editor .safe-rich-editor-container:hover,
+.tournament-rules-editor .safe-rich-editor-container:hover {
+    border-color: #ff0000;
+}
+
+.tournament-description-editor .safe-rich-editor .ql-editor,
+.tournament-rules-editor .safe-rich-editor .ql-editor {
+    min-height: 150px;
+}
+
+.tournament-rules-editor .safe-rich-editor .ql-editor {
+    min-height: 200px;
+}
+
+.tournament-description-display,
+.tournament-rules-display {
+    margin-top: 12px;
+    padding: 16px 0;
+}
+
+.tournament-description-display .rich-content,
+.tournament-rules-display .rich-content {
+    color: #fff;
+    line-height: 1.7;
+}
+
+/* Специальные стили для отображения в турнирной секции */
+.tournament-description-display .rich-content h3,
+.tournament-rules-display .rich-content h3 {
+    color: #ff0000;
+    border-bottom: 1px solid #333;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+}
+
+.tournament-description-display .rich-content h4,
+.tournament-description-display .rich-content h5,
+.tournament-description-display .rich-content h6,
+.tournament-rules-display .rich-content h4,
+.tournament-rules-display .rich-content h5,
+.tournament-rules-display .rich-content h6 {
+    color: #ccc;
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+.tournament-description-display .rich-content blockquote,
+.tournament-rules-display .rich-content blockquote {
+    background: rgba(17, 17, 17, 0.8);
+    border-left-color: #ff0000;
+    margin: 20px 0;
+}
+
+.tournament-description-display .rich-content ul,
+.tournament-description-display .rich-content ol,
+.tournament-rules-display .rich-content ul,
+.tournament-rules-display .rich-content ol {
+    margin: 16px 0;
+}
+
+.tournament-description-display .rich-content li,
+.tournament-rules-display .rich-content li {
+    margin: 8px 0;
+    color: #fff;
+}
+
+/* Кнопка "Читать далее" для правил */
+.tournament-rules-display .read-more-btn {
+    margin-top: 16px;
+    font-size: 13px;
+}
+
+/* Адаптивность для rich text в турнирной секции */
+@media (max-width: 768px) {
+    .tournament-description-editor .safe-rich-editor .ql-editor,
+    .tournament-rules-editor .safe-rich-editor .ql-editor {
+        min-height: 120px;
+        font-size: 13px;
+    }
+    
+    .tournament-rules-editor .safe-rich-editor .ql-editor {
+        min-height: 150px;
+    }
+    
+    .tournament-description-display,
+    .tournament-rules-display {
+        padding: 12px 0;
+    }
+    
+    .tournament-description-display .rich-content,
+    .tournament-rules-display .rich-content {
+        font-size: 13px;
+    }
+}

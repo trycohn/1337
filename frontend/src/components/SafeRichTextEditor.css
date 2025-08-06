@@ -1,0 +1,321 @@
+/* =================================
+   БЕЗОПАСНЫЙ RICH TEXT EDITOR СТИЛИ
+   Монохромная тема: #000, #fff, #ff0000, #111
+   ================================= */
+
+.safe-rich-editor-container {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border: 1px solid #ff0000;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.safe-rich-editor-container:hover {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 1px rgba(255, 0, 0, 0.2);
+}
+
+.safe-rich-editor-container:focus-within {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.3);
+}
+
+/* =================================
+   QUILL EDITOR ПЕРЕОПРЕДЕЛЕНИЕ
+   ================================= */
+
+.safe-rich-editor .ql-toolbar {
+    background: #111 !important;
+    border: none !important;
+    border-bottom: 1px solid #ff0000 !important;
+    padding: 8px 12px;
+}
+
+.safe-rich-editor .ql-toolbar .ql-formats {
+    margin-right: 15px;
+}
+
+.safe-rich-editor .ql-toolbar .ql-formats:last-child {
+    margin-right: 0;
+}
+
+/* Кнопки toolbar */
+.safe-rich-editor .ql-toolbar button {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px !important;
+    color: #fff !important;
+    padding: 4px 6px !important;
+    margin: 0 1px !important;
+    transition: all 0.2s ease;
+}
+
+.safe-rich-editor .ql-toolbar button:hover {
+    background: #ff0000 !important;
+    border-color: #ff0000 !important;
+    color: #fff !important;
+}
+
+.safe-rich-editor .ql-toolbar button.ql-active {
+    background: #ff0000 !important;
+    border-color: #ff0000 !important;
+    color: #fff !important;
+}
+
+.safe-rich-editor .ql-toolbar button svg {
+    fill: currentColor !important;
+}
+
+/* Выпадающие списки */
+.safe-rich-editor .ql-toolbar .ql-picker {
+    color: #fff !important;
+}
+
+.safe-rich-editor .ql-toolbar .ql-picker-label {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px !important;
+    color: #fff !important;
+    padding: 4px 8px !important;
+    transition: all 0.2s ease;
+}
+
+.safe-rich-editor .ql-toolbar .ql-picker-label:hover {
+    background: #ff0000 !important;
+    border-color: #ff0000 !important;
+}
+
+.safe-rich-editor .ql-toolbar .ql-picker-options {
+    background: #111 !important;
+    border: 1px solid #ff0000 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+}
+
+.safe-rich-editor .ql-toolbar .ql-picker-item {
+    color: #fff !important;
+    padding: 8px 12px !important;
+}
+
+.safe-rich-editor .ql-toolbar .ql-picker-item:hover {
+    background: #ff0000 !important;
+    color: #fff !important;
+}
+
+/* =================================
+   РЕДАКТОР КОНТЕНТА
+   ================================= */
+
+.safe-rich-editor .ql-container {
+    background: #000 !important;
+    border: none !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+}
+
+.safe-rich-editor .ql-editor {
+    background: #000 !important;
+    color: #fff !important;
+    padding: 16px !important;
+    min-height: 120px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.safe-rich-editor .ql-editor::before {
+    color: #666 !important;
+    font-style: italic;
+    left: 16px !important;
+    right: 16px !important;
+}
+
+.safe-rich-editor .ql-editor:focus {
+    outline: none !important;
+}
+
+/* Форматирование текста в редакторе */
+.safe-rich-editor .ql-editor strong {
+    color: #fff;
+    font-weight: bold;
+}
+
+.safe-rich-editor .ql-editor em {
+    color: #fff;
+    font-style: italic;
+}
+
+.safe-rich-editor .ql-editor u {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.safe-rich-editor .ql-editor s {
+    color: #ccc;
+    text-decoration: line-through;
+}
+
+.safe-rich-editor .ql-editor h3,
+.safe-rich-editor .ql-editor h4,
+.safe-rich-editor .ql-editor h5,
+.safe-rich-editor .ql-editor h6 {
+    color: #fff;
+    font-weight: bold;
+    margin: 16px 0 8px 0;
+}
+
+.safe-rich-editor .ql-editor h3 { font-size: 1.3em; }
+.safe-rich-editor .ql-editor h4 { font-size: 1.2em; }
+.safe-rich-editor .ql-editor h5 { font-size: 1.1em; }
+.safe-rich-editor .ql-editor h6 { font-size: 1em; }
+
+.safe-rich-editor .ql-editor ul,
+.safe-rich-editor .ql-editor ol {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.safe-rich-editor .ql-editor li {
+    color: #fff;
+    margin: 4px 0;
+}
+
+.safe-rich-editor .ql-editor blockquote {
+    background: #111;
+    border-left: 4px solid #ff0000;
+    color: #ccc;
+    font-style: italic;
+    margin: 16px 0;
+    padding: 12px 16px;
+}
+
+.safe-rich-editor .ql-editor a {
+    color: #ff0000;
+    text-decoration: underline;
+}
+
+.safe-rich-editor .ql-editor a:hover {
+    color: #fff;
+    background: #ff0000;
+    text-decoration: none;
+}
+
+.safe-rich-editor .ql-editor sub,
+.safe-rich-editor .ql-editor sup {
+    color: #fff;
+    font-size: 0.8em;
+}
+
+/* =================================
+   ПОДВАЛ РЕДАКТОРА
+   ================================= */
+
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #111;
+    border-top: 1px solid #333;
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.character-count {
+    color: #ccc;
+    font-family: monospace;
+}
+
+.security-badge {
+    color: #ff0000;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: help;
+}
+
+/* =================================
+   СОСТОЯНИЯ РЕДАКТОРА
+   ================================= */
+
+.safe-rich-editor.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.safe-rich-editor.disabled .ql-toolbar {
+    background: #0a0a0a !important;
+}
+
+.safe-rich-editor.disabled .ql-editor {
+    background: #0a0a0a !important;
+    color: #999 !important;
+    cursor: not-allowed;
+}
+
+/* =================================
+   СКРОЛЛБАРЫ
+   ================================= */
+
+.safe-rich-editor .ql-editor::-webkit-scrollbar {
+    width: 6px;
+}
+
+.safe-rich-editor .ql-editor::-webkit-scrollbar-track {
+    background: #111;
+}
+
+.safe-rich-editor .ql-editor::-webkit-scrollbar-thumb {
+    background: #ff0000;
+    border-radius: 3px;
+}
+
+.safe-rich-editor .ql-editor::-webkit-scrollbar-thumb:hover {
+    background: #cc0000;
+}
+
+/* =================================
+   АДАПТИВНОСТЬ
+   ================================= */
+
+@media (max-width: 768px) {
+    .safe-rich-editor .ql-toolbar {
+        padding: 6px 8px;
+    }
+    
+    .safe-rich-editor .ql-toolbar .ql-formats {
+        margin-right: 8px;
+    }
+    
+    .safe-rich-editor .ql-toolbar button {
+        padding: 3px 4px !important;
+        margin: 0 !important;
+    }
+    
+    .safe-rich-editor .ql-editor {
+        padding: 12px !important;
+        min-height: 100px;
+        font-size: 13px !important;
+    }
+    
+    .editor-footer {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .safe-rich-editor .ql-toolbar {
+        flex-wrap: wrap;
+        padding: 4px 6px;
+    }
+    
+    .safe-rich-editor .ql-toolbar .ql-formats {
+        margin: 2px 4px 2px 0;
+    }
+    
+    .safe-rich-editor .ql-editor {
+        min-height: 80px;
+        font-size: 12px !important;
+    }
+}

@@ -3,6 +3,8 @@ import './TournamentInfoSection.css';
 import { ensureHttps } from '../utils/userHelpers';
 import ParticipationConfirmModal from './tournament/modals/ParticipationConfirmModal';
 import TeamSelectionModal from './modals/TeamSelectionModal';
+import SafeRichTextEditor from './SafeRichTextEditor';
+import SafeRichTextDisplay from './SafeRichTextDisplay';
 import axios from 'axios'; // Added axios import
 
 const TournamentInfoSection = ({ 
@@ -1346,21 +1348,22 @@ const TournamentInfoSection = ({
                 
                 <div className="tournament-description-content">
                     {isEditingDescription ? (
-                        <textarea
-                            className="description-editor"
+                        <SafeRichTextEditor
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={setDescription}
                             placeholder="Введите описание турнира..."
                             disabled={isLoading}
+                            maxLength={3000}
+                            className="tournament-description-editor"
+                            id="tournament-description-editor"
                         />
                     ) : (
                         <>
                             {description ? (
-                                <div className="tournament-description">
-                                    {description.split('\n').map((line, index) => (
-                                        <p key={index}>{line}</p>
-                                    ))}
-                                </div>
+                                <SafeRichTextDisplay
+                                    content={description}
+                                    className="tournament-description-display"
+                                />
                             ) : (
                                 <div className="no-description">
                                     {isAdminOrCreator ? (
@@ -1412,57 +1415,25 @@ const TournamentInfoSection = ({
                 
                 <div className="tournament-rules-content">
                     {isEditingRegulations ? (
-                        <textarea
-                            className="rules-editor"
+                        <SafeRichTextEditor
                             value={regulations}
-                            onChange={(e) => setRegulations(e.target.value)}
+                            onChange={setRegulations}
                             placeholder="Введите регламент турнира..."
                             disabled={isLoading}
+                            maxLength={5000}
+                            className="tournament-rules-editor"
+                            id="tournament-rules-editor"
                         />
                     ) : (
                         <>
                             {regulations ? (
-                                <div className="rules-text">
-                                    {/* 🆕 Сокращенное отображение регламента с тултипом */}
-                                    {shouldTruncateRegulations(regulations) ? (
-                                        <div className="rules-container">
-                                            {/* Сокращенный текст */}
-                                            <div 
-                                                className="rules-truncated"
-                                                onMouseEnter={() => setShowRegulationsTooltip(true)}
-                                                onMouseLeave={() => setShowRegulationsTooltip(false)}
-                                                style={{ position: 'relative' }}
-                                            >
-                                                {truncateText(regulations).split('\n').map((line, index) => (
-                                                    <div key={index} className="rule-item">{line}</div>
-                                                ))}
-                                                
-                                                {/* Тултип для показа полного регламента */}
-                                                {showRegulationsTooltip && (
-                                                    <div className="regulations-tooltip">
-                                                        <div className="tooltip-content">
-                                                            <p>📋 Показать полный регламент</p>
-                                                            <button 
-                                                                className="tooltip-link"
-                                                                onClick={openFullRegulations}
-                                                                title="Открыть полный регламент в новой вкладке"
-                                                            >
-                                                                🔗 Открыть в новой вкладке
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        // Полный текст, если он короткий
-                                        <div>
-                                            {regulations.split('\n').map((line, index) => (
-                                                <div key={index} className="rule-item">{line}</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <SafeRichTextDisplay
+                                    content={regulations}
+                                    className="tournament-rules-display"
+                                    maxLength={shouldTruncateRegulations(regulations) ? 400 : null}
+                                    showReadMore={shouldTruncateRegulations(regulations)}
+                                    onReadMoreClick={openFullRegulations}
+                                />)
                             ) : (
                                 <div className="default-rules">
                                     {isAdminOrCreator ? (

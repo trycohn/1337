@@ -1,0 +1,376 @@
+/* =================================
+   БЕЗОПАСНЫЙ RICH TEXT DISPLAY СТИЛИ
+   Монохромная тема: #000, #fff, #ff0000, #111
+   ================================= */
+
+.safe-rich-display {
+    position: relative;
+    width: 100%;
+    background: transparent;
+    color: #fff;
+    line-height: 1.6;
+}
+
+/* =================================
+   КОНТЕНТ ОТОБРАЖЕНИЯ
+   ================================= */
+
+.safe-rich-display .rich-content {
+    font-size: 14px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.safe-rich-display .rich-content p {
+    margin: 0 0 12px 0;
+    color: #fff;
+}
+
+.safe-rich-display .rich-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Заголовки */
+.safe-rich-display .rich-content h3,
+.safe-rich-display .rich-content h4,
+.safe-rich-display .rich-content h5,
+.safe-rich-display .rich-content h6 {
+    color: #fff;
+    font-weight: bold;
+    margin: 20px 0 12px 0;
+    line-height: 1.3;
+}
+
+.safe-rich-display .rich-content h3 { 
+    font-size: 1.3em; 
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+}
+
+.safe-rich-display .rich-content h4 { 
+    font-size: 1.2em; 
+}
+
+.safe-rich-display .rich-content h5 { 
+    font-size: 1.1em; 
+}
+
+.safe-rich-display .rich-content h6 { 
+    font-size: 1em;
+    color: #ccc;
+}
+
+/* Форматирование текста */
+.safe-rich-display .rich-content strong {
+    color: #fff;
+    font-weight: bold;
+}
+
+.safe-rich-display .rich-content em {
+    color: #fff;
+    font-style: italic;
+}
+
+.safe-rich-display .rich-content u {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.safe-rich-display .rich-content s {
+    color: #999;
+    text-decoration: line-through;
+}
+
+.safe-rich-display .rich-content sub,
+.safe-rich-display .rich-content sup {
+    color: #fff;
+    font-size: 0.8em;
+}
+
+/* Списки */
+.safe-rich-display .rich-content ul,
+.safe-rich-display .rich-content ol {
+    margin: 16px 0;
+    padding-left: 24px;
+}
+
+.safe-rich-display .rich-content li {
+    color: #fff;
+    margin: 6px 0;
+    line-height: 1.5;
+}
+
+.safe-rich-display .rich-content ul li {
+    list-style-type: disc;
+}
+
+.safe-rich-display .rich-content ol li {
+    list-style-type: decimal;
+}
+
+.safe-rich-display .rich-content ul ul,
+.safe-rich-display .rich-content ol ol,
+.safe-rich-display .rich-content ul ol,
+.safe-rich-display .rich-content ol ul {
+    margin: 8px 0;
+}
+
+/* Цитаты */
+.safe-rich-display .rich-content blockquote {
+    background: #111;
+    border-left: 4px solid #ff0000;
+    color: #ccc;
+    font-style: italic;
+    margin: 20px 0;
+    padding: 16px 20px;
+    position: relative;
+}
+
+.safe-rich-display .rich-content blockquote::before {
+    content: '"';
+    color: #ff0000;
+    font-size: 2em;
+    font-weight: bold;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    line-height: 1;
+}
+
+.safe-rich-display .rich-content blockquote p {
+    margin: 0;
+    padding-left: 20px;
+}
+
+/* Ссылки */
+.safe-rich-display .rich-content a {
+    color: #ff0000;
+    text-decoration: underline;
+    transition: all 0.2s ease;
+    word-break: break-all;
+}
+
+.safe-rich-display .rich-content a:hover {
+    color: #fff;
+    background: #ff0000;
+    text-decoration: none;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+.safe-rich-display .rich-content a:focus {
+    outline: 2px solid #ff0000;
+    outline-offset: 2px;
+}
+
+/* Переносы строк */
+.safe-rich-display .rich-content br {
+    line-height: 1.6;
+}
+
+/* =================================
+   ПУСТОЙ КОНТЕНТ
+   ================================= */
+
+.safe-rich-display.empty-content {
+    padding: 20px;
+    text-align: center;
+    background: #111;
+    border: 1px dashed #333;
+    border-radius: 4px;
+}
+
+.safe-rich-display .no-content-message {
+    color: #666;
+    font-style: italic;
+    margin: 0;
+}
+
+/* =================================
+   КНОПКА "ЧИТАТЬ ДАЛЕЕ"
+   ================================= */
+
+.read-more-btn {
+    background: transparent;
+    border: 1px solid #ff0000;
+    color: #ff0000;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 12px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.read-more-btn:hover {
+    background: #ff0000;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.read-more-btn:active {
+    transform: translateY(0);
+}
+
+.read-more-btn:focus {
+    outline: 2px solid #ff0000;
+    outline-offset: 2px;
+}
+
+/* =================================
+   ИНДИКАТОР БЕЗОПАСНОСТИ (DEV)
+   ================================= */
+
+.security-indicator {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: help;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.security-indicator:hover {
+    opacity: 1;
+    background: rgba(255, 0, 0, 0.2);
+}
+
+/* =================================
+   ВАРИАНТЫ РАЗМЕРОВ
+   ================================= */
+
+.safe-rich-display.compact {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.safe-rich-display.compact .rich-content h3,
+.safe-rich-display.compact .rich-content h4,
+.safe-rich-display.compact .rich-content h5,
+.safe-rich-display.compact .rich-content h6 {
+    margin: 16px 0 8px 0;
+}
+
+.safe-rich-display.compact .rich-content p {
+    margin-bottom: 8px;
+}
+
+.safe-rich-display.compact .rich-content ul,
+.safe-rich-display.compact .rich-content ol {
+    margin: 12px 0;
+}
+
+.safe-rich-display.compact .rich-content blockquote {
+    margin: 16px 0;
+    padding: 12px 16px;
+}
+
+/* =================================
+   АДАПТИВНОСТЬ
+   ================================= */
+
+@media (max-width: 768px) {
+    .safe-rich-display .rich-content {
+        font-size: 13px;
+    }
+    
+    .safe-rich-display .rich-content h3 { font-size: 1.2em; }
+    .safe-rich-display .rich-content h4 { font-size: 1.15em; }
+    .safe-rich-display .rich-content h5 { font-size: 1.1em; }
+    .safe-rich-display .rich-content h6 { font-size: 1em; }
+    
+    .safe-rich-display .rich-content ul,
+    .safe-rich-display .rich-content ol {
+        padding-left: 20px;
+    }
+    
+    .safe-rich-display .rich-content blockquote {
+        padding: 12px 16px;
+        margin: 16px 0;
+    }
+    
+    .safe-rich-display .rich-content blockquote::before {
+        font-size: 1.5em;
+        top: 6px;
+        left: 6px;
+    }
+    
+    .safe-rich-display .rich-content blockquote p {
+        padding-left: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .safe-rich-display .rich-content {
+        font-size: 12px;
+    }
+    
+    .safe-rich-display .rich-content ul,
+    .safe-rich-display .rich-content ol {
+        padding-left: 16px;
+    }
+    
+    .safe-rich-display .rich-content blockquote {
+        padding: 10px 12px;
+        margin: 12px 0;
+    }
+    
+    .safe-rich-display .rich-content blockquote p {
+        padding-left: 12px;
+    }
+    
+    .read-more-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    .security-indicator {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+    }
+}
+
+/* =================================
+   ДОСТУПНОСТЬ
+   ================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .safe-rich-display .rich-content a,
+    .read-more-btn,
+    .security-indicator {
+        transition: none;
+    }
+    
+    .read-more-btn:hover {
+        transform: none;
+    }
+}
+
+/* Высокий контраст */
+@media (prefers-contrast: high) {
+    .safe-rich-display .rich-content a {
+        text-decoration: underline !important;
+        text-decoration-thickness: 2px;
+    }
+    
+    .safe-rich-display .rich-content blockquote {
+        border-left-width: 6px;
+    }
+    
+    .read-more-btn {
+        border-width: 2px;
+    }
+}
