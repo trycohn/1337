@@ -44,6 +44,25 @@
     font-size: 0.9em;
 }
 
+.results-loading,
+.results-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    text-align: center;
+}
+
+.results-loading span {
+    color: #fff;
+    font-size: 1.1em;
+}
+
+.results-error span {
+    color: #f44336;
+    font-size: 1.1em;
+}
+
 /* =================================
    ЗАГОЛОВКИ СЕКЦИЙ
    ================================= */

@@ -1231,9 +1231,7 @@ function TournamentDetails() {
                 return (
                     <div className="tab-content-results">
                         <TournamentResults 
-                            tournament={tournament} 
-                            matches={matches} 
-                            participants={tournament.participants || []} 
+                            tournament={tournament}
                         />
                     </div>
                 );

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
 import './TournamentResults.css';
@@ -6,220 +6,89 @@ import './TournamentResults.css';
 /**
  * 🏆 КОМПОНЕНТ РЕЗУЛЬТАТОВ ТУРНИРА
  * Отображает итоговые места участников и историю матчей
+ * Данные загружаются напрямую из БД через API
  */
-const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
-    // Вычисляем итоговые места участников/команд
-    const finalStandings = useMemo(() => {
-        if (!tournament || !matches) return [];
+const TournamentResults = ({ tournament }) => {
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-        // Получаем всех участников с их результатами
-        const standingsMap = new Map();
-        
-        // Отладочная информация (только в development)
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🏆 Подсчет статистики турнира:', {
-                tournamentId: tournament.id,
-                format: tournament.format,
-                totalMatches: matches.length,
-                completedMatches: matches.filter(m => m.status === 'completed').length,
-                teamsCount: tournament.teams?.length || 0,
-                participantsCount: participants?.length || 0
-            });
-        }
-        
-        // Для микс турниров работаем с командами, для остальных - с участниками
-        if (tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) {
-            // Инициализируем команды микс турнира
-            tournament.teams.forEach(team => {
-                standingsMap.set(team.id, {
-                    id: team.id,
-                    name: team.name,
-                    avatar_url: team.avatar_url,
-                    user_id: null, // У команды нет конкретного user_id
-                    place: null,
-                    status: 'участвовала',
-                    elimination_round: null,
-                    wins: 0,
-                    losses: 0,
-                    type: 'team',
-                    members: team.members || []
-                });
-            });
-        } else if (participants && participants.length > 0) {
-            // Инициализируем индивидуальных участников
-            participants.forEach(participant => {
-                standingsMap.set(participant.id, {
-                    id: participant.id,
-                    name: participant.name || participant.username,
-                    avatar_url: participant.avatar_url,
-                    user_id: participant.user_id,
-                    place: null,
-                    status: 'участвовал',
-                    elimination_round: null,
-                    wins: 0,
-                    losses: 0,
-                    type: 'individual'
-                });
-            });
-        }
+    // Загружаем результаты турнира из API
+    useEffect(() => {
+        if (!tournament?.id) return;
 
-        // Убеждаемся, что все участники инициализированы
-        // Это важно для случаев, когда участник не участвовал ни в одном матче
-        if (tournament.format !== 'mix') {
-            participants.forEach(participant => {
-                if (!standingsMap.has(participant.id)) {
-                    standingsMap.set(participant.id, {
-                        id: participant.id,
-                        name: participant.name || participant.username,
-                        avatar_url: participant.avatar_url,
-                        user_id: participant.user_id,
-                        place: null,
-                        status: 'участвовал',
-                        elimination_round: null,
-                        wins: 0,
-                        losses: 0,
-                        type: 'individual'
+        const fetchResults = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const response = await fetch(`/api/tournaments/${tournament.id}/results`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                setResults(data);
+                
+                // Отладочная информация (только в development)
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('🏆 Результаты турнира получены из API:', {
+                        tournamentId: tournament.id,
+                        format: data.tournament.format,
+                        totalMatches: data.matches.length,
+                        completedMatches: data.matches.filter(m => m.status === 'completed').length,
+                        standingsCount: data.standings.length,
+                        historyCount: data.matchHistory.length
                     });
                 }
-            });
-        }
-
-        // Анализируем матчи для определения мест
-        const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
-        
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🎯 Завершенные матчи для подсчета:', completedMatches.map(m => ({
-                id: m.id,
-                match_number: m.match_number,
-                team1_id: m.team1_id,
-                team2_id: m.team2_id,
-                winner_team_id: m.winner_team_id,
-                status: m.status
-            })));
-        }
-        
-        completedMatches.forEach(match => {
-            const winnerId = match.winner_team_id;
-            const loserId = match.team1_id === winnerId ? match.team2_id : match.team1_id;
-            
-            // Обновляем статистику победителя
-            const winner = standingsMap.get(winnerId);
-            if (winner) {
-                winner.wins++;
+                
+            } catch (error) {
+                console.error('❌ Ошибка загрузки результатов турнира:', error);
+                setError(error.message);
+            } finally {
+                setLoading(false);
             }
-            
-            // Обновляем статистику проигравшего
-            // Учитываем поражение только для реальных участников (не BYE)
-            if (loserId && loserId !== null) {
-                const loser = standingsMap.get(loserId);
-                if (loser) {
-                    loser.losses++;
-                    // Записываем раунд выбывания
-                    if (!loser.elimination_round || match.round > loser.elimination_round) {
-                        loser.elimination_round = match.round;
-                    }
-                }
-            }
-            
-            // Дополнительная проверка: если матч против BYE, то у победителя должна быть засчитана победа
-            // но у BYE не должно быть поражения (так как BYE не участник)
-        });
+        };
 
-        // Отладочная информация после подсчета статистики
-        const standings = Array.from(standingsMap.values());
-        if (process.env.NODE_ENV === 'development') {
-            console.log('📊 Статистика после подсчета:', standings.map(s => ({
-                name: s.name,
-                wins: s.wins,
-                losses: s.losses,
-                elimination_round: s.elimination_round
-            })));
-            
-            // Проверяем участников с нулевой статистикой
-            const zeroStats = standings.filter(s => s.wins === 0 && s.losses === 0);
-            if (zeroStats.length > 0) {
-                console.warn('⚠️ Участники с нулевой статистикой:', zeroStats.map(s => s.name));
-                
-                // Ищем матчи с этими участниками
-                zeroStats.forEach(participant => {
-                    const participantMatches = matches.filter(m => 
-                        m.team1_id === participant.id || m.team2_id === participant.id
-                    );
-                    console.log(`🔍 Матчи для ${participant.name}:`, participantMatches.map(m => ({
-                        match_number: m.match_number,
-                        status: m.status,
-                        winner_team_id: m.winner_team_id,
-                        team1_id: m.team1_id,
-                        team2_id: m.team2_id
-                    })));
-                });
-            }
-        }
+        fetchResults();
+    }, [tournament?.id]);
 
-        // Определяем места на основе структуры турнира
-        
-        if (tournament.format === 'single_elimination') {
-            return calculateSingleEliminationStandings(standings, completedMatches, tournament);
-        } else if (tournament.format === 'double_elimination') {
-            return calculateDoubleEliminationStandings(standings, completedMatches, tournament);
-        }
-        
-        // Для других форматов сортируем по количеству побед
-        return standings
-            .sort((a, b) => b.wins - a.wins)
-            .map((participant, index) => ({
-                ...participant,
-                place: index + 1
-            }));
-    }, [tournament, matches, participants]);
+    // Состояния загрузки и ошибок
+    if (loading) {
+        return (
+            <div className="results-tournament-results">
+                <div className="results-loading">
+                    <span>📊 Загрузка результатов...</span>
+                </div>
+            </div>
+        );
+    }
 
-    // Получаем историю матчей в хронологическом порядке
-    const matchHistory = useMemo(() => {
-        if (!matches) return [];
-        
-        return matches
-            .filter(match => match.status === 'completed' && match.winner_team_id)
-            .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
-            .map(match => {
-                let team1, team2, winner, loser;
-                
-                // Для микс турниров ищем команды, для остальных - участников
-                if (tournament.format === 'mix' && tournament.teams) {
-                    team1 = tournament.teams.find(t => t.id === match.team1_id);
-                    team2 = tournament.teams.find(t => t.id === match.team2_id);
-                } else {
-                    team1 = participants.find(p => p.id === match.team1_id);
-                    team2 = participants.find(p => p.id === match.team2_id);
-                }
-                
-                winner = match.winner_team_id === match.team1_id ? team1 : team2;
-                loser = match.winner_team_id === match.team1_id ? team2 : team1;
-                
-                return {
-                    id: match.id,
-                    match_number: match.match_number,
-                    round: match.round,
-                    round_name: match.round_name || `Раунд ${match.round}`,
-                    winner: {
-                        id: winner?.id,
-                        name: winner?.name || winner?.username || 'TBD',
-                        avatar_url: winner?.avatar_url
-                    },
-                    loser: {
-                        id: loser?.id,
-                        name: loser?.name || loser?.username || 'TBD',
-                        avatar_url: loser?.avatar_url
-                    },
-                    score: `${match.score1 || 0}:${match.score2 || 0}`,
-                    maps_data: match.maps_data || [],
-                    date: match.updated_at || match.created_at,
-                    bracket_type: match.bracket_type
-                };
-            });
-    }, [matches, participants]);
+    if (error) {
+        return (
+            <div className="results-tournament-results">
+                <div className="results-error">
+                    <span>❌ Ошибка загрузки: {error}</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!results) {
+        return (
+            <div className="results-tournament-results-empty">
+                <div className="results-empty-state">
+                    <span className="results-empty-icon">📊</span>
+                    <h3>Результаты недоступны</h3>
+                    <p>Не удалось загрузить результаты турнира</p>
+                </div>
+            </div>
+        );
+    }
 
     // Отображаем только если турнир завершен или есть результаты
-    const showResults = tournament?.status === 'completed' || matchHistory.length > 0;
+    const showResults = tournament?.status === 'completed' || results.matchHistory.length > 0;
     
     if (!showResults) {
         return (
@@ -236,34 +105,34 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
     return (
         <div className="results-tournament-results">
             {/* Блок 1: Итоговые места (показываем только если турнир завершен) */}
-            {tournament?.status === 'completed' && finalStandings.length > 0 && (
+            {tournament?.status === 'completed' && results.standings.length > 0 && (
                 <div className="results-final-standings-section">
                     <div className="results-section-header">
                         <h3>🏆 Итоговые результаты турнира</h3>
                         <div className="results-tournament-info">
-                            <span className="results-format-badge">{getFormatDisplayName(tournament.format)}</span>
-                            <span className="results-participants-count">{participants.length} участников</span>
+                            <span className="results-format-badge">{getFormatDisplayName(results.tournament.format)}</span>
+                            <span className="results-participants-count">{results.standings.length} участников</span>
                         </div>
                     </div>
                     
                     <div className="results-standings-list">
-                        {renderStandings(finalStandings)}
+                        {renderStandings(results.standings)}
                     </div>
                 </div>
             )}
 
             {/* Блок 2: История матчей */}
-            {matchHistory.length > 0 && (
+            {results.matchHistory.length > 0 && (
                 <div className="results-match-history-section">
                     <div className="results-section-header">
                         <h3>📋 История матчей</h3>
                         <div className="results-history-stats">
-                            <span className="results-matches-count">{matchHistory.length} завершенных матчей</span>
+                            <span className="results-matches-count">{results.matchHistory.length} завершенных матчей</span>
                         </div>
                     </div>
                     
                     <div className="results-match-history-list">
-                        {matchHistory.map(match => renderMatchHistoryItem(match))}
+                        {results.matchHistory.map(match => renderMatchHistoryItem(match))}
                     </div>
                 </div>
             )}
@@ -391,12 +260,12 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                             <div className="results-participant results-loser">
                                 <div className="results-participant-avatar">
                                     <img 
-                                        src={ensureHttps(match.loser.avatar_url) || '/default-avatar.png'}
-                                        alt={match.loser.name}
+                                        src={ensureHttps(match.loser?.avatar_url) || '/default-avatar.png'}
+                                        alt={match.loser?.name || 'BYE'}
                                         onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                     />
                                 </div>
-                                <span className="results-participant-name">{match.loser.name}</span>
+                                <span className="results-participant-name">{match.loser?.name || 'BYE'}</span>
                             </div>
                         </div>
                     </div>
@@ -412,7 +281,7 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                     </Link>
                     
                     <span className="results-match-date">
-                        {formatMatchDate(match.date)}
+                        {formatMatchDate(match.updated_at || match.created_at)}
                     </span>
                 </div>
             </div>
@@ -421,44 +290,9 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
 };
 
 // Вспомогательные функции
-function calculateSingleEliminationStandings(standings, matches, tournament) {
-    // Логика определения мест для Single Elimination
-    const result = [...standings];
-    
-    // Победитель - тот, кто выиграл финал
-    const finalMatch = matches.find(m => m.round_name?.includes('Финал') || m.bracket_type === 'grand_final');
-    if (finalMatch) {
-        const winner = result.find(p => p.id === finalMatch.winner_team_id);
-        const finalist = result.find(p => p.id === (finalMatch.team1_id === finalMatch.winner_team_id ? finalMatch.team2_id : finalMatch.team1_id));
-        
-        if (winner) winner.place = 1;
-        if (finalist) finalist.place = 2;
-    }
-    
-    // Остальные места по раундам выбывания
-    result.forEach(participant => {
-        if (participant.place) return;
-        
-        if (participant.elimination_round) {
-            // Примерное место по раунду выбывания
-            const roundPlace = Math.pow(2, tournament.total_rounds - participant.elimination_round + 1);
-            participant.place = Math.min(roundPlace, standings.length);
-        } else {
-            participant.place = standings.length; // Не участвовал в матчах
-        }
-    });
-    
-    return result.sort((a, b) => a.place - b.place);
-}
-
-function calculateDoubleEliminationStandings(standings, matches, tournament) {
-    // Логика для Double Elimination аналогична, но учитывает лузерскую сетку
-    return calculateSingleEliminationStandings(standings, matches, tournament);
-}
-
 function groupStandingsByPlace(standings) {
     return standings.reduce((groups, participant) => {
-        const place = participant.place || 'Не определено';
+        const place = participant.place || 999;
         if (!groups[place]) groups[place] = [];
         groups[place].push(participant);
         return groups;
@@ -475,37 +309,39 @@ function getPlaceIcon(place) {
 }
 
 function getFormatDisplayName(format) {
-    switch (format) {
-        case 'single_elimination': return 'Single Elimination';
-        case 'double_elimination': return 'Double Elimination';
-        case 'round_robin': return 'Round Robin';
-        case 'swiss': return 'Swiss System';
-        default: return format;
-    }
+    const formats = {
+        'single_elimination': 'Single Elimination',
+        'double_elimination': 'Double Elimination',
+        'round_robin': 'Round Robin',
+        'swiss': 'Swiss',
+        'mix': 'Mix'
+    };
+    return formats[format] || format;
 }
 
 function getBracketTypeDisplayName(bracketType) {
-    switch (bracketType) {
-        case 'winner': return 'Сетка победителей';
-        case 'loser': return 'Сетка проигравших';
-        case 'loser_semifinal': return 'Полуфинал проигравших';
-        case 'loser_final': return 'Финал проигравших';
-        case 'grand_final': return 'Гранд финал';
-        case 'grand_final_reset': return 'Переигровка финала';
-        default: return 'Основная сетка';
-    }
+    const types = {
+        'winner': 'Винеры',
+        'loser': 'Лузеры',
+        'loser_semifinal': 'Малый финал лузеров',
+        'loser_final': 'Финал лузеров',
+        'grand_final': 'Гранд финал',
+        'grand_final_reset': 'Гранд финал (реванш)'
+    };
+    return types[bracketType] || bracketType;
 }
 
 function getFormattedScore(match) {
-    // Если есть данные карт и только одна карта, показываем детальный счет
-    if (match.maps_data && match.maps_data.length === 1) {
+    // Если есть данные о картах и только одна карта - показываем счет карты
+    if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length === 1) {
         const mapData = match.maps_data[0];
         if (mapData.score1 !== null && mapData.score2 !== null) {
             return `${mapData.score1}:${mapData.score2}`;
         }
     }
     
-    return match.score;
+    // Иначе показываем общий счет матча
+    return `${match.score1 || 0}:${match.score2 || 0}`;
 }
 
 function formatMatchDate(dateString) {
@@ -514,17 +350,18 @@ function formatMatchDate(dateString) {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
     
-    if (diffDays === 0) {
-        return 'Сегодня ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
-        return 'Вчера ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays < 7) {
-        return `${diffDays} дн. назад`;
-    } else {
-        return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-    }
+    if (diffHours < 1) return 'Только что';
+    if (diffHours < 24) return `${diffHours} ч. назад`;
+    if (diffDays < 7) return `${diffDays} дн. назад`;
+    
+    return date.toLocaleDateString('ru-RU', { 
+        day: '2-digit', 
+        month: '2-digit',
+        year: 'numeric'
+    });
 }
 
 export default TournamentResults;

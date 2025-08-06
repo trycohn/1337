@@ -55,6 +55,9 @@ router.get('/', TournamentController.getAllTournaments);
 // Получение турнира по ID
 router.get('/:id', TournamentController.getTournamentById);
 
+// 📊 Получение результатов турнира с правильной статистикой
+router.get('/:id/results', TournamentController.getTournamentResults);
+
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, TournamentController.createTournament);
 

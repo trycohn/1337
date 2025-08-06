@@ -1,4 +1,5 @@
 const TournamentService = require('../../services/tournament/TournamentService');
+const TournamentResultsService = require('../../services/tournament/TournamentResultsService');
 const ParticipantService = require('../../services/tournament/ParticipantService');
 const BracketService = require('../../services/tournament/BracketService');
 const ChatService = require('../../services/tournament/ChatService');
@@ -873,6 +874,28 @@ class TournamentController {
         } catch (error) {
             console.error('Ошибка при получении победителей:', error);
             res.status(500).json({ error: 'Ошибка при получении победителей' });
+        }
+    });
+
+    // 📊 Получение результатов турнира с правильной статистикой
+    static getTournamentResults = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        
+        if (!id || isNaN(parseInt(id))) {
+            return res.status(400).json({ error: 'Некорректный ID турнира' });
+        }
+        
+        try {
+            const results = await TournamentResultsService.getTournamentResults(parseInt(id));
+            res.json(results);
+        } catch (error) {
+            console.error(`❌ Ошибка при получении результатов турнира ${id}:`, error);
+            
+            if (error.message.includes('не найден')) {
+                return res.status(404).json({ error: error.message });
+            }
+            
+            res.status(500).json({ error: 'Ошибка при получении результатов турнира' });
         }
     });
 }
