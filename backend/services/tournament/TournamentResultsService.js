@@ -31,7 +31,7 @@ class TournamentResultsService {
             if (tournament.format === 'mix') {
                 const teamsQuery = `
                     SELECT 
-                        id, name, avatar_url, captain_id, members
+                        id, name, captain_id, members
                     FROM tournament_teams 
                     WHERE tournament_id = $1
                     ORDER BY id
@@ -133,7 +133,6 @@ class TournamentResultsService {
                     stats.set(team.id, {
                         id: team.id,
                         name: team.name,
-                        avatar_url: team.avatar_url,
                         type: 'team',
                         members: team.members || [],
                         wins: 0,
