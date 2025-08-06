@@ -35,6 +35,68 @@ class MatchRepository {
     }
 
     /**
+     * Получение матча по ID с полной информацией об участниках
+     */
+    static async getByIdWithParticipants(matchId) {
+        const result = await pool.query(`
+            SELECT 
+                m.*,
+                -- Информация о первом участнике/команде
+                CASE 
+                    WHEN tt1.id IS NOT NULL THEN 
+                        json_build_object(
+                            'id', tt1.id,
+                            'name', tt1.name,
+                            'avatar_url', tt1.avatar_url,
+                            'user_id', tt1.captain_id,
+                            'type', 'team'
+                        )
+                    WHEN tp1.id IS NOT NULL THEN
+                        json_build_object(
+                            'id', tp1.id,
+                            'name', COALESCE(u1.username, tp1.name),
+                            'avatar_url', u1.avatar_url,
+                            'user_id', u1.id,
+                            'type', 'individual'
+                        )
+                    ELSE NULL
+                END as team1,
+                
+                -- Информация о втором участнике/команде
+                CASE 
+                    WHEN tt2.id IS NOT NULL THEN 
+                        json_build_object(
+                            'id', tt2.id,
+                            'name', tt2.name,
+                            'avatar_url', tt2.avatar_url,
+                            'user_id', tt2.captain_id,
+                            'type', 'team'
+                        )
+                    WHEN tp2.id IS NOT NULL THEN
+                        json_build_object(
+                            'id', tp2.id,
+                            'name', COALESCE(u2.username, tp2.name),
+                            'avatar_url', u2.avatar_url,
+                            'user_id', u2.id,
+                            'type', 'individual'
+                        )
+                    ELSE NULL
+                END as team2
+                
+            FROM matches m
+            LEFT JOIN tournament_teams tt1 ON m.team1_id = tt1.id
+            LEFT JOIN tournament_teams tt2 ON m.team2_id = tt2.id
+            LEFT JOIN tournament_participants tp1 ON m.team1_id = tp1.id
+            LEFT JOIN tournament_participants tp2 ON m.team2_id = tp2.id
+            LEFT JOIN users u1 ON tp1.user_id = u1.id
+            LEFT JOIN users u2 ON tp2.user_id = u2.id
+            WHERE m.id = $1
+        `, [matchId]);
+        
+        return result.rows[0] || null;
+    }
+
+    /**
      * Обновление результата матча
      */
     static async updateResult(matchId, resultData) {

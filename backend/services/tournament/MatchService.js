@@ -738,8 +738,8 @@ class MatchService {
     
     // Алиас для getMatchById (используется в MatchController)
     static async getById(matchId) {
-        console.log(`🔍 MatchService: Алиас getById -> getMatchById для матча ${matchId}`);
-        return await this.getMatchById(matchId);
+        console.log(`🔍 MatchService: Получение матча ${matchId} с информацией об участниках`);
+        return await MatchRepository.getByIdWithParticipants(matchId);
     }
 }
 

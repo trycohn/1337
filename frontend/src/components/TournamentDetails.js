@@ -41,6 +41,7 @@ import TournamentFloatingActionPanel from './tournament/TournamentFloatingAction
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentParticipants from './tournament/TournamentParticipants';
 import TournamentWinners from './tournament/TournamentWinners';
+import TournamentResults from './tournament/TournamentResults';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
@@ -173,6 +174,15 @@ function TournamentDetails() {
 
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
+    
+    // Проверяем URL параметр tab при загрузке
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam && ['info', 'bracket', 'participants', 'results', 'management'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, []);
     
     // 🆕 Состояния для модального окна матча за 3-е место
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
@@ -1220,9 +1230,13 @@ function TournamentDetails() {
             case 'results':
                 return (
                     <div className="tab-content-results">
-                        <TournamentWinners tournament={tournament} />
-            </div>
-        );
+                        <TournamentResults 
+                            tournament={tournament} 
+                            matches={matches} 
+                            participants={tournament.participants || []} 
+                        />
+                    </div>
+                );
 
             case 'management':
         return (

@@ -19,6 +19,7 @@ import { PrivateRoute } from './utils/PrivateRoute';
 import Messenger from './components/Messenger';
 import SocketTest from './components/SocketTest';
 import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
+import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Импортируем страницу деталей матча
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -56,6 +57,7 @@ function App() {
                                 <Route index element={<HomePage />} /> {/* Заменяем Home на HomePage */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
+                                <Route path="/tournaments/:tournamentId/match/:matchId" element={<MatchDetailsPage />} />
                                 <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
                                 <Route path="/login" element={<AuthPage />} /> {/* Добавляем маршрут для входа */}
                                 <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
