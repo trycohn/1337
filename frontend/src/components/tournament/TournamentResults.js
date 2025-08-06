@@ -63,6 +63,27 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
             });
         }
 
+        // Убеждаемся, что все участники инициализированы
+        // Это важно для случаев, когда участник не участвовал ни в одном матче
+        if (tournament.format !== 'mix') {
+            participants.forEach(participant => {
+                if (!standingsMap.has(participant.id)) {
+                    standingsMap.set(participant.id, {
+                        id: participant.id,
+                        name: participant.name || participant.username,
+                        avatar_url: participant.avatar_url,
+                        user_id: participant.user_id,
+                        place: null,
+                        status: 'участвовал',
+                        elimination_round: null,
+                        wins: 0,
+                        losses: 0,
+                        type: 'individual'
+                    });
+                }
+            });
+        }
+
         // Анализируем матчи для определения мест
         const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
         
@@ -87,7 +108,8 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                 winner.wins++;
             }
             
-            // Обновляем статистику проигравшего (только если это не BYE)
+            // Обновляем статистику проигравшего
+            // Учитываем поражение только для реальных участников (не BYE)
             if (loserId && loserId !== null) {
                 const loser = standingsMap.get(loserId);
                 if (loser) {
@@ -98,6 +120,9 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                     }
                 }
             }
+            
+            // Дополнительная проверка: если матч против BYE, то у победителя должна быть засчитана победа
+            // но у BYE не должно быть поражения (так как BYE не участник)
         });
 
         // Отладочная информация после подсчета статистики
@@ -109,6 +134,26 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                 losses: s.losses,
                 elimination_round: s.elimination_round
             })));
+            
+            // Проверяем участников с нулевой статистикой
+            const zeroStats = standings.filter(s => s.wins === 0 && s.losses === 0);
+            if (zeroStats.length > 0) {
+                console.warn('⚠️ Участники с нулевой статистикой:', zeroStats.map(s => s.name));
+                
+                // Ищем матчи с этими участниками
+                zeroStats.forEach(participant => {
+                    const participantMatches = matches.filter(m => 
+                        m.team1_id === participant.id || m.team2_id === participant.id
+                    );
+                    console.log(`🔍 Матчи для ${participant.name}:`, participantMatches.map(m => ({
+                        match_number: m.match_number,
+                        status: m.status,
+                        winner_team_id: m.winner_team_id,
+                        team1_id: m.team1_id,
+                        team2_id: m.team2_id
+                    })));
+                });
+            }
         }
 
         // Определяем места на основе структуры турнира
@@ -298,14 +343,8 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                                     )}
                                     
                                     <div className="results-participant-stats">
-                                        {(participant.wins > 0 || participant.losses > 0) ? (
-                                            <>
-                                                <span className="results-wins">Побед: {participant.wins}</span>
-                                                <span className="results-losses">Поражений: {participant.losses}</span>
-                                            </>
-                                        ) : (
-                                            <span className="results-no-matches">Матчей не играл</span>
-                                        )}
+                                        <span className="results-wins">Побед: {participant.wins}</span>
+                                        <span className="results-losses">Поражений: {participant.losses}</span>
                                         {participant.elimination_round && (
                                             <span className="results-elimination">
                                                 {participant.type === 'team' ? 'Выбыла' : 'Выбыл'} в раунде {participant.elimination_round}
