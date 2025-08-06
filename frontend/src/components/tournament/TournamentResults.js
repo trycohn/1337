@@ -87,8 +87,9 @@ const TournamentResults = ({ tournament }) => {
         );
     }
 
-    // Отображаем только если турнир завершен или есть результаты
-    const showResults = tournament?.status === 'completed' || results.matchHistory.length > 0;
+    // Проверяем есть ли данные для отображения
+    const hasCompletedMatches = results.matches.filter(m => m.status === 'completed' && m.winner_team_id).length > 0;
+    const showResults = tournament?.status === 'completed' || hasCompletedMatches;
     
     if (!showResults) {
         return (
@@ -122,7 +123,7 @@ const TournamentResults = ({ tournament }) => {
             )}
 
             {/* Блок 2: История матчей */}
-            {results.matchHistory.length > 0 && (
+            {results.matchHistory.length > 0 ? (
                 <div className="results-match-history-section">
                     <div className="results-section-header">
                         <h3>📋 История матчей</h3>
@@ -133,6 +134,22 @@ const TournamentResults = ({ tournament }) => {
                     
                     <div className="results-match-history-list">
                         {results.matchHistory.map(match => renderMatchHistoryItem(match))}
+                    </div>
+                </div>
+            ) : (
+                // Временно показываем отладочную информацию
+                <div className="results-match-history-section">
+                    <div className="results-section-header">
+                        <h3>🔍 Отладочная информация</h3>
+                    </div>
+                    <div style={{color: '#999', padding: '20px'}}>
+                        <p>Турнир: {results.tournament.name}</p>
+                        <p>Формат: {results.tournament.format}</p>
+                        <p>Статус: {results.tournament.status}</p>
+                        <p>Всего матчей: {results.matches.length}</p>
+                        <p>Завершенных матчей: {results.matches.filter(m => m.status === 'completed').length}</p>
+                        <p>Участников: {results.participants.length}</p>
+                        <p>Команд: {results.tournament.teams ? results.tournament.teams.length : 0}</p>
                     </div>
                 </div>
             )}

@@ -15,24 +15,7 @@ class TournamentResultsService {
         try {
             // Получаем информацию о турнире
             const tournamentQuery = `
-                SELECT 
-                    t.*,
-                    COALESCE(
-                        json_agg(
-                            json_build_object(
-                                'id', tt.id,
-                                'name', tt.name,
-                                'avatar_url', tt.avatar_url,
-                                'captain_id', tt.captain_id,
-                                'members', COALESCE(tt.members, '[]'::jsonb)
-                            )
-                        ) FILTER (WHERE tt.id IS NOT NULL), 
-                        '[]'::json
-                    ) as teams
-                FROM tournaments t
-                LEFT JOIN tournament_teams tt ON t.id = tt.tournament_id
-                WHERE t.id = $1
-                GROUP BY t.id
+                SELECT * FROM tournaments WHERE id = $1
             `;
             
             const tournamentResult = await pool.query(tournamentQuery, [tournamentId]);
@@ -43,6 +26,20 @@ class TournamentResultsService {
             
             const tournament = tournamentResult.rows[0];
             console.log(`✅ Турнир найден: ${tournament.name}, формат: ${tournament.format}`);
+
+            // Получаем команды для микс турниров
+            if (tournament.format === 'mix') {
+                const teamsQuery = `
+                    SELECT 
+                        id, name, avatar_url, captain_id, members
+                    FROM tournament_teams 
+                    WHERE tournament_id = $1
+                    ORDER BY id
+                `;
+                const teamsResult = await pool.query(teamsQuery, [tournamentId]);
+                tournament.teams = teamsResult.rows;
+                console.log(`👥 Найдено команд: ${tournament.teams.length}`);
+            }
 
             // Получаем всех участников турнира
             const participantsQuery = `
@@ -124,100 +121,117 @@ class TournamentResultsService {
      * Вычисляет статистику побед/поражений для всех участников
      */
     static calculateStatistics(tournament, participants, matches) {
+        console.log('📊 Вычисляем статистику...');
         const stats = new Map();
         
-        // Инициализируем статистику
-        if (tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) {
-            // Для микс турниров работаем с командами
-            tournament.teams.forEach(team => {
-                stats.set(team.id, {
-                    id: team.id,
-                    name: team.name,
-                    avatar_url: team.avatar_url,
-                    type: 'team',
-                    members: team.members || [],
-                    wins: 0,
-                    losses: 0,
-                    elimination_round: null,
-                    last_match_round: 0
+        try {
+            // Инициализируем статистику
+            if (tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) {
+                // Для микс турниров работаем с командами
+                console.log(`👥 Инициализируем ${tournament.teams.length} команд`);
+                tournament.teams.forEach(team => {
+                    stats.set(team.id, {
+                        id: team.id,
+                        name: team.name,
+                        avatar_url: team.avatar_url,
+                        type: 'team',
+                        members: team.members || [],
+                        wins: 0,
+                        losses: 0,
+                        elimination_round: null,
+                        last_match_round: 0
+                    });
                 });
-            });
-        } else {
-            // Для остальных турниров работаем с участниками
-            participants.forEach(participant => {
-                stats.set(participant.id, {
-                    id: participant.id,
-                    name: participant.name || participant.username,
-                    avatar_url: participant.avatar_url,
-                    user_id: participant.user_id,
-                    type: 'individual',
-                    wins: 0,
-                    losses: 0,
-                    elimination_round: null,
-                    last_match_round: 0
+            } else {
+                // Для остальных турниров работаем с участниками
+                console.log(`👤 Инициализируем ${participants.length} участников`);
+                participants.forEach(participant => {
+                    stats.set(participant.id, {
+                        id: participant.id,
+                        name: participant.name || participant.username,
+                        avatar_url: participant.avatar_url,
+                        user_id: participant.user_id,
+                        type: 'individual',
+                        wins: 0,
+                        losses: 0,
+                        elimination_round: null,
+                        last_match_round: 0
+                    });
                 });
-            });
-        }
-
-        // Обрабатываем завершенные матчи
-        const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
-        
-        completedMatches.forEach(match => {
-            const winnerId = match.winner_team_id;
-            const loserId = match.team1_id === winnerId ? match.team2_id : match.team1_id;
-            
-            // Обновляем статистику победителя
-            if (stats.has(winnerId)) {
-                const winner = stats.get(winnerId);
-                winner.wins++;
-                winner.last_match_round = Math.max(winner.last_match_round, match.round);
-                stats.set(winnerId, winner);
             }
+
+            // Обрабатываем завершенные матчи
+            const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
+            console.log(`🎮 Обрабатываем ${completedMatches.length} завершенных матчей`);
             
-            // Обновляем статистику проигравшего (только если это не BYE)
-            if (loserId && stats.has(loserId)) {
-                const loser = stats.get(loserId);
-                loser.losses++;
-                loser.last_match_round = Math.max(loser.last_match_round, match.round);
+            completedMatches.forEach(match => {
+                const winnerId = match.winner_team_id;
+                const loserId = match.team1_id === winnerId ? match.team2_id : match.team1_id;
                 
-                // Записываем раунд выбывания
-                if (!loser.elimination_round || match.round > loser.elimination_round) {
-                    loser.elimination_round = match.round;
+                // Обновляем статистику победителя
+                if (stats.has(winnerId)) {
+                    const winner = stats.get(winnerId);
+                    winner.wins++;
+                    winner.last_match_round = Math.max(winner.last_match_round, match.round);
+                    stats.set(winnerId, winner);
                 }
                 
-                stats.set(loserId, loser);
-            }
-        });
+                // Обновляем статистику проигравшего (только если это не BYE)
+                if (loserId && stats.has(loserId)) {
+                    const loser = stats.get(loserId);
+                    loser.losses++;
+                    loser.last_match_round = Math.max(loser.last_match_round, match.round);
+                    
+                    // Записываем раунд выбывания
+                    if (!loser.elimination_round || match.round > loser.elimination_round) {
+                        loser.elimination_round = match.round;
+                    }
+                    
+                    stats.set(loserId, loser);
+                }
+            });
 
-        return stats;
+            console.log(`✅ Статистика вычислена для ${stats.size} участников`);
+            return stats;
+            
+        } catch (error) {
+            console.error('❌ Ошибка при вычислении статистики:', error);
+            return stats; // Возвращаем пустую статистику вместо ошибки
+        }
     }
 
     /**
      * Определяет места участников на основе структуры турнира
      */
     static calculateStandings(tournament, statistics, matches) {
-        const participants = Array.from(statistics.values());
+        console.log('🏆 Вычисляем места участников...');
         
-        if (tournament.format === 'single_elimination') {
-            return this.calculateSingleEliminationStandings(participants, matches);
-        } else if (tournament.format === 'double_elimination') {
-            return this.calculateDoubleEliminationStandings(participants, matches);
+        try {
+            const participants = Array.from(statistics.values());
+            console.log(`👤 Обрабатываем ${participants.length} участников`);
+            
+            // Простая сортировка по победам и поражениям
+            const standings = participants
+                .sort((a, b) => {
+                    // Сначала по количеству побед (больше лучше)
+                    if (b.wins !== a.wins) return b.wins - a.wins;
+                    // Потом по количеству поражений (меньше лучше)
+                    if (a.losses !== b.losses) return a.losses - b.losses;
+                    // Потом по последнему раунду (дальше лучше)
+                    return b.last_match_round - a.last_match_round;
+                })
+                .map((participant, index) => ({
+                    ...participant,
+                    place: index + 1
+                }));
+            
+            console.log(`✅ Места вычислены для ${standings.length} участников`);
+            return standings;
+            
+        } catch (error) {
+            console.error('❌ Ошибка при вычислении мест:', error);
+            return []; // Возвращаем пустой массив вместо ошибки
         }
-        
-        // Для других форматов сортируем по победам
-        return participants
-            .sort((a, b) => {
-                // Сначала по количеству побед
-                if (b.wins !== a.wins) return b.wins - a.wins;
-                // Потом по количеству поражений (меньше лучше)
-                if (a.losses !== b.losses) return a.losses - b.losses;
-                // Потом по последнему раунду (дальше лучше)
-                return b.last_match_round - a.last_match_round;
-            })
-            .map((participant, index) => ({
-                ...participant,
-                place: index + 1
-            }));
     }
 
     /**
@@ -335,30 +349,39 @@ class TournamentResultsService {
      * Получает историю матчей
      */
     static getMatchHistory(tournament, matches, statistics) {
-        const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
+        console.log('📋 Формируем историю матчей...');
         
-        return completedMatches
-            .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
-            .map(match => {
-                const winner = statistics.get(match.winner_team_id);
-                const loserId = match.team1_id === match.winner_team_id ? match.team2_id : match.team1_id;
-                const loser = statistics.get(loserId);
+        try {
+            const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
+            console.log(`🎮 Найдено ${completedMatches.length} завершенных матчей`);
+            
+            return completedMatches
+                .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+                .map(match => {
+                    const winner = statistics.get(match.winner_team_id);
+                    const loserId = match.team1_id === match.winner_team_id ? match.team2_id : match.team1_id;
+                    const loser = statistics.get(loserId);
+                    
+                    return {
+                        id: match.id,
+                        match_number: match.match_number,
+                        round: match.round,
+                        round_name: match.round_name || `Раунд ${match.round}`,
+                        bracket_type: match.bracket_type || 'winner',
+                        winner,
+                        loser,
+                        score1: match.score1,
+                        score2: match.score2,
+                        maps_data: match.maps_data,
+                        created_at: match.created_at,
+                        updated_at: match.updated_at
+                    };
+                });
                 
-                return {
-                    id: match.id,
-                    match_number: match.match_number,
-                    round: match.round,
-                    round_name: match.round_name,
-                    bracket_type: match.bracket_type,
-                    winner,
-                    loser,
-                    score1: match.score1,
-                    score2: match.score2,
-                    maps_data: match.maps_data,
-                    created_at: match.created_at,
-                    updated_at: match.updated_at
-                };
-            });
+        } catch (error) {
+            console.error('❌ Ошибка при формировании истории матчей:', error);
+            return []; // Возвращаем пустой массив вместо ошибки
+        }
     }
 }
 
