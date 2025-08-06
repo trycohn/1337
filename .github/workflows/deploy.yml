@@ -44,6 +44,13 @@ jobs:
           echo "📦 Установка зависимостей frontend (с --legacy-peer-deps)..."
           npm install --legacy-peer-deps
           
+          # Проверка установки React Quill
+          if npm list react-quill > /dev/null 2>&1; then
+            echo "✅ React Quill установлен успешно"
+          else
+            echo "⚠️ Проблемы с React Quill, но fallback редактор доступен"
+          fi
+          
           # Проверка успешности установки
           if [ $? -eq 0 ]; then
             echo "✅ Зависимости frontend установлены успешно"

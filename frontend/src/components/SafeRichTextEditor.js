@@ -1,7 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
-import ReactQuill from 'react-quill';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import ReactQuillWrapper from './ReactQuillWrapper';
+import SimpleBetterTextEditor from './SimpleBetterTextEditor';
 import DOMPurify from 'dompurify';
-import 'react-quill/dist/quill.snow.css';
 import './SafeRichTextEditor.css';
 
 /**
@@ -17,6 +17,23 @@ const SafeRichTextEditor = ({
     className = '',
     id
 }) => {
+    const [useSimpleEditor, setUseSimpleEditor] = useState(false);
+    const [editorError, setEditorError] = useState(null);
+
+    // Проверка совместимости React Quill
+    useEffect(() => {
+        // Проверяем наличие findDOMNode
+        try {
+            const ReactDOM = require('react-dom');
+            if (!ReactDOM.findDOMNode) {
+                console.warn('⚠️ [SafeRichTextEditor] findDOMNode не найден, используем простой редактор');
+                setUseSimpleEditor(true);
+            }
+        } catch (error) {
+            console.warn('⚠️ [SafeRichTextEditor] Ошибка проверки совместимости:', error);
+            setUseSimpleEditor(true);
+        }
+    }, []);
     // Конфигурация DOMPurify для максимальной безопасности
     const purifyConfig = useMemo(() => ({
         ALLOWED_TAGS: [
@@ -118,9 +135,30 @@ const SafeRichTextEditor = ({
         }
     }, [value, purifyConfig]);
 
+    // Если нужно использовать простой редактор
+    if (useSimpleEditor || editorError) {
+        return (
+            <div className={`safe-rich-editor-fallback ${className}`}>
+                {editorError && (
+                    <div className="editor-error-notice">
+                        ⚠️ Переключен на совместимый редактор
+                    </div>
+                )}
+                <SimpleBetterTextEditor
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    maxLength={maxLength}
+                    id={id}
+                />
+            </div>
+        );
+    }
+
     return (
         <div className={`safe-rich-editor-container ${className}`}>
-            <ReactQuill
+            <ReactQuillWrapper
                 theme="snow"
                 value={safeValue}
                 onChange={handleChange}

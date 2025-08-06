@@ -6,6 +6,9 @@ import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './context/AuthContext';
 import { LoaderProvider } from './context/LoaderContext';
 
+// 🛠️ Полифилл для совместимости React 19 с React Quill
+import './utils/react19-polyfill';
+
 // 🛡️ КРИТИЧЕСКИ ВАЖНО: Защита от React Error #130 (undefined root element)
 const rootElement = document.getElementById('root');
 

@@ -319,3 +319,31 @@
         font-size: 12px !important;
     }
 }
+
+/* =================================
+   FALLBACK РЕДАКТОР
+   ================================= */
+
+.safe-rich-editor-fallback {
+    position: relative;
+}
+
+.editor-error-notice {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    border-radius: 4px;
+    color: #ff0000;
+    font-size: 12px;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    text-align: center;
+}
+
+.safe-rich-editor-fallback .simple-text-editor {
+    border-color: #333;
+}
+
+.safe-rich-editor-fallback .simple-text-editor:hover,
+.safe-rich-editor-fallback .simple-text-editor.focused {
+    border-color: #ff0000;
+}
