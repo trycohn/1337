@@ -27,30 +27,55 @@ class TournamentResultsService {
             const tournament = tournamentResult.rows[0];
             console.log(`✅ Турнир найден: ${tournament.name}, формат: ${tournament.format}`);
 
-            // Получаем команды для микс турниров
+            // Получаем команды для микс турниров с капитанами
             if (tournament.format === 'mix') {
                 const teamsQuery = `
                     SELECT 
                         tt.id, 
                         tt.name,
+                        tt.creator_id,
+                        -- Информация о капитане
+                        captain.user_id as captain_user_id,
+                        captain.participant_id as captain_participant_id,
+                        captain.captain_rating,
+                        captain_user.username as captain_username,
+                        captain_user.avatar_url as captain_avatar_url,
+                        captain_participant.name as captain_name,
+                        -- Участники команды
                         COALESCE(
                             json_agg(
                                 json_build_object(
                                     'id', ttm.id,
                                     'user_id', ttm.user_id,
                                     'participant_id', ttm.participant_id,
+                                    'is_captain', ttm.is_captain,
+                                    'captain_rating', ttm.captain_rating,
                                     'name', COALESCE(tp.name, u.username),
-                                    'username', u.username
-                                ) ORDER BY ttm.id
+                                    'username', u.username,
+                                    'avatar_url', u.avatar_url,
+                                    'faceit_elo', tp.faceit_elo,
+                                    'cs2_premier_rank', tp.cs2_premier_rank
+                                ) ORDER BY ttm.is_captain DESC, ttm.id
                             ) FILTER (WHERE ttm.id IS NOT NULL), 
                             '[]'::json
                         ) as members
                     FROM tournament_teams tt
+                    -- JOIN с участниками команды
                     LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
                     LEFT JOIN users u ON ttm.user_id = u.id
                     LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                    -- JOIN с капитаном команды
+                    LEFT JOIN tournament_team_members captain ON (
+                        tt.id = captain.team_id AND captain.is_captain = TRUE
+                    )
+                    LEFT JOIN users captain_user ON captain.user_id = captain_user.id
+                    LEFT JOIN tournament_participants captain_participant ON captain.participant_id = captain_participant.id
                     WHERE tt.tournament_id = $1
-                    GROUP BY tt.id, tt.name
+                    GROUP BY 
+                        tt.id, tt.name, tt.creator_id,
+                        captain.user_id, captain.participant_id, captain.captain_rating,
+                        captain_user.username, captain_user.avatar_url,
+                        captain_participant.name
                     ORDER BY tt.id
                 `;
                 const teamsResult = await pool.query(teamsQuery, [tournamentId]);
@@ -77,27 +102,38 @@ class TournamentResultsService {
             const participants = participantsResult.rows;
             console.log(`👥 Найдено участников: ${participants.length}`);
 
-            // Получаем все матчи турнира
+            // Получаем все матчи турнира с полными данными из схемы БД
             const matchesQuery = `
                 SELECT 
                     m.id,
-                    m.match_number,
+                    m.tournament_id,
                     m.round,
-                    m.bracket_type,
-                    m.round_name,
-                    m.match_title,
                     m.team1_id,
                     m.team2_id,
-                    m.winner_team_id,
-                    m.status,
                     m.score1,
                     m.score2,
+                    m.winner_team_id,
+                    m.match_date,
+                    m.status,
+                    m.match_number,
+                    m.is_third_place_match,
+                    m.source_match1_id,
+                    m.source_match2_id,
+                    m.next_match_id,
+                    m.bracket_type,
+                    m.loser_next_match_id,
+                    m.target_slot,
                     m.maps_data,
-                    m.created_at,
-                    m.updated_at
+                    m.round_name,
+                    m.match_title,
+                    m.is_preliminary_round,
+                    m.bye_match,
+                    m.position_in_round,
+                    m.match_date as created_at,
+                    m.match_date as updated_at
                 FROM matches m
                 WHERE m.tournament_id = $1
-                ORDER BY m.match_number
+                ORDER BY m.round, COALESCE(m.position_in_round, m.match_number), m.match_number
             `;
             
             const matchesResult = await pool.query(matchesQuery, [tournamentId]);
@@ -151,11 +187,27 @@ class TournamentResultsService {
                         id: team.id,
                         name: team.name,
                         type: 'team',
+                        creator_id: team.creator_id,
+                        // Информация о капитане
+                        captain: team.captain_user_id ? {
+                            user_id: team.captain_user_id,
+                            participant_id: team.captain_participant_id,
+                            username: team.captain_username,
+                            avatar_url: team.captain_avatar_url,
+                            name: team.captain_name,
+                            captain_rating: team.captain_rating
+                        } : null,
+                        // Участники команды с рейтингами
                         members: team.members || [],
+                        member_count: (team.members || []).length,
+                        // Статистика
                         wins: 0,
                         losses: 0,
                         elimination_round: null,
-                        last_match_round: 0
+                        last_match_round: 0,
+                        // Дополнительные поля для команд
+                        average_rating: this.calculateTeamAverageRating(team.members || []),
+                        total_rating: this.calculateTeamTotalRating(team.members || [])
                     });
                 });
             } else {
@@ -398,6 +450,31 @@ class TournamentResultsService {
             console.error('❌ Ошибка при формировании истории матчей:', error);
             return []; // Возвращаем пустой массив вместо ошибки
         }
+    }
+
+    /**
+     * Вычисляет средний рейтинг команды
+     */
+    static calculateTeamAverageRating(members) {
+        if (!members || members.length === 0) return 0;
+        
+        const ratings = members
+            .map(member => member.faceit_elo || member.cs2_premier_rank || 0)
+            .filter(rating => rating > 0);
+        
+        if (ratings.length === 0) return 0;
+        return Math.round(ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length);
+    }
+
+    /**
+     * Вычисляет суммарный рейтинг команды
+     */
+    static calculateTeamTotalRating(members) {
+        if (!members || members.length === 0) return 0;
+        
+        return members
+            .map(member => member.faceit_elo || member.cs2_premier_rank || 0)
+            .reduce((sum, rating) => sum + rating, 0);
     }
 }
 

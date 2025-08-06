@@ -343,7 +343,10 @@ function getBracketTypeDisplayName(bracketType) {
         'loser_semifinal': 'Малый финал лузеров',
         'loser_final': 'Финал лузеров',
         'grand_final': 'Гранд финал',
-        'grand_final_reset': 'Гранд финал (реванш)'
+        'grand_final_reset': 'Гранд финал (реванш)',
+        'placement': 'Матч за 3-е место',
+        'final': 'Финал',
+        'semifinal': 'Полуфинал'
     };
     return types[bracketType] || bracketType;
 }
