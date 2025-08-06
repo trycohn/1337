@@ -136,9 +136,9 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
     
     if (!showResults) {
         return (
-            <div className="tournament-results-empty">
-                <div className="empty-state">
-                    <span className="empty-icon">📊</span>
+            <div className="results-tournament-results-empty">
+                <div className="results-empty-state">
+                    <span className="results-empty-icon">📊</span>
                     <h3>Результаты пока недоступны</h3>
                     <p>Результаты появятся после завершения первых матчей</p>
                 </div>
@@ -147,19 +147,19 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
     }
 
     return (
-        <div className="tournament-results">
+        <div className="results-tournament-results">
             {/* Блок 1: Итоговые места (показываем только если турнир завершен) */}
             {tournament?.status === 'completed' && finalStandings.length > 0 && (
-                <div className="final-standings-section">
-                    <div className="section-header">
+                <div className="results-final-standings-section">
+                    <div className="results-section-header">
                         <h3>🏆 Итоговые результаты турнира</h3>
-                        <div className="tournament-info">
-                            <span className="format-badge">{getFormatDisplayName(tournament.format)}</span>
-                            <span className="participants-count">{participants.length} участников</span>
+                        <div className="results-tournament-info">
+                            <span className="results-format-badge">{getFormatDisplayName(tournament.format)}</span>
+                            <span className="results-participants-count">{participants.length} участников</span>
                         </div>
                     </div>
                     
-                    <div className="standings-list">
+                    <div className="results-standings-list">
                         {renderStandings(finalStandings)}
                     </div>
                 </div>
@@ -167,15 +167,15 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
 
             {/* Блок 2: История матчей */}
             {matchHistory.length > 0 && (
-                <div className="match-history-section">
-                    <div className="section-header">
+                <div className="results-match-history-section">
+                    <div className="results-section-header">
                         <h3>📋 История матчей</h3>
-                        <div className="history-stats">
-                            <span className="matches-count">{matchHistory.length} завершенных матчей</span>
+                        <div className="results-history-stats">
+                            <span className="results-matches-count">{matchHistory.length} завершенных матчей</span>
                         </div>
                     </div>
                     
-                    <div className="match-history-list">
+                    <div className="results-match-history-list">
                         {matchHistory.map(match => renderMatchHistoryItem(match))}
                     </div>
                 </div>
@@ -190,20 +190,20 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
         return Object.entries(groupedByPlace)
             .sort(([a], [b]) => parseInt(a) - parseInt(b))
             .map(([place, participants]) => (
-                <div key={place} className="standings-group">
-                    <div className="place-header">
-                        <span className="place-number">
+                <div key={place} className="results-standings-group">
+                    <div className="results-place-header">
+                        <span className="results-place-number">
                             {getPlaceIcon(parseInt(place))} {place}-е место
                         </span>
                         {participants.length > 1 && (
-                            <span className="shared-place">разделили {participants.length} участника</span>
+                            <span className="results-shared-place">разделили {participants.length} участника</span>
                         )}
                     </div>
                     
-                    <div className="participants-list">
+                    <div className="results-participants-list">
                         {participants.map(participant => (
-                            <div key={participant.id} className={`participant-card ${participant.type === 'team' ? 'team-card' : ''}`}>
-                                <div className="participant-avatar">
+                            <div key={participant.id} className={`results-participant-card ${participant.type === 'team' ? 'results-team-card' : ''}`}>
+                                <div className="results-participant-avatar">
                                     <img 
                                         src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
                                         alt={participant.name}
@@ -211,8 +211,8 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                                     />
                                 </div>
                                 
-                                <div className="participant-info">
-                                    <div className="participant-name">
+                                <div className="results-participant-info">
+                                    <div className="results-participant-name">
                                         {participant.user_id ? (
                                             <Link 
                                                 to={`/user/${participant.user_id}`} 
@@ -225,23 +225,23 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                                             <span>{participant.name}</span>
                                         )}
                                         {participant.type === 'team' && (
-                                            <span className="team-badge">👥 Команда</span>
+                                            <span className="results-team-badge">👥</span>
                                         )}
                                     </div>
                                     
                                     {/* Показываем членов команды для микс турниров */}
                                     {participant.type === 'team' && participant.members && participant.members.length > 0 && (
-                                        <div className="team-members">
-                                            <span className="members-label">Состав:</span>
-                                            <div className="members-list">
+                                        <div className="results-team-members">
+                                            <span className="results-members-label">Состав:</span>
+                                            <div className="results-members-list">
                                                 {participant.members.map((member, index) => (
-                                                    <span key={member.id || index} className="member-name">
+                                                    <span key={member.id || index} className="results-member-name">
                                                         {member.user_id ? (
                                                             <Link 
                                                                 to={`/user/${member.user_id}`} 
                                                                 target="_blank" 
                                                                 rel="noopener noreferrer"
-                                                                className="member-link"
+                                                                className="results-member-link"
                                                             >
                                                                 {member.username || member.name}
                                                             </Link>
@@ -255,11 +255,11 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                                         </div>
                                     )}
                                     
-                                    <div className="participant-stats">
-                                        <span className="wins">Побед: {participant.wins}</span>
-                                        <span className="losses">Поражений: {participant.losses}</span>
+                                    <div className="results-participant-stats">
+                                        <span className="results-wins">Побед: {participant.wins}</span>
+                                        <span className="results-losses">Поражений: {participant.losses}</span>
                                         {participant.elimination_round && (
-                                            <span className="elimination">
+                                            <span className="results-elimination">
                                                 {participant.type === 'team' ? 'Выбыла' : 'Выбыл'} в раунде {participant.elimination_round}
                                             </span>
                                         )}
@@ -275,56 +275,56 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
     // Рендер элемента истории матчей
     function renderMatchHistoryItem(match) {
         return (
-            <div key={match.id} className="match-history-item">
-                <div className="match-info">
-                    <div className="match-header">
-                        <span className="match-number">Матч #{match.match_number}</span>
-                        <span className="round-name">{match.round_name}</span>
-                        <span className="bracket-type">{getBracketTypeDisplayName(match.bracket_type)}</span>
+            <div key={match.id} className="results-match-history-item">
+                <div className="results-match-info">
+                    <div className="results-match-header">
+                        <span className="results-match-number">#{match.match_number}</span>
+                        <span className="results-round-name">{match.round_name}</span>
+                        <span className="results-bracket-type">{getBracketTypeDisplayName(match.bracket_type)}</span>
                     </div>
                     
-                    <div className="match-result">
-                        <div className="participants">
-                            <div className="participant winner">
-                                <div className="participant-avatar">
+                    <div className="results-match-result">
+                        <div className="results-participants">
+                            <div className="results-participant results-winner">
+                                <div className="results-participant-avatar">
                                     <img 
                                         src={ensureHttps(match.winner.avatar_url) || '/default-avatar.png'}
                                         alt={match.winner.name}
                                         onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                     />
                                 </div>
-                                <span className="participant-name">{match.winner.name}</span>
-                                <span className="winner-badge">👑</span>
+                                <span className="results-participant-name">{match.winner.name}</span>
+                                <span className="results-winner-badge">👑</span>
                             </div>
                             
-                            <div className="score">
+                            <div className="results-score">
                                 {getFormattedScore(match)}
                             </div>
                             
-                            <div className="participant loser">
-                                <div className="participant-avatar">
+                            <div className="results-participant results-loser">
+                                <div className="results-participant-avatar">
                                     <img 
                                         src={ensureHttps(match.loser.avatar_url) || '/default-avatar.png'}
                                         alt={match.loser.name}
                                         onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                     />
                                 </div>
-                                <span className="participant-name">{match.loser.name}</span>
+                                <span className="results-participant-name">{match.loser.name}</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div className="match-actions">
+                <div className="results-match-actions">
                     <Link 
                         to={`/tournament/${tournament.id}/match/${match.id}`} 
-                        className="match-details-link"
+                        className="results-match-details-link"
                         title="Подробности матча"
                     >
                         📋 Детали
                     </Link>
                     
-                    <span className="match-date">
+                    <span className="results-match-date">
                         {formatMatchDate(match.date)}
                     </span>
                 </div>

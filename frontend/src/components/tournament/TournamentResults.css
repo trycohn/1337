@@ -3,7 +3,7 @@
    Монохромная тема: #000, #fff, #ff0000, #111
    ================================= */
 
-.tournament-results {
+.results-tournament-results {
     background: #000;
     color: #fff;
     padding: 20px;
@@ -14,7 +14,7 @@
    ПУСТОЕ СОСТОЯНИЕ
    ================================= */
 
-.tournament-results-empty {
+.results-tournament-results-empty {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -22,24 +22,24 @@
     background: #000;
 }
 
-.empty-state {
+.results-empty-state {
     text-align: center;
     color: #666;
 }
 
-.empty-icon {
+.results-empty-icon {
     font-size: 3em;
     margin-bottom: 16px;
     display: block;
 }
 
-.empty-state h3 {
+.results-empty-state h3 {
     color: #fff;
     font-size: 1.2em;
     margin-bottom: 8px;
 }
 
-.empty-state p {
+.results-empty-state p {
     color: #999;
     font-size: 0.9em;
 }
@@ -48,41 +48,41 @@
    ЗАГОЛОВКИ СЕКЦИЙ
    ================================= */
 
-.section-header {
+.results-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #ff0000;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ff0000;
 }
 
-.section-header h3 {
+.results-section-header h3 {
     color: #fff;
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: bold;
     margin: 0;
 }
 
-.tournament-info,
-.history-stats {
+.results-tournament-info,
+.results-history-stats {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
 }
 
-.format-badge,
-.participants-count,
-.matches-count {
-    background: #111;
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8em;
+.results-format-badge,
+.results-participants-count,
+.results-matches-count {
+    background: transparent;
+    color: #999;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.75em;
     border: 1px solid #333;
 }
 
-.format-badge {
+.results-format-badge {
     color: #ff0000;
     border-color: #ff0000;
 }
@@ -91,316 +91,317 @@
    ИТОГОВЫЕ МЕСТА
    ================================= */
 
-.final-standings-section {
-    margin-bottom: 40px;
+.results-final-standings-section {
+    margin-bottom: 32px;
 }
 
-.standings-list {
+.results-standings-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
-.standings-group {
-    background: #111;
+.results-standings-group {
+    background: transparent;
     border: 1px solid #333;
-    border-radius: 8px;
+    border-radius: 4px;
     overflow: hidden;
 }
 
-.place-header {
-    background: #222;
-    padding: 12px 16px;
+.results-place-header {
+    background: #111;
+    padding: 8px 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid #333;
 }
 
-.place-number {
+.results-place-number {
     color: #ff0000;
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 1em;
 }
 
-.shared-place {
-    color: #999;
-    font-size: 0.9em;
+.results-shared-place {
+    color: #666;
+    font-size: 0.8em;
 }
 
-.participants-list {
+.results-participants-list {
     padding: 0;
 }
 
-.participant-card {
+.results-participant-card {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
+    padding: 8px 12px;
     border-bottom: 1px solid #333;
     transition: background-color 0.2s ease;
 }
 
-.participant-card:last-child {
+.results-participant-card:last-child {
     border-bottom: none;
 }
 
-.participant-card:hover {
-    background: #222;
+.results-participant-card:hover {
+    background: rgba(255, 0, 0, 0.05);
 }
 
-.participant-avatar {
-    width: 40px;
-    height: 40px;
+.results-participant-avatar {
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     overflow: hidden;
-    margin-right: 12px;
-    border: 2px solid #333;
+    margin-right: 10px;
+    border: 1px solid #333;
 }
 
-.participant-avatar img {
+.results-participant-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.participant-info {
+.results-participant-info {
     flex: 1;
 }
 
-.participant-name {
-    font-weight: bold;
-    margin-bottom: 4px;
+.results-participant-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+    font-size: 0.9em;
 }
 
-.participant-name a {
-    color: #ff0000;
+.results-participant-name a {
+    color: #fff;
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
-.participant-name a:hover {
-    color: #fff;
-    text-decoration: underline;
+.results-participant-name a:hover {
+    color: #ff0000;
 }
 
-.participant-stats {
+.results-participant-stats {
     display: flex;
-    gap: 16px;
-    font-size: 0.85em;
-    color: #ccc;
+    gap: 12px;
+    font-size: 0.75em;
+    color: #999;
 }
 
-.wins {
+.results-wins {
     color: #4CAF50;
 }
 
-.losses {
+.results-losses {
     color: #f44336;
 }
 
-.elimination {
-    color: #999;
+.results-elimination {
+    color: #666;
 }
 
 /* =================================
    КОМАНДЫ В МИКС ТУРНИРАХ
    ================================= */
 
-.participant-card.team-card {
-    border-left: 3px solid #ff0000;
+.results-participant-card.results-team-card {
+    border-left: 2px solid #ff0000;
 }
 
-.team-badge {
-    background: #ff0000;
-    color: #fff;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 0.7em;
-    font-weight: bold;
-    margin-left: 8px;
+.results-team-badge {
+    background: transparent;
+    color: #ff0000;
+    padding: 1px 4px;
+    border: 1px solid #ff0000;
+    border-radius: 2px;
+    font-size: 0.65em;
+    font-weight: normal;
+    margin-left: 6px;
 }
 
-.team-members {
-    margin-top: 6px;
-    padding-top: 6px;
+.results-team-members {
+    margin-top: 4px;
+    padding-top: 4px;
     border-top: 1px solid #333;
 }
 
-.members-label {
-    color: #ccc;
-    font-size: 0.8em;
-    margin-right: 6px;
+.results-members-label {
+    color: #666;
+    font-size: 0.7em;
+    margin-right: 4px;
 }
 
-.members-list {
+.results-members-list {
     display: inline;
 }
 
-.member-name {
-    font-size: 0.85em;
-    color: #fff;
+.results-member-name {
+    font-size: 0.7em;
+    color: #ccc;
 }
 
-.member-link {
-    color: #ff0000;
+.results-member-link {
+    color: #999;
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
-.member-link:hover {
-    color: #fff;
-    text-decoration: underline;
+.results-member-link:hover {
+    color: #ff0000;
 }
 
 /* =================================
    ИСТОРИЯ МАТЧЕЙ
    ================================= */
 
-.match-history-section {
-    margin-top: 40px;
+.results-match-history-section {
+    margin-top: 32px;
 }
 
-.match-history-list {
+.results-match-history-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
-.match-history-item {
-    background: #111;
+.results-match-history-item {
+    background: transparent;
     border: 1px solid #333;
-    border-radius: 8px;
-    padding: 16px;
+    border-radius: 4px;
+    padding: 10px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease;
 }
 
-.match-history-item:hover {
+.results-match-history-item:hover {
     border-color: #ff0000;
-    background: #1a1a1a;
 }
 
-.match-info {
+.results-match-info {
     flex: 1;
 }
 
-.match-header {
+.results-match-header {
     display: flex;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 6px;
     align-items: center;
 }
 
-.match-number {
+.results-match-number {
     color: #ff0000;
     font-weight: bold;
-    font-size: 0.9em;
+    font-size: 0.8em;
 }
 
-.round-name {
+.results-round-name {
     color: #fff;
     font-weight: 500;
-    font-size: 0.9em;
-}
-
-.bracket-type {
-    color: #999;
     font-size: 0.8em;
-    background: #222;
-    padding: 2px 6px;
-    border-radius: 3px;
 }
 
-.match-result {
-    margin-top: 8px;
+.results-bracket-type {
+    color: #666;
+    font-size: 0.7em;
+    background: transparent;
+    padding: 1px 4px;
+    border: 1px solid #333;
+    border-radius: 2px;
 }
 
-.participants {
+.results-match-result {
+    margin-top: 6px;
+}
+
+.results-participants {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
-.participant {
+.results-participant {
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 120px;
+    gap: 6px;
+    min-width: 100px;
 }
 
-.participant.winner {
+.results-participant.results-winner {
     color: #fff;
 }
 
-.participant.loser {
+.results-participant.results-loser {
     color: #999;
 }
 
-.participant .participant-avatar {
-    width: 24px;
-    height: 24px;
+.results-participant .results-participant-avatar {
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     overflow: hidden;
     border: 1px solid #333;
     margin-right: 0;
 }
 
-.participant .participant-avatar img {
+.results-participant .results-participant-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.participant-name {
-    font-size: 0.9em;
+.results-participant-name {
+    font-size: 0.8em;
     margin: 0;
 }
 
-.winner-badge {
-    font-size: 0.8em;
+.results-winner-badge {
+    font-size: 0.7em;
 }
 
-.score {
-    background: #222;
+.results-score {
+    background: transparent;
     color: #ff0000;
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 3px;
     font-weight: bold;
     font-family: monospace;
-    border: 1px solid #333;
-    min-width: 50px;
+    border: 1px solid #ff0000;
+    min-width: 40px;
     text-align: center;
+    font-size: 0.85em;
 }
 
-.match-actions {
+.results-match-actions {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 8px;
+    gap: 6px;
 }
 
-.match-details-link {
+.results-match-details-link {
     background: transparent;
     border: 1px solid #ff0000;
     color: #ff0000;
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 3px;
     text-decoration: none;
-    font-size: 0.85em;
+    font-size: 0.75em;
     transition: all 0.2s ease;
     white-space: nowrap;
 }
 
-.match-details-link:hover {
+.results-match-details-link:hover {
     background: #ff0000;
     color: #fff;
 }
 
-.match-date {
+.results-match-date {
     color: #666;
-    font-size: 0.75em;
+    font-size: 0.7em;
     white-space: nowrap;
 }
 
@@ -409,65 +410,65 @@
    ================================= */
 
 @media (max-width: 768px) {
-    .tournament-results {
+    .results-tournament-results {
         padding: 16px;
     }
     
-    .section-header {
+    .results-section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
+        gap: 6px;
     }
     
-    .tournament-info,
-    .history-stats {
+    .results-tournament-info,
+    .results-history-stats {
         align-self: stretch;
         justify-content: flex-start;
     }
     
-    .participant-card {
-        padding: 10px 12px;
+    .results-participant-card {
+        padding: 6px 10px;
     }
     
-    .participant-avatar {
-        width: 32px;
-        height: 32px;
+    .results-participant-avatar {
+        width: 24px;
+        height: 24px;
     }
     
-    .participant-stats {
+    .results-participant-stats {
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
     }
     
-    .match-history-item {
+    .results-match-history-item {
         flex-direction: column;
         align-items: stretch;
-        gap: 12px;
-        padding: 12px;
+        gap: 8px;
+        padding: 8px 10px;
     }
     
-    .match-header {
+    .results-match-header {
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
     }
     
-    .participants {
+    .results-participants {
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         align-items: stretch;
     }
     
-    .participant {
+    .results-participant {
         justify-content: flex-start;
         min-width: auto;
     }
     
-    .score {
+    .results-score {
         align-self: center;
-        margin: 8px 0;
+        margin: 6px 0;
     }
     
-    .match-actions {
+    .results-match-actions {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
@@ -475,50 +476,50 @@
 }
 
 @media (max-width: 480px) {
-    .tournament-results {
+    .results-tournament-results {
         padding: 12px;
     }
     
-    .section-header h3 {
+    .results-section-header h3 {
         font-size: 1.1em;
     }
     
-    .place-header {
-        padding: 8px 12px;
+    .results-place-header {
+        padding: 6px 10px;
         flex-direction: column;
         align-items: flex-start;
+        gap: 2px;
+    }
+    
+    .results-participant-card {
+        padding: 6px 8px;
+    }
+    
+    .results-participant-avatar {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .results-match-history-item {
+        padding: 8px;
+    }
+    
+    .results-match-header {
+        font-size: 0.75em;
+    }
+    
+    .results-participants .results-participant {
         gap: 4px;
     }
     
-    .participant-card {
-        padding: 8px 12px;
+    .results-participant .results-participant-avatar {
+        width: 18px;
+        height: 18px;
     }
     
-    .participant-avatar {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .match-history-item {
-        padding: 10px;
-    }
-    
-    .match-header {
-        font-size: 0.85em;
-    }
-    
-    .participants .participant {
-        gap: 6px;
-    }
-    
-    .participant .participant-avatar {
-        width: 20px;
-        height: 20px;
-    }
-    
-    .match-details-link {
-        padding: 4px 8px;
-        font-size: 0.8em;
+    .results-match-details-link {
+        padding: 3px 6px;
+        font-size: 0.7em;
     }
 }
 
@@ -527,30 +528,31 @@
    ================================= */
 
 @media (prefers-reduced-motion: reduce) {
-    .participant-card,
-    .match-history-item,
-    .match-details-link,
-    .participant-name a {
+    .results-participant-card,
+    .results-match-history-item,
+    .results-match-details-link,
+    .results-participant-name a,
+    .results-member-link {
         transition: none;
     }
 }
 
 /* Высокий контраст */
 @media (prefers-contrast: high) {
-    .tournament-results {
-        border: 2px solid #fff;
+    .results-tournament-results {
+        border: 1px solid #fff;
     }
     
-    .section-header {
-        border-bottom-width: 3px;
+    .results-section-header {
+        border-bottom-width: 2px;
     }
     
-    .standings-group,
-    .match-history-item {
+    .results-standings-group,
+    .results-match-history-item {
         border-width: 2px;
     }
     
-    .match-details-link {
+    .results-match-details-link {
         border-width: 2px;
     }
 }
