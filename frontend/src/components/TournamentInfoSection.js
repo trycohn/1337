@@ -1433,7 +1433,7 @@ const TournamentInfoSection = ({
                                     maxLength={shouldTruncateRegulations(regulations) ? 400 : null}
                                     showReadMore={shouldTruncateRegulations(regulations)}
                                     onReadMoreClick={openFullRegulations}
-                                />)
+                                />
                             ) : (
                                 <div className="default-rules">
                                     {isAdminOrCreator ? (
