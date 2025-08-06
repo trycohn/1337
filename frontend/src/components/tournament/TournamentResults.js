@@ -15,6 +15,18 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
         // Получаем всех участников с их результатами
         const standingsMap = new Map();
         
+        // Отладочная информация (только в development)
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🏆 Подсчет статистики турнира:', {
+                tournamentId: tournament.id,
+                format: tournament.format,
+                totalMatches: matches.length,
+                completedMatches: matches.filter(m => m.status === 'completed').length,
+                teamsCount: tournament.teams?.length || 0,
+                participantsCount: participants?.length || 0
+            });
+        }
+        
         // Для микс турниров работаем с командами, для остальных - с участниками
         if (tournament.format === 'mix' && tournament.teams && tournament.teams.length > 0) {
             // Инициализируем команды микс турнира
@@ -54,22 +66,52 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
         // Анализируем матчи для определения мест
         const completedMatches = matches.filter(m => m.status === 'completed' && m.winner_team_id);
         
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🎯 Завершенные матчи для подсчета:', completedMatches.map(m => ({
+                id: m.id,
+                match_number: m.match_number,
+                team1_id: m.team1_id,
+                team2_id: m.team2_id,
+                winner_team_id: m.winner_team_id,
+                status: m.status
+            })));
+        }
+        
         completedMatches.forEach(match => {
-            const winner = standingsMap.get(match.team1_id === match.winner_team_id ? match.team1_id : match.team2_id);
-            const loser = standingsMap.get(match.team1_id === match.winner_team_id ? match.team2_id : match.team1_id);
+            const winnerId = match.winner_team_id;
+            const loserId = match.team1_id === winnerId ? match.team2_id : match.team1_id;
             
-            if (winner) winner.wins++;
-            if (loser) {
-                loser.losses++;
-                // Записываем раунд выбывания
-                if (!loser.elimination_round || match.round > loser.elimination_round) {
-                    loser.elimination_round = match.round;
+            // Обновляем статистику победителя
+            const winner = standingsMap.get(winnerId);
+            if (winner) {
+                winner.wins++;
+            }
+            
+            // Обновляем статистику проигравшего (только если это не BYE)
+            if (loserId && loserId !== null) {
+                const loser = standingsMap.get(loserId);
+                if (loser) {
+                    loser.losses++;
+                    // Записываем раунд выбывания
+                    if (!loser.elimination_round || match.round > loser.elimination_round) {
+                        loser.elimination_round = match.round;
+                    }
                 }
             }
         });
 
-        // Определяем места на основе структуры турнира
+        // Отладочная информация после подсчета статистики
         const standings = Array.from(standingsMap.values());
+        if (process.env.NODE_ENV === 'development') {
+            console.log('📊 Статистика после подсчета:', standings.map(s => ({
+                name: s.name,
+                wins: s.wins,
+                losses: s.losses,
+                elimination_round: s.elimination_round
+            })));
+        }
+
+        // Определяем места на основе структуры турнира
         
         if (tournament.format === 'single_elimination') {
             return calculateSingleEliminationStandings(standings, completedMatches, tournament);
@@ -256,8 +298,14 @@ const TournamentResults = ({ tournament, matches = [], participants = [] }) => {
                                     )}
                                     
                                     <div className="results-participant-stats">
-                                        <span className="results-wins">Побед: {participant.wins}</span>
-                                        <span className="results-losses">Поражений: {participant.losses}</span>
+                                        {(participant.wins > 0 || participant.losses > 0) ? (
+                                            <>
+                                                <span className="results-wins">Побед: {participant.wins}</span>
+                                                <span className="results-losses">Поражений: {participant.losses}</span>
+                                            </>
+                                        ) : (
+                                            <span className="results-no-matches">Матчей не играл</span>
+                                        )}
                                         {participant.elimination_round && (
                                             <span className="results-elimination">
                                                 {participant.type === 'team' ? 'Выбыла' : 'Выбыл'} в раунде {participant.elimination_round}
