@@ -3,16 +3,14 @@
  * Вычисляет статистику и места участников на основе данных из БД
  */
 
-const { Pool } = require('pg');
+const pool = require('../../db');
 
 class TournamentResultsService {
     /**
      * Получить полные результаты турнира с правильной статистикой
      */
     static async getTournamentResults(tournamentId) {
-        const pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
-        });
+        console.log(`🔍 Запрос результатов для турнира ID: ${tournamentId}`);
 
         try {
             // Получаем информацию о турнире
@@ -44,6 +42,7 @@ class TournamentResultsService {
             }
             
             const tournament = tournamentResult.rows[0];
+            console.log(`✅ Турнир найден: ${tournament.name}, формат: ${tournament.format}`);
 
             // Получаем всех участников турнира
             const participantsQuery = `
@@ -62,6 +61,7 @@ class TournamentResultsService {
             
             const participantsResult = await pool.query(participantsQuery, [tournamentId]);
             const participants = participantsResult.rows;
+            console.log(`👥 Найдено участников: ${participants.length}`);
 
             // Получаем все матчи турнира
             const matchesQuery = `
@@ -88,15 +88,22 @@ class TournamentResultsService {
             
             const matchesResult = await pool.query(matchesQuery, [tournamentId]);
             const matches = matchesResult.rows;
+            console.log(`🎮 Найдено матчей: ${matches.length}, завершенных: ${matches.filter(m => m.status === 'completed').length}`);
 
             // Вычисляем статистику
-            const statistics = this.calculateStatistics(tournament, participants, matches);
+            const statisticsMap = this.calculateStatistics(tournament, participants, matches);
             
             // Определяем места
-            const standings = this.calculateStandings(tournament, statistics, matches);
+            const standings = this.calculateStandings(tournament, statisticsMap, matches);
             
             // Получаем историю матчей
-            const matchHistory = this.getMatchHistory(tournament, matches, statistics);
+            const matchHistory = this.getMatchHistory(tournament, matches, statisticsMap);
+            
+            // Преобразуем Map в объект для JSON сериализации
+            const statistics = {};
+            for (const [key, value] of statisticsMap) {
+                statistics[key] = value;
+            }
 
             return {
                 tournament,
@@ -110,8 +117,6 @@ class TournamentResultsService {
         } catch (error) {
             console.error('❌ Ошибка при получении результатов турнира:', error);
             throw error;
-        } finally {
-            await pool.end();
         }
     }
 

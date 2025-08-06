@@ -1,5 +1,5 @@
 const TournamentService = require('../../services/tournament/TournamentService');
-const TournamentResultsService = require('../../services/tournament/TournamentResultsService');
+const TournamentResultsService = require('../../services/tournament/TournamentResultsService_simple');
 const ParticipantService = require('../../services/tournament/ParticipantService');
 const BracketService = require('../../services/tournament/BracketService');
 const ChatService = require('../../services/tournament/ChatService');
