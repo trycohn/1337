@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMatchDetailsModal } from '../../../hooks/useModalSystem';
+import MatchShareModal from './MatchShareModal';
 import '../../../styles/modal-system.css';
 
 /**
@@ -21,6 +22,7 @@ const MatchDetailsModal = ({
     const [activeTab, setActiveTab] = useState('overview');
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     // Используем унифицированный хук модальной системы
     const modalSystem = useMatchDetailsModal({
@@ -28,6 +30,7 @@ const MatchDetailsModal = ({
             setShowTeam1Tooltip(false);
             setShowTeam2Tooltip(false);
             setActiveTab('overview');
+            setIsShareModalOpen(false);
             onClose();
         }
     });
@@ -477,12 +480,8 @@ const MatchDetailsModal = ({
                     <div className="modal-system-flex">
                         <button 
                             className="modal-system-btn"
-                            onClick={() => {
-                                const url = window.location.href + '#match-' + selectedMatch.id;
-                                navigator.clipboard.writeText(url);
-                                // Можно добавить уведомление о копировании
-                            }}
-                            title="Скопировать ссылку на матч"
+                            onClick={() => setIsShareModalOpen(true)}
+                            title="Поделиться результатом матча"
                         >
                             🔗 Поделиться
                         </button>
@@ -500,6 +499,14 @@ const MatchDetailsModal = ({
                     </div>
                 </div>
             </div>
+            
+            {/* Модальное окно шейринга */}
+            <MatchShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                selectedMatch={selectedMatch}
+                tournament={tournament}
+            />
         </div>
     );
 };

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
+import MatchMetaTags from '../SEO/MatchMetaTags';
+import MatchShareModal from './modals/MatchShareModal';
 import './MatchDetailsPage.css';
 
 /**
@@ -14,6 +16,7 @@ const MatchDetailsPage = () => {
     const [tournament, setTournament] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     useEffect(() => {
         fetchMatchDetails();
@@ -90,6 +93,8 @@ const MatchDetailsPage = () => {
 
     return (
         <div className="match-details-page">
+            {/* SEO метатеги для социальных сетей */}
+            <MatchMetaTags match={match} tournament={tournament} />
             <div className="match-details-container">
                 {/* Заголовок */}
                 <div className="match-header">
@@ -255,6 +260,13 @@ const MatchDetailsPage = () => {
                     </button>
                     
                     <button 
+                        className="share-btn"
+                        onClick={() => setIsShareModalOpen(true)}
+                    >
+                        🔗 Поделиться
+                    </button>
+                    
+                    <button 
                         className="tournament-btn"
                         onClick={() => navigate(`/tournaments/${tournamentId}`)}
                     >
@@ -262,6 +274,14 @@ const MatchDetailsPage = () => {
                     </button>
                 </div>
             </div>
+            
+            {/* Модальное окно шейринга */}
+            <MatchShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                selectedMatch={match}
+                tournament={tournament}
+            />
         </div>
     );
 };

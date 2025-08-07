@@ -1,0 +1,276 @@
+/* 🔗 MatchShareModal - Стили для модального окна шейринга матчей */
+
+/* === ПРЕВЬЮ РЕЗУЛЬТАТА === */
+
+.match-share-preview {
+    background: #111;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.match-share-result {
+    text-align: center;
+}
+
+.match-share-teams {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.match-share-team {
+    flex: 1;
+    text-align: center;
+}
+
+.match-share-team .team-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.match-share-score {
+    flex: 0 0 auto;
+    text-align: center;
+    margin: 0 20px;
+}
+
+.match-share-score .score {
+    color: #ff0000;
+    font-weight: 700;
+    font-size: 1.8em;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.match-share-score .winner-indicator {
+    color: #ffd700;
+    font-size: 0.85em;
+    font-weight: 600;
+    display: block;
+}
+
+.match-share-meta {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    color: #999;
+    font-size: 0.9em;
+}
+
+.match-share-meta .tournament-name {
+    font-weight: 500;
+}
+
+.match-share-meta .match-number {
+    color: #666;
+}
+
+/* === КНОПКИ ШЕЙРИНГА === */
+
+.match-share-buttons {
+    margin-bottom: 24px;
+}
+
+.share-section-title {
+    color: #fff;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.social-share-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.social-share-btn {
+    background: #111;
+    border: 2px solid #333;
+    color: #fff;
+    padding: 16px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    font-family: inherit;
+}
+
+.social-share-btn:hover {
+    border-color: #ff0000;
+    background: #1a1a1a;
+    transform: translateY(-2px);
+}
+
+.social-share-btn.telegram:hover {
+    border-color: #0088cc;
+}
+
+.social-share-btn.vk:hover {
+    border-color: #4680c2;
+}
+
+.social-share-btn.discord:hover {
+    border-color: #5865f2;
+}
+
+.social-icon {
+    font-size: 1.5em;
+    margin-bottom: 4px;
+}
+
+.social-share-btn span {
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.copied-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #4caf50;
+    color: #fff;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+/* === ПРЯМАЯ ССЫЛКА === */
+
+.direct-link-section {
+    margin-bottom: 16px;
+}
+
+.direct-link-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.direct-link-input {
+    flex: 1;
+    background: #111;
+    border: 2px solid #333;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-family: 'Courier New', monospace;
+}
+
+.direct-link-input:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+.copy-link-btn {
+    background: #111;
+    border: 2px solid #333;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 50px;
+    font-family: inherit;
+}
+
+.copy-link-btn:hover {
+    border-color: #ff0000;
+    background: #1a1a1a;
+}
+
+.copy-success {
+    color: #4caf50;
+    font-size: 0.85em;
+    margin: 0;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === СТАТИСТИКА === */
+
+.share-stats {
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #333;
+}
+
+.stats-text {
+    color: #666;
+    font-size: 0.8em;
+}
+
+/* === АДАПТИВНОСТЬ === */
+
+@media (max-width: 768px) {
+    .match-share-teams {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .match-share-score {
+        margin: 0;
+        order: -1;
+    }
+    
+    .social-share-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .social-share-btn {
+        padding: 12px;
+    }
+    
+    .direct-link-container {
+        flex-direction: column;
+    }
+    
+    .copy-link-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .match-share-preview {
+        padding: 16px;
+    }
+    
+    .match-share-score .score {
+        font-size: 1.5em;
+    }
+    
+    .social-share-btn {
+        padding: 10px;
+        flex-direction: row;
+        text-align: left;
+        gap: 12px;
+    }
+    
+    .social-icon {
+        font-size: 1.2em;
+        margin-bottom: 0;
+    }
+}

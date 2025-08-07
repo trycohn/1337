@@ -377,7 +377,8 @@
 }
 
 .back-btn,
-.tournament-btn {
+.tournament-btn,
+.share-btn {
     background: transparent;
     border: 1px solid #ff0000;
     color: #ff0000;
@@ -391,6 +392,12 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    font-family: inherit;
+}
+
+.share-btn {
+    border-color: #4caf50;
+    color: #4caf50;
 }
 
 .back-btn:hover,
@@ -400,8 +407,15 @@
     transform: translateY(-1px);
 }
 
+.share-btn:hover {
+    background: #4caf50;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
 .back-btn:active,
-.tournament-btn:active {
+.tournament-btn:active,
+.share-btn:active {
     transform: translateY(0);
 }
 
