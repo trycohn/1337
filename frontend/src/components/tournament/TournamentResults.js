@@ -328,6 +328,21 @@ function renderMatchHistoryItem(match, tournament) {
     const loserId = match.winner_team_id === match.team1_id ? match.team2_id : match.team1_id;
     const loser = getParticipantInfo(loserId, tournament);
 
+    // Добавляем диагностику для проблемных матчей
+    if (process.env.NODE_ENV === 'development' && match.bracket_type === 'grand_final') {
+        console.log('🔍 Диагностика финального матча:', {
+            matchId: match.id,
+            team1_id: match.team1_id,
+            team2_id: match.team2_id,
+            winner_team_id: match.winner_team_id,
+            score1: match.score1,
+            score2: match.score2,
+            winner_name: winner?.name,
+            loser_name: loser?.name,
+            maps_data: match.maps_data
+        });
+    }
+
     return (
         <div key={match.id} className="results-match-history-item">
             <div className="results-match-info">
@@ -407,14 +422,32 @@ function getBracketTypeDisplayName(bracketType) {
 }
 
 function getFormattedScore(match) {
+    let winnerScore, loserScore;
+    
     // Если есть данные о картах и только одна карта - показываем счет карты
     if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length === 1) {
         const mapData = match.maps_data[0];
         if (mapData.team1_score !== undefined && mapData.team2_score !== undefined) {
-            return `${mapData.team1_score}:${mapData.team2_score}`;
+            // Определяем счет победителя и проигравшего
+            if (match.winner_team_id === match.team1_id) {
+                winnerScore = mapData.team1_score;
+                loserScore = mapData.team2_score;
+            } else {
+                winnerScore = mapData.team2_score;
+                loserScore = mapData.team1_score;
+            }
+            return `${winnerScore}:${loserScore}`;
         }
     }
     
-    // Иначе показываем общий счет матча
-    return `${match.score1 || 0}:${match.score2 || 0}`;
+    // Иначе показываем общий счет матча (победитель:проигравший)
+    if (match.winner_team_id === match.team1_id) {
+        winnerScore = match.score1 || 0;
+        loserScore = match.score2 || 0;
+    } else {
+        winnerScore = match.score2 || 0;
+        loserScore = match.score1 || 0;
+    }
+    
+    return `${winnerScore}:${loserScore}`;
 }
