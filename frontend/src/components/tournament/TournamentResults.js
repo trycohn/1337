@@ -13,16 +13,64 @@ const TournamentResults = ({ tournament }) => {
 
         const matches = tournament.matches;
         
-        // Находим завершенные матчи
-        const completedMatches = matches.filter(m => 
-            m.status === 'completed' && m.winner_team_id
-        );
+        // Находим завершенные матчи (используем гибкую логику как в TournamentProgressBar)
+        const completedMatches = matches.filter(match => {
+            // Проверяем по различным критериям завершенности
+            const hasValidState = match.state === 'DONE' || match.state === 'SCORE_DONE' || match.status === 'completed';
+            const hasScore = (match.score1 !== null && match.score1 !== undefined) || 
+                            (match.score2 !== null && match.score2 !== undefined);
+            const hasWinner = match.winner_team_id !== null && match.winner_team_id !== undefined;
+            
+            return hasValidState || hasScore || hasWinner;
+        });
 
         console.log('🏆 TournamentResults: Анализируем матчи', {
             totalMatches: matches.length,
             completedMatches: completedMatches.length,
             format: tournament.format || tournament.bracket_type
         });
+
+        // Отладочная информация для диагностики
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 Детальный анализ матчей:');
+            matches.slice(0, 5).forEach((match, index) => {
+                console.log(`  Матч ${index + 1}:`, {
+                    id: match.id,
+                    status: match.status,
+                    state: match.state,
+                    winner_team_id: match.winner_team_id,
+                    team1_id: match.team1_id,
+                    team2_id: match.team2_id,
+                    score1: match.score1,
+                    score2: match.score2,
+                    bracket_type: match.bracket_type,
+                    // Проверяем критерии завершенности
+                    hasValidState: match.state === 'DONE' || match.state === 'SCORE_DONE' || match.status === 'completed',
+                    hasScore: (match.score1 !== null && match.score1 !== undefined) || (match.score2 !== null && match.score2 !== undefined),
+                    hasWinner: match.winner_team_id !== null && match.winner_team_id !== undefined,
+                    isCompleted: (match.state === 'DONE' || match.state === 'SCORE_DONE' || match.status === 'completed') || 
+                                ((match.score1 !== null && match.score1 !== undefined) || (match.score2 !== null && match.score2 !== undefined)) || 
+                                (match.winner_team_id !== null && match.winner_team_id !== undefined)
+                });
+            });
+            
+            const statusCounts = matches.reduce((acc, m) => {
+                acc[m.status] = (acc[m.status] || 0) + 1;
+                return acc;
+            }, {});
+            console.log('📊 Статусы матчей:', statusCounts);
+            
+            const stateCounts = matches.reduce((acc, m) => {
+                acc[m.state || 'undefined'] = (acc[m.state || 'undefined'] || 0) + 1;
+                return acc;
+            }, {});
+            console.log('📊 Состояния матчей (state):', stateCounts);
+            
+            const withWinners = matches.filter(m => m.winner_team_id).length;
+            const withScores = matches.filter(m => (m.score1 !== null && m.score1 !== undefined) || (m.score2 !== null && m.score2 !== undefined)).length;
+            console.log(`🏆 Матчей с победителями: ${withWinners}`);
+            console.log(`📊 Матчей со счетом: ${withScores}`);
+        }
 
         if (completedMatches.length === 0) {
             return { winners: null, completedMatches: [], hasResults: false };
