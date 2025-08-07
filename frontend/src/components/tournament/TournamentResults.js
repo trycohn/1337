@@ -173,7 +173,10 @@ function calculateWinners(matches, tournament) {
     });
 
     if (!finalMatch || !finalMatch.winner_team_id) {
-        console.log('❌ Финал не найден или не завершен');
+        console.log('❌ Финал не найден или не завершен', {
+            finalMatch: !!finalMatch,
+            winner_team_id: finalMatch?.winner_team_id
+        });
         return null;
     }
 
@@ -195,6 +198,23 @@ function calculateWinners(matches, tournament) {
         second: secondPlace?.name,
         third: thirdPlace?.name
     });
+
+    console.log('🔍 Детальная информация о призерах:', {
+        firstPlace,
+        secondPlace,
+        thirdPlace,
+        firstPlaceExists: !!firstPlace,
+        secondPlaceExists: !!secondPlace
+    });
+
+    if (!firstPlace) {
+        console.log('❌ КРИТИЧЕСКАЯ ОШИБКА: firstPlace не найден!', {
+            winner_team_id: finalMatch.winner_team_id,
+            tournament_teams_count: tournament.teams?.length,
+            tournament_participants_count: tournament.participants?.length
+        });
+        return null;
+    }
 
     return {
         first: firstPlace,
