@@ -1,10 +1,26 @@
-import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { getParticipantInfo } from '../../utils/participantHelpers';
+import React, { useMemo, useState } from 'react';
+import { getParticipantInfo, enrichMatchWithParticipantNames } from '../../utils/participantHelpers';
 import { ensureHttps } from '../../utils/userHelpers';
+import MatchDetailsModal from './modals/MatchDetailsModal';
 import './TournamentResults.css';
 
 const TournamentResults = ({ tournament }) => {
+    // Состояние для модального окна деталей матча
+    const [selectedMatchForDetails, setSelectedMatchForDetails] = useState(null);
+    const [isMatchDetailsOpen, setIsMatchDetailsOpen] = useState(false);
+
+    // Функции для работы с модальным окном
+    const openMatchDetails = (match) => {
+        const enrichedMatch = enrichMatchWithParticipantNames(match, tournament);
+        setSelectedMatchForDetails(enrichedMatch);
+        setIsMatchDetailsOpen(true);
+    };
+
+    const closeMatchDetails = () => {
+        setIsMatchDetailsOpen(false);
+        setSelectedMatchForDetails(null);
+    };
+
     // Используем ту же логику, что и подиум для определения мест
     const tournamentResults = useMemo(() => {
         if (!tournament?.matches || tournament.matches.length === 0) {
@@ -142,9 +158,20 @@ const TournamentResults = ({ tournament }) => {
                     </div>
                     
                     <div className="results-match-history-list">
-                        {tournamentResults.completedMatches.map(match => renderMatchHistoryItem(match, tournament))}
+                        {tournamentResults.completedMatches.map(match => renderMatchHistoryItem(match, tournament, openMatchDetails))}
                     </div>
                 </div>
+            )}
+
+            {/* Модальное окно деталей матча */}
+            {isMatchDetailsOpen && selectedMatchForDetails && (
+                <MatchDetailsModal
+                    isOpen={isMatchDetailsOpen}
+                    onClose={closeMatchDetails}
+                    selectedMatch={selectedMatchForDetails}
+                    canEdit={false}
+                    tournament={tournament}
+                />
             )}
         </div>
     );
@@ -323,7 +350,7 @@ function renderWinners(winners) {
 }
 
 // Рендер элемента истории матчей
-function renderMatchHistoryItem(match, tournament) {
+function renderMatchHistoryItem(match, tournament, openMatchDetails) {
     const winner = getParticipantInfo(match.winner_team_id, tournament);
     const loserId = match.winner_team_id === match.team1_id ? match.team2_id : match.team1_id;
     const loser = getParticipantInfo(loserId, tournament);
@@ -382,12 +409,12 @@ function renderMatchHistoryItem(match, tournament) {
                         </div>
                     </div>
                     
-                    <Link 
-                        to={`/tournaments/${tournament.id}/match/${match.id}`}
+                    <button 
+                        onClick={() => openMatchDetails(match)}
                         className="results-match-details-link"
                     >
                         Подробнее →
-                    </Link>
+                    </button>
                 </div>
             </div>
         </div>

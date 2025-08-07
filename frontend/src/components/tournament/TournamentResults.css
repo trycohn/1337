@@ -370,6 +370,7 @@
 }
 
 .results-match-details-link {
+    background: none;
     color: #ff0000;
     text-decoration: none;
     font-size: 0.85em;
@@ -377,6 +378,8 @@
     border: 1px solid #ff0000;
     border-radius: 4px;
     transition: all 0.2s ease;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .results-match-details-link:hover {
