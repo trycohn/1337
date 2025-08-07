@@ -146,80 +146,80 @@ const MatchShareModal = ({
                 <div className="modal-system-body">
                     
                     {/* Превью результата */}
-                    <div className="match-share-preview">
-                        <div className="match-share-result">
-                            <div className="match-share-teams">
-                                <div className="match-share-team">
-                                    <span className="team-name">{shareData.team1}</span>
+                    <div className="share-match-preview">
+                        <div className="share-match-result">
+                            <div className="share-match-teams">
+                                <div className="share-match-team">
+                                    <span className="share-team-name">{shareData.team1}</span>
                                 </div>
-                                <div className="match-share-score">
-                                    <span className="score">{shareData.score}</span>
+                                <div className="share-match-score">
+                                    <span className="share-score">{shareData.score}</span>
                                     {shareData.winner && (
-                                        <span className="winner-indicator">
+                                        <span className="share-winner-indicator">
                                             👑 {shareData.winner}
                                         </span>
                                     )}
                                 </div>
-                                <div className="match-share-team">
-                                    <span className="team-name">{shareData.team2}</span>
+                                <div className="share-match-team">
+                                    <span className="share-team-name">{shareData.team2}</span>
                                 </div>
                             </div>
-                            <div className="match-share-meta">
-                                <span className="tournament-name">{shareData.tournamentName}</span>
-                                <span className="match-number">Матч #{shareData.matchNumber}</span>
+                            <div className="share-match-meta">
+                                <span className="share-tournament-name">{shareData.tournamentName}</span>
+                                <span className="share-match-number">Матч #{shareData.matchNumber}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Кнопки шейринга */}
-                    <div className="match-share-buttons">
+                    <div className="share-buttons">
                         <h3 className="share-section-title">📤 Поделиться в социальных сетях</h3>
                         
-                        <div className="social-share-grid">
+                        <div className="share-social-grid">
                             <button 
-                                className="social-share-btn telegram"
+                                className="share-social-btn share-telegram"
                                 onClick={shareToTelegram}
                                 title="Поделиться в Telegram"
                             >
-                                <div className="social-icon">📱</div>
+                                <div className="share-social-icon">📱</div>
                                 <span>Telegram</span>
                             </button>
                             
                             <button 
-                                className="social-share-btn vk"
+                                className="share-social-btn share-vk"
                                 onClick={shareToVK}
                                 title="Поделиться ВКонтакте"
                             >
-                                <div className="social-icon">🌐</div>
+                                <div className="share-social-icon">🌐</div>
                                 <span>ВКонтакте</span>
                             </button>
                             
                             <button 
-                                className="social-share-btn discord"
+                                className="share-social-btn share-discord"
                                 onClick={shareToDiscord}
                                 title="Скопировать для Discord"
                             >
-                                <div className="social-icon">💬</div>
+                                <div className="share-social-icon">💬</div>
                                 <span>Discord</span>
-                                {copiedUrl === 'discord' && <span className="copied-indicator">Скопировано!</span>}
+                                {copiedUrl === 'discord' && <span className="share-copied-indicator">Скопировано!</span>}
                             </button>
                         </div>
                     </div>
 
                     {/* Прямая ссылка */}
-                    <div className="direct-link-section">
+                    <div className="share-direct-link-section">
                         <h3 className="share-section-title">🔗 Прямая ссылка</h3>
                         
-                        <div className="direct-link-container">
+                        <div className="share-direct-link-container">
                             <input 
                                 type="text" 
                                 value={shareData.url} 
                                 readOnly 
-                                className="direct-link-input"
+                                className="share-direct-link-input"
                                 onClick={(e) => e.target.select()}
                             />
                             <button 
-                                className="copy-link-btn"
+                                className="share-copy-link-btn"
                                 onClick={copyToClipboard}
                                 title="Скопировать ссылку"
                             >
@@ -228,14 +228,14 @@ const MatchShareModal = ({
                         </div>
                         
                         {copiedUrl === 'direct' && (
-                            <p className="copy-success">✅ Ссылка скопирована в буфер обмена!</p>
+                            <p className="share-copy-success">✅ Ссылка скопирована в буфер обмена!</p>
                         )}
                     </div>
 
                     {/* Статистика (опционально) */}
                     {(shareStats.copies > 0 || shareStats.shares > 0) && (
                         <div className="share-stats">
-                            <small className="stats-text">
+                            <small className="share-stats-text">
                                 📊 Копирований: {shareStats.copies} | Репостов: {shareStats.shares}
                             </small>
                         </div>

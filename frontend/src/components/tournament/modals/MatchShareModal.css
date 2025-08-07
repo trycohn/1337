@@ -2,7 +2,7 @@
 
 /* === ПРЕВЬЮ РЕЗУЛЬТАТА === */
 
-.match-share-preview {
+.share-match-preview {
     background: #111;
     border: 2px solid #333;
     border-radius: 8px;
@@ -10,35 +10,35 @@
     margin-bottom: 24px;
 }
 
-.match-share-result {
+.share-match-result {
     text-align: center;
 }
 
-.match-share-teams {
+.share-match-teams {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
 }
 
-.match-share-team {
+.share-match-team {
     flex: 1;
     text-align: center;
 }
 
-.match-share-team .team-name {
+.share-match-team .share-team-name {
     color: #fff;
     font-weight: 600;
     font-size: 1.1em;
 }
 
-.match-share-score {
+.share-match-score {
     flex: 0 0 auto;
     text-align: center;
     margin: 0 20px;
 }
 
-.match-share-score .score {
+.share-match-score .share-score {
     color: #ff0000;
     font-weight: 700;
     font-size: 1.8em;
@@ -46,14 +46,14 @@
     margin-bottom: 4px;
 }
 
-.match-share-score .winner-indicator {
+.share-match-score .share-winner-indicator {
     color: #ffd700;
     font-size: 0.85em;
     font-weight: 600;
     display: block;
 }
 
-.match-share-meta {
+.share-match-meta {
     display: flex;
     justify-content: center;
     gap: 16px;
@@ -61,17 +61,17 @@
     font-size: 0.9em;
 }
 
-.match-share-meta .tournament-name {
+.share-match-meta .share-tournament-name {
     font-weight: 500;
 }
 
-.match-share-meta .match-number {
+.share-match-meta .share-match-number {
     color: #666;
 }
 
 /* === КНОПКИ ШЕЙРИНГА === */
 
-.match-share-buttons {
+.share-buttons {
     margin-bottom: 24px;
 }
 
@@ -85,13 +85,13 @@
     gap: 8px;
 }
 
-.social-share-grid {
+.share-social-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
 }
 
-.social-share-btn {
+.share-social-btn {
     background: #111;
     border: 2px solid #333;
     color: #fff;
@@ -107,35 +107,35 @@
     font-family: inherit;
 }
 
-.social-share-btn:hover {
+.share-social-btn:hover {
     border-color: #ff0000;
     background: #1a1a1a;
     transform: translateY(-2px);
 }
 
-.social-share-btn.telegram:hover {
+.share-social-btn.share-telegram:hover {
     border-color: #0088cc;
 }
 
-.social-share-btn.vk:hover {
+.share-social-btn.share-vk:hover {
     border-color: #4680c2;
 }
 
-.social-share-btn.discord:hover {
+.share-social-btn.share-discord:hover {
     border-color: #5865f2;
 }
 
-.social-icon {
+.share-social-icon {
     font-size: 1.5em;
     margin-bottom: 4px;
 }
 
-.social-share-btn span {
+.share-social-btn span {
     font-weight: 500;
     font-size: 0.9em;
 }
 
-.copied-indicator {
+.share-copied-indicator {
     position: absolute;
     top: -8px;
     right: -8px;
@@ -144,27 +144,27 @@
     font-size: 0.7em;
     padding: 2px 6px;
     border-radius: 4px;
-    animation: fadeInOut 2s ease-in-out;
+    animation: shareFadeInOut 2s ease-in-out;
 }
 
-@keyframes fadeInOut {
+@keyframes shareFadeInOut {
     0%, 100% { opacity: 0; transform: scale(0.8); }
     50% { opacity: 1; transform: scale(1); }
 }
 
 /* === ПРЯМАЯ ССЫЛКА === */
 
-.direct-link-section {
+.share-direct-link-section {
     margin-bottom: 16px;
 }
 
-.direct-link-container {
+.share-direct-link-container {
     display: flex;
     gap: 8px;
     margin-bottom: 8px;
 }
 
-.direct-link-input {
+.share-direct-link-input {
     flex: 1;
     background: #111;
     border: 2px solid #333;
@@ -175,12 +175,12 @@
     font-family: 'Courier New', monospace;
 }
 
-.direct-link-input:focus {
+.share-direct-link-input:focus {
     outline: none;
     border-color: #ff0000;
 }
 
-.copy-link-btn {
+.share-copy-link-btn {
     background: #111;
     border: 2px solid #333;
     color: #fff;
@@ -192,19 +192,19 @@
     font-family: inherit;
 }
 
-.copy-link-btn:hover {
+.share-copy-link-btn:hover {
     border-color: #ff0000;
     background: #1a1a1a;
 }
 
-.copy-success {
+.share-copy-success {
     color: #4caf50;
     font-size: 0.85em;
     margin: 0;
-    animation: fadeIn 0.3s ease-in;
+    animation: shareFadeIn 0.3s ease-in;
 }
 
-@keyframes fadeIn {
+@keyframes shareFadeIn {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
 }
@@ -217,7 +217,7 @@
     border-top: 1px solid #333;
 }
 
-.stats-text {
+.share-stats-text {
     color: #666;
     font-size: 0.8em;
 }
@@ -225,51 +225,51 @@
 /* === АДАПТИВНОСТЬ === */
 
 @media (max-width: 768px) {
-    .match-share-teams {
+    .share-match-teams {
         flex-direction: column;
         gap: 12px;
     }
     
-    .match-share-score {
+    .share-match-score {
         margin: 0;
         order: -1;
     }
     
-    .social-share-grid {
+    .share-social-grid {
         grid-template-columns: 1fr;
         gap: 8px;
     }
     
-    .social-share-btn {
+    .share-social-btn {
         padding: 12px;
     }
     
-    .direct-link-container {
+    .share-direct-link-container {
         flex-direction: column;
     }
     
-    .copy-link-btn {
+    .share-copy-link-btn {
         width: 100%;
     }
 }
 
 @media (max-width: 480px) {
-    .match-share-preview {
+    .share-match-preview {
         padding: 16px;
     }
     
-    .match-share-score .score {
+    .share-match-score .share-score {
         font-size: 1.5em;
     }
     
-    .social-share-btn {
+    .share-social-btn {
         padding: 10px;
         flex-direction: row;
         text-align: left;
         gap: 12px;
     }
     
-    .social-icon {
+    .share-social-icon {
         font-size: 1.2em;
         margin-bottom: 0;
     }
