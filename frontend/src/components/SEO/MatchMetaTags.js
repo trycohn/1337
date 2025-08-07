@@ -51,6 +51,7 @@ const MatchMetaTags = ({ match, tournament }) => {
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
             <meta property="og:image:alt" content={`Результат матча ${team1} vs ${team2}`} />
+            <meta property="og:image:type" content="image/png" />
             <meta property="og:locale" content="ru_RU" />
             
             {/* Twitter Card метатеги */}
