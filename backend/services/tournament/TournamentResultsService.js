@@ -278,22 +278,36 @@ class TournamentResultsService {
             const participants = Array.from(statistics.values());
             console.log(`👤 Обрабатываем ${participants.length} участников`);
             
-            // Простая сортировка по победам и поражениям
-            const standings = participants
-                .sort((a, b) => {
-                    // Сначала по количеству побед (больше лучше)
-                    if (b.wins !== a.wins) return b.wins - a.wins;
-                    // Потом по количеству поражений (меньше лучше)
-                    if (a.losses !== b.losses) return a.losses - b.losses;
-                    // Потом по последнему раунду (дальше лучше)
-                    return b.last_match_round - a.last_match_round;
-                })
-                .map((participant, index) => ({
-                    ...participant,
-                    place: index + 1
-                }));
+            // Используем специализированные алгоритмы в зависимости от формата турнира
+            let standings;
+            
+            if (tournament.format === 'single_elimination' || tournament.bracket_type === 'single_elimination') {
+                console.log('📊 Используем алгоритм Single Elimination');
+                standings = this.calculateSingleEliminationStandings(participants, matches);
+            } else if (tournament.format === 'double_elimination' || tournament.bracket_type === 'double_elimination') {
+                console.log('📊 Используем алгоритм Double Elimination');
+                standings = this.calculateDoubleEliminationStandings(participants, matches);
+            } else {
+                console.log('📊 Используем базовую сортировку по победам/поражениям');
+                // Базовая сортировка для других форматов
+                standings = participants
+                    .sort((a, b) => {
+                        // Сначала по количеству побед (больше лучше)
+                        if (b.wins !== a.wins) return b.wins - a.wins;
+                        // Потом по количеству поражений (меньше лучше)
+                        if (a.losses !== b.losses) return a.losses - b.losses;
+                        // Потом по последнему раунду (дальше лучше)
+                        return b.last_match_round - a.last_match_round;
+                    })
+                    .map((participant, index) => ({
+                        ...participant,
+                        place: index + 1
+                    }));
+            }
             
             console.log(`✅ Места вычислены для ${standings.length} участников`);
+            console.log(`🏆 Топ-3: ${standings.slice(0, 3).map(s => `${s.place}. ${s.name} (${s.wins}W/${s.losses}L)`).join(', ')}`);
+            
             return standings;
             
         } catch (error) {
@@ -306,32 +320,56 @@ class TournamentResultsService {
      * Вычисляет места для Single Elimination
      */
     static calculateSingleEliminationStandings(participants, matches) {
+        console.log('🏆 Single Elimination: определяем места участников');
         const standings = [...participants];
         
-        // Находим финальный матч
+        // Находим финальный матч (аналогично подиуму)
         const finalMatch = matches.find(m => 
             m.status === 'completed' && 
-            m.bracket_type === 'winner' && 
-            m.round === Math.max(...matches.filter(m2 => m2.bracket_type === 'winner').map(m2 => m2.round))
+            (m.bracket_type === 'grand_final' || 
+             m.bracket_type === 'final' ||
+             m.is_final === true ||
+             (m.round && parseInt(m.round) === Math.max(...matches.map(m2 => parseInt(m2.round) || 0))))
         );
         
-        if (finalMatch) {
+        console.log(`🔍 Финальный матч: ${finalMatch ? `ID ${finalMatch.id}, раунд ${finalMatch.round}` : 'не найден'}`);
+        
+        if (finalMatch && finalMatch.winner_team_id) {
             // 1 место - победитель финала
             const winner = standings.find(p => p.id === finalMatch.winner_team_id);
-            if (winner) winner.place = 1;
+            if (winner) {
+                winner.place = 1;
+                console.log(`🥇 1-е место: ${winner.name}`);
+            }
             
             // 2 место - проигравший финала
-            const finalist = standings.find(p => p.id === (
-                finalMatch.team1_id === finalMatch.winner_team_id ? finalMatch.team2_id : finalMatch.team1_id
-            ));
-            if (finalist) finalist.place = 2;
+            const loserId = finalMatch.team1_id === finalMatch.winner_team_id ? finalMatch.team2_id : finalMatch.team1_id;
+            const finalist = standings.find(p => p.id === loserId);
+            if (finalist) {
+                finalist.place = 2;
+                console.log(`🥈 2-е место: ${finalist.name}`);
+            }
+        }
+        
+        // Находим матч за 3-е место
+        const thirdPlaceMatch = matches.find(m => 
+            m.status === 'completed' && 
+            (m.is_third_place_match === true || m.bracket_type === 'placement')
+        );
+        
+        if (thirdPlaceMatch && thirdPlaceMatch.winner_team_id) {
+            const thirdPlace = standings.find(p => p.id === thirdPlaceMatch.winner_team_id);
+            if (thirdPlace) {
+                thirdPlace.place = 3;
+                console.log(`🥉 3-е место: ${thirdPlace.name}`);
+            }
         }
         
         // Остальные места по раунду выбывания
-        const withoutTopTwo = standings.filter(p => !p.place);
-        const groupedByElimination = this.groupByEliminationRound(withoutTopTwo);
+        const withoutTopPlaces = standings.filter(p => !p.place);
+        const groupedByElimination = this.groupByEliminationRound(withoutTopPlaces);
         
-        let currentPlace = 3;
+        let currentPlace = thirdPlaceMatch ? 4 : 3;
         Object.keys(groupedByElimination)
             .sort((a, b) => parseInt(b) - parseInt(a)) // От большего раунда к меньшему
             .forEach(round => {
@@ -349,6 +387,7 @@ class TournamentResultsService {
      * Вычисляет места для Double Elimination
      */
     static calculateDoubleEliminationStandings(participants, matches) {
+        console.log('🏆 Double Elimination: определяем места участников');
         const standings = [...participants];
         
         // Находим Grand Final
@@ -357,16 +396,23 @@ class TournamentResultsService {
             m.bracket_type === 'grand_final'
         );
         
-        if (grandFinal) {
+        console.log(`🔍 Grand Final: ${grandFinal ? `ID ${grandFinal.id}` : 'не найден'}`);
+        
+        if (grandFinal && grandFinal.winner_team_id) {
             // 1 место - победитель Grand Final
             const champion = standings.find(p => p.id === grandFinal.winner_team_id);
-            if (champion) champion.place = 1;
+            if (champion) {
+                champion.place = 1;
+                console.log(`🥇 1-е место: ${champion.name}`);
+            }
             
             // 2 место - проигравший Grand Final
-            const runnerUp = standings.find(p => p.id === (
-                grandFinal.team1_id === grandFinal.winner_team_id ? grandFinal.team2_id : grandFinal.team1_id
-            ));
-            if (runnerUp) runnerUp.place = 2;
+            const loserId = grandFinal.team1_id === grandFinal.winner_team_id ? grandFinal.team2_id : grandFinal.team1_id;
+            const runnerUp = standings.find(p => p.id === loserId);
+            if (runnerUp) {
+                runnerUp.place = 2;
+                console.log(`🥈 2-е место: ${runnerUp.name}`);
+            }
         }
         
         // Находим финал лузеров для 3 места
@@ -375,12 +421,16 @@ class TournamentResultsService {
             m.bracket_type === 'loser_final'
         );
         
-        if (loserFinal) {
-            // 3 место - проигравший финала лузеров
-            const thirdPlace = standings.find(p => p.id === (
-                loserFinal.team1_id === loserFinal.winner_team_id ? loserFinal.team2_id : loserFinal.team1_id
-            ));
-            if (thirdPlace) thirdPlace.place = 3;
+        console.log(`🔍 Финал лузеров: ${loserFinal ? `ID ${loserFinal.id}` : 'не найден'}`);
+        
+        if (loserFinal && loserFinal.winner_team_id) {
+            // 3 место - проигравший финала лузеров (тот кто дошел дальше всех в лузерах)
+            const loserFinalLoserId = loserFinal.team1_id === loserFinal.winner_team_id ? loserFinal.team2_id : loserFinal.team1_id;
+            const thirdPlace = standings.find(p => p.id === loserFinalLoserId);
+            if (thirdPlace) {
+                thirdPlace.place = 3;
+                console.log(`🥉 3-е место: ${thirdPlace.name}`);
+            }
         }
         
         // Остальные места по раунду выбывания
