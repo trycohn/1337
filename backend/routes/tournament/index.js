@@ -35,6 +35,7 @@ const ChatController = require('../../controllers/tournament/ChatController');
 const MixTeamController = require('../../controllers/tournament/MixTeamController');
 const { BracketController } = require('../../controllers/tournament/BracketController');
 const MatchLobbyController = require('../../controllers/matchLobby/MatchLobbyController');
+const ShareController = require('../../controllers/tournament/ShareController');
 
 const router = express.Router();
 
@@ -101,6 +102,9 @@ router.get('/:id/matches', MatchController.getMatches);
 
 // Получение конкретного матча
 router.get('/:id/matches/:matchId', MatchController.getMatch);
+
+// Генерация изображения для шейринга матча
+router.get('/:id/match/:matchId/share-image', ShareController.generateMatchShareImage);
 
 // Сохранение результата матча
 router.post('/:id/matches/:matchId/result', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.saveMatchResult);
