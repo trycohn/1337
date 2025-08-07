@@ -1,103 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { getParticipantInfo } from '../../utils/participantHelpers';
 import { ensureHttps } from '../../utils/userHelpers';
 import './TournamentResults.css';
 
-/**
- * 🏆 КОМПОНЕНТ РЕЗУЛЬТАТОВ ТУРНИРА
- * Отображает итоговые места участников и историю матчей
- * Данные загружаются напрямую из БД через API
- */
 const TournamentResults = ({ tournament }) => {
-    const [results, setResults] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    // Используем ту же логику, что и подиум для определения мест
+    const tournamentResults = useMemo(() => {
+        if (!tournament?.matches || tournament.matches.length === 0) {
+            return { winners: null, completedMatches: [], hasResults: false };
+        }
 
-    // Загружаем результаты турнира из API
-    useEffect(() => {
-        if (!tournament?.id) return;
+        const matches = tournament.matches;
+        
+        // Находим завершенные матчи
+        const completedMatches = matches.filter(m => 
+            m.status === 'completed' && m.winner_team_id
+        );
 
-        const fetchResults = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                const response = await fetch(`/api/tournaments/${tournament.id}/results`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                setResults(data);
-                
-                // Отладочная информация (только в development)
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('🏆 Результаты турнира получены из API:', {
-                        tournamentId: tournament.id,
-                        format: data.tournament.format,
-                        totalMatches: data.matches.length,
-                        completedMatches: data.matches.filter(m => m.status === 'completed').length,
-                        standingsCount: data.standings.length,
-                        historyCount: data.matchHistory.length
-                    });
-                }
-                
-            } catch (error) {
-                console.error('❌ Ошибка загрузки результатов турнира:', error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
+        console.log('🏆 TournamentResults: Анализируем матчи', {
+            totalMatches: matches.length,
+            completedMatches: completedMatches.length,
+            format: tournament.format || tournament.bracket_type
+        });
+
+        if (completedMatches.length === 0) {
+            return { winners: null, completedMatches: [], hasResults: false };
+        }
+
+        // Определяем призеров (используем ту же логику что подиум)
+        const winners = calculateWinners(matches, tournament);
+        
+        return { 
+            winners, 
+            completedMatches: completedMatches.reverse(), // Последние матчи первыми
+            hasResults: true 
         };
+    }, [tournament]);
 
-        fetchResults();
-    }, [tournament?.id]);
-
-    // Состояния загрузки и ошибок
-    if (loading) {
+    if (!tournament) {
         return (
-            <div className="results-tournament-results">
-                <div className="results-loading">
-                    <span>📊 Загрузка результатов...</span>
-                </div>
+            <div className="results-error">
+                <div>❌ Нет данных о турнире</div>
             </div>
         );
     }
 
-    if (error) {
+    if (!tournamentResults.hasResults) {
         return (
-            <div className="results-tournament-results">
-                <div className="results-error">
-                    <span>❌ Ошибка загрузки: {error}</span>
-                </div>
-            </div>
-        );
-    }
-
-    if (!results) {
-        return (
-            <div className="results-tournament-results-empty">
-                <div className="results-empty-state">
-                    <span className="results-empty-icon">📊</span>
-                    <h3>Результаты недоступны</h3>
-                    <p>Не удалось загрузить результаты турнира</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Проверяем есть ли данные для отображения
-    const hasCompletedMatches = results.matches.filter(m => m.status === 'completed' && m.winner_team_id).length > 0;
-    const showResults = tournament?.status === 'completed' || hasCompletedMatches;
-    
-    if (!showResults) {
-        return (
-            <div className="results-tournament-results-empty">
-                <div className="results-empty-state">
+            <div className="results-empty-state">
+                <div className="results-empty-content">
                     <span className="results-empty-icon">📊</span>
                     <h3>Результаты пока недоступны</h3>
                     <p>Результаты появятся после завершения первых матчей</p>
+                    <div className="results-debug-info">
+                        <p>Турнир: {tournament.name}</p>
+                        <p>Формат: {tournament.format || tournament.bracket_type}</p>
+                        <p>Статус: {tournament.status}</p>
+                        <p>Всего матчей: {tournament.matches?.length || 0}</p>
+                        <p>Завершенных матчей: {tournament.matches?.filter(m => m.status === 'completed').length || 0}</p>
+                    </div>
                 </div>
             </div>
         );
@@ -105,232 +67,257 @@ const TournamentResults = ({ tournament }) => {
 
     return (
         <div className="results-tournament-results">
-            {/* Блок 1: Итоговые места (показываем только если турнир завершен) */}
-            {tournament?.status === 'completed' && results.standings.length > 0 && (
-                <div className="results-final-standings-section">
+            {/* Блок 1: Призовые места (если турнир завершен и есть призеры) */}
+            {tournament.status === 'completed' && tournamentResults.winners && (
+                <div className="results-winners-section">
                     <div className="results-section-header">
-                        <h3>🏆 Итоговые результаты турнира</h3>
+                        <h3>🏆 Призовые места</h3>
                         <div className="results-tournament-info">
-                            <span className="results-format-badge">{getFormatDisplayName(results.tournament.format)}</span>
-                            <span className="results-participants-count">{results.standings.length} участников</span>
+                            <span className="results-format">{getFormatDisplayName(tournament.format || tournament.bracket_type)}</span>
                         </div>
                     </div>
                     
-                    <div className="results-standings-list">
-                        {renderStandings(results.standings)}
+                    <div className="results-podium">
+                        {renderWinners(tournamentResults.winners)}
                     </div>
                 </div>
             )}
 
             {/* Блок 2: История матчей */}
-            {results.matchHistory.length > 0 ? (
+            {tournamentResults.completedMatches.length > 0 && (
                 <div className="results-match-history-section">
                     <div className="results-section-header">
                         <h3>📋 История матчей</h3>
                         <div className="results-history-stats">
-                            <span className="results-matches-count">{results.matchHistory.length} завершенных матчей</span>
+                            <span className="results-matches-count">{tournamentResults.completedMatches.length} завершенных матчей</span>
                         </div>
                     </div>
                     
                     <div className="results-match-history-list">
-                        {results.matchHistory.map(match => renderMatchHistoryItem(match))}
-                    </div>
-                </div>
-            ) : (
-                // Временно показываем отладочную информацию
-                <div className="results-match-history-section">
-                    <div className="results-section-header">
-                        <h3>🔍 Отладочная информация</h3>
-                    </div>
-                    <div style={{color: '#999', padding: '20px'}}>
-                        <p>Турнир: {results.tournament.name}</p>
-                        <p>Формат: {results.tournament.format}</p>
-                        <p>Статус: {results.tournament.status}</p>
-                        <p>Всего матчей: {results.matches.length}</p>
-                        <p>Завершенных матчей: {results.matches.filter(m => m.status === 'completed').length}</p>
-                        <p>Участников: {results.participants.length}</p>
-                        <p>Команд: {results.tournament.teams ? results.tournament.teams.length : 0}</p>
+                        {tournamentResults.completedMatches.map(match => renderMatchHistoryItem(match, tournament))}
                     </div>
                 </div>
             )}
         </div>
     );
-
-    // Рендер итоговых мест
-    function renderStandings(standings) {
-        const groupedByPlace = groupStandingsByPlace(standings);
-        
-        return Object.entries(groupedByPlace)
-            .sort(([a], [b]) => parseInt(a) - parseInt(b))
-            .map(([place, participants]) => (
-                <div key={place} className="results-standings-group">
-                    <div className="results-place-header">
-                        <span className="results-place-number">
-                            {getPlaceIcon(parseInt(place))} {place}-е место
-                        </span>
-                        {participants.length > 1 && (
-                            <span className="results-shared-place">разделили {participants.length} участника</span>
-                        )}
-                    </div>
-                    
-                    <div className="results-participants-list">
-                        {participants.map(participant => (
-                            <div key={participant.id} className={`results-participant-card ${participant.type === 'team' ? 'results-team-card' : ''}`}>
-                                <div className="results-participant-avatar">
-                                    <img 
-                                        src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
-                                        alt={participant.name}
-                                        onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                    />
-                                </div>
-                                
-                                <div className="results-participant-info">
-                                    <div className="results-participant-name">
-                                        {participant.user_id ? (
-                                            <Link 
-                                                to={`/user/${participant.user_id}`} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                            >
-                                                {participant.name}
-                                            </Link>
-                                        ) : (
-                                            <span>{participant.name}</span>
-                                        )}
-                                        {participant.type === 'team' && (
-                                            <span className="results-team-badge">👥</span>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Показываем членов команды для микс турниров */}
-                                    {participant.type === 'team' && participant.members && participant.members.length > 0 && (
-                                        <div className="results-team-members">
-                                            <span className="results-members-label">Состав:</span>
-                                            <div className="results-members-list">
-                                                {participant.members.map((member, index) => (
-                                                    <span key={member.id || index} className="results-member-name">
-                                                        {member.user_id ? (
-                                                            <Link 
-                                                                to={`/user/${member.user_id}`} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer"
-                                                                className="results-member-link"
-                                                            >
-                                                                {member.username || member.name}
-                                                            </Link>
-                                                        ) : (
-                                                            <span>{member.username || member.name}</span>
-                                                        )}
-                                                        {index < participant.members.length - 1 && ', '}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    <div className="results-participant-stats">
-                                        <span className="results-wins">Побед: {participant.wins}</span>
-                                        <span className="results-losses">Поражений: {participant.losses}</span>
-                                        {participant.elimination_round && (
-                                            <span className="results-elimination">
-                                                {participant.type === 'team' ? 'Выбыла' : 'Выбыл'} в раунде {participant.elimination_round}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ));
-    }
-
-    // Рендер элемента истории матчей
-    function renderMatchHistoryItem(match) {
-        return (
-            <div key={match.id} className="results-match-history-item">
-                <div className="results-match-info">
-                    <div className="results-match-header">
-                        <span className="results-match-number">#{match.match_number}</span>
-                        <span className="results-round-name">{match.round_name}</span>
-                        <span className="results-bracket-type">{getBracketTypeDisplayName(match.bracket_type)}</span>
-                    </div>
-                    
-                    <div className="results-match-result">
-                        <div className="results-participants">
-                            <div className="results-participant results-winner">
-                                <div className="results-participant-avatar">
-                                    <img 
-                                        src={ensureHttps(match.winner.avatar_url) || '/default-avatar.png'}
-                                        alt={match.winner.name}
-                                        onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                    />
-                                </div>
-                                <span className="results-participant-name">{match.winner.name}</span>
-                                <span className="results-winner-badge">👑</span>
-                            </div>
-                            
-                            <div className="results-score">
-                                {getFormattedScore(match)}
-                            </div>
-                            
-                            <div className="results-participant results-loser">
-                                <div className="results-participant-avatar">
-                                    <img 
-                                        src={ensureHttps(match.loser?.avatar_url) || '/default-avatar.png'}
-                                        alt={match.loser?.name || 'BYE'}
-                                        onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                    />
-                                </div>
-                                <span className="results-participant-name">{match.loser?.name || 'BYE'}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="results-match-actions">
-                    <Link 
-                        to={`/tournament/${tournament.id}/match/${match.id}`} 
-                        className="results-match-details-link"
-                        title="Подробности матча"
-                    >
-                        📋 Детали
-                    </Link>
-                    
-                    <span className="results-match-date">
-                        {formatMatchDate(match.updated_at || match.created_at)}
-                    </span>
-                </div>
-            </div>
-        );
-    }
 };
 
-// Вспомогательные функции
-function groupStandingsByPlace(standings) {
-    return standings.reduce((groups, participant) => {
-        const place = participant.place || 999;
-        if (!groups[place]) groups[place] = [];
-        groups[place].push(participant);
-        return groups;
-    }, {});
-}
+// Функция определения призеров (идентична подиуму)
+function calculateWinners(matches, tournament) {
+    console.log('🔍 Определяем призеров турнира...');
+    
+    // Находим финальный матч
+    const finalMatch = matches.find(match => 
+        match.bracket_type === 'grand_final' || 
+        match.is_final === true ||
+        (match.round && parseInt(match.round) === Math.max(...matches.map(m => parseInt(m.round) || 0)))
+    );
 
-function getPlaceIcon(place) {
-    switch (place) {
-        case 1: return '🥇';
-        case 2: return '🥈';
-        case 3: return '🥉';
-        default: return '🏅';
+    // Находим матч за 3-е место
+    const thirdPlaceMatch = matches.find(match => 
+        match.is_third_place_match === true ||
+        match.bracket_type === 'placement'
+    );
+
+    console.log('🔍 Найденные ключевые матчи:', {
+        finalMatch: finalMatch ? `ID ${finalMatch.id}, раунд ${finalMatch.round}` : 'не найден',
+        thirdPlaceMatch: thirdPlaceMatch ? `ID ${thirdPlaceMatch.id}` : 'не найден'
+    });
+
+    if (!finalMatch || !finalMatch.winner_team_id) {
+        console.log('❌ Финал не найден или не завершен');
+        return null;
     }
+
+    // Определяем 1-е и 2-е места из финала
+    const firstPlace = getParticipantInfo(finalMatch.winner_team_id, tournament);
+    const secondPlaceId = finalMatch.winner_team_id === finalMatch.team1_id 
+        ? finalMatch.team2_id 
+        : finalMatch.team1_id;
+    const secondPlace = getParticipantInfo(secondPlaceId, tournament);
+
+    // Определяем 3-е место (если есть матч за 3-е место)
+    let thirdPlace = null;
+    if (thirdPlaceMatch && thirdPlaceMatch.winner_team_id) {
+        thirdPlace = getParticipantInfo(thirdPlaceMatch.winner_team_id, tournament);
+    }
+
+    console.log('🏆 Призеры определены:', {
+        first: firstPlace?.name,
+        second: secondPlace?.name,
+        third: thirdPlace?.name
+    });
+
+    return {
+        first: firstPlace,
+        second: secondPlace,
+        third: thirdPlace
+    };
 }
 
+// Рендер призеров
+function renderWinners(winners) {
+    return (
+        <div className="results-winners-list">
+            {/* 1-е место */}
+            <div className="results-winner-card results-place-1">
+                <div className="results-place-medal">🥇</div>
+                <div className="results-place-number">1</div>
+                <div className="results-winner-info">
+                    <div className="results-winner-avatar">
+                        <img 
+                            src={ensureHttps(winners.first.avatar_url) || '/default-avatar.png'}
+                            alt={winners.first.name}
+                            onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                        />
+                    </div>
+                    <div className="results-winner-name">{winners.first.name}</div>
+                    {winners.first.members && winners.first.members.length > 0 && (
+                        <div className="results-team-members">
+                            {winners.first.members.slice(0, 3).map((member, index) => (
+                                <span key={index} className="results-member">
+                                    {member.name}
+                                </span>
+                            ))}
+                            {winners.first.members.length > 3 && (
+                                <span className="results-member-more">
+                                    +{winners.first.members.length - 3}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 2-е место */}
+            <div className="results-winner-card results-place-2">
+                <div className="results-place-medal">🥈</div>
+                <div className="results-place-number">2</div>
+                <div className="results-winner-info">
+                    <div className="results-winner-avatar">
+                        <img 
+                            src={ensureHttps(winners.second.avatar_url) || '/default-avatar.png'}
+                            alt={winners.second.name}
+                            onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                        />
+                    </div>
+                    <div className="results-winner-name">{winners.second.name}</div>
+                    {winners.second.members && winners.second.members.length > 0 && (
+                        <div className="results-team-members">
+                            {winners.second.members.slice(0, 3).map((member, index) => (
+                                <span key={index} className="results-member">
+                                    {member.name}
+                                </span>
+                            ))}
+                            {winners.second.members.length > 3 && (
+                                <span className="results-member-more">
+                                    +{winners.second.members.length - 3}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 3-е место */}
+            {winners.third && (
+                <div className="results-winner-card results-place-3">
+                    <div className="results-place-medal">🥉</div>
+                    <div className="results-place-number">3</div>
+                    <div className="results-winner-info">
+                        <div className="results-winner-avatar">
+                            <img 
+                                src={ensureHttps(winners.third.avatar_url) || '/default-avatar.png'}
+                                alt={winners.third.name}
+                                onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                            />
+                        </div>
+                        <div className="results-winner-name">{winners.third.name}</div>
+                        {winners.third.members && winners.third.members.length > 0 && (
+                            <div className="results-team-members">
+                                {winners.third.members.slice(0, 3).map((member, index) => (
+                                    <span key={index} className="results-member">
+                                        {member.name}
+                                    </span>
+                                ))}
+                                {winners.third.members.length > 3 && (
+                                    <span className="results-member-more">
+                                        +{winners.third.members.length - 3}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Рендер элемента истории матчей
+function renderMatchHistoryItem(match, tournament) {
+    const winner = getParticipantInfo(match.winner_team_id, tournament);
+    const loserId = match.winner_team_id === match.team1_id ? match.team2_id : match.team1_id;
+    const loser = getParticipantInfo(loserId, tournament);
+
+    return (
+        <div key={match.id} className="results-match-history-item">
+            <div className="results-match-info">
+                <div className="results-match-header">
+                    <span className="results-match-number">#{match.match_number || match.id}</span>
+                    <span className="results-round-name">{match.round_name || `Раунд ${match.round}`}</span>
+                    <span className="results-bracket-type">{getBracketTypeDisplayName(match.bracket_type)}</span>
+                </div>
+                
+                <div className="results-match-result">
+                    <div className="results-participants">
+                        <div className="results-participant results-winner">
+                            <div className="results-participant-avatar">
+                                <img 
+                                    src={ensureHttps(winner?.avatar_url) || '/default-avatar.png'}
+                                    alt={winner?.name || 'Winner'}
+                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                />
+                            </div>
+                            <span className="results-participant-name">{winner?.name || 'Winner'}</span>
+                            <span className="results-winner-badge">👑</span>
+                        </div>
+                        
+                        <div className="results-score">
+                            {getFormattedScore(match)}
+                        </div>
+                        
+                        <div className="results-participant results-loser">
+                            <div className="results-participant-avatar">
+                                <img 
+                                    src={ensureHttps(loser?.avatar_url) || '/default-avatar.png'}
+                                    alt={loser?.name || 'Loser'}
+                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                />
+                            </div>
+                            <span className="results-participant-name">{loser?.name || 'Loser'}</span>
+                        </div>
+                    </div>
+                    
+                    <Link 
+                        to={`/tournaments/${tournament.id}/match/${match.id}`}
+                        className="results-match-details-link"
+                    >
+                        Подробнее →
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default TournamentResults;
+
+// Вспомогательные функции
 function getFormatDisplayName(format) {
     const formats = {
         'single_elimination': 'Single Elimination',
         'double_elimination': 'Double Elimination',
-        'round_robin': 'Round Robin',
-        'swiss': 'Swiss',
         'mix': 'Mix'
     };
     return formats[format] || format;
@@ -355,33 +342,11 @@ function getFormattedScore(match) {
     // Если есть данные о картах и только одна карта - показываем счет карты
     if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length === 1) {
         const mapData = match.maps_data[0];
-        if (mapData.score1 !== null && mapData.score2 !== null) {
-            return `${mapData.score1}:${mapData.score2}`;
+        if (mapData.team1_score !== undefined && mapData.team2_score !== undefined) {
+            return `${mapData.team1_score}:${mapData.team2_score}`;
         }
     }
     
     // Иначе показываем общий счет матча
     return `${match.score1 || 0}:${match.score2 || 0}`;
 }
-
-function formatMatchDate(dateString) {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-    
-    if (diffHours < 1) return 'Только что';
-    if (diffHours < 24) return `${diffHours} ч. назад`;
-    if (diffDays < 7) return `${diffDays} дн. назад`;
-    
-    return date.toLocaleDateString('ru-RU', { 
-        day: '2-digit', 
-        month: '2-digit',
-        year: 'numeric'
-    });
-}
-
-export default TournamentResults;

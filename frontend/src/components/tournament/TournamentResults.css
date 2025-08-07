@@ -1,178 +1,341 @@
-/* =================================
-   РЕЗУЛЬТАТЫ ТУРНИРА
-   Монохромная тема: #000, #fff, #ff0000, #111
-   ================================= */
+/* 🏆 TournamentResults - Новые стили для вкладки результатов */
 
 .results-tournament-results {
-    background: #000;
-    color: #fff;
     padding: 20px;
-    min-height: 400px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-/* =================================
-   ПУСТОЕ СОСТОЯНИЕ
-   ================================= */
+/* === СОСТОЯНИЯ === */
 
-.results-tournament-results-empty {
+.results-empty-state {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 300px;
-    background: #000;
+    text-align: center;
 }
 
-.results-empty-state {
-    text-align: center;
-    color: #666;
+.results-empty-content {
+    max-width: 500px;
+    padding: 20px;
 }
 
 .results-empty-icon {
-    font-size: 3em;
-    margin-bottom: 16px;
+    font-size: 4em;
+    margin-bottom: 20px;
     display: block;
 }
 
-.results-empty-state h3 {
+.results-empty-content h3 {
     color: #fff;
-    font-size: 1.2em;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    font-size: 1.5em;
 }
 
-.results-empty-state p {
+.results-empty-content p {
     color: #999;
-    font-size: 0.9em;
+    margin-bottom: 20px;
 }
 
-.results-loading,
+.results-debug-info {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 15px;
+    text-align: left;
+    color: #999;
+    font-size: 0.85em;
+}
+
+.results-debug-info p {
+    margin: 5px 0;
+}
+
 .results-error {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 200px;
     text-align: center;
+    color: #f87171;
 }
 
-.results-loading span {
-    color: #fff;
-    font-size: 1.1em;
-}
-
-.results-error span {
-    color: #f44336;
-    font-size: 1.1em;
-}
-
-/* =================================
-   ЗАГОЛОВКИ СЕКЦИЙ
-   ================================= */
+/* === СЕКЦИИ === */
 
 .results-section-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ff0000;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
 }
 
 .results-section-header h3 {
     color: #fff;
-    font-size: 1.2em;
-    font-weight: bold;
+    font-size: 1.5em;
     margin: 0;
+    font-weight: 600;
 }
 
 .results-tournament-info,
 .results-history-stats {
     display: flex;
-    gap: 8px;
+    gap: 15px;
     align-items: center;
 }
 
-.results-format-badge,
-.results-participants-count,
+.results-format,
 .results-matches-count {
-    background: transparent;
-    color: #999;
-    padding: 2px 6px;
+    background: #111;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    border: 1px solid #333;
+}
+
+/* === ПРИЗОВЫЕ МЕСТА === */
+
+.results-winners-section {
+    margin-bottom: 40px;
+}
+
+.results-podium {
+    margin-top: 20px;
+}
+
+.results-winners-list {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 20px;
+}
+
+.results-winner-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px 15px;
+    min-width: 180px;
+    transition: transform 0.3s ease;
+}
+
+.results-winner-card:hover {
+    transform: translateY(-5px);
+}
+
+.results-place-1 {
+    order: 2;
+    border-color: #ffd700;
+    background: linear-gradient(145deg, #1a1a1a, #111);
+}
+
+.results-place-2 {
+    order: 1;
+    border-color: #c0c0c0;
+    background: linear-gradient(145deg, #1a1a1a, #111);
+}
+
+.results-place-3 {
+    order: 3;
+    border-color: #cd7f32;
+    background: linear-gradient(145deg, #1a1a1a, #111);
+}
+
+.results-place-medal {
+    font-size: 3em;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.results-place-1 .results-place-medal {
+    font-size: 3.5em;
+    animation: goldGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes goldGlow {
+    from { filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)); }
+    to { filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.4)); }
+}
+
+.results-place-number {
+    background: #222;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+}
+
+.results-place-1 .results-place-number {
+    background: linear-gradient(145deg, #ffd700, #ffed4e);
+    color: #000;
+    border-color: #ffd700;
+}
+
+.results-place-2 .results-place-number {
+    background: linear-gradient(145deg, #c0c0c0, #e5e5e5);
+    color: #000;
+    border-color: #c0c0c0;
+}
+
+.results-place-3 .results-place-number {
+    background: linear-gradient(145deg, #cd7f32, #daa520);
+    color: #000;
+    border-color: #cd7f32;
+}
+
+.results-winner-info {
+    text-align: center;
+    width: 100%;
+}
+
+.results-winner-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 12px;
+    border: 2px solid #333;
+}
+
+.results-place-1 .results-winner-avatar {
+    border-color: #ffd700;
+}
+
+.results-place-2 .results-winner-avatar {
+    border-color: #c0c0c0;
+}
+
+.results-place-3 .results-winner-avatar {
+    border-color: #cd7f32;
+}
+
+.results-winner-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.results-winner-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    word-break: break-word;
+}
+
+.results-team-members {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.results-member {
+    background: #222;
+    color: #fff;
+    padding: 3px 8px;
     border-radius: 3px;
     font-size: 0.75em;
     border: 1px solid #333;
 }
 
-.results-format-badge {
-    color: #ff0000;
-    border-color: #ff0000;
+.results-member-more {
+    background: #333;
+    color: #999;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.75em;
+    text-align: center;
 }
 
-/* =================================
-   ИТОГОВЫЕ МЕСТА
-   ================================= */
+/* === ИСТОРИЯ МАТЧЕЙ === */
 
-.results-final-standings-section {
-    margin-bottom: 32px;
+.results-match-history-section {
+    margin-bottom: 20px;
 }
 
-.results-standings-list {
+.results-match-history-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.results-standings-group {
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.results-place-header {
+.results-match-history-item {
     background: #111;
-    padding: 8px 12px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 15px;
+    transition: border-color 0.2s ease;
+}
+
+.results-match-history-item:hover {
+    border-color: #555;
+}
+
+.results-match-info {
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.results-match-header {
+    display: flex;
+    gap: 15px;
     align-items: center;
+    color: #999;
+    font-size: 0.85em;
+}
+
+.results-match-number {
+    color: #fff;
+    font-weight: 500;
+}
+
+.results-round-name,
+.results-bracket-type {
+    background: #222;
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid #333;
+}
+
+.results-match-result {
+    display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #333;
+    align-items: center;
 }
 
-.results-place-number {
-    color: #ff0000;
-    font-weight: bold;
-    font-size: 1em;
-}
-
-.results-shared-place {
-    color: #666;
-    font-size: 0.8em;
-}
-
-.results-participants-list {
-    padding: 0;
-}
-
-.results-participant-card {
+.results-participants {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
-    border-bottom: 1px solid #333;
-    transition: background-color 0.2s ease;
+    gap: 20px;
+    flex: 1;
 }
 
-.results-participant-card:last-child {
-    border-bottom: none;
-}
-
-.results-participant-card:hover {
-    background: rgba(255, 0, 0, 0.05);
+.results-participant {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .results-participant-avatar {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    margin-right: 10px;
     border: 1px solid #333;
 }
 
@@ -182,235 +345,38 @@
     object-fit: cover;
 }
 
-.results-participant-info {
-    flex: 1;
-}
-
 .results-participant-name {
-    font-weight: 500;
-    margin-bottom: 2px;
+    color: #fff;
     font-size: 0.9em;
 }
 
-.results-participant-name a {
-    color: #fff;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.results-participant-name a:hover {
-    color: #ff0000;
-}
-
-.results-participant-stats {
-    display: flex;
-    gap: 12px;
-    font-size: 0.75em;
-    color: #999;
-}
-
-.results-wins {
-    color: #4CAF50;
-}
-
-.results-losses {
-    color: #f44336;
-}
-
-.results-elimination {
-    color: #666;
-}
-
-/* =================================
-   КОМАНДЫ В МИКС ТУРНИРАХ
-   ================================= */
-
-.results-participant-card.results-team-card {
-    border-left: 2px solid #ff0000;
-}
-
-.results-team-badge {
-    background: transparent;
-    color: #ff0000;
-    padding: 1px 4px;
-    border: 1px solid #ff0000;
-    border-radius: 2px;
-    font-size: 0.65em;
-    font-weight: normal;
-    margin-left: 6px;
-}
-
-.results-team-members {
-    margin-top: 4px;
-    padding-top: 4px;
-    border-top: 1px solid #333;
-}
-
-.results-members-label {
-    color: #666;
-    font-size: 0.7em;
-    margin-right: 4px;
-}
-
-.results-members-list {
-    display: inline;
-}
-
-.results-member-name {
-    font-size: 0.7em;
-    color: #ccc;
-}
-
-.results-member-link {
-    color: #999;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.results-member-link:hover {
-    color: #ff0000;
-}
-
-/* =================================
-   ИСТОРИЯ МАТЧЕЙ
-   ================================= */
-
-.results-match-history-section {
-    margin-top: 32px;
-}
-
-.results-match-history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.results-match-history-item {
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 10px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: border-color 0.2s ease;
-}
-
-.results-match-history-item:hover {
-    border-color: #ff0000;
-}
-
-.results-match-info {
-    flex: 1;
-}
-
-.results-match-header {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 6px;
-    align-items: center;
-}
-
-.results-match-number {
-    color: #ff0000;
-    font-weight: bold;
-    font-size: 0.8em;
-}
-
-.results-round-name {
-    color: #fff;
+.results-winner .results-participant-name {
     font-weight: 500;
-    font-size: 0.8em;
-}
-
-.results-bracket-type {
-    color: #666;
-    font-size: 0.7em;
-    background: transparent;
-    padding: 1px 4px;
-    border: 1px solid #333;
-    border-radius: 2px;
-}
-
-.results-match-result {
-    margin-top: 6px;
-}
-
-.results-participants {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.results-participant {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 100px;
-}
-
-.results-participant.results-winner {
-    color: #fff;
-}
-
-.results-participant.results-loser {
-    color: #999;
-}
-
-.results-participant .results-participant-avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 1px solid #333;
-    margin-right: 0;
-}
-
-.results-participant .results-participant-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.results-participant-name {
-    font-size: 0.8em;
-    margin: 0;
 }
 
 .results-winner-badge {
-    font-size: 0.7em;
+    font-size: 1.2em;
+    margin-left: 4px;
 }
 
 .results-score {
-    background: transparent;
-    color: #ff0000;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-weight: bold;
-    font-family: monospace;
-    border: 1px solid #ff0000;
-    min-width: 40px;
-    text-align: center;
-    font-size: 0.85em;
-}
-
-.results-match-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    background: #222;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 1.1em;
+    border: 1px solid #333;
 }
 
 .results-match-details-link {
-    background: transparent;
-    border: 1px solid #ff0000;
     color: #ff0000;
-    padding: 4px 8px;
-    border-radius: 3px;
     text-decoration: none;
-    font-size: 0.75em;
+    font-size: 0.85em;
+    padding: 6px 12px;
+    border: 1px solid #ff0000;
+    border-radius: 4px;
     transition: all 0.2s ease;
-    white-space: nowrap;
 }
 
 .results-match-details-link:hover {
@@ -418,160 +384,41 @@
     color: #fff;
 }
 
-.results-match-date {
-    color: #666;
-    font-size: 0.7em;
-    white-space: nowrap;
-}
-
-/* =================================
-   АДАПТИВНОСТЬ
-   ================================= */
+/* === АДАПТИВНОСТЬ === */
 
 @media (max-width: 768px) {
     .results-tournament-results {
-        padding: 16px;
+        padding: 15px;
     }
     
     .results-section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 6px;
+        gap: 10px;
     }
     
-    .results-tournament-info,
-    .results-history-stats {
-        align-self: stretch;
-        justify-content: flex-start;
-    }
-    
-    .results-participant-card {
-        padding: 6px 10px;
-    }
-    
-    .results-participant-avatar {
-        width: 24px;
-        height: 24px;
-    }
-    
-    .results-participant-stats {
+    .results-winners-list {
         flex-direction: column;
-        gap: 2px;
+        align-items: center;
+        gap: 15px;
     }
     
-    .results-match-history-item {
+    .results-winner-card {
+        min-width: 200px;
+        order: unset !important;
+    }
+    
+    .results-match-result {
         flex-direction: column;
+        gap: 15px;
         align-items: stretch;
-        gap: 8px;
-        padding: 8px 10px;
-    }
-    
-    .results-match-header {
-        flex-wrap: wrap;
-        gap: 6px;
     }
     
     .results-participants {
-        flex-direction: column;
-        gap: 6px;
-        align-items: stretch;
-    }
-    
-    .results-participant {
-        justify-content: flex-start;
-        min-width: auto;
-    }
-    
-    .results-score {
-        align-self: center;
-        margin: 6px 0;
-    }
-    
-    .results-match-actions {
-        flex-direction: row;
         justify-content: space-between;
-        align-items: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .results-tournament-results {
-        padding: 12px;
-    }
-    
-    .results-section-header h3 {
-        font-size: 1.1em;
-    }
-    
-    .results-place-header {
-        padding: 6px 10px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-    }
-    
-    .results-participant-card {
-        padding: 6px 8px;
-    }
-    
-    .results-participant-avatar {
-        width: 22px;
-        height: 22px;
-    }
-    
-    .results-match-history-item {
-        padding: 8px;
-    }
-    
-    .results-match-header {
-        font-size: 0.75em;
-    }
-    
-    .results-participants .results-participant {
-        gap: 4px;
-    }
-    
-    .results-participant .results-participant-avatar {
-        width: 18px;
-        height: 18px;
     }
     
     .results-match-details-link {
-        padding: 3px 6px;
-        font-size: 0.7em;
-    }
-}
-
-/* =================================
-   ДОСТУПНОСТЬ
-   ================================= */
-
-@media (prefers-reduced-motion: reduce) {
-    .results-participant-card,
-    .results-match-history-item,
-    .results-match-details-link,
-    .results-participant-name a,
-    .results-member-link {
-        transition: none;
-    }
-}
-
-/* Высокий контраст */
-@media (prefers-contrast: high) {
-    .results-tournament-results {
-        border: 1px solid #fff;
-    }
-    
-    .results-section-header {
-        border-bottom-width: 2px;
-    }
-    
-    .results-standings-group,
-    .results-match-history-item {
-        border-width: 2px;
-    }
-    
-    .results-match-details-link {
-        border-width: 2px;
+        text-align: center;
     }
 }
