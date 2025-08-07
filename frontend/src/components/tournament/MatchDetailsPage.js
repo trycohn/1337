@@ -26,18 +26,10 @@ const MatchDetailsPage = () => {
         try {
             setLoading(true);
             
-            // Получаем данные матча и турнира
+            // Получаем данные матча и турнира (публичные роуты)
             const [matchResponse, tournamentResponse] = await Promise.all([
-                fetch(`/api/tournaments/${tournamentId}/matches/${matchId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                }),
-                fetch(`/api/tournaments/${tournamentId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                })
+                fetch(`/api/tournaments/${tournamentId}/match/${matchId}`),
+                fetch(`/api/tournaments/${tournamentId}`)
             ]);
 
             if (!matchResponse.ok || !tournamentResponse.ok) {
@@ -47,8 +39,9 @@ const MatchDetailsPage = () => {
             const matchData = await matchResponse.json();
             const tournamentData = await tournamentResponse.json();
             
-            setMatch(matchData);
-            setTournament(tournamentData);
+            // Новый публичный роут возвращает данные в поле data
+            setMatch(matchData.data || matchData);
+            setTournament(tournamentData.data || tournamentData);
         } catch (err) {
             console.error('Ошибка загрузки деталей матча:', err);
             setError(err.message);

@@ -26,6 +26,7 @@
 //
 
 const express = require('express');
+const pool = require('../../db');
 const { authenticateToken, verifyEmailRequired, verifyAdminOrCreator } = require('../../middleware/auth');
 const TournamentController = require('../../controllers/tournament/TournamentController');
 const ParticipantController = require('../../controllers/tournament/ParticipantController');
@@ -102,6 +103,110 @@ router.get('/:id/matches', MatchController.getMatches);
 
 // Получение конкретного матча
 router.get('/:id/matches/:matchId', MatchController.getMatch);
+
+// 🔗 Публичный роут для деталей матча (для шейринга)
+router.get('/:id/match/:matchId', async (req, res) => {
+    const { id: tournamentId, matchId } = req.params;
+    
+    console.log(`🔗 [Public Match Route] Запрос матча ${matchId} турнира ${tournamentId}`);
+    
+    try {
+        // Простой запрос без сложных JOIN'ов
+        const matchResult = await pool.query(`
+            SELECT 
+                m.*,
+                t.name as tournament_name,
+                t.game,
+                t.type as tournament_type
+            FROM matches m
+            JOIN tournaments t ON m.tournament_id = t.id
+            WHERE m.id = $1 AND m.tournament_id = $2
+        `, [parseInt(matchId), parseInt(tournamentId)]);
+        
+        if (matchResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Матч не найден'
+            });
+        }
+        
+        const match = matchResult.rows[0];
+        
+        // Получаем информацию об участниках отдельно
+        let team1 = null, team2 = null;
+        
+        if (match.team1_id) {
+            // Пробуем найти в командах
+            const team1Result = await pool.query(`
+                SELECT id, name, avatar_url, captain_id as user_id, 'team' as type
+                FROM tournament_teams 
+                WHERE id = $1
+            `, [match.team1_id]);
+            
+            if (team1Result.rows.length > 0) {
+                team1 = team1Result.rows[0];
+            } else {
+                // Пробуем найти в участниках
+                const participant1Result = await pool.query(`
+                    SELECT tp.id, COALESCE(u.username, tp.name) as name, u.avatar_url, u.id as user_id, 'individual' as type
+                    FROM tournament_participants tp
+                    LEFT JOIN users u ON tp.user_id = u.id
+                    WHERE tp.id = $1
+                `, [match.team1_id]);
+                
+                if (participant1Result.rows.length > 0) {
+                    team1 = participant1Result.rows[0];
+                }
+            }
+        }
+        
+        if (match.team2_id) {
+            // Пробуем найти в командах
+            const team2Result = await pool.query(`
+                SELECT id, name, avatar_url, captain_id as user_id, 'team' as type
+                FROM tournament_teams 
+                WHERE id = $1
+            `, [match.team2_id]);
+            
+            if (team2Result.rows.length > 0) {
+                team2 = team2Result.rows[0];
+            } else {
+                // Пробуем найти в участниках
+                const participant2Result = await pool.query(`
+                    SELECT tp.id, COALESCE(u.username, tp.name) as name, u.avatar_url, u.id as user_id, 'individual' as type
+                    FROM tournament_participants tp
+                    LEFT JOIN users u ON tp.user_id = u.id
+                    WHERE tp.id = $1
+                `, [match.team2_id]);
+                
+                if (participant2Result.rows.length > 0) {
+                    team2 = participant2Result.rows[0];
+                }
+            }
+        }
+        
+        // Добавляем информацию об участниках к матчу
+        match.team1 = team1;
+        match.team2 = team2;
+        match.team1_name = team1?.name || 'TBD';
+        match.team2_name = team2?.name || 'TBD';
+        
+        console.log(`✅ [Public Match Route] Матч найден: ${match.team1_name} vs ${match.team2_name}`);
+        
+        res.json({
+            success: true,
+            data: match
+        });
+        
+    } catch (error) {
+        console.error(`❌ [Public Match Route] Ошибка:`, error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка получения данных матча',
+            error: error.message
+        });
+    }
+});
 
 // Генерация изображения для шейринга матча
 router.get('/:id/match/:matchId/share-image', ShareController.generateMatchShareImage);
