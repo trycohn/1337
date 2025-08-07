@@ -1,4 +1,4 @@
-const asyncHandler = require('../../utils/tournament/asyncHandler');
+const { asyncHandler } = require('../../utils/asyncHandler');
 const MatchService = require('../../services/tournament/MatchService');
 const TournamentService = require('../../services/tournament/TournamentService');
 const fs = require('fs');
