@@ -138,13 +138,14 @@ router.get('/:id/match/:matchId', async (req, res) => {
         if (match.team1_id) {
             // Пробуем найти в командах
             const team1Result = await pool.query(`
-                SELECT id, name, avatar_url, captain_id as user_id, 'team' as type
+                SELECT id, name, creator_id as user_id, 'team' as type
                 FROM tournament_teams 
                 WHERE id = $1
             `, [match.team1_id]);
             
             if (team1Result.rows.length > 0) {
                 team1 = team1Result.rows[0];
+                team1.avatar_url = null; // У команд нет аватаров
             } else {
                 // Пробуем найти в участниках
                 const participant1Result = await pool.query(`
@@ -163,13 +164,14 @@ router.get('/:id/match/:matchId', async (req, res) => {
         if (match.team2_id) {
             // Пробуем найти в командах
             const team2Result = await pool.query(`
-                SELECT id, name, avatar_url, captain_id as user_id, 'team' as type
+                SELECT id, name, creator_id as user_id, 'team' as type
                 FROM tournament_teams 
                 WHERE id = $1
             `, [match.team2_id]);
             
             if (team2Result.rows.length > 0) {
                 team2 = team2Result.rows[0];
+                team2.avatar_url = null; // У команд нет аватаров
             } else {
                 // Пробуем найти в участниках
                 const participant2Result = await pool.query(`
