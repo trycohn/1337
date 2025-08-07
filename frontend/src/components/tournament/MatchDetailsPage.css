@@ -274,6 +274,7 @@
     overflow: hidden;
     transition: all 0.3s ease;
     cursor: pointer;
+    position: relative;
 }
 
 .map-card:hover {
@@ -283,7 +284,24 @@
 
 .map-card.map-played {
     border-color: #00ff00;
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+    background: linear-gradient(135deg, #000 0%, #001100 100%);
+}
+
+.map-card.map-played::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00ff00, transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .map-image-wrapper {
@@ -334,12 +352,28 @@
 }
 
 .map-score {
-    padding: 5px;
+    padding: 8px;
     text-align: center;
-    background: #000;
-    color: #00ff00;
+    background: linear-gradient(180deg, #111 0%, #000 100%);
+    color: #fff;
     font-weight: bold;
-    border-top: 1px solid #333;
+    border-top: 2px solid #00ff00;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.map-score .score-divider {
+    color: #666;
+    margin: 0 4px;
+}
+
+.map-score .winner-score {
+    color: #00ff00;
+    font-size: 18px;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
 }
 
 /* ========== PICK & BAN ========== */

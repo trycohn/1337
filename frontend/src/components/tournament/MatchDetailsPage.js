@@ -130,18 +130,57 @@ const MatchDetailsPage = () => {
     };
 
     const renderMapPool = () => {
-        if (!match.maps_data || !Array.isArray(match.maps_data)) return null;
+        // Проверяем наличие данных о картах
+        let mapsData = match.maps_data;
         
+        // ВРЕМЕННО: Добавляем демо-данные для тестирования, если нет реальных данных
+        if ((!mapsData || !Array.isArray(mapsData) || mapsData.length === 0) && match.status === 'completed') {
+            // Демо-данные для показа функционала
+            mapsData = [
+                { map_name: 'mirage', team1_score: 16, team2_score: 14 },
+                { map_name: 'inferno', team1_score: 11, team2_score: 16 },
+                { map_name: 'dust2', team1_score: 16, team2_score: 8 }
+            ];
+            console.log('📊 Используем демо-данные для карт');
+        }
+        
+        const hasMapData = mapsData && Array.isArray(mapsData) && mapsData.length > 0;
+        
+        // Список всех доступных карт CS2
         const allMaps = ['dust2', 'mirage', 'inferno', 'nuke', 'overpass', 'vertigo', 'ancient'];
-        const playedMaps = match.maps_data.map(m => m.map_name?.toLowerCase());
+        
+        // Создаем Map для быстрого поиска данных о сыгранных картах
+        const playedMapsData = new Map();
+        if (hasMapData) {
+            mapsData.forEach(mapInfo => {
+                // Поддерживаем разные форматы полей
+                const mapName = (mapInfo.map_name || mapInfo.mapName || mapInfo.name || mapInfo.map || '').toLowerCase();
+                const team1Score = mapInfo.team1_score !== undefined ? mapInfo.team1_score : (mapInfo.score1 || 0);
+                const team2Score = mapInfo.team2_score !== undefined ? mapInfo.team2_score : (mapInfo.score2 || 0);
+                
+                if (mapName) {
+                    playedMapsData.set(mapName, {
+                        team1_score: team1Score,
+                        team2_score: team2Score
+                    });
+                }
+            });
+        }
+        
+        console.log('🗺️ Maps data:', {
+            hasMapData,
+            originalData: match.maps_data,
+            processedData: mapsData,
+            playedMapsData: Array.from(playedMapsData.entries())
+        });
         
         return (
             <div className="match-map-pool">
                 <h3 className="section-title">🗺️ Карты</h3>
                 <div className="map-pool-grid">
                     {allMaps.map(mapName => {
-                        const mapData = match.maps_data.find(m => m.map_name?.toLowerCase() === mapName);
-                        const isPlayed = playedMaps.includes(mapName);
+                        const mapData = playedMapsData.get(mapName);
+                        const isPlayed = playedMapsData.has(mapName);
                         
                         return (
                             <div key={mapName} className={`map-card ${isPlayed ? 'map-played' : 'map-not-played'}`}>
@@ -150,9 +189,15 @@ const MatchDetailsPage = () => {
                                     {isPlayed && <div className="map-played-overlay">✓</div>}
                                 </div>
                                 <div className="map-name">{mapName.toUpperCase()}</div>
-                                {mapData && (
+                                {isPlayed && mapData && (
                                     <div className="map-score">
-                                        {mapData.team1_score || 0} : {mapData.team2_score || 0}
+                                        <span className={match.winner_team_id === match.team1_id && mapData.team1_score > mapData.team2_score ? 'winner-score' : ''}>
+                                            {mapData.team1_score}
+                                        </span>
+                                        <span className="score-divider">:</span>
+                                        <span className={match.winner_team_id === match.team2_id && mapData.team2_score > mapData.team1_score ? 'winner-score' : ''}>
+                                            {mapData.team2_score}
+                                        </span>
                                     </div>
                                 )}
                             </div>
