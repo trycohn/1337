@@ -17,7 +17,7 @@
 .roster-row{display:grid;grid-template-columns:120px 1fr 120px 120px;gap:12px;background:#000;border:1px solid #333;border-radius:6px;padding:10px}
 .teamprof-list{margin:0;padding-left:18px}
 .teamprof-news-placeholder{background:#000;border:1px dashed #333;border-radius:6px;padding:16px;color:#aaa}
-.teamprof-matches .tmr{display:grid;grid-template-columns:1fr 80px 40px;gap:12px;background:#000;border:1px solid #333;border-radius:6px;padding:8px;margin-bottom:8px}
+.teamprof-matches .tmr{display:grid;grid-template-columns:1fr 1fr 80px 40px;gap:12px;background:#000;border:1px solid #333;border-radius:6px;padding:8px;margin-bottom:8px}
 .teamprof-matches .tmr.win{border-color:#0f0}
 .teamprof-matches .tmr.loss{border-color:#f44}
 .no-rows{color:#666}

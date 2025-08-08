@@ -167,6 +167,7 @@ function TeamMatches({ teamId }) {
       {rows.map((m,i) => (
         <div key={i} className={`tmr ${m.result}`}>
           <div className="col tour"><a href={`/tournaments/${m.tournament_id}`} target="_blank" rel="noreferrer">{m.tournament_name}</a></div>
+          <div className="col opp">vs {m.opponent_name}</div>
           <div className="col score">{m.score}</div>
           <div className="col res">{m.result === 'win' ? 'W' : 'L'}</div>
         </div>
