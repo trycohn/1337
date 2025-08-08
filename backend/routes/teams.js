@@ -64,11 +64,11 @@ router.get('/:id', async (req, res) => {
         const matchesRes = await pool.query(`
             SELECT m.id, m.tournament_id, m.team1_id, m.team2_id, m.winner_team_id, m.score1, m.score2,
                    m.bracket_type, m.round, m.maps_data,
-                   t.name as tournament_name, m.created_at
+                   t.name as tournament_name
             FROM matches m
             JOIN tournaments t ON t.id = m.tournament_id
             WHERE m.team1_id = $1 OR m.team2_id = $1
-            ORDER BY m.created_at DESC
+            ORDER BY m.id DESC
             LIMIT 200
         `, [id]);
         const matches = matchesRes.rows || [];
@@ -125,12 +125,12 @@ router.get('/:id/matches', async (req, res) => {
         const id = parseInt(req.params.id);
         const limit = Math.min(parseInt(req.query.limit || '5'), 50);
         const rows = await pool.query(`
-            SELECT m.id, m.tournament_id, t.name as tournament_name, m.created_at,
+            SELECT m.id, m.tournament_id, t.name as tournament_name,
                    m.team1_id, m.team2_id, m.winner_team_id, m.score1, m.score2
             FROM matches m
             JOIN tournaments t ON t.id = m.tournament_id
             WHERE (m.team1_id = $1 OR m.team2_id = $1)
-            ORDER BY m.created_at DESC
+            ORDER BY m.id DESC
             LIMIT $2
         `, [id, limit]);
         const data = rows.rows.map(r => ({
