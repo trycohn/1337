@@ -7,6 +7,13 @@ const multer = require('multer');
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
+// Middleware для проверки роли администратора (объявляем до использования)
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора' });
+    }
+    next();
+}
 // =============================
 //  Глобальный дефолтный маппул
 // =============================
@@ -136,13 +143,7 @@ router.post('/upload/logo', authenticateToken, requireAdmin, upload.single('logo
 });
 
 
-// Middleware для проверки роли администратора
-const requireAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора' });
-    }
-    next();
-};
+// (объявление перенесено наверх)
 
 // Настройка транспорта nodemailer
 const transporter = nodemailer.createTransport({
