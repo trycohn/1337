@@ -10,4 +10,5 @@ function TournamentsPage() {
     );
 }
 
+
 export default TournamentsPage;
