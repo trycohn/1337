@@ -16,6 +16,11 @@ main section {
   text-align: center;
   padding: 20px;
 }
+/* Специфичный фикс для вложенной структуры main > .home-container > main */
+.home-container > main > .home-container > main {
+  width: auto;
+  max-width: none;
+}
 /* РЎС‚РёР»Рё РґР»СЏ header */
 header.header {
   width: 100%;
@@ -193,6 +198,16 @@ header.header {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: visible !important; /* Р”РѕР±Р°РІР»СЏРµРј РґР»СЏ РІРёРґРёРјРѕСЃС‚Рё РІС‹РїР°РґР°СЋС‰РёС… СЃРїРёСЃРєРѕРІ */
   position: relative; /* Р”Р»СЏ РїСЂР°РІРёР»СЊРЅРѕРіРѕ РїРѕР·РёС†РёРѕРЅРёСЂРѕРІР°РЅРёСЏ РґРѕС‡РµСЂРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
+  width: 80vw;      /* 80% видимой ширины окна */
+  max-width: 80vw;  /* не расширяемся больше 80vw */
+  margin: 0 auto;   /* центрируем контейнер */
+}
+
+@media (max-width: 768px) {
+  .tournaments-list {
+    width: 95vw;
+    max-width: 95vw;
+  }
 }
 .tournaments-list h2 {
   color: #ffffff;
