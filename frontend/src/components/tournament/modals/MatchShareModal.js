@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { useMatchDetailsModal } from '../../../hooks/useModalSystem';
 import '../../../styles/modal-system.css';
 import './MatchShareModal.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTelegram } from '@fortawesome/free-brands-svg-icons/faTelegram';
+import { faVk } from '@fortawesome/free-brands-svg-icons/faVk';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons/faDiscord';
 
 /**
  * 🔗 MatchShareModal - Модальное окно для шейринга результатов матча
@@ -180,7 +184,7 @@ const MatchShareModal = ({
                                 onClick={shareToTelegram}
                                 title="Поделиться в Telegram"
                             >
-                                <img className="share-social-icon" src="/images/icons/telegram-128px.png" alt="Telegram" />
+                                <FontAwesomeIcon icon={faTelegram} className="share-social-icon" />
                                 <span>Telegram</span>
                             </button>
                             
@@ -189,7 +193,7 @@ const MatchShareModal = ({
                                 onClick={shareToVK}
                                 title="Поделиться ВКонтакте"
                             >
-                                <img className="share-social-icon" src="/images/icons/vk-128px.png" alt="VK" />
+                                <FontAwesomeIcon icon={faVk} className="share-social-icon" />
                                 <span>ВКонтакте</span>
                             </button>
                             
@@ -198,7 +202,7 @@ const MatchShareModal = ({
                                 onClick={shareToDiscord}
                                 title="Скопировать для Discord"
                             >
-                                <img className="share-social-icon" src="/images/icons/discord-128px.png" alt="Discord" />
+                                <FontAwesomeIcon icon={faDiscord} className="share-social-icon" />
                                 <span>Discord</span>
                                 {copiedUrl === 'discord' && <span className="share-copied-indicator">Скопировано!</span>}
                             </button>

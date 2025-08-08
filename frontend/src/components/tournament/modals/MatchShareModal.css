@@ -125,12 +125,7 @@
     border-color: #5865f2;
 }
 
-.share-social-icon {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    margin-bottom: 4px;
-}
+.share-social-icon { font-size: 22px; margin-bottom: 4px; }
 
 .share-social-btn span {
     font-weight: 500;
