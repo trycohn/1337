@@ -20,6 +20,7 @@ import Messenger from './components/Messenger';
 import SocketTest from './components/SocketTest';
 import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
 import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Импортируем страницу деталей матча
+import TeamProfile from './components/tournament/TeamProfile';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -64,6 +65,7 @@ function App() {
                                 <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* Маршрут для восстановления пароля */}
                                 <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* Маршрут для сброса пароля */}
                                 <Route path="/profile" element={<PrivateRoute component={Profile} />} /> {/* Маршрут для своего профиля */}
+                                <Route path="/teams/:teamId" element={<TeamProfile />} />
                                 <Route path="/user/:userId" element={<PrivateRoute component={UserProfile} />} /> {/* Маршрут для просмотра профиля по ID */}
                                 <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
                                 <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}

@@ -5,6 +5,150 @@ const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+// Публичный профиль команды (турнирные команды + user_teams)
+router.get('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (!Number.isInteger(id)) return res.status(400).json({ success:false, error:'Некорректный id' });
+
+        // Пытаемся найти турнирную команду
+        const tt = await pool.query(`
+            SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id as manager_id
+            FROM tournament_teams tt WHERE tt.id = $1
+        `, [id]);
+
+        let team = null;
+        let teamType = null;
+        let manager = null;
+        let members = [];
+
+        if (tt.rows.length > 0) {
+            teamType = 'tournament';
+            team = tt.rows[0];
+            // Менеджер
+            const mres = await pool.query('SELECT id, username, avatar_url FROM users WHERE id = $1', [team.manager_id]);
+            manager = mres.rows[0] || null;
+            // Состав
+            const mem = await pool.query(`
+                SELECT u.id, u.username, u.avatar_url, u.faceit_elo,
+                       (ttm.is_captain = true) as is_captain
+                FROM tournament_team_members ttm
+                LEFT JOIN users u ON u.id = ttm.user_id
+                WHERE ttm.team_id = $1
+                ORDER BY (ttm.is_captain = true) DESC, u.username ASC
+            `, [id]);
+            members = mem.rows || [];
+        } else {
+            // Пытаемся найти постоянную команду
+            const ut = await pool.query(`
+                SELECT ut.id, ut.name, ut.captain_id as manager_id, ut.avatar_url
+                FROM user_teams ut WHERE ut.id = $1
+            `, [id]);
+            if (ut.rows.length === 0) return res.status(404).json({ success:false, error:'Команда не найдена' });
+            teamType = 'user';
+            team = ut.rows[0];
+            const mres = await pool.query('SELECT id, username, avatar_url FROM users WHERE id = $1', [team.manager_id]);
+            manager = mres.rows[0] || null;
+            const mem = await pool.query(`
+                SELECT u.id, u.username, u.avatar_url, u.faceit_elo,
+                       (utm.role = 'captain') as is_captain
+                FROM user_team_members utm
+                JOIN users u ON u.id = utm.user_id
+                WHERE utm.team_id = $1
+                ORDER BY (utm.role='captain') DESC, u.username ASC
+            `, [id]);
+            members = mem.rows || [];
+        }
+
+        // Матчи (последние 20) и винрейт
+        const matchesRes = await pool.query(`
+            SELECT m.id, m.tournament_id, m.team1_id, m.team2_id, m.winner_team_id, m.score1, m.score2,
+                   m.bracket_type, m.round, m.maps_data,
+                   t.name as tournament_name, m.created_at
+            FROM matches m
+            JOIN tournaments t ON t.id = m.tournament_id
+            WHERE m.team1_id = $1 OR m.team2_id = $1
+            ORDER BY m.created_at DESC
+            LIMIT 200
+        `, [id]);
+        const matches = matchesRes.rows || [];
+        const total = matches.length;
+        const wins = matches.filter(m => m.winner_team_id === id).length;
+        const winrate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+        // История турниров
+        const tournaments = Array.from(new Map(matches.map(m => [m.tournament_id, {
+            tournament_id: m.tournament_id,
+            name: m.tournament_name
+        }])).values());
+
+        // Достижения: призовые места (1-3)
+        const podium = await pool.query(`
+            SELECT t.id as tournament_id, t.name as tournament_name, t.start_date,
+                   CASE WHEN m.bracket_type IN ('grand_final','final') AND m.winner_team_id = $1 THEN 1
+                        WHEN m.bracket_type = 'placement' AND m.winner_team_id = $1 THEN 3
+                        ELSE NULL END as place
+            FROM tournaments t
+            JOIN matches m ON m.tournament_id = t.id
+            WHERE (m.team1_id = $1 OR m.team2_id = $1)
+              AND (m.bracket_type IN ('grand_final','final','placement'))
+        `, [id]);
+        const achievements = (podium.rows || [])
+            .filter(r => r.place)
+            .map(r => ({ place: r.place, tournament: r.tournament_name, date: r.start_date }));
+
+        res.json({
+            success: true,
+            data: {
+                id: team.id,
+                type: teamType,
+                name: team.name,
+                short_name: team.name,
+                logo_url: team.avatar_url || null,
+                manager,
+                roster: members,
+                stats: { total_matches: total, wins, losses: total - wins, winrate },
+                matches: matches.slice(0, 20),
+                tournaments,
+                achievements
+            }
+        });
+    } catch (e) {
+        console.error('Ошибка профиля команды:', e);
+        res.status(500).json({ success:false, error:'Внутренняя ошибка сервера' });
+    }
+});
+
+// Короткая история матчей для превью (используется на странице матча)
+router.get('/:id/matches', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const limit = Math.min(parseInt(req.query.limit || '5'), 50);
+        const rows = await pool.query(`
+            SELECT m.id, m.tournament_id, t.name as tournament_name, m.created_at,
+                   m.team1_id, m.team2_id, m.winner_team_id, m.score1, m.score2
+            FROM matches m
+            JOIN tournaments t ON t.id = m.tournament_id
+            WHERE (m.team1_id = $1 OR m.team2_id = $1)
+            ORDER BY m.created_at DESC
+            LIMIT $2
+        `, [id, limit]);
+        const data = rows.rows.map(r => ({
+            id: r.id,
+            tournament_id: r.tournament_id,
+            tournament_name: r.tournament_name,
+            score: `${r.score1 ?? 0}:${r.score2 ?? 0}`,
+            result: r.winner_team_id === id ? 'win' : 'loss',
+            opponent_id: r.team1_id === id ? r.team2_id : r.team1_id,
+            opponent_name: ''
+        }));
+        res.json({ success: true, data });
+    } catch (e) {
+        console.error('Ошибка получения истории команды:', e);
+        res.status(500).json({ success:false, error:'Ошибка сервера' });
+    }
+});
+
 
 // Настройка multer для загрузки аватаров команд
 const storage = multer.diskStorage({
@@ -643,3 +787,59 @@ router.get('/for-tournament/:tournamentId', authenticateToken, async (req, res) 
 });
 
 module.exports = router;
+ 
+// Статистика по картам для команды
+router.get('/:id/maps-stats', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        // Берем все матчи команды и вытягиваем maps_data
+        const rows = await pool.query(`
+            SELECT m.id, m.tournament_id, m.team1_id, m.team2_id, m.winner_team_id, m.maps_data
+            FROM matches m
+            WHERE m.team1_id = $1 OR m.team2_id = $1
+        `, [id]);
+        const stats = new Map();
+        const norm = (n) => String(n||'').toLowerCase().replace(/^de[_-]?/, '').trim();
+        for (const r of rows.rows) {
+            const list = Array.isArray(r.maps_data) ? r.maps_data : [];
+            for (const md of list) {
+                const key = norm(md.map_name || md.mapName || md.name || md.map);
+                if (!key) continue;
+                const team1Score = md.team1_score ?? md.score1 ?? 0;
+                const team2Score = md.team2_score ?? md.score2 ?? 0;
+                const weAreTeam1 = r.team1_id === id;
+                const our = weAreTeam1 ? team1Score : team2Score;
+                const opp = weAreTeam1 ? team2Score : team1Score;
+                const isWin = our > opp;
+                const cur = stats.get(key) || { key, total:0, wins:0, losses:0 };
+                cur.total += 1;
+                if (isWin) cur.wins += 1; else cur.losses += 1;
+                stats.set(key, cur);
+            }
+        }
+        // Подтягиваем display_name
+        const keys = Array.from(stats.keys());
+        let meta = new Map();
+        if (keys.length) {
+            const metaRes = await pool.query(`
+                SELECT lower(regexp_replace(name, '^de[_-]?', '')) AS key,
+                       COALESCE(display_name, name) AS display_name
+                FROM maps
+                WHERE lower(regexp_replace(name, '^de[_-]?', '')) = ANY($1)
+            `, [keys]);
+            meta = new Map(metaRes.rows.map(r => [r.key, r.display_name]));
+        }
+        const result = Array.from(stats.values()).map(s => ({
+            key: s.key,
+            display_name: meta.get(s.key) || s.key,
+            total: s.total,
+            wins: s.wins,
+            losses: s.losses,
+            winrate: s.total ? Math.round((s.wins / s.total) * 100) : 0
+        })).sort((a,b)=>b.total-a.total);
+        res.json({ success:true, data: result });
+    } catch (e) {
+        console.error('Ошибка карты-стат:', e);
+        res.status(500).json({ success:false, error:'Ошибка сервера' });
+    }
+});

@@ -1,0 +1,29 @@
+.teamprof-page{max-width:1200px;margin:0 auto;color:#fff;background:#000;padding:20px}
+.teamprof-header{display:flex;align-items:center;gap:20px;background:#111;border:1px solid #333;border-radius:8px;padding:20px}
+.teamprof-logo{width:100px;height:100px;border:2px solid #333;border-radius:8px;background:#000;display:flex;align-items:center;justify-content:center}
+.teamprof-logo img{width:96px;height:96px;object-fit:contain}
+.teamprof-logo-fallback{font-size:48px;color:#fff}
+.teamprof-title{flex:1}
+.teamprof-name{margin:0;font-size:28px}
+.teamprof-sub{color:#aaa}
+.teamprof-stats{display:flex;gap:16px}
+.teamprof-stat{background:#000;border:1px solid #333;border-radius:6px;padding:8px 12px}
+.teamprof-stat span{display:block;color:#aaa;font-size:12px}
+.teamprof-stat strong{display:block;font-size:18px}
+.teamprof-manager{margin:16px 0;color:#aaa}
+.teamprof-tabs{display:grid;grid-template-columns:1fr;gap:20px}
+.teamprof-section{background:#111;border:1px solid #333;border-radius:8px;padding:16px}
+.teamprof-roster{display:flex;flex-direction:column;gap:8px}
+.roster-row{display:grid;grid-template-columns:120px 1fr 120px 120px;gap:12px;background:#000;border:1px solid #333;border-radius:6px;padding:10px}
+.teamprof-list{margin:0;padding-left:18px}
+.teamprof-news-placeholder{background:#000;border:1px dashed #333;border-radius:6px;padding:16px;color:#aaa}
+.teamprof-matches .tmr{display:grid;grid-template-columns:1fr 80px 40px;gap:12px;background:#000;border:1px solid #333;border-radius:6px;padding:8px;margin-bottom:8px}
+.teamprof-matches .tmr.win{border-color:#0f0}
+.teamprof-matches .tmr.loss{border-color:#f44}
+.no-rows{color:#666}
+@media(max-width:768px){.roster-row{grid-template-columns:1fr 1fr}.teamprof-header{flex-direction:column;align-items:flex-start}}
+
+.maps-table{width:100%;border-collapse:collapse}
+.maps-table th,.maps-table td{border:1px solid #333;padding:8px;text-align:left}
+.maps-table th{background:#000;color:#fff}
+.maps-table td{background:#0a0a0a;color:#ddd}

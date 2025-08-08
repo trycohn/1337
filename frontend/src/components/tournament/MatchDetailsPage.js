@@ -237,6 +237,15 @@ const MatchDetailsPage = () => {
         );
     };
 
+    const openUserProfile = (userId, isAuthorizedUser) => {
+        if (userId) window.open(`/profile?userId=${userId}`, '_blank');
+        else if (!isAuthorizedUser) alert('Игрок был добавлен единоразова в рамках турнира и не проходил авторизацию');
+    };
+
+    const openTeamPage = (teamId) => {
+        if (teamId) window.open(`/teams/${teamId}`, '_blank');
+    };
+
     const renderTeamLineups = () => {
         if (!tournament?.teams && !tournament?.participants) return null;
         
@@ -249,7 +258,7 @@ const MatchDetailsPage = () => {
                 <div className="lineups-grid">
                     {/* Команда 1 */}
                     <div className="lineup-team">
-                        <div className="lineup-header">
+                        <div className="lineup-header" onClick={() => openTeamPage(match.team1_id)} style={{cursor:'pointer'}}>
                             <img src={getTeamLogo(team1Info)} alt={team1Info?.name} className="lineup-logo" />
                             <h4 className="lineup-team-name">{team1Info?.name || 'TBD'}</h4>
                         </div>
@@ -262,7 +271,13 @@ const MatchDetailsPage = () => {
                                             alt={player.name}
                                             className="player-avatar"
                                         />
-                                        <span className="player-name">{player.name}</span>
+                                        <span
+                                            className="player-name linklike"
+                                            onClick={() => openUserProfile(player.id, Boolean(player.id))}
+                                            title={player.id ? 'Открыть профиль' : 'Игрок был добавлен единоразова в рамках турнира и не проходил авторизацию'}
+                                        >
+                                            {player.name}
+                                        </span>
                                         {player.is_captain && <span className="captain-badge">C</span>}
                                     </div>
                                 ))
@@ -281,7 +296,7 @@ const MatchDetailsPage = () => {
 
                     {/* Команда 2 */}
                     <div className="lineup-team">
-                        <div className="lineup-header">
+                        <div className="lineup-header" onClick={() => openTeamPage(match.team2_id)} style={{cursor:'pointer'}}>
                             <img src={getTeamLogo(team2Info)} alt={team2Info?.name} className="lineup-logo" />
                             <h4 className="lineup-team-name">{team2Info?.name || 'TBD'}</h4>
                         </div>
@@ -294,7 +309,13 @@ const MatchDetailsPage = () => {
                                             alt={player.name}
                                             className="player-avatar"
                                         />
-                                        <span className="player-name">{player.name}</span>
+                                        <span
+                                            className="player-name linklike"
+                                            onClick={() => openUserProfile(player.id, Boolean(player.id))}
+                                            title={player.id ? 'Открыть профиль' : 'Игрок был добавлен единоразова в рамках турнира и не проходил авторизацию'}
+                                        >
+                                            {player.name}
+                                        </span>
                                         {player.is_captain && <span className="captain-badge">C</span>}
                                     </div>
                                 ))

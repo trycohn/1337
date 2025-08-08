@@ -487,6 +487,15 @@
     margin: 0;
 }
 
+.player-name.linklike {
+    color: #fff;
+    border-bottom: 1px dotted #ff0000;
+    cursor: pointer;
+}
+.player-name.linklike:hover {
+    color: #ff0000;
+}
+
 .lineup-players {
     display: flex;
     flex-direction: column;
