@@ -33,7 +33,8 @@ export default function TeamProfile() {
   if (error) return <div className="teamprof-wrap">Ошибка: {error}</div>;
   if (!team) return <div className="teamprof-wrap">Команда не найдена</div>;
 
-  const logo = team.logo_url || (team.manager?.avatar_url) || null;
+  const captain = Array.isArray(team.roster) ? team.roster.find(m => m.is_captain) : null;
+  const logo = team.logo_url || (captain?.avatar_url) || null;
   const fallbackLetter = team.name?.[0]?.toUpperCase() || 'T';
 
   return (
