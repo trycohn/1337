@@ -3,6 +3,138 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
+const sharp = require('sharp');
+const fs = require('fs');
+const path = require('path');
+// =============================
+//  Глобальный дефолтный маппул
+// =============================
+
+// Получить текущий дефолтный маппул (для админов)
+router.get('/default-map-pool', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT map_name, display_order
+             FROM default_map_pool
+             ORDER BY display_order ASC, id ASC`
+        );
+        res.json({ success: true, maps: result.rows });
+    } catch (err) {
+        console.error('Ошибка получения дефолтного маппула:', err);
+        res.status(500).json({ success: false, error: 'Не удалось получить дефолтный маппул' });
+    }
+});
+
+// Обновить дефолтный маппул (замена всего набора)
+router.put('/default-map-pool', authenticateToken, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { maps } = req.body; // ожидаем массив строк в нужном порядке
+        if (!Array.isArray(maps) || maps.length === 0) {
+            return res.status(400).json({ success: false, error: 'Требуется непустой массив карт' });
+        }
+
+        await client.query('BEGIN');
+        await client.query('DELETE FROM default_map_pool');
+
+        let order = 1;
+        for (const raw of maps) {
+            const key = String(raw).toLowerCase().replace(/^de[_-]?/, '');
+            await client.query(
+                `INSERT INTO default_map_pool (map_name, display_order)
+                 VALUES ($1, $2)
+                 ON CONFLICT (map_name) DO UPDATE SET display_order = EXCLUDED.display_order`,
+                [key, order]
+            );
+            order += 1;
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Дефолтный маппул обновлён' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка обновления дефолтного маппула:', err);
+        res.status(500).json({ success: false, error: 'Не удалось обновить дефолтный маппул' });
+    } finally {
+        client.release();
+    }
+});
+
+// =============================
+//  Загрузка изображений карт
+// =============================
+
+const mapsImagesDir = path.join(__dirname, '../../frontend/public/images/maps');
+fs.mkdirSync(mapsImagesDir, { recursive: true });
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+    fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.mimetype)) return cb(new Error('Недопустимый тип файла'));
+        cb(null, true);
+    }
+});
+
+// Загрузка/обновление изображения карты (320x180, 16:9)
+router.post('/upload/map-image', authenticateToken, requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        const { mapKey } = req.body; // например: mirage, inferno, vertigo
+        if (!mapKey || !req.file) return res.status(400).json({ success: false, error: 'Нужны mapKey и image' });
+
+        const key = String(mapKey).toLowerCase().replace(/^de[_-]?/, '');
+        const outPath = path.join(mapsImagesDir, `${key}_logo.jpg`);
+
+        await sharp(req.file.buffer)
+            .resize(320, 180, { fit: 'cover' })
+            .jpeg({ quality: 85 })
+            .toFile(outPath);
+
+        return res.json({
+            success: true,
+            message: 'Изображение карты сохранено',
+            file: `/images/maps/${key}_logo.jpg`
+        });
+    } catch (e) {
+        console.error('Ошибка загрузки изображения карты:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось сохранить изображение' });
+    }
+});
+
+// =============================
+//  Загрузка логотипов (1000x1000)
+// =============================
+const logosDir = path.join(__dirname, '../uploads/logos');
+fs.mkdirSync(logosDir, { recursive: true });
+
+router.post('/upload/logo', authenticateToken, requireAdmin, upload.single('logo'), async (req, res) => {
+    try {
+        const { type = 'org', name = 'logo' } = req.body; // type: org/team/tournament
+        if (!req.file) return res.status(400).json({ success: false, error: 'Файл не загружен' });
+
+        const safeType = ['org', 'team', 'tournament'].includes(type) ? type : 'org';
+        const dir = path.join(logosDir, safeType);
+        fs.mkdirSync(dir, { recursive: true });
+
+        const slug = String(name).toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'logo';
+        const filename = `${slug}-${Date.now()}.jpg`;
+        const outPath = path.join(dir, filename);
+
+        await sharp(req.file.buffer)
+            .resize(1000, 1000, { fit: 'cover', position: 'centre' })
+            .jpeg({ quality: 90 })
+            .toFile(outPath);
+
+        const publicUrl = `/uploads/logos/${safeType}/${filename}`;
+        return res.json({ success: true, message: 'Логотип сохранен', url: publicUrl });
+    } catch (e) {
+        console.error('Ошибка загрузки логотипа:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось сохранить логотип' });
+    }
+});
+
 
 // Middleware для проверки роли администратора
 const requireAdmin = (req, res, next) => {

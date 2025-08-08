@@ -2,8 +2,94 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './AdminPanel.css';
+import './AdminPanel.css';
 import { ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext'; // Добавляем AuthContext
+
+function UploadMapImage() {
+    const [mapKey, setMapKey] = useState('mirage');
+    const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [msg, setMsg] = useState('');
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        if (!file) return;
+        try {
+            setLoading(true);
+            setMsg('');
+            const form = new FormData();
+            form.append('mapKey', mapKey);
+            form.append('image', file);
+            const res = await fetch('/api/admin/upload/map-image', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: form
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Ошибка');
+            setMsg(`Готово: ${data.file}`);
+        } catch (err) {
+            setMsg(`Ошибка: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+    return (
+        <form onSubmit={onSubmit} className="map-upload-form" style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+            <label>Карта:</label>
+            <input value={mapKey} onChange={(e)=>setMapKey(e.target.value)} className="map-input" placeholder="mirage" />
+            <input type="file" accept="image/*" onChange={(e)=>setFile(e.target.files[0]||null)} />
+            <button className="btn" disabled={loading || !file}>Загрузить (320x180)</button>
+            {msg && <span style={{color:'#aaa'}}>{msg}</span>}
+        </form>
+    );
+}
+
+function UploadLogo() {
+    const [type, setType] = useState('org');
+    const [name, setName] = useState('logo');
+    const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [msg, setMsg] = useState('');
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        if (!file) return;
+        try {
+            setLoading(true);
+            setMsg('');
+            const form = new FormData();
+            form.append('type', type);
+            form.append('name', name);
+            form.append('logo', file);
+            const res = await fetch('/api/admin/upload/logo', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: form
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Ошибка');
+            setMsg(`Готово: ${data.url}`);
+        } catch (err) {
+            setMsg(`Ошибка: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+    return (
+        <form onSubmit={onSubmit} className="logo-upload-form" style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', marginTop:8}}>
+            <label>Тип:</label>
+            <select value={type} onChange={(e)=>setType(e.target.value)} className="status-filter">
+                <option value="org">Организация</option>
+                <option value="team">Команда</option>
+                <option value="tournament">Турнир</option>
+            </select>
+            <input value={name} onChange={(e)=>setName(e.target.value)} className="map-input" placeholder="название для файла" />
+            <input type="file" accept="image/*" onChange={(e)=>setFile(e.target.files[0]||null)} />
+            <button className="btn" disabled={loading || !file}>Загрузить (1000x1000)</button>
+            {msg && <span style={{color:'#aaa'}}>{msg}</span>}
+        </form>
+    );
+}
 
 function AdminPanel() {
     const navigate = useNavigate();
@@ -13,6 +99,10 @@ function AdminPanel() {
     const [requests, setRequests] = useState([]);
     const [stats, setStats] = useState({});
     const [activeTab, setActiveTab] = useState('requests');
+    // Default Map Pool state
+    const [defaultMapPool, setDefaultMapPool] = useState([]);
+    const [mapPoolLoading, setMapPoolLoading] = useState(false);
+    const [mapPoolError, setMapPoolError] = useState(null);
     const [statusFilter, setStatusFilter] = useState('pending');
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -84,8 +174,76 @@ function AdminPanel() {
         if (user && user.role === 'admin') {
             fetchRequests();
             fetchStats();
+            fetchDefaultMapPool();
         }
     }, [user, fetchRequests, fetchStats]);
+
+    const fetchDefaultMapPool = useCallback(async () => {
+        try {
+            setMapPoolLoading(true);
+            setMapPoolError(null);
+            const res = await api.get('/api/admin/default-map-pool', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const maps = (res.data && res.data.maps) || [];
+            setDefaultMapPool(maps);
+        } catch (e) {
+            console.error('Ошибка загрузки дефолтного маппула:', e);
+            setMapPoolError('Не удалось загрузить дефолтный маппул');
+        } finally {
+            setMapPoolLoading(false);
+        }
+    }, []);
+
+    const moveMap = (index, dir) => {
+        setDefaultMapPool(prev => {
+            const arr = [...prev];
+            const ni = index + dir;
+            if (ni < 0 || ni >= arr.length) return arr;
+            const tmp = arr[index];
+            arr[index] = arr[ni];
+            arr[ni] = tmp;
+            return arr;
+        });
+    };
+
+    const removeMap = (index) => {
+        setDefaultMapPool(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const addMap = () => {
+        setDefaultMapPool(prev => [...prev, { map_name: '', display_order: prev.length + 1 }]);
+    };
+
+    const updateMapName = (index, value) => {
+        setDefaultMapPool(prev => prev.map((m, i) => i === index ? { ...m, map_name: value } : m));
+    };
+
+    const saveDefaultMapPool = async () => {
+        try {
+            setMapPoolLoading(true);
+            setMapPoolError(null);
+            const maps = defaultMapPool
+                .map(m => (m.map_name || '').trim().toLowerCase())
+                .filter(Boolean)
+                .map(n => n.replace(/^de[_-]?/, ''));
+            if (maps.length === 0) {
+                setMapPoolError('Список карт не может быть пуст');
+                setMapPoolLoading(false);
+                return;
+            }
+            await api.put('/api/admin/default-map-pool', { maps }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            await fetchDefaultMapPool();
+            alert('Дефолтный маппул сохранён');
+        } catch (e) {
+            console.error('Ошибка сохранения маппула:', e);
+            setMapPoolError('Не удалось сохранить маппул');
+        } finally {
+            setMapPoolLoading(false);
+        }
+    };
 
     const fetchRequestDetails = async (requestId) => {
         try {
@@ -205,6 +363,12 @@ function AdminPanel() {
                 >
                     Заявки на организации
                 </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'mapPool' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('mapPool')}
+                >
+                    Карт-пул (дефолт)
+                </button>
             </div>
 
             {/* Содержимое вкладок */}
@@ -319,6 +483,44 @@ function AdminPanel() {
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'mapPool' && (
+                <div className="admin-map-pool">
+                    <h2>Глобальный карт-пул по умолчанию</h2>
+                    {mapPoolError && <div className="admin-error">{mapPoolError}</div>}
+                    {mapPoolLoading && <div className="admin-loading">Загрузка...</div>}
+                    <div className="map-pool-editor">
+                        <div className="map-pool-list">
+                            {defaultMapPool.map((m, idx) => (
+                                <div key={idx} className="map-pool-item">
+                                    <span className="order">{idx + 1}.</span>
+                                    <input
+                                        type="text"
+                                        placeholder="ancient / dust2 / inferno ..."
+                                        value={m.map_name}
+                                        onChange={(e) => updateMapName(idx, e.target.value)}
+                                        className="map-input"
+                                    />
+                                    <button onClick={() => moveMap(idx, -1)} className="btn-small">↑</button>
+                                    <button onClick={() => moveMap(idx, 1)} className="btn-small">↓</button>
+                                    <button onClick={() => removeMap(idx)} className="btn-small danger">✕</button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="map-pool-actions">
+                            <button onClick={addMap} className="btn">Добавить карту</button>
+                            <button onClick={saveDefaultMapPool} className="btn primary" disabled={mapPoolLoading}>Сохранить</button>
+                        </div>
+                        <div className="map-pool-hint">
+                            Разрешены ключи: ancient, dust2, inferno, mirage, nuke, overpass, vertigo, anubis, train
+                        </div>
+                        <hr style={{borderColor:'#333', margin:'16px 0'}} />
+                        <h3>Загрузка изображений</h3>
+                        <UploadMapImage />
+                        <UploadLogo />
+                    </div>
                 </div>
             )}
 

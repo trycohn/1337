@@ -225,6 +225,47 @@ router.get('/:id/match/:matchId', async (req, res) => {
             match.available_maps = [];
         }
 
+        // Если пул карт пуст, используем дефолтный маппул из таблицы default_map_pool
+        if (!match.available_map_details || match.available_map_details.length === 0) {
+            try {
+                const poolRes = await pool.query(`
+                    SELECT map_name AS key, display_order
+                    FROM default_map_pool
+                    ORDER BY display_order ASC, id ASC
+                `);
+                const fallbackKeys = (poolRes.rows || []).map(r => r.key);
+
+                // Получаем display_name и image_url из таблицы maps, если есть
+                const mapsMetaRes = await pool.query(
+                    `SELECT 
+                        lower(regexp_replace(name, '^de[_-]?', '')) AS key,
+                        COALESCE(display_name, name) AS display_name,
+                        image_url
+                     FROM maps
+                     WHERE lower(regexp_replace(name, '^de[_-]?', '')) = ANY($1)`,
+                    [fallbackKeys]
+                );
+                const metaByKey = new Map((mapsMetaRes.rows || []).map(r => [r.key, r]));
+
+                match.available_map_details = fallbackKeys.map((key, idx) => {
+                    const meta = metaByKey.get(key);
+                    const fallbackDisplay = (key === 'dust2' ? 'Dust II' : key.charAt(0).toUpperCase() + key.slice(1));
+                    return {
+                        order: idx + 1,
+                        name: key,
+                        key,
+                        display_name: (meta && meta.display_name) || fallbackDisplay,
+                        image_url: meta ? meta.image_url : null
+                    };
+                });
+                match.available_maps = fallbackKeys;
+            } catch (e) {
+                console.warn('⚠️ Ошибка подготовки дефолтного маппула:', e.message);
+                match.available_map_details = [];
+                match.available_maps = [];
+            }
+        }
+
         console.log(`✅ [Public Match Route] Матч найден: ${match.team1_name} vs ${match.team2_name}`);
         
         res.json({
