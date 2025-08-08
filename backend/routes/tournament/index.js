@@ -196,21 +196,32 @@ router.get('/:id/match/:matchId', async (req, res) => {
         // 🗺️ Добавляем согласованный маппул турнира (если задан при создании)
         try {
             const mapsRes = await pool.query(
-                `SELECT map_name, display_order
-                 FROM tournament_maps
-                 WHERE tournament_id = $1
-                 ORDER BY display_order ASC`,
+                `SELECT 
+                    tm.display_order,
+                    tm.map_name,
+                    lower(regexp_replace(tm.map_name, '^de[_-]?', '')) AS map_key_norm,
+                    COALESCE(m.display_name, tm.map_name) AS display_name,
+                    m.image_url
+                 FROM tournament_maps tm
+                 LEFT JOIN maps m
+                   ON lower(regexp_replace(m.name, '^de[_-]?', '')) = lower(regexp_replace(tm.map_name, '^de[_-]?', ''))
+                 WHERE tm.tournament_id = $1
+                 ORDER BY tm.display_order ASC, tm.id ASC`,
                 [parseInt(tournamentId)]
             );
 
-            if (mapsRes.rows && mapsRes.rows.length > 0) {
-                // Возвращаем как массив строк для простоты на фронтенде
-                match.available_maps = mapsRes.rows.map(r => r.map_name || r.map || r.name).filter(Boolean);
-            } else {
-                match.available_maps = [];
-            }
+            const details = (mapsRes.rows || []).map(r => ({
+                order: r.display_order,
+                name: r.map_name,
+                key: r.map_key_norm,
+                display_name: r.display_name,
+                image_url: r.image_url || null
+            }));
+            match.available_map_details = details;
+            match.available_maps = details.map(d => d.key);
         } catch (e) {
             console.warn('⚠️ Не удалось получить tournament_maps:', e.message);
+            match.available_map_details = [];
             match.available_maps = [];
         }
 
