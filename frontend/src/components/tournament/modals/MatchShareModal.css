@@ -126,7 +126,9 @@
 }
 
 .share-social-icon {
-    font-size: 1.5em;
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
     margin-bottom: 4px;
 }
 
@@ -269,8 +271,5 @@
         gap: 12px;
     }
     
-    .share-social-icon {
-        font-size: 1.2em;
-        margin-bottom: 0;
-    }
+    .share-social-icon { width: 18px; height: 18px; margin-bottom: 0; }
 }

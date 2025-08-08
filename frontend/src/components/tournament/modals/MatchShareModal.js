@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useMatchDetailsModal } from '../../../hooks/useModalSystem';
-import { ensureHttps } from '../../../utils/userHelpers';
 import '../../../styles/modal-system.css';
 import './MatchShareModal.css';
 
@@ -181,7 +180,7 @@ const MatchShareModal = ({
                                 onClick={shareToTelegram}
                                 title="Поделиться в Telegram"
                             >
-                                <div className="share-social-icon">📱</div>
+                                <img className="share-social-icon" src="/images/icons/telegram-128px.png" alt="Telegram" />
                                 <span>Telegram</span>
                             </button>
                             
@@ -190,7 +189,7 @@ const MatchShareModal = ({
                                 onClick={shareToVK}
                                 title="Поделиться ВКонтакте"
                             >
-                                <div className="share-social-icon">🌐</div>
+                                <img className="share-social-icon" src="/images/icons/vk-128px.png" alt="VK" />
                                 <span>ВКонтакте</span>
                             </button>
                             
@@ -199,7 +198,7 @@ const MatchShareModal = ({
                                 onClick={shareToDiscord}
                                 title="Скопировать для Discord"
                             >
-                                <div className="share-social-icon">💬</div>
+                                <img className="share-social-icon" src="/images/icons/discord-128px.png" alt="Discord" />
                                 <span>Discord</span>
                                 {copiedUrl === 'discord' && <span className="share-copied-indicator">Скопировано!</span>}
                             </button>
