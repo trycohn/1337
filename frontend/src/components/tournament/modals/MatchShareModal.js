@@ -3,9 +3,7 @@ import { useMatchDetailsModal } from '../../../hooks/useModalSystem';
 import '../../../styles/modal-system.css';
 import './MatchShareModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTelegram } from '@fortawesome/free-brands-svg-icons/faTelegram';
-import { faVk } from '@fortawesome/free-brands-svg-icons/faVk';
-import { faDiscord } from '@fortawesome/free-brands-svg-icons/faDiscord';
+import { faTelegram, faVk, faDiscord } from '@fortawesome/free-brands-svg-icons';
 
 /**
  * 🔗 MatchShareModal - Модальное окно для шейринга результатов матча
