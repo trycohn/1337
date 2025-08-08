@@ -129,10 +129,27 @@ const MatchDetailsPage = () => {
         });
     };
 
+    function normalizeMapName(raw) {
+        if (!raw) return '';
+        let name = String(raw).toLowerCase().trim();
+        name = name.replace(/^de[_\-\s]?/, ''); // убираем префикс de_
+        name = name.replace(/\s+/g, ' ').trim();
+        // Нормализация часто встречающихся вариантов
+        if (name.includes('dust')) return 'dust2';
+        if (name.includes('mirage')) return 'mirage';
+        if (name.includes('inferno')) return 'inferno';
+        if (name.includes('nuke')) return 'nuke';
+        if (name.includes('overpass')) return 'overpass';
+        if (name.includes('vertigo')) return 'vertigo';
+        if (name.includes('ancient')) return 'ancient';
+        if (name.includes('anubis')) return 'anubis';
+        return name.replace(/\s|\-/g, '');
+    }
+
     const renderMapPool = () => {
         // 1) Согласованный маппул турнира (приоритетный список для сетки)
         const agreedPool = Array.isArray(match.available_maps)
-            ? match.available_maps.map(m => (m || '').toLowerCase()).filter(Boolean)
+            ? match.available_maps.map(m => normalizeMapName(m)).filter(Boolean)
             : [];
 
         // 2) Сыгранные карты из результата матча
@@ -144,7 +161,7 @@ const MatchDetailsPage = () => {
         if (hasMapsDataRaw) {
             mapsDataRaw.forEach(mapInfo => {
                 // Поддерживаем разные форматы полей
-                const mapName = (mapInfo.map_name || mapInfo.mapName || mapInfo.name || mapInfo.map || '').toLowerCase();
+                const mapName = normalizeMapName(mapInfo.map_name || mapInfo.mapName || mapInfo.name || mapInfo.map || '');
                 const team1Score = mapInfo.team1_score !== undefined ? mapInfo.team1_score : (mapInfo.score1 || 0);
                 const team2Score = mapInfo.team2_score !== undefined ? mapInfo.team2_score : (mapInfo.score2 || 0);
                 
@@ -165,17 +182,18 @@ const MatchDetailsPage = () => {
             <div className="match-map-pool">
                 <h3 className="section-title">🗺️ Карты</h3>
                 <div className="map-pool-grid">
-                    {displayPool.map(mapName => {
-                        const mapData = playedMapsData.get(mapName);
-                        const isPlayed = playedMapsData.has(mapName);
+                    {displayPool.map(rawName => {
+                        const mapKey = normalizeMapName(rawName);
+                        const mapData = playedMapsData.get(mapKey);
+                        const isPlayed = playedMapsData.has(mapKey);
                         
                         return (
-                            <div key={mapName} className={`map-card ${isPlayed ? 'map-played' : 'map-not-played'}`}>
+                            <div key={mapKey} className={`map-card ${isPlayed ? 'map-played' : 'map-not-played'}`}>
                                 <div className="map-image-wrapper">
-                                    <img src={getMapImage(mapName)} alt={mapName} className="map-image" />
+                                    <img src={getMapImage(mapKey)} alt={mapKey} className="map-image" />
                                     {isPlayed && <div className="map-played-overlay">✓</div>}
                                 </div>
-                                <div className="map-name">{mapName.toUpperCase()}</div>
+                                <div className="map-name">{mapKey.toUpperCase()}</div>
                                 {isPlayed && mapData && (
                                     <div className="map-score">
                                         <span className={match.winner_team_id === match.team1_id && mapData.team1_score > mapData.team2_score ? 'winner-score' : ''}>
