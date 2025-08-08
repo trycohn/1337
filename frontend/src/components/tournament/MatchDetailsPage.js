@@ -130,29 +130,19 @@ const MatchDetailsPage = () => {
     };
 
     const renderMapPool = () => {
-        // Проверяем наличие данных о картах
-        let mapsData = match.maps_data;
-        
-        // ВРЕМЕННО: Добавляем демо-данные для тестирования, если нет реальных данных
-        if ((!mapsData || !Array.isArray(mapsData) || mapsData.length === 0) && match.status === 'completed') {
-            // Демо-данные для показа функционала
-            mapsData = [
-                { map_name: 'mirage', team1_score: 16, team2_score: 14 },
-                { map_name: 'inferno', team1_score: 11, team2_score: 16 },
-                { map_name: 'dust2', team1_score: 16, team2_score: 8 }
-            ];
-            console.log('📊 Используем демо-данные для карт');
-        }
-        
-        const hasMapData = mapsData && Array.isArray(mapsData) && mapsData.length > 0;
-        
-        // Список всех доступных карт CS2
-        const allMaps = ['dust2', 'mirage', 'inferno', 'nuke', 'overpass', 'vertigo', 'ancient'];
+        // 1) Согласованный маппул турнира (приоритетный список для сетки)
+        const agreedPool = Array.isArray(match.available_maps)
+            ? match.available_maps.map(m => (m || '').toLowerCase()).filter(Boolean)
+            : [];
+
+        // 2) Сыгранные карты из результата матча
+        const mapsDataRaw = match.maps_data;
+        const hasMapsDataRaw = Array.isArray(mapsDataRaw) && mapsDataRaw.length > 0;
         
         // Создаем Map для быстрого поиска данных о сыгранных картах
         const playedMapsData = new Map();
-        if (hasMapData) {
-            mapsData.forEach(mapInfo => {
+        if (hasMapsDataRaw) {
+            mapsDataRaw.forEach(mapInfo => {
                 // Поддерживаем разные форматы полей
                 const mapName = (mapInfo.map_name || mapInfo.mapName || mapInfo.name || mapInfo.map || '').toLowerCase();
                 const team1Score = mapInfo.team1_score !== undefined ? mapInfo.team1_score : (mapInfo.score1 || 0);
@@ -166,19 +156,16 @@ const MatchDetailsPage = () => {
                 }
             });
         }
-        
-        console.log('🗺️ Maps data:', {
-            hasMapData,
-            originalData: match.maps_data,
-            processedData: mapsData,
-            playedMapsData: Array.from(playedMapsData.entries())
-        });
+
+        // 3) Итоговый список карт для отображения: берем согласованный, иначе дефолтный пул CS2
+        const fallbackPool = ['dust2', 'mirage', 'inferno', 'nuke', 'overpass', 'vertigo', 'ancient'];
+        const displayPool = (agreedPool.length > 0 ? agreedPool : fallbackPool);
         
         return (
             <div className="match-map-pool">
                 <h3 className="section-title">🗺️ Карты</h3>
                 <div className="map-pool-grid">
-                    {allMaps.map(mapName => {
+                    {displayPool.map(mapName => {
                         const mapData = playedMapsData.get(mapName);
                         const isPlayed = playedMapsData.has(mapName);
                         

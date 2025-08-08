@@ -193,6 +193,27 @@ router.get('/:id/match/:matchId', async (req, res) => {
         match.team1_name = team1?.name || 'TBD';
         match.team2_name = team2?.name || 'TBD';
         
+        // 🗺️ Добавляем согласованный маппул турнира (если задан при создании)
+        try {
+            const mapsRes = await pool.query(
+                `SELECT map_name, display_order
+                 FROM tournament_maps
+                 WHERE tournament_id = $1
+                 ORDER BY display_order ASC`,
+                [parseInt(tournamentId)]
+            );
+
+            if (mapsRes.rows && mapsRes.rows.length > 0) {
+                // Возвращаем как массив строк для простоты на фронтенде
+                match.available_maps = mapsRes.rows.map(r => r.map_name || r.map || r.name).filter(Boolean);
+            } else {
+                match.available_maps = [];
+            }
+        } catch (e) {
+            console.warn('⚠️ Не удалось получить tournament_maps:', e.message);
+            match.available_maps = [];
+        }
+
         console.log(`✅ [Public Match Route] Матч найден: ${match.team1_name} vs ${match.team2_name}`);
         
         res.json({
