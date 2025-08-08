@@ -457,7 +457,9 @@ const MatchDetailsPage = () => {
 
                 <div className="match-main-header">
                     {/* Команда 1 */}
-                    <div className={`team-block team-left ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}>
+                    <div className={`team-block team-left ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}
+                         onClick={() => window.open(`/teams/${match.team1_id}`, '_blank')}
+                         style={{cursor:'pointer'}}>
                         <img 
                             src={getTeamLogo(team1Info)} 
                             alt={team1Info?.name}
@@ -483,7 +485,9 @@ const MatchDetailsPage = () => {
                     </div>
 
                     {/* Команда 2 */}
-                    <div className={`team-block team-right ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}>
+                    <div className={`team-block team-right ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}
+                         onClick={() => window.open(`/teams/${match.team2_id}`, '_blank')}
+                         style={{cursor:'pointer'}}>
                         <img 
                             src={getTeamLogo(team2Info)} 
                             alt={team2Info?.name}

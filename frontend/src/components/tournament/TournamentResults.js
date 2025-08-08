@@ -410,8 +410,9 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
                     </div>
                     
                     <button 
-                        onClick={() => openMatchDetails(match)}
+                        onClick={() => window.open(`/tournaments/${tournament.id}/match/${match.id}`, '_blank')}
                         className="results-match-details-link"
+                        title="Открыть страницу матча"
                     >
                         Подробнее →
                     </button>
