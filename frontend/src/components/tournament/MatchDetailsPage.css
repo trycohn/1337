@@ -489,7 +489,6 @@
 
 .player-name.linklike {
     color: #fff;
-    border-bottom: 1px dotted #ff0000;
     cursor: pointer;
 }
 .player-name.linklike:hover {
