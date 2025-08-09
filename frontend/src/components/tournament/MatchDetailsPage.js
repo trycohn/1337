@@ -238,7 +238,7 @@ const MatchDetailsPage = () => {
     };
 
     const openUserProfile = (userId, isAuthorizedUser) => {
-        if (userId) window.open(`/profile?userId=${userId}`, '_blank');
+        if (userId) window.open(`/user/${userId}`, '_blank');
         else if (!isAuthorizedUser) alert('Игрок был добавлен единоразова в рамках турнира и не проходил авторизацию');
     };
 
