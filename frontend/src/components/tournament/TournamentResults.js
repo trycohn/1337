@@ -290,16 +290,11 @@ function renderWinners(winners) {
                     <div className="results-winner-name">{winners.first.name}</div>
                     {winners.first.members && winners.first.members.length > 0 && (
                         <div className="results-team-members">
-                            {winners.first.members.slice(0, 3).map((member, index) => (
+                            {winners.first.members.map((member, index) => (
                                 <span key={index} className="results-member">
                                     {member.name}
                                 </span>
                             ))}
-                            {winners.first.members.length > 3 && (
-                                <span className="results-member-more">
-                                    +{winners.first.members.length - 3}
-                                </span>
-                            )}
                         </div>
                     )}
                 </div>
@@ -320,16 +315,11 @@ function renderWinners(winners) {
                     <div className="results-winner-name">{winners.second.name}</div>
                     {winners.second.members && winners.second.members.length > 0 && (
                         <div className="results-team-members">
-                            {winners.second.members.slice(0, 3).map((member, index) => (
+                            {winners.second.members.map((member, index) => (
                                 <span key={index} className="results-member">
                                     {member.name}
                                 </span>
                             ))}
-                            {winners.second.members.length > 3 && (
-                                <span className="results-member-more">
-                                    +{winners.second.members.length - 3}
-                                </span>
-                            )}
                         </div>
                     )}
                 </div>
@@ -349,20 +339,15 @@ function renderWinners(winners) {
                             />
                         </div>
                         <div className="results-winner-name">{winners.third.name}</div>
-                        {winners.third.members && winners.third.members.length > 0 && (
-                            <div className="results-team-members">
-                                {winners.third.members.slice(0, 3).map((member, index) => (
-                                    <span key={index} className="results-member">
-                                        {member.name}
-                                    </span>
-                                ))}
-                                {winners.third.members.length > 3 && (
-                                    <span className="results-member-more">
-                                        +{winners.third.members.length - 3}
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                    {winners.third.members && winners.third.members.length > 0 && (
+                        <div className="results-team-members">
+                            {winners.third.members.map((member, index) => (
+                                <span key={index} className="results-member">
+                                    {member.name}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                     </div>
                 </div>
             )}
