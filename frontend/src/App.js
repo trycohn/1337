@@ -66,7 +66,7 @@ function App() {
                                 <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* Маршрут для сброса пароля */}
                                 <Route path="/profile" element={<PrivateRoute component={Profile} />} /> {/* Маршрут для своего профиля */}
                                 <Route path="/teams/:teamId" element={<TeamProfile />} />
-                                <Route path="/user/:userId" element={<PrivateRoute component={UserProfile} />} /> {/* Маршрут для просмотра профиля по ID */}
+                                <Route path="/user/:userId" element={<UserProfile />} /> {/* Публичный профиль пользователя */}
                                 <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
                                 <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
                                 <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
