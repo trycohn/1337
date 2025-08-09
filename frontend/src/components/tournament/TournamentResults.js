@@ -278,7 +278,7 @@ function renderWinners(winners) {
             {/* 1-е место */}
             <div className="results-winner-card results-place-1">
                 <div className="results-place-medal">🥇</div>
-                <div className="results-place-number">1</div>
+                    {/* номер убран, есть медаль */}
                 <div className="results-winner-info">
                     <div className="results-winner-avatar">
                         <img 
@@ -308,7 +308,7 @@ function renderWinners(winners) {
             {/* 2-е место */}
             <div className="results-winner-card results-place-2">
                 <div className="results-place-medal">🥈</div>
-                <div className="results-place-number">2</div>
+                    {/* номер убран, есть медаль */}
                 <div className="results-winner-info">
                     <div className="results-winner-avatar">
                         <img 
@@ -339,7 +339,7 @@ function renderWinners(winners) {
             {winners.third && (
                 <div className="results-winner-card results-place-3">
                     <div className="results-place-medal">🥉</div>
-                    <div className="results-place-number">3</div>
+                    {/* номер убран, есть медаль */}
                     <div className="results-winner-info">
                         <div className="results-winner-avatar">
                             <img 

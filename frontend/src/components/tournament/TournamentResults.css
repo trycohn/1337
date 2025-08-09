@@ -122,7 +122,8 @@
     border: 1px solid #333;
     border-radius: 8px;
     padding: 20px 15px;
-    min-width: 180px;
+    min-width: 220px;
+    min-height: 220px;
     transition: transform 0.3s ease;
 }
 
@@ -241,6 +242,8 @@
     flex-direction: column;
     gap: 4px;
     margin-top: 8px;
+    max-height: none;
+    overflow: visible;
 }
 
 .results-member {
@@ -252,14 +255,8 @@
     border: 1px solid #333;
 }
 
-.results-member-more {
-    background: #333;
-    color: #999;
-    padding: 3px 8px;
-    border-radius: 3px;
-    font-size: 0.75em;
-    text-align: center;
-}
+/* показываем полный состав, индикатор +N не нужен */
+.results-member-more { display: none; }
 
 /* === ИСТОРИЯ МАТЧЕЙ === */
 
