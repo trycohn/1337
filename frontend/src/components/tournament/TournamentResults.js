@@ -3,6 +3,7 @@ import { getParticipantInfo, enrichMatchWithParticipantNames } from '../../utils
 import { ensureHttps } from '../../utils/userHelpers';
 import MatchDetailsModal from './modals/MatchDetailsModal';
 import './TournamentResults.css';
+import PodiumSection from './PodiumSection';
 
 const TournamentResults = ({ tournament }) => {
     // Состояние для модального окна деталей матча
@@ -24,7 +25,7 @@ const TournamentResults = ({ tournament }) => {
     // Используем ту же логику, что и подиум для определения мест
     const tournamentResults = useMemo(() => {
         if (!tournament?.matches || tournament.matches.length === 0) {
-            return { winners: null, completedMatches: [], hasResults: false };
+            return { completedMatches: [], hasResults: false };
         }
 
         const matches = tournament.matches;
@@ -89,16 +90,12 @@ const TournamentResults = ({ tournament }) => {
         }
 
         if (completedMatches.length === 0) {
-            return { winners: null, completedMatches: [], hasResults: false };
+            return { completedMatches: [], hasResults: false };
         }
 
-        // Определяем призеров (используем ту же логику что подиум)
-        const winners = calculateWinners(matches, tournament);
-        
-        return { 
-            winners, 
-            completedMatches: completedMatches.reverse(), // Последние матчи первыми
-            hasResults: true 
+        return {
+            completedMatches: completedMatches.reverse(),
+            hasResults: true
         };
     }, [tournament]);
 
@@ -132,7 +129,7 @@ const TournamentResults = ({ tournament }) => {
     return (
         <div className="results-tournament-results">
             {/* Блок 1: Призовые места (если турнир завершен и есть призеры) */}
-            {tournament.status === 'completed' && tournamentResults.winners && (
+            {tournament.status === 'completed' && (
                 <div className="results-winners-section">
                     <div className="results-section-header">
                         <h3>🏆 Призовые места</h3>
@@ -140,9 +137,8 @@ const TournamentResults = ({ tournament }) => {
                             <span className="results-format">{getFormatDisplayName(tournament.format || tournament.bracket_type)}</span>
                         </div>
                     </div>
-                    
                     <div className="results-podium">
-                        {renderWinners(tournamentResults.winners)}
+                        <PodiumSection tournament={tournament} matches={tournament.matches} />
                     </div>
                 </div>
             )}
