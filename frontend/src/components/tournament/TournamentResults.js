@@ -188,7 +188,7 @@ function calculateWinners(matches, tournament) {
         (match.round && parseInt(match.round) === Math.max(...matches.map(m => parseInt(m.round) || 0)))
     );
 
-    // Находим матч за 3-е место
+    // Находим матч за 3-е место (SE) или вычисляем 3-е место для DE
     const thirdPlaceMatch = matches.find(match => 
         match.is_third_place_match === true ||
         match.bracket_type === 'placement'
@@ -214,10 +214,31 @@ function calculateWinners(matches, tournament) {
         : finalMatch.team1_id;
     const secondPlace = getParticipantInfo(secondPlaceId, tournament);
 
-    // Определяем 3-е место (если есть матч за 3-е место)
+    // Определяем 3-е место
     let thirdPlace = null;
     if (thirdPlaceMatch && thirdPlaceMatch.winner_team_id) {
+        // SE: победитель матча за 3-е место
         thirdPlace = getParticipantInfo(thirdPlaceMatch.winner_team_id, tournament);
+    } else {
+        // DE: проигравший финала лузеров
+        const losersFinal = matches.find(m => m.bracket_type === 'loser_final');
+        if (losersFinal && losersFinal.winner_team_id && (losersFinal.team1_id || losersFinal.team2_id)) {
+            const loserId = losersFinal.winner_team_id === losersFinal.team1_id ? losersFinal.team2_id : losersFinal.team1_id;
+            thirdPlace = getParticipantInfo(loserId, tournament);
+        } else {
+            // Fallback: последний раунд нижней сетки
+            const losersMatches = matches.filter(m => m.bracket_type === 'loser');
+            if (losersMatches.length > 0) {
+                const maxLosersRound = Math.max(...losersMatches.map(m => parseInt(m.round) || 0));
+                const lastLosersRoundMatch = losersMatches.find(m => (parseInt(m.round) || 0) === maxLosersRound && m.winner_team_id);
+                if (lastLosersRoundMatch) {
+                    const loserId = lastLosersRoundMatch.winner_team_id === lastLosersRoundMatch.team1_id 
+                        ? lastLosersRoundMatch.team2_id 
+                        : lastLosersRoundMatch.team1_id;
+                    thirdPlace = getParticipantInfo(loserId, tournament);
+                }
+            }
+        }
     }
 
     console.log('🏆 Призеры определены:', {
