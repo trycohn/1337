@@ -273,7 +273,7 @@ const MatchDetailsPage = () => {
                                         />
                                         <span
                                             className="player-name linklike"
-                                            onClick={() => openUserProfile(player.id, Boolean(player.id))}
+                                            onClick={() => openUserProfile(player.user_id || player.id, Boolean(player.user_id || player.id))}
                                             title={player.id ? 'Открыть профиль' : 'Игрок был добавлен единоразова в рамках турнира и не проходил авторизацию'}
                                         >
                                             {player.name}
@@ -311,7 +311,7 @@ const MatchDetailsPage = () => {
                                         />
                                         <span
                                             className="player-name linklike"
-                                            onClick={() => openUserProfile(player.id, Boolean(player.id))}
+                                            onClick={() => openUserProfile(player.user_id || player.id, Boolean(player.user_id || player.id))}
                                             title={player.id ? 'Открыть профиль' : 'Игрок был добавлен единоразова в рамках турнира и не проходил авторизацию'}
                                         >
                                             {player.name}
