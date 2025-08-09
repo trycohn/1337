@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { getParticipantInfo } from '../../utils/participantHelpers';
-import './PodiumSection.css';
+import { ensureHttps } from '../../utils/userHelpers';
+import './TournamentResults.css';
 
 /**
  * 🏆 PodiumSection - Подиум с призерами турнира
@@ -83,99 +84,61 @@ const PodiumSection = ({ tournament, matches }) => {
     }
 
     return (
-        <div className="podium-section">
-            <div className="podium-container">
-                <h2 className="podium-title">🏆 Призеры турнира</h2>
-                
-                <div className={`podium ${winners.third ? 'podium-three' : 'podium-two'}`}>
-                    {/* 2-е место */}
-                    {winners.second && (
-                        <div className="podium-place podium-second">
-                            <div className="podium-medal">🥈</div>
-                            <div className="podium-platform podium-platform-second">
-                                <div className="podium-number">2</div>
-                            </div>
-                            <div className="podium-info">
-                                <div className="podium-participant-name">
-                                    {winners.second.name}
-                                </div>
-                                {winners.second.members && winners.second.members.length > 0 && (
-                                    <div className="podium-team-members">
-                                        {winners.second.members.slice(0, 3).map((member, index) => (
-                                            <span key={index} className="podium-member">
-                                                {member.name}
-                                            </span>
-                                        ))}
-                                        {winners.second.members.length > 3 && (
-                                            <span className="podium-member-more">
-                                                +{winners.second.members.length - 3}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+        <div className="results-winners-list">
+            {winners.second && (
+                <div className="results-winner-card results-place-2">
+                    <div className="results-place-medal">🥈</div>
+                    <div className="results-winner-info">
+                        <div className="results-winner-avatar">
+                            <img src={ensureHttps(winners.second.avatar_url) || '/default-avatar.png'} alt={winners.second.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
                         </div>
-                    )}
-
-                    {/* 1-е место */}
-                    <div className="podium-place podium-first">
-                        <div className="podium-medal">🥇</div>
-                        <div className="podium-platform podium-platform-first">
-                            <div className="podium-number">1</div>
-                        </div>
-                        <div className="podium-info">
-                            <div className="podium-participant-name">
-                                {winners.first.name}
+                        <div className="results-winner-name">{winners.second.name}</div>
+                        {Array.isArray(winners.second.members) && winners.second.members.length > 0 && (
+                            <div className="results-team-members">
+                                {winners.second.members.map((m, i) => (
+                                    <span key={i} className="results-member">{m.name}</span>
+                                ))}
                             </div>
-                            {winners.first.members && winners.first.members.length > 0 && (
-                                <div className="podium-team-members">
-                                    {winners.first.members.slice(0, 3).map((member, index) => (
-                                        <span key={index} className="podium-member">
-                                            {member.name}
-                                        </span>
-                                    ))}
-                                    {winners.first.members.length > 3 && (
-                                        <span className="podium-member-more">
-                                            +{winners.first.members.length - 3}
-                                        </span>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
+                </div>
+            )}
 
-                    {/* 3-е место (если есть) */}
-                    {winners.third && (
-                        <div className="podium-place podium-third">
-                            <div className="podium-medal">🥉</div>
-                            <div className="podium-platform podium-platform-third">
-                                <div className="podium-number">3</div>
-                            </div>
-                            <div className="podium-info">
-                                <div className="podium-participant-name">
-                                    {winners.third.name}
-                                </div>
-                                {winners.third.members && winners.third.members.length > 0 && (
-                                    <div className="podium-team-members">
-                                        {winners.third.members.slice(0, 3).map((member, index) => (
-                                            <span key={index} className="podium-member">
-                                                {member.name}
-                                            </span>
-                                        ))}
-                                        {winners.third.members.length > 3 && (
-                                            <span className="podium-member-more">
-                                                +{winners.third.members.length - 3}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+            <div className="results-winner-card results-place-1">
+                <div className="results-place-medal">🥇</div>
+                <div className="results-winner-info">
+                    <div className="results-winner-avatar">
+                        <img src={ensureHttps(winners.first.avatar_url) || '/default-avatar.png'} alt={winners.first.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
+                    </div>
+                    <div className="results-winner-name">{winners.first.name}</div>
+                    {Array.isArray(winners.first.members) && winners.first.members.length > 0 && (
+                        <div className="results-team-members">
+                            {winners.first.members.map((m, i) => (
+                                <span key={i} className="results-member">{m.name}</span>
+                            ))}
                         </div>
                     )}
                 </div>
-
-                {/* Дополнительная информация */}
             </div>
+
+            {winners.third && (
+                <div className="results-winner-card results-place-3">
+                    <div className="results-place-medal">🥉</div>
+                    <div className="results-winner-info">
+                        <div className="results-winner-avatar">
+                            <img src={ensureHttps(winners.third.avatar_url) || '/default-avatar.png'} alt={winners.third.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
+                        </div>
+                        <div className="results-winner-name">{winners.third.name}</div>
+                        {Array.isArray(winners.third.members) && winners.third.members.length > 0 && (
+                            <div className="results-team-members">
+                                {winners.third.members.map((m, i) => (
+                                    <span key={i} className="results-member">{m.name}</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
