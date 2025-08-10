@@ -1116,6 +1116,8 @@ class TournamentService {
             // Получаем участников или команды в зависимости от типа турнира
             let participants = [];
             let teams = [];
+            // 🆕 Администраторы турнира
+            let admins = [];
 
             // 🆕 ОБНОВЛЕННАЯ ЛОГИКА: поддержка CS2 типов участников
             const isTeamTournament = ['team', 'cs2_classic_5v5', 'cs2_wingman_2v2'].includes(tournament.participant_type);
@@ -1130,6 +1132,8 @@ class TournamentService {
 
             // Получаем матчи
             const matches = await MatchRepository.getByTournamentId(tournamentId);
+            // Получаем администраторов
+            admins = await TournamentRepository.getAdmins(tournamentId);
 
             // Добавляем CS2-специфичную информацию
             const enhancedTournament = this._enhanceWithCS2Info(tournament);
@@ -1138,7 +1142,8 @@ class TournamentService {
                 ...enhancedTournament,
                 participants,
                 teams,
-                matches
+                matches,
+                admins
             };
 
         } catch (error) {
