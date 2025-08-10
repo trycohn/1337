@@ -1212,22 +1212,22 @@ router.get('/match-history', authenticateToken, async (req, res) => {
         const matchHistoryResult = await pool.query(`
             SELECT 
                 m.id,
-                m.created_at as date,
+                t.completed_at as date,
                 t.name as tournament_name,
                 t.id as tournament_id,
                 t.game as discipline,
                 m.score1,
                 m.score2,
                 CASE 
-                    WHEN m.winner_team_id = m.participant1_id THEN 
+                    WHEN m.winner_team_id = m.team1_id THEN 
                         CASE WHEN tp1.user_id = $1 OR EXISTS(
                             SELECT 1 FROM tournament_team_members ttm 
-                            WHERE ttm.team_id = m.participant1_id AND ttm.user_id = $1
+                            WHERE ttm.team_id = m.team1_id AND ttm.user_id = $1
                         ) THEN 'win' ELSE 'loss' END
-                    WHEN m.winner_team_id = m.participant2_id THEN 
+                    WHEN m.winner_team_id = m.team2_id THEN 
                         CASE WHEN tp2.user_id = $1 OR EXISTS(
                             SELECT 1 FROM tournament_team_members ttm 
-                            WHERE ttm.team_id = m.participant2_id AND ttm.user_id = $1
+                            WHERE ttm.team_id = m.team2_id AND ttm.user_id = $1
                         ) THEN 'win' ELSE 'loss' END
                     ELSE 'unknown'
                 END as result,
@@ -1240,16 +1240,16 @@ router.get('/match-history', authenticateToken, async (req, res) => {
                 CONCAT(COALESCE(m.score1, 0), ':', COALESCE(m.score2, 0)) as score
             FROM matches m
             JOIN tournaments t ON m.tournament_id = t.id
-            LEFT JOIN tournament_participants tp1 ON m.participant1_id = tp1.id
-            LEFT JOIN tournament_participants tp2 ON m.participant2_id = tp2.id
-            LEFT JOIN tournament_teams tt1 ON m.participant1_id = tt1.id
-            LEFT JOIN tournament_teams tt2 ON m.participant2_id = tt2.id
+            LEFT JOIN tournament_participants tp1 ON m.team1_id = tp1.id
+            LEFT JOIN tournament_participants tp2 ON m.team2_id = tp2.id
+            LEFT JOIN tournament_teams tt1 ON m.team1_id = tt1.id
+            LEFT JOIN tournament_teams tt2 ON m.team2_id = tt2.id
             LEFT JOIN tournament_team_members ttm1 ON tt1.id = ttm1.team_id
             LEFT JOIN tournament_team_members ttm2 ON tt2.id = ttm2.team_id
             WHERE 
                 (tp1.user_id = $1 OR tp2.user_id = $1 OR ttm1.user_id = $1 OR ttm2.user_id = $1)
                 AND m.winner_team_id IS NOT NULL
-            ORDER BY m.created_at DESC
+            ORDER BY m.id DESC
             LIMIT 100
         `, [req.user.id]);
 
