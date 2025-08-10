@@ -1267,15 +1267,15 @@ class TournamentService {
                 WITH recent AS (
                     SELECT t.*
                     FROM tournaments t
-                    WHERE t.status = 'completed' AND t.completed_at IS NOT NULL
-                    ORDER BY t.completed_at DESC
+                    WHERE t.status = 'completed'
+                    ORDER BY COALESCE(t.completed_at, t.end_date, t.updated_at, t.created_at) DESC, t.id DESC
                     LIMIT $1
                 ), winners AS (
                     SELECT 
                         r.id AS tournament_id,
                         r.name AS tournament_name,
                         r.game,
-                        r.completed_at AS date,
+                        COALESCE(r.completed_at, r.end_date, r.updated_at, r.created_at) AS date,
                         COALESCE(
                             (
                                 SELECT m.winner_team_id FROM matches m
@@ -1317,7 +1317,7 @@ class TournamentService {
                 LEFT JOIN tournament_teams tt ON tt.id = w.winner_ref_id
                 LEFT JOIN tournament_participants tp ON tp.id = w.winner_ref_id
                 LEFT JOIN users u ON u.id = tp.user_id
-                ORDER BY w.date DESC
+                ORDER BY w.date DESC NULLS LAST, w.tournament_id DESC
             `, [limit]);
 
             return result.rows;

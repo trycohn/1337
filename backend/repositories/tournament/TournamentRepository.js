@@ -94,10 +94,16 @@ class TournamentRepository {
      * Обновление статуса турнира
      */
     static async updateStatus(tournamentId, status) {
-        const result = await pool.query(
-            'UPDATE tournaments SET status = $1 WHERE id = $2 RETURNING *',
-            [status, tournamentId]
-        );
+        let sql = 'UPDATE tournaments SET status = $1';
+        const values = [status, tournamentId];
+
+        // Если ставим completed — фиксируем момент завершения
+        if (status === 'completed') {
+            sql += ', completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)';
+        }
+        sql += ' WHERE id = $2 RETURNING *';
+
+        const result = await pool.query(sql, values);
         return result.rows[0];
     }
 
