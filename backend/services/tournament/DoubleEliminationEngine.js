@@ -43,7 +43,7 @@ class DoubleEliminationEngine {
             this._validateInput(tournamentId, participants, options);
             
             // 2. Расчет математических параметров для double elimination
-            const bracketMath = this._calculateDoubleEliminationParams(participants.length);
+            let bracketMath = this._calculateDoubleEliminationParams(participants.length);
             
             console.log(`📊 Double Elimination параметры:`, {
                 participants: bracketMath.participants,
