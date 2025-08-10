@@ -1311,7 +1311,7 @@ class TournamentService {
                         WHEN u.id IS NOT NULL THEN u.id
                         ELSE NULL
                     END AS winner_id,
-                    '$' || COALESCE(t.prize_pool, 50000) AS prize
+                    ('$' || COALESCE(t.prize_pool, '50000')) AS prize
                 FROM winners w
                 JOIN tournaments t ON t.id = w.tournament_id
                 LEFT JOIN tournament_teams tt ON tt.id = w.winner_ref_id
