@@ -65,7 +65,22 @@ class DoubleEliminationEngine {
             
             console.log(`🎲 Распределение участников: тип ${seedingType}, количество ${seededParticipants.length}`);
             
-            // 4. Генерация структуры матчей
+            // 4. Коррекция параметров под Full Double Elimination
+            const isFullDE = options.fullDoubleElimination === true;
+            if (!isFullDE && bracketMath.hasGrandFinalReset) {
+                // Если reset-матч заложен в структуру, но отключен в опциях, корректируем ожидания
+                const adjustedGrandFinalMatches = Math.max(1, (bracketMath.grandFinalMatches || 2) - 1);
+                const adjustedTotalMatches = Math.max(0, (bracketMath.totalMatches || 0) - 1);
+                bracketMath = {
+                    ...bracketMath,
+                    hasGrandFinalReset: false,
+                    grandFinalMatches: adjustedGrandFinalMatches,
+                    totalMatches: adjustedTotalMatches
+                };
+                console.log(`🛠️ Коррекция параметров под FullDE=false: GF=${bracketMath.grandFinalMatches}, total=${bracketMath.totalMatches}`);
+            }
+
+            // 5. Генерация структуры матчей
             const matches = await this._generateMatches(
                 tournamentId,
                 seededParticipants,
@@ -73,7 +88,7 @@ class DoubleEliminationEngine {
                 options
             );
             
-            // 5. Финальная валидация
+            // 6. Финальная валидация
             const validationResult = this._validateGeneratedBracket(matches, bracketMath);
             if (!validationResult.isValid) {
                 throw new Error(`Валидация сетки не прошла: ${validationResult.errors.join(', ')}`);
@@ -890,7 +905,9 @@ class DoubleEliminationEngine {
         }
         
         // Проверка наличия всех типов bracket (🆕 включая специальные типы)
-        const requiredBracketTypes = ['winner', 'loser', 'grand_final', 'grand_final_reset'];
+        const requiredBracketTypes = bracketMath.hasGrandFinalReset
+            ? ['winner', 'loser', 'grand_final', 'grand_final_reset']
+            : ['winner', 'loser', 'grand_final'];
         requiredBracketTypes.forEach(type => {
             const matchesOfType = matches.filter(m => m.bracket_type === type);
             if (matchesOfType.length === 0) {
