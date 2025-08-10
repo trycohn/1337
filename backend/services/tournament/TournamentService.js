@@ -1264,32 +1264,60 @@ class TournamentService {
     static async getWinners(limit = 5) {
         try {
             const result = await pool.query(`
+                WITH recent AS (
+                    SELECT t.*
+                    FROM tournaments t
+                    WHERE t.status = 'completed' AND t.completed_at IS NOT NULL
+                    ORDER BY t.completed_at DESC
+                    LIMIT $1
+                ), winners AS (
+                    SELECT 
+                        r.id AS tournament_id,
+                        r.name AS tournament_name,
+                        r.game,
+                        r.completed_at AS date,
+                        COALESCE(
+                            (
+                                SELECT m.winner_team_id FROM matches m
+                                WHERE m.tournament_id = r.id
+                                  AND m.bracket_type = 'grand_final_reset'
+                                  AND m.winner_team_id IS NOT NULL
+                                ORDER BY m.id DESC LIMIT 1
+                            ),
+                            (
+                                SELECT m.winner_team_id FROM matches m
+                                WHERE m.tournament_id = r.id
+                                  AND m.bracket_type IN ('grand_final','final')
+                                  AND m.winner_team_id IS NOT NULL
+                                ORDER BY m.id DESC LIMIT 1
+                            ),
+                            (
+                                SELECT m.winner_team_id FROM matches m
+                                WHERE m.tournament_id = r.id
+                                  AND m.winner_team_id IS NOT NULL
+                                ORDER BY m.id DESC LIMIT 1
+                            )
+                        ) AS winner_ref_id
+                    FROM recent r
+                )
                 SELECT 
-                    t.id,
-                    t.name as tournament_name,
-                    t.game,
-                    t.completed_at as date,
+                    w.tournament_id AS id,
+                    w.tournament_name,
+                    w.game,
+                    w.date,
+                    COALESCE(tt.name, u.username, tp.name) AS winner_name,
                     CASE 
-                        WHEN t.tournament_type = 'team' THEN tt.name
-                        ELSE u.username
-                    END as winner_name,
-                    CASE 
-                        WHEN t.tournament_type = 'team' THEN tt.id
-                        ELSE tp.user_id
-                    END as winner_id,
-                    '$' || COALESCE(t.prize_pool, 50000) as prize
-                FROM tournaments t
-                LEFT JOIN tournament_participants tp ON tp.tournament_id = t.id AND tp.placement = 1
+                        WHEN tt.id IS NOT NULL THEN tt.id
+                        WHEN u.id IS NOT NULL THEN u.id
+                        ELSE NULL
+                    END AS winner_id,
+                    '$' || COALESCE(t.prize_pool, 50000) AS prize
+                FROM winners w
+                JOIN tournaments t ON t.id = w.tournament_id
+                LEFT JOIN tournament_teams tt ON tt.id = w.winner_ref_id
+                LEFT JOIN tournament_participants tp ON tp.id = w.winner_ref_id
                 LEFT JOIN users u ON u.id = tp.user_id
-                LEFT JOIN tournament_teams tt ON tt.tournament_id = t.id 
-                    AND EXISTS (
-                        SELECT 1 FROM tournament_team_members ttm 
-                        WHERE ttm.team_id = tt.id AND ttm.participant_id = tp.id
-                    )
-                WHERE t.status = 'completed' 
-                    AND t.completed_at IS NOT NULL
-                ORDER BY t.completed_at DESC
-                LIMIT $1
+                ORDER BY w.date DESC
             `, [limit]);
 
             return result.rows;
