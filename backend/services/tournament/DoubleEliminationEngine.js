@@ -532,7 +532,15 @@ class DoubleEliminationEngine {
             }
             losersByRound[match.round].push(match);
         });
-        
+        // Стабильная сортировка внутри раунда по match_number/id
+        Object.keys(losersByRound).forEach(r => {
+            losersByRound[r].sort((a, b) => {
+                const am = a.match_number || a.id;
+                const bm = b.match_number || b.id;
+                return am - bm;
+            });
+        });
+
         // Связываем соседние раунды в Losers Bracket
         const rounds = Object.keys(losersByRound).map(Number).sort((a, b) => a - b);
         console.log(`💔 Losers раунды: ${rounds.join(', ')}`);
@@ -546,29 +554,45 @@ class DoubleEliminationEngine {
             
             console.log(`🔗 Связывание Losers R${currentRound} (${currentMatches.length} матчей) → R${nextRound} (${nextMatches.length} матчей)`);
             
-            // Логика зависит от четности раунда
-            if (currentRound % 2 === 0) {
-                // Четные раунды: 1 к 1 продвижение
-                console.log(`  📋 Четный раунд R${currentRound}: связывание 1 к 1`);
-                for (let j = 0; j < currentMatches.length && j < nextMatches.length; j++) {
-                    await client.query(`
-                        UPDATE matches SET next_match_id = $1 WHERE id = $2
-                    `, [nextMatches[j].id, currentMatches[j].id]);
-                    
+            // Адаптивная логика маппинга по количеству матчей
+            const cur = currentMatches.length;
+            const nxt = nextMatches.length;
+
+            if (nxt === cur) {
+                // 1:1
+                console.log(`  📋 Маппинг 1→1 (количества совпадают)`);
+                for (let j = 0; j < cur; j++) {
+                    await client.query(`UPDATE matches SET next_match_id = $1 WHERE id = $2`, [nextMatches[j].id, currentMatches[j].id]);
                     console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${nextMatches[j].id}`);
                 }
-            } else {
-                // Нечетные раунды: 2 к 1 продвижение
-                console.log(`  📋 Нечетный раунд R${currentRound}: связывание 2 к 1`);
-                for (let j = 0; j < currentMatches.length; j++) {
-                    const nextMatchIndex = Math.floor(j / 2);
-                    if (nextMatches[nextMatchIndex]) {
-                        await client.query(`
-                            UPDATE matches SET next_match_id = $1 WHERE id = $2
-                        `, [nextMatches[nextMatchIndex].id, currentMatches[j].id]);
-                        
-                        console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${nextMatches[nextMatchIndex].id}`);
+            } else if (nxt * 2 === cur) {
+                // 2:1 (сжатие раунда)
+                console.log(`  📋 Маппинг 2→1 (сжатие: ${cur} → ${nxt})`);
+                for (let j = 0; j < cur; j++) {
+                    const idx = Math.floor(j / 2);
+                    await client.query(`UPDATE matches SET next_match_id = $1 WHERE id = $2`, [nextMatches[idx].id, currentMatches[j].id]);
+                    console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${nextMatches[idx].id}`);
+                }
+            } else if (nxt === cur * 2) {
+                // 1:2 (расщепление) — редко для LB, но поддержим
+                console.log(`  📋 Маппинг 1→2 (расширение: ${cur} → ${nxt})`);
+                for (let j = 0; j < cur; j++) {
+                    const idx1 = j * 2;
+                    const idx2 = j * 2 + 1;
+                    if (nextMatches[idx1]) {
+                        await client.query(`UPDATE matches SET next_match_id = $1 WHERE id = $2`, [nextMatches[idx1].id, currentMatches[j].id]);
+                        console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${nextMatches[idx1].id}`);
                     }
+                    // Вторую связь хранить негде (один next_match_id), поэтому ограничиваемся idx1
+                }
+            } else {
+                // Общий случай: пропорциональное сопоставление индексов
+                console.log(`  📋 Маппинг пропорциональный (${cur} → ${nxt})`);
+                for (let j = 0; j < cur; j++) {
+                    const idx = Math.floor((j / cur) * nxt);
+                    const target = nextMatches[Math.min(idx, nxt - 1)];
+                    await client.query(`UPDATE matches SET next_match_id = $1 WHERE id = $2`, [target.id, currentMatches[j].id]);
+                    console.log(`  🔗 Losers матч ${currentMatches[j].id} → матч ${target.id}`);
                 }
             }
         }
