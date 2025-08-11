@@ -1347,13 +1347,14 @@ class TournamentService {
             
             // Получаем все незавершенные матчи турнира
             const matchesResult = await client.query(`
-                SELECT id, round, match_number, team1_id, team2_id, 
-                       winner_team_id, next_match_id, loser_next_match_id, 
+                SELECT id, round, match_number, team1_id, team2_id,
+                       winner_team_id, next_match_id, loser_next_match_id,
                        bracket_type, status
-                FROM matches 
-                WHERE tournament_id = $1 
+                FROM matches
+                WHERE tournament_id = $1
                   AND winner_team_id IS NULL
                   AND status = 'pending'
+                  AND (team1_id IS NOT NULL OR team2_id IS NOT NULL) -- обрабатываем только матчи с реальным участником
                 ORDER BY round, match_number
             `, [tournamentId]);
             
@@ -1397,24 +1398,9 @@ class TournamentService {
                     stats.singleBYEMatches++;
                     
                 } else if (isDoubleBYE) {
-                    // Матч BYE vs BYE - передаем BYE дальше
-                    console.log(`🔄 [BYE] Матч ${match.match_number}: BYE vs BYE - передаем BYE в следующий матч`);
-                    
-                    // Завершаем матч как BYE
-                    await client.query(`
-                        UPDATE matches 
-                        SET winner_team_id = NULL, score1 = 0, score2 = 0, 
-                            status = 'completed'
-                        WHERE id = $1
-                    `, [id]);
-                    
-                    // В следующий матч передаем NULL (BYE)
-                    if (next_match_id) {
-                        await this._advanceBYEToNextMatch(client, next_match_id);
-                    }
-                    
+                    // Больше не завершаем пустые placeholder-матчи (оба слота NULL)
+                    // Пропускаем их, чтобы нижняя сетка оставалась ожидающей входящих участников
                     stats.doubleBYEMatches++;
-                    
                 } else {
                     // Обычный матч с двумя реальными участниками
                     stats.regularMatches++;
