@@ -9,8 +9,14 @@
 main {
   margin: 0 auto;
   flex: 1;
-  max-width: 80%; /* РћРіСЂР°РЅРёС‡РёРІР°РµРј С€РёСЂРёРЅСѓ РґРѕ 80% РѕС‚ РІРёРґРёРјРѕРіРѕ РѕРєРЅР° */
-  width: 80%; /* РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј С€РёСЂРёРЅСѓ РІ 80% */
+  max-width: 80%;
+  width: 80%;
+}
+/* Специальный режим для страницы шеринга сетки: убираем ограничения */
+.fullwidth-page {
+  margin: 0;
+  max-width: none !important;
+  width: 100% !important;
 }
 main section {
   text-align: center;

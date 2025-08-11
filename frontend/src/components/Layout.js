@@ -358,9 +358,19 @@ function Layout() {
                     </div>
                 </header>
 
-            <main className={isMobile && location.pathname === '/messages' ? 'messenger-page' : ''}>
-                <Outlet />
-            </main>
+            {(() => {
+                const isMessengerPage = isMobile && location.pathname === '/messages';
+                const isBracketSharePage = /^\/tournaments\/[^/]+\/bracket$/.test(location.pathname);
+                const mainClass = [
+                    isMessengerPage ? 'messenger-page' : '',
+                    isBracketSharePage ? 'fullwidth-page' : ''
+                ].filter(Boolean).join(' ');
+                return (
+                    <main className={mainClass}>
+                        <Outlet />
+                    </main>
+                );
+            })()}
             {/* Компонент уведомления о лобби матча */}
             {user && socket && <MatchLobbyNotification socket={socket} user={user} />}
         </div>
