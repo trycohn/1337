@@ -628,18 +628,29 @@ class DoubleEliminationEngine {
         const winnersRounds = Object.keys(winnersByRound).map(Number).sort((a, b) => a - b);
         
         for (const winnersRound of winnersRounds) {
-            const winnersMatches = winnersByRound[winnersRound];
+            const winnersRoundMatches = winnersByRound[winnersRound]
+                .slice()
+                .sort((a, b) => (a.match_number || a.id) - (b.match_number || b.id));
             
             // Проигравшие из каждого раунда Winners идут в определенный раунд Losers
             const targetLosersRound = this._calculateTargetLosersRound(winnersRound, bracketMath);
-            const targetLosersMatches = losersByRound[targetLosersRound];
+            const targetLosersMatches = (losersByRound[targetLosersRound] || [])
+                .slice()
+                .sort((a, b) => (a.match_number || a.id) - (b.match_number || b.id));
             
-            console.log(`🎯 Winners R${winnersRound} (${winnersMatches.length} матчей) → Losers R${targetLosersRound} (${targetLosersMatches?.length || 0} матчей)`);
+            console.log(`🎯 Winners R${winnersRound} (${winnersRoundMatches.length} матчей) → Losers R${targetLosersRound} (${targetLosersMatches.length} матчей)`);
             
-            if (targetLosersMatches) {
-                for (let index = 0; index < winnersMatches.length; index++) {
-                    const winnerMatch = winnersMatches[index];
-                    const targetLoserMatch = targetLosersMatches[index] || targetLosersMatches[0];
+            if (targetLosersMatches.length > 0) {
+                const cur = winnersRoundMatches.length;
+                const nxt = targetLosersMatches.length;
+                const ratio = nxt > 0 ? cur / nxt : cur; // сколько winner-матчей на один loser-матч
+                
+                for (let index = 0; index < cur; index++) {
+                    const winnerMatch = winnersRoundMatches[index];
+                    // распределяем парами/блоками: [0..ratio-1] -> 0, [ratio..2*ratio-1] -> 1, ...
+                    let targetIndex = Math.floor(index / Math.max(1, Math.floor(ratio)));
+                    if (targetIndex >= nxt) targetIndex = nxt - 1;
+                    const targetLoserMatch = targetLosersMatches[targetIndex];
                     
                     await client.query(`
                         UPDATE matches SET loser_next_match_id = $1 WHERE id = $2
