@@ -306,6 +306,14 @@ class MatchService {
                 matchWasUpdated = true;
             }
 
+            // 2.1. 🆕 Принудительное завершение BYE vs BYE и матчей без winner: статус -> completed
+            const shouldSoftComplete = (!winnerId) && (!matchData.team1_id && !matchData.team2_id);
+            if ((winnerId || shouldSoftComplete) && matchData.status !== 'completed') {
+                console.log(`📝 [safeUpdateMatchResult] Устанавливаем статус 'completed' (winnerId=${winnerId || 'null'}, BYEvsBYE=${shouldSoftComplete})`);
+                await client.query('UPDATE matches SET status = $1 WHERE id = $2', ['completed', matchId]);
+                matchWasUpdated = true;
+            }
+
             // 3. Продвижение команд (выполняется ВСЕГДА если есть winner_team_id)
             let advancementResults = [];
             
