@@ -31,16 +31,18 @@
     -ms-user-drag: none;
 }
 .bracket-renderer-container.bracket-readonly {
-    /* В режиме превью/шейринга отключаем drag-курсор и границы */
+    /* В режиме отдельной страницы: снимаем любые ограничения контейнера */
     cursor: default;
     border: none;
     height: auto;
     min-height: 0;
+    overflow: visible;
 }
 
 .bracket-renderer.bracket-renderer-static {
     position: static;
     width: auto;
+    height: auto;
     min-width: 0;
     min-height: 0;
     padding: 20px;

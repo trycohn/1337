@@ -297,15 +297,15 @@ const BracketRenderer = ({
         // Рендер Double Elimination с четким разделением сеток
         return (
             <div 
-                className={`bracket-renderer-container bracket-double-elimination ${isDragging ? 'dragging' : ''}`}
+                className={`bracket-renderer-container bracket-double-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
             >
                 {renderNavigationPanel()}
                 
-            <div 
-                className="bracket-renderer"
-                ref={rendererRef}
-                {...effectiveHandlers}
-            >
+                <div 
+                    className={`bracket-renderer ${readOnly ? 'bracket-renderer-static' : ''}`}
+                    ref={rendererRef}
+                    {...effectiveHandlers}
+                >
                     {/* ===== UPPER BRACKET (WINNERS) ===== */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
                         <div className="bracket-render-upper-section">
@@ -381,12 +381,12 @@ const BracketRenderer = ({
     // Рендер Single Elimination
     return (
         <div 
-            className={`bracket-renderer-container bracket-single-elimination ${isDragging ? 'dragging' : ''}`}
+            className={`bracket-renderer-container bracket-single-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
         >
             {renderNavigationPanel()}
             
             <div 
-                className="bracket-renderer"
+                className={`bracket-renderer ${readOnly ? 'bracket-renderer-static' : ''}`}
                 ref={rendererRef}
                 {...effectiveHandlers}
             >
