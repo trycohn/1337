@@ -802,7 +802,7 @@
 .bracket-winners-section,
 .bracket-losers-section,
 .bracket-grand-final-section {
-    width: 100%;
+    width: max-content; /* Растягиваемся по содержимому (число раундов) */
     margin-bottom: 50px;
     position: relative;
     padding: 30px;
@@ -811,6 +811,7 @@
     backdrop-filter: blur(10px);
     border: 2px solid transparent;
     background-clip: padding-box;
+    overflow: visible;
 }
 
 /* Специфические стили для каждой секции */
@@ -875,7 +876,7 @@
 
 /* Верхняя сетка (Winners Bracket) */
 .bracket-render-upper-section {
-    width: 100%;
+    width: max-content; /* под ширину количества колонок */
     margin-bottom: 40px;
     padding: 30px;
     border-radius: 15px;
@@ -888,7 +889,7 @@
 
 /* Нижняя сетка (Losers Bracket) */
 .bracket-render-lower-section {
-    width: 100%;
+    width: max-content;
     margin-bottom: 40px;
     padding: 30px;
     border-radius: 15px;
@@ -901,7 +902,7 @@
 
 /* Grand Final секция - обновляем старый класс */
 .bracket-grand-final-section {
-    width: 100%;
+    width: max-content;
     margin-bottom: 40px;
     padding: 30px;
     border-radius: 15px;
@@ -1083,6 +1084,7 @@
     padding: 20px !important;
     border-radius: 10px !important;
     position: relative !important;
+    width: max-content !important; /* ширина по содержимому раундов */
 }
 
 .bracket-render-winners-container {
