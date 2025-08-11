@@ -38,18 +38,7 @@ const BracketRenderer = ({
         canZoomIn,
         canZoomOut,
         handlers
-    } = readOnly ? {
-        isDragging: false,
-        zoomPercentage: 100,
-        zoomIn: () => {},
-        zoomOut: () => {},
-        resetAll: () => {},
-        centerView: () => {},
-        fitToScreen: () => {},
-        canZoomIn: false,
-        canZoomOut: false,
-        handlers: {}
-    } : useDragAndZoom({
+    } = useDragAndZoom({
         initialPosition: { x: 0, y: 0 },
         initialZoom: 1,
         minZoom: 0.3,
@@ -81,6 +70,8 @@ const BracketRenderer = ({
             console.log('🔍 Изменение масштаба:', data.zoom);
         }
     });
+
+    const effectiveHandlers = readOnly ? {} : handlers;
     
     // Получаем формат турнира
     const tournamentFormat = useMemo(() => {
@@ -310,11 +301,11 @@ const BracketRenderer = ({
             >
                 {renderNavigationPanel()}
                 
-                <div 
-                    className="bracket-renderer"
-                    ref={rendererRef}
-                    {...handlers}
-                >
+            <div 
+                className="bracket-renderer"
+                ref={rendererRef}
+                {...effectiveHandlers}
+            >
                     {/* ===== UPPER BRACKET (WINNERS) ===== */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
                         <div className="bracket-render-upper-section">
@@ -397,7 +388,7 @@ const BracketRenderer = ({
             <div 
                 className="bracket-renderer"
                 ref={rendererRef}
-                {...handlers}
+                {...effectiveHandlers}
             >
                 <div className="bracket-rounds-container">
                     {Object.entries(groupedMatches)
