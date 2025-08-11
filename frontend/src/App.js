@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'; // Заменяем Home на HomePage
 import TournamentDetails from './components/TournamentDetails';
 import TournamentsPage from './pages/TournamentsPage';
 import Layout from './components/Layout'; // Импортируем Layout как корневой компонент
+import BracketSharePage from './pages/BracketSharePage';
 import Profile from './components/Profile'; // Добавляем импорт Profile
 import UserProfile from './components/UserProfile'; // Импортируем компонент UserProfile
 import OrganizerProfile from './components/OrganizerProfile'; // Импортируем компонент OrganizerProfile
@@ -58,6 +59,7 @@ function App() {
                                 <Route index element={<HomePage />} /> {/* Заменяем Home на HomePage */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
+                                <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />
                                 <Route path="/tournaments/:tournamentId/match/:matchId" element={<MatchDetailsPage />} />
                                 <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
                                 <Route path="/login" element={<AuthPage />} /> {/* Добавляем маршрут для входа */}

@@ -10,7 +10,18 @@ import useDragAndZoom from '../hooks/useDragAndZoom';
 formatManager.register(new SingleEliminationFormat());
 formatManager.register(new DoubleEliminationFormat());
 
-const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selectedMatch, setSelectedMatch, format, onMatchClick }) => {
+const BracketRenderer = ({ 
+    games, 
+    tournament, 
+    onEditMatch, 
+    canEditMatches, 
+    selectedMatch, 
+    setSelectedMatch, 
+    format, 
+    onMatchClick,
+    readOnly = false,
+    focusMatchId = null
+}) => {
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = useMemo(() => games || [], [games]);
     const rendererRef = useRef(null);
@@ -27,13 +38,24 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
         canZoomIn,
         canZoomOut,
         handlers
-    } = useDragAndZoom({
+    } = readOnly ? {
+        isDragging: false,
+        zoomPercentage: 100,
+        zoomIn: () => {},
+        zoomOut: () => {},
+        resetAll: () => {},
+        centerView: () => {},
+        fitToScreen: () => {},
+        canZoomIn: false,
+        canZoomOut: false,
+        handlers: {}
+    } : useDragAndZoom({
         initialPosition: { x: 0, y: 0 },
-        initialZoom: 0.6,
+        initialZoom: 1,
         minZoom: 0.3,
         maxZoom: 3,
         zoomStep: 0.05,
-        requireCtrl: true,
+        requireCtrl: false,
         excludeSelectors: [
             '.bracket-navigation-panel',
             '.bracket-nav-icon-button',
@@ -41,18 +63,21 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
             '.bracket-edit-match-btn'
         ],
         onDragStart: (data) => {
+            // eslint-disable-next-line no-console
             console.log('🎯 Начало перетаскивания:', data.position);
         },
         onDragMove: (data) => {
-            // Логируем только каждое 10-е перемещение для избежания спама
             if (data.event.timeStamp % 10 < 1) {
+                // eslint-disable-next-line no-console
                 console.log('📍 Перетаскивание:', data.position);
             }
         },
         onDragEnd: (data) => {
+            // eslint-disable-next-line no-console
             console.log('🎯 Конец перетаскивания:', data.position);
         },
         onZoomChange: (data) => {
+            // eslint-disable-next-line no-console
             console.log('🔍 Изменение масштаба:', data.zoom);
         }
     });
@@ -124,6 +149,8 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                         <div
                             key={match.id}
                             className="bracket-match-container"
+                            data-match-id={match.id}
+                            data-focused={focusMatchId && String(focusMatchId) === String(match.id) ? 'true' : 'false'}
                         >
                             <MatchCard
                                 match={match}
@@ -195,6 +222,8 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
                             key={match.id}
                             className="bracket-match-container"
                             data-match-type={match.bracket_type}
+                            data-match-id={match.id}
+                            data-focused={focusMatchId && String(focusMatchId) === String(match.id) ? 'true' : 'false'}
                         >
                             <MatchCard
                                 match={match}
@@ -214,53 +243,55 @@ const BracketRenderer = ({ games, tournament, onEditMatch, canEditMatches, selec
 
     // Рендер панели навигации
     const renderNavigationPanel = () => (
-        <div className="bracket-navigation-panel">
-            <button 
-                className="bracket-nav-icon-button"
-                onClick={zoomOut}
-                disabled={!canZoomOut}
-                title="Уменьшить масштаб"
-            >
-                <span className="bracket-nav-icon">−</span>
-            </button>
-            
-            <div className="bracket-zoom-display">
-                {zoomPercentage}%
+        readOnly ? null : (
+            <div className="bracket-navigation-panel">
+                <button 
+                    className="bracket-nav-icon-button"
+                    onClick={zoomOut}
+                    disabled={!canZoomOut}
+                    title="Уменьшить масштаб"
+                >
+                    <span className="bracket-nav-icon">−</span>
+                </button>
+
+                <button 
+                    className="bracket-nav-icon-button"
+                    onClick={zoomIn}
+                    disabled={!canZoomIn}
+                    title="Увеличить масштаб"
+                >
+                    <span className="bracket-nav-icon">+</span>
+                </button>
+
+                <button 
+                    className="bracket-nav-icon-button"
+                    onClick={resetAll}
+                    title="Восстановить"
+                >
+                    <span className="bracket-nav-icon">⌂</span>
+                </button>
+
+                <button 
+                    className="bracket-nav-icon-button"
+                    onClick={centerView}
+                    title="Центрировать"
+                >
+                    <span className="bracket-nav-icon">⊙</span>
+                </button>
+
+                <button 
+                    className="bracket-nav-icon-button"
+                    onClick={() => {
+                        const matchParam = focusMatchId ? String(focusMatchId) : (selectedMatch ? (typeof selectedMatch === 'object' ? selectedMatch.id : selectedMatch) : null);
+                        const url = `/tournaments/${tournament?.id}/bracket${matchParam ? `?match=${matchParam}` : ''}`;
+                        window.open(url, '_blank', 'noopener');
+                    }}
+                    title="Открыть в новой вкладке"
+                >
+                    <span className="bracket-nav-icon">↗</span>
+                </button>
             </div>
-            
-            <button 
-                className="bracket-nav-icon-button"
-                onClick={zoomIn}
-                disabled={!canZoomIn}
-                title="Увеличить масштаб"
-            >
-                <span className="bracket-nav-icon">+</span>
-            </button>
-            
-            <button 
-                className="bracket-nav-icon-button"
-                onClick={resetAll}
-                title="Сбросить позицию и масштаб"
-            >
-                <span className="bracket-nav-icon">⌂</span>
-            </button>
-            
-            <button 
-                className="bracket-nav-icon-button"
-                onClick={centerView}
-                title="Центрировать сетку"
-            >
-                <span className="bracket-nav-icon">⊙</span>
-            </button>
-            
-            <button 
-                className="bracket-nav-icon-button"
-                onClick={fitToScreen}
-                title="Уместить сетку на экран"
-            >
-                <span className="bracket-nav-icon">⌑</span>
-            </button>
-        </div>
+        )
     );
 
     // Основной рендер с поддержкой разных форматов

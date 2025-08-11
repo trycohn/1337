@@ -30,6 +30,28 @@
     -moz-user-drag: none;
     -ms-user-drag: none;
 }
+.bracket-renderer-container.bracket-readonly {
+    /* В режиме превью/шейринга отключаем drag-курсор и границы */
+    cursor: default;
+    border: none;
+    height: auto;
+    min-height: 0;
+}
+
+.bracket-renderer.bracket-renderer-static {
+    position: static;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 20px;
+}
+
+/* Подсветка сфокусированного матча (по ссылке) */
+.bracket-match-container[data-focused="true"] .bracket-match-card {
+    outline: 2px solid #ff0000;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+}
+
 
 .bracket-renderer-container:active {
     cursor: grabbing;
