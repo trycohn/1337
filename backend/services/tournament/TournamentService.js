@@ -1410,12 +1410,63 @@ class TournamentService {
             await client.query('COMMIT');
             console.log(`✅ [_autoCompleteBYEMatches] Завершено:`, stats);
             
-            return stats;
+            // 🆕 Этап 2: автозавершение BYE vs BYE в лузерах, когда все входящие матчи закрыты
+            const secondStage = await this._autoCompleteLosersDoubleBYEPlaceholders(tournamentId);
+            console.log(`✅ [_autoCompleteBYEMatches] Этап 2 (лузеры BYE vs BYE):`, secondStage);
+            
+            return { ...stats, secondStage };
             
         } catch (error) {
             await client.query('ROLLBACK');
             console.error(`❌ [_autoCompleteBYEMatches] Ошибка:`, error);
             throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * 🆕 ЭТАП 2: Автозавершение матчей BYE vs BYE в нижней сетке,
+     * когда все связанные (входящие) матчи уже завершены
+     */
+    static async _autoCompleteLosersDoubleBYEPlaceholders(tournamentId) {
+        const pool = require('../../db');
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            // Выбираем матчи лузеров без участников, ожидающие, для которых нет незавершенных входящих матчей
+            const selectRes = await client.query(`
+                SELECT m.id
+                FROM matches m
+                WHERE m.tournament_id = $1
+                  AND m.status = 'pending'
+                  AND m.team1_id IS NULL AND m.team2_id IS NULL
+                  AND m.bracket_type IN ('loser','loser_semifinal','loser_final')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM matches u
+                      WHERE u.tournament_id = m.tournament_id
+                        AND (u.loser_next_match_id = m.id OR u.next_match_id = m.id)
+                        AND u.status <> 'completed'
+                  )
+            `, [tournamentId]);
+
+            const ids = selectRes.rows.map(r => r.id);
+            let updated = 0;
+            if (ids.length) {
+                const updRes = await client.query(`
+                    UPDATE matches
+                    SET status = 'completed', score1 = 0, score2 = 0, maps_data = NULL
+                    WHERE id = ANY($1)
+                `, [ids]);
+                updated = updRes.rowCount;
+            }
+
+            await client.query('COMMIT');
+            return { placeholdersCompleted: updated, matchIds: ids };
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ [_autoCompleteLosersDoubleBYEPlaceholders] Ошибка:', error.message);
+            return { placeholdersCompleted: 0, error: error.message };
         } finally {
             client.release();
         }

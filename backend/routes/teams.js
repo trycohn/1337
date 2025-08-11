@@ -67,7 +67,8 @@ router.get('/:id', async (req, res) => {
                    t.name as tournament_name
             FROM matches m
             JOIN tournaments t ON t.id = m.tournament_id
-            WHERE m.team1_id = $1 OR m.team2_id = $1
+            WHERE (m.team1_id = $1 OR m.team2_id = $1)
+              AND m.team1_id IS NOT NULL AND m.team2_id IS NOT NULL -- исключаем матчи против BYE
             ORDER BY m.id DESC
             LIMIT 200
         `, [id]);
@@ -140,6 +141,7 @@ router.get('/:id/matches', async (req, res) => {
             LEFT JOIN tournament_participants tp2 ON m.team2_id = tp2.id
             LEFT JOIN users u2 ON tp2.user_id = u2.id
             WHERE (m.team1_id = $1 OR m.team2_id = $1)
+              AND m.team1_id IS NOT NULL AND m.team2_id IS NOT NULL -- исключаем матчи против BYE
             ORDER BY m.id DESC
             LIMIT $2
         `, [id, limit]);
