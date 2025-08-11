@@ -1,5 +1,5 @@
 // frontend/src/components/BracketRenderer.js
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
 import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
@@ -25,6 +25,11 @@ const BracketRenderer = ({
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = useMemo(() => games || [], [games]);
     const rendererRef = useRef(null);
+    const winnersSectionRef = useRef(null);
+    const losersSectionRef = useRef(null);
+    const grandFinalSectionRef = useRef(null);
+    const dividerRef = useRef(null);
+    const [equalSectionWidth, setEqualSectionWidth] = useState(null);
     
     // 🆕 СОВРЕМЕННАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ
     const {
@@ -84,6 +89,24 @@ const BracketRenderer = ({
         if (!matches || matches.length === 0) return {};
         return tournamentFormat.groupMatches(matches);
     }, [matches, tournamentFormat]);
+
+    // Вычисляем максимальную ширину секций Winners/Losers и применяем к обеим секциям, а также к разделителю и Grand Final
+    const measureSectionsWidth = useCallback(() => {
+        const winnersWidth = winnersSectionRef.current ? winnersSectionRef.current.scrollWidth : 0;
+        const losersWidth = losersSectionRef.current ? losersSectionRef.current.scrollWidth : 0;
+        const maxWidth = Math.max(winnersWidth, losersWidth);
+        if (maxWidth && maxWidth !== equalSectionWidth) setEqualSectionWidth(maxWidth);
+    }, [equalSectionWidth]);
+
+    useEffect(() => {
+        // Измеряем после рендера
+        const id = requestAnimationFrame(measureSectionsWidth);
+        window.addEventListener('resize', measureSectionsWidth);
+        return () => {
+            cancelAnimationFrame(id);
+            window.removeEventListener('resize', measureSectionsWidth);
+        };
+    }, [measureSectionsWidth, groupedMatches]);
     
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
@@ -308,7 +331,11 @@ const BracketRenderer = ({
                 >
                     {/* ===== UPPER BRACKET (WINNERS) ===== */}
                     {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
-                        <div className="bracket-render-upper-section">
+                        <div 
+                            className="bracket-render-upper-section"
+                            ref={winnersSectionRef}
+                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
+                        >
                             <div className="bracket-render-section-header">
                                 <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
                                 <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
@@ -329,7 +356,11 @@ const BracketRenderer = ({
                     {groupedMatches.winners && groupedMatches.losers && 
                      Object.keys(groupedMatches.winners).length > 0 && 
                      Object.keys(groupedMatches.losers).length > 0 && (
-                        <div className="bracket-render-horizontal-divider">
+                        <div 
+                            className="bracket-render-horizontal-divider"
+                            ref={dividerRef}
+                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
+                        >
                             <div className="bracket-render-divider-line"></div>
                             <div className="bracket-render-divider-text">
                                 <span className="bracket-render-divider-label">Переход в нижнюю сетку</span>
@@ -340,7 +371,11 @@ const BracketRenderer = ({
                     
                     {/* ===== LOWER BRACKET (LOSERS) ===== */}
                     {groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0 && (
-                        <div className="bracket-render-lower-section">
+                        <div 
+                            className="bracket-render-lower-section"
+                            ref={losersSectionRef}
+                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
+                        >
                             <div className="bracket-render-section-header">
                                 <div className="bracket-render-section-title bracket-render-losers-title">💀 Losers Bracket</div>
                                 <div className="bracket-render-section-subtitle bracket-render-losers-subtitle">Нижняя сетка на выбывание</div>
@@ -359,12 +394,16 @@ const BracketRenderer = ({
                     
                     {/* ===== GRAND FINAL SECTION ===== */}
                     {groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0 && (
-                        <div className="bracket-grand-final-section">
+                        <div 
+                            className="bracket-grand-final-section"
+                            ref={grandFinalSectionRef}
+                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
+                        >
                             <div className="bracket-render-section-header">
                                 <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
                                 <div className="bracket-render-section-subtitle bracket-render-grand-final-subtitle">Финальное противостояние</div>
                             </div>
-                            <div className="bracket-rounds-container bracket-render-grand-final-container">
+                            <div className="bracket-rounds-container bracket-render-grand-final-container" style={{ justifyContent: 'center' }}>
                                 {groupedMatches.grandFinal.map((match, index) => {
                                     const context = getRoundContext(1, [match], 'grand_final');
                                     const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Triumph' : 'Grand Final';
