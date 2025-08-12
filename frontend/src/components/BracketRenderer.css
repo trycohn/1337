@@ -555,7 +555,7 @@
     align-items: center;
     padding: 16px;
     gap: 8px;
-    background: rgba(0, 0, 0, 0.3);
+    background: #1D1D1D;
     transition: all 0.2s ease;
     height: 64px;
     border-bottom: 1px solid #333;
@@ -575,7 +575,7 @@
 }
 
 .bracket-participant.winner {
-    background: rgba(255, 0, 0, 0.04);
+    background: #1D1D1D;
     border-right: 8px solid #ff0000;
     border-top-right-radius: 8px;
     border-bottom-right-radius: 8px;
