@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import BracketRenderer from '../components/BracketRenderer';
 import BracketCompactView from '../components/BracketCompactView';
@@ -13,13 +13,14 @@ function useQuery() {
 
 function BracketSharePage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const query = useQuery();
   const focusMatchId = query.get('match');
   const viewMode = (query.get('view') || 'classic').toLowerCase();
   const { tournament, matches, loading, error } = useTournamentData(id);
 
   const buildUrl = (next = {}) => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     if (focusMatchId) params.set('match', focusMatchId);
     params.set('view', next.view || viewMode);
     const qs = params.toString();
@@ -128,8 +129,10 @@ function BracketSharePage() {
                   role="tab"
                   aria-selected={viewMode === 'classic'}
                   onClick={() => {
-                    const url = buildUrl({ view: 'classic' });
-                    window.history.replaceState(null, '', url);
+                    const params = new URLSearchParams(location.search);
+                    if (focusMatchId) params.set('match', focusMatchId);
+                    params.set('view', 'classic');
+                    navigate({ pathname: `/tournaments/${id}/bracket`, search: `?${params.toString()}` }, { replace: true });
                   }}
                   className={viewMode === 'classic' ? 'active' : ''}
                 >
@@ -139,8 +142,10 @@ function BracketSharePage() {
                   role="tab"
                   aria-selected={viewMode === 'compact'}
                   onClick={() => {
-                    const url = buildUrl({ view: 'compact' });
-                    window.history.replaceState(null, '', url);
+                    const params = new URLSearchParams(location.search);
+                    if (focusMatchId) params.set('match', focusMatchId);
+                    params.set('view', 'compact');
+                    navigate({ pathname: `/tournaments/${id}/bracket`, search: `?${params.toString()}` }, { replace: true });
                   }}
                   className={viewMode === 'compact' ? 'active' : ''}
                 >
