@@ -343,35 +343,33 @@ const BracketRenderer = ({
 
                         {(grandFinalMatches.length > 0 || (thirdPlaceMatches && thirdPlaceMatches.length > 0)) && (
                             <div className="bracket-side-finals-column">
-                                {/* ===== GRAND FINAL(S) ===== */}
-                                {grandFinalMatches.length > 0 && (
-                                    <div className="bracket-grand-final-section" ref={grandFinalSectionRef}>
-                                        <div className="bracket-render-section-header">
-                                            <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
-                                            <div className="bracket-render-section-subtitle bracket-render-grand-final-subtitle">Финальное противостояние</div>
+                                {/* Заголовок боковой колонки на одном уровне с Winners */}
+                                <div className="bracket-render-section-header">
+                                    <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
+                                </div>
+                                <div className="bracket-side-finals-content">
+                                    {/* GRAND FINAL(S) */}
+                                    {grandFinalMatches.length > 0 && (
+                                        <div className="bracket-grand-final-section" ref={grandFinalSectionRef}>
+                                            <div className="bracket-rounds-container bracket-render-grand-final-container" style={{ justifyContent: 'center' }}>
+                                                {grandFinalMatches.map((match) => {
+                                                    const context = getRoundContext(1, [match], 'grand_final');
+                                                    const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Triumph' : 'Grand Final';
+                                                    return renderDoubleEliminationRound(1, [match], 'grand_final', roundName, context);
+                                                })}
+                                            </div>
                                         </div>
-                                        <div className="bracket-rounds-container bracket-render-grand-final-container" style={{ justifyContent: 'center' }}>
-                                            {grandFinalMatches.map((match) => {
-                                                const context = getRoundContext(1, [match], 'grand_final');
-                                                const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Triumph' : 'Grand Final';
-                                                return renderDoubleEliminationRound(1, [match], 'grand_final', roundName, context);
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* ===== THIRD PLACE (if exists) ===== */}
-                                {thirdPlaceMatches && thirdPlaceMatches.length > 0 && (
-                                    <div className="bracket-third-place-section">
-                                        <div className="bracket-render-section-header">
-                                            <div className="bracket-render-section-title">🥉 3rd Place</div>
-                                            <div className="bracket-render-section-subtitle">Матч за третье место</div>
+                                    {/* THIRD PLACE (if exists) */}
+                                    {thirdPlaceMatches && thirdPlaceMatches.length > 0 && (
+                                        <div className="bracket-third-place-section">
+                                            <div className="bracket-rounds-container" style={{ justifyContent: 'center' }}>
+                                                {renderDoubleEliminationRound(1, thirdPlaceMatches, 'winner', 'Матч за 3-е место', { isLastRound: true })}
+                                            </div>
                                         </div>
-                                        <div className="bracket-rounds-container" style={{ justifyContent: 'center' }}>
-                                            {renderDoubleEliminationRound(1, thirdPlaceMatches, 'winner', 'Матч за 3-е место', { isLastRound: true })}
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

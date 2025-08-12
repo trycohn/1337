@@ -103,7 +103,7 @@
     width: 100%;
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: stretch; /* растягиваем колонки на одинаковую высоту */
     justify-content: center;
     gap: 40px;
 }
@@ -111,6 +111,17 @@
 .bracket-side-finals-column {
     display: flex;
     flex-direction: column;
+    gap: 16px;
+    align-items: stretch; /* растягиваемся по высоте ряда */
+}
+
+/* Область контента финалов — центрируем матчи по вертикали */
+.bracket-side-finals-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     gap: 24px;
 }
 
