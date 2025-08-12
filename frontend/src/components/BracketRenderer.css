@@ -95,9 +95,27 @@
 
 .bracket-double-elimination {
     flex-direction: column;
-    gap: 60px;
+    gap: 40px;
     align-items: center;
     justify-content: flex-start;
+}
+.bracket-upper-and-finals-row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+}
+
+.bracket-side-finals-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.bracket-third-place-section {
+    width: max-content;
 }
 
 .bracket-single-elimination {

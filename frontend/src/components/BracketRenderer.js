@@ -28,7 +28,6 @@ const BracketRenderer = ({
     const winnersSectionRef = useRef(null);
     const losersSectionRef = useRef(null);
     const grandFinalSectionRef = useRef(null);
-    const dividerRef = useRef(null);
     const [equalSectionWidth, setEqualSectionWidth] = useState(null);
     
     // 🆕 СОВРЕМЕННАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ
@@ -317,7 +316,11 @@ const BracketRenderer = ({
                                (groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0);
     
     if (isDoubleElimination) {
-        // Рендер Double Elimination с четким разделением сеток
+        // Подготовка данных для боковой колонки (Grand Final/Reset и 3-е место)
+        const grandFinalMatches = Array.isArray(groupedMatches.grandFinal) ? groupedMatches.grandFinal : [];
+        const thirdPlaceMatches = useMemo(() => (matches || []).filter(m => m.bracket_type === 'placement' || m.is_third_place_match), [matches]);
+
+        // Рендер Double Elimination с Winners + боковая колонка справа
         return (
             <div 
                 className={`bracket-renderer-container bracket-double-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
@@ -329,45 +332,64 @@ const BracketRenderer = ({
                     ref={rendererRef}
                     {...effectiveHandlers}
                 >
-                    {/* ===== UPPER BRACKET (WINNERS) ===== */}
-                    {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
-                        <div 
-                            className="bracket-render-upper-section"
-                            ref={winnersSectionRef}
-                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
-                        >
-                            <div className="bracket-render-section-header">
-                                <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
-                                <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
+                    <div className="bracket-upper-and-finals-row">
+                        {/* ===== UPPER BRACKET (WINNERS) ===== */}
+                        {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
+                            <div 
+                                className="bracket-render-upper-section"
+                                ref={winnersSectionRef}
+                                style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
+                            >
+                                <div className="bracket-render-section-header">
+                                    <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
+                                    <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
+                                </div>
+                                <div className="bracket-rounds-container bracket-render-winners-container">
+                                    {Object.entries(groupedMatches.winners)
+                                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                        .map(([round, matches]) => {
+                                            const context = getRoundContext(parseInt(round), matches, 'winner');
+                                            const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                            return renderDoubleEliminationRound(round, matches, 'winner', roundName, context);
+                                        })}
+                                </div>
                             </div>
-                            <div className="bracket-rounds-container bracket-render-winners-container">
-                                {Object.entries(groupedMatches.winners)
-                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                    .map(([round, matches]) => {
-                                        const context = getRoundContext(parseInt(round), matches, 'winner');
-                                        const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                        return renderDoubleEliminationRound(round, matches, 'winner', roundName, context);
-                                    })}
+                        )}
+
+                        {(grandFinalMatches.length > 0 || (thirdPlaceMatches && thirdPlaceMatches.length > 0)) && (
+                            <div className="bracket-side-finals-column">
+                                {/* ===== GRAND FINAL(S) ===== */}
+                                {grandFinalMatches.length > 0 && (
+                                    <div className="bracket-grand-final-section" ref={grandFinalSectionRef}>
+                                        <div className="bracket-render-section-header">
+                                            <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
+                                            <div className="bracket-render-section-subtitle bracket-render-grand-final-subtitle">Финальное противостояние</div>
+                                        </div>
+                                        <div className="bracket-rounds-container bracket-render-grand-final-container" style={{ justifyContent: 'center' }}>
+                                            {grandFinalMatches.map((match) => {
+                                                const context = getRoundContext(1, [match], 'grand_final');
+                                                const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Triumph' : 'Grand Final';
+                                                return renderDoubleEliminationRound(1, [match], 'grand_final', roundName, context);
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ===== THIRD PLACE (if exists) ===== */}
+                                {thirdPlaceMatches && thirdPlaceMatches.length > 0 && (
+                                    <div className="bracket-third-place-section">
+                                        <div className="bracket-render-section-header">
+                                            <div className="bracket-render-section-title">🥉 3rd Place</div>
+                                            <div className="bracket-render-section-subtitle">Матч за третье место</div>
+                                        </div>
+                                        <div className="bracket-rounds-container" style={{ justifyContent: 'center' }}>
+                                            {renderDoubleEliminationRound(1, thirdPlaceMatches, 'winner', 'Матч за 3-е место', { isLastRound: true })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
-                    
-                    {/* ===== HORIZONTAL DIVIDER ===== */}
-                    {groupedMatches.winners && groupedMatches.losers && 
-                     Object.keys(groupedMatches.winners).length > 0 && 
-                     Object.keys(groupedMatches.losers).length > 0 && (
-                        <div 
-                            className="bracket-render-horizontal-divider"
-                            ref={dividerRef}
-                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
-                        >
-                            <div className="bracket-render-divider-line"></div>
-                            <div className="bracket-render-divider-text">
-                                <span className="bracket-render-divider-label">Переход в нижнюю сетку</span>
-                            </div>
-                            <div className="bracket-render-divider-line"></div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                     
                     {/* ===== LOWER BRACKET (LOSERS) ===== */}
                     {groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0 && (
@@ -392,26 +414,7 @@ const BracketRenderer = ({
                         </div>
                     )}
                     
-                    {/* ===== GRAND FINAL SECTION ===== */}
-                    {groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0 && (
-                        <div 
-                            className="bracket-grand-final-section"
-                            ref={grandFinalSectionRef}
-                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
-                        >
-                            <div className="bracket-render-section-header">
-                                <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
-                                <div className="bracket-render-section-subtitle bracket-render-grand-final-subtitle">Финальное противостояние</div>
-                            </div>
-                            <div className="bracket-rounds-container bracket-render-grand-final-container" style={{ justifyContent: 'center' }}>
-                                {groupedMatches.grandFinal.map((match, index) => {
-                                    const context = getRoundContext(1, [match], 'grand_final');
-                                    const roundName = match.bracket_type === 'grand_final_reset' ? 'Grand Final Triumph' : 'Grand Final';
-                                    return renderDoubleEliminationRound(1, [match], 'grand_final', roundName, context);
-                                })}
-                            </div>
-                        </div>
-                    )}
+                    {/* Grand Final и 3-е место перенесены в боковую колонку справа от Winners */}
                 </div>
             </div>
         );
