@@ -271,11 +271,11 @@
     margin-bottom: 20px;
     padding: 12px 20px;
     background: linear-gradient(145deg, rgba(17, 17, 17, 0.9), rgba(0, 0, 0, 0.8));
-    border: 2px solid #333;
+    border: none;
     border-radius: 20px;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    text-shadow: none;
+    box-shadow: none;
     letter-spacing: 0.5px;
     min-width: 180px;
     position: relative;
@@ -284,22 +284,12 @@
 
 /* Градиентная полоска для заголовков раундов - базовая */
 .bracket-round-header::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 0, 0, 0.8) 50%, 
-        transparent 100%
-    );
+    content: none;
 }
 
 /* Специфические стили для Winners Bracket раундов */
 .bracket-round-header.bracket-winners-bracket-header {
-    border-color: rgba(0, 255, 0, 0.5);
+    border-color: transparent;
     background: linear-gradient(145deg, 
         rgba(0, 50, 0, 0.3), 
         rgba(0, 20, 0, 0.5)
@@ -316,7 +306,7 @@
 
 /* Специфические стили для Losers Bracket раундов */
 .bracket-round-header.bracket-losers-bracket-header {
-    border-color: rgba(255, 100, 100, 0.5);
+    border-color: transparent;
     background: linear-gradient(145deg, 
         rgba(50, 0, 0, 0.3), 
         rgba(20, 0, 0, 0.5)
@@ -333,14 +323,14 @@
 
 /* Специальные стили для малого финала лузеров */
 .bracket-round-header.bracket-losers-bracket-header[data-round-type="losers-small-final"] {
-    border-color: rgba(255, 150, 0, 0.7);
+    border-color: transparent;
     background: linear-gradient(145deg, 
         rgba(80, 40, 0, 0.4), 
         rgba(40, 20, 0, 0.6)
     );
     font-weight: 800;
-    text-shadow: 0 0 10px rgba(255, 150, 0, 0.5);
-    animation: bracket-losers-final-glow 2s infinite;
+    text-shadow: none;
+    animation: none;
 }
 
 .bracket-round-header.bracket-losers-bracket-header[data-round-type="losers-small-final"]::after {
@@ -353,13 +343,13 @@
 
 /* Grand Final заголовки */
 .bracket-round-header.bracket-grand-final-bracket-header {
-    border-color: rgba(255, 215, 0, 0.7);
+    border-color: transparent;
     background: linear-gradient(145deg, 
         rgba(80, 80, 0, 0.4), 
         rgba(40, 40, 0, 0.6)
     );
     font-weight: 800;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    text-shadow: none;
 }
 
 .bracket-round-header.bracket-grand-final-bracket-header::after {  
@@ -823,16 +813,10 @@
     top: -40px;
     left: 5%;
     right: 5%;
-    height: 3px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 0, 0, 0.5) 20%, 
-        rgba(255, 0, 0, 0.8) 50%, 
-        rgba(255, 0, 0, 0.5) 80%, 
-        transparent 100%
-    );
-    border-radius: 2px;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    height: 1px;
+    background: #111;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .bracket-grand-final-section {
@@ -849,16 +833,10 @@
     top: -40px;
     left: 5%;
     right: 5%;
-    height: 3px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 215, 0, 0.5) 20%, 
-        rgba(255, 215, 0, 0.8) 50%, 
-        rgba(255, 215, 0, 0.5) 80%, 
-        transparent 100%
-    );
-    border-radius: 2px;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    height: 1px;
+    background: #111;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 /* ===== СЕКЦИИ DOUBLE ELIMINATION С ЧЕТКИМ РАЗДЕЛЕНИЕМ ===== */
@@ -913,55 +891,33 @@
     justify-content: center;
     margin: 60px 0;
     position: relative;
-    animation: bracket-render-divider-glow 3s ease-in-out infinite;
+    animation: none;
 }
 
 .bracket-render-divider-line {
     flex: 1;
-    height: 4px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 0, 0, 0.3) 10%, 
-        rgba(255, 0, 0, 0.8) 50%, 
-        rgba(255, 0, 0, 0.3) 90%, 
-        transparent 100%
-    );
-    border-radius: 2px;
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+    height: 1px;
+    background: #111;
+    border-radius: 0;
+    box-shadow: none;
     position: relative;
 }
 
-.bracket-render-divider-line::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: 0;
-    right: 0;
-    height: 8px;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 0, 0, 0.1) 10%, 
-        rgba(255, 0, 0, 0.3) 50%, 
-        rgba(255, 0, 0, 0.1) 90%, 
-        transparent 100%
-    );
-    border-radius: 4px;
-    filter: blur(4px);
-}
+.bracket-render-divider-line::before { content: none; }
 
 .bracket-render-divider-text {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 30px;
-    padding: 15px 25px;
-    background: linear-gradient(145deg, rgba(17, 17, 17, 0.95), rgba(0, 0, 0, 0.9));
-    border: 2px solid rgba(255, 0, 0, 0.6);
-    border-radius: 25px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    margin: 0 16px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    box-shadow: none;
     position: relative;
-    min-width: 200px;
+    min-width: 0;
 }
 
 .bracket-render-divider-label {
@@ -971,7 +927,7 @@
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 1px;
-    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    text-shadow: none;
     white-space: nowrap;
 }
 
@@ -996,15 +952,13 @@
     font-weight: 900;
     text-align: center;
     margin-bottom: 8px;
-    padding: 20px 40px;
-    background: linear-gradient(145deg, #222, #111);
-    border: 3px solid #ff0000;
-    border-radius: 30px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
     color: #fff;
-    text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
-    box-shadow: 
-        0 6px 20px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    text-shadow: none;
+    box-shadow: none;
     letter-spacing: 1px;
     text-transform: uppercase;
     position: relative;
@@ -1023,45 +977,7 @@
 }
 
 /* Специфические стили заголовков для каждой секции */
-.bracket-render-winners-title {
-    border-color: #00ff00 !important;
-    text-shadow: 0 0 15px rgba(0, 255, 0, 0.6) !important;
-    background: linear-gradient(145deg, 
-        rgba(0, 100, 0, 0.2), 
-        rgba(0, 50, 0, 0.3)
-    ) !important;
-}
-
-.bracket-render-winners-subtitle {
-    color: rgba(0, 255, 0, 0.8) !important;
-}
-
-.bracket-render-losers-title {
-    border-color: #ff6464 !important;
-    text-shadow: 0 0 15px rgba(255, 100, 100, 0.6) !important;
-    background: linear-gradient(145deg, 
-        rgba(100, 0, 0, 0.2), 
-        rgba(50, 0, 0, 0.3)
-    ) !important;
-}
-
-.bracket-render-losers-subtitle {
-    color: rgba(255, 100, 100, 0.8) !important;
-}
-
-.bracket-render-grand-final-title {
-    border-color: #ffd700 !important;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
-    background: linear-gradient(145deg, 
-        rgba(100, 100, 0, 0.2), 
-        rgba(50, 50, 0, 0.3)
-    ) !important;
-    animation: bracket-grand-final-pulse 3s infinite;
-}
-
-.bracket-render-grand-final-subtitle {
-    color: rgba(255, 215, 0, 0.9) !important;
-}
+/* Стили заголовков секций упрощены: фон/границы/тени отключены выше */
 
 /* ===== КОНТЕЙНЕРЫ РАУНДОВ С УЛУЧШЕННОЙ СТРУКТУРОЙ ===== */
 .bracket-render-winners-container,
