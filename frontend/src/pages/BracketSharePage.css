@@ -9,7 +9,7 @@
 /* Верхний герой-блок: меню страницы + инфо турнира с общим фоном */
 .bracket-share-hero {
   position: relative;
-  background: #000 url('/images/figma/hero-bg-585a9d.png') center/cover no-repeat;
+  /* фон задаем инлайном через PUBLIC_URL, чтобы избежать сборки url() */
 }
 .bracket-share-hero::after {
   content: '';

@@ -113,7 +113,12 @@ function BracketSharePage() {
       {/* Хедер с меню уже рендерится в Layout */}
       <div className="bracket-share-header">
         {/* 1-2. Верхние две части (липкий глобальный хедер рендерится в Layout), здесь — страничный тулбар + блок инфо на одном фоне */}
-        <div className="bracket-share-hero">
+        <div
+          className="bracket-share-hero"
+          style={{
+            background: `#000 url(${process.env.PUBLIC_URL || ''}/images/figma/hero-bg-585a9d.png) center/cover no-repeat`
+          }}
+        >
           <div className="bracket-share-hero-inner">
             <div className="bracket-share-toolbar">
           <Link to={`/tournaments/${id}`} className="bracket-share-link">К турниру</Link>
