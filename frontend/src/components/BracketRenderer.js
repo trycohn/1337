@@ -207,15 +207,18 @@ const BracketRenderer = ({
             default:
                 headerClass += ' bracket-default-bracket-header';
         }
+        const shouldRenderHeader = bracketType !== 'grand_final';
         
         return (
             <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`}>
-                <div 
-                    className={headerClass}
-                    data-round-type={roundType}
-                >
-                    {roundName}
-                </div>
+                {shouldRenderHeader && (
+                    <div 
+                        className={headerClass}
+                        data-round-type={roundType}
+                    >
+                        {roundName}
+                    </div>
+                )}
                 <div className={`bracket-matches-list ${matchesClass}`}>
                     {matches.map(match => (
                         <div
