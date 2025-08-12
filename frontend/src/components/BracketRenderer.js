@@ -307,6 +307,12 @@ const BracketRenderer = ({
         )
     );
 
+    // Предрасчет матчей за 3-е место на верхнем уровне (хук не должен вызываться условно)
+    const thirdPlaceMatches = useMemo(
+        () => (matches || []).filter(m => m.bracket_type === 'placement' || m.is_third_place_match),
+        [matches]
+    );
+
     // Основной рендер с поддержкой разных форматов
     // РАСШИРЕННАЯ ПРОВЕРКА: учитываем разные варианты написания и наличие данных
     const isDoubleElimination = tournament?.bracket_type === 'double_elimination' || 
@@ -318,7 +324,6 @@ const BracketRenderer = ({
     if (isDoubleElimination) {
         // Подготовка данных для боковой колонки (Grand Final/Reset и 3-е место)
         const grandFinalMatches = Array.isArray(groupedMatches.grandFinal) ? groupedMatches.grandFinal : [];
-        const thirdPlaceMatches = useMemo(() => (matches || []).filter(m => m.bracket_type === 'placement' || m.is_third_place_match), [matches]);
 
         // Рендер Double Elimination с Winners + боковая колонка справа
         return (
