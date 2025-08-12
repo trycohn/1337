@@ -33,12 +33,10 @@ const BracketRenderer = ({
     // 🆕 СОВРЕМЕННАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ
     const {
         isDragging,
-        zoomPercentage,
         zoomIn,
         zoomOut,
         resetAll,
         centerView,
-        fitToScreen,
         canZoomIn,
         canZoomOut,
         handlers
@@ -107,6 +105,12 @@ const BracketRenderer = ({
         };
     }, [measureSectionsWidth, groupedMatches]);
     
+    // Предрасчет матчей за 3-е место на верхнем уровне (хуки должны вызываться до ранних return)
+    const thirdPlaceMatches = useMemo(
+        () => (matches || []).filter(m => m.bracket_type === 'placement' || m.is_third_place_match),
+        [matches]
+    );
+
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
         return (
@@ -305,12 +309,6 @@ const BracketRenderer = ({
                 </button>
             </div>
         )
-    );
-
-    // Предрасчет матчей за 3-е место на верхнем уровне (хук не должен вызываться условно)
-    const thirdPlaceMatches = useMemo(
-        () => (matches || []).filter(m => m.bracket_type === 'placement' || m.is_third_place_match),
-        [matches]
     );
 
     // Основной рендер с поддержкой разных форматов
