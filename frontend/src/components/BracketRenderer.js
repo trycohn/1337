@@ -1,5 +1,5 @@
 // frontend/src/components/BracketRenderer.js
-import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useMemo } from 'react';
 import './BracketRenderer.css';
 import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
@@ -28,7 +28,6 @@ const BracketRenderer = ({
     const winnersSectionRef = useRef(null);
     const losersSectionRef = useRef(null);
     const grandFinalSectionRef = useRef(null);
-    const [equalSectionWidth, setEqualSectionWidth] = useState(null);
     
     // 🆕 СОВРЕМЕННАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ
     const {
@@ -87,23 +86,7 @@ const BracketRenderer = ({
         return tournamentFormat.groupMatches(matches);
     }, [matches, tournamentFormat]);
 
-    // Вычисляем максимальную ширину секций Winners/Losers и применяем к обеим секциям, а также к разделителю и Grand Final
-    const measureSectionsWidth = useCallback(() => {
-        const winnersWidth = winnersSectionRef.current ? winnersSectionRef.current.scrollWidth : 0;
-        const losersWidth = losersSectionRef.current ? losersSectionRef.current.scrollWidth : 0;
-        const maxWidth = Math.max(winnersWidth, losersWidth);
-        if (maxWidth && maxWidth !== equalSectionWidth) setEqualSectionWidth(maxWidth);
-    }, [equalSectionWidth]);
-
-    useEffect(() => {
-        // Измеряем после рендера
-        const id = requestAnimationFrame(measureSectionsWidth);
-        window.addEventListener('resize', measureSectionsWidth);
-        return () => {
-            cancelAnimationFrame(id);
-            window.removeEventListener('resize', measureSectionsWidth);
-        };
-    }, [measureSectionsWidth, groupedMatches]);
+    // Убрали автоматическое выравнивание ширин секций
     
     // Предрасчет матчей за 3-е место на верхнем уровне (хуки должны вызываться до ранних return)
     const thirdPlaceMatches = useMemo(
@@ -341,7 +324,6 @@ const BracketRenderer = ({
                             <div 
                                 className="bracket-render-upper-section"
                                 ref={winnersSectionRef}
-                                style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
                             >
                                 <div className="bracket-render-section-header">
                                     <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
@@ -399,7 +381,6 @@ const BracketRenderer = ({
                         <div 
                             className="bracket-render-lower-section"
                             ref={losersSectionRef}
-                            style={equalSectionWidth ? { width: equalSectionWidth } : undefined}
                         >
                             <div className="bracket-render-section-header">
                                 <div className="bracket-render-section-title bracket-render-losers-title">💀 Losers Bracket</div>
