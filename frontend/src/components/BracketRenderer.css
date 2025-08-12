@@ -300,7 +300,6 @@
     text-align: center;
     margin-bottom: 20px;
     padding: 12px 20px;
-    background: linear-gradient(145deg, rgba(17, 17, 17, 0.9), rgba(0, 0, 0, 0.8));
     border: none;
     border-radius: 20px;
     color: #fff;
@@ -320,75 +319,36 @@
 /* Специфические стили для Winners Bracket раундов */
 .bracket-round-header.bracket-winners-bracket-header {
     border-color: transparent;
-    background: linear-gradient(145deg, 
-        rgba(0, 50, 0, 0.3), 
-        rgba(0, 20, 0, 0.5)
-    );
-}
-
-.bracket-round-header.bracket-winners-bracket-header::after {
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(0, 255, 0, 0.6) 50%, 
-        transparent 100%
-    );
 }
 
 /* Специфические стили для Losers Bracket раундов */
 .bracket-round-header.bracket-losers-bracket-header {
     border-color: transparent;
-    background: linear-gradient(145deg, 
-        rgba(50, 0, 0, 0.3), 
-        rgba(20, 0, 0, 0.5)
-    );
+
 }
 
-.bracket-round-header.bracket-losers-bracket-header::after {
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 100, 100, 0.6) 50%, 
-        transparent 100%
-    );
-}
+
 
 /* Специальные стили для малого финала лузеров */
 .bracket-round-header.bracket-losers-bracket-header[data-round-type="losers-small-final"] {
     border-color: transparent;
-    background: linear-gradient(145deg, 
-        rgba(80, 40, 0, 0.4), 
-        rgba(40, 20, 0, 0.6)
-    );
+
     font-weight: 800;
     text-shadow: none;
     animation: none;
 }
 
-.bracket-round-header.bracket-losers-bracket-header[data-round-type="losers-small-final"]::after {
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 150, 0, 0.8) 50%, 
-        transparent 100%
-    );
-}
+
 
 /* Grand Final заголовки */
 .bracket-round-header.bracket-grand-final-bracket-header {
     border-color: transparent;
-    background: linear-gradient(145deg, 
-        rgba(80, 80, 0, 0.4), 
-        rgba(40, 40, 0, 0.6)
-    );
+
     font-weight: 800;
     text-shadow: none;
 }
 
-.bracket-round-header.bracket-grand-final-bracket-header::after {  
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 215, 0, 0.8) 50%, 
-        transparent 100%
-    );
-}
+
 
 .bracket-grand-final-section .bracket-rounds-container {
     border: none;
