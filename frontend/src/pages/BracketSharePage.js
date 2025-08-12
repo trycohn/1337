@@ -100,7 +100,7 @@ function BracketSharePage() {
   }, [focusMatchId, viewMode]);
 
   return (
-    <div className="bracket-share-page">
+    <div className="2.0-bracket-share-page">
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -111,19 +111,19 @@ function BracketSharePage() {
       </Helmet>
 
       {/* Хедер с меню уже рендерится в Layout */}
-      <div className="bracket-share-header">
+      <div className="2.0-bracket-share-header">
         {/* 1-2. Верхние две части (липкий глобальный хедер рендерится в Layout), здесь — страничный тулбар + блок инфо на одном фоне */}
         <div
-          className="bracket-share-hero"
+          className="2.0-bracket-share-hero"
           style={{
             background: `#000 url(${process.env.PUBLIC_URL || ''}/images/figma/hero-bg-585a9d.png) center/cover no-repeat`
           }}
         >
-          <div className="bracket-share-hero-inner">
-            <div className="bracket-share-toolbar">
-          <Link to={`/tournaments/${id}`} className="bracket-share-link">К турниру</Link>
-          <button onClick={handleShare} className="bracket-share-button">Поделиться</button>
-              <div className="bracket-share-segment" role="tablist" aria-label="Переключатель вида">
+          <div className="2.0-bracket-share-hero-inner">
+            <div className="2.0-bracket-share-toolbar">
+              <Link to={`/tournaments/${id}`} className="2.0-bracket-share-link">К турниру</Link>
+              <button onClick={handleShare} className="2.0-bracket-share-button">Поделиться</button>
+              <div className="2.0-bracket-share-segment" role="tablist" aria-label="Переключатель вида">
                 <button
                   role="tab"
                   aria-selected={viewMode === 'classic'}
@@ -147,11 +147,11 @@ function BracketSharePage() {
                   Компактный
                 </button>
               </div>
-              <span className="bracket-share-url">{pageUrl}</span>
+              <span className="2.0-bracket-share-url">{pageUrl}</span>
             </div>
             {tournament && (
-              <div className="bracket-share-info">
-                <div className="bracket-share-title">{tournament.name}</div>
+              <div className="2.0-bracket-share-info">
+                <div className="2.0-bracket-share-title">{tournament.name}</div>
                 {tournament.start_date && <div>Старт: {new Date(tournament.start_date).toLocaleString()}</div>}
               </div>
             )}
@@ -159,17 +159,17 @@ function BracketSharePage() {
         </div>
 
         {/* 3. Нижний локальный хедер страницы турнира */}
-        <div className="bracket-local-nav">
-          <div className="bracket-local-nav-inner">
-            <a href={`#/tournaments/${id}`} className="local-nav-link">Обзор</a>
-            <a href={`#/tournaments/${id}/bracket`} className="local-nav-link active">Сетка</a>
-            <a href={`#/tournaments/${id}/matches`} className="local-nav-link">Матчи</a>
-            <a href={`#/tournaments/${id}/participants`} className="local-nav-link">Участники</a>
+        <div className="2.0-bracket-local-nav">
+          <div className="2.0-bracket-local-nav-inner">
+            <a href={`#/tournaments/${id}`} className="2.0-local-nav-link">Обзор</a>
+            <a href={`#/tournaments/${id}/bracket`} className="2.0-local-nav-link active">Сетка</a>
+            <a href={`#/tournaments/${id}/matches`} className="2.0-local-nav-link">Матчи</a>
+            <a href={`#/tournaments/${id}/participants`} className="2.0-local-nav-link">Участники</a>
           </div>
         </div>
       </div>
 
-      <div className="bracket-share-content">
+      <div className="2.0-bracket-share-content">
         {loading && (
           <div style={{ padding: 24 }}>Загрузка…</div>
         )}
