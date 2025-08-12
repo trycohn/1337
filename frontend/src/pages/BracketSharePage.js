@@ -14,6 +14,7 @@ function useQuery() {
 function BracketSharePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const query = useQuery();
   const focusMatchId = query.get('match');
   const viewMode = (query.get('view') || 'classic').toLowerCase();
